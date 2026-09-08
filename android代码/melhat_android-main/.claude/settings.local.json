@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(cd /d D:RLCodeFlutterProjectsflutter_demo1)",
+      "Read(//c/Users/wangq/.pub-cache/hosted/pub.dev/signals-6.3.0/**)",
+      "Bash(find:*)",
+      "Bash(dir:*)",
+      "Bash(flutter build:*)",
+      "Bash(2)",
+      "Bash(dart pub:*)",
+      "Bash(flutter clean:*)",
+      "Bash(grep -r \"export\\\\|class.*Header\\\\|class.*Footer\" pubcacheeasy_refresh-*/lib/src/)",
+      "Bash(flutter run *)",
+      "Bash(flutter --version)",
+      "Bash(ls \"C:/Users/wangq/AppData/Local/Pub/Cache/hosted/pub.flutter-io.cn/openai_dart-5.0.0/lib/\")",
+      "Read(//c/Users/wangq/AppData/Local/Pub/Cache/hosted/pub.flutter-io.cn/openai_dart-5.0.0/lib/**)",
+      "WebSearch",
+      "WebFetch(domain:pub.dev)",
+      "Bash(find ~/.pub-cache -name \"voice_recognizer\" -type d 2>/dev/null | head -5)",
+      "Read(//c/Users/wangq/**)"
+    ]
+  }
+}

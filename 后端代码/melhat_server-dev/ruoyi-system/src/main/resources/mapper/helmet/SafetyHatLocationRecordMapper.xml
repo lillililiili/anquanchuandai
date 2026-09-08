@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.helmet.mapper.SafetyHatLocationRecordMapper">
+
+    <resultMap id="SafetyHatLocationRecordMap" type="com.ruoyi.helmet.pojo.po.SafetyHatLocationRecord">
+        <id property="id" column="id"/>
+        <id property="hatId" column="hat_id"/>
+        <id property="hatNumber" column="hat_number"/>
+        <id property="userId" column="user_id"/>
+        <id property="userName" column="user_name"/>
+        <id property="lng" column="lng"/>
+        <id property="lat" column="lat"/>
+        <id property="speed" column="speed"/>
+        <id property="timestamp" column="timestamp"/>
+        <id property="altitude" column="altitude"/>
+        <id property="delFlag" column="del_flag"/>
+        <id property="createTime" column="create_time"/>
+        <id property="createBy" column="create_by"/>
+        <id property="updateTime" column="update_time"/>
+        <id property="updateBy" column="update_by"/>
+    </resultMap>
+</mapper>

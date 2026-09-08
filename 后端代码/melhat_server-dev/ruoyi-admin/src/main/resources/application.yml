@@ -1,0 +1,120 @@
+# 项目相关配置
+ruoyi:
+  # 名称
+  name: RuoYi
+  # 版本
+  version: 3.8.5
+  # 版权年份
+  copyrightYear: 2023
+  # 实例演示开关
+  demoEnabled: true
+  # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /home/ruoyi/uploadPath）
+  profile: D:/ruoyi/uploadPath
+  # 获取ip地址开关
+  addressEnabled: false
+  # 验证码类型 math 数组计算 char 字符验证
+
+# 用户配置
+user:
+  password:
+    # 密码最大错误次数
+    maxRetryCount: 5
+    # 密码锁定时间（默认10分钟）
+    lockTime: 10
+
+# Spring配置
+spring:
+  # 资源信息
+  messages:
+    # 国际化资源文件路径
+    basename: i18n/messages
+  profiles:
+    active: dev
+
+# MyBatis配置
+mybatis:
+    # 搜索指定包别名
+    typeAliasesPackage: com.ruoyi.**.domain
+    # 配置mapper的扫描，找到所有的mapper.xml映射文件
+    mapperLocations: classpath*:mapper/**/*Mapper.xml
+    # 加载全局的配置文件
+    configLocation: classpath:mybatis/mybatis-config.xml
+
+mybatis-plus:
+  type-aliases-package: com.ruoyi.**.domain
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  config-location: classpath:mybatis/mybatis-config.xml
+
+# PageHelper分页插件
+pagehelper: 
+  helperDialect: mysql
+  supportMethodsArguments: true
+  params: count=countSql
+
+
+
+# Swagger配置
+swagger:
+  # 是否开启swagger
+  enabled: true
+  # 请求前缀
+  pathMapping: /dev-api
+
+# 防止XSS攻击
+xss: 
+  # 过滤开关
+  enabled: true
+  # 排除链接（多个用逗号分隔）
+  excludes: /system/notice
+  # 匹配链接
+  urlPatterns: /system/*,/monitor/*,/tool/*
+
+
+headband:
+    server: http://api.hel.epplink.com:30090
+    token:
+     url: /api/auth/token
+     username: ${TOKEN_SERVICE_USERNAME:}
+     password: ${TOKEN_SERVICE_PASSWORD:}
+    device:
+      #安全帽列表
+      list: /api/monitor/online
+#      info: /v1/api/device/info
+#      update: /v1/api/device/update
+#      run: /v1/api/device/control/run
+      #回放资源
+      playback: /api/monitor/file
+      #TTS单播
+      singleBroadcast: /api/tts/singleBroadcast
+      #TTS群播
+      groupBroadcast: /api/monitor/tts
+      #开始录制
+      startRecord: /api/monitor/record
+      #停止录制
+      stopRecord: /api/monitor/record/stop
+      #录制状态
+      recordStatus: /api/monitor/record/status
+      #文件列表
+      fileList: /api/file/list
+      call:
+        #单呼
+        singCall: /api/intercom/singleCall
+        #群呼
+        groupCall: /api/intercom/groupCall
+        #获取声网token
+        agoraToken: /api/agora/token
+        #结束通话
+        agoraEnd: /api/monitor/call/end
+        #结束通话
+        end: /api/intercom/end
+    firmware:
+      list: /v1/api/firmware/list
+      upload: /v1/api/firmware/upload
+      add: /v1/api/firmware/add
+      update: /v1/api/firmware/update
+      delete: /v1/api/firmware/delete
+
+# 离线演示时，外部 RTC/TTS 调用由控制器短路为本地记录。
+melhat:
+  demo-mode: true
+

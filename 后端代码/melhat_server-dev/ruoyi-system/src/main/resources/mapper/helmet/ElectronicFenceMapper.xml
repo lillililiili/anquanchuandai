@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.helmet.mapper.ElectronicFenceMapper">
+
+    <resultMap id="ElectronicFenceMap" type="com.ruoyi.helmet.pojo.po.ElectronicFence">
+        <id property="id" column="id"/>
+        <id property="fenceName" column="fence_name"/>
+        <id property="fenceType" column="fence_type"/>
+        <id property="fenceShape" column="fence_shape"/>
+        <id property="alertCount" column="alert_count"/>
+        <id property="status" column="status"/>
+        <id property="delFlag" column="del_flag"/>
+        <id property="createBy" column="create_by"/>
+        <id property="createTime" column="create_time"/>
+        <id property="updateBy" column="update_by"/>
+        <id property="updateTime" column="update_time"/>
+    </resultMap>
+    <select id="selectWithAlertCount" resultMap="ElectronicFenceMap">
+        SELECT ef.*, COUNT(efa.id) as alert_count
+        FROM electronic_fence ef
+        LEFT JOIN electronic_fence_alarm efa ON ef.id = efa.fence_id AND efa.del_flag = '0'
+        WHERE ef.del_flag = '0'
+        <if test='fenceName != null and fenceName != ""'>
+            AND ef.fence_name LIKE CONCAT('%', #{fenceName}, '%')
+        </if>
+        <if test='fenceType != null and fenceType != "" and fenceType != "全部"'>
+            AND ef.fence_type = #{fenceType}
+        </if>
+        <if test='startTime != null'>
+            AND ef.create_time &gt;= #{startTime}
+        </if>
+        <if test='endTime != null'>
+            AND ef.create_time &lt;= #{endTime}
+        </if>
+        GROUP BY ef.id
+        ORDER BY ef.create_time DESC
+    </select>
+
+</mapper>

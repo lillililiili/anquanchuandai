@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.helmet.mapper.IntercomRecordMapper">
+    <resultMap id="IntercomRecordMap" type="com.ruoyi.helmet.pojo.po.IntercomRecord">
+        <id property="id" column="id"/>
+        <id property="intercomType" column="intercom_type"/>
+        <id property="participant" column="participant"/>
+        <id property="recipientCount" column="recipient_count"/>
+        <id property="startTime" column="start_time"/>
+        <id property="endTime" column="end_time"/>
+        <id property="duration" column="duration"/>
+        <id property="recordPath" column="record_path"/>
+        <id property="delFlag" column="del_flag"/>
+        <id property="createBy" column="create_by"/>
+        <id property="createTime" column="create_time"/>
+        <id property="updateBy" column="update_by"/>
+        <id property="updateTime" column="update_time"/>
+    </resultMap>
+    <!-- 统计对讲记录数量 -->
+    <select id="countIntercomRecords" resultType="Integer">
+        SELECT COUNT(1) FROM intercom_record 
+        WHERE del_flag = '0'
+    </select>
+    
+    <!-- 统计今日对讲记录数量 -->
+    <select id="countTodayIntercomRecords" resultType="Integer">
+        SELECT COUNT(1) FROM intercom_record 
+        WHERE DATE(start_time) = CURDATE()
+          AND del_flag = '0'
+    </select>
+    
+    <!-- 统计对讲类型数量（按类型分组） -->
+    <select id="countIntercomByType" resultType="java.util.Map">
+        SELECT 
+            intercom_type,
+            COUNT(1) as count
+        FROM intercom_record
+        WHERE DATE(start_time) = CURDATE()
+          AND del_flag = '0'
+        GROUP BY intercom_type
+    </select>
+
+</mapper>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.helmet.mapper.FileRecordMapper">
+
+    <resultMap id="FileRecordMap" type="com.ruoyi.helmet.pojo.po.FileRecord">
+                            <id property="id" column="id"/>
+                    <id property="fileName" column="file_name"/>
+                    <id property="fileType" column="file_type"/>
+                    <id property="fileUrl" column="file_url"/>
+                    <id property="hatId" column="hat_id"/>
+                    <id property="fileSize" column="file_size"/>
+                    <id property="uploadTime" column="upload_time"/>
+                    <id property="delFlag" column="del_flag"/>
+                    <id property="createBy" column="create_by"/>
+                    <id property="createTime" column="create_time"/>
+                    <id property="updateBy" column="update_by"/>
+                    <id property="updateTime" column="update_time"/>
+            </resultMap>
+</mapper>

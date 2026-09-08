@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.helmet.mapper.TtsTextSynthesisBroadcastMapper">
+
+    <resultMap id="TtsTextSynthesisBroadcastMap" type="com.ruoyi.helmet.pojo.po.TtsTextSynthesisBroadcast">
+        <id property="id" column="id"/>
+        <id property="broadcastType" column="broadcast_type"/>
+        <id property="recipient" column="recipient"/>
+        <id property="recipientCount" column="recipient_count"/>
+        <id property="sendTime" column="send_time"/>
+        <id property="content" column="content"/>
+        <id property="operator" column="operator"/>
+        <id property="delFlag" column="del_flag"/>
+        <id property="createBy" column="create_by"/>
+        <id property="createTime" column="create_time"/>
+        <id property="updateBy" column="update_by"/>
+        <id property="updateTime" column="update_time"/>
+    </resultMap>
+    <!-- 统计 TTS 广播记录数量 -->
+    <select id="countTtsBroadcastRecords" resultType="Integer">
+        SELECT COUNT(1) FROM tts_text_synthesis_broadcast 
+        WHERE del_flag = '0'
+    </select>
+    
+    <!-- 统计今日 TTS 广播记录数量 -->
+    <select id="countTodayTtsBroadcastRecords" resultType="Integer">
+        SELECT COUNT(1) FROM tts_text_synthesis_broadcast 
+        WHERE DATE(send_time) = CURDATE()
+          AND del_flag = '0'
+    </select>
+    
+    <!-- 统计 TTS 广播类型数量（按类型分组） -->
+    <select id="countTtsByType" resultType="java.util.Map">
+        SELECT 
+            broadcast_type,
+            COUNT(1) as count
+        FROM tts_text_synthesis_broadcast
+        WHERE DATE(send_time) = CURDATE()
+          AND del_flag = '0'
+        GROUP BY broadcast_type
+    </select>
+
+</mapper>

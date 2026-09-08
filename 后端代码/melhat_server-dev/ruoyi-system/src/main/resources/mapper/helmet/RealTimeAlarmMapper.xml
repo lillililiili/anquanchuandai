@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.helmet.mapper.RealTimeAlarmMapper">
+
+    <resultMap id="RealTimeAlarmMap" type="com.ruoyi.helmet.pojo.po.RealTimeAlarm">
+        <id property="alarmId" column="alarm_id"/>
+        <id property="userId" column="user_id"/>
+        <id property="userName" column="user_name"/>
+        <id property="hatNumber" column="hat_number"/>
+        <id property="hatId" column="hat_id"/>
+        <id property="alarmType" column="alarm_type"/>
+        <id property="alarmLevel" column="alarm_level"/>
+        <id property="alarmStartTime" column="alarm_start_time"/>
+        <id property="alarmEndTime" column="alarm_end_time"/>
+        <id property="description" column="description"/>
+        <id property="isHandled" column="is_handled"/>
+        <id property="handleTime" column="handle_time"/>
+        <id property="delFlag" column="del_flag"/>
+        <id property="createBy" column="create_by"/>
+        <id property="createTime" column="create_time"/>
+        <id property="updateBy" column="update_by"/>
+        <id property="updateTime" column="update_time"/>
+    </resultMap>
+    <!-- 统计未处理的告警数量 -->
+    <select id="countUnhandledAlarms" resultType="Integer">
+        SELECT COUNT(1)
+        FROM real_time_alarm
+        WHERE is_handled = 0
+          AND del_flag = '0'
+    </select>
+    
+    <!-- 统计今日告警数量 -->
+    <select id="countTodayAlarms" resultType="Integer">
+        SELECT COUNT(1)
+        FROM real_time_alarm
+        WHERE DATE(alarm_start_time) = CURDATE()
+          AND del_flag = '0'
+    </select>
+    
+    <!-- 统计各类告警数量（按告警类型分组） -->
+    <select id="countAlarmByType" resultType="java.util.Map">
+        SELECT 
+            alarm_type,
+            COUNT(1) as count
+        FROM real_time_alarm
+        WHERE DATE(alarm_start_time) = CURDATE()
+          AND del_flag = '0'
+        GROUP BY alarm_type
+    </select>
+
+</mapper>

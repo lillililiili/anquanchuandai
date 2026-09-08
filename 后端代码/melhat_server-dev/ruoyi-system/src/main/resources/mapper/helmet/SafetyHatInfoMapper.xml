@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.helmet.mapper.SafetyHatInfoMapper">
+
+    <resultMap id="SafetyHatInfoMap" type="com.ruoyi.helmet.pojo.po.SafetyHatInfo">
+        <id property="id" column="id"/>
+        <id property="hatNumber" column="hat_number"/>
+        <id property="bindUserId" column="bind_user_id"/>
+        <id property="bindUserName" column="bind_user_name"/>
+        <id property="bindGroupId" column="bind_group_id"/>
+        <id property="bindGroup" column="bind_group"/>
+        <id property="bindTime" column="bind_time"/>
+        <id property="status" column="status"/>
+        <id property="cpuUsage" column="cpu_usage"/>
+        <id property="storageUsage" column="storage_usage"/>
+        <id property="electricityUsage" column="electricity_usage"/>
+        <id property="alarmCount" column="alarm_count"/>
+        <id property="delFlag" column="del_flag"/>
+        <id property="createBy" column="create_by"/>
+        <id property="createTime" column="create_time"/>
+        <id property="updateBy" column="update_by"/>
+        <id property="updateTime" column="update_time"/>
+    </resultMap>
+    
+    <!-- 统计图片数量 -->
+    <select id="countPhotoByHatId" resultType="Integer">
+        SELECT COUNT(1) FROM file_record 
+        WHERE file_type = 'image' 
+        AND del_flag = '0'
+        <if test="hatId != null">
+            AND hat_id = #{hatId}
+        </if>
+    </select>
+    
+    <!-- 统计在线人员数量（状态为 1 的帽子数量） -->
+    <select id="countOnlineUsers" resultType="Integer">
+        SELECT COUNT(1) FROM safety_hat_info 
+        WHERE status = '1' 
+        AND del_flag = '0'
+    </select>
+    
+    <!-- 统计设备正常率（电量大于 20% 的帽子占比） -->
+    <select id="countDeviceNormalRate" resultType="java.math.BigDecimal">
+        SELECT 
+            CAST(COUNT(CASE WHEN electricity_usage > 20 THEN 1 END) AS DECIMAL(10,2)) * 100 / 
+            NULLIF(COUNT(1), 0)
+        FROM safety_hat_info 
+        WHERE del_flag = '0'
+    </select>
+
+    <!-- 更新安全帽信息，支持 null 值 -->
+    <update id="updateSafetyHatInfo" parameterType="com.ruoyi.helmet.pojo.po.SafetyHatInfo">
+        UPDATE safety_hat_info
+        <set>
+            <if test="hatNumber != null or hatNumber == ''">hat_number = #{hatNumber},</if>
+            bind_user_id = #{bindUserId},
+            bind_user_name = #{bindUserName},
+            <if test="bindGroupId != null or bindGroupId == 0">bind_group_id = #{bindGroupId},</if>
+            <if test="bindGroup != null or bindGroup == ''">bind_group = #{bindGroup},</if>
+            <if test="bindTime != null">bind_time = #{bindTime},</if>
+            <if test="bindTime == null">bind_time = null,</if>
+            <if test="status != null or status == ''">status = #{status},</if>
+            <if test="cpuUsage != null">cpu_usage = #{cpuUsage},</if>
+            <if test="storageUsage != null">storage_usage = #{storageUsage},</if>
+            <if test="electricityUsage != null">electricity_usage = #{electricityUsage},</if>
+            <if test="alarmCount != null or alarmCount == 0">alarm_count = #{alarmCount},</if>
+            <if test="videoUrl != null or videoUrl == ''">video_url = #{videoUrl},</if>
+            <if test="rtcPlayConfig != null or rtcPlayConfig == ''">rtc_play_config = #{rtcPlayConfig},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>
