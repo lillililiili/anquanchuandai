@@ -136,6 +136,8 @@ class Http {
         return '证书验证失败';
       case DioExceptionType.unknown:
         return '网络请求失败，请稍后重试';
+      default:
+        return '网络请求失败，请稍后重试';
     }
   }
 
