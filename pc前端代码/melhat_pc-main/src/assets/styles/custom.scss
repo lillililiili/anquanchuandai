@@ -1,0 +1,303 @@
+
+
+.row{
+    display: flex;
+}
+
+.col{
+    display: flex;
+    flex-direction: column;
+}
+
+// ===== Spacing System Utility Classes =====
+// Use these classes to maintain consistent visual rhythm
+// Reference the custom properties in :root for values
+
+// Gap utilities (for flex/grid containers)
+.gap-tight { gap: var(--gap-tight); }
+.gap-standard { gap: var(--gap-standard); }
+.gap-relaxed { gap: var(--gap-relaxed); }
+
+// Section spacing
+.section-padding { padding: var(--section-padding); }
+.section-gap { margin-bottom: var(--section-gap); }
+
+// Tight groupings - use for related elements
+.stack-tight > * + * { margin-top: var(--gap-tight); }
+.row-tight > * + * { margin-left: var(--gap-tight); }
+
+// Standard spacing - use for sibling components
+.stack-standard > * + * { margin-top: var(--gap-standard); }
+.row-standard > * + * { margin-left: var(--gap-standard); }
+
+// Relaxed spacing - use for distinct sections
+.stack-relaxed > * + * { margin-top: var(--gap-relaxed); }
+.row-relaxed > * + * { margin-left: var(--gap-relaxed); }
+
+// Generous section breaks
+.stack-section > * + * { margin-top: var(--section-gap); }
+
+// ===== Responsive Width Utility Classes =====
+// Use clamp() for fluid sizing that adapts to viewport
+// Format: clamp(minimum, preferred, maximum)
+
+// Small inputs - for short text like IDs, codes
+.width-sm {
+  width: clamp(120px, 10rem, 200px) !important;
+}
+
+// Medium inputs - for standard text input
+.width-md {
+  width: clamp(160px, 12rem, 240px) !important;
+}
+
+// Large inputs - for longer text like names
+.width-lg {
+  width: clamp(180px, 14rem, 280px) !important;
+}
+
+// Extra large inputs - for wide content
+.width-xl {
+  width: clamp(200px, 16rem, 320px) !important;
+}
+
+// Date picker inputs - single date
+.width-date {
+  width: clamp(140px, 9rem, 180px) !important;
+}
+
+// Date range picker - fluid width
+.width-date-range {
+  width: clamp(240px, 20rem, 360px) !important;
+}
+
+// Date time range picker - wider
+.width-datetime-range {
+  width: clamp(280px, 24rem, 400px) !important;
+}
+
+// Full width - for containers
+.width-full {
+  width: 100% !important;
+}
+
+// Auto width - shrink to content
+.width-auto {
+  width: auto !important;
+}
+
+// ===== Responsive Table Columns =====
+// Use CSS custom properties for column widths
+// This allows runtime theming while keeping responsive constraints
+
+.col-narrow {
+  width: clamp(60px, 5rem, 100px);
+}
+
+.col-small {
+  width: clamp(80px, 7rem, 120px);
+}
+
+.col-medium {
+  width: clamp(120px, 10rem, 180px);
+}
+
+.col-wide {
+  width: clamp(160px, 14rem, 240px);
+}
+
+.col-xwide {
+  width: clamp(200px, 18rem, 300px);
+}
+
+// ===== Container Queries for Component-Level Responsiveness =====
+// These ensure components adapt based on their container, not viewport
+
+// Form item container - ensures inputs resize within narrow containers
+@container (max-width: 600px) {
+  .width-responsive {
+    width: 100% !important;
+  }
+}
+
+// ===== Legacy Fixed Width Replacements =====
+// These classes replace common inline style="width: XXXpx" patterns
+
+// Replacements for style="width: 150px"
+.w-150 {
+  width: clamp(120px, 9.375rem, 180px) !important;
+}
+
+// Replacements for style="width: 180px"
+.w-180 {
+  width: clamp(150px, 11.25rem, 220px) !important;
+}
+
+// Replacements for style="width: 200px"
+.w-200 {
+  width: clamp(160px, 12.5rem, 240px) !important;
+}
+
+// Replacements for style="width: 240px"
+.w-240 {
+  width: clamp(200px, 15rem, 280px) !important;
+}
+
+// Replacements for style="width: 300px"
+.w-300 {
+  width: clamp(240px, 18.75rem, 360px) !important;
+}
+
+// Replacements for style="width: 320px"
+.w-320 {
+  width: clamp(260px, 20rem, 380px) !important;
+}
+
+// Replacements for style="width: 350px"
+.w-350 {
+  width: clamp(280px, 22rem, 420px) !important;
+}
+
+// ===== Typography System Utility Classes =====
+// 字体排印工具类 - 专业、舒适、严谨
+
+// Font Sizes
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+
+// Font Weights
+.font-normal { font-weight: var(--font-normal); }
+.font-medium { font-weight: var(--font-medium); }
+.font-semibold { font-weight: var(--font-semibold); }
+.font-bold { font-weight: var(--font-bold); }
+
+// Line Heights
+.leading-none { line-height: var(--leading-none); }
+.leading-tight { line-height: var(--leading-tight); }
+.leading-snug { line-height: var(--leading-snug); }
+.leading-normal { line-height: var(--leading-normal); }
+.leading-relaxed { line-height: var(--leading-relaxed); }
+.leading-loose { line-height: var(--leading-loose); }
+
+// Letter Spacing (中文优化)
+.tracking-tight { letter-spacing: var(--tracking-tight); }
+.tracking-normal { letter-spacing: var(--tracking-normal); }
+.tracking-wide { letter-spacing: var(--tracking-wide); }
+.tracking-wider { letter-spacing: var(--tracking-wider); }
+
+// Semantic Typography Classes
+// Use these for consistent typographic hierarchy
+
+// Page title - for main page headings
+.text-page-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-wide);
+}
+
+// Section title - for section headings
+.text-section-title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-wide);
+}
+
+// Card title - for card headers
+.text-card-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+}
+
+// Form label - for form field labels
+.text-form-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+}
+
+// Body text - for primary content
+.text-body {
+  font-size: var(--text-base);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+}
+
+// Secondary text - for supporting content
+.text-secondary {
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+  color: var(--text-secondary);
+}
+
+// Caption - for annotations, timestamps
+.text-caption {
+  font-size: var(--text-xs);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-relaxed);
+  color: var(--text-muted);
+}
+
+// Mono - for code, data, IDs
+.text-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-tight);
+}
+
+// ===== Heading Styles (h1-h6) =====
+// Semantic HTML headings with consistent typography
+
+h1, .h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-6);
+}
+
+h2, .h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-5);
+}
+
+h3, .h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-4);
+}
+
+h4, .h4 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  margin-bottom: var(--space-3);
+}
+
+h5, .h5 {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+  margin-bottom: var(--space-2);
+}
+
+h6, .h6 {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+  margin-bottom: var(--space-2);
+}
+

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "screen-atmosphere",
+    "prompt": "Use case: stylized-concept. One standalone wide landscape image for a premium light enterprise industrial safety command dashboard. A serene porcelain-white modern industrial campus architectural model with a few very restrained pale teal glass details and pale blue metal accents. Airy soft daylight, sophisticated architectural editorial realism, extremely low contrast, almost white atmospheric depth. Composition: vast quiet white space across center and upper 80%, delicate architectural structures ONLY along bottom edge and outer corners. No hard grid, no glowing circuits, no colorful lights, no text, no numbers, no logos, no interface, no people. Wide 16:9 background image. Palette white #ffffff, mist gray #f4f7fa, very pale hints of #1765d1 and #148b98. Gentle natural shadows, calm beautiful material quality, not science fiction.",
+    "source": "C:/Users/黄建凯/.codex/generated_images/01a0755d-a4ee-7b21-8763-30c0f61d32f4/exec-f75a9f9b-020c-489a-9868-642e44b29d13.png",
+    "use": "整页低对比背景"
+  },
+  {
+    "name": "screen-helmet",
+    "prompt": "Use case: product-mockup. One standalone editorial product illustration for a refined light blue and teal industrial safety dashboard. A beautiful porcelain-white intelligent construction hardhat with tiny cobalt blue camera module and a restrained teal detail, resting on a soft white low pedestal. Soft high-key daylight, gentle shadows, realistic premium white plastic and satin metal, elegant believable engineering. Wide 3:2 composition with product entirely in RIGHT THIRD and generous clean white empty space on LEFT TWO THIRDS. Background seamless pure white fading to very pale cool gray at bottom. No text, no numbers, no logos, no people, no UI, no additional helmets. Balanced minimal sophisticated photography, not sci-fi, designed as subtle card decoration.",
+    "source": "C:/Users/黄建凯/.codex/generated_images/01a0755d-a4ee-7b21-8763-30c0f61d32f4/exec-07f0cc78-ba9b-4fc8-b642-4d362b6271d1.png",
+    "use": "概览卡右上角"
+  }
+]

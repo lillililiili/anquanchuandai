@@ -1,0 +1,26 @@
+[
+  {
+    "name": "screen-atmosphere",
+    "prompt": "Use case: stylized-concept. One standalone wide landscape image for a premium light enterprise industrial safety command dashboard. A serene porcelain-white modern industrial campus architectural model with a few very restrained pale teal glass details and pale blue metal accents. Airy soft daylight, sophisticated architectural editorial realism, extremely low contrast, almost white atmospheric depth. Composition: vast quiet white space across center and upper 80%, delicate architectural structures ONLY along bottom edge and outer corners. No hard grid, no glowing circuits, no colorful lights, no text, no numbers, no logos, no interface, no people. Wide 16:9 background image. Palette white #ffffff, mist gray #f4f7fa, very pale hints of #1765d1 and #148b98. Gentle natural shadows, calm beautiful material quality, not science fiction.",
+    "use": "整页低对比背景",
+    "original": "originals/screen-atmosphere.png",
+    "runtime": "public/visuals/screen-atmosphere.webp",
+    "bytes": 34080
+  },
+  {
+    "name": "screen-helmet",
+    "prompt": "Use case: product-mockup. One standalone editorial product illustration for a refined light blue and teal industrial safety dashboard. A beautiful porcelain-white intelligent construction hardhat with tiny cobalt blue camera module and a restrained teal detail, resting on a soft white low pedestal. Soft high-key daylight, gentle shadows, realistic premium white plastic and satin metal, elegant believable engineering. Wide 3:2 composition with product entirely in RIGHT THIRD and generous clean white empty space on LEFT TWO THIRDS. Background seamless pure white fading to very pale cool gray at bottom. No text, no numbers, no logos, no people, no UI, no additional helmets. Balanced minimal sophisticated photography, not sci-fi, designed as subtle card decoration.",
+    "use": "概览卡右上角",
+    "original": "originals/screen-helmet.png",
+    "runtime": "public/visuals/screen-helmet.webp",
+    "bytes": 7082
+  },
+  {
+    "name": "screen-communication",
+    "prompt": "Use case: product-mockup. One independent landscape 3:2 illustration for the header of a premium light industrial command dashboard communications panel. A compact pair of porcelain white industrial handheld radio transceivers with satin silver antenna and tiny cobalt blue controls, beside one subtle physical teal arc representing connection. Precisely engineered realistic product styling, no writing on devices. Objects form a beautifully balanced small still life ENTIRELY in right third. Left two thirds spacious pure white empty backdrop. Soft natural daylight, high key studio photography, gentle soft ground shadows, premium white plastic, minimal calm sophisticated atmosphere. Palette porcelain white, pale cool gray, small cobalt #1765d1 and teal #148b98 accents. No text, no numbers, no logos, no UI, no glowing hologram, no people. Designed as quiet small header decoration, not a full-page hero.",
+    "use": "三块对讲卡片标题区",
+    "original": "originals/screen-communication.png",
+    "runtime": "public/visuals/screen-communication.webp",
+    "bytes": 7976
+  }
+]
