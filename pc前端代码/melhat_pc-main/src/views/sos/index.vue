@@ -125,8 +125,8 @@
               <el-tooltip content="详情" placement="top">
                 <el-button aria-label="详情" icon="View" link type="primary" @click="handleDetail(scope.row)"></el-button>
               </el-tooltip>
-              <el-tooltip v-if="scope.row.alarmType === 'SOS告警'" content="接听" placement="top">
-                <el-button icon="Phone" link type="primary" @click="handleAnswer(scope.row)"></el-button>
+              <el-tooltip v-if="scope.row.alarmType === 'SOS告警'" content="接听能力未完成，真实通话在 S7 交付" placement="top">
+                <el-button disabled icon="Phone" link type="primary" @click="handleAnswer(scope.row)"></el-button>
               </el-tooltip>
               <el-tooltip content="处理" placement="top">
                 <el-button aria-label="处理" icon="CircleCheck" link type="success" @click="handleProcess(scope.row)"></el-button>
@@ -208,7 +208,7 @@
       </div>
       <template #footer>
         <div class="dialog-footer">
-          <el-button v-if="activeTab === 0 && currentDetail.alarmType === 'SOS告警'" class="blue-btn lg" type="primary" @click="handleAnswer(currentDetail)">接听</el-button>
+          <el-button v-if="activeTab === 0 && currentDetail.alarmType === 'SOS告警'" class="blue-btn lg" disabled type="primary" @click="handleAnswer(currentDetail)">接听（S7 未交付）</el-button>
           <el-button v-if="activeTab === 0" class="outline-btn lg" @click="handleProcess(currentDetail)">去处理</el-button>
           <el-button class="outline-btn lg" @click="openDetail = false">关闭</el-button>
         </div>
@@ -275,7 +275,7 @@
 <script setup name="SOS">
 import { nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { listAlarmPage, handleAlarm, answerAlarm, getAlarmDetail } from "@/api/system/sos";
+import { listAlarmPage, handleAlarm, getAlarmDetail } from "@/api/system/sos";
 import TableSkeleton from "@/components/TableSkeleton";
 import { useMap } from "@/hooks/useMap";
 import 'ol/ol.css';
@@ -361,13 +361,9 @@ function handleDetail(row) {
   openDetail.value = true;
 }
 
-/** 接听按钮操作 */
-function handleAnswer(row) {
-  answerAlarm(row.id).then(() => {
-    currentDetail.value = { ...row };
-    openAnswer.value = true;
-    proxy.$modal.msgSuccess("呼叫已接通");
-  });
+/** 接听尚未建立通话会话，S7 前不得显示已接通。 */
+function handleAnswer() {
+  proxy.$modal.msgWarning("接听能力未完成，真实通话在 S7 交付。本次不会建立音视频连接。");
 }
 
 /** 处理按钮操作 */

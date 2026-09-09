@@ -1,5 +1,9 @@
 <template>
   <div class="app-container">
+    <UndeliveredNotice
+      title="模块资料页未交付"
+      description="本页仍走本地演示兼容接口，不能当作生产基础资料。"
+    />
     <ModuleHeader module="system" :title="$route.meta.title || '系统管理'" />
     <el-table
       v-loading="loading"

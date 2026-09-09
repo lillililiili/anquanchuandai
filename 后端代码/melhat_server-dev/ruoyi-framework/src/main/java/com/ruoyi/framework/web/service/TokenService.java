@@ -50,6 +50,9 @@ public class TokenService
     @Autowired
     private RedisCache redisCache;
 
+    @Autowired
+    private UserSessionService userSessionService;
+
     /**
      * 获取用户身份信息
      *
@@ -112,6 +115,7 @@ public class TokenService
         loginUser.setToken(token);
         setUserAgent(loginUser);
         refreshToken(loginUser);
+        userSessionService.trackToken(loginUser.getUserId(), token);
 
         Map<String, Object> claims = new HashMap<>();
         claims.put(Constants.LOGIN_USER_KEY, token);
@@ -215,6 +219,10 @@ public class TokenService
         if (StringUtils.isNotEmpty(token) && token.startsWith(Constants.TOKEN_PREFIX))
         {
             token = token.replace(Constants.TOKEN_PREFIX, "");
+        }
+        if (StringUtils.isEmpty(token))
+        {
+            token = request.getParameter("token");
         }
         return token;
     }

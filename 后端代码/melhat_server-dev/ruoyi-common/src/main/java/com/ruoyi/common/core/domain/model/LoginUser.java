@@ -1,6 +1,7 @@
 package com.ruoyi.common.core.domain.model;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -70,6 +71,12 @@ public class LoginUser implements UserDetails
      * 用户信息
      */
     private SysUser user;
+
+    /** Selected physical site for this session. */
+    private Long currentSiteId;
+
+    /** Authorized physical site ids (not org depts). */
+    private List<Long> authorizedSiteIds;
 
     public Long getUserId()
     {
@@ -256,6 +263,26 @@ public class LoginUser implements UserDetails
     public void setUser(SysUser user)
     {
         this.user = user;
+    }
+
+    public Long getCurrentSiteId()
+    {
+        return currentSiteId;
+    }
+
+    public void setCurrentSiteId(Long currentSiteId)
+    {
+        this.currentSiteId = currentSiteId;
+    }
+
+    public List<Long> getAuthorizedSiteIds()
+    {
+        return authorizedSiteIds;
+    }
+
+    public void setAuthorizedSiteIds(List<Long> authorizedSiteIds)
+    {
+        this.authorizedSiteIds = authorizedSiteIds;
     }
 
     @Override

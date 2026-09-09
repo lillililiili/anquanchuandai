@@ -501,8 +501,12 @@ function saveQueryToUrl() {
     params.set('startTime', dateRange.value[0]);
     params.set('endTime', dateRange.value[1]);
   }
-  const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-  window.history.replaceState({}, '', newUrl);
+  const query = params.toString()
+  const hash = window.location.hash || ''
+  const newUrl = query
+    ? `${window.location.pathname}?${query}${hash}`
+    : `${window.location.pathname}${hash}`
+  window.history.replaceState(window.history.state || {}, '', newUrl)
 }
 
 // 从 URL 参数恢复搜索条件
@@ -517,7 +521,7 @@ function restoreQueryFromUrl() {
 
 // 清除 URL 参数
 function clearUrlParams() {
-  window.history.replaceState({}, '', window.location.pathname);
+  window.history.replaceState(window.history.state || {}, '', window.location.pathname + (window.location.hash || ''))
 }
 
 // ============== 新增/编辑围栏相关 ==================

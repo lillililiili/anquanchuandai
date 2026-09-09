@@ -18,6 +18,7 @@ import com.ruoyi.common.core.page.TableSupport;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.common.utils.file.MimeTypeUtils;
 import com.ruoyi.framework.web.service.TokenService;
+import com.ruoyi.framework.web.service.UserSessionService;
 import com.ruoyi.helmet.pojo.po.FileRecord;
 import com.ruoyi.system.mapper.SysUserMapper;
 import com.ruoyi.system.service.*;
@@ -70,6 +71,9 @@ public class SysUserController extends BaseController {
 
     @Autowired
     private TokenService tokenService;
+
+    @Autowired
+    private UserSessionService userSessionService;
 
 
     /**
@@ -352,7 +356,13 @@ public class SysUserController extends BaseController {
         userService.checkUserAllowed(user);
         userService.checkUserDataScope(user.getUserId());
         user.setUpdateBy(getUsername());
-        return toAjax(userService.updateUserStatus(user));
+        int rows = userService.updateUserStatus(user);
+        if (rows > 0 && "1".equals(user.getStatus())) {
+            userSessionService.markDisabled(user.getUserId());
+        } else if (rows > 0 && "0".equals(user.getStatus())) {
+            userSessionService.clearDisabled(user.getUserId());
+        }
+        return toAjax(rows);
     }
 
     /**

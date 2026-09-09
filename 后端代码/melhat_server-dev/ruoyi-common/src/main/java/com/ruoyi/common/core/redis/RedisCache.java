@@ -49,6 +49,11 @@ public class RedisCache
         redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
     }
 
+    public Boolean setIfAbsent(final String key, final String value, final Integer timeout, final TimeUnit timeUnit)
+    {
+        return redisTemplate.opsForValue().setIfAbsent(key, value, timeout, timeUnit);
+    }
+
     /**
      * 设置有效时间
      *
@@ -180,6 +185,11 @@ public class RedisCache
     public <T> Set<T> getCacheSet(final String key)
     {
         return redisTemplate.opsForSet().members(key);
+    }
+
+    public Long addCacheSetValue(final String key, final Object value)
+    {
+        return redisTemplate.opsForSet().add(key, value);
     }
 
     /**

@@ -28,6 +28,10 @@ public class SafetyHatInfo extends Model<SafetyHatInfo> {
      */
     private Long id;
     /**
+     * 所属物理厂站
+     */
+    private Long siteId;
+    /**
      * 安全帽编号
      */
     private String hatNumber;

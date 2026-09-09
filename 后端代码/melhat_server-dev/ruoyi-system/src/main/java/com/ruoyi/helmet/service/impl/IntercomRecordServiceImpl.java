@@ -76,7 +76,7 @@ public class IntercomRecordServiceImpl extends ServiceImpl<IntercomRecordMapper,
         record.setCreateBy(SecurityUtils.getUsername());
         List<String> hatNoList = new ArrayList<>();
         if("01".equals(record.getIntercomType())){
-            record.setHatNumber(record.getHatNumber());
+            record.setHatNumber(request.getHatNumber());
             record.setParticipant(request.getParticipant());
             record.setRecipientCount(1);
             hatNoList = Arrays.asList(request.getHatNumber().split(","));

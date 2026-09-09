@@ -1,5 +1,9 @@
 <template>
   <div class="app-container">
+    <UndeliveredNotice
+      title="旧头环入口未交付"
+      description="本页不是通用设备台账，真实帽子接入在 S6 完成。"
+    />
     <el-form
       v-show="showSearch"
       ref="queryRef"

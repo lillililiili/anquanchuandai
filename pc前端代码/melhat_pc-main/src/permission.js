@@ -32,6 +32,12 @@ router.beforeEach((to, from, next) => {
           .getInfo()
           .then(() => {
             isRelogin.show = false
+            const store = useUserStore()
+            if (!store.isPlatformAdmin && (!store.sites || store.sites.length === 0)) {
+              next({ path: '/no-site', replace: true })
+              NProgress.done()
+              return Promise.reject('no-site')
+            }
             return usePermissionStore().generateRoutes()
           })
           .then(accessRoutes => {
@@ -45,6 +51,9 @@ router.beforeEach((to, from, next) => {
           })
           .catch(err => {
             isRelogin.show = false
+            if (err === 'no-site') {
+              return
+            }
             useUserStore()
               .logOut()
               .then(() => {

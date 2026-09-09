@@ -8,7 +8,7 @@
           <div class="header-logo-centered">
             <BrandLogo compact />
           </div>
-          <h1 class="header-title">分体式智能安全帽平台</h1>
+          <h1 class="header-title">智能穿戴管理平台</h1>
         </div>
       </div>
       <div class="header-right">

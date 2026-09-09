@@ -147,6 +147,11 @@ spring:
         # #连接池最大阻塞等待时间（使用负值表示没有限制）
         max-wait: -1ms
 
+melhat:
+    demo-mode: false
+    download:
+        allow-private-network: false
+
 # token配置
 token:
     # 令牌自定义标识

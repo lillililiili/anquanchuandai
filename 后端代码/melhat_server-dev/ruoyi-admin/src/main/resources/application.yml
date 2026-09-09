@@ -114,7 +114,28 @@ headband:
       update: /v1/api/firmware/update
       delete: /v1/api/firmware/delete
 
-# 离线演示时，外部 RTC/TTS 调用由控制器短路为本地记录。
+# 演示与接入边界。生产必须保持 demo-mode=false，回调 token 走环境变量。
 melhat:
-  demo-mode: true
+  demo-mode: false
+  callback:
+    token: ${MELHAT_CALLBACK_TOKEN:}
+    hmac-secret: ${MELHAT_CALLBACK_HMAC:}
+    skew-seconds: 300
+  telemetry:
+    stale-after-seconds: 180
+  download:
+    connect-timeout-ms: 5000
+    read-timeout-ms: 15000
+    max-bytes: 20971520
+    max-redirects: 3
+    allow-private-network: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 

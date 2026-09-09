@@ -1,12 +1,13 @@
 <template>
   <span class="brand-logo" :class="{ 'brand-logo--compact': compact }">
-    <img :alt="compact ? '分体式智能安全帽平台' : ''" height="40" :src="logo" width="40" />
-    <span v-if="!compact" class="brand-logo__name">分体式智能安全帽平台<small v-if="caption">智能守护 · 协同调度</small></span>
+    <img :alt="compact ? title : ''" height="40" :src="logo" width="40" />
+    <span v-if="!compact" class="brand-logo__name">{{ title }}<small v-if="caption">智能守护 · 协同调度</small></span>
   </span>
 </template>
 
 <script setup>
 defineProps({ compact: Boolean, caption: Boolean })
+const title = import.meta.env.VITE_APP_TITLE || '智能穿戴管理平台'
 const logo = `${import.meta.env.BASE_URL}visuals/brand-logo.png`
 </script>
 

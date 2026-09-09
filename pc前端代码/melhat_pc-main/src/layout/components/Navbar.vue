@@ -18,6 +18,20 @@
     />
 
     <div class="right-menu">
+      <el-select
+        v-if="userStore.sites && userStore.sites.length"
+        class="site-switch"
+        :model-value="userStore.currentSiteId"
+        placeholder="选择厂站"
+        @change="onSiteChange"
+      >
+        <el-option
+          v-for="site in userStore.sites"
+          :key="site.id"
+          :label="site.name"
+          :value="site.id"
+        />
+      </el-select>
       <div class="avatar-container">
         <router-link to="/big-screen" class="big-screen-link" title="数据大屏">
           <svg-icon icon-class="monitor" class-name="big-screen-icon" />
@@ -80,6 +94,12 @@ function handleCommand(command) {
   }
 }
 
+function onSiteChange(siteId) {
+  userStore.switchSite(siteId).then(() => {
+    window.dispatchEvent(new CustomEvent("site-changed", { detail: siteId }));
+  });
+}
+
 function logout() {
   ElMessageBox.confirm("确定注销并退出系统吗？", "提示", {
     confirmButtonText: "确定",
@@ -88,6 +108,8 @@ function logout() {
   })
     .then(() => {
       userStore.logOut().then(() => {
+        router.replace("/login");
+      }).catch(() => {
         router.replace("/login");
       });
     })
@@ -110,6 +132,11 @@ function setLayout() {
   display: flex;
   align-items: center;
   padding: 0 18px;
+
+  .site-switch {
+    width: 180px;
+    margin-right: 16px;
+  }
 
   .hamburger-container {
     line-height: 60px;

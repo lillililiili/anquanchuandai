@@ -121,9 +121,8 @@
 
     <el-row class="mb16 action-bar" :gutter="10">
       <el-col :span="1.5">
-        <el-button class="add-btn" icon="Plus" type="primary" @click="handleAdd"
-          >新增安全帽</el-button
-        >
+        <el-button v-if="canWriteHat" class="add-btn" icon="Plus" type="primary" @click="handleAdd"
+          >新增安全帽</el-button>
       </el-col>
     </el-row>
 
@@ -276,7 +275,7 @@
                 @click="handleDetail(scope.row)"
               ></el-button>
             </el-tooltip>
-            <el-tooltip content="修改" placement="top">
+            <el-tooltip v-if="canWriteHat" content="修改" placement="top">
               <el-button aria-label="修改"
                 icon="Edit"
                 link
@@ -284,7 +283,7 @@
                 @click="handleUpdate(scope.row)"
               ></el-button>
             </el-tooltip>
-            <el-tooltip content="删除" placement="top">
+            <el-tooltip v-if="canWriteHat" content="删除" placement="top">
               <el-button aria-label="删除"
                 icon="Delete"
                 link
@@ -455,8 +454,11 @@ import { hatSafetyInfoPage, hatSafetyInfoList, hatSafetyInfoUpdate, hatSafetyInf
 import { groupList as getGroupList } from "@/api/group";
 import { listUser } from "@/api/system/user";
 import TableSkeleton from "@/components/TableSkeleton";
+import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
+const userStore = useUserStore();
+const canWriteHat = computed(() => userStore.canWriteHat);
 
 const helmetList = ref([]);
 
@@ -716,6 +718,10 @@ const progressColors = ref({
 });
 
 // 组件挂载时一次性读取CSS变量
+function onSiteChanged() {
+  getList();
+}
+
 onMounted(() => {
   const rootStyle = getComputedStyle(document.documentElement);
   progressColors.value = {
@@ -723,6 +729,11 @@ onMounted(() => {
     warning: rootStyle.getPropertyValue('--color-warning').trim() || '#f59e0b',
     success: rootStyle.getPropertyValue('--color-success').trim() || '#059669'
   };
+  window.addEventListener('site-changed', onSiteChanged);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('site-changed', onSiteChanged);
 });
 
 /** 获取进度条颜色 - 使用缓存值 */

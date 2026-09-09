@@ -121,15 +121,20 @@ const loginForm = ref({
   uuid: ''
 })
 
-const loginRules = {
-  username: [{ required: true, trigger: 'blur', message: '请输入您的账号' }],
-  password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }],
-  code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
-}
-
 const codeUrl = ref('')
 const loading = ref(false)
 const captchaEnabled = ref(true)
+
+const loginRules = computed(() => {
+  const rules = {
+    username: [{ required: true, trigger: 'blur', message: '请输入您的账号' }],
+    password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }]
+  }
+  if (captchaEnabled.value) {
+    rules.code = [{ required: true, trigger: 'change', message: '请输入验证码' }]
+  }
+  return rules
+})
 
 function handleLogin() {
   proxy.$refs.loginRef.validate((valid) => {

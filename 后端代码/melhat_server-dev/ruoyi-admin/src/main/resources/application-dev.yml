@@ -152,6 +152,12 @@ spring:
                 # #连接池最大阻塞等待时间（使用负值表示没有限制）
                 max-wait: -1ms
 
+# 开发环境允许演示兼容接口与本机文件地址（仍须可识别的 MH-DEMO 数据）。
+melhat:
+    demo-mode: true
+    download:
+        allow-private-network: true
+
 # token配置
 token:
     # 令牌自定义标识

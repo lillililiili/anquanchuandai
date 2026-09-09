@@ -5,14 +5,13 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.utils.file.SafeRemoteFileFetcher;
 import com.ruoyi.helmet.mapper.FileRecordMapper;
 import com.ruoyi.helmet.pojo.po.FileRecord;
-import com.ruoyi.helmet.pojo.po.SafetyHatLocationRecord;
 import com.ruoyi.helmet.service.IFileRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +31,21 @@ public class FileRecordServiceImpl extends ServiceImpl<FileRecordMapper, FileRec
 
     @Autowired
     private FileRecordMapper fileRecordMapper;
+
+    @Value("${melhat.download.connect-timeout-ms:5000}")
+    private int downloadConnectTimeoutMs;
+
+    @Value("${melhat.download.read-timeout-ms:15000}")
+    private int downloadReadTimeoutMs;
+
+    @Value("${melhat.download.max-bytes:20971520}")
+    private int downloadMaxBytes;
+
+    @Value("${melhat.download.max-redirects:3}")
+    private int downloadMaxRedirects;
+
+    @Value("${melhat.download.allow-private-network:false}")
+    private boolean downloadAllowPrivateNetwork;
 
     @Override
     public IPage<FileRecord> pageWithFilter(int current, int size, String fileType, Long hatId, String userName,
@@ -90,9 +104,9 @@ public class FileRecordServiceImpl extends ServiceImpl<FileRecordMapper, FileRec
         if (record == null || record.getFileUrl() == null) {
             throw new RuntimeException("文件不存在或无下载地址");
         }
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<byte[]> data = restTemplate.getForEntity(record.getFileUrl(), byte[].class);
-        return  data.getBody();
+        return new SafeRemoteFileFetcher(downloadConnectTimeoutMs, downloadReadTimeoutMs,
+                downloadMaxBytes, downloadMaxRedirects, downloadAllowPrivateNetwork)
+                .fetch(record.getFileUrl());
     }
 
     @Override

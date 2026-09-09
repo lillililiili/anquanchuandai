@@ -2,7 +2,7 @@
   "name": "melhat",
   "version": "v 1.0",
   "license": "UNLICENSED",
-  "description": "分体式智能安全帽平台",
+  "description": "智能穿戴管理平台",
   "packageManager": "bun@1",
   "type": "module",
   "scripts": {

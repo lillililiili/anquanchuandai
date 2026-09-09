@@ -1,7 +1,9 @@
 package com.ruoyi.framework.config;
 
+import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -16,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.filter.CorsFilter;
 import com.ruoyi.framework.config.properties.PermitAllUrlProperties;
+import com.ruoyi.framework.security.filter.DeviceCallbackAuthFilter;
 import com.ruoyi.framework.security.filter.JwtAuthenticationTokenFilter;
 import com.ruoyi.framework.security.handle.AuthenticationEntryPointImpl;
 import com.ruoyi.framework.security.handle.LogoutSuccessHandlerImpl;
@@ -64,6 +67,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
     @Autowired
     private PermitAllUrlProperties permitAllUrl;
 
+    @Autowired
+    private DeviceCallbackAuthFilter deviceCallbackAuthFilter;
+
+    @Autowired
+    private Environment environment;
+
     /**
      * 解决 无法直接注入 AuthenticationManager
      *
@@ -95,41 +104,39 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception
     {
-        // 注解标记允许匿名访问的url
+        httpSecurity
+                .csrf().disable()
+                .headers().cacheControl().disable().and()
+                .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
         ExpressionUrlAuthorizationConfigurer<HttpSecurity>.ExpressionInterceptUrlRegistry registry = httpSecurity.authorizeRequests();
         permitAllUrl.getUrls().forEach(url -> registry.antMatchers(url).permitAll());
-
-        httpSecurity
-                // CSRF禁用，因为不使用session
-                .csrf().disable()
-                // 禁用HTTP响应标头
-                .headers().cacheControl().disable().and()
-                // 认证失败处理类
-                .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
-                // 基于token，所以不需要session
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-                // 过滤请求
-                .authorizeRequests()
-                // 对于登录login 注册register 验证码captchaImage 允许匿名访问
-                .antMatchers("/login", "/register", "/captchaImage","/api/melhat/**","/wsHat","/ws/**","/ext/**","/monitor/job/**","/test/**","test2/**").permitAll()
-                // 静态资源，可匿名访问
-                .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
-                //设置白名单
-                .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**", "/*/api-docs", "/druid/**","/doc.html").permitAll()
-                .antMatchers("/modeler/**","/activiti/definition/upload","/activiti/definition/readResource","/activiti/process/read-resource").permitAll()
-                .antMatchers("/todo/tasks/dowmload/model/**").permitAll()
-                .antMatchers("/aip/head/band/location").permitAll()
-                // 除上面外的所有请求全部需要鉴权认证
-                .anyRequest().authenticated()
-                .and()
-                .headers().frameOptions().disable();
+        registry.antMatchers(SecurityPathRules.PUBLIC).permitAll();
+        registry.antMatchers(SecurityPathRules.DEVICE_CALLBACK).permitAll();
+        registry.antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll();
+        registry.antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**", "/*/api-docs", "/druid/**", "/doc.html").permitAll();
+        registry.antMatchers("/modeler/**", "/activiti/definition/upload", "/activiti/definition/readResource", "/activiti/process/read-resource").permitAll();
+        registry.antMatchers("/todo/tasks/dowmload/model/**").permitAll();
+        if (!isProdProfile())
+        {
+            registry.antMatchers(SecurityPathRules.DEV_WEBSOCKET).permitAll();
+        }
+        registry.anyRequest().authenticated();
+        httpSecurity.headers().frameOptions().disable();
         // 添加Logout filter
         httpSecurity.logout().logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler);
         // 添加JWT filter
         httpSecurity.addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
+        httpSecurity.addFilterBefore(deviceCallbackAuthFilter, JwtAuthenticationTokenFilter.class);
         // 添加CORS filter
         httpSecurity.addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class);
         httpSecurity.addFilterBefore(corsFilter, LogoutFilter.class);
+    }
+
+    private boolean isProdProfile()
+    {
+        return Arrays.asList(environment.getActiveProfiles()).contains("prod");
     }
 
     /**

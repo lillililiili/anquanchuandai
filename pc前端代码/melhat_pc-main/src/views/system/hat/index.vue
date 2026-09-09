@@ -1,5 +1,9 @@
 <template>
   <div class="app-container">
+    <UndeliveredNotice
+      title="旧安全帽页未交付为通用设备台账"
+      description="本页仍走演示或旧帽模型，通用 Device 能力在 S3 交付。"
+    />
     <ModuleHeader module="system" :title="$route.meta.title || '系统管理'" />
     <el-form class="search-form"
       v-show="showSearch"

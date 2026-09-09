@@ -14,6 +14,9 @@ public class SafetyHatListVO {
     @ApiModelProperty(value = "安全帽id")
     private Long id;
 
+    @ApiModelProperty(value = "所属厂站")
+    private Long siteId;
+
     @ApiModelProperty(value = "安全帽sn")
     private String hatNumber;
 

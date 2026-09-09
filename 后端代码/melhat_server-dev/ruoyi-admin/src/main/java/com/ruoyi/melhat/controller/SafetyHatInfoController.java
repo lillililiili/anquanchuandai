@@ -70,7 +70,11 @@ public class SafetyHatInfoController extends BaseController {
     @GetMapping("/user/{userId}")
     @ApiOperation(value = "根据userId获取绑定安全帽的信息")
     public R<SafetyHatInfo> getByUserId(@PathVariable Long userId) {
-        return R.ok(safetyHatService.getHatByUserId(userId));
+        SafetyHatInfo hat = safetyHatService.getHatByUserId(userId);
+        if (hat != null) {
+            safetyHatService.getById(hat.getId());
+        }
+        return R.ok(hat);
     }
 
     /**

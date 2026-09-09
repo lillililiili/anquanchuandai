@@ -9,6 +9,7 @@ import { applyColorMode } from '@/utils/theme'
 import BrandLogo from '@/components/BrandLogo/index.vue'
 import ModuleHeader from '@/components/ModuleHeader/index.vue'
 import BrandedEmpty from '@/components/BrandedEmpty/index.vue'
+import UndeliveredNotice from '@/components/UndeliveredNotice/index.vue'
 import App from './App'
 import store from './store'
 import router from './router'
@@ -75,6 +76,7 @@ app.config.globalProperties.selectDictLabels = selectDictLabels
 app.component('BrandLogo', BrandLogo)
 app.component('ModuleHeader', ModuleHeader)
 app.component('BrandedEmpty', BrandedEmpty)
+app.component('UndeliveredNotice', UndeliveredNotice)
 app.component('DictTag', DictTag)
 app.component('Pagination', Pagination)
 app.component('TreeSelect', TreeSelect)

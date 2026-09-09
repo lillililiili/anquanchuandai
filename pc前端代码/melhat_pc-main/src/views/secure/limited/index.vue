@@ -1,5 +1,9 @@
 <template>
   <div class="app-container">
+    <UndeliveredNotice
+      title="有限空间未交付"
+      description="本页仍调用演示兼容接口，不代表现场有限空间监护已经完成。"
+    />
     <el-row class="mb4" :gutter="10" :lg="6" :sm="24">
       <el-col :lg="7" :sm="24">
         <el-button icon="Plus" plain type="primary" @click="handleAdd">

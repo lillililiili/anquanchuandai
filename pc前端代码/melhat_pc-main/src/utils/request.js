@@ -36,6 +36,11 @@ service.interceptors.request.use(
     if (getToken() && !isToken) {
       config.headers["Authorization"] = "Bearer " + getToken(); // 让每个请求携带自定义token 请根据实际情况自行修改
     }
+    const userStore = useUserStore();
+    if (userStore.currentSiteId) {
+      config.headers["X-Site-Id"] = userStore.currentSiteId;
+    }
+    config._epoch = userStore.requestEpoch;
     // get请求映射params参数
     if (config.method === "get" && config.params) {
       let url = config.url + "?" + tansParams(config.params);
@@ -91,6 +96,10 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (res) => {
+    const userStore = useUserStore();
+    if (res.config && res.config._epoch !== undefined && res.config._epoch !== userStore.requestEpoch) {
+      return Promise.reject(new Error("stale-site"));
+    }
     // 未设置状态码则默认成功状态
     const code = res.data.code || 200;
     // 获取错误信息
@@ -106,7 +115,7 @@ service.interceptors.response.use(
       if (!isRelogin.show) {
         isRelogin.show = true;
         ElMessageBox.confirm(
-          "登录状态已过期，您可以继续留在该页面，或者重新登录",
+          "未登录或登录已过期，请重新登录",
           "系统提示",
           {
             confirmButtonText: "重新登录",
@@ -127,6 +136,12 @@ service.interceptors.response.use(
           });
       }
       return Promise.reject("无效的会话，或者会话已过期，请重新登录。");
+    } else if (code === 403) {
+      ElMessage({ message: msg, type: "error" });
+      return Promise.reject(new Error(msg));
+    } else if (code === 409) {
+      ElMessage({ message: msg, type: "warning" });
+      return Promise.reject(new Error(msg));
     } else if (code === 500) {
       ElMessage({ message: msg, type: "error" });
       return Promise.reject(new Error(msg));
@@ -141,14 +156,30 @@ service.interceptors.response.use(
     }
   },
   (error) => {
+    if (error && error.message === "stale-site") {
+      return Promise.reject(error);
+    }
     console.log("err" + error);
     let { message } = error;
     if (message == "Network Error") {
-      message = "后端接口连接异常";
+      message = "无法连接服务，请检查网络";
     } else if (message.includes("timeout")) {
-      message = "系统接口请求超时";
+      message = "请求超时，请稍后重试";
     } else if (message.includes("Request failed with status code")) {
-      message = "系统接口" + message.substr(message.length - 3) + "异常";
+      const status = error.response && error.response.status;
+      const body = error.response && error.response.data;
+      const serverMsg = body && (body.msg || body.message);
+      if (status === 401) {
+        message = errorCode["401"];
+      } else if (status === 403) {
+        message = serverMsg || errorCode["403"];
+      } else if (status === 409) {
+        message = serverMsg || errorCode["409"];
+      } else if (status === 400 && serverMsg) {
+        message = serverMsg;
+      } else {
+        message = "系统接口" + message.substr(message.length - 3) + "异常";
+      }
     }
     ElMessage({ message: message, type: "error", duration: 5 * 1000 });
     return Promise.reject(error);

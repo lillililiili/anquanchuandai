@@ -85,7 +85,7 @@
     </el-form>
     <!--  底部  -->
     <div class="el-register-footer">
-      <span>分体式智能安全帽平台 · 安全运营系统</span>
+      <span>智能穿戴管理平台 · 安全运营系统</span>
     </div>
   </div>
 </template>

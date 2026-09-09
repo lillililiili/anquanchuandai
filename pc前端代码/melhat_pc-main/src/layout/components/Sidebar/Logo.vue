@@ -1,6 +1,6 @@
 <template>
   <div class="sidebar-logo-container">
-    <router-link class="sidebar-logo-link" to="/" aria-label="分体式智能安全帽平台首页">
+    <router-link class="sidebar-logo-link" to="/" aria-label="智能穿戴管理平台首页">
       <BrandLogo :caption="!collapse" :compact="collapse" />
     </router-link>
   </div>

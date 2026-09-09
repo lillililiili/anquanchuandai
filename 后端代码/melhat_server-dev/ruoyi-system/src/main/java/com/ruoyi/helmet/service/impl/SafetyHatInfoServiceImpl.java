@@ -21,6 +21,7 @@ import com.ruoyi.helmet.service.ISafetyHatInfoService;
 import com.ruoyi.helmet.service.ISafetyHatLocationRecordService;
 import com.ruoyi.helmet.vo.SafetyHatListVO;
 import com.ruoyi.helmet.vo.SafetyHatQueryVO;
+import com.ruoyi.wear.auth.SiteAccessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,8 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
     private ISafetyHatLocationRecordService safetyHatLocationRecordService;
     @Value("${melhat.demo-mode:false}")
     private boolean demoMode;
+    @Autowired
+    private SiteAccessService siteAccessService;
 
     @Override
     public Page<SafetyHatListVO> pageQuery(SafetyHatQueryVO queryVO, int current, int size) {
@@ -77,6 +80,7 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
 
         // 默认不查已删除的数据
         wrapper.eq(SafetyHatInfo::getDelFlag, '0');
+        applySiteScope(wrapper);
 
         IPage<SafetyHatInfo> page1 = this.page(new Page<>(current, size), wrapper);
         //同步状态
@@ -127,18 +131,28 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
     public List<SafetyHatListVO> listAll() {
         LambdaQueryWrapper<SafetyHatInfo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SafetyHatInfo::getDelFlag, '0');
+        applySiteScope(wrapper);
         List<SafetyHatInfo> list = this.list(wrapper);
         return list.stream().map(this::convertToVO).collect(Collectors.toList());
     }
 
     @Override
     public SafetyHatInfo getById(Long id) {
-        return super.getById(id);
+        SafetyHatInfo hat = super.getById(id);
+        siteAccessService.assertHatReadable(hat);
+        return hat;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean saveOrUpdate(SafetyHatInfo safetyHat) {
+        siteAccessService.assertCanWriteHat();
+        Long siteId = siteAccessService.requireCurrentSiteForWrite();
+        if (safetyHat.getId() != null) {
+            SafetyHatInfo existing = super.getById(safetyHat.getId());
+            siteAccessService.assertHatReadable(existing);
+        }
+        safetyHat.setSiteId(siteId);
         // 检查 hatNumber 是否重复
         LambdaQueryWrapper<SafetyHatInfo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SafetyHatInfo::getHatNumber, safetyHat.getHatNumber());
@@ -204,6 +218,7 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
 
     @Override
     public boolean deleteById(Long id) {
+        siteAccessService.assertCanWriteHat();
         SafetyHatInfo safetyHat = this.getById(id);
         if (safetyHat != null) {
             boolean update = this.update(null, new LambdaUpdateWrapper<SafetyHatInfo>()
@@ -226,6 +241,7 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
 
     @Override
     public boolean updateStatus(Long id, String status) {
+        siteAccessService.assertCanWriteHat();
         SafetyHatInfo safetyHat = this.getById(id);
         if (safetyHat != null) {
             safetyHat.setStatus(status);
@@ -244,6 +260,7 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         if (safetyHatInfo == null) {
             throw new ServiceException("未获取到帽子");
         }
+        siteAccessService.assertHatReadable(safetyHatInfo);
         SafetyHatListVO safetyHatListVO = convertToVO(safetyHatInfo);
         SafetyHatLocationRecord location = safetyHatLocationRecordService.lambdaQuery()
                 .eq(SafetyHatLocationRecord::getHatNumber, hatNumber)
@@ -254,6 +271,22 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
             safetyHatListVO.setLatitude(location.getLat());
         }
         return safetyHatListVO;
+    }
+
+    private void applySiteScope(LambdaQueryWrapper<SafetyHatInfo> wrapper) {
+        List<Long> scope = siteAccessService.listScopeSiteIds();
+        if (scope.isEmpty()) {
+            if (!siteAccessService.isPlatformAdmin(siteAccessService.requireLogin())) {
+                wrapper.eq(SafetyHatInfo::getId, -1L);
+            }
+            return;
+        }
+        Long current = siteAccessService.resolveRequestSiteId();
+        if (siteAccessService.isPlatformAdmin(siteAccessService.requireLogin()) && current == null) {
+            wrapper.and(w -> w.in(SafetyHatInfo::getSiteId, scope).or().isNull(SafetyHatInfo::getSiteId));
+        } else {
+            wrapper.in(SafetyHatInfo::getSiteId, scope);
+        }
     }
 
     private SafetyHatListVO convertToVO(SafetyHatInfo entity) {

@@ -12,6 +12,12 @@ public class CacheConstants
      */
     public static final String LOGIN_TOKEN_KEY = "login_tokens:";
 
+    /** All session token uuids for one account, used to revoke immediately. */
+    public static final String LOGIN_USER_TOKENS_KEY = "login_user_tokens:";
+
+    /** Set when an account is disabled so in-flight tokens fail even if a key is missed. */
+    public static final String ACCOUNT_DISABLED_KEY = "account_disabled:";
+
     /**
      * 验证码 redis key
      */

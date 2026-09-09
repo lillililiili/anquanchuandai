@@ -53,6 +53,12 @@ export const constantRoutes = [
     hidden: true,
   },
   {
+    path: "/no-site",
+    component: () => import("@/views/error/no-site"),
+    hidden: true,
+    meta: { title: "未授权厂站" },
+  },
+  {
     path: "/big-screen",
     component: () => import("@/views/big-screen/index"),
     hidden: true,
@@ -62,7 +68,7 @@ export const constantRoutes = [
     path: "/",
     component: Layout,
     hidden: true,
-    redirect: "/group",
+    redirect: "/business/duty",
     children: [
       {
         path: "group",

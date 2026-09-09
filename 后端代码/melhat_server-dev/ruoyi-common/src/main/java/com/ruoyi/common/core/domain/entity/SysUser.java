@@ -5,6 +5,9 @@ import java.util.List;
 import javax.validation.constraints.*;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import com.alibaba.fastjson2.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.annotation.Excel.ColumnType;
 import com.ruoyi.common.annotation.Excel.Type;
@@ -56,6 +59,8 @@ public class SysUser extends BaseEntity
     private String avatar;
 
     /** 密码 */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @JSONField(serialize = false)
     private String password;
 
     /** 帐号状态（0正常 1停用） */
@@ -274,6 +279,8 @@ public class SysUser extends BaseEntity
         this.avatar = avatar;
     }
 
+    @JsonIgnore
+    @JSONField(serialize = false)
     public String getPassword()
     {
         return password;
@@ -410,7 +417,7 @@ public class SysUser extends BaseEntity
             .append("phonenumber", getPhonenumber())
             .append("sex", getSex())
             .append("avatar", getAvatar())
-            .append("password", getPassword())
+            .append("password", "******")
             .append("status", getStatus())
             .append("delFlag", getDelFlag())
             .append("loginIp", getLoginIp())

@@ -8,6 +8,8 @@ import com.ruoyi.helmet.service.DemoCompatibilityService;
 import com.ruoyi.helmet.service.ISafetyHatInfoService;
 import com.ruoyi.helmet.service.ISafetyHatLocationRecordService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +25,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 只服务于离线演示的旧页面 API，不访问设备或第三方服务。 */
+/** 只服务于离线演示的旧页面 API，不访问设备或第三方服务。生产环境不得加载。 */
+@Profile("!prod")
+@ConditionalOnProperty(name = "melhat.demo-mode", havingValue = "true")
 @RestController
 @RequestMapping
 public class DemoCompatibilityController {
