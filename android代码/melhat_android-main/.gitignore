@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
+
+# Local signing and push credentials, never commit.
+/android/signing.properties
+/android/push.properties
+/android/app/agconnect-services.json
+/android/app/google-services.json
+/android/vendor-libs/

@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:rolling_intelligence_headband/http/request_options.dart';
 import 'package:rolling_intelligence_headband/http/response/response.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rolling_intelligence_headband/store/user_store.dart';
 import 'package:rolling_intelligence_headband/utils/app_logger.dart';
 
@@ -32,22 +31,7 @@ class Http {
     // 添加拦截器
     _dio.interceptors.add(_httpInterceptor());
 
-    dio.interceptors.add(
-      PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: false,
-        error: true,
-        compact: true,
-        maxWidth: 90,
-        filter: (options, args) {
-          final logEnabled = options.extra['logEnabled'] as bool? ?? false;
-          // don't print responses with unit8 list data
-          return logEnabled || !args.isResponse || !args.hasUint8ListData;
-        },
-      ),
-    );
+
   }
 
   /// 工厂构造函数 - 返回单例
