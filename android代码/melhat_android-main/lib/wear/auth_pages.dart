@@ -123,20 +123,47 @@ class _WearLoginPageState extends State<WearLoginPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 28),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          'assets/field-brand/cargo-v2/login-hero.png',
-                          height: 155,
-                          fit: BoxFit.cover,
-                          excludeFromSemantics: true,
+                      const SizedBox(height: 24),
+                      if (MediaQuery.viewInsetsOf(context).bottom == 0)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Stack(
+                            alignment: Alignment.bottomLeft,
+                            children: [
+                              Image.asset(
+                                'assets/field-brand/cargo-v2/login-hero.png',
+                                height: 190,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                excludeFromSemantics: true,
+                              ),
+                              const Positioned(
+                                left: 18,
+                                right: 18,
+                                bottom: 18,
+                                child: Text(
+                                  '连接现场\n守护每个人',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w800,
+                                    shadows: [
+                                      Shadow(
+                                        blurRadius: 12,
+                                        color: Colors.black87,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 25),
                       const WearPageHeader(
-                        title: '连接现场，守护每个人',
-                        subtitle: '人员 · 装备 · 接警 · 现场协同',
+                        title: '登录工作台',
+                        subtitle: '使用工作账号，进入所属厂站',
                       ),
                       WearCard(
                         child: Column(

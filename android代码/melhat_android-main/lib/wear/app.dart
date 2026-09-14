@@ -9,6 +9,7 @@ import 'mine_page.dart';
 import 'queries/queries.dart';
 import 'events/events_page.dart';
 import 'communications/communications.dart';
+import '../theme/app_theme.dart';
 
 class WearApp extends StatefulWidget {
   final WearSession? session;
@@ -183,15 +184,7 @@ class _WearAppState extends State<WearApp> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme =
-        ColorScheme.fromSeed(
-          seedColor: WearColors.primary,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: WearColors.primary,
-          surface: Colors.white,
-          onSurface: WearColors.ink,
-        );
+    final cargoTheme = AppTheme.lightTheme;
     return WearScope(
       session: _session,
       child: MaterialApp.router(
@@ -199,19 +192,36 @@ class _WearAppState extends State<WearApp> {
         debugShowCheckedModeBanner: false,
         routerConfig: _router,
         themeMode: ThemeMode.light,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: scheme,
+        theme: cargoTheme.copyWith(
+          colorScheme: cargoTheme.colorScheme,
           scaffoldBackgroundColor: WearColors.background,
           appBarTheme: const AppBarTheme(
             backgroundColor: WearColors.background,
             foregroundColor: WearColors.ink,
             scrolledUnderElevation: 0,
             centerTitle: false,
+            titleTextStyle: TextStyle(
+              fontSize: 23,
+              height: 1.3,
+              fontWeight: FontWeight.w800,
+              color: WearColors.ink,
+            ),
           ),
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
-            fillColor: const Color(0xFFF5F8F8),
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(13),
+              borderSide: const BorderSide(color: WearColors.line),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(13),
+              borderSide: const BorderSide(color: WearColors.accent, width: 2),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(13),
               borderSide: const BorderSide(color: WearColors.line),
@@ -220,6 +230,10 @@ class _WearAppState extends State<WearApp> {
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
               minimumSize: const Size(48, 48),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(13),
               ),
@@ -229,8 +243,9 @@ class _WearAppState extends State<WearApp> {
             style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
           ),
           navigationBarTheme: const NavigationBarThemeData(
+            elevation: 0,
             backgroundColor: Colors.white,
-            indicatorColor: Color(0xFFDDF0F1),
+            indicatorColor: WearColors.accent,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           ),
         ),

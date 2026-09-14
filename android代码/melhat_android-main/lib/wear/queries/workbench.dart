@@ -79,9 +79,10 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     final summary = _summary;
     return QueryPage(
       title: '值班工作台',
-      subtitle: _session?.siteName,
+      subtitle: '先处理风险，再安排现场作业',
       actions: [
         IconButton(
+          tooltip: '刷新工作台',
           onPressed: _loading ? null : _load,
           icon: const Icon(Icons.refresh),
         ),
@@ -96,8 +97,11 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
             : RefreshIndicator(
                 onRefresh: _load,
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   children: [
+                    _dutyBanner(summary),
+                    const SizedBox(height: 16),
                     TextField(
                       controller: _peopleSearch,
                       textInputAction: TextInputAction.search,
@@ -113,60 +117,134 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = (constraints.maxWidth - 10) / 2;
-                        return Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            SizedBox(
-                              width: width,
-                              child: _metric(
-                                '待认领事件',
-                                intOf(summary['unclaimed']),
-                                Icons.notification_important_outlined,
-                                WearColors.danger,
-                                () => context.push('/events?status=open'),
-                              ),
-                            ),
-                            SizedBox(
-                              width: width,
-                              child: _metric(
-                                '我负责的事件',
-                                intOf(summary['mine']),
-                                Icons.assignment_ind_outlined,
-                                WearColors.primary,
-                                () => context.push(
-                                  '/events?claimantUserId=${_session!.userId}',
+                    WearCard(
+                      padding: const EdgeInsets.all(4),
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width =
+                                  MediaQuery.textScalerOf(context).scale(14) >
+                                      20
+                                  ? constraints.maxWidth
+                                  : (constraints.maxWidth - 10) / 2;
+                              return Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  SizedBox(
+                                    width: width,
+                                    child: _metric(
+                                      '待认领事件',
+                                      intOf(summary['unclaimed']),
+                                      Icons.notification_important_outlined,
+                                      WearColors.danger,
+                                      () => context.go('/events?status=open'),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: _metric(
+                                      '我负责的事件',
+                                      intOf(summary['mine']),
+                                      Icons.assignment_ind_outlined,
+                                      WearColors.primary,
+                                      () => context.go(
+                                        '/events?claimantUserId=${_session!.userId}',
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: _metric(
+                                      '逾期事件',
+                                      intOf(summary['overdue']),
+                                      Icons.timer_off_outlined,
+                                      WearColors.warning,
+                                      () =>
+                                          context.go('/events?escalated=true'),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: _metric(
+                                      '失去监护',
+                                      intOf(summary['lostSupervision']),
+                                      Icons.person_off_outlined,
+                                      WearColors.danger,
+                                      () => context.push('/supervision'),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    QuerySection(
+                      title: '近期未关闭事件',
+                      trailing: TextButton(
+                        onPressed: () => context.go('/events'),
+                        child: const Text('事件中心'),
+                      ),
+                      children: jsonList(summary['recentEvents']).isEmpty
+                          ? [
+                              const WearCard(
+                                child: Text(
+                                  '暂无未关闭事件',
+                                  style: TextStyle(color: WearColors.muted),
                                 ),
                               ),
-                            ),
-                            SizedBox(
-                              width: width,
-                              child: _metric(
-                                '逾期事件',
-                                intOf(summary['overdue']),
-                                Icons.timer_off_outlined,
-                                WearColors.warning,
-                                () => context.push('/events?escalated=true'),
-                              ),
-                            ),
-                            SizedBox(
-                              width: width,
-                              child: _metric(
-                                '失去监护',
-                                intOf(summary['lostSupervision']),
-                                Icons.person_off_outlined,
-                                WearColors.danger,
-                                () => context.push('/supervision'),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                            ]
+                          : jsonList(summary['recentEvents'])
+                                .map(
+                                  (event) => QueryRow(
+                                    title:
+                                        '${eventTypeLabel(event['type'])} · ${textOf(event['personName'], '未关联人员')}',
+                                    subtitle:
+                                        '${formatTime(event['occurredAt'])} · ${eventStatusLabel(event['status'])}',
+                                    onTap: () => context.go(
+                                      '/events?eventId=${idOf(event['id'])}',
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
+                    QuerySection(
+                      title: '当前作业',
+                      trailing: TextButton(
+                        onPressed: () => context.push('/tasks'),
+                        child: const Text('全部作业'),
+                      ),
+                      children: jsonList(summary['activeTasks']).isEmpty
+                          ? [
+                              const WearCard(
+                                child: Text(
+                                  '暂无进行中或待开始作业',
+                                  style: TextStyle(color: WearColors.muted),
+                                ),
+                              ),
+                            ]
+                          : jsonList(summary['activeTasks'])
+                                .map(
+                                  (task) => QueryRow(
+                                    title: textOf(task['title']),
+                                    subtitle:
+                                        '${taskStatusLabel(task['status'])} · ${textOf(task['spaceName'])}',
+                                    trailing: WearBadge(
+                                      text: taskStatusLabel(task['status']),
+                                    ),
+                                    onTap: () => context.push(
+                                      '/tasks/${idOf(task['id'])}',
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                    ),
+                    const SizedBox(height: 20),
                     WearCard(
                       child: Row(
                         children: [
@@ -200,7 +278,10 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                       children: [
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            final twoColumns = constraints.maxWidth >= 330;
+                            final twoColumns =
+                                constraints.maxWidth >= 330 &&
+                                MediaQuery.textScalerOf(context).scale(15) <=
+                                    20;
                             final width = twoColumns
                                 ? (constraints.maxWidth - 10) / 2
                                 : constraints.maxWidth;
@@ -245,67 +326,6 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                       ],
                     ),
                     const SizedBox(height: 22),
-                    QuerySection(
-                      title: '当前作业',
-                      trailing: TextButton(
-                        onPressed: () => context.push('/tasks'),
-                        child: const Text('全部作业'),
-                      ),
-                      children: jsonList(summary['activeTasks']).isEmpty
-                          ? [
-                              const WearCard(
-                                child: Text(
-                                  '暂无进行中或待开始作业',
-                                  style: TextStyle(color: WearColors.muted),
-                                ),
-                              ),
-                            ]
-                          : jsonList(summary['activeTasks'])
-                                .map(
-                                  (task) => QueryRow(
-                                    title: textOf(task['title']),
-                                    subtitle:
-                                        '${taskStatusLabel(task['status'])} · ${textOf(task['spaceName'])}',
-                                    trailing: WearBadge(
-                                      text: taskStatusLabel(task['status']),
-                                    ),
-                                    onTap: () => context.push(
-                                      '/tasks/${idOf(task['id'])}',
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                    ),
-                    const SizedBox(height: 14),
-                    QuerySection(
-                      title: '近期未关闭事件',
-                      trailing: TextButton(
-                        onPressed: () => context.push('/events'),
-                        child: const Text('事件中心'),
-                      ),
-                      children: jsonList(summary['recentEvents']).isEmpty
-                          ? [
-                              const WearCard(
-                                child: Text(
-                                  '暂无未关闭事件',
-                                  style: TextStyle(color: WearColors.muted),
-                                ),
-                              ),
-                            ]
-                          : jsonList(summary['recentEvents'])
-                                .map(
-                                  (event) => QueryRow(
-                                    title:
-                                        '${eventTypeLabel(event['type'])} · ${textOf(event['personName'], '未关联人员')}',
-                                    subtitle:
-                                        '${formatTime(event['occurredAt'])} · ${eventStatusLabel(event['status'])}',
-                                    onTap: () => context.push(
-                                      '/events?eventId=${idOf(event['id'])}',
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                    ),
                   ],
                 ),
               ),
@@ -320,31 +340,104 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     Color color,
     VoidCallback onTap,
   ) {
-    return WearCard(
-      padding: EdgeInsets.zero,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 26,
+                      height: 1.2,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: WearColors.muted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dutyBanner(JsonMap summary) {
+    final hasUnclaimed = intOf(summary['unclaimed']) > 0;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: WearColors.line),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Icon(icon, color: color),
-              const SizedBox(height: 10),
-              Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: color,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '现场值守',
+                      style: TextStyle(color: WearColors.muted, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      hasUnclaimed ? '待办优先，及时响应' : '查看现场，持续守护',
+                      style: const TextStyle(
+                        color: WearColors.ink,
+                        fontSize: 22,
+                        height: 1.4,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(label, style: const TextStyle(color: WearColors.muted)),
+              const SizedBox(width: 12),
+              ClipOval(
+                child: Image.asset(
+                  'assets/field-brand/cargo-v2/device-card.png',
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  excludeFromSemantics: true,
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: WearColors.accent,
+              foregroundColor: WearColors.ink,
+            ),
+            onPressed: () =>
+                context.go(hasUnclaimed ? '/events?status=open' : '/events'),
+            icon: const Icon(Icons.arrow_forward, size: 19),
+            label: Text(hasUnclaimed ? '查看待认领事件' : '打开事件中心'),
+          ),
+        ],
       ),
     );
   }

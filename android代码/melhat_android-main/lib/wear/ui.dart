@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class WearColors {
-  static const ink = Color(0xFF16333F);
-  static const muted = Color(0xFF657A84);
-  static const primary = Color(0xFF008594);
-  static const background = Color(0xFFF2F6F6);
-  static const line = Color(0xFFDFE8EA);
+  static const ink = SpringColors.textPrimaryLight;
+  static const muted = SpringColors.textSecondaryLight;
+  // Existing primary usages are foreground text/icons on light surfaces.
+  // Bright cyan belongs to action backgrounds, with navy foreground text.
+  static const primary = ink;
+  static const accent = SpringColors.mintGreen;
+  static const background = SpringColors.backgroundLight;
+  static const line = Color(0xFFE2E7F0);
   static const danger = Color(0xFFBA433C);
   static const warning = Color(0xFF946318);
 }
@@ -15,14 +19,14 @@ class WearCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   const WearCard({super.key, required this.child, this.padding});
   @override
-  Widget build(BuildContext context) => Container(
-    padding: padding ?? const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: WearColors.line),
+  Widget build(BuildContext context) => Material(
+    color: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: const BorderSide(color: WearColors.line),
     ),
-    child: child,
+    clipBehavior: Clip.antiAlias,
+    child: Padding(padding: padding ?? const EdgeInsets.all(18), child: child),
   );
 }
 

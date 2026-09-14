@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rolling_intelligence_headband/wear/app.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
+import 'package:rolling_intelligence_headband/wear/events/events_page.dart';
 import 'wear_session_test.dart'
     show MemoryCredentials, transport, identity, reply;
 
@@ -50,6 +51,36 @@ WearSession appSession({bool authenticated = false}) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  testWidgets(
+    'workbench primary action opens unclaimed events at narrow width',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final session = appSession(authenticated: true);
+      addTearDown(session.dispose);
+      await tester.pumpWidget(
+        WearApp(session: session, enableNotifications: false),
+      );
+      await tester.pumpAndSettle();
+      final action = find.text('查看待认领事件');
+      expect(action.hitTestable(), findsOneWidget);
+      await tester.tap(action);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<EventsPage>(find.byType(EventsPage)).initialStatus,
+        'open',
+      );
+      expect(find.text('安全事件'), findsOneWidget);
+      expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        1,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   testWidgets('default login submits v1 identity and opens actual workbench', (
     tester,
   ) async {

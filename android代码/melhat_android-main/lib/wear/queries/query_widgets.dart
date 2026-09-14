@@ -149,15 +149,27 @@ class QueryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: WearCard(
-        padding: EdgeInsets.zero,
+      padding: const EdgeInsets.only(bottom: 1),
+      child: Material(
+        color: Colors.white,
         child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 6,
+          ),
+          titleTextStyle: const TextStyle(
+            color: WearColors.ink,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+          subtitleTextStyle: const TextStyle(
+            color: WearColors.muted,
+            fontSize: 13,
+            height: 1.5,
+          ),
           leading: leading,
-          title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: subtitle == null
-              ? null
-              : Text(subtitle!, maxLines: 2, overflow: TextOverflow.ellipsis),
+          title: Text(title),
+          subtitle: subtitle == null ? null : Text(subtitle!),
           trailing:
               trailing ??
               (onTap == null ? null : const Icon(Icons.chevron_right)),
