@@ -45,7 +45,3 @@ nbdist/
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml
-
-# Machine-local Spring overrides. Keep out of git so other developers
-# are not forced onto this computer's database or Redis.
-/ruoyi-admin/config/
