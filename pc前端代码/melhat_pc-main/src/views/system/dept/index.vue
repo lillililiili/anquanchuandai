@@ -60,6 +60,7 @@
     <el-table
       v-if="refreshTable"
       v-loading="loading"
+      class="custom-table"
       :data="deptList"
       :default-expand-all="isExpandAll"
       row-key="deptId"
@@ -69,14 +70,14 @@
       <el-table-column
         label="部门名称"
         prop="deptName"
-        width="260"
+        min-width="160"
       ></el-table-column>
       <el-table-column
         label="排序"
         prop="orderNum"
-        width="200"
+        min-width="160"
       ></el-table-column>
-      <el-table-column label="状态" prop="status" width="100">
+      <el-table-column align="center" label="状态" prop="status" min-width="160">
         <template #default="scope">
           <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
         </template>
@@ -85,7 +86,7 @@
         align="center"
         label="创建时间"
         prop="createTime"
-        width="200"
+        min-width="160"
       >
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -94,7 +95,9 @@
       <el-table-column
         align="center"
         class-name="small-padding fixed-width"
+        fixed="right"
         label="操作"
+        min-width="160"
       >
         <template #default="scope">
           <el-tooltip content="修改" placement="top">

@@ -85,6 +85,7 @@
 
     <el-table
       v-loading="loading"
+      class="custom-table"
       :data="noticeList"
       @selection-change="handleSelectionChange"
     >
@@ -94,25 +95,26 @@
         align="center"
         label="序号"
         prop="noticeId"
-        width="100"
+        min-width="100"
       />
       <el-table-column
         align="center"
         label="公告标题"
         prop="noticeTitle"
         :show-overflow-tooltip="true"
+        min-width="360"
       />
       <el-table-column
         align="center"
         label="公告类型"
         prop="noticeType"
-        width="100"
+        min-width="100"
       >
         <template #default="scope">
           <dict-tag :options="sys_notice_type" :value="scope.row.noticeType" />
         </template>
       </el-table-column>
-      <el-table-column align="center" label="状态" prop="status" width="100">
+      <el-table-column align="center" label="状态" prop="status" min-width="100">
         <template #default="scope">
           <dict-tag :options="sys_notice_status" :value="scope.row.status" />
         </template>
@@ -121,13 +123,13 @@
         align="center"
         label="创建者"
         prop="createBy"
-        width="100"
+        min-width="100"
       />
       <el-table-column
         align="center"
         label="创建时间"
         prop="createTime"
-        width="100"
+        min-width="100"
       >
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -136,7 +138,9 @@
       <el-table-column
         align="center"
         class-name="small-padding fixed-width"
+        fixed="right"
         label="操作"
+        width="160"
       >
         <template #default="scope">
           <el-tooltip content="修改" placement="top">

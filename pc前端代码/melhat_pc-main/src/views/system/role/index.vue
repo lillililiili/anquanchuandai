@@ -106,26 +106,27 @@
     <!-- 表格数据 -->
     <el-table
       v-loading="loading"
+      class="custom-table"
       :data="roleList"
       @selection-change="handleSelectionChange"
     >
       <template #empty><BrandedEmpty compact description="暂无记录" /></template>
       <el-table-column align="center" type="selection" width="55" />
-      <el-table-column label="角色编号" prop="roleId" width="120" />
+      <el-table-column label="角色编号" prop="roleId" min-width="120" />
       <el-table-column
         label="角色名称"
         prop="roleName"
         :show-overflow-tooltip="true"
-        width="150"
+        min-width="150"
       />
       <el-table-column
         label="权限字符"
         prop="roleKey"
         :show-overflow-tooltip="true"
-        width="150"
+        min-width="150"
       />
-      <el-table-column label="显示顺序" prop="roleSort" width="100" />
-      <el-table-column align="center" label="状态" width="100">
+      <el-table-column label="显示顺序" prop="roleSort" min-width="100" />
+      <el-table-column align="center" label="状态" min-width="100">
         <template #default="scope">
           <el-switch
             v-model="scope.row.status"
@@ -135,7 +136,7 @@
           ></el-switch>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="创建时间" prop="createTime">
+      <el-table-column align="center" label="创建时间" prop="createTime" min-width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -143,7 +144,9 @@
       <el-table-column
         align="center"
         class-name="small-padding fixed-width"
+        fixed="right"
         label="操作"
+        width="260"
       >
         <template #default="scope">
           <el-tooltip

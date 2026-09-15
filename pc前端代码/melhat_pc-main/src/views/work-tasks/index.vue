@@ -22,20 +22,20 @@
     </el-form>
     <el-table v-loading="loading" class="custom-table" :data="list" highlight-current-row @row-click="openDetail">
       <template #empty><BrandedEmpty compact description="暂无任务" /></template>
-      <el-table-column label="任务" prop="title" />
-      <el-table-column label="类型" width="80">
+      <el-table-column label="任务" prop="title" min-width="140" show-overflow-tooltip />
+      <el-table-column align="center" label="类型" min-width="140">
         <template #default="scope">{{ workTypeLabel(scope.row.workType) }}</template>
       </el-table-column>
-      <el-table-column label="状态" width="90">
+      <el-table-column align="center" label="状态" min-width="140">
         <template #default="scope">{{ taskStatusLabel(scope.row.status) }}</template>
       </el-table-column>
-      <el-table-column label="票" width="100">
+      <el-table-column align="center" label="票" min-width="140">
         <template #default="scope">
           <el-tag v-if="scope.row.ticketStatus === 'unverified'" type="warning" size="small">待核实</el-tag>
           <span v-else>{{ ticketStatusLabel(scope.row.ticketStatus) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="标记" width="72">
+      <el-table-column align="center" label="标记" min-width="140">
         <template #default="scope"><el-tag v-if="scope.row.demo" type="warning" size="small">演示</el-tag></template>
       </el-table-column>
     </el-table>

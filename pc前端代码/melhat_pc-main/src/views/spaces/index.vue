@@ -6,11 +6,11 @@
     </el-row>
     <el-table v-loading="loading" class="custom-table" :data="list">
       <template #empty><BrandedEmpty compact description="暂无区域资料" /></template>
-      <el-table-column label="名称" prop="name" />
-      <el-table-column label="类型" width="120">
+      <el-table-column label="名称" prop="name" min-width="160" show-overflow-tooltip />
+      <el-table-column align="center" label="类型" min-width="160">
         <template #default="scope">{{ typeLabel(scope.row.spaceType) }}</template>
       </el-table-column>
-      <el-table-column label="状态" width="80">
+      <el-table-column align="center" label="状态" min-width="160">
         <template #default="scope">{{ scope.row.status === '1' ? '停用' : '正常' }}</template>
       </el-table-column>
     </el-table>
