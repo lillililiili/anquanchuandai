@@ -26,6 +26,7 @@
         class="login-form"
         :model="loginForm"
         :rules="loginRules"
+        :validate-on-rule-change="false"
       >
         <header class="login-header">
           <p class="login-eyebrow">安全运营工作台</p>

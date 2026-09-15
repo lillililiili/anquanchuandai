@@ -11,10 +11,7 @@ import usePermissionStore from '@/store/modules/permission'
 
 NProgress.configure({ showSpinner: false })
 
-const whiteList = ['/login', '/register', '/big-screen', '/touch-screen']
-
-// 标记 WebSocket 是否已初始化
-let wsInitialized = false
+const whiteList = ['/login', '/register']
 
 router.beforeEach((to, from, next) => {
   NProgress.start()
@@ -38,7 +35,7 @@ router.beforeEach((to, from, next) => {
               NProgress.done()
               return Promise.reject('no-site')
             }
-            return usePermissionStore().generateRoutes()
+            return usePermissionStore().generateRoutes(store.roles)
           })
           .then(accessRoutes => {
             // 根据roles权限生成可访问的路由表
@@ -79,20 +76,4 @@ router.beforeEach((to, from, next) => {
 
 router.afterEach(() => {
   NProgress.done()
-
-  // 延迟初始化 WebSocket，避免阻塞页面加载
-  if (!wsInitialized && useUserStore().userId) {
-    wsInitialized = true
-    const initWs = () => {
-      const userStore = useUserStore()
-      if (userStore.userId) {
-        userStore.connectWsServer()
-      }
-    }
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(initWs, { timeout: 2000 })
-    } else {
-      setTimeout(initWs, 100)
-    }
-  }
 })

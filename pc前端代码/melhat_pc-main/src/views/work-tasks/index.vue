@@ -18,6 +18,7 @@
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button v-if="canEdit" type="primary" icon="Plus" @click="openForm()">新建任务</el-button>
+        <el-button icon="Download" @click="downloadExport('work-tasks', { ...queryParams }, '作业任务.xlsx')">导出</el-button>
       </el-form-item>
     </el-form>
     <el-table v-loading="loading" class="custom-table" :data="list" highlight-current-row @row-click="openDetail">
@@ -130,6 +131,7 @@ import {
 import { peopleOptions, listSpaces } from '@/api/wear/people'
 import { eventTypeLabel, eventStatusLabel } from '@/api/wear/events'
 import useUserStore from '@/store/modules/user'
+import { downloadExport } from '@/api/wear/admin'
 
 const userStore = useUserStore()
 const route = useRoute()

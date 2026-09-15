@@ -9,11 +9,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.core.domain.R;
 import com.ruoyi.wear.assignment.AssignmentService;
 import com.ruoyi.wear.assignment.dto.AssignmentDto;
 import com.ruoyi.wear.assignment.dto.IssueRequest;
+import com.ruoyi.wear.common.WearPage;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -21,6 +23,19 @@ public class WearAssignmentController
 {
     @Autowired
     private AssignmentService assignmentService;
+
+    @GetMapping("/assignments")
+    public R<WearPage<AssignmentDto>> page(
+            @RequestParam(defaultValue = "1") int current,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sn,
+            @RequestParam(required = false) String personKeyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String issuedFrom,
+            @RequestParam(required = false) String issuedTo)
+    {
+        return R.ok(assignmentService.page(current, size, sn, personKeyword, status, issuedFrom, issuedTo));
+    }
 
     @PostMapping("/assignments")
     public R<AssignmentDto> issue(@RequestBody IssueRequest request, HttpServletRequest http)

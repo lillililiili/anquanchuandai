@@ -122,28 +122,25 @@
       <el-table-column
         align="center"
         class-name="small-padding fixed-width"
+        fixed="right"
         label="操作"
-        width="180"
+        width="160"
       >
         <template #default="scope">
-          <el-tooltip content="修改" placement="top">
-            <el-button
-              v-hasPermi="['system:post:edit']"
-              icon="Edit"
-              link
-              type="primary"
-              @click="handleUpdate(scope.row)"
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip content="删除" placement="top">
-            <el-button
-              v-hasPermi="['system:post:remove']"
-              icon="Delete"
-              link
-              type="danger"
-              @click="handleDelete(scope.row)"
-            ></el-button>
-          </el-tooltip>
+          <el-button
+            v-hasPermi="['system:post:edit']"
+            link
+            type="primary"
+            @click="handleUpdate(scope.row)"
+            >修改</el-button
+          >
+          <el-button
+            v-hasPermi="['system:post:remove']"
+            link
+            type="danger"
+            @click="handleDelete(scope.row)"
+            >删除</el-button
+          >
         </template>
       </el-table-column>
     </el-table>

@@ -149,58 +149,38 @@
         width="260"
       >
         <template #default="scope">
-          <el-tooltip
-            v-if="scope.row.roleId !== 1"
-            content="修改"
-            placement="top"
+          <el-button
+            v-if="Number(scope.row.roleId) !== 1"
+            v-hasPermi="['system:role:edit']"
+            link
+            type="primary"
+            @click="handleUpdate(scope.row)"
+            >修改</el-button
           >
-            <el-button
-              v-hasPermi="['system:role:edit']"
-              icon="Edit"
-              link
-              type="primary"
-              @click="handleUpdate(scope.row)"
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip
-            v-if="scope.row.roleId !== 1"
-            content="删除"
-            placement="top"
+          <el-button
+            v-if="Number(scope.row.roleId) !== 1"
+            v-hasPermi="['system:role:remove']"
+            link
+            type="danger"
+            @click="handleDelete(scope.row)"
+            >删除</el-button
           >
-            <el-button
-              v-hasPermi="['system:role:remove']"
-              icon="Delete"
-              link
-              type="danger"
-              @click="handleDelete(scope.row)"
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip
-            v-if="scope.row.roleId !== 1"
-            content="数据权限"
-            placement="top"
+          <el-button
+            v-if="Number(scope.row.roleId) !== 1"
+            v-hasPermi="['system:role:edit']"
+            link
+            type="primary"
+            @click="handleDataScope(scope.row)"
+            >数据权限</el-button
           >
-            <el-button
-              v-hasPermi="['system:role:edit']"
-              icon="CircleCheck"
-              link
-              type="primary"
-              @click="handleDataScope(scope.row)"
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip
-            v-if="scope.row.roleId !== 1"
-            content="分配用户"
-            placement="top"
+          <el-button
+            v-if="Number(scope.row.roleId) !== 1"
+            v-hasPermi="['system:role:edit']"
+            link
+            type="primary"
+            @click="handleAuthUser(scope.row)"
+            >分配用户</el-button
           >
-            <el-button
-              v-hasPermi="['system:role:edit']"
-              icon="User"
-              link
-              type="primary"
-              @click="handleAuthUser(scope.row)"
-            ></el-button>
-          </el-tooltip>
         </template>
       </el-table-column>
     </el-table>

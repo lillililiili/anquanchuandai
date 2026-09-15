@@ -33,10 +33,6 @@
         />
       </el-select>
       <div class="avatar-container">
-        <router-link to="/big-screen" class="big-screen-link" title="数据大屏">
-          <svg-icon icon-class="monitor" class-name="big-screen-icon" />
-          <span class="big-screen-label">数据大屏</span>
-        </router-link>
         <el-dropdown
           class="right-menu-item hover-effect"
           trigger="click"
@@ -124,7 +120,7 @@ function setLayout() {
 
 <style lang="scss" scoped>
 .navbar {
-  height: 60px;
+  height: 56px;
   overflow: hidden;
   position: relative;
   background: var(--bg-pure);
@@ -139,7 +135,7 @@ function setLayout() {
   }
 
   .hamburger-container {
-    line-height: 60px;
+    line-height: 56px;
     height: 100%;
     float: left;
     cursor: pointer;
@@ -213,45 +209,6 @@ function setLayout() {
       align-items: center;
       gap: 8px;
 
-      .big-screen-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 36px;
-        height: 36px;
-        padding: 0 10px;
-        gap: 7px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        transition: all 0.15s;
-        cursor: pointer;
-
-        &:hover {
-          background: var(--bg-hover);
-          border-color: var(--border-hover);
-        }
-
-        .big-screen-icon {
-          width: 17px;
-          height: 17px;
-          color: var(--text-secondary);
-        }
-
-        &:hover .big-screen-icon {
-          color: var(--text-primary);
-        }
-      }
-
-      .big-screen-label {
-        color: var(--text-secondary);
-        font-size: 13px;
-        font-weight: 500;
-      }
-
-      .big-screen-link:hover .big-screen-label {
-        color: var(--text-primary);
-      }
-
       .avatar-wrapper {
         position: relative;
         display: flex;
@@ -296,13 +253,8 @@ function setLayout() {
 
 @media (max-width: 1200px) {
   .navbar .right-menu .avatar-container {
-    .big-screen-label,
     .user-name {
       display: none;
-    }
-
-    .big-screen-link {
-      padding: 0;
     }
   }
 }

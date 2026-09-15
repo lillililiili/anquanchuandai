@@ -6,7 +6,6 @@
 @import './ruoyi.scss';
 @import './custom.scss';
 @import './sidebar.scss';
-@import '../font/font.css';
 
 /*
  * Light dispatch desk
@@ -244,7 +243,7 @@ select {
 .app-container,
 .app-page {
   min-height: 100%;
-  padding: 20px 24px 28px;
+  padding: 16px 18px 22px;
   color: var(--text-primary);
   background: var(--bg-base);
 }
@@ -277,8 +276,8 @@ select {
 .app-container > .el-form:first-child,
 .app-container > form:first-child,
 .search-form {
-  margin: 0 0 16px;
-  padding: 16px 18px 4px;
+  margin: 0 0 12px;
+  padding: 12px 14px 0;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   background: var(--bg-pure);
@@ -312,7 +311,7 @@ select {
 
 /* Element Plus controls */
 .el-form-item {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .el-form-item__label {
@@ -323,7 +322,7 @@ select {
 .el-input__wrapper,
 .el-select__wrapper,
 .el-textarea__inner {
-  min-height: 36px;
+  min-height: 32px;
   border-radius: var(--radius);
   background: var(--bg-soft);
   box-shadow: 0 0 0 1px var(--border-color) inset;
@@ -358,7 +357,7 @@ select {
 }
 
 .el-button {
-  min-height: 36px;
+  min-height: 32px;
   border-radius: var(--radius);
   font-weight: 550;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
@@ -432,8 +431,8 @@ select {
 }
 
 .el-table th.el-table__cell {
-  height: 46px;
-  padding: 9px 0;
+  height: 40px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-table-header) !important;
   color: var(--text-primary) !important;
@@ -442,8 +441,8 @@ select {
 }
 
 .el-table td.el-table__cell {
-  height: 50px;
-  padding: 8px 0;
+  height: 44px;
+  padding: 6px 0;
   border-bottom-color: var(--border-color);
   color: var(--text-primary);
   background: var(--bg-pure);

@@ -19,6 +19,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
   bool _loading = true;
   Object? _error;
   int _request = 0;
+  bool _handoverBusy = false;
 
   @override
   void didChangeDependencies() {
@@ -437,9 +438,144 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
             icon: const Icon(Icons.arrow_forward, size: 19),
             label: Text(hasUnclaimed ? '查看待认领事件' : '打开事件中心'),
           ),
+          if (_session?.isDuty == true) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _handoverBusy ? null : _startHandover,
+              icon: _handoverBusy
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.swap_horiz_rounded, size: 20),
+              label: const Text('发起值班交接'),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _startHandover() async {
+    final session = _session;
+    if (session == null || !session.isDuty || _handoverBusy) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _handoverBusy = true);
+    try {
+      final operators = jsonList(
+        await session.api.get('/api/v1/duty/operators'),
+      ).where((item) => idOf(item['userId']) != session.userId).toList();
+      if (!mounted || session != _session) return;
+      if (operators.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('当前厂站没有可接班的其他值班人员')),
+        );
+        return;
+      }
+
+      final formKey = GlobalKey<FormState>();
+      final comment = TextEditingController();
+      String? toUserId;
+      final confirmed = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (sheetContext) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            4,
+            20,
+            MediaQuery.viewInsetsOf(sheetContext).bottom + 20,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  '发起值班交接',
+                  style: TextStyle(
+                    color: WearColors.ink,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  '当前负责的事件与任务将由服务端自动生成交接快照。',
+                  style: TextStyle(color: WearColors.muted, height: 1.5),
+                ),
+                const SizedBox(height: 18),
+                DropdownButtonFormField<String>(
+                  initialValue: toUserId,
+                  decoration: const InputDecoration(labelText: '接班人'),
+                  items: operators
+                      .map(
+                        (item) => DropdownMenuItem(
+                          value: idOf(item['userId']),
+                          child: Text(
+                            textOf(item['nickName']).isNotEmpty
+                                ? textOf(item['nickName'])
+                                : textOf(item['userName'], '未命名值班员'),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  validator: (value) => value == null ? '请选择接班人' : null,
+                  onChanged: (value) => toUserId = value,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: comment,
+                  minLines: 2,
+                  maxLines: 4,
+                  maxLength: 200,
+                  decoration: const InputDecoration(
+                    labelText: '交接备注（选填）',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: () {
+                    if (formKey.currentState?.validate() != true) return;
+                    Navigator.pop(sheetContext, true);
+                  },
+                  child: const Text('提交交接'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      final note = comment.text.trim();
+      comment.dispose();
+      if (confirmed != true || toUserId == null || !mounted) return;
+      await session.api.post(
+        '/api/v1/duty/handovers',
+        data: {
+          'toUserId': toUserId,
+          if (note.isNotEmpty) 'comment': note,
+        },
+      );
+      if (!mounted || session != _session) return;
+      session.requestRefresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('交接已发起，等待接班人确认')),
+      );
+    } catch (error) {
+      if (error is StaleSessionException || !mounted) return;
+      final message = error is WearApiException ? error.message : '交接未提交，请稍后重试';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      if (error is WearApiException && error.code == 409) {
+        session.requestRefresh();
+      }
+    } finally {
+      if (mounted) setState(() => _handoverBusy = false);
+    }
   }
 
   void _openPeopleSearch(String raw) {

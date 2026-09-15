@@ -1,5 +1,9 @@
 import request from '@/utils/request'
 
+export function listAssignments(params) {
+  return request({ url: '/api/v1/assignments', method: 'get', params })
+}
+
 export function issueAssignment(data) {
   return request({ url: '/api/v1/assignments', method: 'post', data })
 }

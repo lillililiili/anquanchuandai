@@ -52,26 +52,32 @@ public class FenceService
     @Value("${spring.profiles.active:}")
     private String activeProfile;
 
-    public WearPage<GeoFenceDto> page(int current, int size)
+    public WearPage<GeoFenceDto> page(int current, int size, String name, String enabled)
     {
         siteAccessService.requireLogin();
+        int safeCurrent = current < 1 ? 1 : current;
+        int safeSize = size < 1 ? 10 : Math.min(size, 100);
         List<Long> scope = siteAccessService.listScopeSiteIds();
         if (scope.isEmpty())
         {
-            return WearPage.of(Collections.<GeoFenceDto>emptyList(), 0, current, size);
+            return WearPage.of(Collections.<GeoFenceDto>emptyList(), 0, safeCurrent, safeSize);
         }
-        if (size > 100)
+        LambdaQueryWrapper<WearGeoFence> query = new LambdaQueryWrapper<WearGeoFence>()
+                .in(WearGeoFence::getSiteId, scope)
+                .like(StringUtils.isNotEmpty(name), WearGeoFence::getName, name == null ? null : name.trim())
+                .orderByDesc(WearGeoFence::getId);
+        if (StringUtils.isNotEmpty(enabled))
         {
-            size = 100;
+            query.eq(WearGeoFence::getEnabled,
+                    "true".equalsIgnoreCase(enabled) || "1".equals(enabled) ? 1 : 0);
         }
-        IPage<WearGeoFence> page = fenceMapper.selectPage(new Page<WearGeoFence>(current, size),
-                new LambdaQueryWrapper<WearGeoFence>().in(WearGeoFence::getSiteId, scope).orderByDesc(WearGeoFence::getId));
+        IPage<WearGeoFence> page = fenceMapper.selectPage(new Page<WearGeoFence>(safeCurrent, safeSize), query);
         List<GeoFenceDto> records = new ArrayList<GeoFenceDto>();
         for (WearGeoFence row : page.getRecords())
         {
             records.add(toDto(row));
         }
-        return WearPage.of(records, page.getTotal(), current, size);
+        return WearPage.of(records, page.getTotal(), safeCurrent, safeSize);
     }
 
     public GeoFenceDto detail(Long id)

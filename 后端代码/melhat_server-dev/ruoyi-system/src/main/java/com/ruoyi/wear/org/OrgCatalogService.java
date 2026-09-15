@@ -28,15 +28,17 @@ public class OrgCatalogService
     @Autowired
     private SiteAccessService siteAccessService;
 
-    public List<Map<String, String>> listTeams()
+    public List<Map<String, String>> listTeams(String status)
     {
         List<Long> scope = siteAccessService.listScopeSiteIds();
         if (scope.isEmpty())
         {
             return new ArrayList<Map<String, String>>();
         }
-        List<WearTeam> teams = teamMapper.selectList(new LambdaQueryWrapper<WearTeam>()
-                .in(WearTeam::getSiteId, scope).eq(WearTeam::getStatus, "0").orderByAsc(WearTeam::getId));
+        LambdaQueryWrapper<WearTeam> query = new LambdaQueryWrapper<WearTeam>()
+                .in(WearTeam::getSiteId, scope).orderByAsc(WearTeam::getId);
+        if (!"all".equals(status)) query.eq(WearTeam::getStatus, StringUtils.isEmpty(status) ? "0" : status);
+        List<WearTeam> teams = teamMapper.selectList(query);
         List<Map<String, String>> result = new ArrayList<Map<String, String>>();
         for (WearTeam team : teams)
         {
@@ -92,11 +94,12 @@ public class OrgCatalogService
         return teamMap(team);
     }
 
-    public List<Map<String, String>> listContractors()
+    public List<Map<String, String>> listContractors(String status)
     {
         siteAccessService.requireLogin();
-        List<WearContractor> rows = contractorMapper.selectList(new LambdaQueryWrapper<WearContractor>()
-                .eq(WearContractor::getStatus, "0").orderByAsc(WearContractor::getId));
+        LambdaQueryWrapper<WearContractor> query = new LambdaQueryWrapper<WearContractor>().orderByAsc(WearContractor::getId);
+        if (!"all".equals(status)) query.eq(WearContractor::getStatus, StringUtils.isEmpty(status) ? "0" : status);
+        List<WearContractor> rows = contractorMapper.selectList(query);
         List<Map<String, String>> result = new ArrayList<Map<String, String>>();
         for (WearContractor row : rows)
         {

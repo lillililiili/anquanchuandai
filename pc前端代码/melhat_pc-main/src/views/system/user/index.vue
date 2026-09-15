@@ -220,62 +220,43 @@
           <el-table-column
             align="center"
             class-name="small-padding fixed-width"
+            fixed="right"
             label="操作"
-            width="190"
+            width="300"
           >
             <template #default="scope">
-              <el-tooltip
-                v-if="scope.row.userId !== 1"
-                content="修改"
-                placement="top"
+              <el-button
+                v-if="Number(scope.row.userId) !== 1"
+                v-hasPermi="['system:user:edit']"
+                link
+                type="primary"
+                @click="handleUpdate(scope.row)"
+                >修改</el-button
               >
-                <el-button
-                  v-hasPermi="['system:user:edit']"
-                  icon="Edit"
-                  link
-                  type="primary"
-                  @click="handleUpdate(scope.row)"
-                ></el-button>
-              </el-tooltip>
-              <el-tooltip
-                v-if="scope.row.userId !== 1"
-                content="删除"
-                placement="top"
+              <el-button
+                v-if="Number(scope.row.userId) !== 1"
+                v-hasPermi="['system:user:remove']"
+                link
+                type="danger"
+                @click="handleDelete(scope.row)"
+                >删除</el-button
               >
-                <el-button
-                  v-hasPermi="['system:user:remove']"
-                  icon="Delete"
-                  link
-                  type="danger"
-                  @click="handleDelete(scope.row)"
-                ></el-button>
-              </el-tooltip>
-              <el-tooltip
-                v-if="scope.row.userId !== 1"
-                content="重置密码"
-                placement="top"
+              <el-button
+                v-if="Number(scope.row.userId) !== 1"
+                v-hasPermi="['system:user:resetPwd']"
+                link
+                type="primary"
+                @click="handleResetPwd(scope.row)"
+                >重置密码</el-button
               >
-                <el-button
-                  v-hasPermi="['system:user:resetPwd']"
-                  icon="Key"
-                  link
-                  type="primary"
-                  @click="handleResetPwd(scope.row)"
-                ></el-button>
-              </el-tooltip>
-              <el-tooltip
-                v-if="scope.row.userId !== 1"
-                content="分配角色"
-                placement="top"
+              <el-button
+                v-if="Number(scope.row.userId) !== 1"
+                v-hasPermi="['system:user:edit']"
+                link
+                type="primary"
+                @click="handleAuthRole(scope.row)"
+                >分配角色</el-button
               >
-                <el-button
-                  v-hasPermi="['system:user:edit']"
-                  icon="CircleCheck"
-                  link
-                  type="primary"
-                  @click="handleAuthRole(scope.row)"
-                ></el-button>
-              </el-tooltip>
             </template>
           </el-table-column>
         </el-table>

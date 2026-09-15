@@ -14,14 +14,12 @@ describe('event workspace contract', () => {
     expect(fenceActionLabel('leave')).toBe('离开')
   })
 
-  it('events page does not fake a connected call', () => {
+  it('formal events page is a read-only audit timeline', () => {
     const dir = dirname(fileURLToPath(import.meta.url))
-    const page = readFileSync(join(dir, '../../views/events/index.vue'), 'utf8')
-    expect(page).not.toMatch(/呼叫已接通/)
-    expect(page).toMatch(/已看见/)
-    expect(page).toMatch(/已认领/)
-    expect(page).toMatch(/已关闭/)
-    expect(page).toMatch(/applyRouteQuery/)
-    expect(page).toMatch(/listDutyOperators/)
+    const page = readFileSync(join(dir, '../../views/audit/events/index.vue'), 'utf8')
+    expect(page).toMatch(/动作时间线/)
+    expect(page).toMatch(/listEventActions/)
+    expect(page).toMatch(/导出筛选结果/)
+    expect(page).not.toMatch(/claimEvent|handleEvent|transferEvent|closeEvent|simulateEvent/)
   })
 })

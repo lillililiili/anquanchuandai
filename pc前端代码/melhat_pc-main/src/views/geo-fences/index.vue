@@ -1,160 +1,36 @@
 <template>
   <div class="app-container">
-    <ModuleHeader
-      module="system"
-      title="围栏规则"
-      description="仅多边形、WGS84。陈旧或未知点不会判违章。禁用不清历史事件。"
-    />
-    <el-row class="mb8">
-      <el-button v-if="canEdit" type="primary" icon="Plus" @click="openForm()">新增围栏</el-button>
-    </el-row>
-    <el-table v-loading="loading" class="custom-table" :data="list">
-      <template #empty><BrandedEmpty compact description="暂无围栏规则" /></template>
-      <el-table-column label="名称" prop="name" />
-      <el-table-column label="启用" width="80">
-        <template #default="scope">{{ scope.row.enabled ? '是' : '否' }}</template>
-      </el-table-column>
-      <el-table-column label="适用" width="100">
-        <template #default="scope">{{ scope.row.applyMode === 'persons' ? '指定人员' : '全厂站' }}</template>
-      </el-table-column>
-      <el-table-column label="规则版本" prop="ruleVersion" width="100" />
-      <el-table-column label="防抖秒" prop="debounceSeconds" width="90" />
-      <el-table-column label="标记" width="72">
-        <template #default="scope"><el-tag v-if="scope.row.demo" type="warning" size="small">演示</el-tag></template>
-      </el-table-column>
-      <el-table-column v-if="canEdit" label="操作" width="160">
-        <template #default="scope">
-          <el-button link type="primary" @click="toggle(scope.row)">{{ scope.row.enabled ? '禁用' : '启用' }}</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" v-model:page="queryParams.current" v-model:limit="queryParams.size" :total="total" @pagination="getList" />
+    <ModuleHeader title="电子围栏" description="在地图上维护 WGS84 多边形与生效规则。禁用围栏不会清除历史事件。" />
+    <el-form class="search-form" :inline="true" :model="query"><el-form-item label="名称"><el-input v-model="query.name" clearable placeholder="围栏名称" @keyup.enter="search"/></el-form-item><el-form-item label="状态"><el-select v-model="query.enabled" clearable class="w-140" placeholder="全部"><el-option label="启用" value="true"/><el-option label="禁用" value="false"/></el-select></el-form-item><el-form-item><el-button type="primary" icon="Search" @click="search">查询</el-button><el-button icon="Refresh" @click="reset">重置</el-button></el-form-item></el-form>
+    <div class="page-toolbar"><el-button v-if="canEdit" type="primary" icon="Plus" @click="openForm()">新增围栏</el-button><el-button icon="Download" @click="downloadExport('fences',{...query},'电子围栏.xlsx')">导出</el-button></div>
+    <el-table v-loading="loading" class="custom-table" :data="list"><template #empty><BrandedEmpty compact description="暂无围栏规则"/></template><el-table-column label="名称" prop="name" min-width="260" show-overflow-tooltip/><el-table-column align="center" label="状态" min-width="90"><template #default="s"><el-tag :type="s.row.enabled?'success':'info'" size="small">{{ s.row.enabled?'启用':'禁用' }}</el-tag></template></el-table-column><el-table-column align="center" label="适用范围" min-width="120"><template #default="s">{{ s.row.applyMode==='persons'?'指定人员':'全厂站' }}</template></el-table-column><el-table-column align="center" label="触发方向" min-width="130"><template #default="s">{{ directionLabel(s.row) }}</template></el-table-column><el-table-column align="center" label="有效时段" min-width="150"><template #default="s">{{ timeLabel(s.row) }}</template></el-table-column><el-table-column align="center" label="防抖" min-width="90"><template #default="s">{{ s.row.debounceSeconds||0 }} 秒</template></el-table-column><el-table-column align="center" label="规则版本" min-width="100"><template #default="s">v{{ s.row.ruleVersion||1 }}</template></el-table-column><el-table-column align="center" label="操作" min-width="160" fixed="right"><template #default="s"><el-button link type="primary" @click="viewOrEdit(s.row)">{{ canEdit?'编辑':'详情' }}</el-button><el-button v-if="canEdit" link :type="s.row.enabled?'danger':'success'" @click="toggle(s.row)">{{ s.row.enabled?'禁用':'启用' }}</el-button></template></el-table-column></el-table>
+    <pagination v-show="total>0" v-model:page="query.current" v-model:limit="query.size" :total="total" @pagination="load"/>
 
-    <el-dialog v-model="formOpen" title="新增围栏" width="520px">
-      <el-form label-width="100px">
-        <el-form-item label="名称"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="多边形JSON">
-          <el-input v-model="form.polygonText" type="textarea" rows="4" placeholder='[{"lng":117.10,"lat":36.10},...]' />
-        </el-form-item>
-        <el-form-item label="适用">
-          <el-select v-model="form.applyMode" class="w-180">
-            <el-option label="全厂站" value="all_site" />
-            <el-option label="指定人员" value="persons" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="form.applyMode === 'persons'" label="适用人员">
-          <el-select v-model="form.personIds" multiple filterable class="w-180" placeholder="选择人员">
-            <el-option v-for="p in people" :key="p.id" :label="p.name + ' ' + p.personCode" :value="p.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="时段">
-          <el-input v-model="form.timeStart" class="w-140" placeholder="HH:mm 空=全天" />
-          <el-input v-model="form.timeEnd" class="w-140" placeholder="HH:mm" />
-        </el-form-item>
-        <el-form-item label="防抖秒"><el-input v-model="form.debounceSeconds" /></el-form-item>
+    <el-drawer v-model="formOpen" :title="form.id ? (canEdit?'编辑围栏':'围栏详情') : '新增围栏'" size="860px" destroy-on-close @opened="initMap" @closed="disposeMap">
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" :disabled="!canEdit">
+        <div class="form-grid"><el-form-item label="围栏名称" prop="name"><el-input v-model="form.name" maxlength="80" show-word-limit/></el-form-item><el-form-item label="防抖时间" prop="debounceSeconds"><el-input-number v-model="form.debounceSeconds" :min="0" :max="3600" controls-position="right"/><span class="field-unit">秒</span></el-form-item></div>
+        <el-form-item label="围栏范围" prop="polygon"><div class="map-shell"><div class="map-toolbar"><el-button v-if="canEdit" size="small" type="primary" plain @click="startDraw">{{ form.polygon.length?'重新绘制':'开始绘制' }}</el-button><span>{{ polygonHint }}</span></div><div ref="mapTarget" class="fence-map" aria-label="电子围栏绘制地图"></div></div></el-form-item>
+        <div class="form-grid"><el-form-item label="适用范围"><el-radio-group v-model="form.applyMode"><el-radio label="all_site">全厂站</el-radio><el-radio label="persons">指定人员</el-radio></el-radio-group></el-form-item><el-form-item label="触发方向" prop="directions"><el-checkbox v-model="form.enterEnabled">进入</el-checkbox><el-checkbox v-model="form.leaveEnabled">离开</el-checkbox></el-form-item></div>
+        <el-form-item v-if="form.applyMode==='persons'" label="适用人员" prop="personIds"><el-select v-model="form.personIds" multiple filterable collapse-tags placeholder="选择人员"><el-option v-for="p in people" :key="p.id" :label="`${p.name} ${p.personCode}`" :value="String(p.id)"/></el-select></el-form-item>
+        <el-form-item label="有效时段"><div class="time-range"><el-time-picker v-model="form.timeStart" value-format="HH:mm" format="HH:mm" placeholder="开始时间"/><span>至</span><el-time-picker v-model="form.timeEnd" value-format="HH:mm" format="HH:mm" placeholder="结束时间"/><el-button text @click="clearTime">全天有效</el-button></div></el-form-item>
+        <el-alert title="坐标由地图自动生成" :description="coordinateSummary" type="info" :closable="false" show-icon/>
       </el-form>
-      <template #footer>
-        <el-button @click="formOpen = false">取消</el-button>
-        <el-button type="primary" @click="submit">保存</el-button>
-      </template>
-    </el-dialog>
+      <template #footer><el-button @click="formOpen=false">{{ canEdit?'取消':'关闭' }}</el-button><el-button v-if="canEdit" type="primary" :loading="submitting" @click="submit">保存规则</el-button></template>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { listFences, createFence, setFenceEnabled } from '@/api/wear/fences'
-import { peopleOptions } from '@/api/wear/people'
-import useUserStore from '@/store/modules/user'
-
-const userStore = useUserStore()
-const { proxy } = getCurrentInstance()
-const canEdit = computed(() => userStore.canEditFence)
-const loading = ref(false)
-const list = ref([])
-const total = ref(0)
-const queryParams = reactive({ current: 1, size: 10 })
-const formOpen = ref(false)
-const form = reactive({
-  name: '',
-  polygonText: '',
-  debounceSeconds: '60',
-  applyMode: 'all_site',
-  personIds: [],
-  timeStart: '',
-  timeEnd: ''
-})
-const people = ref([])
-
-function unwrap(res) {
-  return res && res.data !== undefined ? res.data : res
-}
-
-function getList() {
-  loading.value = true
-  listFences(queryParams).then(res => {
-    const page = unwrap(res) || {}
-    list.value = page.records || []
-    total.value = page.total || 0
-  }).finally(() => { loading.value = false })
-}
-
-function openForm() {
-  form.name = ''
-  form.polygonText = '[{"lng":117.10,"lat":36.10},{"lng":117.14,"lat":36.10},{"lng":117.14,"lat":36.14},{"lng":117.10,"lat":36.14}]'
-  form.debounceSeconds = '60'
-  form.applyMode = 'all_site'
-  form.personIds = []
-  form.timeStart = ''
-  form.timeEnd = ''
-  peopleOptions().then(res => { people.value = unwrap(res) || [] }).catch(() => { people.value = [] })
-  formOpen.value = true
-}
-
-function submit() {
-  let polygon = []
-  try {
-    polygon = JSON.parse(form.polygonText)
-  } catch (e) {
-    proxy.$modal.msgError('多边形 JSON 无效')
-    return
-  }
-  const body = {
-    name: form.name,
-    polygon,
-    debounceSeconds: Number(form.debounceSeconds),
-    applyMode: form.applyMode
-  }
-  if (form.applyMode === 'persons') {
-    body.personIds = form.personIds
-  }
-  if (form.timeStart) body.timeStart = form.timeStart
-  if (form.timeEnd) body.timeEnd = form.timeEnd
-  createFence(body).then(() => {
-    proxy.$modal.msgSuccess('已保存')
-    formOpen.value = false
-    getList()
-  })
-}
-
-function toggle(row) {
-  setFenceEnabled(row.id, { enabled: !row.enabled, version: row.version }).then(() => {
-    proxy.$modal.msgSuccess(row.enabled ? '已禁用（历史事件保留）' : '已启用')
-    getList()
-  })
-}
-
-function onSiteChanged() {
-  getList()
-}
-
-onMounted(() => {
-  getList()
-  window.addEventListener('site-changed', onSiteChanged)
-})
-onUnmounted(() => window.removeEventListener('site-changed', onSiteChanged))
+import 'ol/ol.css'
+import Map from 'ol/Map'; import View from 'ol/View'; import Feature from 'ol/Feature'; import Polygon from 'ol/geom/Polygon'; import TileLayer from 'ol/layer/Tile'; import VectorLayer from 'ol/layer/Vector'; import XYZ from 'ol/source/XYZ'; import VectorSource from 'ol/source/Vector'; import Draw from 'ol/interaction/Draw'; import Modify from 'ol/interaction/Modify'; import {Fill,Stroke,Style} from 'ol/style'; import {fromLonLat,toLonLat} from 'ol/proj'
+import {listFences,getFence,createFence,updateFence,setFenceEnabled} from '@/api/wear/fences'; import {peopleOptions} from '@/api/wear/people'; import {centerPoint,zoom} from '@/common.config'; import useUserStore from '@/store/modules/user'
+import { downloadExport } from '@/api/wear/admin'
+const userStore=useUserStore(); const {proxy}=getCurrentInstance(); const canEdit=computed(()=>userStore.canEditFence); const loading=ref(false); const submitting=ref(false); const list=ref([]); const total=ref(0); const query=reactive({current:1,size:10,name:'',enabled:''}); const formOpen=ref(false); const formRef=ref(); const mapTarget=ref(); const people=ref([]); const form=reactive({id:'',name:'',polygon:[],enabled:true,applyMode:'all_site',personIds:[],timeStart:'',timeEnd:'',enterEnabled:true,leaveEnabled:true,debounceSeconds:60,version:1}); let map;let source;let draw;let modify
+const rules={name:[{required:true,message:'请输入围栏名称',trigger:'blur'}],polygon:[{validator:(_r,v,done)=>v?.length>=3?done():done(new Error('请在地图上绘制至少三个点的多边形')),trigger:'change'}],personIds:[{validator:(_r,v,done)=>form.applyMode!=='persons'||v.length?done():done(new Error('请选择至少一名人员')),trigger:'change'}],directions:[{validator:(_r,_v,done)=>form.enterEnabled||form.leaveEnabled?done():done(new Error('至少选择一个触发方向')),trigger:'change'}]}
+const polygonHint=computed(()=>form.polygon.length?`已记录 ${form.polygon.length} 个顶点，可直接拖动顶点调整。`:'点击“开始绘制”，在地图上依次落点，双击结束。');const coordinateSummary=computed(()=>form.polygon.length?form.polygon.map(p=>`${Number(p.lng).toFixed(6)}, ${Number(p.lat).toFixed(6)}`).join('  ·  '):'尚未绘制围栏范围。')
+function unwrap(r){return r?.data!==undefined?r.data:r} function directionLabel(r){return [r.enterEnabled?'进入':'',r.leaveEnabled?'离开':''].filter(Boolean).join('、')||'—'} function timeLabel(r){return r.timeStart&&r.timeEnd?`${r.timeStart}–${r.timeEnd}`:'全天'} function load(){loading.value=true;listFences(query).then(r=>{const p=unwrap(r)||{};list.value=p.records||[];total.value=p.total||0}).finally(()=>{loading.value=false})} function search(){query.current=1;load()} function reset(){Object.assign(query,{current:1,name:'',enabled:''});load()}
+function emptyForm(){Object.assign(form,{id:'',name:'',polygon:[],enabled:true,applyMode:'all_site',personIds:[],timeStart:'',timeEnd:'',enterEnabled:true,leaveEnabled:true,debounceSeconds:60,version:1})} function loadPeople(){peopleOptions().then(r=>{people.value=unwrap(r)||[]}).catch(()=>{people.value=[]})} function openForm(){emptyForm();loadPeople();formOpen.value=true} function viewOrEdit(row){loadPeople();getFence(row.id).then(r=>{const d=unwrap(r)||row;Object.assign(form,{id:d.id,name:d.name,polygon:(d.polygon||[]).map(p=>({lng:Number(p.lng),lat:Number(p.lat)})),enabled:d.enabled!==false,applyMode:d.applyMode||'all_site',personIds:(d.personIds||[]).map(String),timeStart:d.timeStart||'',timeEnd:d.timeEnd||'',enterEnabled:d.enterEnabled!==false,leaveEnabled:d.leaveEnabled!==false,debounceSeconds:Number(d.debounceSeconds||60),version:d.version});formOpen.value=true})}
+function initMap(){source=new VectorSource();const layer=new VectorLayer({source,style:new Style({stroke:new Stroke({color:'#e27a19',width:3}),fill:new Fill({color:'rgba(226,122,25,.18)'})})});map=new Map({target:mapTarget.value,layers:[new TileLayer({source:new XYZ({url:'https://webst01.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}'})}),layer],view:new View({center:fromLonLat(centerPoint),zoom})});modify=new Modify({source});modify.on('modifyend',syncPolygon);map.addInteraction(modify);renderPolygon()} function renderPolygon(){if(!source)return;source.clear();if(form.polygon.length<3)return;const ring=form.polygon.map(p=>fromLonLat([p.lng,p.lat]));ring.push(ring[0]);const feature=new Feature(new Polygon([ring]));source.addFeature(feature);map?.getView().fit(feature.getGeometry().getExtent(),{padding:[50,50,50,50],maxZoom:17,duration:0})} function startDraw(){if(!map||!source)return;source.clear();form.polygon=[];if(draw)map.removeInteraction(draw);draw=new Draw({source,type:'Polygon'});draw.on('drawend',()=>{setTimeout(syncPolygon,0);map.removeInteraction(draw);draw=null});map.addInteraction(draw)} function syncPolygon(){const feature=source?.getFeatures()?.[0];const coords=feature?.getGeometry()?.getCoordinates()?.[0]||[];form.polygon=coords.slice(0,-1).map(coord=>{const p=toLonLat(coord);return{lng:Number(p[0].toFixed(7)),lat:Number(p[1].toFixed(7))}});formRef.value?.validateField('polygon').catch(()=>{})} function disposeMap(){if(map){map.setTarget(undefined);map=null}source=null;draw=null;modify=null} function clearTime(){form.timeStart='';form.timeEnd=''}
+function submit(){syncPolygon();formRef.value.validate(valid=>{if(!valid)return;if(Boolean(form.timeStart)!==Boolean(form.timeEnd)){proxy.$modal.msgError('有效时段需要同时填写开始和结束时间');return}submitting.value=true;const payload={name:form.name.trim(),polygon:form.polygon,enabled:form.enabled,applyMode:form.applyMode,personIds:form.applyMode==='persons'?form.personIds:[],timeStart:form.timeStart||null,timeEnd:form.timeEnd||null,enterEnabled:form.enterEnabled,leaveEnabled:form.leaveEnabled,debounceSeconds:form.debounceSeconds,version:form.version};const req=form.id?updateFence(form.id,payload):createFence(payload);req.then(()=>{proxy.$modal.msgSuccess('围栏规则已保存');formOpen.value=false;load()}).finally(()=>{submitting.value=false})})} function toggle(row){proxy.$modal.confirm(`确认${row.enabled?'禁用':'启用'}“${row.name}”吗？`).then(()=>setFenceEnabled(row.id,{enabled:!row.enabled,version:row.version})).then(()=>{proxy.$modal.msgSuccess(row.enabled?'已禁用，历史事件保留':'已启用');load()}).catch(()=>{})} function onSiteChanged(){search()} onMounted(()=>{load();window.addEventListener('site-changed',onSiteChanged)});onUnmounted(()=>{disposeMap();window.removeEventListener('site-changed',onSiteChanged)})
 </script>
-
-<style scoped>
-.w-180 { width: 180px; }
-.w-140 { width: 140px; }
-</style>
+<style scoped>.w-140{width:140px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.map-shell{width:100%;overflow:hidden;border:1px solid var(--border-color);border-radius:8px}.map-toolbar{display:flex;align-items:center;gap:12px;min-height:44px;padding:6px 10px;background:#f6f8fb;color:var(--text-secondary);font-size:12px}.fence-map{height:360px;background:#e9eef4}.field-unit{margin-left:8px;color:var(--text-muted)}.time-range{display:flex;align-items:center;gap:10px;width:100%}@media(max-width:760px){.form-grid{grid-template-columns:1fr}.fence-map{height:300px}}</style>

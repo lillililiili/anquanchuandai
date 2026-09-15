@@ -25,9 +25,11 @@ public class WearFenceController
     @GetMapping
     public R<WearPage<GeoFenceDto>> page(
             @RequestParam(defaultValue = "1") int current,
-            @RequestParam(defaultValue = "10") int size)
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String enabled)
     {
-        return R.ok(fenceService.page(current, size));
+        return R.ok(fenceService.page(current, size, name, enabled));
     }
 
     @PostMapping

@@ -13,11 +13,11 @@ describe('call status contract', () => {
     expect(callStatusLabel('connected')).toBe('已接通')
   })
 
-  it('events page does not treat offered as connected and gates intercom', () => {
+  it('formal audit page and root app do not expose PC call controls', () => {
     const dir = dirname(fileURLToPath(import.meta.url))
-    const page = readFileSync(join(dir, '../../views/events/index.vue'), 'utf8')
-    expect(page).toMatch(/isCallConnected/)
-    expect(page).toMatch(/supportsCapability/)
-    expect(page).not.toMatch(/呼叫已接通/)
+    const page = readFileSync(join(dir, '../../views/audit/events/index.vue'), 'utf8')
+    const app = readFileSync(join(dir, '../../App.vue'), 'utf8')
+    expect(page).not.toMatch(/startCall|joinCall|sendTts|呼叫|播报/)
+    expect(app).not.toMatch(/VideoView|AlarmNotification|assist-video/)
   })
 })

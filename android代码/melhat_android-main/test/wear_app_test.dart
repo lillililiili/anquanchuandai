@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rolling_intelligence_headband/wear/app.dart';
@@ -81,6 +82,69 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  testWidgets('duty operator can create a handover and current user is excluded', (
+    tester,
+  ) async {
+    final requests = <RequestOptions>[];
+    final session = WearSession(
+      credentials: MemoryCredentials(),
+      dio: transport((request) {
+        requests.add(request);
+        if (request.path == '/api/v1/duty/summary') {
+          return reply({
+            'unclaimed': 0,
+            'mine': 0,
+            'overdue': 0,
+            'lostSupervision': 0,
+            'peopleCount': 0,
+            'deviceCount': 0,
+            'activeTasks': [],
+            'recentEvents': [],
+          });
+        }
+        if (request.path == '/api/v1/duty/operators') {
+          return reply([
+            {'userId': '12', 'userName': 'current', 'nickName': '当前用户'},
+            {'userId': '23', 'userName': 'leader', 'nickName': '王班长'},
+          ]);
+        }
+        if (request.path == '/api/v1/duty/handovers' &&
+            request.method == 'POST') {
+          return reply({'id': '9', 'status': 'pending'});
+        }
+        if (request.path.endsWith('/inbox/count')) return reply({'count': 0});
+        return reply({'records': [], 'total': 0, 'current': 1, 'size': 20});
+      }),
+    );
+    session
+      ..initialized = true
+      ..me = identity()
+      ..siteId = '1'
+      ..token = 'test-only';
+    addTearDown(session.dispose);
+    await tester.pumpWidget(
+      WearApp(session: session, enableNotifications: false),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('发起值班交接'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前用户'), findsNothing);
+    expect(find.text('王班长'), findsNothing);
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('王班长').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('提交交接'));
+    await tester.pumpAndSettle();
+    final created = requests.lastWhere(
+      (request) =>
+          request.path == '/api/v1/duty/handovers' && request.method == 'POST',
+    );
+    expect((created.data as Map)['toUserId'], '23');
+    expect((created.data as Map).containsKey('eventIds'), false);
+    expect(find.text('交接已发起，等待接班人确认'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   testWidgets('default login submits v1 identity and opens actual workbench', (
     tester,
   ) async {

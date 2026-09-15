@@ -24,7 +24,7 @@ public class SpaceService
     @Autowired
     private SiteAccessService siteAccessService;
 
-    public List<Map<String, String>> list(String siteId)
+    public List<Map<String, String>> list(String siteId, String status)
     {
         Long sid = siteId == null ? siteAccessService.resolveRequestSiteId() : siteAccessService.parseSiteId(siteId);
         if (sid == null)
@@ -37,8 +37,10 @@ public class SpaceService
             sid = scope.get(0);
         }
         siteAccessService.assertAuthorized(sid);
-        List<WearSpace> rows = spaceMapper.selectList(new LambdaQueryWrapper<WearSpace>()
-                .eq(WearSpace::getSiteId, sid).orderByAsc(WearSpace::getId));
+        LambdaQueryWrapper<WearSpace> query = new LambdaQueryWrapper<WearSpace>()
+                .eq(WearSpace::getSiteId, sid).orderByAsc(WearSpace::getId);
+        if (!"all".equals(status)) query.eq(WearSpace::getStatus, StringUtils.isEmpty(status) ? "0" : status);
+        List<WearSpace> rows = spaceMapper.selectList(query);
         List<Map<String, String>> result = new ArrayList<Map<String, String>>();
         for (WearSpace row : rows)
         {
@@ -94,6 +96,21 @@ public class SpaceService
         row.setVersion(row.getVersion() + 1);
         row.setUpdateBy(SecurityUtils.getUsername());
         row.setUpdateTime(new Date());
+        spaceMapper.updateById(row);
+        return toMap(row);
+    }
+
+    public Map<String, String> changeStatus(Long id, String status, Integer version)
+    {
+        siteAccessService.assertCanWritePerson();
+        WearSpace row = spaceMapper.selectById(id);
+        if (row == null) throw new ServiceException("访问资源不存在", HttpStatus.NOT_FOUND);
+        siteAccessService.assertAuthorized(row.getSiteId());
+        if (version == null || !version.equals(row.getVersion())) throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
+        if (!"0".equals(status) && !"1".equals(status)) throw new ServiceException("状态无效", HttpStatus.BAD_REQUEST);
+        row.setStatus(status);
+        row.setVersion(row.getVersion() + 1);
+        row.setUpdateBy(SecurityUtils.getUsername()); row.setUpdateTime(new Date());
         spaceMapper.updateById(row);
         return toMap(row);
     }

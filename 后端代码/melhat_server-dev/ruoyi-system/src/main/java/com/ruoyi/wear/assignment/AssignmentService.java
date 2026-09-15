@@ -3,11 +3,15 @@ package com.ruoyi.wear.assignment;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -21,6 +25,7 @@ import com.ruoyi.wear.assignment.mapper.WearAssetAuditMapper;
 import com.ruoyi.wear.assignment.mapper.WearAssignmentMapper;
 import com.ruoyi.wear.assignment.mapper.WearIdempotencyMapper;
 import com.ruoyi.wear.auth.SiteAccessService;
+import com.ruoyi.wear.common.WearPage;
 import com.ruoyi.wear.device.domain.WearDevice;
 import com.ruoyi.wear.device.domain.WearProductModel;
 import com.ruoyi.wear.device.mapper.WearDeviceMapper;
@@ -50,6 +55,46 @@ public class AssignmentService
     private WearIdempotencyMapper idempotencyMapper;
     @Autowired
     private SiteAccessService siteAccessService;
+
+    public WearPage<AssignmentDto> page(int current, int size, String sn, String personKeyword,
+            String status, String issuedFrom, String issuedTo)
+    {
+        int safeCurrent = current < 1 ? 1 : current;
+        int safeSize = size < 1 ? 10 : Math.min(size, 100);
+        List<Long> siteIds = siteAccessService.listScopeSiteIds();
+        if (siteIds.isEmpty()) return WearPage.of(new ArrayList<AssignmentDto>(), 0, safeCurrent, safeSize);
+        LambdaQueryWrapper<WearAssignment> query = new LambdaQueryWrapper<WearAssignment>()
+                .in(WearAssignment::getSiteId, siteIds).orderByDesc(WearAssignment::getIssuedAt);
+        if (StringUtils.isNotEmpty(status))
+        {
+            if ("active".equals(status)) query.isNull(WearAssignment::getReturnedAt);
+            if ("returned".equals(status)) query.isNotNull(WearAssignment::getReturnedAt);
+        }
+        if (StringUtils.isNotEmpty(sn))
+        {
+            List<WearDevice> devices = deviceMapper.selectList(new LambdaQueryWrapper<WearDevice>()
+                    .in(WearDevice::getSiteId, siteIds).like(WearDevice::getSn, sn.trim()));
+            List<Long> ids = new ArrayList<Long>();
+            for (WearDevice device : devices) ids.add(device.getId());
+            if (ids.isEmpty()) return WearPage.of(new ArrayList<AssignmentDto>(), 0, safeCurrent, safeSize);
+            query.in(WearAssignment::getDeviceId, ids);
+        }
+        if (StringUtils.isNotEmpty(personKeyword))
+        {
+            List<WearPerson> people = personMapper.selectList(new LambdaQueryWrapper<WearPerson>()
+                    .like(WearPerson::getName, personKeyword.trim()).or().like(WearPerson::getPersonCode, personKeyword.trim()));
+            List<Long> ids = new ArrayList<Long>();
+            for (WearPerson person : people) ids.add(person.getId());
+            if (ids.isEmpty()) return WearPage.of(new ArrayList<AssignmentDto>(), 0, safeCurrent, safeSize);
+            query.in(WearAssignment::getPersonId, ids);
+        }
+        Date from = parseDate(issuedFrom, false);
+        Date to = parseDate(issuedTo, true);
+        if (from != null) query.ge(WearAssignment::getIssuedAt, from);
+        if (to != null) query.le(WearAssignment::getIssuedAt, to);
+        IPage<WearAssignment> page = assignmentMapper.selectPage(new Page<WearAssignment>(safeCurrent, safeSize), query);
+        return WearPage.of(mapList(page.getRecords()), page.getTotal(), safeCurrent, safeSize);
+    }
 
     @Transactional(rollbackFor = Exception.class)
     public AssignmentDto issue(IssueRequest request, String headerIdemKey)
@@ -454,6 +499,23 @@ public class AssignmentService
         catch (Exception ex)
         {
             throw new ServiceException(message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private Date parseDate(String raw, boolean endOfDay)
+    {
+        if (StringUtils.isEmpty(raw)) return null;
+        String value = raw.trim();
+        String pattern = value.length() <= 10 ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss";
+        try
+        {
+            Date parsed = new SimpleDateFormat(pattern).parse(value);
+            if (endOfDay && value.length() <= 10) return new Date(parsed.getTime() + 86399999L);
+            return parsed;
+        }
+        catch (ParseException ex)
+        {
+            throw new ServiceException("日期格式无效", HttpStatus.BAD_REQUEST);
         }
     }
 }

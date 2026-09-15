@@ -1,0 +1,171 @@
+- generic [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - link "智能穿戴管理平台首页" [ref=f1e6] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=f1e8]:
+        - text: 智能穿戴管理平台
+        - generic [ref=f1e9]: 智能守护 · 协同调度
+    - menubar [ref=f1e13]:
+      - link "管理概览" [ref=f1e15] [cursor=pointer]:
+        - /url: "#/dashboard"
+        - menuitem "管理概览" [ref=f1e16]
+      - menuitem "基础资料" [ref=f1e21]
+      - menuitem "设备资产" [ref=f1e30]
+      - menuitem "作业配置" [ref=f1e39]
+      - menuitem "安全审计" [ref=f1e48]
+      - menuitem "系统管理" [ref=f1e57]
+  - generic [ref=f1e65]:
+    - generic [ref=f1e67]:
+      - button "收起侧栏" [expanded] [ref=f1e68] [cursor=pointer]
+      - navigation "Breadcrumb" [ref=f1e71]:
+        - link "管理概览" [ref=f1e73]
+      - generic [ref=f1e74]:
+        - textbox "选择厂站" [ref=f1e79] [cursor=pointer]
+        - button "用户头像 admin" [ref=f1e86] [cursor=pointer]:
+          - img "用户头像" [ref=f1e87]
+          - generic [ref=f1e88]: admin
+    - generic [ref=f1e94]:
+      - region [ref=f1e95]:
+        - generic [ref=f1e96]:
+          - paragraph [ref=f1e97]: CURRENT SITE / 当前管理范围
+          - heading "全平台管理" [level=1] [ref=f1e98]
+          - paragraph [ref=f1e99]: 维护人员、资产与作业规则；现场处置请使用安卓端。
+        - generic [ref=f1e100]:
+          - generic [ref=f1e101]: 数据更新
+          - strong [ref=f1e102]: 21:07
+      - region "管理指标" [ref=f1e103]:
+        - button "在册人员 10 启用 9 人" [ref=f1e104] [cursor=pointer]:
+          - generic [ref=f1e105]: 在册人员
+          - strong [ref=f1e106]: "10"
+          - generic [ref=f1e107]: 启用 9 人
+        - button "设备资产 11 已领用 2 台" [ref=f1e108] [cursor=pointer]:
+          - generic [ref=f1e109]: 设备资产
+          - strong [ref=f1e110]: "11"
+          - generic [ref=f1e111]: 已领用 2 台
+        - button "作业任务 2 草稿 1 项" [ref=f1e112] [cursor=pointer]:
+          - generic [ref=f1e113]: 作业任务
+          - strong [ref=f1e114]: "2"
+          - generic [ref=f1e115]: 草稿 1 项
+        - button "围栏规则 3 启用 3 条" [ref=f1e116] [cursor=pointer]:
+          - generic [ref=f1e117]: 围栏规则
+          - strong [ref=f1e118]: "3"
+          - generic [ref=f1e119]: 启用 3 条
+        - button "未关闭事件 10 7 日新增 13 条" [ref=f1e120] [cursor=pointer]:
+          - generic [ref=f1e121]: 未关闭事件
+          - strong [ref=f1e122]: "10"
+          - generic [ref=f1e123]: 7 日新增 13 条
+      - generic [ref=f1e124]:
+        - region [ref=f1e125]:
+          - generic [ref=f1e126]:
+            - generic [ref=f1e127]:
+              - paragraph [ref=f1e128]: ASSET HEALTH
+              - heading "设备资产分布" [level=2] [ref=f1e129]
+            - button "查看台账" [ref=f1e130] [cursor=pointer]
+          - generic [ref=f1e132]:
+            - generic [ref=f1e133]: 在库
+            - strong [ref=f1e136]: "9"
+          - generic [ref=f1e137]:
+            - generic [ref=f1e138]: 已领用
+            - strong [ref=f1e141]: "2"
+          - generic [ref=f1e142]:
+            - generic [ref=f1e143]: 维修
+            - strong [ref=f1e145]: "0"
+          - generic [ref=f1e146]:
+            - generic [ref=f1e147]: 停用/报废
+            - strong [ref=f1e149]: "0"
+        - region [ref=f1e150]:
+          - generic [ref=f1e151]:
+            - generic [ref=f1e152]:
+              - paragraph [ref=f1e153]: WORK CONFIG
+              - heading "作业配置状态" [level=2] [ref=f1e154]
+            - button "管理任务" [ref=f1e155] [cursor=pointer]
+          - generic [ref=f1e157]:
+            - generic [ref=f1e158]:
+              - generic [ref=f1e159]: 草稿
+              - strong [ref=f1e160]: "1"
+            - generic [ref=f1e161]:
+              - generic [ref=f1e162]: 待开始
+              - strong [ref=f1e163]: "0"
+            - generic [ref=f1e164]:
+              - generic [ref=f1e165]: 进行中
+              - strong [ref=f1e166]: "1"
+            - generic [ref=f1e167]:
+              - generic [ref=f1e168]: 已暂停
+              - strong [ref=f1e169]: "0"
+          - generic [ref=f1e170]: 已启用围栏 3 条
+        - region [ref=f1e172]:
+          - generic [ref=f1e173]:
+            - generic [ref=f1e174]:
+              - paragraph [ref=f1e175]: SAFETY AUDIT / 7 DAYS
+              - heading "近 7 日事件记录" [level=2] [ref=f1e176]
+            - button "进入审计" [ref=f1e177] [cursor=pointer]
+          - img "近 7 日共记录 13 条事件" [ref=f1e179]:
+            - generic [ref=f1e180]:
+              - generic [ref=f1e181]: "4"
+              - generic [ref=f1e183]: 09-08
+            - generic [ref=f1e184]:
+              - generic [ref=f1e185]: "9"
+              - generic [ref=f1e187]: 09-09
+            - generic [ref=f1e188]:
+              - generic [ref=f1e189]: "0"
+              - generic [ref=f1e191]: 09-10
+            - generic [ref=f1e192]:
+              - generic [ref=f1e193]: "0"
+              - generic [ref=f1e195]: 09-11
+            - generic [ref=f1e196]:
+              - generic [ref=f1e197]: "0"
+              - generic [ref=f1e199]: 09-12
+            - generic [ref=f1e200]:
+              - generic [ref=f1e201]: "0"
+              - generic [ref=f1e203]: 09-13
+            - generic [ref=f1e204]:
+              - generic [ref=f1e205]: "0"
+              - generic [ref=f1e207]: 09-14
+        - region [ref=f1e208]:
+          - generic [ref=f1e209]:
+            - generic [ref=f1e210]:
+              - paragraph [ref=f1e211]: MAINTENANCE QUEUE
+              - heading "待维护事项" [level=2] [ref=f1e212]
+            - generic [ref=f1e213]: 共 11 项
+          - generic [ref=f1e214]:
+            - button "未关闭事件 10 核对处置时间线与关联对象" [ref=f1e215] [cursor=pointer]:
+              - generic [ref=f1e216]: 未关闭事件
+              - strong [ref=f1e217]: "10"
+              - generic [ref=f1e218]: 核对处置时间线与关联对象
+              - generic [aria-hidden] [ref=f1e219]: 查看 →
+            - button "维修中设备 0 检查维修和恢复入库状态" [ref=f1e220] [cursor=pointer]:
+              - generic [ref=f1e221]: 维修中设备
+              - strong [ref=f1e222]: "0"
+              - generic [ref=f1e223]: 检查维修和恢复入库状态
+              - generic [aria-hidden] [ref=f1e224]: 查看 →
+            - button "草稿任务 1 补齐成员、时段和关联区域" [ref=f1e225] [cursor=pointer]:
+              - generic [ref=f1e226]: 草稿任务
+              - strong [ref=f1e227]: "1"
+              - generic [ref=f1e228]: 补齐成员、时段和关联区域
+              - generic [aria-hidden] [ref=f1e229]: 查看 →
+            - button "未启用围栏 0 检查范围和生效规则" [ref=f1e230] [cursor=pointer]:
+              - generic [ref=f1e231]: 未启用围栏
+              - strong [ref=f1e232]: "0"
+              - generic [ref=f1e233]: 检查范围和生效规则
+              - generic [aria-hidden] [ref=f1e234]: 查看 →
+      - region [ref=f1e235]:
+        - generic [ref=f1e236]:
+          - paragraph [ref=f1e237]: QUICK ENTRY
+          - heading "常用维护入口" [level=2] [ref=f1e238]
+        - navigation "常用维护入口" [ref=f1e239]:
+          - button "人员台账 维护人员有效期与归属" [ref=f1e240] [cursor=pointer]:
+            - generic [ref=f1e241]: 人员台账
+            - generic [ref=f1e242]: 维护人员有效期与归属
+            - generic [aria-hidden] [ref=f1e243]: →
+          - button "设备台账 录入型号和资产编号" [ref=f1e244] [cursor=pointer]:
+            - generic [ref=f1e245]: 设备台账
+            - generic [ref=f1e246]: 录入型号和资产编号
+            - generic [aria-hidden] [ref=f1e247]: →
+          - button "围栏配置 绘制区域与生效规则" [ref=f1e248] [cursor=pointer]:
+            - generic [ref=f1e249]: 围栏配置
+            - generic [ref=f1e250]: 绘制区域与生效规则
+            - generic [aria-hidden] [ref=f1e251]: →
+          - button "作业任务 安排人员和作业时段" [ref=f1e252] [cursor=pointer]:
+            - generic [ref=f1e253]: 作业任务
+            - generic [ref=f1e254]: 安排人员和作业时段
+            - generic [aria-hidden] [ref=f1e255]: →

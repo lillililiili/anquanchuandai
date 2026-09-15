@@ -196,7 +196,9 @@ public class SiteAccessService
 
     public boolean canEditTask()
     {
-        return canClaimEvent();
+        LoginUser user = requireLogin();
+        boolean ruoyiAdmin = user.getUser() != null && user.getUser().isAdmin();
+        return WearRoleKeys.canEditTask(roleKeys(user), ruoyiAdmin);
     }
 
     public void assertCanEditTask()
@@ -340,6 +342,7 @@ public class SiteAccessService
     public Set<String> permissions()
     {
         Set<String> perms = new LinkedHashSet<String>();
+        perms.add(WearRoleKeys.PERM_OVERVIEW_LIST);
         perms.add(WearRoleKeys.PERM_SITE_LIST);
         perms.add(WearRoleKeys.PERM_SITE_SELECT);
         perms.add(WearRoleKeys.PERM_HAT_LIST);
@@ -363,12 +366,22 @@ public class SiteAccessService
         perms.add(WearRoleKeys.PERM_LOCATION_QUERY);
         perms.add(WearRoleKeys.PERM_FENCE_LIST);
         perms.add(WearRoleKeys.PERM_FENCE_QUERY);
+        perms.add(WearRoleKeys.PERM_EVENT_EXPORT);
+        perms.add(WearRoleKeys.PERM_FILE_LIST);
+        perms.add(WearRoleKeys.PERM_FILE_QUERY);
+        perms.add(WearRoleKeys.PERM_FILE_EXPORT);
+        perms.add(WearRoleKeys.PERM_ASSIGNMENT_EXPORT);
+        perms.add(WearRoleKeys.PERM_TASK_EXPORT);
+        perms.add(WearRoleKeys.PERM_FENCE_EXPORT);
         if (canClaimEvent())
         {
             perms.add(WearRoleKeys.PERM_EVENT_CLAIM);
             perms.add(WearRoleKeys.PERM_CALL_START);
-            perms.add(WearRoleKeys.PERM_TASK_EDIT);
             perms.add(WearRoleKeys.PERM_DUTY_HANDOVER);
+        }
+        if (canEditTask())
+        {
+            perms.add(WearRoleKeys.PERM_TASK_EDIT);
         }
         if (canReviewEvent())
         {
@@ -384,6 +397,8 @@ public class SiteAccessService
             perms.add(WearRoleKeys.PERM_SPACE_EDIT);
             perms.add(WearRoleKeys.PERM_TEAM_EDIT);
             perms.add(WearRoleKeys.PERM_CONTRACTOR_EDIT);
+            perms.add(WearRoleKeys.PERM_PERSON_IMPORT);
+            perms.add(WearRoleKeys.PERM_PERSON_EXPORT);
         }
         if (canWriteDevice())
         {
@@ -391,6 +406,10 @@ public class SiteAccessService
             perms.add(WearRoleKeys.PERM_MODEL_EDIT);
             perms.add(WearRoleKeys.PERM_ASSIGNMENT_ISSUE);
             perms.add(WearRoleKeys.PERM_FENCE_EDIT);
+            perms.add(WearRoleKeys.PERM_DEVICE_IMPORT);
+            perms.add(WearRoleKeys.PERM_DEVICE_EXPORT);
+            perms.add(WearRoleKeys.PERM_MODEL_IMPORT);
+            perms.add(WearRoleKeys.PERM_MODEL_EXPORT);
         }
         if (canSendTts())
         {

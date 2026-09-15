@@ -30,9 +30,9 @@ const tagsViewStore = useTagsViewStore();
   position: relative;
   overflow-y: auto;
   background-color: var(--bg-base);
-  // The shell uses a single 60px fixed header.
-  height: calc(100vh - 60px);
-  margin-top: 60px;
+  // The shell uses a single compact fixed header.
+  height: calc(100vh - 56px);
+  margin-top: 56px;
   scrollbar-gutter: stable;
 }
 </style>

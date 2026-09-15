@@ -36,9 +36,15 @@ public class WearEventController
             @RequestParam(required = false) String severity,
             @RequestParam(required = false) String updatedAfter,
             @RequestParam(required = false) String claimantUserId,
-            @RequestParam(required = false) String escalated)
+            @RequestParam(required = false) String escalated,
+            @RequestParam(required = false) String personKeyword,
+            @RequestParam(required = false) String sn,
+            @RequestParam(required = false) String taskId,
+            @RequestParam(required = false) String occurredFrom,
+            @RequestParam(required = false) String occurredTo)
     {
-        return R.ok(queryService.page(current, size, type, status, personId, severity, updatedAfter, claimantUserId, escalated));
+        return R.ok(queryService.page(current, size, type, status, personId, severity, updatedAfter, claimantUserId,
+                escalated, personKeyword, sn, taskId, occurredFrom, occurredTo));
     }
 
     @GetMapping("/inbox/count")

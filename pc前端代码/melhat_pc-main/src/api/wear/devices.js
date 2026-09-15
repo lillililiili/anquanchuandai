@@ -28,6 +28,22 @@ export function listProductModels(params) {
   return request({ url: '/api/v1/product-models', method: 'get', params })
 }
 
+export function getProductModel(id) {
+  return request({ url: '/api/v1/product-models/' + id, method: 'get' })
+}
+
+export function createProductModel(data) {
+  return request({ url: '/api/v1/product-models', method: 'post', data })
+}
+
+export function updateProductModel(id, data) {
+  return request({ url: '/api/v1/product-models/' + id, method: 'put', data })
+}
+
+export function changeProductModelStatus(id, data) {
+  return request({ url: '/api/v1/product-models/' + id + '/status', method: 'put', data })
+}
+
 export function listDeviceSamples(id) {
   return request({ url: '/api/v1/devices/' + id + '/samples', method: 'get' })
 }

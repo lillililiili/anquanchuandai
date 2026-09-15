@@ -1,8 +1,8 @@
 import { login, logout, getInfo } from '@/api/login'
 import { getMe, selectCurrentSite } from '@/api/wear/identity'
 import { getToken, setToken, removeToken } from '@/utils/auth'
+import { hasAccessPermission, mergeAccessValues } from '@/store/access'
 import defAva from '@/assets/images/profile.jpg'
-import { initWebSocketServer, closeWebSocket, isWsConnected } from '@/server'
 
 const useUserStore = defineStore('user', {
   state: () => ({
@@ -12,40 +12,23 @@ const useUserStore = defineStore('user', {
     roles: [],
     permissions: [],
     userId: '',
-    wsConnected: false,
     sites: [],
     currentSiteId: '',
     isPlatformAdmin: false,
     requestEpoch: 0
   }),
   getters: {
-    canWriteHat: (state) => (state.permissions || []).indexOf('wear:hat:edit') !== -1,
-    canWritePerson: (state) => (state.permissions || []).indexOf('wear:person:edit') !== -1,
-    canWriteDevice: (state) => (state.permissions || []).indexOf('wear:device:edit') !== -1,
-    canClaimEvent: (state) => (state.permissions || []).indexOf('wear:event:claim') !== -1,
-    canReviewEvent: (state) => (state.permissions || []).indexOf('wear:event:review') !== -1,
-    canStartCall: (state) => (state.permissions || []).indexOf('wear:call:start') !== -1,
-    canSendTts: (state) => (state.permissions || []).indexOf('wear:command:tts') !== -1,
-    canEditTask: (state) => (state.permissions || []).indexOf('wear:task:edit') !== -1,
-    canEditFence: (state) => (state.permissions || []).indexOf('wear:fence:edit') !== -1
+    canWriteHat: (state) => hasAccessPermission(state.permissions, 'wear:hat:edit'),
+    canWritePerson: (state) => hasAccessPermission(state.permissions, 'wear:person:edit'),
+    canWriteDevice: (state) => hasAccessPermission(state.permissions, 'wear:device:edit'),
+    canClaimEvent: (state) => hasAccessPermission(state.permissions, 'wear:event:claim'),
+    canReviewEvent: (state) => hasAccessPermission(state.permissions, 'wear:event:review'),
+    canStartCall: (state) => hasAccessPermission(state.permissions, 'wear:call:start'),
+    canSendTts: (state) => hasAccessPermission(state.permissions, 'wear:command:tts'),
+    canEditTask: (state) => hasAccessPermission(state.permissions, 'wear:task:edit'),
+    canEditFence: (state) => hasAccessPermission(state.permissions, 'wear:fence:edit')
   },
   actions: {
-    // 初始化 WebSocket
-    connectWsServer() {
-      if (this.userId) {
-        initWebSocketServer(this.userId, 1)
-        this.startConnectionCheck()
-      }
-    },
-    // 定时检查连接状态
-    startConnectionCheck() {
-      const checkInterval = setInterval(() => {
-        this.wsConnected = isWsConnected()
-      }, 3000)
-      window.addEventListener('beforeunload', () => {
-        clearInterval(checkInterval)
-      })
-    },
     // 登录
     login(userInfo) {
       const username = userInfo.username.trim()
@@ -98,7 +81,7 @@ const useUserStore = defineStore('user', {
       return getMe().then(res => {
         const me = res.data || {}
         this.sites = me.authorizedSites || []
-        this.permissions = me.permissions && me.permissions.length ? me.permissions : this.permissions
+        this.permissions = mergeAccessValues(this.permissions, me.permissions)
         this.isPlatformAdmin = !!me.admin
         if (me.roles && me.roles.length) {
           this.roles = Array.from(me.roles)
@@ -128,23 +111,17 @@ const useUserStore = defineStore('user', {
         try {
           localStorage.setItem('wear.currentSiteId', String(siteId))
         } catch (e) {}
-        closeWebSocket()
-        if (this.userId) {
-          this.connectWsServer()
-        }
       })
     },
     // 退出系统
     logOut() {
       return new Promise((resolve) => {
-        closeWebSocket()
         logout(this.token)
           .catch(() => {})
           .finally(() => {
             this.token = ''
             this.roles = []
             this.permissions = []
-            this.wsConnected = false
             this.sites = []
             this.currentSiteId = ''
             this.isPlatformAdmin = false

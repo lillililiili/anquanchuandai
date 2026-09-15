@@ -1,0 +1,102 @@
+- generic [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - link "智能穿戴管理平台首页" [ref=f1e6] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=f1e8]:
+        - text: 智能穿戴管理平台
+        - generic [ref=f1e9]: 智能守护 · 协同调度
+    - menubar [ref=f1e13]:
+      - link "管理概览" [ref=f1e15] [cursor=pointer]:
+        - /url: "#/dashboard"
+        - menuitem "管理概览" [ref=f1e16]
+      - menuitem "基础资料" [ref=f1e21]
+      - menuitem "设备资产" [ref=f1e30]
+      - menuitem "作业配置" [ref=f1e39]
+      - menuitem "安全审计" [ref=f1e48]
+      - menuitem "系统管理" [expanded] [ref=f1e57]:
+        - menu [ref=f1e256]:
+          - link "用户管理" [ref=f1e258] [cursor=pointer]:
+            - /url: "#/system/user"
+            - menuitem "用户管理" [ref=f1e259]
+          - link "角色管理" [ref=f1e264] [cursor=pointer]:
+            - /url: "#/system/role"
+            - menuitem "角色管理" [ref=f1e265]
+          - link "菜单管理" [ref=f1e270] [cursor=pointer]:
+            - /url: "#/system/menu"
+            - menuitem "菜单管理" [ref=f1e271]
+          - link "部门管理" [ref=f1e276] [cursor=pointer]:
+            - /url: "#/system/dept"
+            - menuitem "部门管理" [ref=f1e277]
+          - link "岗位管理" [ref=f1e282] [cursor=pointer]:
+            - /url: "#/system/post"
+            - menuitem "岗位管理" [ref=f1e283]
+          - link "字典管理" [ref=f1e288] [cursor=pointer]:
+            - /url: "#/system/dict"
+            - menuitem "字典管理" [ref=f1e289]
+          - link "参数设置" [ref=f1e294] [cursor=pointer]:
+            - /url: "#/system/config"
+            - menuitem "参数设置" [ref=f1e295]
+          - link "通知公告" [ref=f1e300] [cursor=pointer]:
+            - /url: "#/system/notice"
+            - menuitem "通知公告" [ref=f1e301]
+  - generic [ref=f1e65]:
+    - generic [ref=f1e67]:
+      - button "收起侧栏" [expanded] [ref=f1e68] [cursor=pointer]
+      - navigation "Breadcrumb" [ref=f1e71]:
+        - generic [ref=f1e305]:
+          - link "系统管理" [ref=f1e306]
+          - text: /
+        - link "角色管理" [ref=f1e791]
+      - generic [ref=f1e74]:
+        - textbox "选择厂站" [ref=f1e79] [cursor=pointer]
+        - button "用户头像 admin" [ref=f1e86] [cursor=pointer]:
+          - img "用户头像" [ref=f1e87]
+          - generic [ref=f1e88]: admin
+    - generic [ref=f1e792]:
+      - generic [ref=f1e795]:
+        - heading "角色管理" [level=1] [ref=f1e796]
+        - paragraph [ref=f1e797]: 维护组织、账号与权限，保障平台有序运行。
+      - generic [ref=f1e798]:
+        - generic [ref=f1e799]:
+          - generic [ref=f1e800]: 角色名称
+          - textbox "角色名称" [ref=f1e804]:
+            - /placeholder: 请输入角色名称
+        - generic [ref=f1e805]:
+          - generic [ref=f1e806]: 权限字符
+          - textbox "权限字符" [ref=f1e810]:
+            - /placeholder: 请输入权限字符
+        - generic [ref=f1e811]:
+          - generic [ref=f1e812]: 状态
+          - textbox "状态" [ref=f1e818] [cursor=pointer]:
+            - /placeholder: 角色状态
+        - group "创建时间" [ref=f1e823]:
+          - generic [ref=f1e826]:
+            - textbox "开始日期" [ref=f1e830]
+            - generic [ref=f1e831]: "-"
+            - textbox "结束日期" [ref=f1e832]
+        - generic [ref=f1e834]:
+          - button "搜索" [ref=f1e835] [cursor=pointer]
+          - button "重置" [ref=f1e840] [cursor=pointer]
+      - generic [ref=f1e845]:
+        - button "新增" [ref=f1e847] [cursor=pointer]
+        - button "修改" [disabled] [ref=f1e853]
+        - button "删除" [disabled] [ref=f1e860]
+        - button "导出" [ref=f1e866] [cursor=pointer]
+      - generic [ref=f1e872]:
+        - table [ref=f1e874]:
+          - rowgroup [ref=f1e884]:
+            - row "角色编号 角色名称 权限字符 显示顺序 状态 创建时间 操作" [ref=f1e885]:
+              - columnheader [ref=f1e886]:
+                - generic [ref=f1e889] [cursor=pointer]:
+                  - checkbox [disabled]
+              - columnheader "角色编号" [ref=f1e891]
+              - columnheader "角色名称" [ref=f1e893]
+              - columnheader "权限字符" [ref=f1e895]
+              - columnheader "显示顺序" [ref=f1e897]
+              - columnheader "状态" [ref=f1e899]
+              - columnheader "创建时间" [ref=f1e901]
+              - columnheader "操作" [ref=f1e903]
+        - generic [ref=f1e908]:
+          - table:
+            - rowgroup
+          - paragraph [ref=f1e912]: 暂无记录

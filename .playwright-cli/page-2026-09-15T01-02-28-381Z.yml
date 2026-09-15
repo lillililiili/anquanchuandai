@@ -1,0 +1,29 @@
+- main [ref=e3]:
+  - region "工业安全监控场景" [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e8]:
+        - text: 智能穿戴管理平台
+        - generic [ref=e9]: 智能守护 · 协同调度
+      - generic [ref=e10]:
+        - paragraph [ref=e11]: 智能感知 · 安全协同
+        - heading "每一份专注 都有安全守护" [level=1] [ref=e12]: 每一份专注都有安全守护
+        - paragraph [ref=e13]: 连接设备、人员与现场，让每一次作业清晰可见，让每一次响应及时抵达。
+      - generic [ref=e14]:
+        - generic [ref=e15]: 设备感知
+        - generic [ref=e18]: 安全预警
+        - generic [ref=e21]: 协同调度
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - paragraph [ref=e27]: 安全运营工作台
+      - heading "欢迎回来" [level=2] [ref=e28]
+      - paragraph [ref=e29]: 登录您的账号，开始安全有序的一天。
+    - generic [ref=e31]:
+      - generic [ref=e32]: 账号
+      - textbox "账号" [ref=e38]:
+        - /placeholder: 请输入账号
+    - generic [ref=e40]:
+      - generic [ref=e41]: 密码
+      - textbox "密码" [ref=e47]:
+        - /placeholder: 请输入密码
+    - button "登录系统" [ref=e50] [cursor=pointer]
+    - paragraph [ref=e52]: 安全运营平台 · 请使用授权账号访问

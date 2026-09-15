@@ -9,8 +9,8 @@
 defineProps({ collapse: { type: Boolean, required: true } })
 </script>
 <style scoped>
-.sidebar-logo-container { display: flex; align-items: center; justify-content: center; height: 60px; border-bottom: 1px solid var(--sidebar-border); background: var(--sidebar-bg); }
-.sidebar-logo-link { display: flex; align-items: center; justify-content: center; height: 60px; width: 100%; padding: 0 12px; }
+.sidebar-logo-container { display: flex; align-items: center; justify-content: center; height: 56px; border-bottom: 1px solid var(--sidebar-border); background: var(--sidebar-bg); }
+.sidebar-logo-link { display: flex; align-items: center; justify-content: center; height: 56px; width: 100%; padding: 0 12px; }
 .sidebar-logo-link :deep(.brand-logo) { gap: 8px; }
 .sidebar-logo-link :deep(.brand-logo__name) { font-size: 12px; }
 .sidebar-logo-link :deep(.brand-logo img) { width: 32px; height: 36px; }

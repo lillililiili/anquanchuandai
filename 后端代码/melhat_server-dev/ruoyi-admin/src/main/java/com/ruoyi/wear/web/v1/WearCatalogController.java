@@ -25,9 +25,9 @@ public class WearCatalogController
     private SpaceService spaceService;
 
     @GetMapping("/teams")
-    public R<List<Map<String, String>>> teams()
+    public R<List<Map<String, String>>> teams(@RequestParam(required = false) String status)
     {
-        return R.ok(orgCatalogService.listTeams());
+        return R.ok(orgCatalogService.listTeams(status));
     }
 
     @PostMapping("/teams")
@@ -43,9 +43,9 @@ public class WearCatalogController
     }
 
     @GetMapping("/contractors")
-    public R<List<Map<String, String>>> contractors()
+    public R<List<Map<String, String>>> contractors(@RequestParam(required = false) String status)
     {
-        return R.ok(orgCatalogService.listContractors());
+        return R.ok(orgCatalogService.listContractors(status));
     }
 
     @PostMapping("/contractors")
@@ -61,9 +61,10 @@ public class WearCatalogController
     }
 
     @GetMapping("/spaces")
-    public R<List<Map<String, String>>> spaces(@RequestParam(required = false) String siteId)
+    public R<List<Map<String, String>>> spaces(@RequestParam(required = false) String siteId,
+            @RequestParam(required = false) String status)
     {
-        return R.ok(spaceService.list(siteId));
+        return R.ok(spaceService.list(siteId, status));
     }
 
     @PostMapping("/spaces")
@@ -78,5 +79,13 @@ public class WearCatalogController
         String name = body.get("name") == null ? null : String.valueOf(body.get("name"));
         Integer version = body.get("version") == null ? null : Integer.valueOf(String.valueOf(body.get("version")));
         return R.ok(spaceService.update(id, name, version));
+    }
+
+    @PutMapping("/spaces/{id}/status")
+    public R<Map<String, String>> changeSpaceStatus(@PathVariable Long id, @RequestBody Map<String, Object> body)
+    {
+        String status = body.get("status") == null ? null : String.valueOf(body.get("status"));
+        Integer version = body.get("version") == null ? null : Integer.valueOf(String.valueOf(body.get("version")));
+        return R.ok(spaceService.changeStatus(id, status, version));
     }
 }

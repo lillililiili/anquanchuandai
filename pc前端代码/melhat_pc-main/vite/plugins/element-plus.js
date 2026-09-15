@@ -1,6 +1,5 @@
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import ElementPlus from 'unplugin-element-plus/vite'
 
 export default function createElementPlus() {
   return [
@@ -9,14 +8,14 @@ export default function createElementPlus() {
       dirs: [], // 明确设置为空数组，避免 undefined
       resolvers: [
         ElementPlusResolver({
-          importStyle: 'sass' // 使用 sass 样式，更好的定制性
+          // The complete customized theme is already loaded once from
+          // src/assets/styles/element/index.scss. Per-component style imports
+          // duplicated that CSS and made Vite re-optimize dependencies every
+          // time a lazy route introduced a new Element Plus component.
+          importStyle: false
         })
       ],
       dts: false // 不生成类型声明文件
-    }),
-    // 自动导入 Element Plus 样式
-    ElementPlus({
-      useSource: true
     })
   ]
 }

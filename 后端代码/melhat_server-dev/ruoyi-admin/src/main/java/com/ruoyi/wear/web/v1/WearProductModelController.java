@@ -22,9 +22,10 @@ public class WearProductModelController
     private ProductModelService productModelService;
 
     @GetMapping
-    public R<List<ProductModelDto>> list(@RequestParam(required = false) String typeCode)
+    public R<List<ProductModelDto>> list(@RequestParam(required = false) String typeCode,
+            @RequestParam(required = false) String status)
     {
-        return R.ok(productModelService.list(typeCode));
+        return R.ok(productModelService.list(typeCode, status));
     }
 
     @GetMapping("/{id}")
@@ -43,5 +44,11 @@ public class WearProductModelController
     public R<ProductModelDto> update(@PathVariable Long id, @RequestBody ProductModelDto request)
     {
         return R.ok(productModelService.update(id, request));
+    }
+
+    @PutMapping("/{id}/status")
+    public R<ProductModelDto> changeStatus(@PathVariable Long id, @RequestBody ProductModelDto request)
+    {
+        return R.ok(productModelService.changeStatus(id, request.getStatus(), request.getVersion()));
     }
 }

@@ -1,5 +1,6 @@
 .DS_Store
 node_modules/
+.vite-cache/
 dist/
 npm-debug.log*
 **/*.log
@@ -9,6 +10,7 @@ tests/e2e/reports
 selenium-debug.log
 coverage/
 src/__tests__/
+output/
 
 # Editor directories and files
 .idea

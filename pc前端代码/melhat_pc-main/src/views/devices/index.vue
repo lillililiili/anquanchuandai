@@ -33,6 +33,8 @@
     </el-form>
     <el-row class="mb8">
       <el-button v-if="canWrite" type="primary" icon="Plus" @click="openForm()">登记设备</el-button>
+      <el-button v-if="canWrite" icon="Upload" @click="importOpen = true">批量导入</el-button>
+      <el-button icon="Download" @click="downloadExport('devices', { ...queryParams }, '设备台账.xlsx')">导出</el-button>
     </el-row>
     <el-table v-loading="loading" class="custom-table" :data="list">
       <template #empty><BrandedEmpty compact description="暂无设备" /></template>
@@ -114,16 +116,6 @@
       <p v-if="!samples.length">无遥测样本。</p>
       <p v-if="ingestRows.length">接入摘要：</p>
       <p v-for="item in ingestRows" :key="item.id">{{ item.receivedAt }} {{ item.path }} {{ item.processStatus }}</p>
-      <el-button v-if="canStartCall && supportsCapability(detail, 'intercom')" type="warning" @click="callThisDevice">联系</el-button>
-      <el-button v-if="canSendTts && supportsCapability(detail, 'tts')" @click="ttsThisDevice">播报</el-button>
-      <p v-if="!supportsCapability(detail, 'intercom')">本型号无对讲，不提供通话入口。</p>
-      <p v-if="callSession.id">通话：{{ callStatusLabel(callSession.status) }}
-        <el-tag v-if="callSession.demo" type="warning" size="small">演示通道</el-tag>
-      </p>
-      <div v-if="callSession.id && canStartCall">
-        <el-button v-if="callSession.status === 'offered'" type="primary" @click="doJoinCall">确认加入</el-button>
-        <el-button v-if="callSession.status === 'offered' || callSession.status === 'connected'" @click="doHangupCall">结束</el-button>
-      </div>
     </el-dialog>
 
     <el-dialog v-model="issueOpen" title="领用" width="460px">
@@ -150,21 +142,21 @@
         <el-button type="primary" @click="submitReturn">确认归还</el-button>
       </template>
     </el-dialog>
+    <LedgerImportDialog v-model="importOpen" resource="devices" template-name="设备导入模板.xlsx" @success="getList" />
   </div>
 </template>
 
 <script setup>
 import { listDevices, getDevice, createDevice, updateDevice, assignDeviceSite, listProductModels, supportsCapability, connectionLabel, listDeviceSamples, listDeviceIngest } from '@/api/wear/devices'
-import { startCall, joinCall, endCall, sendTts, callStatusLabel } from '@/api/wear/calls'
 import { issueAssignment, returnAssignment, listDeviceAssignments, newIdempotencyKey } from '@/api/wear/assignments'
 import { peopleOptions as fetchPeopleOptions } from '@/api/wear/people'
 import useUserStore from '@/store/modules/user'
+import { downloadExport } from '@/api/wear/admin'
+import LedgerImportDialog from '@/components/LedgerImportDialog/index.vue'
 
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
 const canWrite = computed(() => userStore.canWriteDevice)
-const canStartCall = computed(() => userStore.canStartCall)
-const canSendTts = computed(() => userStore.canSendTts)
 const loading = ref(false)
 const list = ref([])
 const total = ref(0)
@@ -184,7 +176,7 @@ const history = ref([])
 const samples = ref([])
 const ingestRows = ref([])
 const peopleOptions = ref([])
-const callSession = ref({})
+const importOpen = ref(false)
 
 function unwrap(res) {
   return res && res.data !== undefined ? res.data : res
@@ -243,37 +235,9 @@ function openForm(row) {
   formOpen.value = true
 }
 
-function callThisDevice() {
-  startCall({ deviceId: detail.value.id, kind: 'single', video: supportsCapability(detail.value, 'video') }).then(res => {
-    callSession.value = unwrap(res) || {}
-    proxy.$modal.msgSuccess(callSession.value.demo ? '演示通道已就绪，确认加入后才算接通' : '待加入')
-  })
-}
-
-function doJoinCall() {
-  joinCall(callSession.value.id, { agoraUid: callSession.value.credentials && callSession.value.credentials.agoraUid }).then(res => {
-    callSession.value = unwrap(res) || callSession.value
-    proxy.$modal.msgSuccess('已接通')
-  })
-}
-
-function doHangupCall() {
-  endCall(callSession.value.id).then(res => {
-    callSession.value = unwrap(res) || {}
-    proxy.$modal.msgSuccess('已结束')
-  })
-}
-
-function ttsThisDevice() {
-  sendTts({ deviceIds: [detail.value.id], text: '请注意安全' }).then(() => {
-    proxy.$modal.msgSuccess('平台已受理（未确认现场听到）')
-  })
-}
-
 function openDetail(row) {
   getDevice(row.id).then(res => {
     detail.value = unwrap(res) || row
-    callSession.value = {}
     detailOpen.value = true
   })
   listDeviceAssignments(row.id).then(res => { history.value = unwrap(res) || [] }).catch(() => { history.value = [] })

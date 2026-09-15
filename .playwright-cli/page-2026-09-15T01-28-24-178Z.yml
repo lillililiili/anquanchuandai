@@ -1,0 +1,69 @@
+- generic [ref=e53]:
+  - generic [ref=e54]:
+    - link "智能穿戴管理平台首页" [ref=e56] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=e58]:
+        - text: 智能穿戴管理平台
+        - generic [ref=e59]: 智能守护 · 协同调度
+    - menubar [ref=e63]:
+      - link "管理概览" [ref=e65] [cursor=pointer]:
+        - /url: "#/dashboard"
+        - menuitem "管理概览" [ref=e66]
+      - menuitem "基础资料" [expanded] [ref=e71]:
+        - menu [ref=e323]:
+          - link "人员台账" [ref=e306] [cursor=pointer]:
+            - /url: "#/master-data/people"
+            - menuitem "人员台账" [ref=e307]
+          - link "组织资料" [ref=e312] [cursor=pointer]:
+            - /url: "#/master-data/organization"
+            - menuitem "组织资料" [ref=e313]
+          - link "区域资料" [ref=e318] [cursor=pointer]:
+            - /url: "#/master-data/spaces"
+            - menuitem "区域资料" [ref=e319]
+      - menuitem "设备资产" [ref=e80]
+      - menuitem "作业配置" [ref=e89]
+      - menuitem "安全审计" [ref=e98]
+      - menuitem "系统管理" [ref=e107]
+  - generic [ref=e115]:
+    - generic [ref=e117]:
+      - button "收起侧栏" [expanded] [ref=e118] [cursor=pointer]
+      - navigation "Breadcrumb" [ref=e121]:
+        - generic [ref=e324]:
+          - link "基础资料" [ref=e325]
+          - text: /
+        - link "区域资料" [ref=e327]
+      - generic [ref=e124]:
+        - textbox "选择厂站" [ref=e129] [cursor=pointer]
+        - button [ref=e136] [cursor=pointer]:
+          - img "用户头像" [ref=e137]
+    - generic [ref=e328]:
+      - generic [ref=e331]:
+        - heading "区域资料" [level=1] [ref=e332]
+        - paragraph [ref=e333]: 只维护厂站内区域/设施/楼层名称，不表示实时定位。
+      - button "新增区域" [ref=e335] [cursor=pointer]
+      - generic [ref=e341]:
+        - table [ref=e343]:
+          - rowgroup [ref=e349]:
+            - row [ref=e350]:
+              - columnheader "名称" [ref=e351]
+              - columnheader "类型" [ref=e353]
+              - columnheader "状态" [ref=e355]
+              - columnheader "操作" [ref=e357]
+        - table [ref=e363]:
+          - rowgroup [ref=e369]:
+            - row [ref=e370]:
+              - cell "东区作业区" [ref=e371]
+              - cell "区域" [ref=e373]
+              - cell "启用" [ref=e375]
+              - cell [ref=e379]:
+                - generic [ref=e380]:
+                  - button "编辑" [ref=e381] [cursor=pointer]
+                  - button "停用" [ref=e383] [cursor=pointer]
+            - row [ref=e385]:
+              - cell "循环水泵房" [ref=e386]
+              - cell "区域" [ref=e388]
+              - cell "启用" [ref=e390]
+              - cell [ref=e394]:
+                - generic [ref=e395]:
+                  - button "编辑" [ref=e396] [cursor=pointer]
+                  - button "停用" [ref=e398] [cursor=pointer]

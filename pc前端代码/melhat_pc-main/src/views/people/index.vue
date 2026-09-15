@@ -31,8 +31,8 @@
     </el-form>
     <el-row class="mb8">
       <el-button v-if="canWrite" type="primary" icon="Plus" @click="openForm()">新增人员</el-button>
-      <el-button v-if="canWrite" @click="openTeamForm">新增班组</el-button>
-      <el-button v-if="canWrite" @click="openContractorForm">新增承包商</el-button>
+      <el-button v-if="canWrite" icon="Upload" @click="importOpen = true">批量导入</el-button>
+      <el-button icon="Download" @click="downloadExport('people', { ...queryParams }, '人员台账.xlsx')">导出</el-button>
     </el-row>
     <el-table v-loading="loading" class="custom-table" :data="list">
       <template #empty><BrandedEmpty compact description="暂无人员" /></template>
@@ -81,7 +81,9 @@
           </el-select>
         </el-form-item>
         <el-form-item label="登录账号ID"><el-input v-model="form.accountUserId" placeholder="可空。无账号也能作为现场人员" /></el-form-item>
-        <el-form-item label="有效期至"><el-date-picker v-model="form.validTo" type="date" value-format="YYYY-MM-DD" /></el-form-item>
+        <el-form-item label="有效期从"><el-date-picker v-model="form.validFrom" type="date" value-format="YYYY-MM-DD" placeholder="不限" /></el-form-item>
+        <el-form-item label="有效期至"><el-date-picker v-model="form.validTo" type="date" value-format="YYYY-MM-DD" placeholder="不限" /></el-form-item>
+        <el-form-item label="授权厂站"><el-select v-model="form.siteIds" multiple collapse-tags placeholder="至少选择一个厂站"><el-option v-for="site in userStore.sites" :key="site.id" :label="site.name" :value="String(site.id)" /></el-select></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="formOpen = false">取消</el-button>
@@ -102,67 +104,34 @@
       <p v-for="item in (detail.equipment || [])" :key="item.id">{{ item.typeCode === 'belt' ? '安全带' : '安全帽' }} {{ item.sn }}　{{ item.issuedAt }}</p>
       <p v-if="personHistory.length">领用历史：</p>
       <p v-for="item in personHistory" :key="'h-' + item.id">{{ item.sn }} {{ item.issuedAt }} → {{ item.returnedAt || '在用' }}</p>
-      <p>通话：仅当前领用安全帽且型号支持对讲。认领成功不等于已接通。</p>
-      <el-button v-if="canStartCall && helmetEquip" type="warning" @click="callPersonHat">联系安全帽</el-button>
-      <p v-if="callSession.id" class="detail-line">通话：{{ callStatusLabel(callSession.status) }}
-        <el-tag v-if="callSession.demo" type="warning" size="small">演示通道</el-tag>
-      </p>
-      <div v-if="callSession.id && canStartCall" class="detail-actions">
-        <el-button v-if="callSession.status === 'offered'" type="primary" @click="doJoinCall">确认加入</el-button>
-        <el-button v-if="callSession.status === 'offered' || callSession.status === 'connected'" @click="doHangupCall">结束</el-button>
-      </div>
     </el-dialog>
-
-    <el-dialog v-model="teamOpen" title="新增班组" width="420px">
-      <el-form label-width="80px">
-        <el-form-item label="名称"><el-input v-model="teamName" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="teamOpen = false">取消</el-button>
-        <el-button type="primary" @click="submitTeam">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="contractorOpen" title="新增承包商" width="420px">
-      <el-form label-width="80px">
-        <el-form-item label="名称"><el-input v-model="contractorName" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="contractorOpen = false">取消</el-button>
-        <el-button type="primary" @click="submitContractor">保存</el-button>
-      </template>
-    </el-dialog>
+    <LedgerImportDialog v-model="importOpen" resource="people" template-name="人员导入模板.xlsx" @success="getList" />
   </div>
 </template>
 
 <script setup>
-import { listPeople, getPerson, createPerson, updatePerson, changePersonStatus, listTeams, listContractors, createTeam, createContractor } from '@/api/wear/people'
+import { listPeople, getPerson, createPerson, updatePerson, changePersonStatus, listTeams, listContractors } from '@/api/wear/people'
 import { listPersonAssignments } from '@/api/wear/assignments'
-import { startCall, joinCall, endCall, callStatusLabel } from '@/api/wear/calls'
 import useUserStore from '@/store/modules/user'
 import { ElMessageBox } from 'element-plus'
+import { downloadExport } from '@/api/wear/admin'
+import LedgerImportDialog from '@/components/LedgerImportDialog/index.vue'
 
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
 const canWrite = computed(() => userStore.canWritePerson)
-const canStartCall = computed(() => userStore.canStartCall)
-const helmetEquip = computed(() => (detail.value.equipment || []).find(item => item.typeCode === 'helmet'))
 const loading = ref(false)
 const list = ref([])
 const total = ref(0)
 const queryParams = reactive({ current: 1, size: 10, name: '', personCode: '', status: '', teamId: '', contractorId: '' })
 const formOpen = ref(false)
 const detailOpen = ref(false)
-const teamOpen = ref(false)
-const contractorOpen = ref(false)
-const teamName = ref('')
-const contractorName = ref('')
-const form = reactive({ id: null, personCode: '', name: '', teamId: '', contractorId: '', accountUserId: '', validTo: null, version: 1 })
+const form = reactive({ id: null, personCode: '', name: '', teamId: '', contractorId: '', accountUserId: '', validFrom: null, validTo: null, siteIds: [], version: 1 })
 const detail = ref({})
 const personHistory = ref([])
 const teams = ref([])
 const contractors = ref([])
-const callSession = ref({})
+const importOpen = ref(false)
 
 function unwrap(res) {
   return res && res.data !== undefined ? res.data : res
@@ -208,32 +177,6 @@ function validityHint(row) {
   return row.status === '0' ? '当前厂站不可选' : ''
 }
 
-function openTeamForm() {
-  teamName.value = ''
-  teamOpen.value = true
-}
-
-function openContractorForm() {
-  contractorName.value = ''
-  contractorOpen.value = true
-}
-
-function submitTeam() {
-  createTeam({ name: teamName.value }).then(() => {
-    proxy.$modal.msgSuccess('班组已保存')
-    teamOpen.value = false
-    loadCatalog()
-  })
-}
-
-function submitContractor() {
-  createContractor({ name: contractorName.value }).then(() => {
-    proxy.$modal.msgSuccess('承包商已保存')
-    contractorOpen.value = false
-    loadCatalog()
-  })
-}
-
 function loadCatalog() {
   listTeams().then(res => { teams.value = unwrap(res) || [] })
   listContractors().then(res => { contractors.value = unwrap(res) || [] })
@@ -242,39 +185,16 @@ function loadCatalog() {
 function openForm(row) {
   loadCatalog()
   if (row) {
-    Object.assign(form, { id: row.id, personCode: row.personCode, name: row.name, teamId: row.teamId || '', contractorId: row.contractorId || '', accountUserId: row.accountUserId || '', validTo: row.validTo, version: row.version })
+    Object.assign(form, { id: row.id, personCode: row.personCode, name: row.name, teamId: row.teamId || '', contractorId: row.contractorId || '', accountUserId: row.accountUserId || '', validFrom: row.validFrom, validTo: row.validTo, siteIds: (row.siteIds || []).map(String), version: row.version })
   } else {
-    Object.assign(form, { id: null, personCode: '', name: '', teamId: '', contractorId: '', accountUserId: '', validTo: null, version: 1 })
+    Object.assign(form, { id: null, personCode: '', name: '', teamId: '', contractorId: '', accountUserId: '', validFrom: null, validTo: null, siteIds: userStore.currentSiteId ? [String(userStore.currentSiteId)] : [], version: 1 })
   }
   formOpen.value = true
-}
-
-function callPersonHat() {
-  if (!helmetEquip.value) return
-  startCall({ deviceId: helmetEquip.value.deviceId, kind: 'single' }).then(res => {
-    callSession.value = unwrap(res) || {}
-    proxy.$modal.msgSuccess(callSession.value.demo ? '演示通道已就绪，确认加入后才算接通' : '待加入')
-  })
-}
-
-function doJoinCall() {
-  joinCall(callSession.value.id, { agoraUid: callSession.value.credentials && callSession.value.credentials.agoraUid }).then(res => {
-    callSession.value = unwrap(res) || callSession.value
-    proxy.$modal.msgSuccess('已接通')
-  })
-}
-
-function doHangupCall() {
-  endCall(callSession.value.id).then(res => {
-    callSession.value = unwrap(res) || {}
-    proxy.$modal.msgSuccess('已结束')
-  })
 }
 
 function openDetail(row) {
   getPerson(row.id).then(res => {
     detail.value = unwrap(res) || row
-    callSession.value = {}
     detailOpen.value = true
   })
   listPersonAssignments(row.id).then(res => { personHistory.value = unwrap(res) || [] }).catch(() => { personHistory.value = [] })

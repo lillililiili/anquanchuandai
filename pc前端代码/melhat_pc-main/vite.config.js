@@ -10,6 +10,10 @@ export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd())
 
   return {
+    // Keep Vite's generated dependency cache outside node_modules. On some
+    // Windows development machines node_modules is read-only/locked, which
+    // makes lazy-loaded routes stall while Vite repeatedly retries optimizeDeps.
+    cacheDir: path.resolve(__dirname, '.vite-cache'),
     plugins: createVitePlugins(env, command === 'build'),
     resolve: {
       extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
@@ -20,6 +24,23 @@ export default defineConfig(({ mode, command }) => {
     server: {
       host: '0.0.0.0',
       port: 5175,
+      // Transform the formal admin pages while the dev server is idle so the
+      // first menu click does not have to compile a large Vue view on demand.
+      warmup: {
+        clientFiles: [
+          './src/views/dashboard/index.vue',
+          './src/views/people/index.vue',
+          './src/views/organization/index.vue',
+          './src/views/spaces/index.vue',
+          './src/views/devices/index.vue',
+          './src/views/product-models/index.vue',
+          './src/views/assignments/index.vue',
+          './src/views/work-tasks/index.vue',
+          './src/views/geo-fences/index.vue',
+          './src/views/audit/events/index.vue',
+          './src/views/audit/files/index.vue'
+        ]
+      },
       proxy: {
         '/dev-api': {
           target: 'http://127.0.0.1:18084',

@@ -1,0 +1,49 @@
+05:14:40.232 [background-preinit] INFO  o.h.v.i.util.Version - [<clinit>,21] - HV000001: Hibernate Validator 6.2.3.Final
+05:14:40.937 [main] INFO  c.r.RuoYiApplication - [logStarting,55] - Starting RuoYiApplication using Java 17.0.20.1 on kk with PID 42188 (E:\³Á»ýÑÒ\anquanchuandai\ºó¶Ë´úÂë\melhat_server-dev\ruoyi-admin\target\fdc-admin.jar started by »Æ½¨¿­ in E:\³Á»ýÑÒ\anquanchuandai)
+05:14:41.133 [main] INFO  c.r.RuoYiApplication - [logStartupProfileInfo,686] - The following 1 profile is active: "dev"
+05:15:02.263 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - [multipleStoresDetected,262] - Multiple Spring Data modules found, entering strict repository configuration mode!
+05:15:02.278 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - [registerRepositoriesIn,132] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+05:15:02.923 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - [registerRepositoriesIn,201] - Finished Spring Data repository scanning in 582 ms. Found 0 Redis repository interfaces.
+05:15:11.086 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'spring.datasource.dynamic-com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceProperties' of type [com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceProperties] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:15:11.120 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceAutoConfiguration' of type [com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceAutoConfiguration$$EnhancerBySpringCGLIB$$95239b93] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:15:11.284 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'dsProcessor' of type [com.baomidou.dynamic.datasource.processor.DsHeaderProcessor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:15:11.471 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler@7927bd9f' of type [org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:15:11.591 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'methodSecurityMetadataSource' of type [org.springframework.security.access.method.DelegatingMethodSecurityMetadataSource] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:15:52.257 [main] INFO  o.s.b.w.e.t.TomcatWebServer - [initialize,108] - Tomcat initialized with port(s): 18084 (http)
+05:15:52.663 [main] INFO  o.a.c.h.Http11NioProtocol - [log,173] - Initializing ProtocolHandler ["http-nio-18084"]
+05:15:52.664 [main] INFO  o.a.c.c.StandardService - [log,173] - Starting service [Tomcat]
+05:15:52.666 [main] INFO  o.a.c.c.StandardEngine - [log,173] - Starting Servlet engine: [Apache Tomcat/9.0.63]
+05:15:53.930 [main] INFO  o.a.c.c.C.[.[.[/] - [log,173] - Initializing Spring embedded WebApplicationContext
+05:15:53.932 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - [prepareWebApplicationContext,290] - Root WebApplicationContext: initialization completed in 72290 ms
+05:16:40.842 [Druid-ConnectionPool-Create-1658520865] INFO  c.a.d.p.DruidAbstractDataSource - [setFailContinuous,1877] - {dataSource-1} failContinuous is true
+05:16:40.817 [main] INFO  c.a.d.p.DruidDataSource - [init,996] - {dataSource-1} inited
+05:16:41.165 [main] INFO  c.a.d.p.DruidDataSource - [close,2138] - {dataSource-1} closing ...
+05:16:41.313 [main] INFO  c.a.d.p.DruidDataSource - [close,2211] - {dataSource-1} closed
+05:16:41.765 [main] INFO  o.a.c.c.StandardService - [log,173] - Stopping service [Tomcat]
+05:16:42.271 [main] INFO  o.s.b.a.l.ConditionEvaluationReportLoggingListener - [logMessage,136] - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+05:17:37.871 [background-preinit] INFO  o.h.v.i.util.Version - [<clinit>,21] - HV000001: Hibernate Validator 6.2.3.Final
+05:17:38.311 [main] INFO  c.r.RuoYiApplication - [logStarting,55] - Starting RuoYiApplication using Java 17.0.20.1 on kk with PID 8804 (E:\³Á»ýÑÒ\anquanchuandai\ºó¶Ë´úÂë\melhat_server-dev\ruoyi-admin\target\fdc-admin.jar started by »Æ½¨¿­ in E:\³Á»ýÑÒ\anquanchuandai)
+05:17:38.381 [main] INFO  c.r.RuoYiApplication - [logStartupProfileInfo,686] - The following 1 profile is active: "dev"
+05:17:55.999 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - [multipleStoresDetected,262] - Multiple Spring Data modules found, entering strict repository configuration mode!
+05:17:56.070 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - [registerRepositoriesIn,132] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+05:17:57.127 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - [registerRepositoriesIn,201] - Finished Spring Data repository scanning in 735 ms. Found 0 Redis repository interfaces.
+05:18:08.568 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'spring.datasource.dynamic-com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceProperties' of type [com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceProperties] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:18:08.741 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceAutoConfiguration' of type [com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceAutoConfiguration$$EnhancerBySpringCGLIB$$578d0118] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:18:08.915 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'dsProcessor' of type [com.baomidou.dynamic.datasource.processor.DsHeaderProcessor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:18:09.254 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler@514eedd8' of type [org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:18:09.837 [main] INFO  o.s.c.s.PostProcessorRegistrationDelegate$BeanPostProcessorChecker - [postProcessAfterInitialization,376] - Bean 'methodSecurityMetadataSource' of type [org.springframework.security.access.method.DelegatingMethodSecurityMetadataSource] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+05:18:17.133 [main] INFO  o.s.b.w.e.t.TomcatWebServer - [initialize,108] - Tomcat initialized with port(s): 18084 (http)
+05:18:17.648 [main] INFO  o.a.c.h.Http11NioProtocol - [log,173] - Initializing ProtocolHandler ["http-nio-18084"]
+05:18:17.726 [main] INFO  o.a.c.c.StandardService - [log,173] - Starting service [Tomcat]
+05:18:17.744 [main] INFO  o.a.c.c.StandardEngine - [log,173] - Starting Servlet engine: [Apache Tomcat/9.0.63]
+05:18:18.994 [main] INFO  o.a.c.c.C.[.[.[/] - [log,173] - Initializing Spring embedded WebApplicationContext
+05:18:19.020 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - [prepareWebApplicationContext,290] - Root WebApplicationContext: initialization completed in 39941 ms
+05:19:18.784 [main] INFO  c.a.d.p.DruidDataSource - [init,996] - {dataSource-1} inited
+05:19:18.809 [main] INFO  c.a.d.p.DruidDataSource - [close,2138] - {dataSource-1} closing ...
+05:19:18.823 [main] INFO  c.a.d.p.DruidDataSource - [close,2211] - {dataSource-1} closed
+05:19:19.206 [main] INFO  o.a.c.c.StandardService - [log,173] - Stopping service [Tomcat]
+05:19:19.619 [main] INFO  o.s.b.a.l.ConditionEvaluationReportLoggingListener - [logMessage,136] - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.

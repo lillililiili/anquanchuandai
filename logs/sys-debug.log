@@ -1,0 +1,6 @@
+05:14:41.090 [main] DEBUG c.r.RuoYiApplication - [logStarting,56] - Running with Spring Boot v2.5.14, Spring v5.3.20
+05:16:09.199 [main] DEBUG c.r.f.s.f.JwtAuthenticationTokenFilter - [init,242] - Filter 'jwtAuthenticationTokenFilter' configured for use
+05:16:09.264 [main] DEBUG c.r.f.s.f.DeviceCallbackAuthFilter - [init,242] - Filter 'deviceCallbackAuthFilter' configured for use
+05:17:38.370 [main] DEBUG c.r.RuoYiApplication - [logStarting,56] - Running with Spring Boot v2.5.14, Spring v5.3.20
+05:18:27.511 [main] DEBUG c.r.f.s.f.JwtAuthenticationTokenFilter - [init,242] - Filter 'jwtAuthenticationTokenFilter' configured for use
+05:18:27.779 [main] DEBUG c.r.f.s.f.DeviceCallbackAuthFilter - [init,242] - Filter 'deviceCallbackAuthFilter' configured for use

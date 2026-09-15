@@ -8,6 +8,7 @@ import autoImport from 'unplugin-auto-import/vite'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  cacheDir: path.resolve(__dirname, './output/vite-test-cache'),
   plugins: [
     vue(),
     setupExtend(),

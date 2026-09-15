@@ -59,4 +59,24 @@ public interface FileRecordMapper extends BaseMapper<FileRecord> {
                                                      @Param("startTime") String startTime,
                                                      @Param("endTime") String endTime);
 
+    @Select("<script>" +
+            "SELECT fr.*, shi.hat_number, COALESCE(fr.user_name, shi.bind_user_name) AS user_name, " +
+            "CONCAT(shi.hat_number, CASE WHEN shi.bind_user_name IS NULL OR shi.bind_user_name = '' THEN '' ELSE CONCAT(' - ', shi.bind_user_name) END) AS device_info " +
+            "FROM file_record fr JOIN safety_hat_info shi ON fr.hat_id = shi.id " +
+            "WHERE fr.del_flag = '0' AND shi.site_id IN " +
+            "<foreach collection='siteIds' item='siteId' open='(' separator=',' close=')'>#{siteId}</foreach> " +
+            "<if test='fileType != null and fileType != \"\"'> AND fr.file_type = #{fileType} </if>" +
+            "<if test='fileName != null and fileName != \"\"'> AND fr.file_name LIKE CONCAT('%', #{fileName}, '%') </if>" +
+            "<if test='device != null and device != \"\"'> AND shi.hat_number LIKE CONCAT('%', #{device}, '%') </if>" +
+            "<if test='userName != null and userName != \"\"'> AND shi.bind_user_name LIKE CONCAT('%', #{userName}, '%') </if>" +
+            "<if test='uploadTimeFrom != null'> AND fr.upload_time &gt;= #{uploadTimeFrom} </if>" +
+            "<if test='uploadTimeTo != null'> AND fr.upload_time &lt;= #{uploadTimeTo} </if>" +
+            "ORDER BY fr.upload_time DESC" +
+            "</script>")
+    List<FileRecord> selectAuditRecords(@Param("siteIds") List<Long> siteIds,
+            @Param("fileName") String fileName, @Param("fileType") String fileType,
+            @Param("device") String device, @Param("userName") String userName,
+            @Param("uploadTimeFrom") Date uploadTimeFrom,
+            @Param("uploadTimeTo") Date uploadTimeTo);
+
 }

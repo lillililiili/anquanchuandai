@@ -24,8 +24,8 @@ export function changePersonStatus(id, data) {
   return request({ url: '/api/v1/people/' + id + '/status', method: 'put', data })
 }
 
-export function listTeams() {
-  return request({ url: '/api/v1/teams', method: 'get' })
+export function listTeams(params) {
+  return request({ url: '/api/v1/teams', method: 'get', params })
 }
 
 export function createTeam(data) {
@@ -36,8 +36,8 @@ export function updateTeam(id, data) {
   return request({ url: '/api/v1/teams/' + id, method: 'put', data })
 }
 
-export function listContractors() {
-  return request({ url: '/api/v1/contractors', method: 'get' })
+export function listContractors(params) {
+  return request({ url: '/api/v1/contractors', method: 'get', params })
 }
 
 export function createContractor(data) {
@@ -58,4 +58,8 @@ export function createSpace(data) {
 
 export function updateSpace(id, data) {
   return request({ url: '/api/v1/spaces/' + id, method: 'put', data })
+}
+
+export function changeSpaceStatus(id, data) {
+  return request({ url: '/api/v1/spaces/' + id + '/status', method: 'put', data })
 }

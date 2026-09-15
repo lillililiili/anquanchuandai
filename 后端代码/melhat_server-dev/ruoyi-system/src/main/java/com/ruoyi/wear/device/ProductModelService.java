@@ -24,12 +24,12 @@ public class ProductModelService
     @Autowired
     private SiteAccessService siteAccessService;
 
-    public List<ProductModelDto> list(String typeCode)
+    public List<ProductModelDto> list(String typeCode, String status)
     {
         siteAccessService.requireLogin();
         LambdaQueryWrapper<WearProductModel> query = new LambdaQueryWrapper<WearProductModel>()
-                .eq(WearProductModel::getStatus, "0")
                 .orderByAsc(WearProductModel::getId);
+        if (!"all".equals(status)) query.eq(WearProductModel::getStatus, StringUtils.isEmpty(status) ? "0" : status);
         if (StringUtils.isNotEmpty(typeCode))
         {
             query.eq(WearProductModel::getTypeCode, typeCode);
@@ -99,6 +99,19 @@ public class ProductModelService
         model.setVersion(model.getVersion() + 1);
         model.setUpdateBy(SecurityUtils.getUsername());
         model.setUpdateTime(new Date());
+        modelMapper.updateById(model);
+        return toDto(model);
+    }
+
+    public ProductModelDto changeStatus(Long id, String status, Integer version)
+    {
+        siteAccessService.assertCanWriteDevice();
+        WearProductModel model = modelMapper.selectById(id);
+        if (model == null) throw new ServiceException("访问资源不存在", HttpStatus.NOT_FOUND);
+        if (version == null || !version.equals(model.getVersion())) throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
+        if (!"0".equals(status) && !"1".equals(status)) throw new ServiceException("状态无效", HttpStatus.BAD_REQUEST);
+        model.setStatus(status); model.setVersion(model.getVersion() + 1);
+        model.setUpdateBy(SecurityUtils.getUsername()); model.setUpdateTime(new Date());
         modelMapper.updateById(model);
         return toDto(model);
     }

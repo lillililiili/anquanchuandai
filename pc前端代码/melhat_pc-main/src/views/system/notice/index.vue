@@ -143,24 +143,20 @@
         width="160"
       >
         <template #default="scope">
-          <el-tooltip content="修改" placement="top">
-            <el-button
-              v-hasPermi="['system:notice:edit']"
-              icon="Edit"
-              link
-              type="primary"
-              @click="handleUpdate(scope.row)"
-            ></el-button>
-          </el-tooltip>
-          <el-tooltip content="删除" placement="top">
-            <el-button
-              v-hasPermi="['system:notice:remove']"
-              icon="Delete"
-              link
-              type="danger"
-              @click="handleDelete(scope.row)"
-            ></el-button>
-          </el-tooltip>
+          <el-button
+            v-hasPermi="['system:notice:edit']"
+            link
+            type="primary"
+            @click="handleUpdate(scope.row)"
+            >修改</el-button
+          >
+          <el-button
+            v-hasPermi="['system:notice:remove']"
+            link
+            type="danger"
+            @click="handleDelete(scope.row)"
+            >删除</el-button
+          >
         </template>
       </el-table-column>
     </el-table>

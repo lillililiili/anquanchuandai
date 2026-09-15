@@ -26,8 +26,8 @@ class WearRoleKeysTest {
     }
 
     @Test
-    void personWriteFollowsDeviceAdminNotDuty() {
-        assertTrue(WearRoleKeys.canWritePerson(set(WearRoleKeys.DEVICE_ADMIN), false));
+    void personWriteIsReservedForPlatformAdministration() {
+        assertFalse(WearRoleKeys.canWritePerson(set(WearRoleKeys.DEVICE_ADMIN), false));
         assertTrue(WearRoleKeys.canWritePerson(set(WearRoleKeys.PLATFORM_ADMIN), false));
         assertFalse(WearRoleKeys.canWritePerson(set(WearRoleKeys.DUTY), false));
         assertFalse(WearRoleKeys.canWritePerson(set(WearRoleKeys.READONLY), false));
@@ -67,10 +67,10 @@ class WearRoleKeysTest {
     }
 
     @Test
-    void taskEditFollowsDutyNotPlatform() {
+    void taskEditSupportsDutyAndPlatformMaintenance() {
         assertTrue(WearRoleKeys.canEditTask(set(WearRoleKeys.DUTY), false));
         assertTrue(WearRoleKeys.canEditTask(set(WearRoleKeys.TEAM_LEAD), false));
-        assertFalse(WearRoleKeys.canEditTask(set(WearRoleKeys.PLATFORM_ADMIN), false));
+        assertTrue(WearRoleKeys.canEditTask(set(WearRoleKeys.PLATFORM_ADMIN), false));
         assertFalse(WearRoleKeys.canEditTask(set(WearRoleKeys.READONLY), false));
     }
 

@@ -1,0 +1,87 @@
+- generic [ref=e53]:
+  - generic [ref=e54]:
+    - link "智能穿戴管理平台首页" [ref=e56] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=e58]:
+        - text: 智能穿戴管理平台
+        - generic [ref=e59]: 智能守护 · 协同调度
+    - menubar [ref=e63]:
+      - link "管理概览" [ref=e65] [cursor=pointer]:
+        - /url: "#/dashboard"
+        - menuitem "管理概览" [ref=e66]
+      - menuitem "基础资料" [ref=e71]
+      - menuitem "设备资产" [ref=e80]
+      - menuitem "作业配置" [expanded] [ref=e89]:
+        - menu:
+          - link "作业任务" [ref=e485] [cursor=pointer]:
+            - /url: "#/work/tasks"
+            - menuitem "作业任务" [ref=e486]
+          - link "电子围栏" [ref=e491] [cursor=pointer]:
+            - /url: "#/work/fences"
+            - menuitem "电子围栏" [ref=e492]
+      - menuitem "安全审计" [ref=e98]
+      - menuitem "系统管理" [ref=e107]:
+        - menu [ref=e496]:
+          - link "用户管理" [ref=e498] [cursor=pointer]:
+            - /url: "#/system/user"
+            - menuitem "用户管理" [ref=e499]
+          - link "角色管理" [ref=e504] [cursor=pointer]:
+            - /url: "#/system/role"
+            - menuitem "角色管理" [active] [ref=e505]
+          - link "菜单管理" [ref=e510] [cursor=pointer]:
+            - /url: "#/system/menu"
+            - menuitem "菜单管理" [ref=e511]
+          - link "部门管理" [ref=e516] [cursor=pointer]:
+            - /url: "#/system/dept"
+            - menuitem "部门管理" [ref=e517]
+          - link "岗位管理" [ref=e522] [cursor=pointer]:
+            - /url: "#/system/post"
+            - menuitem "岗位管理" [ref=e523]
+          - link "字典管理" [ref=e528] [cursor=pointer]:
+            - /url: "#/system/dict"
+            - menuitem "字典管理" [ref=e529]
+          - link "参数设置" [ref=e534] [cursor=pointer]:
+            - /url: "#/system/config"
+            - menuitem "参数设置" [ref=e535]
+          - link "通知公告" [ref=e540] [cursor=pointer]:
+            - /url: "#/system/notice"
+            - menuitem "通知公告" [ref=e541]
+  - generic [ref=e115]:
+    - generic [ref=e117]:
+      - button "收起侧栏" [expanded] [ref=e118] [cursor=pointer]
+      - navigation "Breadcrumb" [ref=e121]:
+        - generic [ref=e545]:
+          - link "作业配置" [ref=e546]
+          - text: /
+        - link "作业任务" [ref=e548]
+      - generic [ref=e124]:
+        - textbox "选择厂站" [ref=e129] [cursor=pointer]
+        - button "用户头像 admin" [ref=e549] [cursor=pointer]:
+          - img "用户头像" [ref=e137]
+          - generic [ref=e550]: admin
+    - generic [ref=e551]:
+      - generic [ref=e554]:
+        - heading "作业任务" [level=1] [ref=e555]
+        - paragraph [ref=e556]: 任务不是工作票。无票显示待核实，不是违章。结束任务不会关闭事件。
+      - generic [ref=e557]:
+        - generic [ref=e558]:
+          - generic [ref=e559]: 状态
+          - textbox "状态" [ref=e565] [cursor=pointer]:
+            - /placeholder: 全部
+        - generic [ref=e571]:
+          - button "搜索" [ref=e572] [cursor=pointer]
+          - button "新建任务" [ref=e577] [cursor=pointer]
+          - button "导出" [ref=e582] [cursor=pointer]
+      - generic [ref=e588]:
+        - table [ref=e590]:
+          - rowgroup [ref=e597]:
+            - row [ref=e598]:
+              - columnheader "任务" [ref=e599]
+              - columnheader "类型" [ref=e601]
+              - columnheader "状态" [ref=e603]
+              - columnheader "票" [ref=e605]
+              - columnheader "标记" [ref=e607]
+        - generic [ref=e612]:
+          - table:
+            - rowgroup
+          - paragraph [ref=e616]: 暂无任务

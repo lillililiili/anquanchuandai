@@ -2,6 +2,8 @@ package com.ruoyi.wear.event;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -38,7 +40,8 @@ public class EventQueryService
     private EventCommandService commandService;
 
     public WearPage<EventDto> page(int current, int size, String type, String status, String personId,
-            String severity, String updatedAfter, String claimantUserId, String escalated)
+            String severity, String updatedAfter, String claimantUserId, String escalated,
+            String personKeyword, String sn, String taskId, String occurredFrom, String occurredTo)
     {
         siteAccessService.requireLogin();
         commandService.escalateDue();
@@ -61,17 +64,30 @@ public class EventQueryService
         {
             query.eq(WearSafetyEvent::getEventType, type);
         }
-        if (StringUtils.isNotEmpty(status))
+        if (StringUtils.isNotEmpty(status) && !"all".equals(status))
         {
             query.eq(WearSafetyEvent::getStatus, status);
         }
-        else
+        else if (!"all".equals(status))
         {
             query.ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED);
         }
         if (StringUtils.isNotEmpty(personId))
         {
             query.eq(WearSafetyEvent::getPersonId, Long.valueOf(personId));
+        }
+        if (StringUtils.isNotEmpty(personKeyword))
+        {
+            query.and(item -> item.like(WearSafetyEvent::getPersonName, personKeyword.trim())
+                    .or().like(WearSafetyEvent::getPersonCode, personKeyword.trim()));
+        }
+        if (StringUtils.isNotEmpty(sn))
+        {
+            query.like(WearSafetyEvent::getSn, sn.trim());
+        }
+        if (StringUtils.isNotEmpty(taskId))
+        {
+            query.eq(WearSafetyEvent::getTaskId, parseId(taskId, "任务ID"));
         }
         if (StringUtils.isNotEmpty(severity))
         {
@@ -88,6 +104,14 @@ public class EventQueryService
         if (StringUtils.isNotEmpty(updatedAfter))
         {
             query.ge(WearSafetyEvent::getUpdateTime, parseTime(updatedAfter));
+        }
+        if (StringUtils.isNotEmpty(occurredFrom))
+        {
+            query.ge(WearSafetyEvent::getOccurredAt, parseDay(occurredFrom, false));
+        }
+        if (StringUtils.isNotEmpty(occurredTo))
+        {
+            query.le(WearSafetyEvent::getOccurredAt, parseDay(occurredTo, true));
         }
         query.orderByDesc(WearSafetyEvent::getOccurredAt).orderByDesc(WearSafetyEvent::getId);
         IPage<WearSafetyEvent> page = eventMapper.selectPage(new Page<WearSafetyEvent>(current, size), query);
@@ -154,6 +178,25 @@ public class EventQueryService
         catch (Exception ex)
         {
             throw new ServiceException("updatedAfter 格式无效", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private Long parseId(String raw, String label)
+    {
+        try { return Long.valueOf(raw.trim()); }
+        catch (NumberFormatException ex) { throw new ServiceException(label + "格式无效", HttpStatus.BAD_REQUEST); }
+    }
+
+    private Date parseDay(String raw, boolean endOfDay)
+    {
+        try
+        {
+            Date parsed = new SimpleDateFormat("yyyy-MM-dd").parse(raw.trim());
+            return endOfDay ? new Date(parsed.getTime() + 86399999L) : parsed;
+        }
+        catch (ParseException ex)
+        {
+            throw new ServiceException("日期格式无效", HttpStatus.BAD_REQUEST);
         }
     }
 }

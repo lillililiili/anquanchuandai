@@ -1,0 +1,74 @@
+- generic [ref=e53]:
+  - generic [ref=e54]:
+    - link "智能穿戴管理平台首页" [ref=e56] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=e58]:
+        - text: 智能穿戴管理平台
+        - generic [ref=e59]: 智能守护 · 协同调度
+    - menubar [ref=e63]:
+      - link "管理概览" [ref=e65] [cursor=pointer]:
+        - /url: "#/dashboard"
+        - menuitem "管理概览" [ref=e66]
+      - menuitem "基础资料" [expanded] [ref=e71]:
+        - menu [ref=e323]:
+          - link "人员台账" [ref=e306] [cursor=pointer]:
+            - /url: "#/master-data/people"
+            - menuitem "人员台账" [ref=e307]
+          - link "组织资料" [ref=e312] [cursor=pointer]:
+            - /url: "#/master-data/organization"
+            - menuitem "组织资料" [ref=e313]
+          - link "区域资料" [ref=e318] [cursor=pointer]:
+            - /url: "#/master-data/spaces"
+            - menuitem "区域资料" [ref=e319]
+      - menuitem "设备资产" [ref=e80]
+      - menuitem "作业配置" [ref=e89]
+      - menuitem "安全审计" [ref=e98]
+      - menuitem "系统管理" [ref=e107]
+  - generic [ref=e115]:
+    - generic [ref=e117]:
+      - button "收起侧栏" [expanded] [ref=e118] [cursor=pointer]
+      - navigation "Breadcrumb" [ref=e121]:
+        - generic [ref=e324]:
+          - link "基础资料" [ref=e325]
+          - text: /
+        - link "组织资料" [ref=e401]
+      - generic [ref=e124]:
+        - textbox "选择厂站" [ref=e129] [cursor=pointer]
+        - button [ref=e136] [cursor=pointer]:
+          - img "用户头像" [ref=e137]
+    - generic [ref=e402]:
+      - generic [ref=e405]:
+        - heading "组织资料" [level=1] [ref=e406]
+        - paragraph [ref=e407]: 维护班组与承包商。停用后不再用于新增人员，历史归属继续保留。
+      - generic [ref=e408]:
+        - tablist [ref=e412]:
+          - tab "班组" [selected] [ref=e414]
+          - tab "承包商" [ref=e415]
+        - tabpanel "班组" [ref=e417]:
+          - button "新增班组" [ref=e419] [cursor=pointer]
+          - generic [ref=e425]:
+            - table [ref=e427]:
+              - rowgroup [ref=e433]:
+                - row [ref=e434]:
+                  - columnheader "班组名称" [ref=e435]
+                  - columnheader "厂站" [ref=e437]
+                  - columnheader "状态" [ref=e439]
+                  - columnheader "操作" [ref=e441]
+            - table [ref=e447]:
+              - rowgroup [ref=e453]:
+                - row [ref=e454]:
+                  - cell "A站巡检班" [ref=e455]
+                  - cell "演示厂站A" [ref=e457]
+                  - cell "启用" [ref=e459]
+                  - cell [ref=e463]:
+                    - generic [ref=e464]:
+                      - button "编辑" [ref=e465] [cursor=pointer]
+                      - button "停用" [ref=e467] [cursor=pointer]
+                - row [ref=e469]:
+                  - cell "B站巡检班" [ref=e470]
+                  - cell "演示厂站B" [ref=e472]
+                  - cell "启用" [ref=e474]
+                  - cell [ref=e478]:
+                    - generic [ref=e479]:
+                      - button "编辑" [ref=e480] [cursor=pointer]
+                      - button "停用" [ref=e482] [cursor=pointer]

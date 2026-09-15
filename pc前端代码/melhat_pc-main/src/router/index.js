@@ -59,30 +59,10 @@ export const constantRoutes = [
     meta: { title: "未授权厂站" },
   },
   {
-    path: "/big-screen",
-    component: () => import("@/views/big-screen/index"),
-    hidden: true,
-    meta: { title: "数据大屏" },
-  },
-  {
     path: "/",
     component: Layout,
     hidden: true,
-    redirect: "/business/duty",
-    children: [
-      {
-        path: "group",
-        component: () => import("@/views/group/index"),
-        name: "group",
-        meta: { title: "群组管理" }
-      },
-      {
-        path: "live",
-        component: () => import("@/views/live/index"),
-        name: "live",
-        meta: { title: "实时监控" },
-      },
-    ],
+    redirect: "/dashboard",
   },
   {
     path: "/user",
@@ -99,6 +79,47 @@ export const constantRoutes = [
     ]
   },
 ];
+
+const legacyEnabled = import.meta.env.VITE_ENABLE_LEGACY_CONSOLE === "true";
+
+function loadLegacyRtc() {
+  if (window.AgoraRTC) return true;
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://download.agora.io/sdk/release/AgoraRTC_N-4.22.2.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("旧版音视频组件加载失败"));
+    document.head.appendChild(script);
+  });
+}
+
+export const legacyRoutes = legacyEnabled ? [
+  {
+    path: "/legacy/big-screen",
+    component: () => import("@/views/big-screen/index.vue"),
+    hidden: true,
+    meta: { title: "旧版数据大屏", legacy: true },
+  },
+  {
+    path: "/legacy",
+    component: Layout,
+    hidden: true,
+    children: [
+      { path: "group", component: () => import("@/views/group/index.vue"), name: "LegacyGroup", meta: { title: "旧版群组", legacy: true } },
+      { path: "hat", component: () => import("@/views/hat/index.vue"), name: "LegacyHat", meta: { title: "旧版帽子", legacy: true } },
+      { path: "live", component: () => import("@/views/live/index.vue"), beforeEnter: loadLegacyRtc, name: "LegacyLive", meta: { title: "旧版实时监控", legacy: true } },
+      { path: "events", component: () => import("@/views/events/index.vue"), beforeEnter: loadLegacyRtc, name: "LegacyEvents", meta: { title: "旧版事件操作", legacy: true } },
+      { path: "duty", component: () => import("@/views/duty/index.vue"), name: "LegacyDuty", meta: { title: "旧版值班交接", legacy: true } },
+      { path: "locations", component: () => import("@/views/locations/index.vue"), name: "LegacyLocations", meta: { title: "旧版定位", legacy: true } },
+      { path: "track", component: () => import("@/views/track/index.vue"), name: "LegacyTrack", meta: { title: "旧版轨迹", legacy: true } },
+      { path: "fence", component: () => import("@/views/fence/index.vue"), name: "LegacyFence", meta: { title: "旧版围栏", legacy: true } },
+      { path: "sos", component: () => import("@/views/sos/index.vue"), name: "LegacySos", meta: { title: "旧版告警", legacy: true } },
+      { path: "files", component: () => import("@/views/file/index.vue"), name: "LegacyFiles", meta: { title: "旧版文件", legacy: true } },
+      { path: "intercom", component: () => import("@/views/intercom/index.vue"), name: "LegacyIntercom", meta: { title: "旧版对讲", legacy: true } },
+      { path: "tts", component: () => import("@/views/tts/index.vue"), name: "LegacyTts", meta: { title: "旧版广播", legacy: true } },
+    ],
+  },
+] : [];
 
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [

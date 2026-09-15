@@ -1,12 +1,31 @@
 import auth from "@/plugins/auth";
-import router, { constantRoutes, dynamicRoutes } from "@/router";
+import router, { constantRoutes, dynamicRoutes, legacyRoutes } from "@/router";
 import { getRouters } from "@/api/menu";
 import Layout from "@/layout/index";
 import ParentView from "@/components/ParentView";
 import InnerLink from "@/layout/components/InnerLink";
 
 // 匹配views里面所有的.vue文件
-const modules = import.meta.glob("./../../views/**/*.vue");
+const modules = import.meta.glob([
+  "./../../views/**/*.vue",
+  "!./../../views/index.vue",
+  "!./../../views/big-screen/**/*.vue",
+  "!./../../views/group/**/*.vue",
+  "!./../../views/hat/**/*.vue",
+  "!./../../views/live/**/*.vue",
+  "!./../../views/track/**/*.vue",
+  "!./../../views/fence/**/*.vue",
+  "!./../../views/sos/**/*.vue",
+  "!./../../views/file/**/*.vue",
+  "!./../../views/events/**/*.vue",
+  "!./../../views/duty/**/*.vue",
+  "!./../../views/locations/**/*.vue",
+  "!./../../views/intercom/**/*.vue",
+  "!./../../views/tts/**/*.vue",
+  "!./../../views/secure/**/*.vue",
+  "!./../../views/system/hat/**/*.vue",
+  "!./../../views/system/module/**/*.vue",
+]);
 
 const usePermissionStore = defineStore("permission", {
   state: () => ({
@@ -30,8 +49,7 @@ const usePermissionStore = defineStore("permission", {
     setSidebarRouters(routes) {
       this.sidebarRouters = routes;
     },
-    generateRoutes(roles) {
-      console.log("roles ----- ", roles);
+    generateRoutes(roles = []) {
       return new Promise((resolve, reject) => {
         // 向后端请求路由数据
         getRouters().then((res) => {
@@ -45,7 +63,11 @@ const usePermissionStore = defineStore("permission", {
           asyncRoutes.forEach((route) => {
             router.addRoute(route);
           });
-          this.setRoutes(rewriteRoutes);
+          const canUseLegacy = legacyRoutes.length && roles.some(role => role === "admin" || role === "wear_platform_admin");
+          if (canUseLegacy) {
+            legacyRoutes.forEach(route => router.addRoute(route));
+          }
+          this.setRoutes(canUseLegacy ? rewriteRoutes.concat(legacyRoutes) : rewriteRoutes);
           this.setSidebarRouters(constantRoutes.concat(sidebarRoutes));
           this.setDefaultRoutes(sidebarRoutes);
           this.setTopbarRoutes(defaultRoutes);

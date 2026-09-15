@@ -56,6 +56,20 @@ public final class WearRoleKeys
     public static final String PERM_FENCE_LIST = "wear:fence:list";
     public static final String PERM_FENCE_QUERY = "wear:fence:query";
     public static final String PERM_FENCE_EDIT = "wear:fence:edit";
+    public static final String PERM_OVERVIEW_LIST = "wear:overview:list";
+    public static final String PERM_PERSON_IMPORT = "wear:person:import";
+    public static final String PERM_PERSON_EXPORT = "wear:person:export";
+    public static final String PERM_DEVICE_IMPORT = "wear:device:import";
+    public static final String PERM_DEVICE_EXPORT = "wear:device:export";
+    public static final String PERM_MODEL_IMPORT = "wear:model:import";
+    public static final String PERM_MODEL_EXPORT = "wear:model:export";
+    public static final String PERM_ASSIGNMENT_EXPORT = "wear:assignment:export";
+    public static final String PERM_TASK_EXPORT = "wear:task:export";
+    public static final String PERM_FENCE_EXPORT = "wear:fence:export";
+    public static final String PERM_EVENT_EXPORT = "wear:event:export";
+    public static final String PERM_FILE_LIST = "wear:file:list";
+    public static final String PERM_FILE_QUERY = "wear:file:query";
+    public static final String PERM_FILE_EXPORT = "wear:file:export";
 
     private static final Set<String> ALL_SITES = Collections.unmodifiableSet(new HashSet<String>(
             Arrays.asList(PLATFORM_ADMIN, RUOYI_ADMIN)));
@@ -109,7 +123,8 @@ public final class WearRoleKeys
 
     public static boolean canWritePerson(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        return canWriteHat(roleKeys, ruoyiAdminUser);
+        if (ruoyiAdminUser) return true;
+        return roleKeys != null && roleKeys.contains(PLATFORM_ADMIN);
     }
 
     public static boolean canWriteDevice(Set<String> roleKeys, boolean ruoyiAdminUser)
@@ -159,7 +174,8 @@ public final class WearRoleKeys
 
     public static boolean canEditTask(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        return canClaimEvent(roleKeys, ruoyiAdminUser);
+        if (ruoyiAdminUser) return true;
+        return canClaimEvent(roleKeys, false) || (roleKeys != null && roleKeys.contains(PLATFORM_ADMIN));
     }
 
     public static boolean canSendTts(Set<String> roleKeys, boolean ruoyiAdminUser)

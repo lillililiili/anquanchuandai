@@ -107,12 +107,13 @@
       <el-table-column
         align="center"
         class-name="small-padding fixed-width"
+        fixed="right"
         label="操作"
+        width="120"
       >
         <template #default="scope">
           <el-button
             v-hasPermi="['system:role:remove']"
-            icon="CircleClose"
             link
             type="primary"
             @click="cancelAuthUser(scope.row)"

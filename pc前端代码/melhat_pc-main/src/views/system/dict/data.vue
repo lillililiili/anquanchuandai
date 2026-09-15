@@ -146,13 +146,13 @@
       <el-table-column
         align="center"
         class-name="small-padding fixed-width"
+        fixed="right"
         label="操作"
         width="160"
       >
         <template #default="scope">
           <el-button
             v-hasPermi="['system:dict:edit']"
-            icon="Edit"
             link
             type="primary"
             @click="handleUpdate(scope.row)"
@@ -160,7 +160,6 @@
           >
           <el-button
             v-hasPermi="['system:dict:remove']"
-            icon="Delete"
             link
             type="danger"
             @click="handleDelete(scope.row)"
