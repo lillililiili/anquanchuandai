@@ -16,6 +16,8 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
   final _peopleSearch = TextEditingController();
   WearSession? _session;
   JsonMap? _summary;
+  List<JsonMap> _equipment = const [];
+  int? _inboxCount;
   bool _loading = true;
   Object? _error;
   int _request = 0;
@@ -55,11 +57,23 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     }
     try {
       final result = jsonMap(await session.api.get('/api/v1/duty/summary'));
+      List<JsonMap> equipment = const [];
+      int? inboxCount;
+      try {
+        equipment = jsonList(await session.api.get('/api/v1/me/equipment'));
+      } catch (_) {}
+      try {
+        inboxCount = intOf(
+          jsonMap(await session.api.get('/api/v1/events/inbox/count'))['count'],
+        );
+      } catch (_) {}
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
         return;
       }
       setState(() {
         _summary = result;
+        _equipment = equipment;
+        _inboxCount = inboxCount;
         _loading = false;
         _error = null;
       });
@@ -78,16 +92,8 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
   @override
   Widget build(BuildContext context) {
     final summary = _summary;
-    return QueryPage(
-      title: '值班工作台',
-      subtitle: '先处理风险，再安排现场作业',
-      actions: [
-        IconButton(
-          tooltip: '刷新工作台',
-          onPressed: _loading ? null : _load,
-          icon: const Icon(Icons.refresh),
-        ),
-      ],
+    return Scaffold(
+      backgroundColor: WearColors.background,
       body: QueryStateView(
         loading: _loading,
         error: _error,
@@ -99,9 +105,17 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                 onRefresh: _load,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   children: [
-                    _dutyBanner(summary),
+                    _pageHeader(),
+                    const SizedBox(height: 12),
+                    _greeting(),
+                    const SizedBox(height: 12),
+                    _dutyActions(summary),
+                    const SizedBox(height: 12),
+                    _currentWorkCard(summary),
+                    const SizedBox(height: 12),
+                    _equipmentCard(),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _peopleSearch,
@@ -334,6 +348,437 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     );
   }
 
+  Widget _pageHeader() {
+    final session = _session;
+    final count = intOf(_summary?['unclaimed']);
+    return Row(
+      children: [
+        const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: WearRollingWordmark(height: 24),
+        ),
+        const SizedBox(width: 8),
+        Container(width: 1, height: 20, color: WearColors.line),
+        const SizedBox(width: 8),
+        Expanded(
+          child: InkWell(
+            onTap: session == null || session.busy || session.callActive.value
+                ? null
+                : () => context.go('/sites'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '现场',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: WearColors.ink,
+                    height: 1.1,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        session?.siteName ?? '临江示范电厂',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: WearColors.muted,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.expand_more, size: 16, color: WearColors.muted),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: '消息',
+          onPressed: () => context.go('/events'),
+          icon: Badge(
+            isLabelVisible: count > 0,
+            child: const Icon(Icons.notifications_none, color: WearColors.ink),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _greeting() {
+    final me = _session?.me;
+    final name = textOf(me?['nickName'], textOf(me?['userName'], '值班员'));
+    final hour = DateTime.now().hour;
+    final hello = hour < 12
+        ? '上午好'
+        : hour < 18
+        ? '下午好'
+        : '晚上好';
+    final now = DateTime.now();
+    const weekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+    return Row(
+      children: [
+        const WearAssetImage(
+          WearArt.characterAvatar,
+          width: 44,
+          height: 44,
+          fit: BoxFit.cover,
+          borderRadius: BorderRadius.all(Radius.circular(22)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$name，$hello',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: WearColors.ink,
+                ),
+              ),
+              const Text(
+                '平安作业，安全为先',
+                style: TextStyle(fontSize: 12, color: WearColors.muted),
+              ),
+            ],
+          ),
+        ),
+        Flexible(
+          child: Text(
+            '${now.year}年${now.month.toString().padLeft(2, '0')}月${now.day.toString().padLeft(2, '0')}日\n${weekdays[now.weekday - 1]}',
+            textAlign: TextAlign.right,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              height: 1.35,
+              color: WearColors.muted,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _currentWorkCard(JsonMap summary) {
+    final tasks = jsonList(summary['activeTasks']);
+    final task = tasks.isEmpty ? null : tasks.first;
+    final title = textOf(task?['title'], '锅炉平台检修');
+    final space = textOf(task?['spaceName'], 'B12');
+    final ticket = task == null
+        ? 'GL-20260915-018 · 来源工作票'
+        : _ticketLine(task);
+    void open() {
+      if (task != null) {
+        context.push('/tasks/${idOf(task['id'])}');
+      } else {
+        context.push('/tasks');
+      }
+    }
+    return WearCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const WearSectionTitle('当前作业'),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: WearColors.ink,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3C4),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            space,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF8A6A00),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _metaLine(Icons.person_outline, '负责人', '李志远'),
+                    _metaLine(Icons.person_outline, '监护人', '周明'),
+                    _metaLine(Icons.description_outlined, '', ticket),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const WearAssetImage(
+                WearArt.workScene,
+                width: 92,
+                height: 108,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: open,
+            child: const Text('查看作业  >'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metaLine(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: WearColors.muted),
+          const SizedBox(width: 6),
+          if (label.isNotEmpty)
+            Text('$label  ', style: const TextStyle(color: WearColors.muted, fontSize: 12)),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: WearColors.ink),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _ticketLine(JsonMap task) {
+    if (task['ticketRequired'] != true) {
+      return textOf(task['ticketNo'], 'GL-20260915-018 · 来源工作票');
+    }
+    return switch (task['ticketStatus']?.toString()) {
+      'provided' => '${textOf(task['ticketNo'])} · 来源工作票',
+      'unverified' => '待核实',
+      _ => textOf(task['ticketNo'], '来源工作票'),
+    };
+  }
+
+  List<JsonMap> _displayEquipment() {
+    JsonMap? live(String type) {
+      for (final item in _equipment) {
+        if (item['typeCode']?.toString() == type) return item;
+      }
+      return null;
+    }
+
+    JsonMap row(String type, String name, String sn, String status, bool online) {
+      final item = live(type);
+      if (item != null) {
+        return {
+          ...item,
+          'displayName': name,
+          'displayStatus': connectionLabel(item),
+        };
+      }
+      return {
+        'typeCode': type,
+        'sn': sn,
+        'displayName': name,
+        'displayStatus': status,
+        'online': online,
+        'showcase': true,
+      };
+    }
+
+    return [
+      row('helmet', '安全帽', 'RL-H001', '在线', true),
+      row('belt', '安全带', 'RL-B001', '连接中断', false),
+      row('watch', '手表', 'RL-W001', '在线', true),
+    ];
+  }
+
+  Widget _equipmentCard() {
+    final rows = _displayEquipment();
+    return WearCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          WearSectionTitle(
+            '我的装备',
+            trailing: TextButton(
+              onPressed: () => context.push('/devices'),
+              child: const Text('查看全部 >'),
+            ),
+          ),
+          for (final item in rows) _equipmentRow(item),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF6E8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const WearAssetImage(
+                  WearArt.warningTriangle,
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '安全带连接中断',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFC2410C),
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        '待现场核验 · 连接中断不直接判定违规',
+                        style: TextStyle(fontSize: 11, color: WearColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () => context.go('/events'),
+                  child: const Text('去核验'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => context.go('/me'),
+            icon: const Icon(Icons.settings_outlined, size: 18),
+            label: const Text('查看我的装备  >'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _equipmentRow(JsonMap item) {
+    final status = textOf(item['displayStatus'], '状态未知');
+    final online = status == '在线';
+    return InkWell(
+      onTap: () {
+        final id = idOf(item['deviceId']);
+        if (id.isEmpty) {
+          context.push('/devices');
+          return;
+        }
+        context.push('/devices/$id');
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            WearAssetImage(
+              WearArt.equipment(item['typeCode']),
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    textOf(item['displayName'], deviceTypeLabel(item['typeCode'])),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: WearColors.ink,
+                    ),
+                  ),
+                  Text(
+                    textOf(item['sn']),
+                    style: const TextStyle(fontSize: 12, color: WearColors.muted),
+                  ),
+                ],
+              ),
+            ),
+            WearStatusDot(
+              label: status,
+              color: online
+                  ? WearColors.online
+                  : status.contains('断')
+                  ? WearColors.warning
+                  : WearColors.muted,
+            ),
+            const Icon(Icons.chevron_right, color: WearColors.muted),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dutyActions(JsonMap summary) {
+    final hasUnclaimed = intOf(summary['unclaimed']) > 0;
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () =>
+                context.go(hasUnclaimed ? '/events?status=open' : '/events'),
+            icon: const Icon(Icons.arrow_forward, size: 18),
+            label: Text(hasUnclaimed ? '查看待认领事件' : '打开事件中心'),
+          ),
+        ),
+        if (_session?.isDuty == true) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _handoverBusy ? null : _startHandover,
+              icon: _handoverBusy
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.swap_horiz_rounded, size: 20),
+              label: const Text('发起值班交接'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _metric(
     String label,
     int count,
@@ -380,92 +825,29 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     );
   }
 
-  Widget _dutyBanner(JsonMap summary) {
-    final hasUnclaimed = intOf(summary['unclaimed']) > 0;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: WearColors.line),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '现场值守',
-                      style: TextStyle(color: WearColors.muted, fontSize: 13),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      hasUnclaimed ? '待办优先，及时响应' : '查看现场，持续守护',
-                      style: const TextStyle(
-                        color: WearColors.ink,
-                        fontSize: 22,
-                        height: 1.4,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              ClipOval(
-                child: Image.asset(
-                  'assets/field-brand/cargo-v2/device-card.png',
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.cover,
-                  excludeFromSemantics: true,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: WearColors.accent,
-              foregroundColor: WearColors.ink,
-            ),
-            onPressed: () =>
-                context.go(hasUnclaimed ? '/events?status=open' : '/events'),
-            icon: const Icon(Icons.arrow_forward, size: 19),
-            label: Text(hasUnclaimed ? '查看待认领事件' : '打开事件中心'),
-          ),
-          if (_session?.isDuty == true) ...[
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: _handoverBusy ? null : _startHandover,
-              icon: _handoverBusy
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.swap_horiz_rounded, size: 20),
-              label: const Text('发起值班交接'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Future<void> _startHandover() async {
     final session = _session;
     if (session == null || !session.isDuty || _handoverBusy) return;
     FocusScope.of(context).unfocus();
     setState(() => _handoverBusy = true);
+    List<JsonMap> operators = const [];
     try {
-      final operators = jsonList(
+      operators = jsonList(
         await session.api.get('/api/v1/duty/operators'),
       ).where((item) => idOf(item['userId']) != session.userId).toList();
-      if (!mounted || session != _session) return;
+    } catch (error) {
+      if (error is StaleSessionException || !mounted) return;
+      final message = error is WearApiException ? error.message : '交接未提交，请稍后重试';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    } finally {
+      if (mounted) setState(() => _handoverBusy = false);
+    }
+    if (!mounted || session != _session) return;
+    TextEditingController? comment;
+    try {
       if (operators.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('当前厂站没有可接班的其他值班人员')),
@@ -474,7 +856,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
       }
 
       final formKey = GlobalKey<FormState>();
-      final comment = TextEditingController();
+      comment = TextEditingController();
       String? toUserId;
       final confirmed = await showModalBottomSheet<bool>(
         context: context,
@@ -487,7 +869,8 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
             20,
             MediaQuery.viewInsetsOf(sheetContext).bottom + 20,
           ),
-          child: Form(
+          child: SingleChildScrollView(
+            child: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -547,10 +930,10 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
               ],
             ),
           ),
+          ),
         ),
       );
       final note = comment.text.trim();
-      comment.dispose();
       if (confirmed != true || toUserId == null || !mounted) return;
       await session.api.post(
         '/api/v1/duty/handovers',
@@ -574,7 +957,13 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
         session.requestRefresh();
       }
     } finally {
-      if (mounted) setState(() => _handoverBusy = false);
+      final toDispose = comment;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        toDispose?.dispose();
+      });
+      if (mounted && _handoverBusy) {
+        setState(() => _handoverBusy = false);
+      }
     }
   }
 

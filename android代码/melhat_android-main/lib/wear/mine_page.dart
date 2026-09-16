@@ -122,58 +122,53 @@ class _WearMinePageState extends State<WearMinePage> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
         children: [
-          const WearPageHeader(title: '我的', subtitle: '工作身份与接警设置'),
-          WearCard(
-            child: Row(
+          WearBrandHero(
+            title: '我的',
+            subtitle:
+                '你好，${textOf(session.me?['nickName'], textOf(session.me?['userName'], '值班员'))}！\n安全作业，平安每一天！',
+            background: WearArt.mineHero,
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Image.asset(
-                  'assets/field-brand/cargo-v2/logo.png',
-                  width: 54,
-                  height: 54,
-                  excludeFromSemantics: true,
+          WearCard(
+            child: Column(
+              children: [
+                _profileRow(
+                  Icons.person_outline,
+                  '姓名',
+                  textOf(session.me?['nickName'], textOf(session.me?['userName'])),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        textOf(
-                          session.me?['nickName'],
-                          textOf(session.me?['userName']),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${textOf(session.me?['userName'])} · ${session.siteName}',
-                        style: const TextStyle(color: WearColors.muted),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        session.roles
-                            .map(
-                              (role) =>
-                                  const {
-                                    'wear_duty': '值班员',
-                                    'wear_team_lead': '班组长',
-                                    'wear_reviewer': '复核员',
-                                    'wear_readonly': '只读',
-                                    'wear_device_admin': '设备管理员',
-                                    'wear_platform_admin': '平台管理员',
-                                    'admin': '管理员',
-                                  }[role] ??
-                                  role,
-                            )
-                            .join(' / '),
-                      ),
-                    ],
-                  ),
+                _profileRow(
+                  Icons.badge_outlined,
+                  '账号',
+                  textOf(session.me?['userName']),
+                ),
+                _profileRow(Icons.factory_outlined, '厂站', session.siteName),
+                _profileRow(
+                  Icons.verified_user_outlined,
+                  '角色',
+                  session.roles
+                      .map(
+                        (role) =>
+                            const {
+                              'wear_duty': '值班员',
+                              'wear_team_lead': '班组长',
+                              'wear_reviewer': '复核员',
+                              'wear_readonly': '只读',
+                              'wear_device_admin': '设备管理员',
+                              'wear_platform_admin': '平台管理员',
+                              'admin': '管理员',
+                            }[role] ??
+                            role,
+                      )
+                      .join(' / '),
                 ),
               ],
             ),
@@ -329,7 +324,11 @@ class _WearMinePageState extends State<WearMinePage> {
             icon: const Icon(Icons.swap_horiz),
             label: const Text('切换厂站'),
           ),
-          TextButton(
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFFE8E6),
+              foregroundColor: WearColors.danger,
+            ),
             onPressed: session.busy || session.callActive.value
                 ? null
                 : () async {
@@ -352,7 +351,8 @@ class _WearMinePageState extends State<WearMinePage> {
                     );
                     if (confirmed == true) await session.logout();
                   },
-            child: const Text('退出登录'),
+            icon: const Icon(Icons.logout),
+            label: const Text('退出登录'),
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 15),
@@ -363,6 +363,35 @@ class _WearMinePageState extends State<WearMinePage> {
                 color: WearColors.muted,
                 fontSize: 12,
                 height: 1.6,
+              ),
+            ),
+          ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: WearColors.brand, size: 22),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 56,
+            child: Text(label, style: const TextStyle(color: WearColors.muted)),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: WearColors.ink,
               ),
             ),
           ),

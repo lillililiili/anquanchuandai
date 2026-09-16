@@ -20,7 +20,27 @@ class QueryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: WearColors.background,
-      appBar: AppBar(title: Text(title), actions: actions),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const WearRollingWordmark(height: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: WearColors.ink,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: actions,
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

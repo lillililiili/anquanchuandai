@@ -80,9 +80,37 @@ class WearCommunicationsGateway implements CommunicationsGateway {
     ),
   ).map(TtsCommand.fromJson).toList(growable: false);
 
-  Future<List<PersonOption>> peopleOptions() async => jsonList(
-    await api.get('/api/v1/people/options'),
-  ).map(PersonOption.fromJson).toList(growable: false);
+  Future<List<PersonOption>> peopleOptions({String? name}) async {
+    final query = name == null || name.trim().isEmpty
+        ? null
+        : {'name': name.trim()};
+    return jsonList(
+      await api.get('/api/v1/people/options', query: query),
+    ).map(PersonOption.fromJson).toList(growable: false);
+  }
+
+  Future<List<CommunicationDevice>> listDevices({String? sn}) async {
+    try {
+      final page = await api.page(
+        '/api/v1/devices',
+        size: 50,
+        query: {if (sn != null && sn.trim().isNotEmpty) 'sn': sn.trim()},
+      );
+      return page.records
+          .map(CommunicationDevice.fromJson)
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<JsonMap>> meEquipment() async {
+    try {
+      return jsonList(await api.get('/api/v1/me/equipment'));
+    } catch (_) {
+      return const [];
+    }
+  }
 
   Future<PersonOption> person(String personId) async =>
       PersonOption.fromJson(jsonMap(await api.get('/api/v1/people/$personId')));

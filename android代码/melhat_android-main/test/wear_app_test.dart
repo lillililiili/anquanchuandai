@@ -73,10 +73,10 @@ void main() {
         tester.widget<EventsPage>(find.byType(EventsPage)).initialStatus,
         'open',
       );
-      expect(find.text('安全事件'), findsOneWidget);
+      expect(find.text('统一接警、认领、处置与复核'), findsOneWidget);
       expect(
         tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-        1,
+        2,
       );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -154,14 +154,18 @@ void main() {
       WearApp(session: session, enableNotifications: false),
     );
     await tester.pumpAndSettle();
-    expect(find.text('智能穿戴管理平台'), findsOneWidget);
+    expect(find.text('欢迎登录'), findsOneWidget);
+    expect(find.text('临江示范电厂'), findsOneWidget);
+    expect(find.text('图形验证码'), findsOneWidget);
+    expect(find.text('登录遇到问题  >'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(0), 'operator');
     await tester.enterText(find.byType(TextFormField).at(1), 'test-password');
-    await tester.ensureVisible(find.text('进入工作台'));
-    await tester.tap(find.text('进入工作台'));
+    await tester.enterText(find.byType(TextFormField).at(2), '7K4P');
+    await tester.ensureVisible(find.text('登录'));
+    await tester.tap(find.text('登录'));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationDestination), findsNWidgets(4));
-    expect(find.text('待处理 3'), findsOneWidget);
+    expect(find.text('现场'), findsWidgets);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -182,13 +186,13 @@ void main() {
       WearApp(session: session, enableNotifications: false),
     );
     await tester.pumpAndSettle();
-    for (final label in ['工作台', '事件', '通讯', '我的']) {
+    for (final label in ['现场', '通讯', '消息', '我的']) {
       expect(find.text(label), findsWidgets);
     }
     expect(tester.takeException(), isNull);
     await tester.tap(find.byType(NavigationDestination).at(3));
     await tester.pumpAndSettle();
-    expect(find.text('工作身份与接警设置'), findsOneWidget);
+    expect(find.text('姓名'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });

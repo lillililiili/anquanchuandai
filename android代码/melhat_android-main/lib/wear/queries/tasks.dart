@@ -358,6 +358,7 @@ class _TaskPageState extends State<TaskPage> {
                             (person) => QueryRow(
                               title: textOf(person['name']),
                               subtitle: textOf(person['personCode']),
+                              trailing: _memberDots(idOf(person['personId'])),
                               onTap: () => context.push(
                                 '/people/${idOf(person['personId'])}',
                               ),
@@ -416,6 +417,37 @@ class _TaskPageState extends State<TaskPage> {
                 ),
               ),
       ),
+    );
+  }
+
+  Widget _memberDots(String personId) {
+    Widget dot(String type) {
+      JsonMap? item;
+      for (final row in _equipment) {
+        if (idOf(row['personId']) == personId &&
+            row['typeCode']?.toString() == type) {
+          item = row;
+          break;
+        }
+      }
+      final result = item?['result']?.toString();
+      final color = switch (result) {
+        'ok' => WearColors.online,
+        'missing' => WearColors.danger,
+        _ => WearColors.muted,
+      };
+      return Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: WearStatusDot(
+          label: type == 'helmet' ? '帽' : '带',
+          color: color,
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [dot('helmet'), dot('belt')],
     );
   }
 

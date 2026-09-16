@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../components/field_brand.dart';
 import '../core.dart';
 import 'event_controller.dart';
 import 'event_models.dart';
@@ -240,61 +239,92 @@ class _EventsPageState extends State<EventsPage> {
               key: const ValueKey('wear-events-workspace'),
               controller: _scroll,
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
               children: [
-                FieldArtworkSurface(
-                  scene: 'workbench-card',
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 18, 14, 2),
-                    child: WearPageHeader(
-                      title: '安全事件',
-                      subtitle: '统一接警、认领、处置与复核',
-                      trailing: IconButton(
+                WearBrandHero(
+                  title: '消息',
+                  subtitle: '统一接警、认领、处置与复核',
+                  background: WearArt.eventsHero,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const WearSiteSwitcher(),
+                      IconButton(
                         tooltip: '刷新最新状态',
                         onPressed: controller.loading || controller.writing
                             ? null
                             : controller.refreshFromSignal,
                         icon: const Icon(Icons.refresh),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 14),
-                _filters(controller),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _filters(controller),
+                ),
                 if (controller.loading) ...[
                   const SizedBox(height: 8),
-                  const LinearProgressIndicator(minHeight: 3),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: LinearProgressIndicator(minHeight: 3),
+                  ),
                 ],
                 if (controller.errorMessage case final message?)
-                  _notice(message, danger: true),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _notice(message, danger: true),
+                  ),
                 if (controller.selected == null &&
                     controller.conflictMessage != null)
-                  _notice(
-                    '${controller.conflictMessage!}；已重新读取服务器状态，未提交草稿仍保留。',
-                    danger: true,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _notice(
+                      '${controller.conflictMessage!}；已重新读取服务器状态，未提交草稿仍保留。',
+                      danger: true,
+                    ),
                   ),
                 if (controller.selected == null &&
                     controller.successMessage != null)
-                  _notice(controller.successMessage!),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _notice(controller.successMessage!),
+                  ),
                 if (controller.selected case final event?) ...[
                   const SizedBox(height: 14),
-                  _detail(controller, event),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _detail(controller, event),
+                  ),
                 ],
                 const SizedBox(height: 14),
-                _resultHeader(controller),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _resultHeader(controller),
+                ),
                 const SizedBox(height: 10),
                 if (!controller.loading && controller.records.isEmpty)
-                  WearEmpty(
-                    title: '当前筛选没有事件',
-                    detail: '当前条件下没有待处理事项，可调整筛选或刷新。',
-                    onRetry: controller.reload,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: WearEmpty(
+                      title: '当前筛选没有事件',
+                      detail: '当前条件下没有待处理事项，可调整筛选或刷新。',
+                      onRetry: controller.reload,
+                    ),
                   )
                 else
                   ...controller.records.map(
-                    (event) => _eventRow(controller, event),
+                    (event) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _eventRow(controller, event),
+                    ),
                   ),
                 const SizedBox(height: 10),
-                _paging(controller),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _paging(controller),
+                ),
               ],
             ),
           ),
@@ -515,6 +545,30 @@ class _EventsPageState extends State<EventsPage> {
               ? '位置未知（不阻断处置）'
               : '${event.locationLat}, ${event.locationLng} · ${_locationLabel(event.locationQuality)}',
         ),
+        if (event.type == 'sos') ...[
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Stack(
+              children: [
+                const WearAssetImage(
+                  WearArt.plantMap,
+                  width: double.infinity,
+                  height: 168,
+                  fit: BoxFit.cover,
+                ),
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: WearBadge(
+                    text: event.demo ? 'SOS 演示 · 厂区示意 · 非实测' : '厂区示意 · 非实测',
+                    color: WearColors.warning,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (event.taskId.isNotEmpty)
           _line(
             Icons.assignment_outlined,
@@ -683,13 +737,32 @@ class _EventsPageState extends State<EventsPage> {
           ),
         ),
         const SizedBox(height: 10),
-        FilledButton.icon(
-          key: ValueKey('event-handle-submit-${event.id}'),
-          onPressed: controller.writing
-              ? null
-              : () => _execute(controller, EventCommand.handle),
-          icon: const Icon(Icons.build_outlined),
-          label: const Text('提交处置'),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: controller.writing
+                    ? null
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('草稿已保存在本机')),
+                        );
+                      },
+                child: const Text('保存草稿'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                key: ValueKey('event-handle-submit-${event.id}'),
+                onPressed: controller.writing
+                    ? null
+                    : () => _execute(controller, EventCommand.handle),
+                icon: const Icon(Icons.build_outlined),
+                label: const Text('提交处置'),
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -421,12 +421,69 @@ class _EquipmentPanelState extends State<EquipmentPanel> {
           child: Column(
             children: _items
                 .map(
-                  (item) => QueryRow(
-                    title:
-                        '${deviceTypeLabel(item['typeCode'])} · ${textOf(item['sn'])}',
-                    subtitle: '领用时间 ${formatTime(item['issuedAt'])}',
-                    onTap: () =>
-                        context.push('/devices/${idOf(item['deviceId'])}'),
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: WearCard(
+                      padding: const EdgeInsets.all(12),
+                      child: InkWell(
+                        onTap: () =>
+                            context.push('/devices/${idOf(item['deviceId'])}'),
+                        child: Row(
+                          children: [
+                            WearAssetImage(
+                              WearArt.equipment(item['typeCode']),
+                              width: 88,
+                              height: 88,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    deviceTypeLabel(item['typeCode']),
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: WearColors.ink,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    textOf(item['sn']),
+                                    style: const TextStyle(
+                                      color: WearColors.muted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  WearStatusDot(
+                                    label: connectionLabel(item),
+                                    color: connectionLabel(item) == '在线'
+                                        ? WearColors.online
+                                        : connectionLabel(item) == '数据陈旧'
+                                        ? WearColors.warning
+                                        : WearColors.muted,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '领用时间 ${formatTime(item['issuedAt'])}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: WearColors.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: WearColors.muted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 )
                 .toList(),

@@ -105,6 +105,22 @@ class _WearAppState extends State<WearApp> {
             StatefulShellBranch(
               routes: [
                 GoRoute(
+                  path: '/communications',
+                  builder: (_, s) => CommunicationsPage(
+                    deviceId: s.uri.queryParameters['deviceId'],
+                    personId: s.uri.queryParameters['personId'],
+                    eventId: s.uri.queryParameters['eventId'],
+                    video: const [
+                      'true',
+                      '1',
+                    ].contains(s.uri.queryParameters['video']),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
                   path: '/events',
                   builder: (_, s) => EventsPage(
                     eventId: s.uri.queryParameters['eventId'],
@@ -118,22 +134,6 @@ class _WearAppState extends State<WearApp> {
                         s.uri.queryParameters.containsKey('escalated')
                         ? s.uri.queryParameters['escalated'] == 'true'
                         : null,
-                  ),
-                ),
-              ],
-            ),
-            StatefulShellBranch(
-              routes: [
-                GoRoute(
-                  path: '/communications',
-                  builder: (_, s) => CommunicationsPage(
-                    deviceId: s.uri.queryParameters['deviceId'],
-                    personId: s.uri.queryParameters['personId'],
-                    eventId: s.uri.queryParameters['eventId'],
-                    video: const [
-                      'true',
-                      '1',
-                    ].contains(s.uri.queryParameters['video']),
                   ),
                 ),
               ],
@@ -193,7 +193,13 @@ class _WearAppState extends State<WearApp> {
         routerConfig: _router,
         themeMode: ThemeMode.light,
         theme: cargoTheme.copyWith(
-          colorScheme: cargoTheme.colorScheme,
+          colorScheme: cargoTheme.colorScheme.copyWith(
+            primary: WearColors.brand,
+            onPrimary: Colors.white,
+            primaryContainer: const Color(0xFFE8F1FF),
+            secondary: WearColors.brand,
+            onSecondary: Colors.white,
+          ),
           scaffoldBackgroundColor: WearColors.background,
           appBarTheme: const AppBarTheme(
             backgroundColor: WearColors.background,
@@ -215,38 +221,61 @@ class _WearAppState extends State<WearApp> {
               vertical: 16,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: WearColors.line),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(13),
-              borderSide: const BorderSide(color: WearColors.accent, width: 2),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: WearColors.brand, width: 2),
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: WearColors.line),
             ),
           ),
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
               minimumSize: const Size(48, 48),
+              backgroundColor: WearColors.brand,
+              foregroundColor: Colors.white,
               textStyle: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
           outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 48),
+              foregroundColor: WearColors.brand,
+              side: const BorderSide(color: WearColors.brand),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
-          navigationBarTheme: const NavigationBarThemeData(
+          navigationBarTheme: NavigationBarThemeData(
             elevation: 0,
             backgroundColor: Colors.white,
-            indicatorColor: WearColors.accent,
+            indicatorColor: WearColors.brand.withValues(alpha: 0.14),
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            iconTheme: WidgetStateProperty.resolveWith((states) {
+              final selected = states.contains(WidgetState.selected);
+              return IconThemeData(
+                color: selected ? WearColors.brand : WearColors.muted,
+              );
+            }),
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              final selected = states.contains(WidgetState.selected);
+              return TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? WearColors.brand : WearColors.muted,
+              );
+            }),
           ),
         ),
         localizationsDelegates: const [
@@ -323,56 +352,6 @@ class _WearShellState extends State<WearShell> {
         bottom: false,
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: WearColors.line)),
-              ),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/field-brand/cargo-v2/logo.png',
-                    width: 33,
-                    height: 33,
-                    semanticLabel: '智能穿戴管理平台',
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: session.busy || session.callActive.value
-                          ? null
-                          : () => context.go('/sites'),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              session.siteName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const Icon(Icons.expand_more, size: 18),
-                        ],
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => widget.shell.goBranch(1),
-                    child: Text(
-                      _count == null ? '数量未同步' : '待处理 $_count',
-                      style: TextStyle(
-                        color: _count == null
-                            ? WearColors.muted
-                            : WearColors.primary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             ListenableBuilder(
               listenable: widget.notifications,
               builder: (context, _) {
@@ -421,23 +400,29 @@ class _WearShellState extends State<WearShell> {
                 FocusScope.of(context).unfocus();
                 widget.shell.goBranch(index);
               },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: '工作台',
+        destinations: [
+          const NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: '现场',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.notifications_none),
-            selectedIcon: Icon(Icons.notifications),
-            label: '事件',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.headset_mic_outlined),
-            selectedIcon: Icon(Icons.headset_mic),
+          const NavigationDestination(
+            icon: Icon(Icons.call_outlined),
+            selectedIcon: Icon(Icons.call),
             label: '通讯',
           ),
           NavigationDestination(
+            icon: Badge(
+              isLabelVisible: (_count ?? 0) > 0,
+              child: const Icon(Icons.chat_bubble_outline),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: (_count ?? 0) > 0,
+              child: const Icon(Icons.chat_bubble),
+            ),
+            label: '消息',
+          ),
+          const NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: '我的',
