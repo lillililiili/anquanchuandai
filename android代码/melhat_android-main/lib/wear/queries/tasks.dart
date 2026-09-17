@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
+import 'work_reference.dart';
 
 String _workTypeLabel(Object? value) => switch (value?.toString()) {
   'patrol' => '巡检',
@@ -252,6 +253,7 @@ class _TaskPageState extends State<TaskPage> {
   bool _loading = true;
   Object? _error;
   int _request = 0;
+  bool _preview = false;
 
   @override
   void didChangeDependencies() {
@@ -264,6 +266,10 @@ class _TaskPageState extends State<TaskPage> {
   }
 
   Future<void> _load() async {
+    if (widget.id == 'ui-preview') {
+      await _showPreview();
+      return;
+    }
     final session = _session;
     if (session == null) return;
     final request = ++_request;
@@ -299,155 +305,150 @@ class _TaskPageState extends State<TaskPage> {
     }
   }
 
+  void _back() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/workbench');
+    }
+  }
+
+  void _exampleAction() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('界面示例：未连接真实人员、事件或通话服务')));
+  }
+
+  Future<void> _showPreview() async {
+    final task = await workReferencePreview();
+    if (!mounted) return;
+    setState(() {
+      _preview = true;
+      _task = task;
+      _equipment = jsonList(task['equipmentCheck']);
+      _events = jsonList(task['events']);
+      _loading = false;
+      _error = null;
+    });
+  }
+
+  void _contactGuardian() {
+    if (_preview) {
+      _exampleAction();
+      return;
+    }
+    final id = idOf(_task?['guardianPersonId']);
+    if (id.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('尚未关联监护人，无法发起联系')));
+      return;
+    }
+    context.push(communicationUri(personId: id).toString());
+  }
+
   @override
   Widget build(BuildContext context) {
     final task = _task;
-    return QueryPage(
-      title: task == null ? '作业详情' : textOf(task['title']),
-      body: QueryStateView(
-        loading: _loading,
-        error: _error,
-        empty: task == null,
-        onRetry: _load,
-        child: task == null
-            ? const SizedBox.shrink()
-            : RefreshIndicator(
-                onRefresh: _load,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    WearCard(
-                      child: Column(
-                        children: [
-                          DetailField(
-                            label: '状态',
-                            value: taskStatusLabel(task['status']),
-                          ),
-                          DetailField(
-                            label: '作业类型',
-                            value: _workTypeLabel(task['workType']),
-                          ),
-                          DetailField(
-                            label: '作业区域',
-                            value: textOf(task['spaceName']),
-                          ),
-                          DetailField(
-                            label: '计划时间',
-                            value:
-                                '${formatTime(task['plannedStart'])} 至 ${formatTime(task['plannedEnd'])}',
-                          ),
-                          DetailField(
-                            label: '实际时间',
-                            value:
-                                '${formatTime(task['actualStart'])} 至 ${formatTime(task['actualEnd'])}',
-                          ),
-                          DetailField(label: '工作票', value: _ticketLabel(task)),
-                          if (task['demo'] == true)
-                            const DetailField(
-                              label: '数据标识',
-                              value: '演示作业，不作为生产依据',
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    QuerySection(
-                      title: '作业成员（${jsonList(task['members']).length}）',
-                      children: jsonList(task['members'])
-                          .map(
-                            (person) => QueryRow(
-                              title: textOf(person['name']),
-                              subtitle: textOf(person['personCode']),
-                              trailing: _memberDots(idOf(person['personId'])),
-                              onTap: () => context.push(
-                                '/people/${idOf(person['personId'])}',
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 14),
-                    QuerySection(
-                      title: '装备检查（${_equipment.length}）',
-                      children: _equipment.isEmpty
-                          ? [
-                              const WearCard(
-                                child: Text(
-                                  '该任务没有装备检查项',
-                                  style: TextStyle(color: WearColors.muted),
-                                ),
-                              ),
-                            ]
-                          : _equipment.map(_equipmentRow).toList(),
-                    ),
-                    const SizedBox(height: 14),
-                    QuerySection(
-                      title: '关联事件（${_events.length}）',
-                      children: _events.isEmpty
-                          ? [
-                              const WearCard(
-                                child: Text(
-                                  '暂无关联事件',
-                                  style: TextStyle(color: WearColors.muted),
-                                ),
-                              ),
-                            ]
-                          : _events.map((event) {
-                              final pending =
-                                  event['taskMatch']?.toString() == 'pending';
-                              return QueryRow(
-                                title:
-                                    '${eventTypeLabel(event['type'])} · ${textOf(event['personName'], '未关联人员')}',
-                                subtitle: pending
-                                    ? '存在多个候选任务，需人工确认关联'
-                                    : '${formatTime(event['occurredAt'])} · ${eventStatusLabel(event['status'])}',
-                                trailing: WearBadge(
-                                  text: pending
-                                      ? '待确认关联'
-                                      : textOf(event['severity'], '风险未知'),
-                                  color: pending ? WearColors.warning : null,
-                                ),
-                                onTap: () => context.push(
-                                  '/events?eventId=${idOf(event['id'])}',
-                                ),
-                              );
-                            }).toList(),
-                    ),
-                  ],
-                ),
+    final unavailable =
+        _error is WearApiException &&
+        [404, 501].contains((_error as WearApiException).code);
+    if (_loading || _error != null || task == null) {
+      return QueryPage(
+        title: '作业详情',
+        body: Column(
+          children: [
+            Expanded(
+              child: QueryStateView(
+                loading: _loading,
+                error: _error,
+                empty: task == null,
+                onRetry: _load,
+                child: const SizedBox.shrink(),
               ),
-      ),
-    );
-  }
-
-  Widget _memberDots(String personId) {
-    Widget dot(String type) {
-      JsonMap? item;
-      for (final row in _equipment) {
-        if (idOf(row['personId']) == personId &&
-            row['typeCode']?.toString() == type) {
-          item = row;
-          break;
-        }
-      }
-      final result = item?['result']?.toString();
-      final color = switch (result) {
-        'ok' => WearColors.online,
-        'missing' => WearColors.danger,
-        _ => WearColors.muted,
-      };
-      return Padding(
-        padding: const EdgeInsets.only(left: 8),
-        child: WearStatusDot(
-          label: type == 'helmet' ? '帽' : '带',
-          color: color,
+            ),
+            if (unavailable)
+              TextButton(onPressed: _showPreview, child: const Text('查看界面示例')),
+          ],
         ),
       );
     }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [dot('helmet'), dot('belt')],
+    return Scaffold(
+      backgroundColor: const Color(0xFFEEF8FF),
+      body: SafeArea(
+        child: TaskReferenceView(
+          task: task,
+          equipment: _equipment,
+          events: _events,
+          owner: workOwnerLabel(task, _session!),
+          guardian: workGuardianLabel(task),
+          preview: _preview,
+          onBack: _back,
+          onRefresh: _preview ? _showPreview : _load,
+          onPerson: (person) {
+            if (_preview) {
+              _exampleAction();
+              return;
+            }
+            final id = idOf(person['personId']);
+            if (id.isNotEmpty) context.push('/people/$id');
+          },
+          onEvent: (event) {
+            if (_preview) {
+              _exampleAction();
+              return;
+            }
+            final id = idOf(event['id']);
+            if (id.isNotEmpty) {
+              context.push(
+                Uri(
+                  path: '/events',
+                  queryParameters: {'eventId': id},
+                ).toString(),
+              );
+            }
+          },
+          onGuardian: _contactGuardian,
+          details: Column(
+            children: [
+              DetailField(label: '状态', value: taskStatusLabel(task['status'])),
+              DetailField(
+                label: '作业类型',
+                value: _workTypeLabel(task['workType']),
+              ),
+              DetailField(label: '作业区域', value: textOf(task['spaceName'])),
+              DetailField(
+                label: '计划时间',
+                value:
+                    '${formatTime(task['plannedStart'])} 至 ${formatTime(task['plannedEnd'])}',
+              ),
+              DetailField(
+                label: '实际时间',
+                value:
+                    '${formatTime(task['actualStart'])} 至 ${formatTime(task['actualEnd'])}',
+              ),
+              DetailField(label: '工作票', value: _ticketLabel(task)),
+              if (task['demo'] == true)
+                const DetailField(label: '数据标识', value: '演示作业，不作为生产依据'),
+              for (final person in jsonList(task['members']))
+                DetailField(
+                  label: textOf(person['name']),
+                  value: textOf(person['personCode']),
+                ),
+            ],
+          ),
+          equipmentDetails: Column(
+            children: _equipment.isEmpty
+                ? [
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text('该任务没有装备检查项'),
+                    ),
+                  ]
+                : _equipment.map(_equipmentRow).toList(),
+          ),
+        ),
+      ),
     );
   }
 

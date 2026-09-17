@@ -1,0 +1,26 @@
+[
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/app.dart",
+    "sha256": "fe6c362051ebba3e1fde8d8d55bc84c0a145c65f173805db8e803b9e52f1ab79"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/mine_page.dart",
+    "sha256": "7616e525fc8ad815cf25fb8e6966334e1c338d1a7d7c5ff52cc5d03d5b5e5b54"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_mine_reference_test.dart",
+    "sha256": "c479b7bf944f7ab2f4ca182e8183c06ad3d57a22a4a2e2a6704da245c7530be4"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/assets/field-brand/preview/mine_reference_hero.png",
+    "sha256": "c0390f04a10413c461067806400544eec34b7254dd8fc86e034c0599edaa65f8"
+  },
+  {
+    "relativePath": "新版安卓端开发/UI素材/背景/mine_reference_hero.png",
+    "sha256": "c0390f04a10413c461067806400544eec34b7254dd8fc86e034c0599edaa65f8"
+  },
+  {
+    "relativePath": "android代码\\melhat_android-main\\build\\app\\outputs\\flutter-apk\\app-debug.apk",
+    "sha256": "dc0b7cfcb3b244bf56596fea6ad4189598b8dc5c60d069a2cfcdc2224918fda7"
+  }
+]

@@ -158,9 +158,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('17'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('17'), findsOneWidget);
     expect(find.text('待认领事件'), findsOneWidget);
-    await tester.drag(find.byType(ListView), const Offset(0, -450));
+    await tester.scrollUntilVisible(
+      find.text('61'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     expect(find.text('61'), findsOneWidget);
     expect(find.text('49'), findsOneWidget);

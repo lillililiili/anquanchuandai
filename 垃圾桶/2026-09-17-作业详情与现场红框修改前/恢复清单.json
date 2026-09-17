@@ -1,0 +1,14 @@
+[
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/app.dart",
+    "sha256": "94C89813656B83D9FEBB53BCA56BD5E59F6D5A6E06960C652E8BAD4FDCB73137"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/workbench.dart",
+    "sha256": "6F39312E0C70A33E8F9ACC0D9ADD4A5E2CEE9C9B276383D4FF0EB069F6141AAE"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/tasks.dart",
+    "sha256": "543A17F803631F77E8FCA3EA634443008CEB3031BDD1C6BA94A64697F5A3C49F"
+  }
+]

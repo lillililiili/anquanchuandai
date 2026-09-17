@@ -1,0 +1,74 @@
+{
+  "taskId": "T01",
+  "status": "待验收（开发自验通过）",
+  "files": [
+    {
+      "relativePath": "android代码/melhat_android-main/lib/wear/app.dart",
+      "beforeSha256": "1aee0444249b36564b5c8dbcb0e621d5013b7f7aaf47120f42b5eb7ee2905213",
+      "backupRelativePath": "新版安卓端开发\\开发任务拆分\\验收记录\\T01\\rollback\\android代码\\melhat_android-main\\lib\\wear\\app.dart",
+      "afterSha256": "b077e9bf31c5b874ee511aaf03a9d67a4a3ecfce3601c55512076bdf9b2c6dc8",
+      "changeType": "modified"
+    },
+    {
+      "relativePath": "android代码/melhat_android-main/lib/wear/mine_page.dart",
+      "beforeSha256": "f051ecda6bdb547a518fe5c00d36263bbe9850788fc15be823a7d02b45e80789",
+      "backupRelativePath": "新版安卓端开发\\开发任务拆分\\验收记录\\T01\\rollback\\android代码\\melhat_android-main\\lib\\wear\\mine_page.dart",
+      "afterSha256": "1436acda33b4c203b3a56ab3c1f5870a18db04c73be2ea86de38723c358d9c42",
+      "changeType": "modified"
+    },
+    {
+      "relativePath": "新版安卓端开发/开发任务拆分/T01-外观开关.md",
+      "beforeSha256": "096d4035b0b0e2d2c8ff7cd9f108fa0f0a25fd5de2959d84c8095240823b5d23",
+      "backupRelativePath": "新版安卓端开发\\开发任务拆分\\验收记录\\T01\\rollback\\新版安卓端开发\\开发任务拆分\\T01-外观开关.md",
+      "afterSha256": "43ba7479ea2d83a99b3716660504718545b3f5cc848514873ca4dc2853720060",
+      "changeType": "modified"
+    },
+    {
+      "relativePath": "新版安卓端开发/开发任务拆分/01-任务总表与执行顺序.md",
+      "beforeSha256": "18443f210a019a8c15287a9a28bcd4b0e45f06b7034f854d295cec3c03041b96",
+      "backupRelativePath": "新版安卓端开发\\开发任务拆分\\验收记录\\T01\\rollback\\新版安卓端开发\\开发任务拆分\\01-任务总表与执行顺序.md",
+      "afterSha256": "ce95a96c87b166739cb9d0ffb1e1f7ade4706f9215cf2b648e949757816ad3d7",
+      "changeType": "modified"
+    },
+    {
+      "relativePath": "android代码/melhat_android-main/lib/wear/preview_appearance.dart",
+      "changeType": "added",
+      "beforeSha256": null,
+      "afterSha256": "f16b018fd576bb74f8cf984f1162f6211c4ac220d42d68f5660592bbccfc7551"
+    },
+    {
+      "relativePath": "android代码/melhat_android-main/test/wear_preview_appearance_test.dart",
+      "changeType": "added",
+      "beforeSha256": null,
+      "afterSha256": "ca32fd7072b5a63427fc7c6a6a1ba539a037a5a768f6687b887c2bf61ba6aec4"
+    },
+    {
+      "relativePath": "新版安卓端开发\\00-文档说明.md",
+      "changeType": "modified",
+      "beforeSha256": "47129b9bc569a6830f64ffe55915c25ee3268c57948debf500e30f3de4bc187c",
+      "backupRelativePath": "新版安卓端开发\\开发任务拆分\\验收记录\\T01\\rollback\\新版安卓端开发\\00-文档说明.md",
+      "afterSha256": "dae0340d112bec6ea15f43b18a7f48d9d85e44d3889c0a586260f64c368dc342"
+    },
+    {
+      "relativePath": "新版安卓端开发\\开发任务拆分\\00-总指挥与总限制.md",
+      "changeType": "modified",
+      "beforeSha256": "50d03810397627f4f82776110c7752ab3bfc9b5926f3025aa70b6d8787405203",
+      "backupRelativePath": "新版安卓端开发\\开发任务拆分\\验收记录\\T01\\rollback\\新版安卓端开发\\开发任务拆分\\00-总指挥与总限制.md",
+      "afterSha256": "120e7eee8fb6bf57ace66fd01bcf3874b61a5d15f7bcadc1041d7b319b3f4d92"
+    },
+    {
+      "relativePath": "新版安卓端开发\\开发任务拆分\\03-主题与素材衔接说明.md",
+      "changeType": "modified",
+      "beforeSha256": "86de84acb04c90fdbb50323b7acd9061badf5e79b7b4948b9701bc38f3a045f4",
+      "backupRelativePath": "新版安卓端开发\\开发任务拆分\\验收记录\\T01\\rollback\\新版安卓端开发\\开发任务拆分\\03-主题与素材衔接说明.md",
+      "afterSha256": "4660c5c9983cbd66369f445c6f06ad94faa7357b2b8dcb58f33ea0a21423f843"
+    }
+  ],
+  "apk": {
+    "relativePath": "android代码\\melhat_android-main\\build\\app\\outputs\\flutter-apk\\app-debug.apk",
+    "sha256": "f3f7d32e623aac947e650b1c9d2aa34e5cc0a281acf631dda59e0756ca7fff21",
+    "apiBaseUrl": "http://127.0.0.1:18084",
+    "device": "emulator-5554"
+  },
+  "protectedBaselineUnchangedExceptT01": true
+}

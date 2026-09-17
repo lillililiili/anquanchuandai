@@ -1,0 +1,6 @@
+{
+  "baselineFiles": 405,
+  "baselineHash": "ee76cd4eda70ed354cf099ec2f9784e72aaf321f8e26af6af254386b53efe022",
+  "method": "将app.dart和mine_page.dart替换成原始备份后复核，排除本次新增图片与测试",
+  "otherAndroidFilesAndReferencesUnchanged": true
+}

@@ -1,0 +1,54 @@
+[
+  {
+    "path": "android代码/melhat_android-main/bin/connect-ldplayer.ps1",
+    "hash": "F18A104D98227653DC2CA2967AAC6C313B4E95527510D4255FA37DFFCEE7FCE1"
+  },
+  {
+    "path": "pc前端代码/melhat_pc-main/vite.config.js",
+    "hash": "B1DD4BAE6EA950381B9E04545BBA3959112A2E84BB299A9C0204E190DC3417F1"
+  },
+  {
+    "path": "新版安卓端开发/00-文档说明.md",
+    "hash": "CF0B60FDE758F2A5268F859B5EE5EEB36A6F7FFBC82ECB79DD417BC80E50432F"
+  },
+  {
+    "path": "新版安卓端开发/01-参考图逐页分析.md",
+    "hash": "57FED9BB9A80C0715AA12CE606A076E6C58046E4CD1AC8924B08C4D02FAD5984"
+  },
+  {
+    "path": "新版安卓端开发/02-当前系统与参考图差别文档.md",
+    "hash": "B1702FF5F6BEED99999439E50017AE686BEA0A16F22573A41BD29C066D237647"
+  },
+  {
+    "path": "新版安卓端开发/03-新版安卓端UI开发文档.md",
+    "hash": "36CFAE91AA5ACD9179F175135E03A8F0F0C4B3B2E142524E51CEBA94D8FA9FBD"
+  },
+  {
+    "path": "新版安卓端开发/04-UI素材清单.md",
+    "hash": "F34CC3A3B3A54F9871F9DF4151CF8944B62E9FAF7B794F5B36E21317AD7F6324"
+  },
+  {
+    "path": "新版安卓端开发/05-安卓页面功能与跳转关系分析.md",
+    "hash": "660A89569DE29F67960087CFDF4A7A3837B177BD58D33289BAA7144A8F5F350F"
+  },
+  {
+    "path": "新版安卓端开发/06-雷电网络故障原因与修复记录.md",
+    "hash": "8ABEC64C408011D885C43E1313EC58659B93E62F6AEAD7F883044EAF6B1A499E"
+  },
+  {
+    "path": "新版安卓端开发/07-安卓页面职责与冲突整改方案.md",
+    "hash": "38BD59DFADE37CF5B6CA05C53665FC9BC5D14487FEB99C082AD9CFDF1BEF8942"
+  },
+  {
+    "path": "新版安卓端开发/08-安卓统一视觉与明暗主题规范.md",
+    "hash": "9888C5BA38819F90D3F006B456FC7A1DD929F62206C86B42D7C750A4C491EC5B"
+  },
+  {
+    "path": "新版安卓端开发/09-安卓整改重点总结-审核预览.md",
+    "hash": "E91DD9C302BCB0F60DB03CE8672266B27B1F9C05801459E8CFED8FC7AB116CEB"
+  },
+  {
+    "path": "新版安卓端开发/智能穿戴管理平台-整体设计方案.docx",
+    "hash": "11D6F7FB47A289A96C508B892E93BC37632018DCAC80C586DFE0F4EF01350376"
+  }
+]

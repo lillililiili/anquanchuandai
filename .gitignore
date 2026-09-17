@@ -1,0 +1,8 @@
+# Local assistant configuration
+/.claude/
+/.grok/
+
+# Local project archives and Android build/rollback packages
+/*.7z
+*.apk
+*.aab

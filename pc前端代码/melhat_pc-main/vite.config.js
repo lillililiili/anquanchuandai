@@ -43,7 +43,18 @@ export default defineConfig(({ mode, command }) => {
       },
       proxy: {
         '/dev-api': {
-          target: 'http://127.0.0.1:18084',
+          target: process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:18084',
+          changeOrigin: true,
+          rewrite: (requestPath) => requestPath.replace(/^\/dev-api/, '')
+        }
+      }
+    },
+    preview: {
+      host: '0.0.0.0',
+      port: Number(process.env.VITE_DEV_PORT || 5175),
+      proxy: {
+        '/dev-api': {
+          target: process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:18084',
           changeOrigin: true,
           rewrite: (requestPath) => requestPath.replace(/^\/dev-api/, '')
         }

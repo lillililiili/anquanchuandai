@@ -1,0 +1,357 @@
+[
+  {
+    "originalRelativePath": "android代码/melhat_android-main/lib/wear/app.dart",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\android代码\\melhat_android-main\\lib\\wear\\app.dart",
+    "sha256": "b077e9bf31c5b874ee511aaf03a9d67a4a3ecfce3601c55512076bdf9b2c6dc8"
+  },
+  {
+    "originalRelativePath": "android代码/melhat_android-main/lib/wear/mine_page.dart",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\android代码\\melhat_android-main\\lib\\wear\\mine_page.dart",
+    "sha256": "1436acda33b4c203b3a56ab3c1f5870a18db04c73be2ea86de38723c358d9c42"
+  },
+  {
+    "originalRelativePath": "android代码/melhat_android-main/lib/wear/preview_appearance.dart",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\android代码\\melhat_android-main\\lib\\wear\\preview_appearance.dart",
+    "sha256": "f16b018fd576bb74f8cf984f1162f6211c4ac220d42d68f5660592bbccfc7551"
+  },
+  {
+    "originalRelativePath": "android代码/melhat_android-main/test/wear_preview_appearance_test.dart",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\android代码\\melhat_android-main\\test\\wear_preview_appearance_test.dart",
+    "sha256": "ca32fd7072b5a63427fc7c6a6a1ba539a037a5a768f6687b887c2bf61ba6aec4"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\00-文档说明.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\00-文档说明.md",
+    "sha256": "dae0340d112bec6ea15f43b18a7f48d9d85e44d3889c0a586260f64c368dc342"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\01-参考图逐页分析.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\01-参考图逐页分析.md",
+    "sha256": "56043c6fd41e427defd2009636bedf6126d30460b8bf826df8d4bdda4f9962d6"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\02-当前系统与参考图差别文档.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\02-当前系统与参考图差别文档.md",
+    "sha256": "749b592f7d0428d805005b7bd8fd06ebb08e7585a7ed49ec008b6b7e385fb3c9"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\03-新版安卓端UI开发文档.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\03-新版安卓端UI开发文档.md",
+    "sha256": "3162a7a35ebe48a1fadf14b7127201cf1d821442e70a530f1019f3f007e4a1ba"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\04-UI素材清单.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\04-UI素材清单.md",
+    "sha256": "8b6c85a5f782296ff42b652c67cabab5ff591694a2408758fca0f75761af9432"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\05-安卓页面功能与跳转关系分析.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\05-安卓页面功能与跳转关系分析.md",
+    "sha256": "001f1b8d99dda102428e6829135ec6c3b09602d5033585d3bafb4ae6084ea548"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\06-雷电网络故障原因与修复记录.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\06-雷电网络故障原因与修复记录.md",
+    "sha256": "8abec64c408011d885c43e1313ec58659b93e62f6aead7f883044eaf6b1a499e"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\07-安卓页面职责与冲突整改方案.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\07-安卓页面职责与冲突整改方案.md",
+    "sha256": "a1893070c7f03b19cd63fc540f1c8912134aa46414faf431eecc3f4a4fc71a6e"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\08-安卓统一视觉与明暗主题规范.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\08-安卓统一视觉与明暗主题规范.md",
+    "sha256": "d089c83f2fe7ada12a6fbac54b0e80bc36262c33797e85be77dd5e919fefb959"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\09-安卓整改重点总结-审核预览.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\09-安卓整改重点总结-审核预览.md",
+    "sha256": "018d95f9b591f8dc93a48eed30074ef33fe12a7d3762ec3889b0b0c8a5d2babe"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\10-安卓开发指南-预览图复刻与微调.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\10-安卓开发指南-预览图复刻与微调.md",
+    "sha256": "746752808bde95ebae79e65cefdfc45aba9ba936ab8e781335aa7302ca4a19ba"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\11-安卓逐页开发说明与跳转保留表.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\11-安卓逐页开发说明与跳转保留表.md",
+    "sha256": "ee4bc4ae77136d7dd2bdfdd39e39dc02fc067e4dd4dd9688af7f1b19fe2168b0"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\12-安卓开发强限制与验收清单.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\12-安卓开发强限制与验收清单.md",
+    "sha256": "cc213104b3ab179ec3b09ec853f53345764278796beb659e01ff51d66bd8624f"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\00-总指挥与总限制.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\00-总指挥与总限制.md",
+    "sha256": "120e7eee8fb6bf57ace66fd01bcf3874b61a5d15f7bcadc1041d7b319b3f4d92"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\01-任务总表与执行顺序.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\01-任务总表与执行顺序.md",
+    "sha256": "ce95a96c87b166739cb9d0ffb1e1f7ade4706f9215cf2b648e949757816ad3d7"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\02-逐任务验收与回退规则.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\02-逐任务验收与回退规则.md",
+    "sha256": "990bdf62eb4564009c9ed55da5e3385b12855a6eb375825fca1f9eef350da45f"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\03-主题与素材衔接说明.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\03-主题与素材衔接说明.md",
+    "sha256": "4660c5c9983cbd66369f445c6f06ad94faa7357b2b8dcb58f33ea0a21423f843"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\04-预览图差异与局部例外登记.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\04-预览图差异与局部例外登记.md",
+    "sha256": "b925a403e879ababb02454f7df0487a2307b22af9a2b734370a245f22a8ad9ea"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T01-外观开关.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T01-外观开关.md",
+    "sha256": "43ba7479ea2d83a99b3716660504718545b3f5cc848514873ca4dc2853720060"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T02-四栏底导航.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T02-四栏底导航.md",
+    "sha256": "d2e8cf7ea140715ea7eca61271666b294fd128133785b06a9250b540d7ed1e83"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T03-现场页头与背景.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T03-现场页头与背景.md",
+    "sha256": "4e79f2992ab51d96f8f74c67920f7e5bcb45ba69221892b571885c30aad7246d"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T04-现场当前作业卡.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T04-现场当前作业卡.md",
+    "sha256": "e34b7037e0d16d496b40d149c57e883055a0d6d39a1c3c0eb9cfb1201b623c6a"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T05-现场装备产品行.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T05-现场装备产品行.md",
+    "sha256": "aa72aeb8c14c9e42c7eba61fdc3f007ca53cb8a6e0b203150570fdc78dbdd377"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T06-现场异常提示.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T06-现场异常提示.md",
+    "sha256": "1a89c120ce55d9b4386cd8390ee673c00923d3ea74191ec3be959f6b6cd6c335"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T07-现场已有扩展区.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T07-现场已有扩展区.md",
+    "sha256": "8468d695b6fe7a4f0aa2eb0aa67ce1504f9d01db1119aae0914608c6680d5bb6"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T08-通讯页头与背景.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T08-通讯页头与背景.md",
+    "sha256": "17729ed80f3b6edb046b3d5fa1da09cd5b0a3d519501fc7069db013ebe7364fb"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T09-通讯联系人与多选.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T09-通讯联系人与多选.md",
+    "sha256": "f951674ef6b1895d5607f0bab215a25d6eeef94a888ef625635d82567c59f074"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T10-通讯两种呼叫.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T10-通讯两种呼叫.md",
+    "sha256": "9d6e9aa2a25e0dbd219c026c0c6e252affdd2f8f97c5074419685786d1a940ef"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T11-TTS原入口与编辑区.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T11-TTS原入口与编辑区.md",
+    "sha256": "c174b2d29ef8867ce8b0448b81a7efc624fda071da462cc797666d7770f0aee0"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T12-通讯历史区域.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T12-通讯历史区域.md",
+    "sha256": "47806639e0e92deca224bf817805a63fdd824b94feb488e6938c9e2a059a89fe"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T13-我的页头与背景.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T13-我的页头与背景.md",
+    "sha256": "50483358a5aa07d758346bcaf51bba72741d2570933090c89735cb817d38453a"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T14-我的身份资料卡.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T14-我的身份资料卡.md",
+    "sha256": "0f0ec3629bff7e1e680e213bee927f9a3a8e5269dd9ab58c0f23f5fb1a6014e9"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T15-我的通讯服务卡.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T15-我的通讯服务卡.md",
+    "sha256": "38ca0d9aa6130fa699384f9923de2ffa40d41818c63e5e978f93dd1968d0e751"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T16-我的菜单与账号动作.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T16-我的菜单与账号动作.md",
+    "sha256": "829bf99b327814f3b4d17ea16fa7e5c3c1bc10b190f666b42e755937e9f0b58d"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T17-我的装备展示入口.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T17-我的装备展示入口.md",
+    "sha256": "4f92d0c178510195f4e6b5885c4586a1b9ca6f05873da375aec6470eb4c3f7a4"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T18-我的装备大产品卡.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T18-我的装备大产品卡.md",
+    "sha256": "c15321e924053a1934532e1ca3226ccdf4ec524edea19859871d11377a1def4a"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T19-装备历史与首页入口.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T19-装备历史与首页入口.md",
+    "sha256": "e06bb1e28a7874225ae2c7907f6d8db6f93d0491ed2047085629fc57af28b74c"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T20-作业详情页头信息卡.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T20-作业详情页头信息卡.md",
+    "sha256": "09cce5d52c2d70cb3e37b1f78efe940651e7268f9b41e6ddcb3097964c6c25e4"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T21-作业参与人员行.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T21-作业参与人员行.md",
+    "sha256": "5f1c8bdc1b08593a4821c80b3befd2e082d405bcb51fb81d9b36d08ab146108b"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T22-作业事件与监护人联系.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T22-作业事件与监护人联系.md",
+    "sha256": "6535b77fefb4b1b3167eab3f60a21caf88f481e9c245d313f0d7f47e3f96eb8c"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T23-消息列表与筛选.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T23-消息列表与筛选.md",
+    "sha256": "062f3e38ba4555a72491bd93b5951beaf390ac8fa2da6c18cd136238b885b34f"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T24-普通消息详情.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T24-普通消息详情.md",
+    "sha256": "12f9b8f922979642f96aae02e3b21b50e25a40c8081b75af7f3c4d30e2336459"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T25-核验页头与来源卡.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T25-核验页头与来源卡.md",
+    "sha256": "a3842e5a6b1c56bcd394a4f05c1e3d76192e9aa5f9bb2a1a567682e7f30767a1"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T26-核验说明与双按钮.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T26-核验说明与双按钮.md",
+    "sha256": "f5cde940483c75156a4a5a93dba46b4cb13018f95b0a8d10e83c551f3bd873c4"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T27-核验本地附件.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T27-核验本地附件.md",
+    "sha256": "1bc656848a72db52cf037ac489adb60f05aafcea38fd6ee08272f154f60c37e3"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T28-SOS标识与人员头部.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T28-SOS标识与人员头部.md",
+    "sha256": "2df6507fac417d31c4fed5bffc3f3b54a5bb1478860dfd48b1754545819bb402"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T29-SOS地图与位置来源.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T29-SOS地图与位置来源.md",
+    "sha256": "171086fbc51dae7da649126ea7c7ba013358d4ef4987e5eba33440892d991a28"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T30-SOS协助双按钮.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T30-SOS协助双按钮.md",
+    "sha256": "c37aed085079a5d74078d391fc9f209525ad9182bba9b50b2a65a278c569464e"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T31-视频身份与大画面.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T31-视频身份与大画面.md",
+    "sha256": "17eaf59e67f9a1681e4229ef99c99d0723aa7bb97891cc966a7e8185238c5bc1"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T32-视频控制与挂断.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T32-视频控制与挂断.md",
+    "sha256": "7c62e05326711c2c6f98739fe847e264d4ca955a8fbfb0c7d4851678c47734b9"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T33-登录页头与深色背景.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T33-登录页头与深色背景.md",
+    "sha256": "d534f33cf4504977b87932f6da47f824e39bd083a778b6b85104f1609b34f97b"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T34-登录表单与验证码.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T34-登录表单与验证码.md",
+    "sha256": "f48458193f2d35126cdf8f6f0325530e3d31f143361e3d635403c3b09156dade"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T35-登录帮助与反馈.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T35-登录帮助与反馈.md",
+    "sha256": "bd7e8a05c346df7cbaf8e8ac9d03b611e480a2c8309121e0f36b956d058dc3b5"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T36-厂站选择页面.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T36-厂站选择页面.md",
+    "sha256": "bd070c32d1a905a6528092fdf5fb673814bc5458eb9c383c3d8e80a6188cbe37"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T37-人员搜索列表.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T37-人员搜索列表.md",
+    "sha256": "e0704d53a22ae242227133842bc1becf34e1c6dcb76a5565303afea4f256e142"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T38-人员详情与装备关联.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T38-人员详情与装备关联.md",
+    "sha256": "cd41932a1ac45f536b5758a33c0fdf28cb2b283447621c80b192471a88fd6714"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T39-设备列表与筛选.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T39-设备列表与筛选.md",
+    "sha256": "c029e3ca337bd7b2af756ded2545635246888e4e7e75c19750bae02e934c356d"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T40-设备详情能力按钮.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T40-设备详情能力按钮.md",
+    "sha256": "5d756bd29a303c8bebb00afbce4ce5394f8eb2b30f7d10b40c4d0eaed03396af"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T41-作业查询列表.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T41-作业查询列表.md",
+    "sha256": "da7f0950a7819cd9fd23b7ec858fb257ef83d07d96f13c55da4ff33be34d5e0b"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T42-失去监护列表.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T42-失去监护列表.md",
+    "sha256": "46ba6c28a0605eaa4260eeeacc01fb745d246fec56b57c961552da6c322f74c6"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T43-围栏列表.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T43-围栏列表.md",
+    "sha256": "cd600d5264cb8aaaefd25aa71543dd384515aab0260f7811d44e432087c104a6"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T44-围栏详情关联内容.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T44-围栏详情关联内容.md",
+    "sha256": "afa3e90b518c52ada8f504581e7246a3ad64f1446a5c91710062e02f23008f81"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T45-轨迹人员日期筛选.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T45-轨迹人员日期筛选.md",
+    "sha256": "527c029939cc4469e859b8ef01a07a166ae84a1564c9d5a0cff13aa881cc90cb"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T46-轨迹地图与回放.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T46-轨迹地图与回放.md",
+    "sha256": "8bc304a1a904212dce8dbbb6db51e458d3d60b269633497d705cb72d33308e85"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T47-我的接警状态.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T47-我的接警状态.md",
+    "sha256": "57115807b0e7c3c81760b095693658afa0ca7ecf96b8d35b9c77f58d93f8e57a"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T48-值班交接卡与弹层.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T48-值班交接卡与弹层.md",
+    "sha256": "88fd041947230ec749a650cc0daeb58b33dd172b2feb50ddd33d37adc255994b"
+  },
+  {
+    "originalRelativePath": "新版安卓端开发\\开发任务拆分\\T49-全局弹层与系统主题收口.md",
+    "backupRelativePath": "垃圾桶\\2026-09-17-我的页面整改前\\新版安卓端开发\\开发任务拆分\\T49-全局弹层与系统主题收口.md",
+    "sha256": "bd1456d3c9863eeab65c711e49180646489865a6e94f7f6d585a3e0e796e5562"
+  }
+]

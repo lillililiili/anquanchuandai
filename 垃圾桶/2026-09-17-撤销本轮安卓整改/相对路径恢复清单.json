@@ -1,0 +1,132 @@
+[
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/app.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "6D82693E29D20788F17DE6991535E1B96DA64524E731912A8B096FE7AA71C012"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/auth_pages.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "D5B6957A4CFC0F5919EC98BE56202628985A144C2D52066C5BD1459CACC608CA"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/communications/communications_page.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "BD5B0354255696ACD3FF7E18AF599C883E056A849448ACA1DD40128839839898"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/events/events_page.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "7C2B70E057AECA60D28D98B71EEB00CD17A95C9E5B5B60825E2CD827F60D8C36"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/mine_page.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "7655437632B8F639F00D74EB569726C8C1BF8D09846D3BD76F7F71D61037DB5A"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/devices.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "77BAE59AA17DF2C955EB1CE79FF4B083A86F13EC3C9328D8215F58991984F3F0"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/fences.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "BE015B7317D576DA4A63C24C3CE0E6649E57D5A53F0DF206F79C9BB28AFF4A80"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/people.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "76F58EF95BEB2590318FC465782B10C57B33778B0E41BFEF40DCBA59CBC6025B"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/query_widgets.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "D6DA45661C20AF1E7A2A88D8A559E2FED5805A1EF2BC34BF82747A8C839B749A"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/supervision.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "53D9218790E9486A7372FA2DC478B866A04920BC1EE97FD6D71FCF16F0EE5D45"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/tasks.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "D4FC791546D522C54E5A5C5AE9B49E38C8DB0E1A5BF085975FE56D4112D41027"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/tracks.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "69FFA9A58D673BB0E0CA56BB7DC61E2A16A00A3728C246FAE2E1241FAE38E1FD"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/ui.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "13B8D32FEE53A3B65F8840FD1165217E708250ACBADC3C4848734BCDA756EC11"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/pubspec.yaml",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "C0FD7CDC17E2B0A8A1E2D321CF9B4CEA7AB48AA868DD77FB8A186BF58BBA3353"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/pubspec.lock",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "9545F2E9BDF2CE9697A88997D5283CE0AD73C2823D7A62E8F3EEAB8CBCA4515B"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_app_test.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "CF7049E06980001640660A20E98F36B3A1417E2731DB7ECCFD866C7B1DD4045D"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_events_widget_test.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "FB5B0A148A278A5D07787E8D49944157C9904D1FDB1B4E4898E2589D6A71EED0"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_queries_test.dart",
+    "operation": "保存被撤销内容；原文件恢复HEAD",
+    "sha256": "61D8CE435FCCA7E2B13CCE837F84DDB499E24178C3F0276443D2E0E2EC360B13"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/assets/field-brand/themes/industrial-dark.png",
+    "operation": "移出本轮新增文件",
+    "sha256": "552C843F8D5B9C3E833EE681BB20445D7A4603BD005AA3BD1A37F4EADDB884AB"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/assets/field-brand/themes/industrial-light.png",
+    "operation": "移出本轮新增文件",
+    "sha256": "7F0E2B4F323567E05A515D1B144DDE4E8FA28DE1AE90F4D5FB0055383A3F3865"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/queries/person_location.dart",
+    "operation": "移出本轮新增文件",
+    "sha256": "BFB01BD4A3BDB50D16944A1225385E021F0DAD8FFEE230FA33B57D3EEF6F3803"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/lib/wear/theme.dart",
+    "operation": "移出本轮新增文件",
+    "sha256": "6B2B6C739656BDDFB8C98B56D3353E1B70D0ADC79D1EC3EA70A48E61A05BCEFC"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_comms_page_test.dart",
+    "operation": "移出本轮新增文件",
+    "sha256": "9866C387B5F4767CB5B23C031FED2FCD2BCE6FB2B1C92D6C3446DB9C139D3B2C"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_context_redesign_test.dart",
+    "operation": "移出本轮新增文件",
+    "sha256": "F0CC69B0031CEA9A9E9FCCE08AEEC08E221CD4B17DFCA86DEEFCFE91A560296C"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_redesign_test.dart",
+    "operation": "移出本轮新增文件",
+    "sha256": "1225A6D9650BB1722B292D22F838DA5A783212A5E79262800222536DB0C5D963"
+  },
+  {
+    "relativePath": "android代码/melhat_android-main/test/wear_scope_navigation_test.dart",
+    "operation": "移出本轮新增文件",
+    "sha256": "1200FB8ADFFCD48B5A6B811B25968E1DBD0854D717CC20A72FEA5D6798A8B3BF"
+  }
+]

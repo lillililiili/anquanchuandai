@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
@@ -44,14 +45,26 @@ WearSession _session(
   return session;
 }
 
-Widget _app(WearSession session) => MaterialApp(
-  builder: (context, child) => MediaQuery(
-    data: MediaQuery.of(
-      context,
-    ).copyWith(viewInsets: const EdgeInsets.only(bottom: 280)),
-    child: child!,
+Widget _app(WearSession session) => WearScope(
+  session: session,
+  child: MaterialApp.router(
+    routerConfig: GoRouter(
+      initialLocation: '/events',
+      routes: [
+        GoRoute(
+          path: '/events',
+          builder: (_, state) =>
+              EventsPage(eventId: state.uri.queryParameters['eventId']),
+        ),
+      ],
+    ),
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(viewInsets: const EdgeInsets.only(bottom: 280)),
+      child: child!,
+    ),
   ),
-  home: WearScope(session: session, child: const EventsPage()),
 );
 
 void main() {
@@ -59,7 +72,7 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('本人已认领事件的内联处置草稿在离开后恢复，窄屏键盘下可提交且防重', (tester) async {
+  testWidgets('本人已认领事件的原处置草稿在离开后恢复，窄屏键盘下可提交且防重', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = 1.5;
@@ -111,6 +124,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('wear-event-event-1')));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('event-original-actions')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('事件资料与原处置功能'));
+    await tester.pumpAndSettle();
     final firstInput = find.byKey(const ValueKey('event-handle-input-event-1'));
     await tester.ensureVisible(firstInput);
     await tester.pumpAndSettle();
@@ -128,6 +147,18 @@ void main() {
     await tester.pumpWidget(_app(secondSession));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('wear-event-event-1')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wear-event-event-1')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('event-original-actions')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('事件资料与原处置功能'));
+    await tester.pumpAndSettle();
     final restoredInput = find.byKey(
       const ValueKey('event-handle-input-event-1'),
     );

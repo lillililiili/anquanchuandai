@@ -392,43 +392,54 @@ class _WearShellState extends State<WearShell> {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: widget.shell.currentIndex,
-        onDestinationSelected: session.busy
-            ? null
-            : (index) {
-                FocusScope.of(context).unfocus();
-                widget.shell.goBranch(index);
-              },
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '现场',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.call_outlined),
-            selectedIcon: Icon(Icons.call),
-            label: '通讯',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: (_count ?? 0) > 0,
-              child: const Icon(Icons.chat_bubble_outline),
+      bottomNavigationBar:
+          RegExp(
+                r'^/tasks/[^/]+$',
+              ).hasMatch(GoRouterState.of(context).uri.path) ||
+              (GoRouterState.of(context).uri.path == '/events' &&
+                  (GoRouterState.of(
+                        context,
+                      ).uri.queryParameters['eventId']?.isNotEmpty ??
+                      false))
+          ? null
+          : NavigationBar(
+              height: 60,
+              selectedIndex: widget.shell.currentIndex,
+              onDestinationSelected: session.busy
+                  ? null
+                  : (index) {
+                      FocusScope.of(context).unfocus();
+                      widget.shell.goBranch(index);
+                    },
+              destinations: [
+                const NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home),
+                  label: '现场',
+                ),
+                const NavigationDestination(
+                  icon: Icon(Icons.call_outlined),
+                  selectedIcon: Icon(Icons.call),
+                  label: '通讯',
+                ),
+                NavigationDestination(
+                  icon: Badge(
+                    isLabelVisible: (_count ?? 0) > 0,
+                    child: const Icon(Icons.chat_bubble_outline),
+                  ),
+                  selectedIcon: Badge(
+                    isLabelVisible: (_count ?? 0) > 0,
+                    child: const Icon(Icons.chat_bubble),
+                  ),
+                  label: '消息',
+                ),
+                const NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  selectedIcon: Icon(Icons.person),
+                  label: '我的',
+                ),
+              ],
             ),
-            selectedIcon: Badge(
-              isLabelVisible: (_count ?? 0) > 0,
-              child: const Icon(Icons.chat_bubble),
-            ),
-            label: '消息',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: '我的',
-          ),
-        ],
-      ),
     );
   }
 }

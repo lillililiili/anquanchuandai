@@ -1,0 +1,19 @@
+{
+  "apkSha256": "68b233b8fe5ffbec237a20364962833eb7b93e43fbd380e38eb48cdc1dab7c7f",
+  "documentationUpdated": [
+    "新版安卓端开发/开发任务拆分/00-总指挥与总限制.md",
+    "新版安卓端开发/开发任务拆分/01-任务总表与执行顺序.md",
+    "新版安卓端开发/开发任务拆分/04-预览图差异与局部例外登记.md",
+    "新版安卓端开发/开发任务拆分/05-任务进度与续作安排.md",
+    "新版安卓端开发/开发任务拆分/T02-四栏底导航.md",
+    "新版安卓端开发/00-文档说明.md",
+    "新版安卓端开发/08-安卓统一视觉规范.md",
+    "新版安卓端开发/11-安卓逐页开发说明与跳转保留表.md",
+    "新版安卓端开发/12-安卓开发强限制与验收清单.md",
+    "新版安卓端开发/我的页面开发说明.md"
+  ],
+  "productionFiles": [
+    "android代码/melhat_android-main/lib/wear/app.dart",
+    "android代码/melhat_android-main/lib/wear/mine_page.dart"
+  ]
+}

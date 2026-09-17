@@ -1,0 +1,347 @@
+[
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T02-四栏底导航.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T02-四栏底导航.md",
+    "sha256": "44823f725aee9f850851907c8c95293c51f0eded102cb2b8cf93fa841ed49d6a"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T03-现场页头与背景.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T03-现场页头与背景.md",
+    "sha256": "23ff1aaf8299fa452acbdf076f0ad7af8e00a9e2d8c818124e32605129035bc1"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T04-现场当前作业卡.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T04-现场当前作业卡.md",
+    "sha256": "d7ddaa8dd21c0e76149efd6ee0ee61d1b2729c19944b31cc65ee2700f4fa3a5a"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T05-现场装备产品行.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T05-现场装备产品行.md",
+    "sha256": "dad3320f1daad469209ee828a59f03421b0ed65f8e63b16bd25d115ef8be8caa"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T06-现场异常提示.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T06-现场异常提示.md",
+    "sha256": "bda9f093a50e2a750ea147bc1d361960e4fc26a74dd9359c118524ea69f65b91"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T07-现场已有扩展区.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T07-现场已有扩展区.md",
+    "sha256": "35a26040ab7c54c31b3f1f5f65e9c41b87cf1f20ac27726f65697025249e25e2"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T08-通讯页头与背景.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T08-通讯页头与背景.md",
+    "sha256": "c99b54d66d285e76627a12c4fd7e21eb7b29963753a5ac9573f5d7a4c4ed69aa"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T09-通讯联系人与多选.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T09-通讯联系人与多选.md",
+    "sha256": "16f4336b8dfdcbc9ba8db67fc06ab3367b7d3008b1812664ad7c8eb1e15d92d3"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T10-通讯两种呼叫.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T10-通讯两种呼叫.md",
+    "sha256": "6b9687c1ae267e7fe5655fb5b2c1ee82c2f480ec05e204ea5cbd1e3885536e90"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T11-TTS原入口与编辑区.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T11-TTS原入口与编辑区.md",
+    "sha256": "0d55e4dbbb42132f77d1180a41a015c9f12c029445112adf25bcb8371e7d8e6a"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T12-通讯历史区域.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T12-通讯历史区域.md",
+    "sha256": "78d5dcea5e9b920c1f3ddc4a8e2b1653f98e46bfbe3840e1329b3f35dcc28b97"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T13-我的页头与背景.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T13-我的页头与背景.md",
+    "sha256": "56863c3727b28a5cc91b63702b946b7ff634e4f1a0f508999e591187d3d31cdc"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T14-我的身份资料卡.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T14-我的身份资料卡.md",
+    "sha256": "d6832fde5a3584a8e577d9dea73e9ab64068ba7a29b1dc591410b9f951b2af28"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T15-我的通讯服务卡.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T15-我的通讯服务卡.md",
+    "sha256": "d373083ef9af84050d50f6059dd38d1688a80f969579297449508d2cc0e48a98"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T16-我的菜单与账号动作.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T16-我的菜单与账号动作.md",
+    "sha256": "564fae450496147a909d419313ab4f75a8bf7c487342bd6dd5522d30ad7bec62"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T17-我的装备展示入口.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T17-我的装备展示入口.md",
+    "sha256": "28225e22150da8aff123f71bafc3d578fa7215ee748706f81ef85451f065bf1b"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T18-我的装备大产品卡.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T18-我的装备大产品卡.md",
+    "sha256": "5f5f0213685ed789aaea31ec13c18c66b48cd6480dcd3b3e3b5555c7f5e26407"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T19-装备历史与首页入口.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T19-装备历史与首页入口.md",
+    "sha256": "d8b29290bb3069d0240148fe80a46220725127d81f2aa408dfdc875e3068e775"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T20-作业详情页头信息卡.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T20-作业详情页头信息卡.md",
+    "sha256": "a4ee38a245f3a171381620cbf98462857f2787acfcdd0ce7b8d32d72b7175ca8"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T21-作业参与人员行.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T21-作业参与人员行.md",
+    "sha256": "e56812b2e879d6a2a913ebbc681b947c21c3aa89d810bb1ebc2cf90a8d459b45"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T22-作业事件与监护人联系.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T22-作业事件与监护人联系.md",
+    "sha256": "f7cf13daa050459b68b0a744bdccb0fdd2920eb34e9e4684c66fcd3d3ce1b22a"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T23-消息列表与筛选.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T23-消息列表与筛选.md",
+    "sha256": "adff5ed300da14476d4a681336776723cb7a991d21e36580d30b9b7f5e0d4afd"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T24-普通消息详情.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T24-普通消息详情.md",
+    "sha256": "bb4d28308b5db93962125265c932d0998073ed09b84bb329911e938030ccfa27"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T25-核验页头与来源卡.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T25-核验页头与来源卡.md",
+    "sha256": "fa53b5799f84002a8780ed8cd553e6bb835f1809c9811ce621994c34bc1bda24"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T26-核验说明与双按钮.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T26-核验说明与双按钮.md",
+    "sha256": "ef056fba7c6ec879b4f6d3e22ec0f4cea52408d1747a94091edc764355acfcab"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T27-核验本地附件.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T27-核验本地附件.md",
+    "sha256": "743d8e671a4fbc38e754cf72a46715f2fce5d2e26ea3cbc63605d260b639653f"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T28-SOS标识与人员头部.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T28-SOS标识与人员头部.md",
+    "sha256": "7d5b4775e877e877e8cfd284da502722bacbf33370d64d8bb8182afc3f4f4087"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T29-SOS地图与位置来源.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T29-SOS地图与位置来源.md",
+    "sha256": "f6aa84c89bb29e9b1bcef96e3b4d72120dc51f868f6c3210c6ce20b9d1a8f07f"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T30-SOS协助双按钮.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T30-SOS协助双按钮.md",
+    "sha256": "5b9d6a921bbcb4d9cd3bd6ecd68e8f8d9a914658769f4cd2946036d0d6d0cd8a"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T31-视频身份与大画面.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T31-视频身份与大画面.md",
+    "sha256": "dbab394577424150fca39ffc9a12a5dcd60c1237f6cf5f52933849631aee2a4c"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T32-视频控制与挂断.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T32-视频控制与挂断.md",
+    "sha256": "1806b124510a55688029ed82a0f231646ad7ac34dbdfaf8474d8cd221c1556b8"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T33-登录页头与背景.md",
+    "sha256": "e0b1113157082132dc051a19aa6213fc9f6cb28a7e84f47eb4ec08a6d6c92644"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T34-登录表单与验证码.md",
+    "sha256": "ba76ff5d6c13c6fe526f6e2a193c6d5a63cc56d81469854517c82ca746e4d11b"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T35-登录帮助与反馈.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T35-登录帮助与反馈.md",
+    "sha256": "33a08b3dfbcdff89f23a1e417f1f45b3f58ae7e92df976594da90a1c57bcf0d0"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T36-厂站选择页面.md",
+    "sha256": "aad3bed8cf558ca1a1ae54c69ebacec9944c3a19e3e909015cfc45cdcbfd4618"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T37-人员搜索列表.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T37-人员搜索列表.md",
+    "sha256": "8ffa8495078c265e5b47761bdd5bcabaa985f6305fe1c51a5ae6bad51248d40d"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T38-人员详情与装备关联.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T38-人员详情与装备关联.md",
+    "sha256": "d4e2301910744eacd42bdb42b90b77a571112611eb20e66897c86e119878a1ea"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T39-设备列表与筛选.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T39-设备列表与筛选.md",
+    "sha256": "3f83c8e1e95d93ff957b341c5c7138055a4183d26c0e9a0ace879f655340512e"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T40-设备详情能力按钮.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T40-设备详情能力按钮.md",
+    "sha256": "966edff81bd6a5469599c0967853ba31590219887f344888a805b79ec1c980ec"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T41-作业查询列表.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T41-作业查询列表.md",
+    "sha256": "81884e56d0be32499482d8abc1a2e4fbd36f0b8ff529f64b081de295ca3af94d"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T42-失去监护列表.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T42-失去监护列表.md",
+    "sha256": "80108af1a23ff671f5bc9c9a3f7d51738cd1ec0fc2c4135f3ea61751e0962dba"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T43-围栏列表.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T43-围栏列表.md",
+    "sha256": "814a6a993c1b6110618db4011cfe5d588e27cd4e3b832ca286dd55d940fc8e4d"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T44-围栏详情关联内容.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T44-围栏详情关联内容.md",
+    "sha256": "85a44ae7f097bbfbb120d49f70ac720af3103ab164b0201895faa8428647dc9a"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T45-轨迹人员日期筛选.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T45-轨迹人员日期筛选.md",
+    "sha256": "338381742485579af2c8a6958919901d5a66df970de564aeb42ec63f9208ef55"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T46-轨迹地图与回放.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T46-轨迹地图与回放.md",
+    "sha256": "7f842993279c2beb59a94ad6dcbf6644e77b4fd74eb0fe27e95bdf3dd64bbc52"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T47-我的接警状态.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T47-我的接警状态.md",
+    "sha256": "35b10451742597012111794a725444a93a7a1cf633ca9393cbd65c555781d25f"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T48-值班交接卡与弹层.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T48-值班交接卡与弹层.md",
+    "sha256": "871ed35bc79f532219a994211c5af867232d27f843dc55ee40f9e2ab275bad92"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/T49-全局弹层与系统主题收口.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/T49-全局弹层与系统栏收口.md",
+    "sha256": "94aae41db7b5ee489cb261318a7afc5dd1468b50644f1a966ba198869cc85512"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/README.md",
+    "sha256": "8a7ab53587ff4fdb3b0c16c1c237801d6470b1ae101dcd1e324984c2e5b333bb"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/00-总指挥与总限制.md",
+    "sha256": "9921853679bacbd38d916d14152a510d60ed6409b153fbb72ac3f7ecee784a6f"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/02-逐任务验收与回退规则.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/02-逐任务验收与回退规则.md",
+    "sha256": "732c62ac3e1aa186aff3b97c9026bcb317dcd4ad07f8a676685e4c034c9cbc45"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/03-主题与素材衔接说明.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/03-局部视图与素材衔接说明.md",
+    "sha256": "f5b03e6eff19c75b8634e5495db43390d4f5121d00ced8150550119567d98d4a"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/开发任务拆分/04-预览图差异与局部例外登记.md",
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/04-预览图差异与局部例外登记.md",
+    "sha256": "6c7452e896d2dc8fc7519fa2f8387364c5e9e892c19cbf6ab231c48fb2ebcff3"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/01-任务总表与执行顺序.md",
+    "sha256": "90c3102e089605e118e061be2c358322337adaf50ece484b659d7d786072ee67"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/05-任务进度与续作安排.md",
+    "sha256": "09421546e2a9d74f186243817c6e0551b822d6e49c01b00520c592b3dc8dc5ed"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/01-参考图逐页分析.md",
+    "restoredRelativePath": "新版安卓端开发/01-参考图逐页分析.md",
+    "sha256": "f0bc4f2ea76a89995b30744b2b8963edeeb9bc30ec879f344381034b8fe0fbf0"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/02-当前系统与参考图差别文档.md",
+    "restoredRelativePath": "新版安卓端开发/02-当前系统与参考图差别文档.md",
+    "sha256": "3cee41b0c83f14ebe26ade10f451d8819f1d8c48c4e7e4e8b9427b20fb1d2691"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/03-新版安卓端UI开发文档.md",
+    "restoredRelativePath": "新版安卓端开发/03-新版安卓端UI开发文档.md",
+    "sha256": "8f6349a8236e5699a5c039e6a60e994751854b59a73d9828977a20e832dbd2aa"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/04-UI素材清单.md",
+    "restoredRelativePath": "新版安卓端开发/04-UI素材清单.md",
+    "sha256": "2062ff9a45b850de381964590189b7af7961292e741efd0a07c2d3de628f979b"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/07-安卓页面职责与冲突整改方案.md",
+    "restoredRelativePath": "新版安卓端开发/07-安卓页面职责与冲突整改方案.md",
+    "sha256": "720641f54ea095afc416a1c4f3c5775604e70e153784f59105263e7987fcf993"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/09-安卓整改重点总结-审核预览.md",
+    "restoredRelativePath": "新版安卓端开发/09-安卓整改重点总结-审核预览.md",
+    "sha256": "aa34b17c2b2587e7eedd9a15db7332ee0d04f25e3be6cacf053a96ebd90ffff9"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/08-安卓统一视觉与明暗主题规范.md",
+    "restoredRelativePath": "新版安卓端开发/08-安卓统一视觉规范.md",
+    "sha256": "d35810b35a752720c442ab6bd1fa80b4e35f6525bead99d3c2d51c317cbaee1e"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/10-安卓开发指南-预览图复刻与微调.md",
+    "restoredRelativePath": "新版安卓端开发/10-安卓开发指南-预览图复刻与微调.md",
+    "sha256": "dc63991cf46f2f6f9188bff00d7656d001e926113b6224685b370c417a50de23"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/11-安卓逐页开发说明与跳转保留表.md",
+    "restoredRelativePath": "新版安卓端开发/11-安卓逐页开发说明与跳转保留表.md",
+    "sha256": "1a32ce64fb53458817a74a5fa7e3762702110d9d95639b6172d288a60f4623fd"
+  },
+  {
+    "originalRelativePath": "垃圾桶/2026-09-17-取消明暗规划/新版安卓端开发/12-安卓开发强限制与验收清单.md",
+    "restoredRelativePath": "新版安卓端开发/12-安卓开发强限制与验收清单.md",
+    "sha256": "d1d068ba7ed445c778d08d65e2de8e3630434822ecd1f85dd5d1884588630efd"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/00-文档说明.md",
+    "sha256": "198bd58fd4e305d4e2e8037dfd4917fdc08e2947932a0871b8422b496e2d3419"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/我的页面开发说明.md",
+    "sha256": "152852b355dc4d65e9699a55d3c714afeacac435ef52f2e56c418a379dd89565"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/我的页面整改验收/验收说明.md",
+    "sha256": "fcdc2ad5ca7959bd3b46509905d8f31902b0f8563b3099d0bcda577ae53c5657"
+  },
+  {
+    "originalRelativePath": null,
+    "restoredRelativePath": "新版安卓端开发/开发任务拆分/06-文档恢复与修订记录.md",
+    "sha256": "a2797a8f765bd2e8d425e8ef08e814723f7cfcd69d0a782768ad5ec7b16dcdf5"
+  }
+]

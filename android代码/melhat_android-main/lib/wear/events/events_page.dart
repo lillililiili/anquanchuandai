@@ -8,6 +8,7 @@ import 'event_controller.dart';
 import 'event_models.dart';
 import 'event_repository.dart';
 import 'event_state_store.dart';
+import 'event_reference_view.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({
@@ -219,9 +220,48 @@ class _EventsPageState extends State<EventsPage> {
     if (controller == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (widget.eventId?.isNotEmpty == true) {
+      final event = controller.selected;
+      if (event != null && event.id == widget.eventId) {
+        return EventReferenceView(
+          key: ValueKey('${controller.scopeKey}:${event.id}'),
+          controller: controller,
+          onBack: _backToEvents,
+          onSubmit: () => _execute(controller, EventCommand.handle),
+          onCommunication: () => context.push(
+            Uri(
+              path: '/communications',
+              queryParameters: {
+                'eventId': event.id,
+                if (event.deviceId.isNotEmpty) 'deviceId': event.deviceId,
+                if (event.personId.isNotEmpty) 'personId': event.personId,
+              },
+            ).toString(),
+          ),
+          legacyDetail: _detail(
+            controller,
+            event,
+            includeHandle: event.type == 'sos',
+          ),
+        );
+      }
+      return Scaffold(
+        appBar: AppBar(
+          leading: BackButton(onPressed: _backToEvents),
+          title: const Text('事件详情'),
+        ),
+        body: controller.detailLoading || controller.loading
+            ? const Center(child: CircularProgressIndicator())
+            : WearEmpty(
+                title: '事件详情暂不可用',
+                detail: controller.errorMessage,
+                onRetry: () => controller.select(widget.eventId!),
+              ),
+      );
+    }
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     return PopScope(
-      canPop: !controller.writing && controller.selected == null,
+      canPop: !controller.writing,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop || controller.writing) return;
         if (keyboardOpen) {
@@ -291,13 +331,6 @@ class _EventsPageState extends State<EventsPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _notice(controller.successMessage!),
                   ),
-                if (controller.selected case final event?) ...[
-                  const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _detail(controller, event),
-                  ),
-                ],
                 const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -331,6 +364,30 @@ class _EventsPageState extends State<EventsPage> {
         ),
       ),
     );
+  }
+
+  void _backToEvents() {
+    if (_controller?.writing == true) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/events');
+    }
+  }
+
+  Future<void> _openEvent(EventController controller, String id) async {
+    await context.push(
+      Uri(path: '/events', queryParameters: {'eventId': id}).toString(),
+    );
+    if (!mounted || !identical(controller, _controller)) return;
+    // Read persisted child drafts before refreshing the underlying list.
+    final session = _session!;
+    await controller.replaceScope(
+      scopeKey: session.scopeKey,
+      actor: _actor(session),
+      store: _store(session),
+    );
+    _restoreScroll();
   }
 
   Widget _filters(EventController controller) => WearCard(
@@ -405,7 +462,9 @@ class _EventsPageState extends State<EventsPage> {
       child: InkWell(
         key: ValueKey('wear-event-${event.id}'),
         borderRadius: BorderRadius.circular(22),
-        onTap: controller.writing ? null : () => controller.select(event.id),
+        onTap: controller.writing
+            ? null
+            : () => _openEvent(controller, event.id),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -419,7 +478,9 @@ class _EventsPageState extends State<EventsPage> {
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(
-                  Icons.warning_amber_rounded,
+                  event.type == 'sos'
+                      ? Icons.error_rounded
+                      : Icons.warning_amber_rounded,
                   color: _eventColor(event),
                 ),
               ),
@@ -482,7 +543,11 @@ class _EventsPageState extends State<EventsPage> {
     ),
   );
 
-  Widget _detail(EventController controller, WearEvent event) => WearCard(
+  Widget _detail(
+    EventController controller,
+    WearEvent event, {
+    bool includeHandle = true,
+  }) => WearCard(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -500,7 +565,7 @@ class _EventsPageState extends State<EventsPage> {
             ),
             IconButton(
               tooltip: '收起详情',
-              onPressed: controller.writing ? null : controller.closeDetail,
+              onPressed: controller.writing ? null : _backToEvents,
               icon: const Icon(Icons.close),
             ),
           ],
@@ -590,7 +655,7 @@ class _EventsPageState extends State<EventsPage> {
           ),
         ],
         const Divider(height: 28),
-        _actions(controller),
+        _actions(controller, includeHandle: includeHandle),
         const Divider(height: 28),
         const Text(
           '处置时间线',
@@ -607,7 +672,7 @@ class _EventsPageState extends State<EventsPage> {
     ),
   );
 
-  Widget _actions(EventController controller) {
+  Widget _actions(EventController controller, {bool includeHandle = true}) {
     final canHandle = controller.can(EventCommand.handle);
     final buttons = <Widget>[
       if (controller.can(EventCommand.ack))
@@ -666,16 +731,21 @@ class _EventsPageState extends State<EventsPage> {
           style: TextStyle(fontWeight: FontWeight.w700, color: WearColors.ink),
         ),
         const SizedBox(height: 10),
-        if (controller.conflictMessage case final message?) ...[
+        if (controller.conflictMessage case final message?
+            when widget.eventId == null) ...[
           _actionNotice('$message；已重新读取服务器状态，未提交草稿仍保留。', danger: true),
           const SizedBox(height: 10),
         ],
-        if (controller.successMessage case final message?) ...[
+        if (controller.successMessage case final message?
+            when widget.eventId == null) ...[
           _actionNotice(message),
           const SizedBox(height: 10),
         ],
         if (controller.writing) const LinearProgressIndicator(minHeight: 3),
-        if (canHandle) ...[_handleForm(controller), const SizedBox(height: 12)],
+        if (canHandle && includeHandle) ...[
+          _handleForm(controller),
+          const SizedBox(height: 12),
+        ],
         Wrap(spacing: 8, runSpacing: 8, children: buttons),
         if (!canHandle && buttons.isEmpty)
           const Text(
@@ -1320,7 +1390,7 @@ String _taskStatusLabel(String value) =>
     (value.isEmpty ? '状态未知' : value);
 
 Color _eventColor(WearEvent event) =>
-    event.isHighRisk ? WearColors.danger : WearColors.warning;
+    event.type == 'sos' ? WearColors.danger : WearColors.warning;
 Color _statusColor(String status) => switch (status) {
   'closed' => WearColors.muted,
   'pending_review' => WearColors.warning,

@@ -1,0 +1,17 @@
+[
+  {
+    "original": "android代码/melhat_android-main/lib/wear/app.dart",
+    "backup": "垃圾桶/2026-09-17-异常核验与SOS修改前/android代码/melhat_android-main/lib/wear/app.dart",
+    "sha256": "6b74faa869ee749df4e2d1a9c7ba589b32be8094df3a8b6261ac7b39aa990473"
+  },
+  {
+    "original": "android代码/melhat_android-main/lib/wear/events/events_page.dart",
+    "backup": "垃圾桶/2026-09-17-异常核验与SOS修改前/android代码/melhat_android-main/lib/wear/events/events_page.dart",
+    "sha256": "2d61342de7656442d9ed07139c138d1dd0ece59bb4d3782302bba5c7bcd2c258"
+  },
+  {
+    "original": "android代码/melhat_android-main/test/wear_events_widget_test.dart",
+    "backup": "垃圾桶/2026-09-17-异常核验与SOS修改前/android代码/melhat_android-main/test/wear_events_widget_test.dart",
+    "sha256": "1390f01e1418d931ebc77ca634cc92e5b666460d6d2258eabbb9cd7fd3d7d77a"
+  }
+]

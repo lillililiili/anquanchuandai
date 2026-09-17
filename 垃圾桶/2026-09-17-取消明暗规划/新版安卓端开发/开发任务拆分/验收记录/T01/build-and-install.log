@@ -1,0 +1,20 @@
+Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+Running Gradle task 'assembleDebug'...                          
+Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+Running Gradle task 'assembleDebug'...                            131.4s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+
+LastWriteTime         Length
+-------------         ------
+2026/9/17 14:32:37 369595619
+
+
+Performing Streamed Install
+Success
+Starting: Intent { cmp=com.rolling.intelligence_headband/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.rolling.intelligence_headband/.MainActivity
+TotalTime: 4101
+WaitTime: 4110
+Complete

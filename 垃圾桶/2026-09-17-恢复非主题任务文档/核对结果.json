@@ -1,0 +1,13 @@
+{
+  "tasks": 48,
+  "statusCounts": {
+    "部分完成": 4,
+    "未开始": 40,
+    "待用户审核（开发自验通过）": 4
+  },
+  "checkedDocs": 71,
+  "protectedFilesUnchanged": 295,
+  "changedProtectedFiles": [],
+  "brokenLinks": [],
+  "errors": []
+}

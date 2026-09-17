@@ -1,0 +1,125 @@
+{
+  "date": "2026-09-17",
+  "pathBase": "项目根目录",
+  "scope": "消息异常核验02与SOS协助04",
+  "backupFiles": [
+    {
+      "originalRelativePath": "android代码/melhat_android-main/lib/wear/app.dart",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/android代码/melhat_android-main/lib/wear/app.dart",
+      "sha256": "6b74faa869ee749df4e2d1a9c7ba589b32be8094df3a8b6261ac7b39aa990473"
+    },
+    {
+      "originalRelativePath": "android代码/melhat_android-main/lib/wear/events/events_page.dart",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/android代码/melhat_android-main/lib/wear/events/events_page.dart",
+      "sha256": "2d61342de7656442d9ed07139c138d1dd0ece59bb4d3782302bba5c7bcd2c258"
+    },
+    {
+      "originalRelativePath": "android代码/melhat_android-main/test/wear_events_widget_test.dart",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/android代码/melhat_android-main/test/wear_events_widget_test.dart",
+      "sha256": "1390f01e1418d931ebc77ca634cc92e5b666460d6d2258eabbb9cd7fd3d7d77a"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/01-任务总表与执行顺序.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/01-任务总表与执行顺序.md",
+      "sha256": "d6ddce4a65181f9f367f32d9fd2970cdaf5f5310825947848d027e0d0c2342ce"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/04-预览图差异与局部例外登记.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/04-预览图差异与局部例外登记.md",
+      "sha256": "c4410faa6c335375417569d3096477188b0019868d0b11e031d96259a8f52e80"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/05-任务进度与续作安排.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/05-任务进度与续作安排.md",
+      "sha256": "c8e4a4b884669ee5336081295b1b360f621edcdefefe6f394f58410b1b59b354"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/README.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/README.md",
+      "sha256": "4188222e4bd01f739067c22dc8f5dffea57f190f21297c6a6282e9a6cb184134"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T23-消息列表与筛选.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T23-消息列表与筛选.md",
+      "sha256": "adff5ed300da14476d4a681336776723cb7a991d21e36580d30b9b7f5e0d4afd"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T24-普通消息详情.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T24-普通消息详情.md",
+      "sha256": "bb4d28308b5db93962125265c932d0998073ed09b84bb329911e938030ccfa27"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T25-核验页头与来源卡.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T25-核验页头与来源卡.md",
+      "sha256": "fa53b5799f84002a8780ed8cd553e6bb835f1809c9811ce621994c34bc1bda24"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T26-核验说明与双按钮.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T26-核验说明与双按钮.md",
+      "sha256": "ef056fba7c6ec879b4f6d3e22ec0f4cea52408d1747a94091edc764355acfcab"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T27-核验本地附件.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T27-核验本地附件.md",
+      "sha256": "743d8e671a4fbc38e754cf72a46715f2fce5d2e26ea3cbc63605d260b639653f"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T28-SOS标识与人员头部.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T28-SOS标识与人员头部.md",
+      "sha256": "7d5b4775e877e877e8cfd284da502722bacbf33370d64d8bb8182afc3f4f4087"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T29-SOS地图与位置来源.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T29-SOS地图与位置来源.md",
+      "sha256": "f6aa84c89bb29e9b1bcef96e3b4d72120dc51f868f6c3210c6ce20b9d1a8f07f"
+    },
+    {
+      "originalRelativePath": "新版安卓端开发/开发任务拆分/T30-SOS协助双按钮.md",
+      "backupRelativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/新版安卓端开发/开发任务拆分/T30-SOS协助双按钮.md",
+      "sha256": "5b9d6a921bbcb4d9cd3bd6ecd68e8f8d9a914658769f4cd2946036d0d6d0cd8a"
+    }
+  ],
+  "newFiles": [
+    {
+      "relativePath": "android代码/melhat_android-main/lib/wear/events/event_reference_view.dart",
+      "sha256": "b0b6da5e8809c661870e22710b384ad6dc9feb8e498e73bb7d8f5f5e08f8db19",
+      "restore": "本轮新增文件；回退时先转存至垃圾桶，禁止直接删除其他文件"
+    },
+    {
+      "relativePath": "android代码/melhat_android-main/test/wear_event_reference_test.dart",
+      "sha256": "322b170afd996831f68f62ab4975f139bac127b6d7b1a7a4b34b1d545f0b7b35",
+      "restore": "本轮新增文件；回退时先转存至垃圾桶，禁止直接删除其他文件"
+    },
+    {
+      "relativePath": "android代码/melhat_android-main/assets/field-brand/preview/verify_reference_hero.png",
+      "sha256": "f55f858d0a192873201a55abb3450f288e009ae3734f13518b0b15c4fbbf6675",
+      "restore": "本轮新增文件；回退时先转存至垃圾桶，禁止直接删除其他文件"
+    },
+    {
+      "relativePath": "android代码/melhat_android-main/assets/field-brand/preview/sos_reference_hero.png",
+      "sha256": "e65e8ed58eac8a0d306bcafe21dd25bed065160b43b0e834fc8b966b551c7fe0",
+      "restore": "本轮新增文件；回退时先转存至垃圾桶，禁止直接删除其他文件"
+    },
+    {
+      "relativePath": "新版安卓端开发/UI素材/背景/verify_reference_hero.png",
+      "sha256": "f55f858d0a192873201a55abb3450f288e009ae3734f13518b0b15c4fbbf6675",
+      "restore": "本轮新增文件；回退时先转存至垃圾桶，禁止直接删除其他文件"
+    },
+    {
+      "relativePath": "新版安卓端开发/UI素材/背景/sos_reference_hero.png",
+      "sha256": "e65e8ed58eac8a0d306bcafe21dd25bed065160b43b0e834fc8b966b551c7fe0",
+      "restore": "本轮新增文件；回退时先转存至垃圾桶，禁止直接删除其他文件"
+    }
+  ],
+  "beforeApk": {
+    "relativePath": "垃圾桶/2026-09-17-异常核验与SOS修改前/before.apk",
+    "sha256": "0d5c55520a3e804af1665b8ad87f95bd20127d56fff98da2b93bd2f68e0caafa"
+  },
+  "installedApk": {
+    "relativePath": "android代码/melhat_android-main/build/app/outputs/flutter-apk/app-debug.apk",
+    "sha256": "59a92440953b36b4dc85186d66f365bd632d13042e7d1c0de672a5e53ae03c68",
+    "device": "emulator-5554",
+    "verifiedInstalledSha256": "59a92440953b36b4dc85186d66f365bd632d13042e7d1c0de672a5e53ae03c68"
+  },
+  "note": "验收记录目录为本轮新增证据；恢复时保留证据，按备份相对路径逐项恢复，不覆盖其他改动。"
+}

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
+import 'work_reference.dart';
 
 class WorkbenchPage extends StatefulWidget {
   const WorkbenchPage({super.key});
@@ -107,12 +108,28 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   children: [
-                    _pageHeader(),
-                    const SizedBox(height: 12),
-                    _greeting(),
-                    const SizedBox(height: 12),
-                    _dutyActions(summary),
-                    const SizedBox(height: 12),
+                    Container(
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage(
+                            'assets/field-brand/preview/work_reference_header.png',
+                          ),
+                          fit: BoxFit.cover,
+                          opacity: .70,
+                          alignment: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          _pageHeader(),
+                          const SizedBox(height: 12),
+                          _greeting(),
+                          const SizedBox(height: 4),
+                          _dutyActions(summary),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     _currentWorkCard(summary),
                     const SizedBox(height: 12),
                     _equipmentCard(),
@@ -350,7 +367,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
 
   Widget _pageHeader() {
     final session = _session;
-    final count = intOf(_summary?['unclaimed']);
+    final count = _inboxCount ?? intOf(_summary?['unclaimed']);
     return Row(
       children: [
         const FittedBox(
@@ -390,7 +407,11 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                         ),
                       ),
                     ),
-                    const Icon(Icons.expand_more, size: 16, color: WearColors.muted),
+                    const Icon(
+                      Icons.expand_more,
+                      size: 16,
+                      color: WearColors.muted,
+                    ),
                   ],
                 ),
               ],
@@ -469,87 +490,131 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
   Widget _currentWorkCard(JsonMap summary) {
     final tasks = jsonList(summary['activeTasks']);
     final task = tasks.isEmpty ? null : tasks.first;
-    final title = textOf(task?['title'], '锅炉平台检修');
-    final space = textOf(task?['spaceName'], 'B12');
-    final ticket = task == null
-        ? 'GL-20260915-018 · 来源工作票'
-        : _ticketLine(task);
-    void open() {
-      if (task != null) {
-        context.push('/tasks/${idOf(task['id'])}');
-      } else {
-        context.push('/tasks');
-      }
-    }
-    return WearCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 12, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const WearSectionTitle('当前作业'),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final title = textOf(task?['title'], '暂无当前作业');
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final height = 228.0 + (textScale - 1).clamp(0, 2) * 130;
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: SizedBox(
+          height: height,
+          child: Stack(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Positioned.fill(
+                bottom: 40,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/field-brand/preview/work_reference_scene.png',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.centerRight,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 1,
+                left: 4,
+                right: 2,
+                child: Row(
                   children: [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: WearColors.ink,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3C4),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            space,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF8A6A00),
-                            ),
-                          ),
-                        ),
-                      ],
+                    Container(
+                      width: 5,
+                      height: 25,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF008BFF),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    _metaLine(Icons.person_outline, '负责人', '李志远'),
-                    _metaLine(Icons.person_outline, '监护人', '周明'),
-                    _metaLine(Icons.description_outlined, '', ticket),
+                    const SizedBox(width: 10),
+                    const Text(
+                      '当前作业',
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF101F43),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              const WearAssetImage(
-                WearArt.workScene,
-                width: 92,
-                height: 108,
-                fit: BoxFit.cover,
-                borderRadius: BorderRadius.all(Radius.circular(12)),
+              Positioned(
+                left: 5,
+                top: 43,
+                right: 118,
+                bottom: 50,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF101F43),
+                      ),
+                    ),
+                    const Spacer(),
+                    _metaLine(
+                      Icons.person_outline,
+                      '负责人',
+                      task == null ? '未关联' : workOwnerLabel(task, _session!),
+                    ),
+                    const SizedBox(height: 5),
+                    _metaLine(
+                      Icons.person_outline,
+                      '监护人',
+                      task == null ? '未关联' : workGuardianLabel(task),
+                    ),
+                    const SizedBox(height: 5),
+                    _metaLine(
+                      Icons.description_outlined,
+                      '',
+                      task == null ? '暂无来源工作票' : _ticketLine(task),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: FilledButton(
+                  key: const ValueKey('view-current-work'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF008BFF),
+                    minimumSize: const Size.fromHeight(44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                  onPressed: () => context.push(
+                    task == null ? '/tasks' : '/tasks/${idOf(task['id'])}',
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '查看作业',
+                        style: TextStyle(
+                          fontSize: 17,
+                          decoration: TextDecoration.none,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.chevron_right, size: 24),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: open,
-            child: const Text('查看作业  >'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -562,7 +627,10 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
           Icon(icon, size: 15, color: WearColors.muted),
           const SizedBox(width: 6),
           if (label.isNotEmpty)
-            Text('$label  ', style: const TextStyle(color: WearColors.muted, fontSize: 12)),
+            Text(
+              '$label  ',
+              style: const TextStyle(color: WearColors.muted, fontSize: 12),
+            ),
           Expanded(
             child: Text(
               value,
@@ -578,7 +646,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
 
   String _ticketLine(JsonMap task) {
     if (task['ticketRequired'] != true) {
-      return textOf(task['ticketNo'], 'GL-20260915-018 · 来源工作票');
+      return textOf(task['ticketNo'], '无需工作票');
     }
     return switch (task['ticketStatus']?.toString()) {
       'provided' => '${textOf(task['ticketNo'])} · 来源工作票',
@@ -748,34 +816,41 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
 
   Widget _dutyActions(JsonMap summary) {
     final hasUnclaimed = intOf(summary['unclaimed']) > 0;
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Wrap(
+        spacing: 8,
+        children: [
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF008BFF),
+              visualDensity: VisualDensity.compact,
+              minimumSize: const Size(48, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+            ),
             onPressed: () =>
                 context.go(hasUnclaimed ? '/events?status=open' : '/events'),
-            icon: const Icon(Icons.arrow_forward, size: 18),
-            label: Text(hasUnclaimed ? '查看待认领事件' : '打开事件中心'),
-          ),
-        ),
-        if (_session?.isDuty == true) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _handoverBusy ? null : _startHandover,
-              icon: _handoverBusy
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.swap_horiz_rounded, size: 20),
-              label: const Text('发起值班交接'),
+            child: Text(
+              hasUnclaimed ? '查看待认领事件' : '打开事件中心',
+              style: const TextStyle(fontSize: 11),
             ),
           ),
+          if (_session?.isDuty == true)
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF008BFF),
+                visualDensity: VisualDensity.compact,
+                minimumSize: const Size(48, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+              ),
+              onPressed: _handoverBusy ? null : _startHandover,
+              child: Text(
+                _handoverBusy ? '正在提交…' : '发起值班交接',
+                style: const TextStyle(fontSize: 11),
+              ),
+            ),
         ],
-      ],
+      ),
     );
   }
 
