@@ -22,6 +22,27 @@ import static org.mockito.Mockito.when;
 class SafetyHatInfoServiceImplDemoModeTest {
 
     @Test
+    void unmatchedHatIsUnknownInsteadOfCachedOnline() throws Exception {
+        HeadbandService platform = mock(HeadbandService.class);
+        when(platform.getHeadBandList(anyMap())).thenReturn(java.util.Collections.emptyList());
+        Page<SafetyHatInfo> page = new Page<>();
+        page.setRecords(Arrays.asList(hat("OLD-001", "1", "stale")));
+        ReflectionTestUtils.invokeMethod(service(platform, false), "getStatusInfo", page);
+        assertEquals("-1", page.getRecords().get(0).getStatus());
+        org.junit.jupiter.api.Assertions.assertNull(page.getRecords().get(0).getUid());
+    }
+
+    @Test
+    void realModeDoesNotReturnStaleOnlineStateOnFailure() throws Exception {
+        HeadbandService platform = mock(HeadbandService.class);
+        when(platform.getHeadBandList(anyMap())).thenThrow(new com.ruoyi.common.exception.ServiceException("平台凭据未配置"));
+        Page<SafetyHatInfo> page = new Page<>();
+        page.setRecords(Arrays.asList(hat("REAL-001", "1", "stale-uid")));
+        org.junit.jupiter.api.Assertions.assertThrows(com.ruoyi.common.exception.ServiceException.class,
+                () -> ReflectionTestUtils.invokeMethod(service(platform, false), "getStatusInfo", page));
+    }
+
+    @Test
     void demoModeReturnsLocalRecordsAndStatusesWithoutHeadbandSync() {
         HeadbandService headbandService = mock(HeadbandService.class);
         SafetyHatInfoServiceImpl service = service(headbandService, true);

@@ -1,0 +1,89 @@
+/* One bounded workspace. Dense lists own their scroll; reading pages retain it. */
+.portal-shell { min-height:0; }
+.portal-shell .main-content { display:flex; flex-direction:column; overflow:hidden; padding:20px; }
+.main-content > :not(.route-surface) { flex-shrink:0; }
+.route-surface { flex:1; min-height:0; min-width:0; overflow:auto; scrollbar-gutter:stable; }
+.route-surface > * { min-width:0; }
+.main-content .workspace-navigation { margin-bottom:14px; gap:8px; padding-bottom:10px; }
+.personnel-pagination, .s2-pagination { display:block; padding:0; margin:0; }
+.portal-pagination { width:100%; }
+.table-scroll, .equipment-table-wrap, .event-table-scroll, .work-table-scroll,
+.s2-material-grid, .workspace-list-scroll { overscroll-behavior:contain; scrollbar-gutter:stable; }
+.table-scroll thead th, .equipment-table-wrap thead th, .event-table-scroll thead th { position:sticky; top:0; z-index:2; background:var(--input-bg); }
+.route-surface :is(.table-scroll,.equipment-table-wrap,.event-table-scroll) { max-height:65dvh; overflow:auto; }
+.route-surface .s2-material-grid { max-height:65dvh; overflow:auto; align-content:start; }
+.workspace-list-scroll { min-height:0; overflow:auto; max-height:55dvh; }
+.personnel-side, .s2-detail { overflow:auto; }
+.el-dialog { max-height:90dvh; display:flex; flex-direction:column; }
+.el-overlay-dialog .el-dialog { margin-top:5dvh; margin-bottom:5dvh; }
+.el-dialog__header, .el-dialog__footer { flex-shrink:0; }
+.el-dialog__body { min-height:0; overflow:auto; }
+.route-surface .data-state { min-height:120px; }
+.route-surface .personnel-list-layout:not(.has-selection),
+.route-surface .event-list-columns:not(.has-selection),
+.route-surface .s2-material-layout:not(.has-selection) { grid-template-columns:minmax(0,1fr); }
+.route-surface .s2-fence-grid:not(.has-selection) { grid-template-columns:minmax(230px,25%) minmax(0,1fr); }
+.route-surface .dispatch-stack { align-content:start; }
+.route-surface .work-columns:not(.standalone):not(.has-selection) { grid-template-columns:minmax(0,1fr); }
+.route-surface .event-associations, .route-surface .event-evidence-columns { align-items:start; }
+.route-surface .data-state.compact { min-height:72px; flex:0 0 auto; padding:12px; }
+.route-surface .workbench-panel { align-self:start; }
+.route-surface .s2-material-layout:not(.has-selection) .s2-material-grid { grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
+@media(max-width:900px) { .route-surface .s2-fence-grid:not(.has-selection) { grid-template-columns:minmax(0,1fr); } }
+
+@media (min-width:1201px) and (min-height:760px) {
+  .route-surface:is([data-route='/personnel'],[data-route='/equipment'],[data-route='/alarms'],[data-route='/materials'],[data-route='/location'],[data-route='/supervision'],[data-route='/video']) { display:flex; flex-direction:column; overflow:hidden; }
+  .route-surface:is([data-route='/personnel'],[data-route='/equipment'],[data-route='/alarms'],[data-route='/materials'],[data-route='/location'],[data-route='/supervision'],[data-route='/video']) > * { flex-shrink:0; }
+  .route-surface > :is(.personnel-page,.equipment-page,.event-workspace,.s2-page,.work-monitor,.video-workspace) { flex:1; display:flex; flex-direction:column; min-height:0; gap:12px; }
+  .route-surface > :is(.personnel-page,.equipment-page,.event-workspace,.s2-page,.work-monitor,.video-workspace) > * { flex-shrink:0; }
+  .personnel-page-heading, .s2-heading, .event-heading, .video-heading { margin-bottom:0; }
+  .personnel-list-layout, .event-list-columns, .s2-material-layout, .s2-location-grid, .s2-fence-grid, .work-columns:not(.standalone), .video-columns:not(.single-video) { flex:1; min-height:0; align-items:stretch; }
+  .personnel-list-main, .personnel-table-panel, .event-table-panel, .s2-material-main, .s2-list { display:flex; flex-direction:column; min-height:0; }
+  .personnel-list-main > *, .personnel-table-panel > *, .event-table-panel > *, .s2-material-main > *, .s2-list > * { flex-shrink:0; }
+  .personnel-table-panel { flex:1; }
+  .personnel-side { min-height:0; height:100%; }
+  .personnel-table-panel > .table-scroll, .equipment-page > .equipment-table-wrap, .event-table-panel > .event-table-scroll,
+  .s2-material-main > .s2-material-grid, .s2-list > .workspace-list-scroll { flex:1; min-height:0; max-height:none; overflow:auto; }
+  .personnel-pagination, .s2-pagination { margin-top:auto; }
+  .personnel-filters { margin-bottom:12px; }
+  .event-table-panel { padding-bottom:0; }
+  .event-aside, .s2-detail { height:100%; min-height:0; max-height:none; overflow:auto; align-self:stretch; }
+  .s2-map-column { min-height:0; }
+  .s2-page:has(.s2-playback) .s2-location-grid { height:auto; min-height:0; }
+  .s2-map { min-height:200px; }
+  .s2-position-card { max-height:calc(100% - 130px); overflow:auto; }
+  .s2-map-column > .s2-note { flex-shrink:0; padding:6px; }
+  .s2-material-card { align-self:start; }
+  .work-columns:not(.standalone) > .work-panel { min-height:0; overflow:auto; }
+  .work-columns:not(.standalone) > .work-panel:first-child { display:flex; flex-direction:column; }
+  .work-columns:not(.standalone) > .work-panel:first-child > * { flex-shrink:0; }
+  .work-columns:not(.standalone) .work-table-scroll { flex:1; min-height:80px; max-height:none; }
+  .work-columns:not(.standalone) .work-time-window { max-height:150px; overflow:auto; }
+  .video-columns:not(.single-video) > * { min-height:0; overflow:auto; max-height:none; }
+  .video-device-strip { max-height:140px; overflow:auto; }
+  .video-workspace > .portal-pagination { margin-top:auto; }
+}
+
+/* High zoom / short windows: never clip filters or controls to force a single screen. */
+@media (max-width:1200px), (max-height:759px) {
+  .portal-shell .main-content { padding:12px; overflow:auto; }
+  .route-surface { flex:none; overflow:visible; }
+  .personnel-table-panel, .personnel-side { min-height:0; }
+  .table-scroll, .equipment-table-wrap, .event-table-scroll, .work-table-scroll,
+  .workspace-list-scroll { max-height:clamp(180px, calc(100dvh - 420px), 55dvh); overflow:auto; }
+  .route-surface :is(.table-scroll,.equipment-table-wrap,.event-table-scroll,.s2-material-grid) { max-height:clamp(180px, calc(100dvh - 420px), 55dvh); }
+  .personnel-side { max-height:65dvh; }
+  .s2-material-layout, .s2-fence-grid { grid-template-columns:minmax(0,1fr); }
+  .s2-detail { max-height:65dvh; }
+  .personnel-filters label, .equipment-filters label { min-width:min(160px,100%); }
+  .sidebar { min-height:0; }
+  .main-nav { min-height:0; flex:1; }
+  .topbar { gap:8px; }
+  .topbar-actions { min-width:0; }
+}
+
+@media (max-width:1100px) {
+  .portal-shell { --sidebar-width:72px; }
+  .sidebar .nav-link > span, .sidebar-controls > span, .sidebar-footer span { display:none; }
+  .sidebar .nav-link, .sidebar .admin-link { justify-content:center; padding-left:8px; padding-right:8px; }
+}

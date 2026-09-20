@@ -6,6 +6,11 @@
   "packageManager": "bun@1",
   "type": "module",
   "scripts": {
+    "dev:mock": "vite --mode admin-mock",
+    "build:mock": "vite build --mode admin-mock",
+    "preview:mock": "vite preview --mode admin-mock",
+    "test:admin-mock": "vitest run -c vitest.admin-mock.config.js",
+    "lint:admin-mock": "eslint --no-eslintrc -c .eslintrc.admin-mock.cjs src/admin-mock src/admin-provider-disabled.js vite/admin-mock.js --ext .js,.vue",
     "dev": "vite",
     "build:prod": "vite build",
     "build:stage": "vite build --mode staging",

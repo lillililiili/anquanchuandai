@@ -65,7 +65,8 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         if (StringUtils.hasText(queryVO.getBindGroup()) && !"全部".equals(queryVO.getBindGroup())) {
             wrapper.eq(SafetyHatInfo::getBindGroup, queryVO.getBindGroup());
         }
-        if (StringUtils.hasText(queryVO.getStatus()) && !"全部".equals(queryVO.getStatus())) {
+        boolean filterStatus = StringUtils.hasText(queryVO.getStatus()) && !"全部".equals(queryVO.getStatus());
+        if (demoMode && filterStatus) {
             wrapper.eq(SafetyHatInfo::getStatus, queryVO.getStatus());
         }
         if (queryVO.getStartTime() != null) {
@@ -78,6 +79,20 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         // 默认不查已删除的数据
         wrapper.eq(SafetyHatInfo::getDelFlag, '0');
 
+        if (current < 1 || size < 1 || size > 1000) throw new ServiceException("分页参数不合法");
+        // 真实状态筛选必须在平台查询之后执行，不能使用数据库缓存状态筛选。
+        if (!demoMode && filterStatus) {
+            Page<SafetyHatInfo> snapshot = new Page<>();
+            snapshot.setRecords(this.list(wrapper));
+            List<SafetyHatListVO> matching = getStatusInfo(snapshot).getRecords().stream()
+                    .filter(hat -> queryVO.getStatus().equals(hat.getStatus()))
+                    .map(this::convertToVO).collect(Collectors.toList());
+            int from = (int) Math.min((long) (current - 1) * size, matching.size());
+            int to = Math.min(from + size, matching.size());
+            Page<SafetyHatListVO> filtered = new Page<>(current, size, matching.size());
+            filtered.setRecords(new ArrayList<>(matching.subList(from, to)));
+            return filtered;
+        }
         IPage<SafetyHatInfo> page1 = this.page(new Page<>(current, size), wrapper);
         //同步状态
         IPage<SafetyHatInfo> page = getStatusInfo(page1);
@@ -97,6 +112,9 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         if (demoMode) {
             return page;
         }
+        if (CollectionUtils.isEmpty(page.getRecords())) {
+            return page;
+        }
         List<String> hatNumbers = page.getRecords().stream()
                 .map(SafetyHatInfo::getHatNumber)
                 .collect(Collectors.toList());
@@ -106,18 +124,26 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         param.put("statusOnline", "");
         try {
             List<HeadbandVO> headBandList = headbandService.getHeadBandList(param);
-            if (!CollectionUtils.isEmpty(headBandList)) {
+            if (headBandList == null) {
+                throw new ServiceException("平台未返回有效设备列表，无法确认实时状态");
+            }
                 page.getRecords().forEach(hat -> {
-                    HeadbandVO headbandVO = headBandList.stream().filter(g -> g.getHelmetSn().equals(hat.getHatNumber())).findFirst().orElse(null);
+                    HeadbandVO headbandVO = headBandList.stream().filter(g -> g != null && Objects.equals(g.getHelmetSn(), hat.getHatNumber())).findFirst().orElse(null);
                     if (headbandVO != null) {
-                        hat.setStatus(headbandVO.getOnline());
+                        hat.setStatus("1".equals(headbandVO.getOnline()) ? "1" : "0".equals(headbandVO.getOnline()) ? "0" : "-1");
                         hat.setUid(headbandVO.getUid_device());
+                    } else {
+                        // 只修改查询结果，保留数据库原记录及绑定关系。
+                        hat.setStatus("-1");
+                        hat.setUid(null);
                     }
                 });
-            }
         } catch (Exception e) {
-            log.error("同步安全帽在线状态异常:",e);
-            return page;
+            log.warn("同步安全帽在线状态失败，异常类型: " + e.getClass().getSimpleName());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            }
+            throw new ServiceException("真实设备状态查询失败，请检查平台连接；未使用本地旧状态冒充实时状态");
         }
         return page;
 
@@ -128,7 +154,9 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         LambdaQueryWrapper<SafetyHatInfo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SafetyHatInfo::getDelFlag, '0');
         List<SafetyHatInfo> list = this.list(wrapper);
-        return list.stream().map(this::convertToVO).collect(Collectors.toList());
+        Page<SafetyHatInfo> snapshot = new Page<>();
+        snapshot.setRecords(list);
+        return getStatusInfo(snapshot).getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
     }
 
     @Override
@@ -265,6 +293,8 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
             vo.setStatusText("正常使用");
         } else if ("0".equals(entity.getStatus())) {
             vo.setStatusText("已离线");
+        } else {
+            vo.setStatusText("平台未确认");
         }
 
         // 格式化电量、存储等进度条颜色（前端可能需要）

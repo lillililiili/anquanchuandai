@@ -1,6 +1,10 @@
 .DS_Store
 node_modules/
 dist/
+dist-admin-mock/
+.playwright-cli/
+output/playwright/admin-a0/
+output/playwright/admin-a1/
 npm-debug.log*
 **/*.log
 
@@ -26,3 +30,9 @@ vite.config.js
 .codeartsdoer/
 .codepilot-uploads/
 .arts/
+.playwright-cli/
+output/playwright/admin-a2/
+output/playwright/admin-a3/
+output/playwright/admin-a4/
+output/playwright/admin-a5/
+output/playwright/admin-visual/

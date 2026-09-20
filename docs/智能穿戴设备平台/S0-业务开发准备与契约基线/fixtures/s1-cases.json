@@ -1,0 +1,1103 @@
+{
+  "schemaVersion": "S1-contract-v1.0",
+  "synthetic": true,
+  "warning": "仅文档合成样例，不是接口实现、真实数据、默认演示服务或测试账号。",
+  "cases": [
+    {
+      "id": "context-authorized",
+      "endpoint": "context",
+      "query": {},
+      "pathParams": {},
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "sites": [
+            {
+              "siteId": "syn-site-1",
+              "name": "合成厂站",
+              "timeZone": null
+            }
+          ],
+          "selectedSiteId": "syn-site-1",
+          "areas": [],
+          "teams": [],
+          "shifts": [
+            {
+              "shiftId": "syn-shift-1",
+              "siteId": "syn-site-1",
+              "name": "合成班次",
+              "startsAt": null,
+              "endsAt": null,
+              "isCurrent": true
+            }
+          ],
+          "availability": {
+            "roster": "AVAILABLE",
+            "areas": "NOT_INTEGRATED",
+            "teams": "NOT_INTEGRATED",
+            "shifts": "AVAILABLE"
+          },
+          "capabilities": {
+            "people": {
+              "state": "SUPPORTED",
+              "reasonCode": null
+            },
+            "equipmentHistory": {
+              "state": "UNKNOWN",
+              "reasonCode": "HISTORY_NOT_INTEGRATED"
+            }
+          },
+          "permissions": [
+            "portal:person:read"
+          ]
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "只显示授权厂站，未接入班组区域不可选"
+    },
+    {
+      "id": "context-no-scope",
+      "endpoint": "context",
+      "query": {},
+      "pathParams": {},
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "sites": [],
+          "selectedSiteId": null,
+          "areas": [],
+          "teams": [],
+          "shifts": [],
+          "availability": {
+            "roster": "NOT_INTEGRATED",
+            "areas": "NOT_INTEGRATED",
+            "teams": "NOT_INTEGRATED",
+            "shifts": "NOT_INTEGRATED"
+          },
+          "capabilities": {
+            "people": {
+              "state": "UNSUPPORTED",
+              "reasonCode": "NO_AUTHORIZED_SITE"
+            },
+            "equipmentHistory": {
+              "state": "UNKNOWN",
+              "reasonCode": "HISTORY_NOT_INTEGRATED"
+            }
+          },
+          "permissions": []
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "无授权厂站，不回退全库"
+    },
+    {
+      "id": "people-roster-missing",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "state": "NOT_INTEGRATED",
+          "reasonCode": "ROSTER_NOT_INTEGRATED",
+          "items": [],
+          "total": null,
+          "pageNum": 1,
+          "pageSize": 20,
+          "scope": {
+            "siteId": "syn-site-1",
+            "shiftId": "syn-shift-1"
+          }
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "显示名册未接入，不显示0人"
+    },
+    {
+      "id": "people-empty",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "state": "AVAILABLE",
+          "reasonCode": null,
+          "items": [],
+          "total": 0,
+          "pageNum": 1,
+          "pageSize": 20,
+          "scope": {
+            "siteId": "syn-site-1",
+            "shiftId": "syn-shift-1"
+          }
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "已接入名册确实为空，显示0人"
+    },
+    {
+      "id": "people-equipment-states",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "state": "AVAILABLE",
+          "reasonCode": null,
+          "items": [
+            {
+              "personId": "syn-person-1",
+              "personCode": "SYN-P-001",
+              "name": "合成人员甲",
+              "avatarUrl": null,
+              "phoneMasked": null,
+              "siteId": "syn-site-1",
+              "team": null,
+              "area": null,
+              "accountId": null,
+              "legacy": {
+                "userId": null
+              },
+              "dataUpdatedAt": null,
+              "duty": {
+                "state": "AVAILABLE",
+                "data": {
+                  "shiftId": "syn-shift-1",
+                  "state": "ON_DUTY"
+                },
+                "reasonCode": null
+              },
+              "works": {
+                "state": "NOT_INTEGRATED",
+                "data": null,
+                "reasonCode": "SOURCE_NOT_INTEGRATED"
+              },
+              "equipment": {
+                "state": "AVAILABLE",
+                "data": {
+                  "helmet": {
+                    "type": "HELMET",
+                    "assignmentState": "ASSIGNED",
+                    "devices": [
+                      {
+                        "deviceId": "syn-device-1",
+                        "deviceCode": "SYN-H-001",
+                        "type": "HELMET",
+                        "model": null,
+                        "legacyHatId": "9007199254740993",
+                        "communication": {
+                          "state": "OFFLINE",
+                          "sourceKind": "PLATFORM_QUERY",
+                          "sourceTime": null,
+                          "receivedAt": null,
+                          "observedAt": "2026-09-17T03:00:00Z",
+                          "freshness": "UNKNOWN",
+                          "reasonCode": "SOURCE_TIME_MISSING"
+                        },
+                        "battery": {
+                          "value": null,
+                          "sourceTime": null,
+                          "receivedAt": null,
+                          "freshness": "UNKNOWN",
+                          "reasonCode": "SOURCE_SEMANTICS_UNCONFIRMED"
+                        },
+                        "capabilities": {
+                          "video": {
+                            "state": "UNKNOWN",
+                            "verification": "UNVERIFIED",
+                            "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                          },
+                          "talk": {
+                            "state": "UNKNOWN",
+                            "verification": "UNVERIFIED",
+                            "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                          },
+                          "location": {
+                            "state": "UNKNOWN",
+                            "verification": "UNVERIFIED",
+                            "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                          },
+                          "capture": {
+                            "state": "UNKNOWN",
+                            "verification": "UNVERIFIED",
+                            "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                          },
+                          "record": {
+                            "state": "UNKNOWN",
+                            "verification": "UNVERIFIED",
+                            "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                          }
+                        },
+                        "manufacturerExtensions": {}
+                      }
+                    ],
+                    "reasonCode": null
+                  },
+                  "belt": {
+                    "type": "BELT",
+                    "assignmentState": "UNKNOWN",
+                    "devices": [],
+                    "reasonCode": "ASSIGNMENT_SOURCE_NOT_INTEGRATED"
+                  },
+                  "watch": {
+                    "type": "WATCH",
+                    "assignmentState": "UNASSIGNED",
+                    "devices": [],
+                    "reasonCode": "AUTHORITATIVE_NO_ASSIGNMENT"
+                  }
+                },
+                "reasonCode": null
+              },
+              "actions": {
+                "viewHistory": {
+                  "allowed": false,
+                  "reasonCode": "HISTORY_NOT_INTEGRATED"
+                },
+                "viewVideo": {
+                  "allowed": false,
+                  "reasonCode": "MODULE_NOT_ENABLED"
+                },
+                "talk": {
+                  "allowed": false,
+                  "reasonCode": "MODULE_NOT_ENABLED"
+                },
+                "viewWork": {
+                  "allowed": false,
+                  "reasonCode": "MODULE_NOT_ENABLED"
+                },
+                "viewEvent": {
+                  "allowed": false,
+                  "reasonCode": "MODULE_NOT_ENABLED"
+                }
+              }
+            }
+          ],
+          "total": 1,
+          "pageNum": 1,
+          "pageSize": 20,
+          "scope": {
+            "siteId": "syn-site-1",
+            "shiftId": "syn-shift-1"
+          }
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "帽离线但上报时间未知；带领用未知；表经权威关系确认未领用"
+    },
+    {
+      "id": "person-detail",
+      "endpoint": "detail",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {
+        "personId": "syn-person-1"
+      },
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "person": {
+            "personId": "syn-person-1",
+            "personCode": "SYN-P-001",
+            "name": "合成人员甲",
+            "avatarUrl": null,
+            "phoneMasked": null,
+            "siteId": "syn-site-1",
+            "team": null,
+            "area": null,
+            "accountId": null,
+            "legacy": {
+              "userId": null
+            },
+            "dataUpdatedAt": null,
+            "duty": {
+              "state": "AVAILABLE",
+              "data": {
+                "shiftId": "syn-shift-1",
+                "state": "ON_DUTY"
+              },
+              "reasonCode": null
+            },
+            "works": {
+              "state": "NOT_INTEGRATED",
+              "data": null,
+              "reasonCode": "SOURCE_NOT_INTEGRATED"
+            },
+            "equipment": {
+              "state": "AVAILABLE",
+              "data": {
+                "helmet": {
+                  "type": "HELMET",
+                  "assignmentState": "ASSIGNED",
+                  "devices": [
+                    {
+                      "deviceId": "syn-device-1",
+                      "deviceCode": "SYN-H-001",
+                      "type": "HELMET",
+                      "model": null,
+                      "legacyHatId": "9007199254740993",
+                      "communication": {
+                        "state": "OFFLINE",
+                        "sourceKind": "PLATFORM_QUERY",
+                        "sourceTime": null,
+                        "receivedAt": null,
+                        "observedAt": "2026-09-17T03:00:00Z",
+                        "freshness": "UNKNOWN",
+                        "reasonCode": "SOURCE_TIME_MISSING"
+                      },
+                      "battery": {
+                        "value": null,
+                        "sourceTime": null,
+                        "receivedAt": null,
+                        "freshness": "UNKNOWN",
+                        "reasonCode": "SOURCE_SEMANTICS_UNCONFIRMED"
+                      },
+                      "capabilities": {
+                        "video": {
+                          "state": "UNKNOWN",
+                          "verification": "UNVERIFIED",
+                          "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                        },
+                        "talk": {
+                          "state": "UNKNOWN",
+                          "verification": "UNVERIFIED",
+                          "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                        },
+                        "location": {
+                          "state": "UNKNOWN",
+                          "verification": "UNVERIFIED",
+                          "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                        },
+                        "capture": {
+                          "state": "UNKNOWN",
+                          "verification": "UNVERIFIED",
+                          "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                        },
+                        "record": {
+                          "state": "UNKNOWN",
+                          "verification": "UNVERIFIED",
+                          "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                        }
+                      },
+                      "manufacturerExtensions": {}
+                    }
+                  ],
+                  "reasonCode": null
+                },
+                "belt": {
+                  "type": "BELT",
+                  "assignmentState": "UNKNOWN",
+                  "devices": [],
+                  "reasonCode": "ASSIGNMENT_SOURCE_NOT_INTEGRATED"
+                },
+                "watch": {
+                  "type": "WATCH",
+                  "assignmentState": "UNASSIGNED",
+                  "devices": [],
+                  "reasonCode": "AUTHORITATIVE_NO_ASSIGNMENT"
+                }
+              },
+              "reasonCode": null
+            },
+            "actions": {
+              "viewHistory": {
+                "allowed": false,
+                "reasonCode": "HISTORY_NOT_INTEGRATED"
+              },
+              "viewVideo": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              },
+              "talk": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              },
+              "viewWork": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              },
+              "viewEvent": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              }
+            }
+          },
+          "equipment": {
+            "state": "AVAILABLE",
+            "data": {
+              "helmet": {
+                "type": "HELMET",
+                "assignmentState": "ASSIGNED",
+                "devices": [
+                  {
+                    "deviceId": "syn-device-1",
+                    "deviceCode": "SYN-H-001",
+                    "type": "HELMET",
+                    "model": null,
+                    "legacyHatId": "9007199254740993",
+                    "communication": {
+                      "state": "OFFLINE",
+                      "sourceKind": "PLATFORM_QUERY",
+                      "sourceTime": null,
+                      "receivedAt": null,
+                      "observedAt": "2026-09-17T03:00:00Z",
+                      "freshness": "UNKNOWN",
+                      "reasonCode": "SOURCE_TIME_MISSING"
+                    },
+                    "battery": {
+                      "value": null,
+                      "sourceTime": null,
+                      "receivedAt": null,
+                      "freshness": "UNKNOWN",
+                      "reasonCode": "SOURCE_SEMANTICS_UNCONFIRMED"
+                    },
+                    "capabilities": {
+                      "video": {
+                        "state": "UNKNOWN",
+                        "verification": "UNVERIFIED",
+                        "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                      },
+                      "talk": {
+                        "state": "UNKNOWN",
+                        "verification": "UNVERIFIED",
+                        "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                      },
+                      "location": {
+                        "state": "UNKNOWN",
+                        "verification": "UNVERIFIED",
+                        "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                      },
+                      "capture": {
+                        "state": "UNKNOWN",
+                        "verification": "UNVERIFIED",
+                        "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                      },
+                      "record": {
+                        "state": "UNKNOWN",
+                        "verification": "UNVERIFIED",
+                        "reasonCode": "CAPABILITY_NOT_VERIFIED"
+                      }
+                    },
+                    "manufacturerExtensions": {}
+                  }
+                ],
+                "reasonCode": null
+              },
+              "belt": {
+                "type": "BELT",
+                "assignmentState": "UNKNOWN",
+                "devices": [],
+                "reasonCode": "ASSIGNMENT_SOURCE_NOT_INTEGRATED"
+              },
+              "watch": {
+                "type": "WATCH",
+                "assignmentState": "UNASSIGNED",
+                "devices": [],
+                "reasonCode": "AUTHORITATIVE_NO_ASSIGNMENT"
+              }
+            },
+            "reasonCode": null
+          },
+          "works": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "SOURCE_NOT_INTEGRATED"
+          },
+          "duty": {
+            "state": "AVAILABLE",
+            "data": {
+              "shiftId": "syn-shift-1",
+              "state": "ON_DUTY"
+            },
+            "reasonCode": null
+          },
+          "events": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "SOURCE_NOT_INTEGRATED"
+          },
+          "location": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "HISTORICAL_ATTRIBUTION_UNKNOWN"
+          },
+          "media": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "SOURCE_NOT_INTEGRATED"
+          },
+          "historySummary": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "HISTORY_NOT_INTEGRATED"
+          },
+          "actions": {
+            "viewHistory": {
+              "allowed": false,
+              "reasonCode": "HISTORY_NOT_INTEGRATED"
+            },
+            "viewVideo": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            },
+            "talk": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            },
+            "viewWork": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            },
+            "viewEvent": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            }
+          }
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "不显示假地图、作业、视频、告警或历史"
+    },
+    {
+      "id": "history-snapshot",
+      "endpoint": "history",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {
+        "personId": "syn-person-1"
+      },
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "state": "AVAILABLE",
+          "reasonCode": null,
+          "items": [
+            {
+              "recordId": "syn-record-1",
+              "relationId": "syn-relation-1",
+              "personId": "syn-person-1",
+              "deviceId": "syn-device-1",
+              "deviceCode": "SYN-H-001",
+              "deviceType": "HELMET",
+              "action": "MIGRATION_SNAPSHOT",
+              "occurredAt": null,
+              "startedAt": null,
+              "endedAt": null,
+              "operator": null,
+              "state": "UNKNOWN",
+              "evidenceQuality": "CURRENT_SNAPSHOT_ONLY",
+              "legacy": {
+                "hatId": "9007199254740993",
+                "userId": null
+              }
+            }
+          ],
+          "total": 1,
+          "pageNum": 1,
+          "pageSize": 20,
+          "scope": {
+            "siteId": "syn-site-1"
+          }
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "合成独立快照，不冒充领用或归还历史"
+    },
+    {
+      "id": "history-missing",
+      "endpoint": "history",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {
+        "personId": "syn-person-1"
+      },
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "state": "NOT_INTEGRATED",
+          "reasonCode": "HISTORY_NOT_INTEGRATED",
+          "items": [],
+          "total": null,
+          "pageNum": 1,
+          "pageSize": 20,
+          "scope": {
+            "siteId": "syn-site-1"
+          }
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "无历史证据"
+    },
+    {
+      "id": "detail-partial-failure",
+      "endpoint": "detail",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {
+        "personId": "syn-person-1"
+      },
+      "httpStatus": 200,
+      "response": {
+        "code": 200,
+        "msg": "成功",
+        "data": {
+          "person": {
+            "personId": "syn-person-1",
+            "personCode": "SYN-P-001",
+            "name": "合成人员甲",
+            "avatarUrl": null,
+            "phoneMasked": null,
+            "siteId": "syn-site-1",
+            "team": null,
+            "area": null,
+            "accountId": null,
+            "legacy": {
+              "userId": null
+            },
+            "dataUpdatedAt": null,
+            "duty": {
+              "state": "AVAILABLE",
+              "data": {
+                "shiftId": "syn-shift-1",
+                "state": "ON_DUTY"
+              },
+              "reasonCode": null
+            },
+            "works": {
+              "state": "NOT_INTEGRATED",
+              "data": null,
+              "reasonCode": "SOURCE_NOT_INTEGRATED"
+            },
+            "equipment": {
+              "state": "UNAVAILABLE",
+              "data": null,
+              "reasonCode": "SOURCE_UNAVAILABLE"
+            },
+            "actions": {
+              "viewHistory": {
+                "allowed": false,
+                "reasonCode": "SECTION_FORBIDDEN"
+              },
+              "viewVideo": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              },
+              "talk": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              },
+              "viewWork": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              },
+              "viewEvent": {
+                "allowed": false,
+                "reasonCode": "MODULE_NOT_ENABLED"
+              }
+            }
+          },
+          "equipment": {
+            "state": "UNAVAILABLE",
+            "data": null,
+            "reasonCode": "SOURCE_UNAVAILABLE"
+          },
+          "works": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "SOURCE_NOT_INTEGRATED"
+          },
+          "duty": {
+            "state": "AVAILABLE",
+            "data": {
+              "shiftId": "syn-shift-1",
+              "state": "ON_DUTY"
+            },
+            "reasonCode": null
+          },
+          "events": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "SOURCE_NOT_INTEGRATED"
+          },
+          "location": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "HISTORICAL_ATTRIBUTION_UNKNOWN"
+          },
+          "media": {
+            "state": "NOT_INTEGRATED",
+            "data": null,
+            "reasonCode": "SOURCE_NOT_INTEGRATED"
+          },
+          "historySummary": {
+            "state": "FORBIDDEN",
+            "data": null,
+            "reasonCode": "SECTION_FORBIDDEN"
+          },
+          "actions": {
+            "viewHistory": {
+              "allowed": false,
+              "reasonCode": "SECTION_FORBIDDEN"
+            },
+            "viewVideo": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            },
+            "talk": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            },
+            "viewWork": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            },
+            "viewEvent": {
+              "allowed": false,
+              "reasonCode": "MODULE_NOT_ENABLED"
+            }
+          }
+        },
+        "requestId": "syn-request-1",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "装备源失败与历史无权限分别呈现"
+    },
+    {
+      "id": "error-400",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 400,
+      "response": {
+        "code": 400,
+        "errorCode": "VALIDATION_ERROR",
+        "msg": "合成错误提示",
+        "data": null,
+        "requestId": "syn-error-400",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "按契约错误表处理，不伪装空数据"
+    },
+    {
+      "id": "error-401",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 401,
+      "response": {
+        "code": 401,
+        "errorCode": "UNAUTHENTICATED",
+        "msg": "合成错误提示",
+        "data": null,
+        "requestId": "syn-error-401",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "按契约错误表处理，不伪装空数据"
+    },
+    {
+      "id": "error-403",
+      "endpoint": "history",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {
+        "personId": "syn-person-1"
+      },
+      "httpStatus": 403,
+      "response": {
+        "code": 403,
+        "errorCode": "FORBIDDEN",
+        "msg": "合成错误提示",
+        "data": null,
+        "requestId": "syn-error-403",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "按契约错误表处理，不伪装空数据"
+    },
+    {
+      "id": "error-404",
+      "endpoint": "detail",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {
+        "personId": "syn-person-1"
+      },
+      "httpStatus": 404,
+      "response": {
+        "code": 404,
+        "errorCode": "PERSON_NOT_FOUND",
+        "msg": "合成错误提示",
+        "data": null,
+        "requestId": "syn-error-404",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "按契约错误表处理，不伪装空数据"
+    },
+    {
+      "id": "error-409",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 409,
+      "response": {
+        "code": 409,
+        "errorCode": "CONTEXT_CHANGED",
+        "msg": "合成错误提示",
+        "data": null,
+        "requestId": "syn-error-409",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "按契约错误表处理，不伪装空数据"
+    },
+    {
+      "id": "error-503",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 503,
+      "response": {
+        "code": 503,
+        "errorCode": "SOURCE_UNAVAILABLE",
+        "msg": "合成错误提示",
+        "data": null,
+        "requestId": "syn-error-503",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "按契约错误表处理，不伪装空数据"
+    },
+    {
+      "id": "error-500",
+      "endpoint": "people",
+      "query": {
+        "siteId": "syn-site-1"
+      },
+      "pathParams": {},
+      "httpStatus": 500,
+      "response": {
+        "code": 500,
+        "errorCode": "INTERNAL_ERROR",
+        "msg": "合成错误提示",
+        "data": null,
+        "requestId": "syn-error-500",
+        "asOf": "2026-09-17T03:00:00Z"
+      },
+      "expected": "按契约错误表处理，不伪装空数据"
+    }
+  ],
+  "stateSamples": {
+    "legacySnapshot": {
+      "state": "UNKNOWN",
+      "sourceKind": "LEGACY_SNAPSHOT",
+      "sourceTime": null,
+      "receivedAt": null,
+      "observedAt": null,
+      "freshness": "UNKNOWN",
+      "reasonCode": "LEGACY_STATUS_NOT_AUTHORITATIVE"
+    },
+    "stale": {
+      "state": "ONLINE",
+      "sourceKind": "PLATFORM_QUERY",
+      "sourceTime": "2026-09-17T02:00:00Z",
+      "receivedAt": "2026-09-17T02:00:01Z",
+      "observedAt": "2026-09-17T03:00:00Z",
+      "freshness": "STALE",
+      "reasonCode": "EXCEEDS_APPROVED_THRESHOLD"
+    },
+    "protocolPending": {
+      "state": "NOT_INTEGRATED",
+      "sourceKind": "NONE",
+      "sourceTime": null,
+      "receivedAt": null,
+      "observedAt": null,
+      "freshness": "NOT_APPLICABLE",
+      "reasonCode": "PROTOCOL_PENDING"
+    },
+    "conflict": {
+      "type": "HELMET",
+      "assignmentState": "CONFLICT",
+      "devices": [
+        {
+          "deviceId": "syn-device-1",
+          "deviceCode": "SYN-H-001",
+          "type": "HELMET",
+          "model": null,
+          "legacyHatId": "9007199254740993",
+          "communication": {
+            "state": "OFFLINE",
+            "sourceKind": "PLATFORM_QUERY",
+            "sourceTime": null,
+            "receivedAt": null,
+            "observedAt": "2026-09-17T03:00:00Z",
+            "freshness": "UNKNOWN",
+            "reasonCode": "SOURCE_TIME_MISSING"
+          },
+          "battery": {
+            "value": null,
+            "sourceTime": null,
+            "receivedAt": null,
+            "freshness": "UNKNOWN",
+            "reasonCode": "SOURCE_SEMANTICS_UNCONFIRMED"
+          },
+          "capabilities": {
+            "video": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "talk": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "location": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "capture": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "record": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            }
+          },
+          "manufacturerExtensions": {}
+        },
+        {
+          "deviceId": "syn-device-2",
+          "deviceCode": "SYN-H-002",
+          "type": "HELMET",
+          "model": null,
+          "legacyHatId": "9007199254740994",
+          "communication": {
+            "state": "OFFLINE",
+            "sourceKind": "PLATFORM_QUERY",
+            "sourceTime": null,
+            "receivedAt": null,
+            "observedAt": "2026-09-17T03:00:00Z",
+            "freshness": "UNKNOWN",
+            "reasonCode": "SOURCE_TIME_MISSING"
+          },
+          "battery": {
+            "value": null,
+            "sourceTime": null,
+            "receivedAt": null,
+            "freshness": "UNKNOWN",
+            "reasonCode": "SOURCE_SEMANTICS_UNCONFIRMED"
+          },
+          "capabilities": {
+            "video": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "talk": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "location": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "capture": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            },
+            "record": {
+              "state": "UNKNOWN",
+              "verification": "UNVERIFIED",
+              "reasonCode": "CAPABILITY_NOT_VERIFIED"
+            }
+          },
+          "manufacturerExtensions": {}
+        }
+      ],
+      "reasonCode": "MULTIPLE_CURRENT_ASSIGNMENTS"
+    }
+  },
+  "testOnlyPolicy": {
+    "staleSample": "假设已批准来源阈值30分钟，仅用于渲染测试，不是平台默认阈值。"
+  },
+  "legacyExamples": {
+    "rPage": {
+      "code": 200,
+      "msg": "成功",
+      "data": {
+        "records": [
+          {
+            "id": "9007199254740993",
+            "hatNumber": "SYN-H-001",
+            "status": "1"
+          }
+        ],
+        "total": 1,
+        "current": 1,
+        "size": 10
+      }
+    },
+    "tableDataInfo": {
+      "code": 200,
+      "msg": "查询成功",
+      "rows": [],
+      "total": 0
+    },
+    "business401": {
+      "httpStatus": 200,
+      "body": {
+        "code": 401,
+        "msg": "认证失败"
+      }
+    }
+  }
+}

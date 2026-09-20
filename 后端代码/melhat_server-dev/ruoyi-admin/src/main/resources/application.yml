@@ -71,7 +71,7 @@ xss:
 
 
 headband:
-    server: http://api.hel.epplink.com:30090
+    server: ${HEADBAND_SERVER:http://api.hel.epplink.com:30090}
     token:
      url: /api/auth/token
      username: ${TOKEN_SERVICE_USERNAME:}
@@ -116,5 +116,5 @@ headband:
 
 # 离线演示时，外部 RTC/TTS 调用由控制器短路为本地记录。
 melhat:
-  demo-mode: true
+  demo-mode: ${MELHAT_DEMO_MODE:false}
 

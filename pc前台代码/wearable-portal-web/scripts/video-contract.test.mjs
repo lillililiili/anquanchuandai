@@ -1,0 +1,19 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { uniqueDevices, wallSlots, validateVideoDevice, validateVideoPage, validateVideoDetail } from '../src/utils/video-contract.js'
+import { videoQuery, safeVideoReturn } from '../src/utils/video-route.js'
+import { safeWorkspaceReturn } from '../src/utils/spatial-contract.js'
+const missing = () => ({ state: 'NOT_INTEGRATED', data: null, reasonCode: 'SOURCE_NOT_INTEGRATED' })
+const device = () => ({ deviceId: '90071992547409931234', siteId: 's', name: '合成设备', type: 'HELMET', communication: { state: 'ONLINE', sourceTime: null }, video: { state: 'UNKNOWN', verification: 'UNVERIFIED' }, streamState: 'INTERRUPTED', sourceTime: null, freshness: 'UNKNOWN', unavailableReason: 'MEDIA_ACCESS_NOT_ENABLED' })
+const page = () => ({ state: 'AVAILABLE', items: [device()], total: 1, pageNum: 1, pageSize: 8, scope: { siteId: 's' }, filters: { areas: missing(), works: missing() }, statistics: missing() })
+test('dedup uses string identity, slots never repeat main', () => { const d = device(); assert.equal(uniqueDevices([d, d]).length, 1); for (const l of ['1+7', '2x4', '3x3']) { const s = wallSlots([d, d], d.deviceId, l); assert.equal(s.filter(Boolean).length, 1); assert.equal(s.length, l === '3x3' ? 9 : 8) } })
+test('long ID, online communication and interrupted stream are independent', () => { const d = validateVideoDevice(device(), 's'); assert.equal(d.deviceId, '90071992547409931234'); assert.equal(d.streamState, 'INTERRUPTED'); assert.equal(d.video.state, 'UNKNOWN') })
+test('missing statistics remain unknown, not counted from page', () => assert.equal(validateVideoPage(page(), { siteId: 's' }).statistics.data, null))
+test('page number and source identity are checked', () => { assert.throws(() => validateVideoPage(page(), { siteId: 's', pageNum: 2 })); assert.throws(() => validateVideoDevice(device(), 'other')) })
+test('missing source is not zero or empty available', () => { const p = page(); p.state = 'NOT_INTEGRATED'; p.reasonCode = 'VIDEO_NOT_INTEGRATED'; p.items = []; p.total = null; assert.equal(validateVideoPage(p, { siteId: 's' }).total, null); p.total = 0; assert.throws(() => validateVideoPage(p, { siteId: 's' })) })
+test('unknown time cannot claim freshness', () => { const d = device(); d.freshness = 'STALE'; assert.throws(() => validateVideoDevice(d, 's')); d.sourceTime = '2026-09-01T00:00:00Z'; assert.equal(validateVideoDevice(d, 's').freshness, 'STALE') })
+test('metadata credentials and arbitrary nested addresses rejected', () => { const d = device(); d.video.url = 'https://invalid'; assert.throws(() => validateVideoDevice(d, 's')) })
+test('related evidence and independent sections validated', () => { const d = { device: device(), ...Object.fromEntries(['person', 'equipment', 'works', 'location', 'events', 'materials'].map(k => [k, missing()])) }; validateVideoDetail(d, 's', device().deviceId); d.person = { state: 'AVAILABLE', data: [{ id: 'p', siteId: 's', name: '未证明', attribution: 'UNKNOWN' }], reasonCode: null }; assert.throws(() => validateVideoDetail(d, 's', device().deviceId)) })
+test('legal query whitelist excludes media URL and malformed IDs', () => assert.deepEqual(videoQuery({ siteId: 's', selectedId: '../bad', pageSize: 101, layout: '3x3', url: 'x' }), { siteId: 's', layout: '3x3' }))
+test('safe video return rejects external and other modules', () => { for (const v of ['https://evil', '//evil', '/\\evil', '/materials', '/video#bad', '/video\n']) assert.equal(safeVideoReturn(v), '/video'); assert.equal(safeVideoReturn('/video?layout=2x4&url=evil'), '/video?layout=2x4') })
+test('single return restored without nested external target', () => { const v = safeVideoReturn('/video/d?siteId=s&returnTo=https://evil', true); assert.equal(v, '/video/d?siteId=s&returnTo=%2Fvideo'); assert.equal(safeWorkspaceReturn('/video?layout=3x3'), '/video?layout=3x3') })

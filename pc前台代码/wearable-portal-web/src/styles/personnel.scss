@@ -1,0 +1,99 @@
+.personnel-page, .person-detail-page { min-width: 0; --status-online: #4cdec6; --status-warning: #f4cd79; }
+.personnel-page-heading { display: flex; align-items: baseline; gap: 18px; margin-bottom: 22px; flex-wrap: wrap; }
+.personnel-page-heading h1 { font-size: 27px; font-weight: 600; }
+.personnel-page-heading p, .muted, .query-time { color: var(--text-muted); }
+.personnel-list-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(330px, 1fr); gap: 16px; align-items: start; }
+.personnel-list-main { min-width: 0; }
+.personnel-filters { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 16px; }
+.personnel-filters label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-secondary); min-width: 90px; flex: 1; }
+.personnel-filters .keyword-filter { flex: 2; min-width: 180px; }
+.personnel-filters input, .personnel-filters select, .portal-select { min-width: 0; width: 100%; border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); background: var(--input-bg); height: 40px; padding: 0 10px; font-size: 14px; }
+.portal-select { width: 200px; }
+.personnel-filters .el-button { margin-left: 0; min-height: 40px; }
+.personnel-filters :disabled { opacity: .65; cursor: not-allowed; }
+.personnel-table-panel, .personnel-side, .person-summary-panel { border: 1px solid var(--border); border-radius: 4px; background: var(--panel-bg); }
+.personnel-table-panel { min-height: 560px; display: flex; flex-direction: column; }
+.personnel-side { min-height: 645px; overflow: hidden; }
+.table-scroll { overflow: auto; max-width: 100%; }
+.people-table { border-collapse: collapse; width: 100%; font-size: 13px; text-align: left; }
+.people-table th { color: var(--text-secondary); background: var(--input-bg); font-weight: 500; white-space: nowrap; }
+.people-table td, .people-table th { border-bottom: 1px solid var(--border-soft); padding: 14px 10px; }
+.people-table td { overflow-wrap: anywhere; }
+.people-table small { display: block; color: var(--text-muted); margin-top: 5px; }
+.people-table tr.selected { background: var(--selected-bg); box-shadow: inset 3px 0 var(--cyan); }
+.people-table tbody tr:hover { background: var(--input-bg); }
+.people-table .person-row-button { min-width: 150px; }
+.person-row-button { color: inherit; background: transparent; border: none; text-align: left; padding: 6px 0; }
+.person-identity { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.person-identity > div { min-width: 0; overflow-wrap: anywhere; }
+.person-identity strong { font-size: 16px; font-weight: 600; }
+.person-identity p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; }
+.person-avatar { display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--blue); color: var(--text-primary); flex-shrink: 0; font-size: 22px; }
+.person-identity.large .person-avatar { width: 78px; height: 78px; font-size: 34px; }
+.person-identity.large h1 { font-size: 26px; font-weight: 600; }
+.person-identity.large p { font-size: 14px; }
+.personnel-pagination { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: auto; color: var(--text-muted); flex-wrap: wrap; }
+.query-time { font-size: 12px; margin-top: 10px; }
+.data-state { min-height: 240px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; padding: 24px; text-align: center; color: var(--text-secondary); }
+.data-state.compact { min-height: 100px; padding: 16px; font-size: 13px; }
+.data-state small { color: var(--text-muted); font-size: 12px; }
+.state-mark { width: 28px; height: 24px; border: 1px solid var(--border); border-top: 2px solid var(--cyan); opacity: .8; }
+.data-state[aria-busy=true] .state-mark { animation: portal-pulse 1.4s ease-in-out infinite alternate; }
+@keyframes portal-pulse { to { opacity: .3; } }
+.side-person-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 20px 16px; border-bottom: 1px solid var(--border-soft); }
+.person-tabs { padding: 0 16px; }
+.person-tabs .el-tabs__item { font-size: 14px; padding: 0 10px; }
+.person-tabs h3 { font-size: 15px; padding-left: 10px; border-left: 3px solid var(--cyan); margin: 18px 0 10px; }
+.person-facts { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px 12px; margin: 16px 0; font-size: 14px; }
+.person-facts dt { color: var(--text-muted); }
+.person-facts dd { margin: 0; overflow-wrap: anywhere; }
+.equipment-triplet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+.equipment-card { border: 1px solid var(--border); border-radius: 4px; padding: 12px; min-width: 0; }
+.equipment-title { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.equipment-title strong { font-size: 14px; }
+.device-glyph { width: 38px; height: 38px; flex-shrink: 0; color: var(--text-secondary); }
+.equipment-card small { color: var(--text-muted); font-size: 12px; display: block; overflow-wrap: anywhere; }
+.device-reading { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-soft); }
+.device-code { font-variant-numeric: tabular-nums; font-size: 13px; overflow-wrap: anywhere; }
+.status-label { font-size: 12px; color: var(--text-secondary); }
+.status-label::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 5px; }
+[data-state=ONLINE], [data-state=FRESH] { color: var(--status-online) !important; }
+[data-state=OFFLINE], [data-state=CONFLICT], [data-state=STALE] { color: var(--status-warning) !important; }
+.equipment-triplet.compact { padding: 0; gap: 6px; min-width: 195px; }
+.compact .equipment-card { padding: 0; border: 0; }
+.compact .equipment-title { flex-direction: column; gap: 3px; margin-bottom: 4px; align-items: start; }
+.compact .equipment-title strong { font-size: 12px; font-weight: 400; }
+.compact .device-glyph { width: 26px; height: 26px; }
+.compact .device-reading { border: 0; margin: 3px 0 0; padding: 0; }
+.compact .device-code { display: none; }
+.personnel-side .equipment-triplet:not(.compact) { grid-template-columns: 1fr; padding: 0; }
+.personnel-side .equipment-card { padding: 10px; }
+.personnel-side .equipment-title { float: left; margin: 0 12px 0 0; }
+.personnel-side .device-reading { clear: both; }
+.personnel-side .equipment-triplet.summary { gap: 6px; }
+.summary .equipment-title { margin: 0 8px 0 0; }
+.summary .device-glyph { width: 26px; height: 26px; }
+.summary .device-reading { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 5px 12px; padding-top: 5px; margin-top: 5px; }
+.summary .equipment-card { min-height: 48px; }
+.person-detail-page .device-reading { gap: 3px; padding-top: 5px; margin-top: 5px; }
+.person-detail-page .equipment-title { margin-bottom: 6px; }
+.person-detail-page .device-glyph { width: 30px; height: 30px; }
+.person-detail-page .equipment-card { padding: 10px; }
+.person-detail-page .person-summary-panel { padding: 16px; }
+.person-detail-page .position-placeholder { min-height: 170px; }
+.person-actions { padding: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+.person-actions .el-button { margin: 0; }
+.back-personnel { display: inline-block; color: var(--cyan); margin-bottom: 16px; padding: 6px 0; }
+.person-detail-columns { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); gap: 16px; }
+.person-detail-primary, .person-detail-secondary { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.person-summary-panel { padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.person-detail-page .portal-panel { min-height: 0; flex: initial; }
+.person-detail-page .panel-heading { min-height: 48px; }
+.person-detail-page .data-state { min-height: 150px; }
+.person-detail-page .related-records { padding: 16px; }
+.person-detail-page .el-pagination { padding: 12px; }
+.related-records article + article { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.position-placeholder { min-height: 225px; display: flex; background: var(--page-bg); }
+@media (max-width: 1500px) { .personnel-list-layout { grid-template-columns: minmax(0, 1fr) 330px; } .people-table td, .people-table th { padding: 12px 8px; } }
+@media (max-width: 1150px) { .personnel-list-layout, .person-detail-columns { grid-template-columns: minmax(0, 1fr); } .personnel-side { min-height: 220px; } .person-summary-panel { flex-wrap: wrap; } }
+@media (max-width: 600px) { .equipment-triplet:not(.compact) { grid-template-columns: 1fr; } .personnel-filters .keyword-filter { min-width: 100%; } .personnel-page-heading h1 { font-size: 22px; } .personnel-table-panel { min-height: 340px; } }

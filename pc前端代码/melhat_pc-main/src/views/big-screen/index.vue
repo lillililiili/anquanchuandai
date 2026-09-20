@@ -544,7 +544,7 @@ const mapContainer = ref(null)
 let mapInstance = null
 let mapUtils = null
 
-// 模拟人员位置数据 - 使用配置中的中心点
+// 本地人员位置数据 - 使用配置中的中心点
 const staffPositions = [
   { name: '陈明辉', coord: [117.144732, 36.663887], status: 'online' },
   { name: '刘建国', coord: [117.154732, 36.673887], status: 'online' },

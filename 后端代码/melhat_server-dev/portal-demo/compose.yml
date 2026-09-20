@@ -1,0 +1,57 @@
+name: wearable-portal-demo
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: wearable_portal_demo
+      MYSQL_USER: portal_demo
+      MYSQL_PASSWORD: ${DEMO_DB_PASSWORD:?Run Initialize.ps1}
+      MYSQL_ROOT_PASSWORD: ${DEMO_ROOT_PASSWORD:?Run Initialize.ps1}
+    volumes:
+      - database:/var/lib/mysql
+      - ./schema:/docker-entrypoint-initdb.d:ro
+    networks: [isolated]
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -uportal_demo wearable_portal_demo -e 'SELECT 1' >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["cache:/data"]
+    networks: [isolated]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  backend:
+    build:
+      context: ..
+      dockerfile: portal-demo/Dockerfile
+    image: wearable-portal-demo-backend:local
+    environment:
+      DEMO_DB_PASSWORD: ${DEMO_DB_PASSWORD:?Run Initialize.ps1}
+      DEMO_TOKEN_SECRET: ${DEMO_TOKEN_SECRET:?Run Initialize.ps1}
+    volumes:
+      - files:/data
+      - ./runtime:/demo-runtime
+    networks: [isolated]
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  gateway:
+    image: nginx:1.27-alpine
+    ports: ["127.0.0.1:18085:18085", "127.0.0.1:13308:13308", "127.0.0.1:6381:6381"]
+    volumes: ["./gateway.conf:/etc/nginx/nginx.conf:ro"]
+    networks: [isolated, entry]
+    depends_on: [backend]
+networks:
+  isolated:
+    internal: true
+  entry:
+volumes:
+  database:
+  cache:
+  files:

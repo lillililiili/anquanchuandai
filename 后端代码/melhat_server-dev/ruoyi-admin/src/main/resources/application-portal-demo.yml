@@ -1,0 +1,44 @@
+server:
+  port: 18085
+spring:
+  datasource:
+    druid:
+      master:
+        url: jdbc:mysql://mysql:3306/wearable_portal_demo?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+        username: portal_demo
+        password: ${DEMO_DB_PASSWORD}
+      slave:
+        enabled: false
+      statViewServlet:
+        enabled: false
+  redis:
+    host: redis
+    port: 6379
+    database: 0
+    password: ''
+  quartz:
+    auto-startup: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 51MB
+token:
+  secret: ${DEMO_TOKEN_SECRET}
+  expireTime: 60
+ruoyi:
+  demoEnabled: false
+  profile: /data/upload
+  hatfile: /data/hatfile
+  taskPackageFile: /data/tasks
+  addressEnabled: false
+headband:
+  server: http://127.0.0.1:9
+  username: disabled
+  password: disabled
+melhat:
+  demo-mode: false
+swagger:
+  enabled: false
+logging:
+  level:
+    com.ruoyi: info

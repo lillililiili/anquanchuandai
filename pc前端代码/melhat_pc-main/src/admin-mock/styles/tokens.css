@@ -1,0 +1,10 @@
+:root {
+  font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-synthesis: none;
+  --ink: #142b55; --blue: #2563eb; --blue-dark: #174db9; --cyan: #06b6d4; --cyan-dark: #08778c; --purple: #7c3aed; --orange: #f59e0b;
+  --muted: #586b83; --line: #dbe6f4; --card: #fff; --canvas: #f3f7ff;
+  --soft-blue: #eaf2ff; --soft-cyan: #e5f9fc; --soft-purple: #f2ecff; --soft-orange: #fff5e2;
+  --danger: #b42337; --success: #147a53; --radius: 14px; --shadow: 0 6px 24px #204c8910;
+  --font-number: 'Bahnschrift', 'Segoe UI', sans-serif;
+  color: var(--ink); background: var(--canvas);
+}

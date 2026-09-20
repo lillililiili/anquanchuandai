@@ -1,0 +1,39 @@
+<template><section><div class="page-heading"><div><span class="eyebrow">装备资产 / 设备台账 / 档案</span><h1>设备档案</h1></div><router-link class="button" :to="recordReturn(route.query.returnTo, '/admin/assets/devices')">返回设备台账</router-link></div><AssetTabs />
+  <div class="device-detail-tools"><MaintenanceEntry :device-id="d?.id" /><AssignmentEntry :device-id="String(route.params.deviceId)" :disabled="!d || d.relation !== 'UNASSIGNED' || d.lifecycle !== 'STOCK' || !d.writable" reason="需库存、明确未领用及本设备办理权限" /><AssignmentEntry mode="return" :device-id="String(route.params.deviceId)" :disabled="!d || d.relation !== 'ASSIGNED' || !d.person || !d.writable" reason="需正常有效关系及双方范围办理权限" /><DeviceEditPanel :device="d" :disabled="!d?.writable || detail.loading.value" :reason="d?.lifecycle === 'SCRAPPED' ? '报废设备全档案只读' : '需要本设备范围的资产维护权限'" /></div>
+  <QueryState :data="d" :loading="detail.loading.value" :error="detail.error.value" @retry="load"><template v-if="d?.id"><section class="panel device-header"><DeviceMark :type="d.type" /><div><span class="eyebrow">{{ DEVICE_TYPES[d.type] }} / 本地资产档案</span><h2>{{ d.name }}</h2><p class="device-code">{{ d.code }}</p><p>{{ d.modelName }}</p><div class="actions"><span class="badge">{{ DEVICE_FILTERS.lifecycle[d.lifecycle] }}</span><span class="badge" :class="{ warning: ['UNKNOWN', 'CONFLICT'].includes(d.relation) }">{{ DEVICE_FILTERS.relation[d.relation] }}</span><span class="badge">{{ DEVICE_FILTERS.communication[d.communication] }}</span></div></div></section>
+    <div class="device-detail-grid"><section class="panel"><h2>基础资料</h2><dl class="record-fields"><template v-for="[key, name] in fields" :key="key"><dt>{{ name }}</dt><dd>{{ d[key] || '待补充' }}</dd></template><dt>厂站</dt><dd>{{ store.sites.find(s => s.id === d.siteId)?.name }}</dd><dt>区域</dt><dd>{{ d.areaName }}</dd><dt>资料版本</dt><dd>{{ d.version }}</dd></dl><p class="notice">{{ d.identityComplete ? '厂家身份已填写，尚未核验真实设备。' : '厂家身份未完整核验，缺少厂商或SN。' }}</p></section>
+    <section class="panel"><h2>当前领用关系</h2><p>{{ DEVICE_FILTERS.relation[d.relation] }}</p><template v-if="d.person"><router-link class="button" :to="{ path: '/admin/people/' + d.person.id, query: { siteId: store.siteId } }">{{ d.person.name }} · 人员详情</router-link><p class="muted">{{ d.assignmentSource === 'MOCK_OPERATION' ? '本页本地办理' : '初始绑定快照' }} · 领用开始：{{ d.startedAt || '未知' }}</p></template><p v-else class="muted">{{ d.relation === 'UNASSIGNED' ? '来源明确未领用。' : '人员关联未知、冲突或无权查看；不推定使用人。' }}</p><div class="actions"><router-link v-for="id in d.activeOrderIds" :key="id" class="button" :to="{ path: '/admin/assets/maintenance/' + id, query: { siteId: store.siteId } }">活动维修单</router-link></div><p class="disabled-reason">运维通过上方共用面板办理；使用中先正常归还，未知或冲突关系需核实。</p></section>
+    <section class="panel capability-panel"><h2>{{ d.type === 'HELMET' ? '型号与选配' : d.type === 'BELT' ? '安全带需求与能力说明' : '手表公共档案与能力待确认' }}</h2><p>{{ d.declaration }}</p><dl class="record-fields"><dt>模板声明</dt><dd>{{ d.modelName }} · 预置来源</dd><dt>实例装配</dt><dd><template v-if="Object.keys(d.assemblies || {}).length"><p v-for="(value, key) in d.assemblies" :key="key">{{ optionNames[key] || key }}：{{ ASSEMBLY[value] }}</p></template><template v-else>暂无已声明的可选模块</template></dd><dt>接入状态</dt><dd>未接入</dd><dt>真实验证</dt><dd>待确认，未进行真机验证</dd><dt>来源</dt><dd>{{ d.capabilitySource }}</dd></dl><p v-if="d.type !== 'HELMET'" class="notice">厂家协议待确认。不显示传感读数，不生成健康或作业安全结论。</p></section>
+    <section class="panel"><h2>接入摘要</h2><dl class="record-fields"><dt>通信</dt><dd>{{ DEVICE_FILTERS.communication[d.communication] }}</dd><dt>新鲜度</dt><dd>{{ d.freshness === 'STALE' ? '过期（本地样例）' : '未知' }}</dd><dt>设备源时间</dt><dd>{{ d.sourceTime || '未知' }}</dd><dt>接口来源</dt><dd>前端内存本地，不连接设备平台</dd></dl><p class="muted">影像、定位和现场通信属于监护前台。两端独立登录，本地数据不互通。</p><a v-if="portal" class="button" :href="portal" target="_blank" rel="noopener noreferrer">打开监护前台首页</a><button v-else class="button" disabled>前台地址未配置</button></section></div>
+    <MaintenanceRecords :device-id="d.id" /><section class="panel device-history"><h2>领用历史</h2><QueryState :data="history.data.value" :loading="history.loading.value" :error="history.error.value" @retry="loadHistory"><HistoryTable :rows="history.data.value?.rows || []" /><div class="pagination"><span>共 {{ history.data.value?.total || 0 }} 条</span><button class="button" :disabled="historyPage <= 1" @click="historyPage--; loadHistory()">上一页历史</button><button class="button" :disabled="historyPage * 20 >= (history.data.value?.total || 0)" @click="historyPage++; loadHistory()">下一页历史</button></div></QueryState></section>
+    <section class="panel device-history"><h2>资料变更（需要审计权限）</h2><QueryState :data="changes.data.value" :loading="changes.loading.value" :error="changes.error.value" @retry="loadChanges"><ol v-if="changes.data.value?.rows?.length" class="device-changes"><li v-for="a in changes.data.value.rows" :key="a.id"><strong>{{ a.action }} · {{ a.actorName }}</strong><p>{{ a.occurredAt }} · {{ a.source }}</p><dl class="record-fields"><template v-for="field in changed(a)" :key="field"><dt>{{ fieldNames[field] || field }}</dt><dd>{{ format(a.before?.[field]) }} → {{ format(a.after?.[field]) }}</dd></template></dl></li></ol><p v-else class="query-state">暂无设备资料变更。</p><div class="pagination"><span>共 {{ changes.data.value?.total || 0 }} 条</span><button class="button" :disabled="changesPage <= 1" @click="changesPage--; loadChanges()">上一页变更</button><button class="button" :disabled="changesPage * 20 >= (changes.data.value?.total || 0)" @click="changesPage++; loadChanges()">下一页变更</button></div></QueryState></section>
+  </template></QueryState></section></template>
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAdminStore } from '../store'
+import { useQuery } from '../useQuery'
+import { recordReturn, trustedPortal } from '../navigation'
+import { DEVICE_FILTERS, DEVICE_TYPES, ASSEMBLY } from '../deviceData'
+import QueryState from '../components/QueryState.vue'
+import DeviceEditPanel from '../components/DeviceEditPanel.vue'
+import DeviceMark from '../components/DeviceMark.vue'
+import AssetTabs from '../components/AssetTabs.vue'
+import AssignmentEntry from '../components/AssignmentEntry.vue'
+import HistoryTable from '../components/HistoryTable.vue'
+import MaintenanceEntry from '../components/MaintenanceEntry.vue'
+import MaintenanceRecords from '../components/MaintenanceRecords.vue'
+const store = useAdminStore(), route = useRoute(), detail = useQuery(), history = useQuery(), changes = useQuery()
+const d = computed(() => detail.data.value), historyPage = ref(1), changesPage = ref(1)
+const portal = trustedPortal(import.meta.env.VITE_ADMIN_PORTAL_URL)
+const fields = [['id', '设备ID'], ['manufacturer', '厂商'], ['sn', 'SN'], ['assetCode', '资产编号'], ['purchasedOn', '购置日期'], ['remark', '备注']]
+const fieldNames = { ...Object.fromEntries(fields), code: '平台编号', name: '名称', modelId: '型号', areaId: '区域', assemblies: '实例装配', version: '版本', type: '类型' }, optionNames = { camera: '影像模块', position: '定位模块' }
+const input = () => ({ siteId: store.siteId, id: route.params.deviceId })
+function load() { detail.run('device', input()); loadHistory(); loadChanges() }
+function loadHistory() { history.run('deviceHistory', { ...input(), pageNum: historyPage.value, pageSize: 20 }) }
+function loadChanges() { changes.run('deviceChanges', { ...input(), pageNum: changesPage.value, pageSize: 20 }) }
+function changed(a) { return Object.keys(fieldNames).filter(k => JSON.stringify(a.before?.[k]) !== JSON.stringify(a.after?.[k])) }
+const format = v => v == null || v === '' ? '未填写' : typeof v === 'object' ? JSON.stringify(v) : String(v)
+watch(() => [store.siteId, route.params.deviceId], () => { historyPage.value = 1; changesPage.value = 1; load() }, { immediate: true })
+watch(() => store.revision, load)
+</script>

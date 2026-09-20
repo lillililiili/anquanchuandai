@@ -52,7 +52,7 @@ public class OkHttpService {
             });
         }
         String acturl = urlBuilder.build().toString();
-        log.info("请求URL: {}", acturl);
+        log.info("GET 请求路径: {}", urlBuilder.build().encodedPath());
         Request.Builder builder = new Request.Builder().url(acturl).get();
         if (!CollectionUtils.isEmpty(headers)) {
             headers.forEach(builder::addHeader);
@@ -60,7 +60,7 @@ public class OkHttpService {
         Request request = builder.build();
         try (Response response = okHttpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new ServiceException("请求异常: " + response);
+                throw new ServiceException("设备平台 GET 请求失败，HTTP " + response.code(), response.code());
             }
             ResponseBody body = response.body();
             return body == null ? null : body.string();

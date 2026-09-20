@@ -1,0 +1,86 @@
+name: local-dev
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: melhat-mysql
+    restart: unless-stopped
+    ports:
+      - "13306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MELHAT_DB_PASSWORD:-123456}
+      MYSQL_DATABASE: new-helmet
+      TZ: Asia/Shanghai
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --sql-mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    volumes:
+      - melhat-mysql-data:/var/lib/mysql
+      - ../sql/ry_20230223.sql:/docker-entrypoint-initdb.d/01-ry.sql:ro
+      - ../sql/quartz.sql:/docker-entrypoint-initdb.d/02-quartz.sql:ro
+      - ../sql/melhat_demo.sql:/docker-entrypoint-initdb.d/03-melhat-demo.sql:ro
+      - ../sql/migrations/20260916_page_schema.sql:/docker-entrypoint-initdb.d/04-page-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    container_name: melhat-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - melhat-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ..
+      dockerfile: local-dev/Dockerfile
+    image: melhat-backend:dev
+    container_name: melhat-backend
+    restart: unless-stopped
+    ports:
+      - "18084:18084"
+    environment:
+      TZ: Asia/Shanghai
+      MELHAT_DEMO_MODE: ${MELHAT_DEMO_MODE:-false}
+      HEADBAND_SERVER: ${HEADBAND_SERVER:-http://api.hel.epplink.com:30090}
+      TOKEN_SERVICE_USERNAME: ${TOKEN_SERVICE_USERNAME:-}
+      TOKEN_SERVICE_PASSWORD: ${TOKEN_SERVICE_PASSWORD:-}
+    command:
+      - "--spring.datasource.druid.master.url=jdbc:mysql://mysql:3306/new-helmet?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowMultiQueries=true&nullCatalogMeansCurrent=true"
+      - "--spring.datasource.druid.master.username=root"
+      - "--spring.datasource.druid.master.password=${MELHAT_DB_PASSWORD:-123456}"
+      - "--spring.redis.host=redis"
+      - "--spring.redis.port=6379"
+      - "--spring.redis.database=10"
+      - "--spring.redis.password="
+      - "--ruoyi.profile=/data/uploadPath"
+      - "--ruoyi.hatfile=/data/hatfile"
+      - "--ruoyi.task-package-file=/data/taskPackageFile"
+    volumes:
+      - melhat-backend-data:/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  melhat-mysql-data:
+    name: local-dev_melhat-mysql-data
+  melhat-redis-data:
+    name: local-dev_melhat-redis-data
+  melhat-backend-data:
+    name: local-dev_melhat-backend-data

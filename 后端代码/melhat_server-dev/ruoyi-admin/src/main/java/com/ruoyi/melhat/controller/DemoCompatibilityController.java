@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -25,6 +26,7 @@ import java.util.Map;
 
 /** 只服务于离线演示的旧页面 API，不访问设备或第三方服务。 */
 @RestController
+@ConditionalOnProperty(name = "melhat.demo-mode", havingValue = "true")
 @RequestMapping
 public class DemoCompatibilityController {
 

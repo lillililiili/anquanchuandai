@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-demo/
+dist-mock/
+output/
+.playwright-cli/
+*.local
+*.log

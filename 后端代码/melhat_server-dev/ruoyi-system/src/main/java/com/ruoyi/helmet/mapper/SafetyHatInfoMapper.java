@@ -15,6 +15,10 @@ import java.math.BigDecimal;
 @Mapper
 public interface SafetyHatInfoMapper extends BaseMapper<SafetyHatInfo> {
 
+    // 同步时识别已删除记录，不自动恢复用户删除的设备。
+    @org.apache.ibatis.annotations.Select("SELECT * FROM safety_hat_info WHERE hat_number = #{sn}")
+    java.util.List<SafetyHatInfo> findIncludingDeleted(@Param("sn") String sn);
+
     /**
      * 统计图片数量（根据文件类型 'image'）
      * @param hatId 帽子 ID，为 null 时统计所有

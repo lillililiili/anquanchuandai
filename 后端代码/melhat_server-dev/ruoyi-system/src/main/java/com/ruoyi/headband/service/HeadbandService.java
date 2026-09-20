@@ -80,31 +80,50 @@ public class HeadbandService {
     }
 
     public String getToken() throws Exception {
+        if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
+            throw new ServiceException("真实设备平台凭据未配置，请设置 TOKEN_SERVICE_USERNAME 和 TOKEN_SERVICE_PASSWORD；未发起设备请求");
+        }
         String accessToken = redisCache.getCacheObject(BusinessConst.CacheConst.HEADBAND_API_TOKEN);
         if (StringUtils.isNotBlank(accessToken)) {
             return accessToken;
         }
-        String url = server + tokenurl + "?client_id=" + username + "&client_secret=" + password;
+        String url = okhttp3.HttpUrl.parse(server + tokenurl).newBuilder()
+                .addQueryParameter("client_id", username)
+                .addQueryParameter("client_secret", password)
+                .build().toString();
         String result = null;
         try {
             result = okHttpService.doGet(url, null, null);
         } catch (Exception e) {
-            log.error("请求安全帽异常", e);
-            throw new ServiceException("请求安全帽异常");
+            // 网络异常可能包含带凭据的请求 URL，不记录原始异常。
+            log.warn("设备平台认证请求失败，异常类型: {}", e.getClass().getSimpleName());
+            throw new ServiceException("设备平台认证失败，请检查网络、平台地址及账号凭据");
         }
         if (StringUtils.isBlank(result)) {
             throw new ServiceException("获取token异常");
         }
-        ResponseVO responseVO = JSON.parseObject(result, ResponseVO.class);
-        Map data = (Map) responseVO.getData();
-        if (Objects.isNull(data)) {
-            throw new ServiceException("获取token异常");
+        try {
+            JSONObject response = JSON.parseObject(result);
+            if (response == null || !Integer.valueOf(200).equals(response.getInteger("code"))) {
+                throw new ServiceException("设备平台认证未通过，请核对平台账号权限及凭据");
+            }
+            JSONObject data = response.getJSONObject("data");
+            if (data == null || StringUtils.isBlank(data.getString("accessToken"))) {
+                throw new ServiceException("设备平台认证响应缺少 Token，未连接真实设备");
+            }
+            String tokenType = StringUtils.defaultIfBlank(data.getString("tokenType"), "Bearer");
+            Integer expireTime = data.getInteger("expireTime");
+            if (expireTime == null || expireTime <= 0) {
+                throw new ServiceException("设备平台认证响应有效期无效");
+            }
+            accessToken = tokenType + " " + data.getString("accessToken");
+            redisCache.setCacheObject(BusinessConst.CacheConst.HEADBAND_API_TOKEN, accessToken,
+                    Math.max(1, expireTime - 300), TimeUnit.SECONDS);
+        } catch (ServiceException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new ServiceException("设备平台认证响应格式异常");
         }
-        String token = data.get("accessToken").toString();
-        String tokenType = data.get("tokenType").toString();
-        Integer expireTime = (Integer) data.get("expireTime");//秒 默认120分钟
-        accessToken = "Bearer " + token;
-        redisCache.setCacheObject(BusinessConst.CacheConst.HEADBAND_API_TOKEN, accessToken, expireTime - 300, TimeUnit.SECONDS);
         return accessToken;
     }
 
@@ -117,8 +136,7 @@ public class HeadbandService {
      * @throws Exception
      */
     public List<HeadbandVO> getHeadBandList(Map<String, Object> param) throws Exception {
-        Map<String, String> headers = getHeaders();
-        String responseBody = okHttpService.doGet(server + headbandDeviceApi, headers, param);
+        String responseBody = readDeviceApi(server + headbandDeviceApi, param);
         if (StringUtils.isBlank(responseBody)) {
             throw new Exception("未获取到返回结果");
         }
@@ -140,8 +158,7 @@ public class HeadbandService {
      * @throws Exception
      */
     public HeadbandVO getMelhatInfo(String sn) throws Exception {
-        Map<String, String> headers = getHeaders();
-        String responseBody = okHttpService.doGet(server + headbandDeviceApi + "/" + sn, headers, null);
+        String responseBody = readDeviceApi(server + headbandDeviceApi + "/" + sn, null);
         if (StringUtils.isBlank(responseBody)) {
             throw new Exception("未获取到返回结果");
         }
@@ -460,6 +477,27 @@ public class HeadbandService {
 
 
 
+
+    // 仅对只读查询重试一次。通话、广播等控制请求绝不自动重放。
+    private String readDeviceApi(String url, Map<String, Object> param) throws Exception {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            try {
+                String body = okHttpService.doGet(url, getHeaders(), param);
+                JSONObject result = StringUtils.isBlank(body) ? null : JSON.parseObject(body);
+                if (result != null && Integer.valueOf(401).equals(result.getInteger("code"))) {
+                    throw new ServiceException("设备平台认证已失效", 401);
+                }
+                return body;
+            } catch (ServiceException e) {
+                if (attempt == 0 && Integer.valueOf(401).equals(e.getCode())) {
+                    redisCache.deleteObject(BusinessConst.CacheConst.HEADBAND_API_TOKEN);
+                } else {
+                    throw e;
+                }
+            }
+        }
+        throw new ServiceException("设备平台认证失败，请核对凭据");
+    }
 
     private Map<String, String> getHeaders() throws Exception {
         String accessToken = getToken();
