@@ -1,0 +1,2 @@
+Invalid argument(s): 0
+原安卓 TracksPage 在空轨迹时预先构造 _trackBody，_points.length - 1 为 -1，触发 clamp 参数异常。

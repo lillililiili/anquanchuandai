@@ -366,7 +366,7 @@ class _DevicePageState extends State<DevicePage> {
       buttons.add(
         OutlinedButton.icon(
           onPressed: () =>
-              _openCommunications(context, device, personId: personId),
+              _openCommunications(context, personId: personId, action: 'tts'),
           icon: const Icon(Icons.campaign_outlined),
           label: const Text('TTS'),
         ),
@@ -375,8 +375,11 @@ class _DevicePageState extends State<DevicePage> {
     if (actions.contains('intercom')) {
       buttons.add(
         OutlinedButton.icon(
-          onPressed: () =>
-              _openCommunications(context, device, personId: personId),
+          onPressed: () => _openCommunications(
+            context,
+            personId: personId,
+            action: 'intercom',
+          ),
           icon: const Icon(Icons.call_outlined),
           label: const Text('对讲'),
         ),
@@ -385,12 +388,8 @@ class _DevicePageState extends State<DevicePage> {
     if (actions.contains('video')) {
       buttons.add(
         FilledButton.icon(
-          onPressed: () => _openCommunications(
-            context,
-            device,
-            personId: personId,
-            video: true,
-          ),
+          onPressed: () =>
+              _openCommunications(context, personId: personId, action: 'video'),
           icon: const Icon(Icons.videocam_outlined),
           label: const Text('视频'),
         ),
@@ -403,18 +402,14 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   void _openCommunications(
-    BuildContext context,
-    JsonMap device, {
+    BuildContext context, {
     String? personId,
-    bool video = false,
+    required String action,
   }) {
-    final uri = Uri(
-      path: '/communications',
-      queryParameters: {
-        'deviceId': widget.id,
-        if (personId != null && personId.isNotEmpty) 'personId': personId,
-        if (video) 'video': '1',
-      },
+    final uri = communicationUri(
+      deviceId: widget.id,
+      personId: personId,
+      action: action,
     );
     context.push(uri.toString());
   }

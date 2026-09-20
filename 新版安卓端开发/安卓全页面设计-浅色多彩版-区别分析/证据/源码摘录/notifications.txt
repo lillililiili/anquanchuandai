@@ -1,0 +1,540 @@
+1: import 'dart:async';
+2: import 'dart:convert';
+3: import 'dart:math';
+4: import 'package:flutter/foundation.dart';
+5: import 'package:flutter/services.dart';
+6: import 'package:flutter/widgets.dart';
+7: import 'package:jpush_flutter/jpush_flutter.dart';
+8: import 'package:jpush_flutter/jpush_interface.dart';
+9: import 'package:permission_handler/permission_handler.dart';
+10: import 'package:shared_preferences/shared_preferences.dart';
+11: import 'package:web_socket_channel/web_socket_channel.dart';
+12: import 'core.dart';
+13: 
+14: class WearNotice {
+15:   final String eventId, siteId, notificationId;
+16:   final int version;
+17:   final bool hasUniqueDelivery;
+18:   const WearNotice({
+19:     required this.eventId,
+20:     required this.siteId,
+21:     required this.notificationId,
+22:     this.version = 0,
+23:     this.hasUniqueDelivery = true,
+24:   });
+25:   static WearNotice? parse(Object? value) {
+26:     try {
+27:       var data = jsonMap(value is String ? jsonDecode(value) : value);
+28:       final nested = data['extras'] ?? data['cn.jpush.android.EXTRA'];
+29:       if (nested != null) {
+30:         data = {
+31:           ...data,
+32:           ...jsonMap(nested is String ? jsonDecode(nested) : nested),
+33:         };
+34:       }
+35:       final eventId = idOf(data['eventId']), siteId = idOf(data['siteId']);
+36:       final validId = RegExp(r'^[a-zA-Z0-9_-]{1,128}$');
+37:       if (!validId.hasMatch(eventId) || !validId.hasMatch(siteId)) return null;
+38:       final type = idOf(data['type']);
+39:       if (type.isNotEmpty && type != 'wear.event') return null;
+40:       final version = intOf(data['eventVersion'] ?? data['version']);
+41:       final deliveryId = idOf(
+42:         data['notificationId'] ??
+43:             data['cn.jpush.android.MSG_ID'] ??
+44:             data['msgId'],
+45:       );
+46:       return WearNotice(
+47:         eventId: eventId,
+48:         siteId: siteId,
+49:         version: version,
+50:         hasUniqueDelivery: deliveryId.isNotEmpty || version > 0,
+51:         notificationId: textOf(deliveryId, '$siteId:$eventId:$version'),
+52:       );
+53:     } catch (_) {
+54:       return null;
+55:     }
+56:   }
+57: }
+58: 
+59: /// WS is foreground-only. Native push needs both provider credentials and the server binding API.
+60: class WearNotifications extends ChangeNotifier with WidgetsBindingObserver {
+61:   final WearSession session;
+62:   final Future<void> Function(WearNotice) openEvent;
+63:   static const _native = MethodChannel('rolling/wear');
+64:   JPushFlutterInterface? _push;
+65:   WebSocketChannel? _socket;
+66:   StreamSubscription<dynamic>? _subscription;
+67:   Timer? _reconnect;
+68:   Timer? _poll;
+69:   Timer? _heartbeat;
+70:   DateTime? _lastPong;
+71:   bool _disposed = false, _foreground = true, _binding = false;
+72:   bool _bindAgain = false;
+73:   bool _gettingRegistration = false;
+74:   String _registrationId = '';
+75:   Future<void> _nativeTail = Future.value();
+76:   bool _connecting = false;
+77:   int _socketGeneration = 0;
+78:   String _scope = '', _boundUser = '', _installationId = '';
+79:   bool configured = false,
+80:       permissionGranted = false,
+81:       registered = false,
+82:       socketConnected = false;
+83:   String status = '正在检查接警连接';
+84:   String? error;
+85:   WearNotice? pendingOpen, latest;
+86:   final Set<String> _received = {}, _opened = {};
+87:   bool _opening = false;
+88:   WearNotifications({required this.session, required this.openEvent});
+89: 
+90:   @visibleForTesting
+91:   factory WearNotifications.withPush({
+92:     required WearSession session,
+93:     required Future<void> Function(WearNotice) openEvent,
+94:     required JPushFlutterInterface push,
+95:     String installationId = 'test-installation',
+96:     String registrationId = 'provider-registration',
+97:   }) => WearNotifications(session: session, openEvent: openEvent)
+98:     .._push = push
+99:     ..configured = true
+100:     .._registrationId = registrationId
+101:     .._installationId = installationId;
+102: 
+103:   void _emit() {
+104:     if (!_disposed) notifyListeners();
+105:   }
+106: 
+107:   // Native and HTTP lifecycle work share one queue. A logout timeout cannot
+108:   // allow DELETE to overtake a pending binding PUT or stop a newer account.
+109:   Future<T> _nativeOrdered<T>(Future<T> Function() operation) {
+110:     final next = _nativeTail.catchError((_) {}).then((_) => operation());
+111:     _nativeTail = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+112:     return next;
+113:   }
+114: 
+115:   Future<void> _stopForExpiredSession() async {
+116:     final scope = session.scopeKey;
+117:     await _nativeOrdered(() async {
+118:       if (_disposed || session.me != null || scope != session.scopeKey) return;
+119:       if (_registrationId.isNotEmpty) await _push?.stopPush();
+120:       if (_disposed || session.me != null || scope != session.scopeKey) return;
+121:       await _push?.clearAllNotifications();
+122:     });
+123:   }
+124: 
+125:   void _prepareRegistration() {
+126:     if (_gettingRegistration ||
+127:         _push == null ||
+128:         _disposed ||
+129:         _registrationId.isNotEmpty) {
+130:       return;
+131:     }
+132:     _gettingRegistration = true;
+133:     // JPush holds this Future until its first RID callback. Do not await it in
+134:     // the lifecycle queue or stop the fresh installation before it registers.
+135:     unawaited(
+136:       _push!
+137:           .getRegistrationID()
+138:           .then((rid) async {
+139:             if (_disposed || rid.isEmpty) return;
+140:             _registrationId = rid;
+141:             await _nativeOrdered(() async {
+142:               if (!_disposed) await _push!.stopPush();
+143:             });
+144:             if (!_disposed) await bind();
+145:           })
+146:           .catchError((_) {
+147:             if (!_disposed) {
+148:               status = '推送注册暂未完成，可稍后重试';
+149:               _emit();
+150:             }
+151:           })
+152:           .whenComplete(() => _gettingRegistration = false),
+153:     );
+154:   }
+155: 
+156:   Future<void> start() async {
+157:     WidgetsBinding.instance.addObserver(this);
+158:     session.addListener(_sessionChanged);
+159:     session.beforeLogout = unbind;
+160:     _poll = Timer.periodic(const Duration(seconds: 30), (_) {
+161:       if (_foreground && session.me != null && !session.busy) {
+162:         session.requestRefresh();
+163:       }
+164:     });
+165:     try {
+166:       final prefs = await SharedPreferences.getInstance();
+167:       if (_disposed) return;
+168:       _installationId = prefs.getString('wear.installationId') ?? '';
+169:       if (_installationId.isEmpty) {
+170:         final random = Random.secure();
+171:         _installationId = List.generate(
+172:           16,
+173:           (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+174:         ).join();
+175:         await prefs.setString('wear.installationId', _installationId);
+176:       }
+177:       if (_disposed) return;
+178:       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+179:         final key = await _native.invokeMethod<String>('pushAppKey') ?? '';
+180:         permissionGranted = await Permission.notification.isGranted;
+181:         if (_disposed) return;
+182:         configured = key.isNotEmpty;
+183:         if (configured) {
+184:           _push = JPush.newJPush();
+185:           _push!.addEventHandler(
+186:             onReceiveNotification: (data) async => receive(data),
+187:             onReceiveMessage: (data) async => receive(data),
+188:             onOpenNotification: (data) async => receive(data, opened: true),
+189:             onConnected: (_) async => bind(),
+190:           );
+191:           _push!.setCollectControl(
+192:             imsi: false,
+193:             mac: false,
+194:             wifi: false,
+195:             bssid: false,
+196:             ssid: false,
+197:             imei: false,
+198:             cell: false,
+199:             gps: false,
+200:           );
+201:           _push!.setGeofenceEnable(enable: false);
+202:           _push!.setDataInsightsEnable(enable: false);
+203:           _push!.setUnShowAtTheForeground(unShow: true);
+204:           _push!.setup(
+205:             appKey: key,
+206:             channel: 'wearable',
+207:             production: kReleaseMode,
+208:             debug: false,
+209:           );
+210:           _prepareRegistration();
+211:           final launch = await _push!.getLaunchAppNotification();
+212:           if (_disposed) return;
+213:           receive(jsonMap(launch), opened: true);
+214:         }
+215:       }
+216:       status = configured ? '等待账号绑定推送' : '未配置推送，仅支持前台接警';
+217:     } catch (_) {
+218:       status = '推送初始化未完成，仅支持前台接警';
+219:     }
+220:     _sessionChanged();
+221:     _emit();
+222:   }
+223: 
+224:   void _sessionChanged() {
+225:     if (_disposed) return;
+226:     final scope = session.me != null && !session.busy && session.siteId != null
+227:         ? session.scopeKey
+228:         : '';
+229:     if (scope != _scope) {
+230:       _scope = scope;
+231:       _closeSocket();
+232:       latest = null;
+233:       if (scope.isNotEmpty && _foreground) _connect();
+234:     }
+235:     if (session.me == null) {
+236:       registered = false;
+237:       _boundUser = '';
+238:       _received.clear();
+239:       _opened.clear();
+240:       if (_push != null) unawaited(_stopForExpiredSession().catchError((_) {}));
+241:     } else if (!session.busy) {
+242:       unawaited(bind());
+243:       unawaited(_openPending());
+244:     }
+245:     _emit();
+246:   }
+247: 
+248:   Future<void> requestPermission() async {
+249:     if (kIsWeb) return;
+250:     registered = false;
+251:     permissionGranted = (await Permission.notification.request()).isGranted;
+252:     if (!permissionGranted) status = '通知权限未开启，后台接警受限';
+253:     await bind();
+254:     _emit();
+255:   }
+256: 
+257:   Future<void> bind() async {
+258:     if (_binding) {
+259:       _bindAgain = true;
+260:       return;
+261:     }
+262:     if (_disposed ||
+263:         !configured ||
+264:         _push == null ||
+265:         session.me == null ||
+266:         session.busy ||
+267:         _installationId.isEmpty) {
+268:       return;
+269:     }
+270:     if (registered && _boundUser == session.userId) return;
+271:     if (_registrationId.isEmpty) {
+272:       _prepareRegistration();
+273:       status = '等待推送通道注册，仅支持前台接警';
+274:       _emit();
+275:       return;
+276:     }
+277:     _binding = true;
+278:     final user = session.userId;
+279:     final scope = session.scopeKey;
+280:     try {
+281:       await _nativeOrdered(() async {
+282:         if (_disposed || scope != session.scopeKey || session.busy) return;
+283:         await _push!.stopPush();
+284:         if (_disposed || scope != session.scopeKey || session.busy) return;
+285:         await session.api.put(
+286:           '/api/v1/me/push-installations/$_installationId',
+287:           data: {
+288:             'provider': 'jpush',
+289:             'registrationId': _registrationId,
+290:             'platform': 'android',
+291:             'appVersion': '1.3.0+7',
+292:             'notificationPermission': permissionGranted ? 'granted' : 'denied',
+293:           },
+294:         );
+295:         if (_disposed || scope != session.scopeKey || session.busy) return;
+296:         // Delivery resumes only after the server confirms the current owner.
+297:         await _push!.resumePush();
+298:         if (_disposed || scope != session.scopeKey || session.busy) return;
+299:         registered = true;
+300:         _boundUser = user;
+301:         status = permissionGranted ? '推送已绑定，锁屏到达待真机验收' : '通知权限未开启，后台接警受限';
+302:       });
+303:     } on WearApiException catch (e) {
+304:       if (e is! StaleSessionException) {
+305:         status = e.code == 404 ? '后台推送接口尚未就绪，仅前台接警' : '推送绑定失败，可重试';
+306:       }
+307:     } catch (_) {
+308:       status = '推送通道暂不可用，可重试';
+309:     } finally {
+310:       _binding = false;
+311:       _emit();
+312:       if (_bindAgain) {
+313:         _bindAgain = false;
+314:         unawaited(bind());
+315:       }
+316:     }
+317:   }
+318: 
+319:   Future<void> unbind() async {
+320:     // Stop local delivery before waiting for HTTP; a timed-out request must not
+321:     // stop push after a different account has already signed in.
+322:     registered = false;
+323:     _boundUser = '';
+324:     pendingOpen = null;
+325:     latest = null;
+326:     final user = session.userId;
+327:     final scope = session.scopeKey;
+328:     await _nativeOrdered(() async {
+329:       if (_disposed || scope != session.scopeKey || user != session.userId) {
+330:         return;
+331:       }
+332:       if (_registrationId.isNotEmpty) await _push?.stopPush();
+333:       if (_disposed || scope != session.scopeKey || user != session.userId) {
+334:         return;
+335:       }
+336:       await _push?.clearAllNotifications();
+337:       if (_disposed || scope != session.scopeKey || user != session.userId) {
+338:         return;
+339:       }
+340:       if (configured && _installationId.isNotEmpty) {
+341:         await session.api.delete(
+342:           '/api/v1/me/push-installations/$_installationId',
+343:         );
+344:       }
+345:     });
+346:     _emit();
+347:   }
+348: 
+349:   void receive(Object? data, {bool opened = false}) {
+350:     if (_disposed) return;
+351:     final notice = WearNotice.parse(data);
+352:     if (notice == null) return;
+353:     if (opened) {
+354:       if (notice.hasUniqueDelivery && _opened.contains(notice.notificationId)) {
+355:         return;
+356:       }
+357:       pendingOpen = notice;
+358:       unawaited(_openPending());
+359:     } else if (!notice.hasUniqueDelivery ||
+360:         _received.add(notice.notificationId)) {
+361:       if (_received.length > 200) _received.remove(_received.first);
+362:       if (session.sites.any((site) => idOf(site['id']) == notice.siteId)) {
+363:         latest = notice;
+364:         session.requestRefresh();
+365:       }
+366:     }
+367:     _emit();
+368:   }
+369: 
+370:   Future<void> _openPending() async {
+371:     if (_opening || pendingOpen == null || session.me == null || session.busy) {
+372:       return;
+373:     }
+374:     _opening = true;
+375:     final notice = pendingOpen!;
+376:     final user = session.userId;
+377:     try {
+378:       if (!session.sites.any((site) => idOf(site['id']) == notice.siteId)) {
+379:         throw const WearApiException(403, '当前账号无权查看该通知');
+380:       }
+381:       await openEvent(notice);
+382:       if (notice.hasUniqueDelivery) _opened.add(notice.notificationId);
+383:       if (_opened.length > 200) _opened.remove(_opened.first);
+384:       error = null;
+385:     } catch (e) {
+386:       error = e is WearApiException ? e.message : '通知详情暂时无法打开，请在事件页查看';
+387:       if (user == session.userId &&
+388:           session.sites.any((site) => idOf(site['id']) == notice.siteId) &&
+389:           !(e is WearApiException && (e.code == 403 || e.code == 404))) {
+390:         // Keep a retry target for offline/409 cases, including a cross-site
+391:         // notification opened while a call is active.
+392:         latest = notice;
+393:       }
+394:     } finally {
+395:       if (identical(pendingOpen, notice)) pendingOpen = null;
+396:       _opening = false;
+397:       _emit();
+398:       if (pendingOpen != null) unawaited(_openPending());
+399:     }
+400:   }
+401: 
+402:   void openLatest() {
+403:     if (latest != null) {
+404:       pendingOpen = latest;
+405:       unawaited(_openPending());
+406:     }
+407:   }
+408: 
+409:   void dismissLatest() {
+410:     latest = null;
+411:     error = null;
+412:     _emit();
+413:   }
+414: 
+415:   Future<void> _connect() async {
+416:     final scope = _scope;
+417:     if (scope.isEmpty ||
+418:         !_foreground ||
+419:         _disposed ||
+420:         _connecting ||
+421:         socketConnected) {
+422:       return;
+423:     }
+424:     _connecting = true;
+425:     final generation = ++_socketGeneration;
+426:     try {
+427:       final base = Uri.parse(session.api.dio.options.baseUrl);
+428:       final uri = base.replace(
+429:         scheme: base.scheme == 'https' ? 'wss' : 'ws',
+430:         path:
+431:             '${base.path.replaceAll(RegExp(r'/$'), '')}/ws/${session.userId}/2',
+432:         queryParameters: {'token': session.token!},
+433:       );
+434:       final socket = WebSocketChannel.connect(uri);
+435:       _socket = socket;
+436:       await socket.ready.timeout(const Duration(seconds: 10));
+437:       if (_disposed ||
+438:           scope != _scope ||
+439:           !_foreground ||
+440:           generation != _socketGeneration) {
+441:         await socket.sink.close();
+442:         return;
+443:       }
+444:       socketConnected = true;
+445:       _lastPong = DateTime.now();
+446:       _emit();
+447:       session.requestRefresh();
+448:       _subscription = socket.stream.listen(
+449:         (data) {
+450:           if (_disposed || generation != _socketGeneration || scope != _scope) {
+451:             return;
+452:           }
+453:           if (data == 'pong') {
+454:             _lastPong = DateTime.now();
+455:           } else {
+456:             receive(data);
+457:           }
+458:         },
+459:         onError: (_) {
+460:           if (generation == _socketGeneration) _scheduleReconnect(scope);
+461:         },
+462:         onDone: () {
+463:           if (generation == _socketGeneration) _scheduleReconnect(scope);
+464:         },
+465:       );
+466:       _heartbeat = Timer.periodic(const Duration(seconds: 20), (_) {
+467:         if (_disposed || generation != _socketGeneration || scope != _scope) {
+468:           return;
+469:         }
+470:         if (DateTime.now().difference(_lastPong!).inSeconds > 45) {
+471:           _scheduleReconnect(scope);
+472:           return;
+473:         }
+474:         try {
+475:           socket.sink.add('ping');
+476:         } catch (_) {
+477:           _scheduleReconnect(scope);
+478:         }
+479:       });
+480:     } catch (_) {
+481:       if (generation == _socketGeneration) _scheduleReconnect(scope);
+482:     } finally {
+483:       if (generation == _socketGeneration) _connecting = false;
+484:     }
+485:   }
+486: 
+487:   void _scheduleReconnect(String scope) {
+488:     if (_disposed || scope != _scope || !_foreground) return;
+489:     _closeSocket();
+490:     _emit();
+491:     _reconnect = Timer(const Duration(seconds: 5), _connect);
+492:   }
+493: 
+494:   void _closeSocket() {
+495:     _socketGeneration++;
+496:     _connecting = false;
+497:     _heartbeat?.cancel();
+498:     _heartbeat = null;
+499:     _reconnect?.cancel();
+500:     _reconnect = null;
+501:     unawaited(_subscription?.cancel());
+502:     _subscription = null;
+503:     unawaited(_socket?.sink.close());
+504:     _socket = null;
+505:     socketConnected = false;
+506:   }
+507: 
+508:   @override
+509:   void didChangeAppLifecycleState(AppLifecycleState state) {
+510:     _foreground = state == AppLifecycleState.resumed;
+511:     if (_foreground) {
+512:       if (_scope.isNotEmpty && !socketConnected) _connect();
+513:       session.requestRefresh();
+514:       unawaited(_refreshPermission());
+515:     } else {
+516:       _closeSocket();
+517:     }
+518:   }
+519: 
+520:   Future<void> _refreshPermission() async {
+521:     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+522:     final granted = await Permission.notification.isGranted;
+523:     if (permissionGranted != granted) {
+524:       registered = false;
+525:       permissionGranted = granted;
+526:     }
+527:     await bind();
+528:   }
+529: 
+530:   @override
+531:   void dispose() {
+532:     _disposed = true;
+533:     _poll?.cancel();
+534:     _closeSocket();
+535:     WidgetsBinding.instance.removeObserver(this);
+536:     session.removeListener(_sessionChanged);
+537:     session.beforeLogout = null;
+538:     super.dispose();
+539:   }
+540: }

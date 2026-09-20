@@ -1,0 +1,50 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.ArrayList;
+4: import java.util.List;
+5: import java.util.Map;
+6: import org.springframework.beans.factory.annotation.Autowired;
+7: import org.springframework.web.bind.annotation.GetMapping;
+8: import org.springframework.web.bind.annotation.PathVariable;
+9: import org.springframework.web.bind.annotation.PostMapping;
+10: import org.springframework.web.bind.annotation.RequestBody;
+11: import org.springframework.web.bind.annotation.RequestMapping;
+12: import org.springframework.web.bind.annotation.RestController;
+13: import com.ruoyi.common.core.domain.R;
+14: import com.ruoyi.wear.call.CommandService;
+15: import com.ruoyi.wear.call.dto.CommandDto;
+16: 
+17: @RestController
+18: @RequestMapping("/api/v1/commands")
+19: public class WearCommandController
+20: {
+21:     @Autowired
+22:     private CommandService commandService;
+23: 
+24:     @PostMapping("/tts")
+25:     public R<List<CommandDto>> tts(@RequestBody Map<String, Object> body)
+26:     {
+27:         List<String> ids = new ArrayList<String>();
+28:         Object raw = body == null ? null : body.get("deviceIds");
+29:         if (raw instanceof List)
+30:         {
+31:             for (Object item : (List<?>) raw)
+32:             {
+33:                 if (item != null)
+34:                 {
+35:                     ids.add(String.valueOf(item));
+36:                 }
+37:             }
+38:         }
+39:         String text = body == null || body.get("text") == null ? null : String.valueOf(body.get("text"));
+40:         String eventId = body == null || body.get("eventId") == null ? null : String.valueOf(body.get("eventId"));
+41:         String idem = body == null || body.get("idempotencyKey") == null ? null : String.valueOf(body.get("idempotencyKey"));
+42:         return R.ok(commandService.tts(ids, text, eventId, idem));
+43:     }
+44: 
+45:     @GetMapping("/{id:\\d+}")
+46:     public R<CommandDto> detail(@PathVariable Long id)
+47:     {
+48:         return R.ok(commandService.detail(id));
+49:     }
+50: }

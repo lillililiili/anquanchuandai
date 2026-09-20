@@ -1,0 +1,134 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.List;
+4: import java.util.Map;
+5: import org.springframework.beans.factory.annotation.Autowired;
+6: import org.springframework.web.bind.annotation.GetMapping;
+7: import org.springframework.web.bind.annotation.PathVariable;
+8: import org.springframework.web.bind.annotation.PostMapping;
+9: import org.springframework.web.bind.annotation.RequestBody;
+10: import org.springframework.web.bind.annotation.RequestMapping;
+11: import org.springframework.web.bind.annotation.RequestParam;
+12: import org.springframework.web.bind.annotation.RestController;
+13: import com.ruoyi.common.core.domain.R;
+14: import com.ruoyi.wear.common.WearPage;
+15: import com.ruoyi.wear.event.EventCommandService;
+16: import com.ruoyi.wear.event.EventQueryService;
+17: import com.ruoyi.wear.event.dto.EventActionDto;
+18: import com.ruoyi.wear.event.dto.EventDto;
+19: 
+20: @RestController
+21: @RequestMapping("/api/v1/events")
+22: public class WearEventController
+23: {
+24:     @Autowired
+25:     private EventQueryService queryService;
+26:     @Autowired
+27:     private EventCommandService commandService;
+28: 
+29:     @GetMapping
+30:     public R<WearPage<EventDto>> page(
+31:             @RequestParam(defaultValue = "1") int current,
+32:             @RequestParam(defaultValue = "10") int size,
+33:             @RequestParam(required = false) String type,
+34:             @RequestParam(required = false) String status,
+35:             @RequestParam(required = false) String personId,
+36:             @RequestParam(required = false) String severity,
+37:             @RequestParam(required = false) String updatedAfter,
+38:             @RequestParam(required = false) String claimantUserId,
+39:             @RequestParam(required = false) String escalated,
+40:             @RequestParam(required = false) String personKeyword,
+41:             @RequestParam(required = false) String sn,
+42:             @RequestParam(required = false) String taskId,
+43:             @RequestParam(required = false) String occurredFrom,
+44:             @RequestParam(required = false) String occurredTo)
+45:     {
+46:         return R.ok(queryService.page(current, size, type, status, personId, severity, updatedAfter, claimantUserId,
+47:                 escalated, personKeyword, sn, taskId, occurredFrom, occurredTo));
+48:     }
+49: 
+50:     @GetMapping("/inbox/count")
+51:     public R<Map<String, Object>> inboxCount()
+52:     {
+53:         return R.ok(queryService.inboxCount());
+54:     }
+55: 
+56:     @GetMapping("/{id:\\d+}")
+57:     public R<EventDto> detail(@PathVariable Long id)
+58:     {
+59:         return R.ok(queryService.detail(id));
+60:     }
+61: 
+62:     @GetMapping("/{id:\\d+}/actions")
+63:     public R<List<EventActionDto>> actions(@PathVariable Long id)
+64:     {
+65:         return R.ok(queryService.actions(id));
+66:     }
+67: 
+68:     @PostMapping("/{id:\\d+}/ack")
+69:     public R<EventDto> ack(@PathVariable Long id)
+70:     {
+71:         return R.ok(commandService.ack(id));
+72:     }
+73: 
+74:     @PostMapping("/{id:\\d+}/claim")
+75:     public R<EventDto> claim(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body)
+76:     {
+77:         return R.ok(commandService.claim(id, intVal(body, "version")));
+78:     }
+79: 
+80:     @PostMapping("/{id:\\d+}/handle")
+81:     public R<EventDto> handle(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body)
+82:     {
+83:         return R.ok(commandService.handle(id, strVal(body, "comment"), intVal(body, "version")));
+84:     }
+85: 
+86:     @PostMapping("/{id:\\d+}/transfer")
+87:     public R<EventDto> transfer(@PathVariable Long id, @RequestBody Map<String, Object> body)
+88:     {
+89:         return R.ok(commandService.transfer(id, strVal(body, "toUserId"), strVal(body, "reason"), intVal(body, "version")));
+90:     }
+91: 
+92:     @PostMapping("/{id:\\d+}/close")
+93:     public R<EventDto> close(@PathVariable Long id, @RequestBody Map<String, Object> body)
+94:     {
+95:         return R.ok(commandService.close(id, strVal(body, "reason"), intVal(body, "version")));
+96:     }
+97: 
+98:     @PostMapping("/{id:\\d+}/reopen")
+99:     public R<EventDto> reopen(@PathVariable Long id, @RequestBody Map<String, Object> body)
+100:     {
+101:         return R.ok(commandService.reopen(id, strVal(body, "reason"), intVal(body, "version")));
+102:     }
+103: 
+104:     @PostMapping("/{id:\\d+}/task")
+105:     public R<EventDto> assignTask(@PathVariable Long id, @RequestBody Map<String, Object> body)
+106:     {
+107:         return R.ok(commandService.assignTask(id, strVal(body, "taskId"), intVal(body, "version")));
+108:     }
+109: 
+110:     private Integer intVal(Map<String, Object> body, String key)
+111:     {
+112:         if (body == null || body.get(key) == null || String.valueOf(body.get(key)).trim().isEmpty())
+113:         {
+114:             return null;
+115:         }
+116:         try
+117:         {
+118:             return Integer.valueOf(String.valueOf(body.get(key)));
+119:         }
+120:         catch (NumberFormatException ex)
+121:         {
+122:             return null;
+123:         }
+124:     }
+125: 
+126:     private String strVal(Map<String, Object> body, String key)
+127:     {
+128:         if (body == null || body.get(key) == null)
+129:         {
+130:             return null;
+131:         }
+132:         return String.valueOf(body.get(key));
+133:     }
+134: }

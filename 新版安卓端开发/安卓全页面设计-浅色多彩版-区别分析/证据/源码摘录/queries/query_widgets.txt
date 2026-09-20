@@ -1,0 +1,269 @@
+1: import 'package:flutter/material.dart';
+2: 
+3: import '../core.dart';
+4: 
+5: class QueryPage extends StatelessWidget {
+6:   const QueryPage({
+7:     super.key,
+8:     required this.title,
+9:     required this.body,
+10:     this.subtitle,
+11:     this.actions = const [],
+12:   });
+13: 
+14:   final String title;
+15:   final String? subtitle;
+16:   final Widget body;
+17:   final List<Widget> actions;
+18: 
+19:   @override
+20:   Widget build(BuildContext context) {
+21:     return Scaffold(
+22:       backgroundColor: WearColors.background,
+23:       appBar: AppBar(
+24:         title: Row(
+25:           children: [
+26:             const WearRollingWordmark(height: 22),
+27:             const SizedBox(width: 10),
+28:             Expanded(
+29:               child: Text(
+30:                 title,
+31:                 maxLines: 1,
+32:                 overflow: TextOverflow.ellipsis,
+33:                 style: const TextStyle(
+34:                   fontSize: 18,
+35:                   fontWeight: FontWeight.w800,
+36:                   color: WearColors.ink,
+37:                 ),
+38:               ),
+39:             ),
+40:           ],
+41:         ),
+42:         actions: actions,
+43:       ),
+44:       body: SafeArea(
+45:         child: Column(
+46:           crossAxisAlignment: CrossAxisAlignment.stretch,
+47:           children: [
+48:             if (subtitle != null)
+49:               Padding(
+50:                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+51:                 child: Text(
+52:                   subtitle!,
+53:                   style: const TextStyle(color: WearColors.muted),
+54:                 ),
+55:               ),
+56:             Expanded(child: body),
+57:           ],
+58:         ),
+59:       ),
+60:     );
+61:   }
+62: }
+63: 
+64: class QueryStateView extends StatelessWidget {
+65:   const QueryStateView({
+66:     super.key,
+67:     required this.loading,
+68:     required this.error,
+69:     required this.empty,
+70:     required this.onRetry,
+71:     required this.child,
+72:     this.emptyTitle = '暂无数据',
+73:     this.emptyDetail,
+74:   });
+75: 
+76:   final bool loading;
+77:   final Object? error;
+78:   final bool empty;
+79:   final VoidCallback onRetry;
+80:   final Widget child;
+81:   final String emptyTitle;
+82:   final String? emptyDetail;
+83: 
+84:   @override
+85:   Widget build(BuildContext context) {
+86:     if (loading) return const Center(child: CircularProgressIndicator());
+87:     if (error != null) {
+88:       return Center(
+89:         child: WearEmpty(
+90:           title:
+91:               error is WearApiException &&
+92:                   (error as WearApiException).code == 403
+93:               ? '暂无访问权限'
+94:               : '加载失败',
+95:           detail: error is WearApiException
+96:               ? (error as WearApiException).message
+97:               : '请检查网络后重试',
+98:           onRetry: onRetry,
+99:         ),
+100:       );
+101:     }
+102:     if (empty) {
+103:       return Center(
+104:         child: WearEmpty(
+105:           title: emptyTitle,
+106:           detail: emptyDetail,
+107:           onRetry: onRetry,
+108:         ),
+109:       );
+110:     }
+111:     return child;
+112:   }
+113: }
+114: 
+115: class QuerySection extends StatelessWidget {
+116:   const QuerySection({
+117:     super.key,
+118:     required this.title,
+119:     required this.children,
+120:     this.trailing,
+121:   });
+122: 
+123:   final String title;
+124:   final List<Widget> children;
+125:   final Widget? trailing;
+126: 
+127:   @override
+128:   Widget build(BuildContext context) {
+129:     return Column(
+130:       crossAxisAlignment: CrossAxisAlignment.stretch,
+131:       children: [
+132:         Row(
+133:           children: [
+134:             Expanded(
+135:               child: Text(
+136:                 title,
+137:                 style: const TextStyle(
+138:                   fontSize: 17,
+139:                   fontWeight: FontWeight.w700,
+140:                 ),
+141:               ),
+142:             ),
+143:             ?trailing,
+144:           ],
+145:         ),
+146:         const SizedBox(height: 10),
+147:         ...children,
+148:       ],
+149:     );
+150:   }
+151: }
+152: 
+153: class QueryRow extends StatelessWidget {
+154:   const QueryRow({
+155:     super.key,
+156:     required this.title,
+157:     this.subtitle,
+158:     this.leading,
+159:     this.trailing,
+160:     this.onTap,
+161:   });
+162: 
+163:   final String title;
+164:   final String? subtitle;
+165:   final Widget? leading;
+166:   final Widget? trailing;
+167:   final VoidCallback? onTap;
+168: 
+169:   @override
+170:   Widget build(BuildContext context) {
+171:     return Padding(
+172:       padding: const EdgeInsets.only(bottom: 1),
+173:       child: Material(
+174:         color: Colors.white,
+175:         child: ListTile(
+176:           contentPadding: const EdgeInsets.symmetric(
+177:             horizontal: 16,
+178:             vertical: 6,
+179:           ),
+180:           titleTextStyle: const TextStyle(
+181:             color: WearColors.ink,
+182:             fontSize: 15,
+183:             fontWeight: FontWeight.w600,
+184:           ),
+185:           subtitleTextStyle: const TextStyle(
+186:             color: WearColors.muted,
+187:             fontSize: 13,
+188:             height: 1.5,
+189:           ),
+190:           leading: leading,
+191:           title: Text(title),
+192:           subtitle: subtitle == null ? null : Text(subtitle!),
+193:           trailing:
+194:               trailing ??
+195:               (onTap == null ? null : const Icon(Icons.chevron_right)),
+196:           onTap: onTap,
+197:         ),
+198:       ),
+199:     );
+200:   }
+201: }
+202: 
+203: class DetailField extends StatelessWidget {
+204:   const DetailField({super.key, required this.label, required this.value});
+205: 
+206:   final String label;
+207:   final String value;
+208: 
+209:   @override
+210:   Widget build(BuildContext context) {
+211:     return Padding(
+212:       padding: const EdgeInsets.symmetric(vertical: 7),
+213:       child: Row(
+214:         crossAxisAlignment: CrossAxisAlignment.start,
+215:         children: [
+216:           SizedBox(
+217:             width: 92,
+218:             child: Text(label, style: const TextStyle(color: WearColors.muted)),
+219:           ),
+220:           Expanded(child: Text(value)),
+221:         ],
+222:       ),
+223:     );
+224:   }
+225: }
+226: 
+227: class PagingFooter extends StatelessWidget {
+228:   const PagingFooter({
+229:     super.key,
+230:     required this.current,
+231:     required this.total,
+232:     required this.hasMore,
+233:     required this.busy,
+234:     required this.onPrevious,
+235:     required this.onNext,
+236:   });
+237: 
+238:   final int current;
+239:   final int total;
+240:   final bool hasMore;
+241:   final bool busy;
+242:   final VoidCallback onPrevious;
+243:   final VoidCallback onNext;
+244: 
+245:   @override
+246:   Widget build(BuildContext context) {
+247:     return Padding(
+248:       padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
+249:       child: Row(
+250:         children: [
+251:           Expanded(
+252:             child: Text(
+253:               '共 $total 条 · 第 $current 页',
+254:               style: const TextStyle(color: WearColors.muted),
+255:             ),
+256:           ),
+257:           IconButton(
+258:             onPressed: busy || current <= 1 ? null : onPrevious,
+259:             icon: const Icon(Icons.chevron_left),
+260:           ),
+261:           IconButton(
+262:             onPressed: busy || !hasMore ? null : onNext,
+263:             icon: const Icon(Icons.chevron_right),
+264:           ),
+265:         ],
+266:       ),
+267:     );
+268:   }
+269: }

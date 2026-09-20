@@ -1,0 +1,339 @@
+{
+  "generatedAt": "2026-09-18T16:36:19+08:00",
+  "referencePages": 40,
+  "currentImages": 42,
+  "pageItems": 360,
+  "commonItems": 9,
+  "freshCaptures": [
+    "01",
+    "02",
+    "13",
+    "16"
+  ],
+  "tracksExistingTests": 3,
+  "resetExistingTests": 2,
+  "captureTests": 4,
+  "scope": "代码核对与原组件样例渲染；未部署、未真实呼叫或播报",
+  "pages": [
+    {
+      "id": "01",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "02",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "03",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "04",
+      "items": 11,
+      "frames": 3,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "05",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "06",
+      "items": 10,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "07",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "08",
+      "items": 10,
+      "frames": 4,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "09",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "10",
+      "items": 10,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "11",
+      "items": 8,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "12",
+      "items": 8,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "13",
+      "items": 10,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "14",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "15",
+      "items": 8,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "16",
+      "items": 7,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "17",
+      "items": 10,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "18",
+      "items": 9,
+      "frames": 4,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "19",
+      "items": 9,
+      "frames": 5,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "20",
+      "items": 8,
+      "frames": 3,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "21",
+      "items": 9,
+      "frames": 4,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "22",
+      "items": 10,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "23",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "24",
+      "items": 10,
+      "frames": 4,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "25",
+      "items": 11,
+      "frames": 3,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "26",
+      "items": 11,
+      "frames": 3,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "27",
+      "items": 7,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "28",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "29",
+      "items": 10,
+      "frames": 5,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "30",
+      "items": 10,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "31",
+      "items": 10,
+      "frames": 2,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "32",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "33",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "34",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "35",
+      "items": 10,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "36",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "37",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "38",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "39",
+      "items": 8,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    },
+    {
+      "id": "40",
+      "items": 9,
+      "frames": 1,
+      "bottomReached": true,
+      "designImage": true,
+      "currentImage": true
+    }
+  ]
+}

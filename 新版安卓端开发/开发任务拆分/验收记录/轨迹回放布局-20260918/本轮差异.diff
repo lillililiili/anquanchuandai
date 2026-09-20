@@ -1,0 +1,1107 @@
+diff --git a/垃圾桶/2026-09-18-轨迹回放布局整改前/android代码/melhat_android-main/lib/wear/queries/tracks.dart b/android代码/melhat_android-main/lib/wear/queries/tracks.dart
+index a559ceb..709bb41 100644
+--- a/垃圾桶/2026-09-18-轨迹回放布局整改前/android代码/melhat_android-main/lib/wear/queries/tracks.dart
++++ b/android代码/melhat_android-main/lib/wear/queries/tracks.dart
+@@ -2,11 +2,11 @@ import 'dart:async';
+ 
+ import 'package:flutter/material.dart';
+ import 'package:flutter_map/flutter_map.dart';
+-import 'package:latlong2/latlong.dart';
++import 'package:go_router/go_router.dart';
++import 'package:latlong2/latlong.dart' show LatLng;
+ 
+ import '../core.dart';
+ import 'query_utils.dart';
+-import 'query_widgets.dart';
+ 
+ class TracksPage extends StatefulWidget {
+   const TracksPage({super.key, this.personId});
+@@ -82,6 +82,7 @@ class _TracksPageState extends State<TracksPage> {
+         return;
+       }
+       setState(() {
++        _preview = false;
+         _person = person;
+         _people = const [];
+         _search.text = textOf(person['name'], '');
+@@ -151,8 +152,11 @@ class _TracksPageState extends State<TracksPage> {
+     final request = ++_request;
+     final scopeKey = session.scopeKey;
+     setState(() {
++      _preview = false;
+       _loading = true;
+       _error = null;
++      _points = const [];
++      _index = 0;
+     });
+     try {
+       final loaded = <JsonMap>[];
+@@ -200,268 +204,708 @@ class _TracksPageState extends State<TracksPage> {
+     }
+   }
+ 
++  bool _preview = false;
++  List<JsonMap> get _visiblePoints => _preview ? _samplePoints : _points;
++  List<JsonMap> get _samplePoints => List.generate(
++    9,
++    (i) => {
++      'occurredAt': DateTime(
++        _from.year,
++        _from.month,
++        _from.day,
++        9,
++        i * 12,
++      ).toIso8601String(),
++      'locationQuality': 'ok',
++    },
++  );
++  String get _displayName =>
++      _preview ? '陈建国（示例）' : textOf(_person?['name'], '选择人员');
++
++  void _togglePreview() {
++    _stop();
++    setState(() {
++      _preview = !_preview;
++      _index = 0;
++    });
++  }
++
+   @override
+   Widget build(BuildContext context) {
+-    return QueryPage(
+-      title: '轨迹回放',
+-      subtitle: '安全帽 GNSS 轨迹 · WGS84 · 服务端最多抽稀为 500 点',
+-      body: Column(
+-        children: [
++    return Scaffold(
++      backgroundColor: WearColors.background,
++      body: SafeArea(
++        child: SingleChildScrollView(
++          key: const ValueKey('track-reference-scroll'),
++          child: Column(
++            children: [
++              _header(),
++              Padding(
++                padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
++                child: Column(
++                  crossAxisAlignment: CrossAxisAlignment.stretch,
++                  children: [
++                    _queryCard(),
++                    const SizedBox(height: 12),
++                    _mapCard(),
++                    const SizedBox(height: 12),
++                    _informationCard(),
++                  ],
++                ),
++              ),
++            ],
++          ),
++        ),
++      ),
++    );
++  }
++
++  Widget _header() => SizedBox(
++    height: WearHeaderLayout.height(context),
++    child: Stack(
++      fit: StackFit.expand,
++      children: [
++        const WearAssetImage(
++          'assets/field-brand/preview/work_reference_header.png',
++          fit: BoxFit.cover,
++          alignment: Alignment.bottomRight,
++        ),
++        Padding(
++          padding: const EdgeInsets.fromLTRB(4, 2, 16, 12),
++          child: Column(
++            crossAxisAlignment: CrossAxisAlignment.start,
++            children: [
++              Row(
++                children: [
++                  IconButton(
++                    tooltip: '返回现场',
++                    onPressed: () => context.canPop()
++                        ? context.pop()
++                        : context.go('/workbench'),
++                    icon: const Icon(Icons.arrow_back_ios_new, size: 22),
++                  ),
++                  const WearRollingWordmark(height: 22),
++                  const Spacer(),
++                  TextButton(
++                    key: const ValueKey('track-preview'),
++                    onPressed: _loading ? null : _togglePreview,
++                    style: TextButton.styleFrom(
++                      foregroundColor: WearColors.brand,
++                    ),
++                    child: Text(
++                      _preview ? '返回查询' : '示例预览',
++                      style: const TextStyle(fontSize: 11),
++                    ),
++                  ),
++                ],
++              ),
++              Expanded(
++                child: Padding(
++                  padding: const EdgeInsets.only(left: 12),
++                  child: Align(
++                    alignment: Alignment.centerLeft,
++                    child: Column(
++                      mainAxisSize: MainAxisSize.min,
++                      crossAxisAlignment: CrossAxisAlignment.start,
++                      children: [
++                        const Text(
++                          '现场 / 轨迹',
++                          style: TextStyle(
++                            fontSize: 10,
++                            color: WearColors.brand,
++                          ),
++                        ),
++                        const SizedBox(height: 4),
++                        const Text(
++                          '轨迹回放',
++                          style: TextStyle(
++                            fontSize: WearHeaderLayout.titleSize,
++                            fontWeight: FontWeight.w800,
++                            height: 1.15,
++                            color: WearColors.ink,
++                          ),
++                        ),
++                        const SizedBox(height: 6),
++                        Text(
++                          _preview ? '示例轨迹 · 非真实人员活动' : '查看人员指定日期内的活动轨迹',
++                          style: const TextStyle(
++                            fontSize: WearHeaderLayout.subtitleSize,
++                            height: 1.35,
++                            color: WearColors.muted,
++                          ),
++                        ),
++                      ],
++                    ),
++                  ),
++                ),
++              ),
++            ],
++          ),
++        ),
++      ],
++    ),
++  );
++
++  Widget _queryCard() => WearCard(
++    padding: const EdgeInsets.all(14),
++    child: Column(
++      crossAxisAlignment: CrossAxisAlignment.stretch,
++      children: [
++        InkWell(
++          key: const ValueKey('track-person-picker'),
++          onTap: _choosePerson,
++          child: Padding(
++            padding: const EdgeInsets.symmetric(vertical: 4),
++            child: Row(
++              children: [
++                const WearAssetImage(
++                  WearArt.characterAvatar,
++                  width: 38,
++                  height: 38,
++                  fit: BoxFit.cover,
++                  borderRadius: BorderRadius.all(Radius.circular(19)),
++                ),
++                const SizedBox(width: 12),
++                Expanded(
++                  child: Column(
++                    crossAxisAlignment: CrossAxisAlignment.start,
++                    children: [
++                      Text(
++                        _displayName,
++                        style: const TextStyle(
++                          fontSize: 14,
++                          fontWeight: FontWeight.w700,
++                          color: WearColors.ink,
++                        ),
++                      ),
++                      const SizedBox(height: 4),
++                      Text(
++                        _preview
++                            ? 'P-001 · RL-H001 · 示例'
++                            : _person == null
++                            ? '按姓名查找 · 支持历史人员'
++                            : '${textOf(_person?['personCode'])} · ${textOf(_person?['sn'], '安全帽轨迹')}',
++                        style: const TextStyle(
++                          fontSize: 11,
++                          color: WearColors.muted,
++                        ),
++                      ),
++                    ],
++                  ),
++                ),
++                if (_searching)
++                  const SizedBox(
++                    width: 16,
++                    height: 16,
++                    child: CircularProgressIndicator(strokeWidth: 2),
++                  )
++                else
++                  const Icon(
++                    Icons.expand_more,
++                    size: 20,
++                    color: WearColors.brand,
++                  ),
++              ],
++            ),
++          ),
++        ),
++        if (_searchError != null)
+           Padding(
+-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+-            child: TextField(
+-              controller: _search,
+-              textInputAction: TextInputAction.search,
+-              onSubmitted: (_) => _findPeople(),
+-              decoration: InputDecoration(
+-                prefixIcon: const Icon(Icons.person_search_outlined),
+-                hintText: '按姓名搜索人员（含历史有效人员）',
+-                suffixIcon: _searching
+-                    ? const Padding(
+-                        padding: EdgeInsets.all(14),
+-                        child: CircularProgressIndicator(strokeWidth: 2),
+-                      )
+-                    : IconButton(
+-                        onPressed: _findPeople,
++            padding: const EdgeInsets.only(top: 8),
++            child: Text(
++              '人员加载失败，点击人员栏重试',
++              style: const TextStyle(color: WearColors.danger, fontSize: 12),
++            ),
++          ),
++        const Divider(height: 24, color: WearColors.line),
++        Row(
++          children: [
++            Expanded(child: _dateField(true)),
++            const SizedBox(width: 10),
++            Expanded(child: _dateField(false)),
++          ],
++        ),
++        const SizedBox(height: 14),
++        FilledButton(
++          key: const ValueKey('track-query'),
++          onPressed: _loading
++              ? null
++              : _preview
++              ? () {
++                  _stop();
++                  setState(() => _index = 0);
++                }
++              : _person == null
++              ? _choosePerson
++              : _loadTracks,
++          style: FilledButton.styleFrom(
++            backgroundColor: const Color(0xFF008FFF),
++            minimumSize: const Size.fromHeight(44),
++            shape: RoundedRectangleBorder(
++              borderRadius: BorderRadius.circular(10),
++            ),
++          ),
++          child: Text(
++            _loading
++                ? '查询中…'
++                : _preview
++                ? '预览示例轨迹'
++                : '查询轨迹',
++          ),
++        ),
++      ],
++    ),
++  );
++
++  Widget _dateField(bool from) => Column(
++    crossAxisAlignment: CrossAxisAlignment.start,
++    children: [
++      Text(
++        from ? '开始日期' : '结束日期',
++        style: const TextStyle(
++          fontSize: 12,
++          fontWeight: FontWeight.w600,
++          color: WearColors.ink,
++        ),
++      ),
++      const SizedBox(height: 8),
++      OutlinedButton(
++        key: ValueKey(from ? 'track-from' : 'track-to'),
++        onPressed: () => _pickDate(from: from),
++        style: OutlinedButton.styleFrom(
++          backgroundColor: const Color(0xFFF7FAFF),
++          foregroundColor: WearColors.muted,
++          minimumSize: const Size.fromHeight(44),
++          padding: const EdgeInsets.symmetric(horizontal: 8),
++          side: const BorderSide(color: Color(0xFFD8E6F8)),
++          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
++        ),
++        child: Text(
++          _day(from ? _from : _to),
++          style: const TextStyle(fontSize: 12),
++        ),
++      ),
++    ],
++  );
++
++  Future<void> _choosePerson() async {
++    _stop();
++    _search.clear();
++    await _findPeople();
++    if (!mounted) return;
++    final picked = await showModalBottomSheet<JsonMap>(
++      context: context,
++      isScrollControlled: true,
++      useSafeArea: true,
++      backgroundColor: WearColors.background,
++      builder: (sheetContext) => StatefulBuilder(
++        builder: (sheetContext, updateSheet) {
++          Future<void> search() async {
++            final result = _findPeople();
++            updateSheet(() {});
++            await result;
++            if (sheetContext.mounted) updateSheet(() {});
++          }
++
++          return Padding(
++            padding: EdgeInsets.fromLTRB(
++              16,
++              16,
++              16,
++              MediaQuery.viewInsetsOf(sheetContext).bottom + 12,
++            ),
++            child: SizedBox(
++              height: MediaQuery.sizeOf(sheetContext).height * .60,
++              child: Column(
++                children: [
++                  Row(
++                    children: [
++                      const Expanded(
++                        child: Text(
++                          '选择轨迹人员',
++                          style: TextStyle(
++                            fontSize: 18,
++                            fontWeight: FontWeight.w700,
++                          ),
++                        ),
++                      ),
++                      IconButton(
++                        tooltip: '关闭人员选择',
++                        onPressed: () => Navigator.pop(sheetContext),
++                        icon: const Icon(Icons.close),
++                      ),
++                    ],
++                  ),
++                  const SizedBox(height: 8),
++                  TextField(
++                    controller: _search,
++                    textInputAction: TextInputAction.search,
++                    onSubmitted: (_) => search(),
++                    decoration: InputDecoration(
++                      hintText: '按姓名搜索人员（含历史有效人员）',
++                      prefixIcon: const Icon(Icons.person_search_outlined),
++                      suffixIcon: IconButton(
++                        tooltip: '搜索人员',
++                        onPressed: search,
+                         icon: const Icon(Icons.search),
+                       ),
++                    ),
++                  ),
++                  const SizedBox(height: 12),
++                  Expanded(
++                    child: _searching
++                        ? const Center(child: CircularProgressIndicator())
++                        : _searchError != null
++                        ? WearEmpty(title: '人员加载失败', onRetry: search)
++                        : _people.isEmpty
++                        ? const WearEmpty(title: '没有匹配的人员')
++                        : ListView.builder(
++                            itemCount: _people.length,
++                            itemBuilder: (_, i) {
++                              final person = _people[i];
++                              return ListTile(
++                                key: ValueKey(
++                                  'track-person-${idOf(person['id'])}',
++                                ),
++                                leading: const Icon(Icons.person_outline),
++                                title: Text(textOf(person['name'])),
++                                subtitle: Text(
++                                  '${textOf(person['personCode'])} · ${person['status'] == '0' ? '在职' : '历史人员'}',
++                                ),
++                                trailing: const Icon(Icons.chevron_right),
++                                onTap: () =>
++                                    Navigator.pop(sheetContext, person),
++                              );
++                            },
++                          ),
++                  ),
++                ],
+               ),
+             ),
++          );
++        },
++      ),
++    );
++    if (picked == null || !mounted) return;
++    setState(() {
++      _preview = false;
++      _person = picked;
++      _people = const [];
++      _points = const [];
++      _index = 0;
++      _search.text = textOf(picked['name'], '');
++    });
++    await _loadTracks();
++  }
++
++  Widget _mapCard() {
++    final points = _visiblePoints;
++    final ready =
++        points.isNotEmpty && !_loading && (_preview || _error == null);
++    return WearCard(
++      padding: const EdgeInsets.all(12),
++      child: Column(
++        children: [
++          AspectRatio(
++            aspectRatio: 1.35,
++            child: ClipRRect(
++              borderRadius: BorderRadius.circular(12),
++              child: _preview
++                  ? _previewMap()
++                  : _loading
++                  ? const Center(child: CircularProgressIndicator())
++                  : _error != null
++                  ? WearEmpty(
++                      title: '轨迹加载失败',
++                      detail: _error is WearApiException
++                          ? (_error as WearApiException).message
++                          : '请检查网络后重试',
++                      onRetry: _loadTracks,
++                    )
++                  : points.isEmpty
++                  ? _emptyMap()
++                  : _realMap(),
++            ),
+           ),
+-          if (_searchError != null)
+-            Padding(
+-              padding: const EdgeInsets.symmetric(horizontal: 16),
+-              child: WearEmpty(
+-                title: '人员加载失败',
+-                detail: _searchError is WearApiException
+-                    ? (_searchError as WearApiException).message
+-                    : null,
+-                onRetry: _findPeople,
+-              ),
++          const SizedBox(height: 8),
++          SliderTheme(
++            data: SliderTheme.of(context).copyWith(
++              trackHeight: 3,
++              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
++              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
++            ),
++            child: Slider(
++              key: const ValueKey('track-progress'),
++              activeColor: const Color(0xFF008FFF),
++              value: ready ? _index.clamp(0, points.length - 1).toDouble() : 0,
++              min: 0,
++              max: points.length > 1 ? (points.length - 1).toDouble() : 1,
++              onChanged: ready && points.length > 1
++                  ? (value) {
++                      _stop();
++                      setState(() => _index = value.round());
++                    }
++                  : null,
+             ),
+-          if (_people.isNotEmpty &&
+-              (_person == null ||
+-                  _search.text.trim() != textOf(_person!['name'], '')))
+-            ConstrainedBox(
+-              constraints: const BoxConstraints(maxHeight: 180),
+-              child: ListView.builder(
+-                padding: const EdgeInsets.symmetric(horizontal: 16),
+-                itemCount: _people.length,
+-                itemBuilder: (context, index) {
+-                  final person = _people[index];
+-                  return QueryRow(
+-                    title: textOf(person['name']),
+-                    subtitle:
+-                        '${textOf(person['personCode'])} · ${person['status'] == '0' ? '在职' : '历史人员'}',
+-                    onTap: () {
+-                      setState(() {
+-                        _person = person;
+-                        _people = const [];
+-                        _search.text = textOf(person['name'], '');
+-                      });
+-                      _loadTracks();
+-                    },
+-                  );
+-                },
++          ),
++          Row(
++            children: [
++              Expanded(
++                child: Text(
++                  ready ? _clock(points.first['occurredAt']) : '--:--',
++                  style: const TextStyle(fontSize: 11, color: WearColors.muted),
++                ),
++              ),
++              TextButton.icon(
++                key: const ValueKey('track-play'),
++                onPressed: ready && points.length > 1 ? _togglePlayback : null,
++                style: TextButton.styleFrom(
++                  foregroundColor: const Color(0xFF008FFF),
++                  backgroundColor: const Color(0xFFEAF4FF),
++                  padding: const EdgeInsets.symmetric(horizontal: 10),
++                  minimumSize: const Size(0, 40),
++                ),
++                icon: Icon(_playing ? Icons.pause : Icons.play_arrow, size: 18),
++                label: Text(
++                  _playing ? '暂停回放' : '播放轨迹',
++                  style: const TextStyle(fontSize: 12),
++                ),
++              ),
++              Expanded(
++                child: Text(
++                  ready ? _clock(points.last['occurredAt']) : '--:--',
++                  textAlign: TextAlign.right,
++                  style: const TextStyle(fontSize: 11, color: WearColors.muted),
++                ),
+               ),
++            ],
++          ),
++          ExpansionTile(
++            key: const ValueKey('track-more-controls'),
++            tilePadding: EdgeInsets.zero,
++            dense: true,
++            title: const Text(
++              '回放选项',
++              style: TextStyle(fontSize: 12, color: WearColors.muted),
+             ),
+-          if (_person != null) _filters(context),
+-          Expanded(
+-            child: _person == null
+-                ? const WearEmpty(
+-                    title: '请先选择人员',
+-                    detail: '轨迹按人员稳定 ID 查询，与登录账号无关。',
+-                  )
+-                : QueryStateView(
+-                    loading: _loading,
+-                    error: _error,
+-                    empty: _points.isEmpty,
+-                    onRetry: _loadTracks,
+-                    emptyTitle: '该时段没有轨迹点',
+-                    emptyDetail: '人员没有有效安全帽领用或该时段没有 GNSS 样本。',
+-                    child: _trackBody(context),
+-                  ),
++            children: [
++              Wrap(
++                spacing: 6,
++                children: [
++                  for (final speed in const [0.5, 1.0, 2.0, 5.0])
++                    ChoiceChip(
++                      label: Text(
++                        '${speed == speed.roundToDouble() ? speed.toInt() : speed}x',
++                      ),
++                      selected: _speed == speed,
++                      onSelected: ready
++                          ? (_) {
++                              setState(() => _speed = speed);
++                              if (_playing) _startTimer();
++                            }
++                          : null,
++                    ),
++                ],
++              ),
++              TextButton.icon(
++                onPressed: ready ? _seekTime : null,
++                icon: const Icon(Icons.schedule, size: 18),
++                label: const Text('定位时间'),
++              ),
++            ],
+           ),
+         ],
+       ),
+     );
+   }
+ 
+-  Widget _filters(BuildContext context) {
+-    return Padding(
+-      padding: const EdgeInsets.fromLTRB(16, 3, 16, 10),
+-      child: WearCard(
+-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+-        child: Row(
++  Widget _emptyMap() => ColoredBox(
++    color: const Color(0xFFF2F7FC),
++    child: Center(
++      child: Padding(
++        padding: const EdgeInsets.all(16),
++        child: Column(
++          mainAxisSize: MainAxisSize.min,
+           children: [
+-            Expanded(
+-              child: TextButton.icon(
+-                onPressed: () => _pickDate(from: true),
+-                icon: const Icon(Icons.calendar_today_outlined, size: 18),
+-                label: Text(_day(_from)),
+-              ),
++            const Icon(Icons.route_outlined, size: 40, color: WearColors.muted),
++            const SizedBox(height: 10),
++            Text(
++              _person == null ? '选择人员和日期后查询轨迹' : '该时段没有轨迹点',
++              textAlign: TextAlign.center,
++              style: const TextStyle(fontSize: 14, color: WearColors.ink),
+             ),
+-            const Text('至', style: TextStyle(color: WearColors.muted)),
+-            Expanded(
+-              child: TextButton.icon(
+-                onPressed: () => _pickDate(from: false),
+-                icon: const Icon(Icons.event_outlined, size: 18),
+-                label: Text(_day(_to)),
+-              ),
+-            ),
+-            IconButton(
+-              onPressed: _loading ? null : _loadTracks,
+-              icon: const Icon(Icons.refresh),
++            const SizedBox(height: 6),
++            const Text(
++              '可查看示例预览，示例不代表真实活动',
++              textAlign: TextAlign.center,
++              style: TextStyle(fontSize: 11, color: WearColors.muted),
+             ),
++            TextButton(onPressed: _togglePreview, child: const Text('查看示例')),
+           ],
+         ),
+       ),
+-    );
+-  }
++    ),
++  );
+ 
+-  Widget _trackBody(BuildContext context) {
++  Widget _previewMap() => Stack(
++    fit: StackFit.expand,
++    children: [
++      const Image(
++        image: AssetImage('assets/field-brand/preview/plant_map.jpg'),
++        fit: BoxFit.cover,
++      ),
++      CustomPaint(painter: _TrackPreviewPainter(_index)),
++      const Positioned(
++        left: 8,
++        bottom: 8,
++        child: DecoratedBox(
++          decoration: BoxDecoration(
++            color: Color(0xEEFFFBEF),
++            borderRadius: BorderRadius.all(Radius.circular(5)),
++          ),
++          child: Padding(
++            padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
++            child: Text(
++              '厂区示意 · 示例轨迹 · 非实时地图',
++              style: TextStyle(fontSize: 10, color: WearColors.muted),
++            ),
++          ),
++        ),
++      ),
++    ],
++  );
++
++  Widget _realMap() {
+     final latLngs = _validPoints(_points);
++    if (latLngs.isEmpty) {
++      return const WearEmpty(title: '轨迹坐标无效', detail: '轨迹点缺少有效经纬度。');
++    }
+     final current = _points[_index.clamp(0, _points.length - 1)];
+-    final currentLat = double.tryParse(current['lat']?.toString() ?? '');
+-    final currentLng = double.tryParse(current['lng']?.toString() ?? '');
+-    return Column(
++    final lat = double.tryParse('${current['lat']}');
++    final lng = double.tryParse('${current['lng']}');
++    return Stack(
+       children: [
+-        Expanded(
+-          child: Padding(
+-            padding: const EdgeInsets.symmetric(horizontal: 16),
+-            child: ClipRRect(
+-              borderRadius: BorderRadius.circular(22),
+-              child: latLngs.isEmpty
+-                  ? const WearEmpty(title: '轨迹坐标无效', detail: '服务返回的轨迹点缺少有效经纬度。')
+-                  : FlutterMap(
+-                      key: ValueKey(
+-                        '${idOf(_person?['id'])}-${_points.length}-${_from.millisecondsSinceEpoch}-${_to.millisecondsSinceEpoch}',
+-                      ),
+-                      options: MapOptions(
+-                        initialCenter: latLngs.first,
+-                        initialZoom: 16,
+-                        initialCameraFit: latLngs.length > 1
+-                            ? CameraFit.bounds(
+-                                bounds: LatLngBounds.fromPoints(latLngs),
+-                                padding: const EdgeInsets.all(34),
+-                              )
+-                            : null,
+-                        interactionOptions: const InteractionOptions(
+-                          flags:
+-                              InteractiveFlag.pinchZoom | InteractiveFlag.drag,
+-                        ),
+-                      ),
+-                      children: [
+-                        TileLayer(
+-                          urlTemplate:
+-                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+-                          userAgentPackageName: 'rolling_intelligence_headband',
+-                        ),
+-                        PolylineLayer(
+-                          polylines: [
+-                            Polyline(
+-                              points: latLngs,
+-                              color: WearColors.primary,
+-                              strokeWidth: 4,
+-                            ),
+-                          ],
+-                        ),
+-                        if (currentLat != null && currentLng != null)
+-                          MarkerLayer(
+-                            markers: [
+-                              Marker(
+-                                point: LatLng(currentLat, currentLng),
+-                                width: 44,
+-                                height: 44,
+-                                child: const Icon(
+-                                  Icons.location_on,
+-                                  size: 42,
+-                                  color: WearColors.danger,
+-                                ),
+-                              ),
+-                            ],
+-                          ),
+-                      ],
+-                    ),
++        FlutterMap(
++          key: ValueKey(
++            '${idOf(_person?['id'])}-${_points.length}-${_from.millisecondsSinceEpoch}-${_to.millisecondsSinceEpoch}',
++          ),
++          options: MapOptions(
++            initialCenter: latLngs.first,
++            initialZoom: 16,
++            initialCameraFit: latLngs.length > 1
++                ? CameraFit.bounds(
++                    bounds: LatLngBounds.fromPoints(latLngs),
++                    padding: const EdgeInsets.all(34),
++                  )
++                : null,
++            interactionOptions: const InteractionOptions(
++              flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
+             ),
+           ),
+-        ),
+-        Padding(
+-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+-          child: WearCard(
+-            padding: const EdgeInsets.all(12),
+-            child: Column(
+-              children: [
+-                Row(
+-                  children: [
+-                    IconButton(
+-                      onPressed: _togglePlayback,
+-                      icon: Icon(
+-                        _playing
+-                            ? Icons.pause_circle_filled
+-                            : Icons.play_circle_fill,
+-                        size: 36,
+-                      ),
+-                    ),
+-                    Expanded(
+-                      child: Slider(
+-                        value: _index.toDouble(),
+-                        min: 0,
+-                        max: (_points.length - 1).toDouble(),
+-                        divisions: _points.length > 1
+-                            ? _points.length - 1
+-                            : null,
+-                        onChanged: (value) {
+-                          _stop();
+-                          setState(() => _index = value.round());
+-                        },
+-                      ),
+-                    ),
+-                    Text('${_index + 1}/${_points.length}'),
+-                  ],
+-                ),
+-                Row(
+-                  children: [
+-                    Expanded(
+-                      child: Text(
+-                        '${formatTime(current['occurredAt'])} · ${_qualityLabel(current['locationQuality'])}',
+-                        style: const TextStyle(
+-                          color: WearColors.muted,
+-                          fontSize: 12,
+-                        ),
+-                      ),
+-                    ),
+-                    TextButton.icon(
+-                      onPressed: _seekTime,
+-                      icon: const Icon(Icons.schedule, size: 17),
+-                      label: const Text('定位时间'),
+-                    ),
+-                  ],
+-                ),
+-                Wrap(
+-                  spacing: 6,
+-                  children: [
+-                    for (final speed in const [0.5, 1.0, 2.0, 5.0])
+-                      ChoiceChip(
+-                        label: Text(
+-                          '${speed == speed.roundToDouble() ? speed.toInt() : speed}x',
+-                        ),
+-                        selected: _speed == speed,
+-                        onSelected: (_) {
+-                          setState(() => _speed = speed);
+-                          if (_playing) _startTimer();
+-                        },
+-                      ),
+-                  ],
++          children: [
++            TileLayer(
++              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
++              userAgentPackageName: 'rolling_intelligence_headband',
++            ),
++            PolylineLayer(
++              polylines: [
++                Polyline(
++                  points: latLngs,
++                  color: const Color(0xFF008FFF),
++                  strokeWidth: 4,
+                 ),
+               ],
+             ),
++            if (lat != null && lng != null)
++              MarkerLayer(
++                markers: [
++                  Marker(
++                    point: LatLng(lat, lng),
++                    width: 44,
++                    height: 44,
++                    child: const Icon(
++                      Icons.location_on,
++                      size: 42,
++                      color: WearColors.danger,
++                    ),
++                  ),
++                ],
++              ),
++          ],
++        ),
++        const Positioned(
++          left: 5,
++          bottom: 5,
++          child: ColoredBox(
++            color: Color(0xDDFFFFFF),
++            child: Padding(
++              padding: EdgeInsets.all(3),
++              child: Text(
++                '© OpenStreetMap contributors',
++                style: TextStyle(fontSize: 9),
++              ),
++            ),
+           ),
+         ),
+       ],
+     );
+   }
+ 
++  Widget _informationCard() {
++    final points = _visiblePoints;
++    final current = points.isEmpty
++        ? null
++        : points[_index.clamp(0, points.length - 1)];
++    Widget row(String label, String value) => Padding(
++      padding: const EdgeInsets.symmetric(vertical: 7),
++      child: Row(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          Text(
++            label,
++            style: const TextStyle(fontSize: 12, color: WearColors.muted),
++          ),
++          const SizedBox(width: 16),
++          Expanded(
++            child: Text(
++              value,
++              textAlign: TextAlign.right,
++              style: const TextStyle(fontSize: 12, color: WearColors.ink),
++            ),
++          ),
++        ],
++      ),
++    );
++    return WearCard(
++      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
++      child: Column(
++        children: [
++          row('轨迹来源', _preview ? '安全帽 GNSS（示例）' : '安全帽 GNSS'),
++          row(
++            '当前时间点',
++            current == null
++                ? '--:--:--'
++                : _clock(current['occurredAt'], seconds: true),
++          ),
++          row(
++            '当前数据',
++            _preview ? '${points.length} 个示例轨迹点' : '${points.length} 个轨迹点',
++          ),
++          if (current != null && !_preview)
++            row('定位质量', _qualityLabel(current['locationQuality'])),
++        ],
++      ),
++    );
++  }
++
++  String _clock(Object? raw, {bool seconds = false}) {
++    final time = DateTime.tryParse('$raw')?.toLocal();
++    if (time == null) return '--:--';
++    final base =
++        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
++    return seconds ? '$base:${time.second.toString().padLeft(2, '0')}' : base;
++  }
++
+   Future<void> _pickDate({required bool from}) async {
+     final initial = from ? _from : _to;
+     final value = await showDatePicker(
+@@ -483,13 +927,18 @@ class _TracksPageState extends State<TracksPage> {
+       _from = nextFrom;
+       _to = nextTo;
+     });
+-    _loadTracks();
++    if (_preview) {
++      _stop();
++      setState(() => _index = 0);
++    } else {
++      _loadTracks();
++    }
+   }
+ 
+   Future<void> _seekTime() async {
+     final current =
+         DateTime.tryParse(
+-          _points[_index]['occurredAt']?.toString() ?? '',
++          _visiblePoints[_index]['occurredAt']?.toString() ?? '',
+         )?.toLocal() ??
+         _from;
+     final date = await showDatePicker(
+@@ -511,7 +960,7 @@ class _TracksPageState extends State<TracksPage> {
+       time.hour,
+       time.minute,
+     );
+-    final index = nearestPointIndex(_points, target);
++    final index = nearestPointIndex(_visiblePoints, target);
+     if (index >= 0) {
+       _stop();
+       setState(() => _index = index);
+@@ -523,7 +972,7 @@ class _TracksPageState extends State<TracksPage> {
+       _stop();
+       return;
+     }
+-    if (_index >= _points.length - 1) setState(() => _index = 0);
++    if (_index >= _visiblePoints.length - 1) setState(() => _index = 0);
+     setState(() => _playing = true);
+     _startTimer();
+   }
+@@ -533,7 +982,7 @@ class _TracksPageState extends State<TracksPage> {
+     _timer = Timer.periodic(Duration(milliseconds: (850 / _speed).round()), (
+       _,
+     ) {
+-      if (!mounted || _index >= _points.length - 1) {
++      if (!mounted || _index >= _visiblePoints.length - 1) {
+         _stop();
+         return;
+       }
+@@ -553,7 +1002,7 @@ class _TracksPageState extends State<TracksPage> {
+       DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
+ 
+   String _day(DateTime value) =>
+-      '${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
++      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+ 
+   List<LatLng> _validPoints(List<JsonMap> points) {
+     return points
+@@ -572,3 +1021,78 @@ class _TracksPageState extends State<TracksPage> {
+     _ => '定位质量未知',
+   };
+ }
++
++/// Normalized positions belong only to the explicitly labelled plant preview.
++class _TrackPreviewPainter extends CustomPainter {
++  const _TrackPreviewPainter(this.index);
++  final int index;
++  static const route = [
++    Offset(.18, .78),
++    Offset(.24, .64),
++    Offset(.38, .64),
++    Offset(.52, .64),
++    Offset(.52, .48),
++    Offset(.52, .30),
++    Offset(.52, .22),
++    Offset(.65, .22),
++    Offset(.78, .22),
++  ];
++  @override
++  void paint(Canvas canvas, Size size) {
++    final points = route
++        .map((p) => Offset(p.dx * size.width, p.dy * size.height))
++        .toList();
++    final path = Path()..moveTo(points.first.dx, points.first.dy);
++    for (final point in points.skip(1)) {
++      path.lineTo(point.dx, point.dy);
++    }
++    canvas.drawPath(
++      path,
++      Paint()
++        ..color = Colors.white
++        ..strokeWidth = 6
++        ..style = PaintingStyle.stroke
++        ..strokeJoin = StrokeJoin.round,
++    );
++    canvas.drawPath(
++      path,
++      Paint()
++        ..color = const Color(0xFF008FFF)
++        ..strokeWidth = 3
++        ..style = PaintingStyle.stroke
++        ..strokeJoin = StrokeJoin.round,
++    );
++    final current = points[index.clamp(0, points.length - 1)];
++    canvas.drawCircle(current, 7, Paint()..color = Colors.white);
++    canvas.drawCircle(current, 5, Paint()..color = const Color(0xFF008FFF));
++    final label = TextPainter(
++      text: const TextSpan(
++        text: '陈建国 · 示例',
++        style: TextStyle(
++          color: Colors.white,
++          fontSize: 10,
++          fontWeight: FontWeight.w600,
++        ),
++      ),
++      textDirection: TextDirection.ltr,
++    )..layout();
++    final rect = Rect.fromLTWH(
++      (current.dx - label.width / 2 - 6).clamp(
++        4,
++        size.width - label.width - 16,
++      ),
++      current.dy - 30,
++      label.width + 12,
++      22,
++    );
++    canvas.drawRRect(
++      RRect.fromRectAndRadius(rect, const Radius.circular(5)),
++      Paint()..color = const Color(0xFF008FFF),
++    );
++    label.paint(canvas, Offset(rect.left + 6, rect.top + 4));
++  }
++
++  @override
++  bool shouldRepaint(_TrackPreviewPainter oldDelegate) =>
++      oldDelegate.index != index;
++}

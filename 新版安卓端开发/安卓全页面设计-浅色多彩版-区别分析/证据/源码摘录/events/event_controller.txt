@@ -1,0 +1,513 @@
+1: import 'dart:async';
+2: 
+3: import 'package:flutter/foundation.dart';
+4: 
+5: import 'event_models.dart';
+6: import 'event_policy.dart';
+7: 
+8: export 'event_policy.dart' show EventActor;
+9: 
+10: abstract interface class EventGateway {
+11:   Future<EventPageData> fetchPage(EventFilters filters, int current, int size);
+12:   Future<int> fetchInboxCount();
+13:   Future<TaskCandidatePage> fetchTaskCandidates(int current, int size);
+14:   Future<WearEvent> fetchDetail(String eventId);
+15:   Future<List<EventAction>> fetchActions(String eventId);
+16:   Future<List<DutyOperator>> fetchOperators();
+17:   Future<WearEvent> execute(
+18:     EventCommand command,
+19:     WearEvent event,
+20:     EventDraft draft,
+21:   );
+22: }
+23: 
+24: abstract interface class EventStateStore {
+25:   Future<EventWorkspaceState?> read();
+26:   Future<void> write(EventWorkspaceState value);
+27: }
+28: 
+29: class EventController extends ChangeNotifier {
+30:   EventController({
+31:     required this.gateway,
+32:     required EventStateStore store,
+33:     required String scopeKey,
+34:     required EventActor actor,
+35:     this.pageSize = 20,
+36:     this.initialEventId,
+37:     this.initialPersonId,
+38:     this.initialTaskId,
+39:     this.initialClaimantUserId,
+40:     this.initialEscalated,
+41:     this.initialStatus,
+42:     this.initialType,
+43:   }) : _store = store,
+44:        _scopeKey = scopeKey,
+45:        _actor = actor;
+46: 
+47:   final EventGateway gateway;
+48:   final int pageSize;
+49:   final String? initialEventId;
+50:   final String? initialPersonId;
+51:   final String? initialTaskId;
+52:   final String? initialClaimantUserId;
+53:   final bool? initialEscalated;
+54:   final String? initialStatus;
+55:   final String? initialType;
+56: 
+57:   EventStateStore _store;
+58:   String _scopeKey;
+59:   EventActor _actor;
+60:   int _scopeGeneration = 0;
+61:   int _pageGeneration = 0;
+62:   int _detailGeneration = 0;
+63:   int _refreshGeneration = 0;
+64:   int _countGeneration = 0;
+65:   bool _disposed = false;
+66:   Future<void> _persistChain = Future.value();
+67: 
+68:   EventFilters filters = const EventFilters();
+69:   List<WearEvent> records = const [];
+70:   List<EventAction> actions = const [];
+71:   List<DutyOperator> operators = const [];
+72:   List<WorkTaskCandidate> taskCandidates = const [];
+73:   WearEvent? selected;
+74:   int total = 0;
+75:   int inboxCount = 0;
+76:   int taskCandidateTotal = 0;
+77:   int taskCandidateCurrent = 1;
+78:   int current = 1;
+79:   double scrollOffset = 0;
+80:   bool loading = false;
+81:   bool loadingMore = false;
+82:   bool _endReached = false;
+83:   String? loadMoreError;
+84:   bool detailLoading = false;
+85:   bool writing = false;
+86:   bool taskCandidatesLoading = false;
+87:   String? errorMessage;
+88:   String? conflictMessage;
+89:   String? successMessage;
+90:   final Map<String, EventDraft> _drafts = {};
+91:   final Set<String> _ackedLocally = {};
+92: 
+93:   String get scopeKey => _scopeKey;
+94:   EventActor get actor => _actor;
+95:   bool get hasMore => !_endReached && current * pageSize < total;
+96: 
+97:   EventDraft draftFor(String eventId) => _drafts[eventId] ?? const EventDraft();
+98: 
+99:   Future<void> initialize({bool applyInitial = true}) async {
+100:     final scope = _scopeGeneration;
+101:     final restored = await _store.read();
+102:     if (!_acceptScope(scope)) return;
+103:     if (restored != null) {
+104:       filters = restored.filters;
+105:       current = restored.current;
+106:       scrollOffset = restored.scrollOffset;
+107:       _drafts
+108:         ..clear()
+109:         ..addAll(restored.drafts);
+110:     }
+111:     if (applyInitial) {
+112:       filters = filters.copyWith(
+113:         personId: initialPersonId ?? filters.personId,
+114:         taskId: initialTaskId ?? filters.taskId,
+115:         claimantUserId: initialClaimantUserId ?? filters.claimantUserId,
+116:         escalated: initialEscalated ?? filters.escalated,
+117:         status: initialStatus ?? filters.status,
+118:         type: initialType ?? filters.type,
+119:       );
+120:     }
+121:     final target = applyInitial
+122:         ? initialEventId ?? restored?.selectedEventId ?? ''
+123:         : restored?.selectedEventId ?? '';
+124:     await reload(current: current);
+125:     if (target.isNotEmpty && _acceptScope(scope)) await select(target);
+126:   }
+127: 
+128:   Future<void> replaceScope({
+129:     required String scopeKey,
+130:     required EventActor actor,
+131:     required EventStateStore store,
+132:   }) async {
+133:     _scopeGeneration++;
+134:     _pageGeneration++;
+135:     _detailGeneration++;
+136:     _refreshGeneration++;
+137:     _countGeneration++;
+138:     _scopeKey = scopeKey;
+139:     _actor = actor;
+140:     _store = store;
+141:     filters = const EventFilters();
+142:     records = const [];
+143:     loadingMore = false;
+144:     loadMoreError = null;
+145:     _endReached = false;
+146:     actions = const [];
+147:     operators = const [];
+148:     taskCandidates = const [];
+149:     selected = null;
+150:     total = 0;
+151:     inboxCount = 0;
+152:     taskCandidateTotal = 0;
+153:     taskCandidateCurrent = 1;
+154:     current = 1;
+155:     scrollOffset = 0;
+156:     _drafts.clear();
+157:     _ackedLocally.clear();
+158:     notifyListeners();
+159:     await initialize(applyInitial: false);
+160:   }
+161: 
+162:   Future<void> reload({int? current}) async {
+163:     final request = ++_pageGeneration;
+164:     final scope = _scopeGeneration;
+165:     final targetPage = current ?? this.current;
+166:     final requestedFilters = filters;
+167:     loadingMore = false;
+168:     loadMoreError = null;
+169:     loading = true;
+170:     errorMessage = null;
+171:     notifyListeners();
+172:     unawaited(_reloadInboxCount(scope));
+173:     try {
+174:       // Rebuild all previously loaded batches so refreshing/returning never
+175:       // replaces a continuous list with only its final batch.
+176:       final rows = <String, WearEvent>{};
+177:       var reachedEnd = false;
+178:       var loadedPage = 1;
+179:       var latestTotal = 0;
+180:       for (var number = 1; number <= targetPage; number++) {
+181:         final page = await gateway.fetchPage(
+182:           requestedFilters,
+183:           number,
+184:           pageSize,
+185:         );
+186:         if (!_acceptPage(scope, request)) return;
+187:         for (final event in page.records) {
+188:           rows[event.id] = event;
+189:         }
+190:         loadedPage = page.current;
+191:         latestTotal = page.total;
+192:         reachedEnd =
+193:             page.records.isEmpty ||
+194:             page.current < number ||
+195:             page.current * pageSize >= page.total;
+196:         if (reachedEnd) break;
+197:       }
+198:       records = rows.values.toList();
+199:       total = latestTotal;
+200:       this.current = loadedPage;
+201:       _endReached = reachedEnd;
+202:     } catch (error) {
+203:       if (!_acceptPage(scope, request)) return;
+204:       if (error is! EventStaleScope) errorMessage = error.toString();
+205:     } finally {
+206:       if (_acceptPage(scope, request)) {
+207:         loading = false;
+208:         notifyListeners();
+209:         _persist();
+210:       }
+211:     }
+212:   }
+213: 
+214:   Future<void> setFilters(EventFilters value) async {
+215:     conflictMessage = null;
+216:     successMessage = null;
+217:     // Invalidate a pending append before persistence yields to its response.
+218:     _pageGeneration++;
+219:     loadingMore = false;
+220:     loadMoreError = null;
+221:     _endReached = false;
+222:     records = const [];
+223:     total = 0;
+224:     filters = value;
+225:     current = 1;
+226:     scrollOffset = 0;
+227:     await _persist();
+228:     await reload(current: 1);
+229:   }
+230: 
+231:   Future<void> loadMore() async {
+232:     if (loading || loadingMore || writing || !hasMore) return;
+233:     final request = ++_pageGeneration;
+234:     final scope = _scopeGeneration;
+235:     final targetPage = current + 1;
+236:     loadingMore = true;
+237:     loadMoreError = null;
+238:     notifyListeners();
+239:     try {
+240:       final page = await gateway.fetchPage(filters, targetPage, pageSize);
+241:       if (!_acceptPage(scope, request)) return;
+242:       final rows = {for (final event in records) event.id: event};
+243:       for (final event in page.records) {
+244:         rows[event.id] = event;
+245:       }
+246:       records = rows.values.toList();
+247:       total = page.total;
+248:       _endReached =
+249:           page.records.isEmpty ||
+250:           page.current < targetPage ||
+251:           page.current * pageSize >= page.total;
+252:       current = page.current;
+253:     } catch (error) {
+254:       if (_acceptPage(scope, request) && error is! EventStaleScope) {
+255:         loadMoreError = '后续事件加载失败';
+256:       }
+257:     } finally {
+258:       if (_acceptPage(scope, request)) {
+259:         loadingMore = false;
+260:         notifyListeners();
+261:         unawaited(_persist());
+262:       }
+263:     }
+264:   }
+265: 
+266:   Future<void> select(String eventId) async {
+267:     final request = ++_detailGeneration;
+268:     final scope = _scopeGeneration;
+269:     detailLoading = true;
+270:     errorMessage = null;
+271:     conflictMessage = null;
+272:     successMessage = null;
+273:     notifyListeners();
+274:     try {
+275:       final result = await Future.wait<Object>([
+276:         gateway.fetchDetail(eventId),
+277:         gateway.fetchActions(eventId),
+278:       ]);
+279:       if (!_acceptDetail(scope, request)) return;
+280:       selected = result[0] as WearEvent;
+281:       actions = result[1] as List<EventAction>;
+282:       await _persist();
+283:     } catch (error) {
+284:       if (!_acceptDetail(scope, request)) return;
+285:       if (error is! EventStaleScope) errorMessage = error.toString();
+286:     } finally {
+287:       if (_acceptDetail(scope, request)) {
+288:         detailLoading = false;
+289:         notifyListeners();
+290:       }
+291:     }
+292:   }
+293: 
+294:   Future<void> closeDetail() async {
+295:     _detailGeneration++;
+296:     selected = null;
+297:     actions = const [];
+298:     notifyListeners();
+299:     await _persist();
+300:   }
+301: 
+302:   Future<void> loadOperators() async {
+303:     final scope = _scopeGeneration;
+304:     try {
+305:       final result = await gateway.fetchOperators();
+306:       if (_acceptScope(scope)) {
+307:         operators = result
+308:             .where((item) => item.userId != actor.userId)
+309:             .toList();
+310:         notifyListeners();
+311:       }
+312:     } catch (error) {
+313:       if (_acceptScope(scope) && error is! EventStaleScope) {
+314:         errorMessage = error.toString();
+315:       }
+316:     }
+317:   }
+318: 
+319:   Future<void> loadTaskCandidates({int current = 1}) async {
+320:     final scope = _scopeGeneration;
+321:     taskCandidatesLoading = true;
+322:     errorMessage = null;
+323:     notifyListeners();
+324:     try {
+325:       final page = await gateway.fetchTaskCandidates(current, 10);
+326:       if (!_acceptScope(scope)) return;
+327:       taskCandidates = page.records;
+328:       taskCandidateTotal = page.total;
+329:       taskCandidateCurrent = page.current;
+330:     } catch (error) {
+331:       if (_acceptScope(scope) && error is! EventStaleScope) {
+332:         errorMessage = error.toString();
+333:       }
+334:     } finally {
+335:       if (_acceptScope(scope)) {
+336:         taskCandidatesLoading = false;
+337:         notifyListeners();
+338:       }
+339:     }
+340:   }
+341: 
+342:   Future<void> updateDraft(String eventId, EventDraft draft) async {
+343:     if (draft.isEmpty) {
+344:       _drafts.remove(eventId);
+345:     } else {
+346:       _drafts[eventId] = draft;
+347:     }
+348:     notifyListeners();
+349:     await _persist();
+350:   }
+351: 
+352:   Future<void> updateScroll(double offset) async {
+353:     scrollOffset = offset < 0 ? 0 : offset;
+354:     await _persist();
+355:   }
+356: 
+357:   bool can(EventCommand command) {
+358:     final event = selected;
+359:     if (event == null || !EventPolicy.can(command, event, actor)) return false;
+360:     if (command == EventCommand.ack &&
+361:         (_ackedLocally.contains(event.id) ||
+362:             (actor.userName.isNotEmpty &&
+363:                 actions.any(
+364:                   (action) =>
+365:                       action.action == 'ack' && action.actor == actor.userName,
+366:                 )))) {
+367:       return false;
+368:     }
+369:     return true;
+370:   }
+371: 
+372:   Future<bool> execute(EventCommand command) async {
+373:     final event = selected;
+374:     if (writing || event == null || !can(command)) {
+375:       return false;
+376:     }
+377:     writing = true;
+378:     errorMessage = null;
+379:     conflictMessage = null;
+380:     successMessage = null;
+381:     notifyListeners();
+382:     final scope = _scopeGeneration;
+383:     final selectionGeneration = _detailGeneration;
+384:     try {
+385:       final latest = await gateway.execute(command, event, draftFor(event.id));
+386:       if (!_acceptScope(scope)) return false;
+387:       if (command != EventCommand.ack) _drafts.remove(event.id);
+388:       if (command == EventCommand.ack) _ackedLocally.add(event.id);
+389:       successMessage = _successText(command);
+390:       if (selectionGeneration != _detailGeneration ||
+391:           selected?.id != event.id) {
+392:         await reload(current: current);
+393:         return true;
+394:       }
+395:       selected = latest;
+396:       try {
+397:         await _refreshAfterWrite(event.id, scope);
+398:       } on EventStaleScope {
+399:         return true;
+400:       } catch (error) {
+401:         if (_acceptScope(scope)) {
+402:           errorMessage = '操作已成功，但最新列表加载失败：$error';
+403:         }
+404:       }
+405:       return true;
+406:     } on EventConflict catch (conflict) {
+407:       if (!_acceptScope(scope)) return false;
+408:       conflictMessage = conflict.message;
+409:       if (selectionGeneration != _detailGeneration ||
+410:           selected?.id != event.id) {
+411:         await reload(current: current);
+412:         return false;
+413:       }
+414:       try {
+415:         await _refreshAfterWrite(event.id, scope);
+416:       } on EventStaleScope {
+417:         return false;
+418:       } catch (error) {
+419:         if (_acceptScope(scope)) {
+420:           errorMessage = '状态已冲突，重新加载失败：$error';
+421:         }
+422:       }
+423:       return false;
+424:     } catch (error) {
+425:       if (_acceptScope(scope) && error is! EventStaleScope) {
+426:         errorMessage = error.toString();
+427:       }
+428:       return false;
+429:     } finally {
+430:       if (_acceptScope(scope)) {
+431:         writing = false;
+432:         notifyListeners();
+433:         _persist();
+434:       }
+435:     }
+436:   }
+437: 
+438:   Future<void> refreshFromSignal() async {
+439:     final request = ++_refreshGeneration;
+440:     final scope = _scopeGeneration;
+441:     final id = selected?.id;
+442:     await reload(current: current);
+443:     if (!_acceptScope(scope) || request != _refreshGeneration) return;
+444:     if (id != null && id.isNotEmpty) await select(id);
+445:   }
+446: 
+447:   Future<void> _refreshAfterWrite(String eventId, int scope) async {
+448:     final detail = await Future.wait<Object>([
+449:       gateway.fetchDetail(eventId),
+450:       gateway.fetchActions(eventId),
+451:     ]);
+452:     if (!_acceptScope(scope)) return;
+453:     selected = detail[0] as WearEvent;
+454:     actions = detail[1] as List<EventAction>;
+455:     await reload(current: current);
+456:   }
+457: 
+458:   Future<void> _reloadInboxCount(int scope) async {
+459:     final request = ++_countGeneration;
+460:     try {
+461:       final result = await gateway.fetchInboxCount();
+462:       if (_acceptScope(scope) && request == _countGeneration) {
+463:         inboxCount = result;
+464:         notifyListeners();
+465:       }
+466:     } on EventStaleScope {
+467:       // A replacement scope owns the next count.
+468:     } catch (_) {
+469:       // The authoritative page remains usable if this supplementary count fails.
+470:     }
+471:   }
+472: 
+473:   String _successText(EventCommand command) => switch (command) {
+474:     EventCommand.ack => '已确认看见该事件',
+475:     EventCommand.claim => '事件已认领',
+476:     EventCommand.handle => '处置记录已提交',
+477:     EventCommand.transfer => '事件已转交',
+478:     EventCommand.close => '事件已关闭',
+479:     EventCommand.reopen => '事件已重开',
+480:     EventCommand.assignTask => '事件关联任务已确认',
+481:   };
+482: 
+483:   bool _acceptScope(int scope) => !_disposed && scope == _scopeGeneration;
+484:   bool _acceptPage(int scope, int request) =>
+485:       _acceptScope(scope) && request == _pageGeneration;
+486:   bool _acceptDetail(int scope, int request) =>
+487:       _acceptScope(scope) && request == _detailGeneration;
+488: 
+489:   Future<void> _persist() {
+490:     final store = _store;
+491:     final value = EventWorkspaceState(
+492:       filters: filters,
+493:       current: current,
+494:       selectedEventId: selected?.id ?? '',
+495:       scrollOffset: scrollOffset,
+496:       drafts: Map.unmodifiable(_drafts),
+497:     );
+498:     final operation = _persistChain.then((_) => store.write(value));
+499:     _persistChain = operation.catchError((_) {});
+500:     return operation;
+501:   }
+502: 
+503:   @override
+504:   void dispose() {
+505:     _disposed = true;
+506:     _scopeGeneration++;
+507:     _pageGeneration++;
+508:     _detailGeneration++;
+509:     _refreshGeneration++;
+510:     _countGeneration++;
+511:     super.dispose();
+512:   }
+513: }

@@ -1,0 +1,337 @@
+{
+  "verifiedAt": "2026-09-18T08:36:31.085Z",
+  "htmlFiles": 47,
+  "localLinks": 690,
+  "allLinksExist": true,
+  "referencePages": 40,
+  "totalDetailRows": 360,
+  "search": true,
+  "moduleFilter": true,
+  "noResults": true,
+  "rowSearch": true,
+  "desktop": "1440x1060",
+  "mobile": "390x844",
+  "consoleErrors": [],
+  "checks": [
+    {
+      "id": "01",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "02",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "03",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "04",
+      "rows": 11,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "05",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "06",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "07",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "08",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "09",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "10",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "11",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "12",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "13",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "14",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "15",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "16",
+      "rows": 7,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "17",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "18",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "19",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "20",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "21",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "22",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "23",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "24",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "25",
+      "rows": 11,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "26",
+      "rows": 11,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "27",
+      "rows": 7,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "28",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "29",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "30",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "31",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "32",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "33",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "34",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "35",
+      "rows": 10,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "36",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "37",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "38",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "39",
+      "rows": 8,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    },
+    {
+      "id": "40",
+      "rows": 9,
+      "images": true,
+      "desktop": true,
+      "mobile": true,
+      "bottomAccessible": true
+    }
+  ]
+}

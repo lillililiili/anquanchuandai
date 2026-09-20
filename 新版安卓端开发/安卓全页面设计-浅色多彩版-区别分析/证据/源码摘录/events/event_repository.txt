@@ -1,0 +1,167 @@
+1: import '../core.dart';
+2: import 'event_controller.dart';
+3: import 'event_models.dart';
+4: 
+5: class ApiEventGateway implements EventGateway {
+6:   const ApiEventGateway(this.api);
+7:   final WearApi api;
+8: 
+9:   Future<T> _fresh<T>(Future<T> Function() request) async {
+10:     try {
+11:       return await request();
+12:     } on StaleSessionException {
+13:       throw const EventStaleScope();
+14:     }
+15:   }
+16: 
+17:   @override
+18:   Future<EventPageData> fetchPage(
+19:     EventFilters filters,
+20:     int current,
+21:     int size,
+22:   ) async {
+23:     return _fresh(() async {
+24:       if (filters.taskId.isNotEmpty) {
+25:         final rows =
+26:             jsonList(
+27:               await api.get('/api/v1/work-tasks/${filters.taskId}/events'),
+28:             ).map(WearEvent.fromJson).where((event) {
+29:               return ((filters.status.isEmpty || filters.status == 'active')
+30:                       ? !event.isClosed
+31:                       : event.status == filters.status) &&
+32:                   (filters.type.isEmpty || event.type == filters.type) &&
+33:                   (filters.personId.isEmpty ||
+34:                       event.personId == filters.personId) &&
+35:                   (filters.claimantUserId.isEmpty ||
+36:                       event.claimantUserId == filters.claimantUserId) &&
+37:                   (!filters.escalated || event.escalated);
+38:             }).toList();
+39:         final maxPage = rows.isEmpty ? 1 : ((rows.length - 1) ~/ size) + 1;
+40:         final safeCurrent = current.clamp(1, maxPage);
+41:         final start = (safeCurrent - 1) * size;
+42:         final end = (start + size).clamp(0, rows.length);
+43:         return EventPageData(
+44:           records: start >= rows.length ? const [] : rows.sublist(start, end),
+45:           total: rows.length,
+46:           current: safeCurrent,
+47:           size: size,
+48:         );
+49:       }
+50: 
+51:       final page = await api.page(
+52:         '/api/v1/events',
+53:         current: current,
+54:         size: size,
+55:         query: {
+56:           if (filters.status.isNotEmpty && filters.status != 'active')
+57:             'status': filters.status,
+58:           if (filters.type.isNotEmpty) 'type': filters.type,
+59:           if (filters.personId.isNotEmpty) 'personId': filters.personId,
+60:           if (filters.claimantUserId.isNotEmpty)
+61:             'claimantUserId': filters.claimantUserId,
+62:           if (filters.escalated) 'escalated': 'true',
+63:         },
+64:       );
+65:       return EventPageData(
+66:         records: page.records.map(WearEvent.fromJson).toList(),
+67:         total: page.total,
+68:         current: page.current,
+69:         size: page.size,
+70:       );
+71:     });
+72:   }
+73: 
+74:   @override
+75:   Future<int> fetchInboxCount() => _fresh(() async {
+76:     final data = jsonMap(await api.get('/api/v1/events/inbox/count'));
+77:     return intOf(data['count']);
+78:   });
+79: 
+80:   @override
+81:   Future<TaskCandidatePage> fetchTaskCandidates(int current, int size) =>
+82:       _fresh(() async {
+83:         final page = await api.page(
+84:           '/api/v1/work-tasks',
+85:           current: current,
+86:           size: size,
+87:         );
+88:         return TaskCandidatePage(
+89:           records: page.records.map(WorkTaskCandidate.fromJson).toList(),
+90:           total: page.total,
+91:           current: page.current,
+92:           size: page.size,
+93:         );
+94:       });
+95: 
+96:   @override
+97:   Future<WearEvent> fetchDetail(String eventId) => _fresh(
+98:     () async =>
+99:         WearEvent.fromJson(jsonMap(await api.get('/api/v1/events/$eventId'))),
+100:   );
+101: 
+102:   @override
+103:   Future<List<EventAction>> fetchActions(String eventId) => _fresh(
+104:     () async => jsonList(
+105:       await api.get('/api/v1/events/$eventId/actions'),
+106:     ).map(EventAction.fromJson).toList(),
+107:   );
+108: 
+109:   @override
+110:   Future<List<DutyOperator>> fetchOperators() => _fresh(
+111:     () async => jsonList(await api.get('/api/v1/duty/operators'))
+112:         .map(DutyOperator.fromJson)
+113:         .where((item) => item.userId.isNotEmpty)
+114:         .toList(),
+115:   );
+116: 
+117:   @override
+118:   Future<WearEvent> execute(
+119:     EventCommand command,
+120:     WearEvent event,
+121:     EventDraft draft,
+122:   ) async {
+123:     return _fresh(() async {
+124:       final data = switch (command) {
+125:         EventCommand.ack => null,
+126:         EventCommand.claim => <String, dynamic>{'version': event.version},
+127:         EventCommand.handle => <String, dynamic>{
+128:           'comment': draft.handleComment.trim(),
+129:           'version': event.version,
+130:         },
+131:         EventCommand.transfer => <String, dynamic>{
+132:           'toUserId': draft.transferUserId,
+133:           'reason': draft.transferReason.trim(),
+134:           'version': event.version,
+135:         },
+136:         EventCommand.close => <String, dynamic>{
+137:           'reason': draft.closeReason.trim(),
+138:           'version': event.version,
+139:         },
+140:         EventCommand.reopen => <String, dynamic>{
+141:           'reason': draft.reopenReason.trim(),
+142:           'version': event.version,
+143:         },
+144:         EventCommand.assignTask => <String, dynamic>{
+145:           'taskId': draft.taskId,
+146:           'version': event.version,
+147:         },
+148:       };
+149:       try {
+150:         final actionPath = command == EventCommand.assignTask
+151:             ? 'task'
+152:             : command.name;
+153:         return WearEvent.fromJson(
+154:           jsonMap(
+155:             await api.post(
+156:               '/api/v1/events/${event.id}/$actionPath',
+157:               data: data,
+158:             ),
+159:           ),
+160:         );
+161:       } on WearApiException catch (error) {
+162:         if (error.code == 409) throw EventConflict(error.message);
+163:         rethrow;
+164:       }
+165:     });
+166:   }
+167: }

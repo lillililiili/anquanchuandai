@@ -25,6 +25,10 @@ void main() {
         Map<String, dynamic> event(String id) => {
           'id': id,
           'type': id == 'a' ? 'geofence' : 'sos',
+          'alarmCode': id == 'a' ? 'helmet.fence_exit' : 'helmet.sos',
+          'alarmName': id == 'a' ? '离开指定区域（核心系统名称）' : 'SOS 紧急求救',
+          'alarmDescription': id == 'a' ? '已离开指定作业区域，请核实现场情况' : '',
+          'sourceEventId': 'call-lab:helmet.fence_exit:fixture',
           'severity': 'high',
           'status': 'claimed',
           'claimantUserId': 'event-ui-$scale',
@@ -86,14 +90,22 @@ void main() {
         await tester.tap(find.byType(NavigationDestination).at(2));
         await tester.pumpAndSettle();
         Future<void> click(Finder f) async {
+          if (f.evaluate().isEmpty) {
+            await tester.scrollUntilVisible(f, 180);
+          }
           await tester.ensureVisible(f);
           await tester.pumpAndSettle();
           await tester.tap(f);
           await tester.pumpAndSettle();
         }
 
+        expect(find.text('离开指定区域（核心系统名称）'), findsOneWidget);
         await click(find.byKey(const ValueKey('wear-event-a')));
         expect(find.text('异常核验'), findsOneWidget);
+        expect(find.text('离开指定区域（核心系统名称）'), findsWidgets);
+        expect(find.text('已离开指定作业区域，请核实现场情况'), findsOneWidget);
+        expect(find.text('围栏异常'), findsNothing);
+        expect(find.text('原安监事件'), findsNothing);
         expect(find.byType(NavigationBar), findsNothing);
         final input = find.byKey(const ValueKey('event-handle-input-a'));
         await tester.ensureVisible(input);
@@ -112,6 +124,16 @@ void main() {
         await click(find.byKey(const ValueKey('event-handle-submit-a')));
         expect(writes.single.path, '/api/v1/events/a/handle');
         expect(writes.single.data, {'comment': '已核查，等待现场确认', 'version': 3});
+        expect(tester.widget<TextField>(input).controller!.text, '已核查，等待现场确认');
+        expect(find.text('已提交核验'), findsOneWidget);
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const ValueKey('event-handle-submit-a')),
+              )
+              .onPressed,
+          isNull,
+        );
         await click(find.byTooltip('返回事件列表'));
         await click(find.byKey(const ValueKey('wear-event-s')));
         expect(find.text('SOS协助'), findsOneWidget);

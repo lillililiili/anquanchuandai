@@ -1,0 +1,82 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.ArrayList;
+4: import java.util.HashMap;
+5: import java.util.List;
+6: import java.util.Map;
+7: import org.springframework.beans.factory.annotation.Autowired;
+8: import org.springframework.web.bind.annotation.GetMapping;
+9: import org.springframework.web.bind.annotation.PutMapping;
+10: import org.springframework.web.bind.annotation.RequestBody;
+11: import org.springframework.web.bind.annotation.RequestMapping;
+12: import org.springframework.web.bind.annotation.RestController;
+13: import com.ruoyi.common.core.domain.R;
+14: import com.ruoyi.common.core.domain.entity.SysUser;
+15: import com.ruoyi.common.core.domain.model.LoginUser;
+16: import com.ruoyi.framework.web.service.TokenService;
+17: import com.ruoyi.wear.auth.SiteAccessService;
+18: import com.ruoyi.wear.auth.dto.MeDto;
+19: import com.ruoyi.wear.auth.dto.SelectSiteRequest;
+20: import com.ruoyi.wear.auth.dto.SiteDto;
+21: import com.ruoyi.wear.site.domain.WearSite;
+22: 
+23: @RestController
+24: @RequestMapping("/api/v1")
+25: public class WearIdentityController
+26: {
+27:     @Autowired
+28:     private SiteAccessService siteAccessService;
+29: 
+30:     @Autowired
+31:     private TokenService tokenService;
+32: 
+33:     @GetMapping("/me")
+34:     public R<MeDto> me()
+35:     {
+36:         LoginUser loginUser = siteAccessService.requireLogin();
+37:         SysUser sysUser = loginUser.getUser();
+38:         MeDto dto = new MeDto();
+39:         dto.setUserId(loginUser.getUserId() == null ? null : String.valueOf(loginUser.getUserId()));
+40:         dto.setUserName(sysUser == null ? null : sysUser.getUserName());
+41:         dto.setNickName(sysUser == null ? null : sysUser.getNickName());
+42:         dto.setStatus(sysUser == null ? null : sysUser.getStatus());
+43:         dto.setAdmin(siteAccessService.isPlatformAdmin(loginUser));
+44:         dto.setRoles(siteAccessService.roleKeys(loginUser));
+45:         dto.setPermissions(siteAccessService.permissions());
+46:         List<SiteDto> sites = toDtos(siteAccessService.authorizedSites());
+47:         dto.setAuthorizedSites(sites);
+48:         Long current = siteAccessService.resolveRequestSiteId();
+49:         dto.setCurrentSiteId(current == null ? null : String.valueOf(current));
+50:         return R.ok(dto);
+51:     }
+52: 
+53:     @GetMapping("/sites")
+54:     public R<List<SiteDto>> sites()
+55:     {
+56:         return R.ok(toDtos(siteAccessService.authorizedSites()));
+57:     }
+58: 
+59:     @PutMapping("/me/current-site")
+60:     public R<Map<String, String>> selectCurrentSite(@RequestBody SelectSiteRequest request)
+61:     {
+62:         Long siteId = siteAccessService.parseSiteId(request == null ? null : request.getSiteId());
+63:         siteAccessService.assertAuthorized(siteId);
+64:         LoginUser loginUser = siteAccessService.requireLogin();
+65:         loginUser.setCurrentSiteId(siteId);
+66:         loginUser.setAuthorizedSiteIds(siteAccessService.authorizedSiteIds());
+67:         tokenService.setLoginUser(loginUser);
+68:         Map<String, String> data = new HashMap<String, String>();
+69:         data.put("currentSiteId", String.valueOf(siteId));
+70:         return R.ok(data);
+71:     }
+72: 
+73:     private List<SiteDto> toDtos(List<WearSite> sites)
+74:     {
+75:         List<SiteDto> result = new ArrayList<SiteDto>();
+76:         for (WearSite site : sites)
+77:         {
+78:             result.add(SiteDto.from(site));
+79:         }
+80:         return result;
+81:     }
+82: }

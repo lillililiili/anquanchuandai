@@ -1,0 +1,686 @@
+{
+  "startedAt": "2026-09-20T05:35:17.322Z",
+  "backendOrigin": "http://127.0.0.1:18084",
+  "site": "1",
+  "devices": [
+    "12",
+    "13"
+  ],
+  "scope": "Local Java relay integration, simulated state only; no SOS or assignment writes",
+  "requests": [
+    {
+      "at": "2026-09-20T05:35:17.331Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/login",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "authenticated": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:17.592Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/login",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "authenticated": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:17.734Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/login",
+      "method": "POST",
+      "account": "reader",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "authenticated": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:17.878Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/login",
+      "method": "POST",
+      "account": "other",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "authenticated": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.020Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/bridge-info",
+      "method": "GET",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "responseKeys": [
+          "bridge",
+          "enabled",
+          "upstreamType",
+          "simulation",
+          "realMedia"
+        ],
+        "configuration": {
+          "enabled": true,
+          "simulation": true,
+          "realMedia": false,
+          "bridge": "java-business-backend",
+          "upstreamType": "virtual-helmet"
+        }
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.031Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/me",
+      "method": "GET",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "hasData": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.042Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/state?client=console",
+      "method": "GET",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "devices": [
+          {
+            "deviceId": "12",
+            "online": false
+          },
+          {
+            "deviceId": "13",
+            "online": false
+          }
+        ],
+        "currentCall": [],
+        "activeCallCount": 0
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.093Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/devices/12",
+      "method": "GET",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "deviceId": "12",
+        "siteId": "1",
+        "typeCode": "helmet"
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.115Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/presence",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "deviceId": "12",
+        "online": true,
+        "simulation": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.156Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/devices/13",
+      "method": "GET",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "deviceId": "13",
+        "siteId": "1",
+        "typeCode": "helmet"
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.172Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/presence",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "deviceId": "13",
+        "online": true,
+        "simulation": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.215Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/state",
+      "method": "GET",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "devices": [
+          {
+            "deviceId": "12",
+            "online": true
+          },
+          {
+            "deviceId": "13",
+            "online": true
+          }
+        ],
+        "currentCall": [],
+        "activeCallCount": 0
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.285Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "ringing",
+        "video": false,
+        "videoEnabled": false,
+        "createdAt": 1789882518313,
+        "connectedAt": null,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "ringing"
+          },
+          {
+            "deviceId": "13",
+            "state": "ringing"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.316Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 409,
+      "code": 409,
+      "result": {
+        "hasData": false
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.351Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/accept",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "connected",
+        "video": false,
+        "videoEnabled": false,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "connected"
+          },
+          {
+            "deviceId": "13",
+            "state": "ringing"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.375Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "reader",
+      "site": "1",
+      "httpStatus": 403,
+      "code": 403,
+      "result": {
+        "hasData": false
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.387Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "other",
+      "site": "1",
+      "httpStatus": 403,
+      "code": 403,
+      "result": {
+        "hasData": false
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.399Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "admin",
+      "site": "2",
+      "httpStatus": 404,
+      "code": 404,
+      "result": {
+        "hasData": false
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.424Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "connected",
+        "video": false,
+        "videoEnabled": true,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "connected"
+          },
+          {
+            "deviceId": "13",
+            "state": "ringing"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.448Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "connected",
+        "video": false,
+        "videoEnabled": false,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "connected"
+          },
+          {
+            "deviceId": "13",
+            "state": "ringing"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.477Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 400,
+      "code": 400,
+      "result": {
+        "hasData": false
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.527Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "connected",
+        "video": false,
+        "videoEnabled": true,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "connected"
+          },
+          {
+            "deviceId": "13",
+            "state": "ringing"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.563Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/accept",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "connected",
+        "video": false,
+        "videoEnabled": true,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "connected"
+          },
+          {
+            "deviceId": "13",
+            "state": "connected"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.588Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "connected",
+        "video": false,
+        "videoEnabled": false,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "connected"
+          },
+          {
+            "deviceId": "13",
+            "state": "connected"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.623Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/state",
+      "method": "GET",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "devices": [
+          {
+            "deviceId": "12",
+            "online": true
+          },
+          {
+            "deviceId": "13",
+            "online": true
+          }
+        ],
+        "currentCall": [
+          {
+            "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+            "state": "connected",
+            "videoEnabled": false,
+            "connectedAt": 1789882518373,
+            "participants": [
+              {
+                "deviceId": "12",
+                "state": "connected"
+              },
+              {
+                "deviceId": "13",
+                "state": "connected"
+              }
+            ]
+          }
+        ],
+        "activeCallCount": 1
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.696Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "connected",
+        "video": false,
+        "videoEnabled": true,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "connected"
+          },
+          {
+            "deviceId": "13",
+            "state": "connected"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.730Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/end",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "callId": "da7aa36d-2fdb-4381-85af-6b81241d2e81",
+        "state": "ended",
+        "video": false,
+        "videoEnabled": false,
+        "createdAt": 1789882518313,
+        "connectedAt": 1789882518373,
+        "participants": [
+          {
+            "deviceId": "12",
+            "state": "ended"
+          },
+          {
+            "deviceId": "13",
+            "state": "ended"
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.772Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/calls/da7aa36d-2fdb-4381-85af-6b81241d2e81/video",
+      "method": "POST",
+      "account": "duty",
+      "site": "1",
+      "httpStatus": 409,
+      "code": 409,
+      "result": {
+        "hasData": false
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.814Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/presence",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "deviceId": "12",
+        "online": false,
+        "simulation": true
+      }
+    },
+    {
+      "at": "2026-09-20T05:35:18.864Z",
+      "origin": "http://127.0.0.1:18084",
+      "path": "/api/v1/lab/presence",
+      "method": "POST",
+      "account": "admin",
+      "site": "1",
+      "httpStatus": 200,
+      "code": 200,
+      "result": {
+        "deviceId": "13",
+        "online": false,
+        "simulation": true
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "Java backend identifies its virtual helmet bridge exactly",
+      "passed": true
+    },
+    {
+      "name": "Duty account has site 1 access",
+      "passed": true
+    },
+    {
+      "name": "No pre-existing call will be interrupted",
+      "passed": true
+    },
+    {
+      "name": "Existing helmet 12 belongs to site 1",
+      "passed": true
+    },
+    {
+      "name": "Existing helmet 13 belongs to site 1",
+      "passed": true
+    },
+    {
+      "name": "Unified two-helmet call starts ringing without video",
+      "passed": true
+    },
+    {
+      "name": "One helmet accepts while the other remains ringing",
+      "passed": true
+    },
+    {
+      "name": "Same-site administrator may view helmets without a second call",
+      "passed": true
+    },
+    {
+      "name": "Administrator may stop viewing without ending original call",
+      "passed": true
+    },
+    {
+      "name": "Owner enables one-way view on same call without second ring",
+      "passed": true
+    },
+    {
+      "name": "Second helmet joins original call without resetting connectedAt",
+      "passed": true
+    },
+    {
+      "name": "View can stop without ending or recreating the call",
+      "passed": true
+    },
+    {
+      "name": "State read through Java preserves same connected call",
+      "passed": true
+    },
+    {
+      "name": "End clears viewing and participant state",
+      "passed": true
+    },
+    {
+      "name": "Every client request used Java port 18084, never Node directly",
+      "passed": true
+    }
+  ],
+  "cleanup": [
+    {
+      "deviceId": "12",
+      "offline": true
+    },
+    {
+      "deviceId": "13",
+      "offline": true
+    }
+  ],
+  "status": "passed",
+  "finishedAt": "2026-09-20T05:35:18.914Z"
+}

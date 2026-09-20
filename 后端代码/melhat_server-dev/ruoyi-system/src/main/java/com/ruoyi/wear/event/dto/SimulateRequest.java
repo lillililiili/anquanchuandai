@@ -5,6 +5,12 @@ import java.math.BigDecimal;
 public class SimulateRequest
 {
     private String sourceEventId;
+    private String scenarioCode;
+    private java.util.Map<String, BigDecimal> measurements;
+    public String getScenarioCode() { return scenarioCode; }
+    public void setScenarioCode(String value) { scenarioCode = value; }
+    public java.util.Map<String, BigDecimal> getMeasurements() { return measurements; }
+    public void setMeasurements(java.util.Map<String, BigDecimal> value) { measurements = value; }
     private String type;
     private String siteId;
     private String deviceId;

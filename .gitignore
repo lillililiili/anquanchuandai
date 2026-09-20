@@ -6,3 +6,12 @@
 /*.7z
 *.apk
 *.aab
+
+# Local backups and generated delivery artifacts
+/垃圾桶/
+/android代码/melhat_android-main - 副本/
+~$*
+*.log
+*.zip
+*.py[cod]
+**/__pycache__/

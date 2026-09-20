@@ -1,0 +1,260 @@
+1: typedef JsonMap = Map<String, dynamic>;
+2: 
+3: String _stringOf(Object? value, [String fallback = '']) {
+4:   if (value == null) return fallback;
+5:   final text = value.toString().trim();
+6:   return text == 'null' ? fallback : text;
+7: }
+8: 
+9: bool _boolOf(Object? value) =>
+10:     value == true || value == 1 || value?.toString().toLowerCase() == 'true';
+11: 
+12: enum WearCallStatus {
+13:   requesting,
+14:   offered,
+15:   connected,
+16:   ended,
+17:   failed,
+18:   timedOut,
+19:   unknown,
+20: }
+21: 
+22: extension WearCallStatusView on WearCallStatus {
+23:   bool get isTerminal =>
+24:       this == WearCallStatus.ended ||
+25:       this == WearCallStatus.failed ||
+26:       this == WearCallStatus.timedOut;
+27: 
+28:   String get label => switch (this) {
+29:     WearCallStatus.requesting => '正在请求设备',
+30:     WearCallStatus.offered => '等待加入',
+31:     WearCallStatus.connected => '已接通',
+32:     WearCallStatus.ended => '已结束',
+33:     WearCallStatus.failed => '通话失败',
+34:     WearCallStatus.timedOut => '等待超时',
+35:     WearCallStatus.unknown => '未知状态',
+36:   };
+37: }
+38: 
+39: WearCallStatus callStatusOf(Object? raw) => switch (_stringOf(raw)) {
+40:   'requesting' => WearCallStatus.requesting,
+41:   'offered' => WearCallStatus.offered,
+42:   'connected' => WearCallStatus.connected,
+43:   'ended' => WearCallStatus.ended,
+44:   'failed' => WearCallStatus.failed,
+45:   'timed_out' => WearCallStatus.timedOut,
+46:   _ => WearCallStatus.unknown,
+47: };
+48: 
+49: class CallSession {
+50:   const CallSession({
+51:     required this.id,
+52:     required this.kind,
+53:     required this.status,
+54:     required this.deviceId,
+55:     required this.requesterUserId,
+56:     this.eventId,
+57:     this.personId,
+58:     this.siteId,
+59:     this.sn = '',
+60:     this.channelName = '',
+61:     this.video = false,
+62:     this.demo = false,
+63:     this.connectionQuality = '',
+64:     this.expiresAt,
+65:     this.startedAt,
+66:     this.connectedAt,
+67:     this.endedAt,
+68:     this.failReason = '',
+69:     this.version = 0,
+70:   });
+71: 
+72:   factory CallSession.fromJson(JsonMap json) => CallSession(
+73:     id: _stringOf(json['id']),
+74:     kind: _stringOf(json['kind'], 'single'),
+75:     status: callStatusOf(json['status']),
+76:     eventId: _nullableString(json['eventId']),
+77:     deviceId: _stringOf(json['deviceId']),
+78:     sn: _stringOf(json['sn']),
+79:     personId: _nullableString(json['personId']),
+80:     siteId: _nullableString(json['siteId']),
+81:     requesterUserId: _stringOf(json['requesterUserId']),
+82:     channelName: _stringOf(json['channelName']),
+83:     video: _boolOf(json['video']),
+84:     demo: _boolOf(json['demo']),
+85:     connectionQuality: _stringOf(json['connectionQuality']),
+86:     expiresAt: _dateOf(json['expiresAt']),
+87:     startedAt: _dateOf(json['startedAt']),
+88:     connectedAt: _dateOf(json['connectedAt']),
+89:     endedAt: _dateOf(json['endedAt']),
+90:     failReason: _stringOf(json['failReason']),
+91:     version: int.tryParse(_stringOf(json['version'])) ?? 0,
+92:   );
+93: 
+94:   final String id;
+95:   final String kind;
+96:   final WearCallStatus status;
+97:   final String? eventId;
+98:   final String deviceId;
+99:   final String sn;
+100:   final String? personId;
+101:   final String? siteId;
+102:   final String requesterUserId;
+103:   final String channelName;
+104:   final bool video;
+105:   final bool demo;
+106:   final String connectionQuality;
+107:   final DateTime? expiresAt;
+108:   final DateTime? startedAt;
+109:   final DateTime? connectedAt;
+110:   final DateTime? endedAt;
+111:   final String failReason;
+112:   final int version;
+113: 
+114:   bool get isConnected => status == WearCallStatus.connected && !demo;
+115:   bool get isTerminal => status.isTerminal;
+116:   String get statusLabel => demo ? '演示状态（未连接真实设备）' : status.label;
+117: }
+118: 
+119: class RtcCredentials {
+120:   const RtcCredentials({
+121:     required this.appId,
+122:     required this.channelName,
+123:     required this.uid,
+124:     required this.token,
+125:     this.expiresAt,
+126:     this.demo = false,
+127:     this.video = false,
+128:   });
+129: 
+130:   factory RtcCredentials.fromJson(JsonMap json) => RtcCredentials(
+131:     appId: _stringOf(json['agoraAppId']),
+132:     channelName: _stringOf(json['channelName']),
+133:     uid: int.tryParse(_stringOf(json['agoraUid'])) ?? 0,
+134:     token: _stringOf(json['agoraToken']),
+135:     expiresAt: _dateOf(json['expiresAt']),
+136:     demo: _boolOf(json['demo']),
+137:     video: _boolOf(json['video']),
+138:   );
+139: 
+140:   final String appId;
+141:   final String channelName;
+142:   final int uid;
+143:   final String token;
+144:   final DateTime? expiresAt;
+145:   final bool demo;
+146:   final bool video;
+147: 
+148:   bool get isUsable =>
+149:       appId.isNotEmpty && channelName.isNotEmpty && uid > 0 && token.isNotEmpty;
+150:   bool get isExpired =>
+151:       expiresAt != null && !expiresAt!.isAfter(DateTime.now());
+152: }
+153: 
+154: class StartedCall {
+155:   const StartedCall(this.session, this.credentials);
+156:   final CallSession session;
+157:   final RtcCredentials? credentials;
+158: }
+159: 
+160: class PersonOption {
+161:   const PersonOption({
+162:     required this.id,
+163:     required this.name,
+164:     required this.personCode,
+165:   });
+166: 
+167:   factory PersonOption.fromJson(JsonMap json) => PersonOption(
+168:     id: _stringOf(json['id']),
+169:     name: _stringOf(json['name'], '未命名人员'),
+170:     personCode: _stringOf(json['personCode']),
+171:   );
+172: 
+173:   final String id;
+174:   final String name;
+175:   final String personCode;
+176: }
+177: 
+178: class CommunicationDevice {
+179:   const CommunicationDevice({
+180:     required this.id,
+181:     required this.sn,
+182:     required this.actions,
+183:     this.personId,
+184:     this.personName,
+185:     this.typeCode = '',
+186:     this.modelName = '',
+187:     this.demo = false,
+188:   });
+189: 
+190:   factory CommunicationDevice.fromJson(JsonMap json, {JsonMap? assignment}) {
+191:     final capabilities = json['capabilities'];
+192:     final actions = capabilities is Map
+193:         ? _strings(capabilities['actions'])
+194:         : const <String>{};
+195:     return CommunicationDevice(
+196:       id: _stringOf(json['id'] ?? assignment?['deviceId']),
+197:       sn: _stringOf(json['sn'] ?? assignment?['sn']),
+198:       personId: _nullableString(assignment?['personId']),
+199:       personName: _nullableString(assignment?['personName']),
+200:       typeCode: _stringOf(json['typeCode'] ?? assignment?['typeCode']),
+201:       modelName: _stringOf(json['modelName']),
+202:       actions: actions,
+203:       demo: _boolOf(json['demo']),
+204:     );
+205:   }
+206: 
+207:   final String id;
+208:   final String sn;
+209:   final String? personId;
+210:   final String? personName;
+211:   final String typeCode;
+212:   final String modelName;
+213:   final Set<String> actions;
+214:   final bool demo;
+215: 
+216:   bool supports(String action) => actions.contains(action);
+217: }
+218: 
+219: enum TtsCommandStatus { accepted, sent, failed, unknown }
+220: 
+221: class TtsCommand {
+222:   const TtsCommand({
+223:     required this.id,
+224:     required this.deviceId,
+225:     required this.status,
+226:     this.vendorMessage = '',
+227:   });
+228: 
+229:   factory TtsCommand.fromJson(JsonMap json) => TtsCommand(
+230:     id: _stringOf(json['id']),
+231:     deviceId: _stringOf(json['deviceId']),
+232:     status: switch (_stringOf(json['status'])) {
+233:       'accepted' => TtsCommandStatus.accepted,
+234:       'sent' => TtsCommandStatus.sent,
+235:       'failed' => TtsCommandStatus.failed,
+236:       _ => TtsCommandStatus.unknown,
+237:     },
+238:     vendorMessage: _stringOf(json['vendorMsg']),
+239:   );
+240: 
+241:   final String id;
+242:   final String deviceId;
+243:   final TtsCommandStatus status;
+244:   final String vendorMessage;
+245: }
+246: 
+247: String? _nullableString(Object? value) {
+248:   final text = _stringOf(value);
+249:   return text.isEmpty ? null : text;
+250: }
+251: 
+252: DateTime? _dateOf(Object? value) {
+253:   final text = _stringOf(value);
+254:   return text.isEmpty ? null : DateTime.tryParse(text);
+255: }
+256: 
+257: Set<String> _strings(Object? value) {
+258:   if (value is! List) return const <String>{};
+259:   return value.map(_stringOf).where((item) => item.isNotEmpty).toSet();
+260: }

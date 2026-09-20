@@ -1,0 +1,49 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import org.springframework.beans.factory.annotation.Autowired;
+4: import org.springframework.http.HttpHeaders;
+5: import org.springframework.http.MediaType;
+6: import org.springframework.http.ResponseEntity;
+7: import org.springframework.web.bind.annotation.GetMapping;
+8: import org.springframework.web.bind.annotation.PathVariable;
+9: import org.springframework.web.bind.annotation.RequestMapping;
+10: import org.springframework.web.bind.annotation.RequestParam;
+11: import org.springframework.web.bind.annotation.RestController;
+12: import com.ruoyi.common.core.domain.R;
+13: import com.ruoyi.helmet.pojo.po.FileRecord;
+14: import com.ruoyi.wear.common.WearPage;
+15: import com.ruoyi.wear.file.FileAuditService;
+16: import com.ruoyi.wear.file.FileAuditDto;
+17: 
+18: @RestController
+19: @RequestMapping("/api/v1/files")
+20: public class WearFileController
+21: {
+22:     @Autowired private FileAuditService fileAuditService;
+23: 
+24:     @GetMapping
+25:     public R<WearPage<FileAuditDto>> page(@RequestParam(defaultValue = "1") int current,
+26:             @RequestParam(defaultValue = "10") int size,
+27:             @RequestParam(required = false) String fileName,
+28:             @RequestParam(required = false) String fileType,
+29:             @RequestParam(required = false) String device,
+30:             @RequestParam(required = false) String userName,
+31:             @RequestParam(required = false) String uploadTimeFrom,
+32:             @RequestParam(required = false) String uploadTimeTo)
+33:     {
+34:         return R.ok(fileAuditService.page(current, size, fileName, fileType, device, userName, uploadTimeFrom, uploadTimeTo));
+35:     }
+36: 
+37:     @GetMapping("/{id}")
+38:     public R<FileAuditDto> detail(@PathVariable Long id) { return R.ok(fileAuditService.detail(id)); }
+39: 
+40:     @GetMapping("/{id}/download")
+41:     public ResponseEntity<byte[]> download(@PathVariable Long id)
+42:     {
+43:         FileRecord row = fileAuditService.requireReadable(id);
+44:         HttpHeaders headers = new HttpHeaders();
+45:         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+46:         headers.setContentDispositionFormData("attachment", row.getFileName());
+47:         return ResponseEntity.ok().headers(headers).body(fileAuditService.download(id));
+48:     }
+49: }

@@ -1,0 +1,221 @@
+{
+  "capturedAt": "2026-09-18T16:36:19+08:00",
+  "files": [
+    {
+      "path": "lib/wear/api.dart",
+      "sha256": "d20f1e49dc7dfaead78250577e95c9675413cf91b0846a0e657fe2f1df1debb0",
+      "capture_sha256": "d20f1e49dc7dfaead78250577e95c9675413cf91b0846a0e657fe2f1df1debb0",
+      "match": true
+    },
+    {
+      "path": "lib/wear/app.dart",
+      "sha256": "cf0f91754e0eef05aa5939e027b4fd6f133debce8f92c4f666ef8041e47064c4",
+      "capture_sha256": "cf0f91754e0eef05aa5939e027b4fd6f133debce8f92c4f666ef8041e47064c4",
+      "match": true
+    },
+    {
+      "path": "lib/wear/auth_pages.dart",
+      "sha256": "b78b5b2c8dcdd66179b7ca8d12dada35289118646ca349d4630b75554296e7d8",
+      "capture_sha256": "4860added67e742eafa2f9efca2398cdd55a785438b8a9a4644af90d6ab9230a",
+      "match": false
+    },
+    {
+      "path": "lib/wear/core.dart",
+      "sha256": "cba71282164517abda3339bc0a33e27cbf9033e31e4c7048c20ab73575a8aa1d",
+      "capture_sha256": "cba71282164517abda3339bc0a33e27cbf9033e31e4c7048c20ab73575a8aa1d",
+      "match": true
+    },
+    {
+      "path": "lib/wear/data.dart",
+      "sha256": "28a3459c34187bb188a8350607c284f90946c1726b276e8c8f480715070df565",
+      "capture_sha256": "28a3459c34187bb188a8350607c284f90946c1726b276e8c8f480715070df565",
+      "match": true
+    },
+    {
+      "path": "lib/wear/mine_page.dart",
+      "sha256": "53df094390e4b7a1fd750085262a17fa5d2e56c9953616d47d622b73c1a74de3",
+      "capture_sha256": "53df094390e4b7a1fd750085262a17fa5d2e56c9953616d47d622b73c1a74de3",
+      "match": true
+    },
+    {
+      "path": "lib/wear/notifications.dart",
+      "sha256": "cefaec1470612e5ad522526305f1392a7010e939da3aaa6c5971de4027207286",
+      "capture_sha256": "cefaec1470612e5ad522526305f1392a7010e939da3aaa6c5971de4027207286",
+      "match": true
+    },
+    {
+      "path": "lib/wear/password_reset_page.dart",
+      "sha256": "df87b1adedc8c19e7758e39627b34e214952e559af7d57a6c1e487567dc84da9",
+      "capture_sha256": null,
+      "match": false
+    },
+    {
+      "path": "lib/wear/session.dart",
+      "sha256": "272a69a6423aec04d8c10a7df878373f413199956ec1300b3e842d13b4892ae1",
+      "capture_sha256": "272a69a6423aec04d8c10a7df878373f413199956ec1300b3e842d13b4892ae1",
+      "match": true
+    },
+    {
+      "path": "lib/wear/ui.dart",
+      "sha256": "682b2764b1604c75bf72b0391b34bbf281d6e943cedf0397c91be9b68df81403",
+      "capture_sha256": "682b2764b1604c75bf72b0391b34bbf281d6e943cedf0397c91be9b68df81403",
+      "match": true
+    },
+    {
+      "path": "lib/wear/communications/api_gateway.dart",
+      "sha256": "663a66d136d2d3cfa41113ccc4f96fde177a6afa82f69432ec45f14a1d07e723",
+      "capture_sha256": "663a66d136d2d3cfa41113ccc4f96fde177a6afa82f69432ec45f14a1d07e723",
+      "match": true
+    },
+    {
+      "path": "lib/wear/communications/communications.dart",
+      "sha256": "59cb41f28c214d23c41b8d21c257bceea7aa6ec688d03d6a0d5eb782c3fde2af",
+      "capture_sha256": "59cb41f28c214d23c41b8d21c257bceea7aa6ec688d03d6a0d5eb782c3fde2af",
+      "match": true
+    },
+    {
+      "path": "lib/wear/communications/communications_page.dart",
+      "sha256": "2f14721af351a343dc016ac328bb1610fea86a9f4c61ad1b3bef595baa249d12",
+      "capture_sha256": "2f14721af351a343dc016ac328bb1610fea86a9f4c61ad1b3bef595baa249d12",
+      "match": true
+    },
+    {
+      "path": "lib/wear/communications/controller.dart",
+      "sha256": "6229fc6e977f5c9a042afb01e1b879a0c6dde5050c40537f58ee830ff5039454",
+      "capture_sha256": "6229fc6e977f5c9a042afb01e1b879a0c6dde5050c40537f58ee830ff5039454",
+      "match": true
+    },
+    {
+      "path": "lib/wear/communications/models.dart",
+      "sha256": "687ca0c87c09d50a3737d328200fff2cda09ac78a9c330fd684327e120460150",
+      "capture_sha256": "687ca0c87c09d50a3737d328200fff2cda09ac78a9c330fd684327e120460150",
+      "match": true
+    },
+    {
+      "path": "lib/wear/communications/policy.dart",
+      "sha256": "1aad022a2398fc17518610fb2b10f568d15cadee76830ac4fe924e4452dd6a1a",
+      "capture_sha256": "1aad022a2398fc17518610fb2b10f568d15cadee76830ac4fe924e4452dd6a1a",
+      "match": true
+    },
+    {
+      "path": "lib/wear/communications/rtc_engine.dart",
+      "sha256": "4407c97225177043466a751a3838910a79a5759bb657c0d2d1a829179780f01c",
+      "capture_sha256": "4407c97225177043466a751a3838910a79a5759bb657c0d2d1a829179780f01c",
+      "match": true
+    },
+    {
+      "path": "lib/wear/events/events_page.dart",
+      "sha256": "8ccb63afe72b78178a44552205e23f11ec0ad0eb411dece6405d0e9952c711dc",
+      "capture_sha256": "8ccb63afe72b78178a44552205e23f11ec0ad0eb411dece6405d0e9952c711dc",
+      "match": true
+    },
+    {
+      "path": "lib/wear/events/event_controller.dart",
+      "sha256": "85bbf302ab0dca6b94b84418d9031b5bd496b439cd1325baadee8702a050e5d4",
+      "capture_sha256": "85bbf302ab0dca6b94b84418d9031b5bd496b439cd1325baadee8702a050e5d4",
+      "match": true
+    },
+    {
+      "path": "lib/wear/events/event_models.dart",
+      "sha256": "ff0aba341c143850b479f175ba421b6b51c4827d8bd6ff19da1d1758746edc09",
+      "capture_sha256": "ff0aba341c143850b479f175ba421b6b51c4827d8bd6ff19da1d1758746edc09",
+      "match": true
+    },
+    {
+      "path": "lib/wear/events/event_policy.dart",
+      "sha256": "c45c6f6efc74fbb0a1642a596ca445e0aac34b5774715c414ce597e2f0e4863d",
+      "capture_sha256": "c45c6f6efc74fbb0a1642a596ca445e0aac34b5774715c414ce597e2f0e4863d",
+      "match": true
+    },
+    {
+      "path": "lib/wear/events/event_reference_view.dart",
+      "sha256": "83148ba79b3205e5db877022e01b2cc6c998f73417faa785d81709e3fdade51a",
+      "capture_sha256": "83148ba79b3205e5db877022e01b2cc6c998f73417faa785d81709e3fdade51a",
+      "match": true
+    },
+    {
+      "path": "lib/wear/events/event_repository.dart",
+      "sha256": "b73afc483e0ecdc520d3b8a6a6040d2bc44562280c02e82c562743832ff681ac",
+      "capture_sha256": "b73afc483e0ecdc520d3b8a6a6040d2bc44562280c02e82c562743832ff681ac",
+      "match": true
+    },
+    {
+      "path": "lib/wear/events/event_state_store.dart",
+      "sha256": "87625c97815cbda7db052dab2eb9d0f6ba076db1285d6c40913861db3d59f351",
+      "capture_sha256": "87625c97815cbda7db052dab2eb9d0f6ba076db1285d6c40913861db3d59f351",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/devices.dart",
+      "sha256": "4f36e7d7c9265983c5fed35655e30a246f351030b8f8d90f23d2af30011fb9cc",
+      "capture_sha256": "4f36e7d7c9265983c5fed35655e30a246f351030b8f8d90f23d2af30011fb9cc",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/fences.dart",
+      "sha256": "2fc2f922dd4f8ddd59f320b74d4f8a4956e218d072b3743ad891ab7246b135ad",
+      "capture_sha256": "2fc2f922dd4f8ddd59f320b74d4f8a4956e218d072b3743ad891ab7246b135ad",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/my_equipment_page.dart",
+      "sha256": "99555c31e5472e9540c58dbe3c13967608f482e12f9a58bae31675a3a66e412f",
+      "capture_sha256": "99555c31e5472e9540c58dbe3c13967608f482e12f9a58bae31675a3a66e412f",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/people.dart",
+      "sha256": "401f984bfe1e4b44b5734e428a306ffed5a34b6c059e068e2b793655cf95d9d5",
+      "capture_sha256": "401f984bfe1e4b44b5734e428a306ffed5a34b6c059e068e2b793655cf95d9d5",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/queries.dart",
+      "sha256": "07253ea50dee5ba9ae77a2957fc369e84c681334cdc2f23b8d47807b0126047a",
+      "capture_sha256": "07253ea50dee5ba9ae77a2957fc369e84c681334cdc2f23b8d47807b0126047a",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/query_utils.dart",
+      "sha256": "f37b49db7b73f4bcddfbfda3aeab5e0fafcf3628b5400faf8e4f91c1d391dae7",
+      "capture_sha256": "f37b49db7b73f4bcddfbfda3aeab5e0fafcf3628b5400faf8e4f91c1d391dae7",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/query_widgets.dart",
+      "sha256": "69357aab90cbe43db9fbe1fb4fd161579af32b4764f1012f9ff2f2a19e6f2e80",
+      "capture_sha256": "69357aab90cbe43db9fbe1fb4fd161579af32b4764f1012f9ff2f2a19e6f2e80",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/supervision.dart",
+      "sha256": "67f2a3bbb3b721e8a22879cb943ae06a1ba84c0a877edb64078c1a08fe2e8daf",
+      "capture_sha256": "67f2a3bbb3b721e8a22879cb943ae06a1ba84c0a877edb64078c1a08fe2e8daf",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/tasks.dart",
+      "sha256": "138c741340404d66e1929d98edb882d8246051d03ad4b350c152722472df897b",
+      "capture_sha256": "138c741340404d66e1929d98edb882d8246051d03ad4b350c152722472df897b",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/tracks.dart",
+      "sha256": "72644c7a921c7a642e39addfef1ff4d332eab66db2686545f70053c77b2d16c4",
+      "capture_sha256": "836aa2dacfc3a6c56de86e676ad51e016ff4a53aa47246d1a2efcfd96b485412",
+      "match": false
+    },
+    {
+      "path": "lib/wear/queries/workbench.dart",
+      "sha256": "6606becc834415566d0e96d1c1f2795c7a26838bb217dd1f182d4444fd179c5c",
+      "capture_sha256": "6606becc834415566d0e96d1c1f2795c7a26838bb217dd1f182d4444fd179c5c",
+      "match": true
+    },
+    {
+      "path": "lib/wear/queries/work_reference.dart",
+      "sha256": "78f92601403576f47183435c5385aa10fc8d62b47e2357392029b1a77eadc906",
+      "capture_sha256": "78f92601403576f47183435c5385aa10fc8d62b47e2357392029b1a77eadc906",
+      "match": true
+    }
+  ]
+}

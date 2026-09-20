@@ -1,0 +1,64 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.Map;
+4: import org.springframework.beans.factory.annotation.Autowired;
+5: import org.springframework.web.bind.annotation.GetMapping;
+6: import org.springframework.web.bind.annotation.PathVariable;
+7: import org.springframework.web.bind.annotation.PostMapping;
+8: import org.springframework.web.bind.annotation.PutMapping;
+9: import org.springframework.web.bind.annotation.RequestBody;
+10: import org.springframework.web.bind.annotation.RequestMapping;
+11: import org.springframework.web.bind.annotation.RequestParam;
+12: import org.springframework.web.bind.annotation.RestController;
+13: import com.ruoyi.common.core.domain.R;
+14: import com.ruoyi.wear.common.WearPage;
+15: import com.ruoyi.wear.location.FenceService;
+16: import com.ruoyi.wear.location.dto.GeoFenceDto;
+17: 
+18: @RestController
+19: @RequestMapping("/api/v1/fences")
+20: public class WearFenceController
+21: {
+22:     @Autowired
+23:     private FenceService fenceService;
+24: 
+25:     @GetMapping
+26:     public R<WearPage<GeoFenceDto>> page(
+27:             @RequestParam(defaultValue = "1") int current,
+28:             @RequestParam(defaultValue = "10") int size,
+29:             @RequestParam(required = false) String name,
+30:             @RequestParam(required = false) String enabled)
+31:     {
+32:         return R.ok(fenceService.page(current, size, name, enabled));
+33:     }
+34: 
+35:     @PostMapping
+36:     public R<GeoFenceDto> create(@RequestBody Map<String, Object> body)
+37:     {
+38:         return R.ok(fenceService.create(body));
+39:     }
+40: 
+41:     @GetMapping("/{id:\\d+}")
+42:     public R<GeoFenceDto> detail(@PathVariable Long id)
+43:     {
+44:         return R.ok(fenceService.detail(id));
+45:     }
+46: 
+47:     @PutMapping("/{id:\\d+}")
+48:     public R<GeoFenceDto> update(@PathVariable Long id, @RequestBody Map<String, Object> body)
+49:     {
+50:         return R.ok(fenceService.update(id, body));
+51:     }
+52: 
+53:     @PutMapping("/{id:\\d+}/enabled")
+54:     public R<GeoFenceDto> enabled(@PathVariable Long id, @RequestBody Map<String, Object> body)
+55:     {
+56:         return R.ok(fenceService.setEnabled(id, body));
+57:     }
+58: 
+59:     @PostMapping("/evaluate")
+60:     public R<Map<String, Object>> evaluate(@RequestBody Map<String, Object> body)
+61:     {
+62:         return R.ok(fenceService.evaluate(body));
+63:     }
+64: }

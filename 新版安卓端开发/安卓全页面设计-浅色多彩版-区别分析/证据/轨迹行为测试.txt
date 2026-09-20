@@ -1,0 +1,5 @@
+00:00 +0: loading C:/Users/qiyue/Desktop/开发项目/android代码/melhat_android-main/test/wear_track_reference_test.dart
+00:00 +0: track preview plays and seeks without querying real tracks at 1.0
+00:02 +1: track preview plays and seeks without querying real tracks at 1.5
+00:02 +2: person picker retains stable-id query dates and empty state
+00:03 +3: All tests passed!

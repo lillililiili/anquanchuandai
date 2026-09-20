@@ -1,0 +1,657 @@
+1: import 'package:flutter/material.dart';
+2: import '../core.dart';
+3: import 'query_utils.dart';
+4: 
+5: String workOwnerLabel(JsonMap task, WearSession session) {
+6:   final explicit = textOf(task['ownerName'], '');
+7:   if (explicit.isNotEmpty) return explicit;
+8:   final id = idOf(task['ownerUserId']);
+9:   if (id == session.userId) {
+10:     return textOf(
+11:       session.me?['nickName'],
+12:       textOf(session.me?['userName'], '当前用户'),
+13:     );
+14:   }
+15:   return id.isEmpty ? '未关联' : '账号 $id';
+16: }
+17: 
+18: String workGuardianLabel(JsonMap task) {
+19:   final explicit = textOf(task['guardianName'], '');
+20:   if (explicit.isNotEmpty) return explicit;
+21:   final id = idOf(task['guardianPersonId']);
+22:   for (final person in jsonList(task['members'])) {
+23:     if (idOf(person['personId']) == id) return textOf(person['name']);
+24:   }
+25:   return id.isEmpty ? '未关联' : '人员 $id';
+26: }
+27: 
+28: /// Local read-only fixture, used only after explicitly opening the UI example.
+29: /// IDs are never sent to business APIs.
+30: Future<JsonMap> workReferencePreview() async => {
+31:   'id': 'ui-preview',
+32:   'title': '锅炉平台检修',
+33:   'demo': true,
+34:   'ownerName': '李志远',
+35:   'guardianName': '周明',
+36:   'status': 'in_progress',
+37:   'workType': 'height',
+38:   'spaceName': '锅炉平台',
+39:   'ticketRequired': true,
+40:   'ticketStatus': 'provided',
+41:   'ticketNo': 'GL-20260915-018',
+42:   'members': [
+43:     {'personId': 'preview-1', 'name': '陈建国', 'personCode': '示例'},
+44:     {'personId': 'preview-2', 'name': '赵启航', 'personCode': '示例'},
+45:     {'personId': 'preview-3', 'name': '孙立', 'personCode': '示例'},
+46:   ],
+47:   'equipmentCheck': [
+48:     for (var i = 1; i <= 3; i++)
+49:       for (final type in ['helmet', 'belt', 'watch'])
+50:         {
+51:           'personId': 'preview-$i',
+52:           'personName': ['陈建国', '赵启航', '孙立'][i - 1],
+53:           'typeCode': type,
+54:           'result': i == 1 && type == 'belt' ? 'unknown' : 'ok',
+55:           'sn': '示例-$type-$i',
+56:         },
+57:   ],
+58:   'events': [
+59:     {
+60:       'id': 'preview-event',
+61:       'personName': '陈建国',
+62:       'type': 'realtime',
+63:       'status': 'open',
+64:       'description': '安全带连接中断',
+65:       'occurredAt': '2026-09-17T10:39:00+08:00',
+66:     },
+67:   ],
+68: };
+69: 
+70: class TaskReferenceView extends StatelessWidget {
+71:   const TaskReferenceView({
+72:     super.key,
+73:     required this.task,
+74:     required this.equipment,
+75:     required this.events,
+76:     required this.owner,
+77:     required this.guardian,
+78:     required this.onBack,
+79:     required this.onRefresh,
+80:     required this.onPerson,
+81:     required this.onEvent,
+82:     required this.onGuardian,
+83:     required this.details,
+84:     required this.equipmentDetails,
+85:     this.preview = false,
+86:   });
+87:   final JsonMap task;
+88:   final List<JsonMap> equipment, events;
+89:   final String owner, guardian;
+90:   final VoidCallback onBack, onGuardian;
+91:   final Future<void> Function() onRefresh;
+92:   final void Function(JsonMap) onPerson, onEvent;
+93:   final Widget details, equipmentDetails;
+94:   final bool preview;
+95:   static const ink = Color(0xFF101F43),
+96:       muted = Color(0xFF6B88AF),
+97:       blue = Color(0xFF008BFF);
+98: 
+99:   Widget _card(Widget child) => Material(
+100:     color: Colors.white,
+101:     borderRadius: BorderRadius.circular(14),
+102:     clipBehavior: Clip.antiAlias,
+103:     child: Padding(
+104:       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+105:       child: child,
+106:     ),
+107:   );
+108:   Widget _line() => const Divider(height: 1, color: Color(0xFFEDF2F8));
+109:   Widget _field(IconData icon, String label, String value) => Padding(
+110:     padding: const EdgeInsets.symmetric(vertical: 4),
+111:     child: Row(
+112:       children: [
+113:         Icon(icon, size: 20, color: muted),
+114:         const SizedBox(width: 12),
+115:         SizedBox(
+116:           width: 87,
+117:           child: Text(
+118:             label,
+119:             style: const TextStyle(fontSize: 14, color: muted),
+120:           ),
+121:         ),
+122:         Expanded(
+123:           child: Text(value, style: const TextStyle(fontSize: 14, color: ink)),
+124:         ),
+125:       ],
+126:     ),
+127:   );
+128:   Widget _heading(IconData icon, String title, {Color color = blue}) => Padding(
+129:     padding: const EdgeInsets.only(top: 2, bottom: 10),
+130:     child: Row(
+131:       children: [
+132:         Icon(icon, color: color, size: 28),
+133:         const SizedBox(width: 10),
+134:         Expanded(
+135:           child: Text(
+136:             title,
+137:             style: const TextStyle(
+138:               fontSize: 19,
+139:               fontWeight: FontWeight.w800,
+140:               color: ink,
+141:             ),
+142:           ),
+143:         ),
+144:       ],
+145:     ),
+146:   );
+147:   Widget _avatar() => const WearAssetImage(
+148:     WearArt.characterAvatar,
+149:     width: 46,
+150:     height: 46,
+151:     fit: BoxFit.cover,
+152:     borderRadius: BorderRadius.all(Radius.circular(23)),
+153:   );
+154: 
+155:   @override
+156:   Widget build(BuildContext context) {
+157:     final members = jsonList(task['members']);
+158:     return RefreshIndicator(
+159:       onRefresh: onRefresh,
+160:       child: SingleChildScrollView(
+161:         physics: const AlwaysScrollableScrollPhysics(),
+162:         child: Column(
+163:           children: [
+164:             SizedBox(
+165:               key: const ValueKey('wear-page-hero-task'),
+166:               height: WearHeaderLayout.height(context),
+167:               child: Stack(
+168:                 children: [
+169:                   Positioned.fill(
+170:                     child: Image.asset(
+171:                       'assets/field-brand/preview/task_reference_hero.png',
+172:                       fit: BoxFit.cover,
+173:                     ),
+174:                   ),
+175:                   Positioned(
+176:                     top: 3,
+177:                     left: 0,
+178:                     right: 12,
+179:                     child: Row(
+180:                       children: [
+181:                         IconButton(
+182:                           tooltip: '返回来源页面',
+183:                           onPressed: onBack,
+184:                           icon: const Icon(
+185:                             Icons.arrow_back_ios_new,
+186:                             size: 22,
+187:                             color: ink,
+188:                           ),
+189:                         ),
+190:                         const WearRollingWordmark(height: 23),
+191:                         const Spacer(),
+192:                         Flexible(
+193:                           child: Text(
+194:                             preview
+195:                                 ? '界面示例 · 非真实业务'
+196:                                 : task['demo'] == true
+197:                                 ? '演示作业'
+198:                                 : '作业信息',
+199:                             textAlign: TextAlign.right,
+200:                             style: const TextStyle(fontSize: 10, color: muted),
+201:                           ),
+202:                         ),
+203:                       ],
+204:                     ),
+205:                   ),
+206:                   Positioned(
+207:                     left: 18,
+208:                     top: 60,
+209:                     right: 150,
+210:                     child: Column(
+211:                       crossAxisAlignment: CrossAxisAlignment.start,
+212:                       children: [
+213:                         const Text(
+214:                           '作业详情',
+215:                           style: TextStyle(
+216:                             fontSize: WearHeaderLayout.titleSize,
+217:                             fontWeight: FontWeight.w900,
+218:                             color: ink,
+219:                             height: 1.15,
+220:                           ),
+221:                         ),
+222:                         const SizedBox(height: 8),
+223:                         const Text(
+224:                           '安全作业，平安每一天！',
+225:                           style: TextStyle(fontSize: 12, color: muted),
+226:                         ),
+227:                       ],
+228:                     ),
+229:                   ),
+230:                 ],
+231:               ),
+232:             ),
+233:             Padding(
+234:               padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+235:               child: Column(
+236:                 crossAxisAlignment: CrossAxisAlignment.stretch,
+237:                 children: [
+238:                   _card(
+239:                     Column(
+240:                       children: [
+241:                         Row(
+242:                           children: [
+243:                             Container(
+244:                               width: 40,
+245:                               height: 40,
+246:                               decoration: const BoxDecoration(
+247:                                 color: Color(0xFFEAF7FF),
+248:                                 shape: BoxShape.circle,
+249:                               ),
+250:                               child: const Icon(
+251:                                 Icons.description_outlined,
+252:                                 color: blue,
+253:                                 size: 25,
+254:                               ),
+255:                             ),
+256:                             const SizedBox(width: 10),
+257:                             Expanded(
+258:                               child: Text(
+259:                                 textOf(task['title']),
+260:                                 style: const TextStyle(
+261:                                   fontSize: 21,
+262:                                   fontWeight: FontWeight.w800,
+263:                                   color: ink,
+264:                                 ),
+265:                               ),
+266:                             ),
+267:                             const SizedBox(width: 6),
+268:                             Container(
+269:                               padding: const EdgeInsets.symmetric(
+270:                                 horizontal: 8,
+271:                                 vertical: 5,
+272:                               ),
+273:                               decoration: BoxDecoration(
+274:                                 color: const Color(0xFFE2F3FF),
+275:                                 borderRadius: BorderRadius.circular(5),
+276:                               ),
+277:                               child: const Text(
+278:                                 '只读关联',
+279:                                 style: TextStyle(fontSize: 12, color: blue),
+280:                               ),
+281:                             ),
+282:                           ],
+283:                         ),
+284:                         const SizedBox(height: 10),
+285:                         _line(),
+286:                         _field(
+287:                           Icons.description_outlined,
+288:                           '来源工作票',
+289:                           task['ticketRequired'] == false
+290:                               ? '无需工作票'
+291:                               : textOf(
+292:                                   task['ticketNo'],
+293:                                   task['ticketStatus'] == 'unverified'
+294:                                       ? '待核实'
+295:                                       : '未关联',
+296:                                 ),
+297:                         ),
+298:                         _line(),
+299:                         _field(Icons.person_outline, '工作负责人', owner),
+300:                         _line(),
+301:                         _field(Icons.person_outline, '监护人', guardian),
+302:                         _line(),
+303:                         Theme(
+304:                           data: Theme.of(
+305:                             context,
+306:                           ).copyWith(dividerColor: Colors.transparent),
+307:                           child: ExpansionTile(
+308:                             tilePadding: EdgeInsets.zero,
+309:                             visualDensity: VisualDensity.compact,
+310:                             minTileHeight: 36,
+311:                             leading: const Icon(
+312:                               Icons.info_outline,
+313:                               size: 18,
+314:                               color: muted,
+315:                             ),
+316:                             title: const Text(
+317:                               '许可与审批以原工作票系统为准',
+318:                               style: TextStyle(fontSize: 10, color: muted),
+319:                             ),
+320:                             subtitle: const Text(
+321:                               '更多作业信息',
+322:                               style: TextStyle(fontSize: 10, color: muted),
+323:                             ),
+324:                             children: [details],
+325:                           ),
+326:                         ),
+327:                       ],
+328:                     ),
+329:                   ),
+330:                   const SizedBox(height: 10),
+331:                   _card(
+332:                     Column(
+333:                       children: [
+334:                         _heading(Icons.groups, '参与人员 · ${members.length} 人'),
+335:                         _line(),
+336:                         if (members.isEmpty)
+337:                           const Padding(
+338:                             padding: EdgeInsets.all(14),
+339:                             child: Text(
+340:                               '暂无参与人员',
+341:                               style: TextStyle(color: muted),
+342:                             ),
+343:                           ),
+344:                         for (final person in members) ...[
+345:                           InkWell(
+346:                             key: ValueKey(
+347:                               'task-person-${idOf(person['personId'])}',
+348:                             ),
+349:                             onTap: () => onPerson(person),
+350:                             child: Padding(
+351:                               padding: const EdgeInsets.symmetric(vertical: 10),
+352:                               child: Row(
+353:                                 children: [
+354:                                   _avatar(),
+355:                                   const SizedBox(width: 12),
+356:                                   Expanded(
+357:                                     child: Column(
+358:                                       crossAxisAlignment:
+359:                                           CrossAxisAlignment.start,
+360:                                       children: [
+361:                                         Text(
+362:                                           textOf(person['name']),
+363:                                           style: const TextStyle(
+364:                                             fontSize: 16,
+365:                                             fontWeight: FontWeight.w700,
+366:                                             color: ink,
+367:                                           ),
+368:                                         ),
+369:                                         const SizedBox(height: 5),
+370:                                         Wrap(
+371:                                           spacing: 9,
+372:                                           runSpacing: 4,
+373:                                           children: [
+374:                                             for (final type in [
+375:                                               'helmet',
+376:                                               'belt',
+377:                                               'watch',
+378:                                             ])
+379:                                               _memberStatus(person, type),
+380:                                           ],
+381:                                         ),
+382:                                       ],
+383:                                     ),
+384:                                   ),
+385:                                 ],
+386:                               ),
+387:                             ),
+388:                           ),
+389:                           _line(),
+390:                         ],
+391:                         Theme(
+392:                           data: Theme.of(
+393:                             context,
+394:                           ).copyWith(dividerColor: Colors.transparent),
+395:                           child: ExpansionTile(
+396:                             tilePadding: EdgeInsets.zero,
+397:                             visualDensity: VisualDensity.compact,
+398:                             minTileHeight: 32,
+399:                             title: Text(
+400:                               '装备检查（${equipment.length}）',
+401:                               style: const TextStyle(
+402:                                 fontSize: 12,
+403:                                 color: muted,
+404:                               ),
+405:                             ),
+406:                             children: [equipmentDetails],
+407:                           ),
+408:                         ),
+409:                       ],
+410:                     ),
+411:                   ),
+412:                   const SizedBox(height: 10),
+413:                   _card(
+414:                     Column(
+415:                       children: [
+416:                         _heading(
+417:                           Icons.warning_amber_rounded,
+418:                           '待核验事件',
+419:                           color: const Color(0xFFFFA000),
+420:                         ),
+421:                         _line(),
+422:                         if (events.isEmpty)
+423:                           const Padding(
+424:                             padding: EdgeInsets.all(16),
+425:                             child: Text(
+426:                               '暂无关联事件',
+427:                               style: TextStyle(color: muted),
+428:                             ),
+429:                           ),
+430:                         for (final event in events)
+431:                           Padding(
+432:                             padding: const EdgeInsets.symmetric(vertical: 11),
+433:                             child: Row(
+434:                               children: [
+435:                                 _avatar(),
+436:                                 const SizedBox(width: 12),
+437:                                 Expanded(
+438:                                   child: Column(
+439:                                     crossAxisAlignment:
+440:                                         CrossAxisAlignment.start,
+441:                                     children: [
+442:                                       Text(
+443:                                         textOf(event['personName'], '未关联人员'),
+444:                                         style: const TextStyle(
+445:                                           fontSize: 15,
+446:                                           fontWeight: FontWeight.w700,
+447:                                           color: ink,
+448:                                         ),
+449:                                       ),
+450:                                       Text(
+451:                                         textOf(
+452:                                           event['description'],
+453:                                           eventTypeLabel(event['type']),
+454:                                         ),
+455:                                         style: const TextStyle(
+456:                                           fontSize: 13,
+457:                                           color: ink,
+458:                                         ),
+459:                                       ),
+460:                                       Text(
+461:                                         '${formatTime(event['occurredAt'])} · ${eventStatusLabel(event['status'])} · ${textOf(event['severity'], '风险未知')}${event['taskMatch'] == 'pending' ? '\n存在多个候选任务，需人工确认关联' : ''}',
+462:                                         style: const TextStyle(
+463:                                           fontSize: 11,
+464:                                           color: muted,
+465:                                         ),
+466:                                       ),
+467:                                     ],
+468:                                   ),
+469:                                 ),
+470:                                 const SizedBox(width: 8),
+471:                                 FilledButton(
+472:                                   key: ValueKey(
+473:                                     'task-event-${idOf(event['id'])}',
+474:                                   ),
+475:                                   style: FilledButton.styleFrom(
+476:                                     backgroundColor: blue,
+477:                                     padding: const EdgeInsets.symmetric(
+478:                                       horizontal: 12,
+479:                                     ),
+480:                                     minimumSize: const Size(88, 44),
+481:                                     shape: RoundedRectangleBorder(
+482:                                       borderRadius: BorderRadius.circular(8),
+483:                                     ),
+484:                                   ),
+485:                                   onPressed: () => onEvent(event),
+486:                                   child: const Text(
+487:                                     '查看核验',
+488:                                     style: TextStyle(
+489:                                       fontSize: 14,
+490:                                       decoration: TextDecoration.none,
+491:                                     ),
+492:                                   ),
+493:                                 ),
+494:                               ],
+495:                             ),
+496:                           ),
+497:                       ],
+498:                     ),
+499:                   ),
+500:                   const SizedBox(height: 12),
+501:                   OutlinedButton.icon(
+502:                     onPressed: onGuardian,
+503:                     icon: const Icon(Icons.call, size: 25),
+504:                     style: OutlinedButton.styleFrom(
+505:                       foregroundColor: blue,
+506:                       minimumSize: const Size.fromHeight(48),
+507:                       side: const BorderSide(color: blue),
+508:                       shape: RoundedRectangleBorder(
+509:                         borderRadius: BorderRadius.circular(10),
+510:                       ),
+511:                     ),
+512:                     label: const Text(
+513:                       '联系监护人',
+514:                       style: TextStyle(
+515:                         fontSize: 18,
+516:                         fontWeight: FontWeight.w700,
+517:                       ),
+518:                     ),
+519:                   ),
+520:                 ],
+521:               ),
+522:             ),
+523:           ],
+524:         ),
+525:       ),
+526:     );
+527:   }
+528: 
+529:   Widget _memberStatus(JsonMap person, String type) {
+530:     final items = equipment.where(
+531:       (e) =>
+532:           idOf(e['personId']) == idOf(person['personId']) &&
+533:           e['typeCode'] == type,
+534:     );
+535:     final result = items.isEmpty ? null : items.first['result'];
+536:     final color = result == 'ok'
+537:         ? const Color(0xFF00BE95)
+538:         : result == null
+539:         ? muted
+540:         : const Color(0xFFFFA000);
+541:     final label = switch (type) {
+542:       'helmet' => '帽',
+543:       'belt' => '带',
+544:       _ => '表',
+545:     };
+546:     // Equipment-check verifies readiness, not a live connectivity feed.
+547:     final state = result == 'ok'
+548:         ? '正常'
+549:         : result == 'missing'
+550:         ? '缺少'
+551:         : result == null
+552:         ? '未关联'
+553:         : '待核验';
+554:     return Row(
+555:       mainAxisSize: MainAxisSize.min,
+556:       children: [
+557:         CustomPaint(
+558:           size: const Size(20, 20),
+559:           painter: _EquipmentGlyph(type, color),
+560:         ),
+561:         const SizedBox(width: 3),
+562:         Text(
+563:           '$label$state',
+564:           style: TextStyle(fontSize: 11, color: result == 'ok' ? muted : color),
+565:         ),
+566:       ],
+567:     );
+568:   }
+569: }
+570: 
+571: class _EquipmentGlyph extends CustomPainter {
+572:   const _EquipmentGlyph(this.type, this.color);
+573:   final String type;
+574:   final Color color;
+575:   @override
+576:   void paint(Canvas canvas, Size size) {
+577:     canvas.save();
+578:     canvas.scale(size.width / 24, size.height / 24);
+579:     final fill = Paint()..color = color;
+580:     final stroke = Paint()
+581:       ..color = color
+582:       ..style = PaintingStyle.stroke
+583:       ..strokeWidth = 2.5
+584:       ..strokeJoin = StrokeJoin.round;
+585:     if (type == 'helmet') {
+586:       canvas.drawPath(
+587:         Path()
+588:           ..moveTo(3, 18)
+589:           ..lineTo(3, 13)
+590:           ..quadraticBezierTo(3, 5, 12, 4)
+591:           ..quadraticBezierTo(21, 5, 21, 13)
+592:           ..lineTo(21, 18)
+593:           ..close(),
+594:         fill,
+595:       );
+596:       canvas.drawRRect(
+597:         RRect.fromRectAndRadius(
+598:           const Rect.fromLTWH(10, 2, 4, 15),
+599:           const Radius.circular(2),
+600:         ),
+601:         fill,
+602:       );
+603:       canvas.drawRRect(
+604:         RRect.fromRectAndRadius(
+605:           const Rect.fromLTWH(1, 17, 22, 5),
+606:           const Radius.circular(2),
+607:         ),
+608:         fill,
+609:       );
+610:     } else if (type == 'belt') {
+611:       canvas.drawRRect(
+612:         RRect.fromRectAndRadius(
+613:           const Rect.fromLTWH(5, 5, 14, 14),
+614:           const Radius.circular(2),
+615:         ),
+616:         stroke,
+617:       );
+618:       canvas.drawRect(const Rect.fromLTWH(0, 8, 6, 8), fill);
+619:       canvas.drawRect(const Rect.fromLTWH(18, 8, 6, 8), fill);
+620:       canvas.drawLine(const Offset(13, 5), const Offset(13, 19), stroke);
+621:     } else {
+622:       canvas.drawRRect(
+623:         RRect.fromRectAndRadius(
+624:           const Rect.fromLTWH(8, 0, 8, 24),
+625:           const Radius.circular(2),
+626:         ),
+627:         fill,
+628:       );
+629:       canvas.drawRRect(
+630:         RRect.fromRectAndRadius(
+631:           const Rect.fromLTWH(4, 5, 16, 14),
+632:           const Radius.circular(3),
+633:         ),
+634:         fill,
+635:       );
+636:       canvas.drawLine(
+637:         const Offset(12, 8),
+638:         const Offset(12, 13),
+639:         Paint()
+640:           ..color = Colors.white
+641:           ..strokeWidth = 2,
+642:       );
+643:       canvas.drawLine(
+644:         const Offset(12, 13),
+645:         const Offset(15, 13),
+646:         Paint()
+647:           ..color = Colors.white
+648:           ..strokeWidth = 2,
+649:       );
+650:     }
+651:     canvas.restore();
+652:   }
+653: 
+654:   @override
+655:   bool shouldRepaint(_EquipmentGlyph oldDelegate) =>
+656:       type != oldDelegate.type || color != oldDelegate.color;
+657: }

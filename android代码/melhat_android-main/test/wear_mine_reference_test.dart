@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rolling_intelligence_headband/wear/app.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/queries/queries.dart';
+import 'package:rolling_intelligence_headband/wear/queries/my_equipment_page.dart';
 import 'wear_app_test.dart' show appSession;
 import 'wear_session_test.dart'
     show MemoryCredentials, transport, identity, reply;
@@ -42,7 +43,7 @@ void main() {
               }),
             )
             ..initialized = true
-          ..me = identity(user: 'header-site-test')
+            ..me = identity(user: 'header-site-test')
             ..siteId = '1'
             ..token = 'test-only';
       addTearDown(session.dispose);
@@ -73,6 +74,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('选择工作厂站'), findsOneWidget);
       await tester.tap(find.text('厂站二'));
+      await tester.pumpAndSettle();
+      expect(session.siteId, '1');
+      await tester.ensureVisible(find.byKey(const ValueKey('sites-enter')));
+      await tester.tap(find.byKey(const ValueKey('sites-enter')));
       await tester.pumpAndSettle();
       expect(session.siteId, '2');
       expect(session.siteName, '厂站二');
@@ -125,7 +130,7 @@ void main() {
         }
 
         await open('我的装备');
-        expect(find.byType(EquipmentPanel), findsOneWidget);
+        expect(find.byType(MyEquipmentPage), findsOneWidget);
         await tester.tap(find.byTooltip('返回我的'));
         await tester.pumpAndSettle();
         await open('通讯服务');

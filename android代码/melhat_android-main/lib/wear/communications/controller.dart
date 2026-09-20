@@ -51,6 +51,8 @@ class CommunicationsController extends ChangeNotifier {
   bool busy = false;
   bool ttsBusy = false;
   bool microphoneMuted = false;
+  bool speakerphoneEnabled = true;
+  bool _speakerBusy = false;
   bool remotePresent = false;
   int? remoteUid;
 
@@ -481,6 +483,31 @@ class CommunicationsController extends ChangeNotifier {
     _notify();
   }
 
+  Future<void> toggleSpeakerphone() async {
+    final operation = _operationGeneration;
+    final callId = activeCall?.id;
+    if (!isConnected || callId == null || _speakerBusy) return;
+    final route = rtc;
+    if (route is! WearRtcAudioRoute) {
+      statusMessage = '当前音频引擎不支持扬声器切换';
+      _notify();
+      return;
+    }
+    final enabled = !speakerphoneEnabled;
+    _speakerBusy = true;
+    try {
+      await (route as WearRtcAudioRoute).setSpeakerphone(enabled);
+      if (!_acceptsCallOperation(operation, callId)) return;
+      speakerphoneEnabled = enabled;
+    } catch (error) {
+      if (!_acceptsCallOperation(operation, callId)) return;
+      statusMessage = _errorMessage(error, '扬声器切换失败');
+    } finally {
+      _speakerBusy = false;
+    }
+    _notify();
+  }
+
   Future<void> sendTts({String? eventId}) async {
     final device = selectedDevice;
     final text = ttsText.trim();
@@ -616,6 +643,7 @@ class CommunicationsController extends ChangeNotifier {
     remotePresent = false;
     remoteUid = null;
     microphoneMuted = false;
+    speakerphoneEnabled = true;
     await rtc.leave();
   }
 

@@ -1,0 +1,414 @@
+1: typedef EventJson = Map<String, dynamic>;
+2: 
+3: String _text(Object? value) => value?.toString().trim() ?? '';
+4: 
+5: int _integer(Object? value, [int fallback = 0]) =>
+6:     value is num ? value.toInt() : int.tryParse(_text(value)) ?? fallback;
+7: 
+8: bool _boolean(Object? value) =>
+9:     value == true || value == 1 || _text(value).toLowerCase() == 'true';
+10: 
+11: enum EventCommand { ack, claim, handle, transfer, close, reopen, assignTask }
+12: 
+13: class WearEvent {
+14:   const WearEvent({
+15:     required this.id,
+16:     required this.type,
+17:     required this.severity,
+18:     required this.status,
+19:     required this.occurredAt,
+20:     required this.receivedAt,
+21:     required this.personId,
+22:     required this.personCode,
+23:     required this.personName,
+24:     required this.deviceId,
+25:     required this.sn,
+26:     required this.siteId,
+27:     required this.locationLat,
+28:     required this.locationLng,
+29:     required this.locationQuality,
+30:     required this.claimantUserId,
+31:     required this.repeatCount,
+32:     required this.escalated,
+33:     required this.demo,
+34:     required this.source,
+35:     required this.sourceEventId,
+36:     required this.ruleVersion,
+37:     required this.taskId,
+38:     required this.taskMatch,
+39:     required this.fenceId,
+40:     required this.fenceAction,
+41:     required this.version,
+42:   });
+43: 
+44:   factory WearEvent.fromJson(EventJson json) {
+45:     final id = _text(json['id']);
+46:     if (id.isEmpty) throw const FormatException('事件缺少有效编号');
+47:     return WearEvent(
+48:       id: id,
+49:       type: _text(json['type']),
+50:       severity: _text(json['severity']),
+51:       status: _text(json['status']),
+52:       occurredAt: _text(json['occurredAt']),
+53:       receivedAt: _text(json['receivedAt']),
+54:       personId: _text(json['personId']),
+55:       personCode: _text(json['personCode']),
+56:       personName: _text(json['personName']),
+57:       deviceId: _text(json['deviceId']),
+58:       sn: _text(json['sn']),
+59:       siteId: _text(json['siteId']),
+60:       locationLat: _text(json['locationLat']),
+61:       locationLng: _text(json['locationLng']),
+62:       locationQuality: _text(json['locationQuality']),
+63:       claimantUserId: _text(json['claimantUserId']),
+64:       repeatCount: _integer(json['repeatCount']),
+65:       escalated: _boolean(json['escalated']),
+66:       demo: _boolean(json['demo']),
+67:       source: _text(json['source']),
+68:       sourceEventId: _text(json['sourceEventId']),
+69:       ruleVersion: _text(json['ruleVersion']),
+70:       taskId: _text(json['taskId']),
+71:       taskMatch: _text(json['taskMatch']),
+72:       fenceId: _text(json['fenceId']),
+73:       fenceAction: _text(json['fenceAction']),
+74:       version: _integer(json['version']),
+75:     );
+76:   }
+77: 
+78:   final String id;
+79:   final String type;
+80:   final String severity;
+81:   final String status;
+82:   final String occurredAt;
+83:   final String receivedAt;
+84:   final String personId;
+85:   final String personCode;
+86:   final String personName;
+87:   final String deviceId;
+88:   final String sn;
+89:   final String siteId;
+90:   final String locationLat;
+91:   final String locationLng;
+92:   final String locationQuality;
+93:   final String claimantUserId;
+94:   final int repeatCount;
+95:   final bool escalated;
+96:   final bool demo;
+97:   final String source;
+98:   final String sourceEventId;
+99:   final String ruleVersion;
+100:   final String taskId;
+101:   final String taskMatch;
+102:   final String fenceId;
+103:   final String fenceAction;
+104:   final int version;
+105: 
+106:   bool get isHighRisk => const {'sos', 'fall', 'impact'}.contains(type);
+107:   bool get isClosed => status == 'closed';
+108: 
+109:   String get typeLabel =>
+110:       const {
+111:         'sos': 'SOS 求助',
+112:         'fall': '跌倒',
+113:         'impact': '撞击',
+114:         'geofence': '围栏',
+115:         'realtime': '实时告警',
+116:       }[type] ??
+117:       (type.isEmpty ? '未知类型' : type);
+118: 
+119:   String get statusLabel =>
+120:       const {
+121:         'open': '待认领',
+122:         'claimed': '已认领',
+123:         'handling': '处置中',
+124:         'pending_review': '待复核',
+125:         'closed': '已关闭',
+126:       }[status] ??
+127:       (status.isEmpty ? '未知状态' : status);
+128: }
+129: 
+130: class EventAction {
+131:   const EventAction({
+132:     required this.id,
+133:     required this.action,
+134:     required this.actor,
+135:     required this.reason,
+136:     required this.fromStatus,
+137:     required this.toStatus,
+138:     required this.createTime,
+139:   });
+140: 
+141:   factory EventAction.fromJson(EventJson json) => EventAction(
+142:     id: _text(json['id']),
+143:     action: _text(json['action']),
+144:     actor: _text(json['actor']),
+145:     reason: _text(json['reason']),
+146:     fromStatus: _text(json['fromStatus']),
+147:     toStatus: _text(json['toStatus']),
+148:     createTime: _text(json['createTime']),
+149:   );
+150: 
+151:   final String id;
+152:   final String action;
+153:   final String actor;
+154:   final String reason;
+155:   final String fromStatus;
+156:   final String toStatus;
+157:   final String createTime;
+158: }
+159: 
+160: class DutyOperator {
+161:   const DutyOperator({
+162:     required this.userId,
+163:     required this.userName,
+164:     required this.nickName,
+165:   });
+166: 
+167:   factory DutyOperator.fromJson(EventJson json) => DutyOperator(
+168:     userId: _text(json['userId']),
+169:     userName: _text(json['userName']),
+170:     nickName: _text(json['nickName']),
+171:   );
+172: 
+173:   final String userId;
+174:   final String userName;
+175:   final String nickName;
+176:   String get displayName => nickName.isNotEmpty ? nickName : userName;
+177: }
+178: 
+179: class WorkTaskCandidate {
+180:   const WorkTaskCandidate({
+181:     required this.id,
+182:     required this.title,
+183:     required this.status,
+184:     required this.workType,
+185:     required this.spaceName,
+186:     required this.plannedStart,
+187:     required this.plannedEnd,
+188:     required this.demo,
+189:   });
+190: 
+191:   factory WorkTaskCandidate.fromJson(EventJson json) {
+192:     final id = _text(json['id']);
+193:     if (id.isEmpty) throw const FormatException('作业任务缺少有效编号');
+194:     return WorkTaskCandidate(
+195:       id: id,
+196:       title: _text(json['title']),
+197:       status: _text(json['status']),
+198:       workType: _text(json['workType']),
+199:       spaceName: _text(json['spaceName']),
+200:       plannedStart: _text(json['plannedStart']),
+201:       plannedEnd: _text(json['plannedEnd']),
+202:       demo: _boolean(json['demo']),
+203:     );
+204:   }
+205: 
+206:   final String id;
+207:   final String title;
+208:   final String status;
+209:   final String workType;
+210:   final String spaceName;
+211:   final String plannedStart;
+212:   final String plannedEnd;
+213:   final bool demo;
+214: }
+215: 
+216: class TaskCandidatePage {
+217:   const TaskCandidatePage({
+218:     required this.records,
+219:     required this.total,
+220:     required this.current,
+221:     required this.size,
+222:   });
+223: 
+224:   final List<WorkTaskCandidate> records;
+225:   final int total;
+226:   final int current;
+227:   final int size;
+228:   bool get hasMore => current * size < total;
+229: }
+230: 
+231: class EventFilters {
+232:   const EventFilters({
+233:     this.status = 'active',
+234:     this.type = '',
+235:     this.personId = '',
+236:     this.taskId = '',
+237:     this.claimantUserId = '',
+238:     this.escalated = false,
+239:   });
+240: 
+241:   factory EventFilters.fromJson(Object? value) {
+242:     if (value is! Map) return const EventFilters();
+243:     final status = _text(value['status']);
+244:     return EventFilters(
+245:       status: status.isEmpty ? 'active' : status,
+246:       type: _text(value['type']),
+247:       personId: _text(value['personId']),
+248:       taskId: _text(value['taskId']),
+249:       claimantUserId: _text(value['claimantUserId']),
+250:       escalated: _boolean(value['escalated']),
+251:     );
+252:   }
+253: 
+254:   final String status;
+255:   final String type;
+256:   final String personId;
+257:   final String taskId;
+258:   final String claimantUserId;
+259:   final bool escalated;
+260: 
+261:   EventJson toJson() => {
+262:     'status': status,
+263:     'type': type,
+264:     'personId': personId,
+265:     'taskId': taskId,
+266:     'claimantUserId': claimantUserId,
+267:     'escalated': escalated,
+268:   };
+269: 
+270:   EventFilters copyWith({
+271:     String? status,
+272:     String? type,
+273:     String? personId,
+274:     String? taskId,
+275:     String? claimantUserId,
+276:     bool? escalated,
+277:   }) => EventFilters(
+278:     status: status ?? this.status,
+279:     type: type ?? this.type,
+280:     personId: personId ?? this.personId,
+281:     taskId: taskId ?? this.taskId,
+282:     claimantUserId: claimantUserId ?? this.claimantUserId,
+283:     escalated: escalated ?? this.escalated,
+284:   );
+285: }
+286: 
+287: class EventDraft {
+288:   const EventDraft({
+289:     this.handleComment = '',
+290:     this.transferUserId = '',
+291:     this.transferReason = '',
+292:     this.closeReason = '',
+293:     this.reopenReason = '',
+294:     this.taskId = '',
+295:   });
+296: 
+297:   factory EventDraft.fromJson(Object? value) {
+298:     if (value is! Map) return const EventDraft();
+299:     return EventDraft(
+300:       handleComment: _text(value['handleComment']),
+301:       transferUserId: _text(value['transferUserId']),
+302:       transferReason: _text(value['transferReason']),
+303:       closeReason: _text(value['closeReason']),
+304:       reopenReason: _text(value['reopenReason']),
+305:       taskId: _text(value['taskId']),
+306:     );
+307:   }
+308: 
+309:   final String handleComment;
+310:   final String transferUserId;
+311:   final String transferReason;
+312:   final String closeReason;
+313:   final String reopenReason;
+314:   final String taskId;
+315: 
+316:   bool get isEmpty =>
+317:       handleComment.isEmpty &&
+318:       transferUserId.isEmpty &&
+319:       transferReason.isEmpty &&
+320:       closeReason.isEmpty &&
+321:       reopenReason.isEmpty &&
+322:       taskId.isEmpty;
+323: 
+324:   EventJson toJson() => {
+325:     'handleComment': handleComment,
+326:     'transferUserId': transferUserId,
+327:     'transferReason': transferReason,
+328:     'closeReason': closeReason,
+329:     'reopenReason': reopenReason,
+330:     'taskId': taskId,
+331:   };
+332: 
+333:   EventDraft copyWith({
+334:     String? handleComment,
+335:     String? transferUserId,
+336:     String? transferReason,
+337:     String? closeReason,
+338:     String? reopenReason,
+339:     String? taskId,
+340:   }) => EventDraft(
+341:     handleComment: handleComment ?? this.handleComment,
+342:     transferUserId: transferUserId ?? this.transferUserId,
+343:     transferReason: transferReason ?? this.transferReason,
+344:     closeReason: closeReason ?? this.closeReason,
+345:     reopenReason: reopenReason ?? this.reopenReason,
+346:     taskId: taskId ?? this.taskId,
+347:   );
+348: }
+349: 
+350: class EventPageData {
+351:   const EventPageData({
+352:     required this.records,
+353:     required this.total,
+354:     required this.current,
+355:     required this.size,
+356:   });
+357: 
+358:   final List<WearEvent> records;
+359:   final int total;
+360:   final int current;
+361:   final int size;
+362:   bool get hasMore => current * size < total;
+363: }
+364: 
+365: class EventWorkspaceState {
+366:   const EventWorkspaceState({
+367:     this.filters = const EventFilters(),
+368:     this.current = 1,
+369:     this.selectedEventId = '',
+370:     this.scrollOffset = 0,
+371:     this.drafts = const {},
+372:   });
+373: 
+374:   factory EventWorkspaceState.fromJson(Object? value) {
+375:     if (value is! Map) return const EventWorkspaceState();
+376:     final rawDrafts = value['drafts'];
+377:     return EventWorkspaceState(
+378:       filters: EventFilters.fromJson(value['filters']),
+379:       current: _integer(value['current'], 1).clamp(1, 1 << 30),
+380:       selectedEventId: _text(value['selectedEventId']),
+381:       scrollOffset: double.tryParse(_text(value['scrollOffset'])) ?? 0,
+382:       drafts: rawDrafts is Map
+383:           ? rawDrafts.map(
+384:               (key, draft) => MapEntry(_text(key), EventDraft.fromJson(draft)),
+385:             )
+386:           : const {},
+387:     );
+388:   }
+389: 
+390:   final EventFilters filters;
+391:   final int current;
+392:   final String selectedEventId;
+393:   final double scrollOffset;
+394:   final Map<String, EventDraft> drafts;
+395: 
+396:   EventJson toJson() => {
+397:     'filters': filters.toJson(),
+398:     'current': current,
+399:     'selectedEventId': selectedEventId,
+400:     'scrollOffset': scrollOffset,
+401:     'drafts': drafts.map((key, value) => MapEntry(key, value.toJson())),
+402:   };
+403: }
+404: 
+405: class EventConflict implements Exception {
+406:   const EventConflict(this.message);
+407:   final String message;
+408:   @override
+409:   String toString() => message;
+410: }
+411: 
+412: class EventStaleScope implements Exception {
+413:   const EventStaleScope();
+414: }

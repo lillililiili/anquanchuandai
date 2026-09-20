@@ -1,0 +1,322 @@
+[
+  {
+    "id": "01",
+    "title": "欢迎登录",
+    "group": "账号与访问",
+    "source": "auth_pages.dart / WearLoginPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "02",
+    "title": "找回登录权限",
+    "group": "账号与访问",
+    "source": "auth_pages.dart / password reset bottom sheet",
+    "kind": "弹层设计",
+    "note": "现有找回密码底部弹层，按完整内容稿展示。"
+  },
+  {
+    "id": "03",
+    "title": "选择工作厂站",
+    "group": "账号与访问",
+    "source": "auth_pages.dart / WearSitesPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "04",
+    "title": "现场",
+    "group": "现场工作台",
+    "source": "queries/workbench.dart / WorkbenchPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "05",
+    "title": "作业任务",
+    "group": "现场 / 作业",
+    "source": "queries/tasks.dart / TasksPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "06",
+    "title": "作业详情",
+    "group": "现场 / 作业",
+    "source": "queries/tasks.dart + work_reference.dart",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "07",
+    "title": "现场人员",
+    "group": "现场 / 人员",
+    "source": "queries/people.dart / PeoplePage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "08",
+    "title": "人员详情",
+    "group": "现场 / 人员",
+    "source": "queries/people.dart / PersonPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "09",
+    "title": "失去监护人员",
+    "group": "现场 / 监护",
+    "source": "queries/supervision.dart / SupervisionPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "10",
+    "title": "设备台账",
+    "group": "现场 / 设备",
+    "source": "queries/devices.dart / DevicesPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "11",
+    "title": "设备详情",
+    "group": "现场 / 设备",
+    "source": "queries/devices.dart / DevicePage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "12",
+    "title": "设备状态异常",
+    "group": "现场 / 设备",
+    "source": "queries/devices.dart / DevicePage",
+    "kind": "设备详情状态",
+    "note": ""
+  },
+  {
+    "id": "13",
+    "title": "轨迹回放",
+    "group": "现场 / 轨迹",
+    "source": "queries/tracks.dart / TracksPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "14",
+    "title": "电子围栏",
+    "group": "现场 / 围栏",
+    "source": "queries/fences.dart / FencesPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "15",
+    "title": "围栏详情",
+    "group": "现场 / 围栏",
+    "source": "queries/fences.dart / FencePage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "16",
+    "title": "轨迹查询 · 选择人员",
+    "group": "现场 / 轨迹",
+    "source": "queries/tracks.dart / person picker",
+    "kind": "选择状态",
+    "note": ""
+  },
+  {
+    "id": "17",
+    "title": "通讯",
+    "group": "现场通信",
+    "source": "communications/communications_page.dart",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "18",
+    "title": "语音通话",
+    "group": "通讯 / 通话",
+    "source": "communications/communications_page.dart / active call",
+    "kind": "通话状态",
+    "note": ""
+  },
+  {
+    "id": "19",
+    "title": "视频通话",
+    "group": "通讯 / 通话",
+    "source": "communications/communications_page.dart / video",
+    "kind": "视频状态",
+    "note": ""
+  },
+  {
+    "id": "20",
+    "title": "语音播报",
+    "group": "通讯 / 设备能力",
+    "source": "communications/communications_page.dart / TTS",
+    "kind": "通信功能区",
+    "note": ""
+  },
+  {
+    "id": "21",
+    "title": "通话记录",
+    "group": "通讯 / 历史",
+    "source": "communications/communications_page.dart / history",
+    "kind": "通信功能区",
+    "note": ""
+  },
+  {
+    "id": "22",
+    "title": "消息",
+    "group": "事件中心",
+    "source": "events/events_page.dart / EventsPage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "23",
+    "title": "筛选事件",
+    "group": "消息 / 筛选",
+    "source": "events/events_page.dart / filter sheet",
+    "kind": "底部筛选弹层",
+    "note": ""
+  },
+  {
+    "id": "24",
+    "title": "事件详情",
+    "group": "消息 / 事件",
+    "source": "events/events_page.dart / detail",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "25",
+    "title": "异常核验",
+    "group": "消息 / 现场核验",
+    "source": "events/event_reference_view.dart / verification",
+    "kind": "页面",
+    "note": "附件保持当前版本示例能力边界。"
+  },
+  {
+    "id": "26",
+    "title": "SOS 协助",
+    "group": "消息 / 紧急协助",
+    "source": "events/event_reference_view.dart / SOS",
+    "kind": "页面",
+    "note": "保留代码中协助服务尚未接入的边界。"
+  },
+  {
+    "id": "27",
+    "title": "转交事件",
+    "group": "消息 / 事件操作",
+    "source": "events/events_page.dart / transfer dialog",
+    "kind": "操作弹层",
+    "note": ""
+  },
+  {
+    "id": "28",
+    "title": "关联作业",
+    "group": "消息 / 事件操作",
+    "source": "events/events_page.dart / task association dialog",
+    "kind": "操作弹层",
+    "note": ""
+  },
+  {
+    "id": "29",
+    "title": "事件处置",
+    "group": "消息 / 事件操作",
+    "source": "events/events_page.dart / handle + command dialogs",
+    "kind": "处置表单及操作状态",
+    "note": ""
+  },
+  {
+    "id": "30",
+    "title": "我的",
+    "group": "个人中心",
+    "source": "mine_page.dart / WearMinePage",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "31",
+    "title": "我的装备",
+    "group": "我的 / 装备",
+    "source": "queries/people.dart / EquipmentWidget via mine detail",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "32",
+    "title": "历史领用记录",
+    "group": "我的 / 装备",
+    "source": "queries/people.dart + devices.dart / history sections",
+    "kind": "历史记录功能区",
+    "note": ""
+  },
+  {
+    "id": "33",
+    "title": "通讯服务",
+    "group": "我的 / 服务状态",
+    "source": "mine_page.dart / notification detail",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "34",
+    "title": "设置",
+    "group": "我的 / 设置",
+    "source": "mine_page.dart / settings detail",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "35",
+    "title": "值班交接",
+    "group": "我的 / 设置",
+    "source": "mine_page.dart / handover card + confirm dialog",
+    "kind": "设置子区及确认弹层",
+    "note": ""
+  },
+  {
+    "id": "36",
+    "title": "帮助与反馈",
+    "group": "我的 / 帮助",
+    "source": "mine_page.dart / help detail",
+    "kind": "页面",
+    "note": ""
+  },
+  {
+    "id": "37",
+    "title": "通知权限未开启",
+    "group": "我的 / 服务状态",
+    "source": "mine_page.dart / notification permission state",
+    "kind": "权限状态",
+    "note": ""
+  },
+  {
+    "id": "38",
+    "title": "切换 / 退出账号",
+    "group": "我的 / 账号操作",
+    "source": "mine_page.dart / leave account dialog",
+    "kind": "确认弹层",
+    "note": ""
+  },
+  {
+    "id": "39",
+    "title": "页面空态",
+    "group": "通用状态",
+    "source": "ui.dart / WearEmpty + query state view",
+    "kind": "通用空态组合",
+    "note": ""
+  },
+  {
+    "id": "40",
+    "title": "网络异常与加载",
+    "group": "通用状态",
+    "source": "query_widgets.dart / QueryStateView + router error",
+    "kind": "通用异常及加载状态",
+    "note": ""
+  }
+]

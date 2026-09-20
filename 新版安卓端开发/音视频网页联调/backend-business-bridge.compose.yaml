@@ -1,0 +1,15 @@
+# Local virtual-helmet signalling only. Leaves the real vendor/Agora settings unchanged.
+# From project root:
+# docker compose -f docker/compose.yaml -f 新版安卓端开发/音视频网页联调/backend-business-bridge.compose.yaml up -d --no-deps backend
+services:
+  backend:
+    environment:
+      MELHAT_CALL_LAB_ENABLED: "true"
+      MELHAT_CALL_LAB_UPSTREAM_BASE_URL: http://call-lab:18766
+    networks:
+      - default
+      - call_lab
+networks:
+  call_lab:
+    external: true
+    name: wear-call-lab_default

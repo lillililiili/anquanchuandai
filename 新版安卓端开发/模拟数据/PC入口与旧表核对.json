@@ -1,0 +1,273 @@
+{
+  "menus": [
+    {
+      "id": 2009,
+      "name": "实时对讲",
+      "path": "intercom",
+      "parent": 2023,
+      "status": "1",
+      "visible": "1",
+      "component": "intercom/index"
+    },
+    {
+      "id": 2010,
+      "name": "TTS 广播",
+      "path": "tts",
+      "parent": 2023,
+      "status": "1",
+      "visible": "1",
+      "component": "tts/index"
+    },
+    {
+      "id": 2015,
+      "name": "人员台账",
+      "path": "people",
+      "parent": 2025,
+      "status": "0",
+      "visible": "0",
+      "component": "people/index"
+    },
+    {
+      "id": 2016,
+      "name": "区域资料",
+      "path": "spaces",
+      "parent": 2025,
+      "status": "0",
+      "visible": "0",
+      "component": "spaces/index"
+    },
+    {
+      "id": 2017,
+      "name": "设备台账",
+      "path": "devices",
+      "parent": 2026,
+      "status": "0",
+      "visible": "0",
+      "component": "devices/index"
+    },
+    {
+      "id": 2018,
+      "name": "事件记录",
+      "path": "events",
+      "parent": 2028,
+      "status": "0",
+      "visible": "0",
+      "component": "audit/events/index"
+    },
+    {
+      "id": 2019,
+      "name": "值班台",
+      "path": "duty",
+      "parent": 2000,
+      "status": "1",
+      "visible": "1",
+      "component": "duty/index"
+    },
+    {
+      "id": 2020,
+      "name": "作业任务",
+      "path": "tasks",
+      "parent": 2027,
+      "status": "0",
+      "visible": "0",
+      "component": "work-tasks/index"
+    },
+    {
+      "id": 2021,
+      "name": "人员位置",
+      "path": "locations",
+      "parent": 2000,
+      "status": "1",
+      "visible": "1",
+      "component": "locations/index"
+    },
+    {
+      "id": 2022,
+      "name": "电子围栏",
+      "path": "fences",
+      "parent": 2027,
+      "status": "0",
+      "visible": "0",
+      "component": "geo-fences/index"
+    },
+    {
+      "id": 2029,
+      "name": "组织资料",
+      "path": "organization",
+      "parent": 2025,
+      "status": "0",
+      "visible": "0",
+      "component": "organization/index"
+    },
+    {
+      "id": 2030,
+      "name": "产品型号",
+      "path": "models",
+      "parent": 2026,
+      "status": "0",
+      "visible": "0",
+      "component": "product-models/index"
+    },
+    {
+      "id": 2032,
+      "name": "文件记录",
+      "path": "files",
+      "parent": 2028,
+      "status": "0",
+      "visible": "0",
+      "component": "audit/files/index"
+    }
+  ],
+  "files": [
+    {
+      "type": "varchar(64)",
+      "column": "create_by"
+    },
+    {
+      "type": "datetime",
+      "column": "create_time"
+    },
+    {
+      "type": "char(1)",
+      "column": "del_flag"
+    },
+    {
+      "type": "varchar(255)",
+      "column": "file_name"
+    },
+    {
+      "type": "decimal(10,2)",
+      "column": "file_size"
+    },
+    {
+      "type": "varchar(32)",
+      "column": "file_type"
+    },
+    {
+      "type": "varchar(500)",
+      "column": "file_url"
+    },
+    {
+      "type": "bigint",
+      "column": "hat_id"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "hat_number"
+    },
+    {
+      "type": "bigint",
+      "column": "id"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "update_by"
+    },
+    {
+      "type": "datetime",
+      "column": "update_time"
+    },
+    {
+      "type": "datetime",
+      "column": "upload_time"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "user_name"
+    }
+  ],
+  "legacyDevices": [
+    {
+      "type": "int",
+      "column": "alarm_count"
+    },
+    {
+      "type": "varchar(100)",
+      "column": "bind_group"
+    },
+    {
+      "type": "bigint",
+      "column": "bind_group_id"
+    },
+    {
+      "type": "datetime",
+      "column": "bind_time"
+    },
+    {
+      "type": "bigint",
+      "column": "bind_user_id"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "bind_user_name"
+    },
+    {
+      "type": "decimal(10,2)",
+      "column": "cpu_usage"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "create_by"
+    },
+    {
+      "type": "datetime",
+      "column": "create_time"
+    },
+    {
+      "type": "char(1)",
+      "column": "del_flag"
+    },
+    {
+      "type": "decimal(10,2)",
+      "column": "electricity_usage"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "hat_number"
+    },
+    {
+      "type": "bigint",
+      "column": "id"
+    },
+    {
+      "type": "text",
+      "column": "rtc_play_config"
+    },
+    {
+      "type": "bigint",
+      "column": "site_id"
+    },
+    {
+      "type": "varchar(20)",
+      "column": "status"
+    },
+    {
+      "type": "decimal(10,2)",
+      "column": "storage_usage"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "uid"
+    },
+    {
+      "type": "varchar(64)",
+      "column": "update_by"
+    },
+    {
+      "type": "datetime",
+      "column": "update_time"
+    },
+    {
+      "type": "varchar(500)",
+      "column": "video_url"
+    }
+  ],
+  "clock": [
+    {
+      "now": "2026-09-18 16:30:31.000000",
+      "utc": "2026-09-18 08:30:31.000000",
+      "database": "melhat_local",
+      "timezone": "+08:00"
+    }
+  ]
+}

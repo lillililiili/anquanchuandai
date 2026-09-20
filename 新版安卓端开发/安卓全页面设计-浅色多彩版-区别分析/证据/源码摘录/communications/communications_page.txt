@@ -1,0 +1,1266 @@
+1: import 'dart:async';
+2: 
+3: import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+4: import 'package:flutter/material.dart';
+5: 
+6: import '../core.dart';
+7: import 'api_gateway.dart';
+8: import 'controller.dart';
+9: import 'models.dart' hide JsonMap;
+10: import 'rtc_engine.dart';
+11: 
+12: class CommunicationsPage extends StatefulWidget {
+13:   const CommunicationsPage({
+14:     super.key,
+15:     this.deviceId,
+16:     this.personId,
+17:     this.eventId,
+18:     this.action,
+19:     this.video = false,
+20:   });
+21: 
+22:   final String? deviceId;
+23:   final String? personId;
+24:   final String? eventId;
+25:   final String? action;
+26:   final bool video;
+27: 
+28:   @override
+29:   State<CommunicationsPage> createState() => _CommunicationsPageState();
+30: }
+31: 
+32: class _CommunicationsPageState extends State<CommunicationsPage>
+33:     with WidgetsBindingObserver {
+34:   WearSession? _session;
+35:   WearCommunicationsGateway? _gateway;
+36:   CommunicationsController? _controller;
+37:   final _tts = TextEditingController();
+38:   final _search = TextEditingController();
+39:   final _targetActionsKey = GlobalKey();
+40:   List<PersonOption> _people = const [];
+41:   List<CommunicationDevice> _devices = const [];
+42:   List<CommunicationDevice> _equipment = const [];
+43:   List<CallSession> _history = const [];
+44:   List<JsonMap> _myEquipment = const [];
+45:   final Map<String, List<CommunicationDevice>> _equipmentByPerson = {};
+46:   final Set<String> _selectedKeys = {};
+47:   bool _multiSelect = false;
+48:   late String _action;
+49:   bool _loading = true;
+50:   Object? _loadError;
+51:   String _eventType = '';
+52:   int _loadGeneration = 0;
+53: 
+54:   @override
+55:   void initState() {
+56:     super.initState();
+57:     _action = _initialAction;
+58:     WidgetsBinding.instance.addObserver(this);
+59:   }
+60: 
+61:   String get _initialAction => switch (widget.action) {
+62:     'tts' => 'tts',
+63:     'video' => 'video',
+64:     'intercom' => 'intercom',
+65:     _ => widget.video ? 'video' : 'intercom',
+66:   };
+67: 
+68:   @override
+69:   void didUpdateWidget(CommunicationsPage oldWidget) {
+70:     super.didUpdateWidget(oldWidget);
+71:     if (oldWidget.action != widget.action || oldWidget.video != widget.video) {
+72:       _action = _initialAction;
+73:     }
+74:     if (oldWidget.deviceId != widget.deviceId ||
+75:         oldWidget.personId != widget.personId ||
+76:         oldWidget.eventId != widget.eventId) {
+77:       _loading = true;
+78:       _selectedKeys.clear();
+79:       _controller?.selectDevice(null);
+80:       unawaited(_load());
+81:     }
+82:   }
+83: 
+84:   @override
+85:   void didChangeDependencies() {
+86:     super.didChangeDependencies();
+87:     final session = WearScope.of(context);
+88:     if (!identical(session, _session)) {
+89:       _controller?.removeListener(_onControllerChanged);
+90:       _controller?.dispose();
+91:       _session = session;
+92:       _gateway = WearCommunicationsGateway(session.api);
+93:       _controller = CommunicationsController(
+94:         gateway: _gateway!,
+95:         rtc: AgoraWearRtcEngine(),
+96:         userId: session.userId,
+97:         permissions: session.permissions,
+98:       )..addListener(_onControllerChanged);
+99:       session.terminateCall = _controller!.terminate;
+100:       unawaited(_load());
+101:     }
+102:   }
+103: 
+104:   @override
+105:   void didChangeAppLifecycleState(AppLifecycleState state) {
+106:     _controller?.setForeground(state == AppLifecycleState.resumed);
+107:   }
+108: 
+109:   void _onControllerChanged() {
+110:     final controller = _controller;
+111:     if (controller != null) {
+112:       _session?.callActive.value = controller.hasActiveOwnedSession;
+113:     }
+114:     if (mounted) setState(() {});
+115:   }
+116: 
+117:   Future<void> _load() async {
+118:     final session = _session;
+119:     final gateway = _gateway;
+120:     final controller = _controller;
+121:     if (session == null || gateway == null || controller == null) return;
+122:     final generation = ++_loadGeneration;
+123:     final scope = session.scopeKey;
+124:     final blocking = _people.isEmpty && _devices.isEmpty;
+125:     setState(() {
+126:       if (blocking) _loading = true;
+127:       _loadError = null;
+128:     });
+129:     try {
+130:       final people = await gateway.peopleOptions(
+131:         name: _search.text.trim().isEmpty ? null : _search.text.trim(),
+132:       );
+133:       final devices = await gateway.listDevices(
+134:         sn: _search.text.trim().isEmpty ? null : _search.text.trim(),
+135:       );
+136:       final myEquipment = await gateway.meEquipment();
+137:       PersonOption? person;
+138:       List<CommunicationDevice> equipment = const [];
+139:       CommunicationDevice? selected;
+140:       String eventType = '';
+141:       String? resolvedDeviceId = _clean(widget.deviceId);
+142:       final eventId = _clean(widget.eventId);
+143: 
+144:       if (eventId != null) {
+145:         final event = await gateway.event(eventId);
+146:         eventType = idOf(event['type']);
+147:         resolvedDeviceId ??= _clean(idOf(event['deviceId']));
+148:       }
+149:       final personId = _clean(widget.personId);
+150:       if (personId != null) {
+151:         person =
+152:             people.where((item) => item.id == personId).firstOrNull ??
+153:             await gateway.person(personId);
+154:         equipment = await gateway.equipmentForPerson(personId);
+155:         selected = resolvedDeviceId == null
+156:             ? equipment.firstOrNull
+157:             : equipment
+158:                   .where((item) => item.id == resolvedDeviceId)
+159:                   .firstOrNull;
+160:       }
+161:       if (resolvedDeviceId != null && selected == null) {
+162:         selected = await gateway.device(resolvedDeviceId);
+163:         final assignedPersonId = selected.personId;
+164:         if (person == null && assignedPersonId != null) {
+165:           person = people
+166:               .where((item) => item.id == assignedPersonId)
+167:               .firstOrNull;
+168:         }
+169:       }
+170:       if (selected != null &&
+171:           equipment.every((item) => item.id != selected!.id)) {
+172:         equipment = [...equipment, selected];
+173:       }
+174:       final history = await gateway.calls(
+175:         eventId: eventId,
+176:         deviceId: selected?.id,
+177:       );
+178:       if (!mounted ||
+179:           generation != _loadGeneration ||
+180:           scope != session.scopeKey) {
+181:         return;
+182:       }
+183:       setState(() {
+184:         _people = people;
+185:         _devices = devices;
+186:         _myEquipment = myEquipment;
+187:         _equipment = equipment;
+188:         _history = history;
+189:         _eventType = eventType;
+190:         _loading = false;
+191:         if (selected != null && resolvedDeviceId != null) {
+192:           _selectedKeys
+193:             ..clear()
+194:             ..add('d:${selected.id}');
+195:         } else if (person != null) {
+196:           _selectedKeys
+197:             ..clear()
+198:             ..add('p:${person.id}');
+199:           _equipmentByPerson[person.id] = equipment;
+200:         } else if (selected != null) {
+201:           _selectedKeys
+202:             ..clear()
+203:             ..add('d:${selected.id}');
+204:         }
+205:       });
+206:       controller.selectDevice(selected);
+207:     } catch (error) {
+208:       if (error is StaleSessionException) return;
+209:       if (!mounted ||
+210:           generation != _loadGeneration ||
+211:           scope != session.scopeKey) {
+212:         return;
+213:       }
+214:       setState(() {
+215:         _loadError = error;
+216:         _loading = false;
+217:       });
+218:     }
+219:   }
+220: 
+221:   Future<void> _selectPerson(PersonOption? person) async {
+222:     final session = _session;
+223:     final gateway = _gateway;
+224:     if (session == null || gateway == null || person == null) return;
+225:     final generation = ++_loadGeneration;
+226:     final scope = session.scopeKey;
+227:     setState(() {
+228:       _equipment = const [];
+229:       _history = const [];
+230:       _loadError = null;
+231:     });
+232:     _controller?.selectDevice(null);
+233:     try {
+234:       final equipment = await gateway.equipmentForPerson(person.id);
+235:       final selected = equipment.firstOrNull;
+236:       final history = await gateway.calls(deviceId: selected?.id);
+237:       if (!mounted ||
+238:           generation != _loadGeneration ||
+239:           scope != session.scopeKey) {
+240:         return;
+241:       }
+242:       setState(() {
+243:         _equipment = equipment;
+244:         _equipmentByPerson[person.id] = equipment;
+245:         _history = history;
+246:       });
+247:       _controller?.selectDevice(selected);
+248:     } catch (error) {
+249:       if (error is StaleSessionException) return;
+250:       if (!mounted ||
+251:           generation != _loadGeneration ||
+252:           scope != session.scopeKey) {
+253:         return;
+254:       }
+255:       setState(() => _loadError = error);
+256:     }
+257:   }
+258: 
+259:   Future<void> _selectDevice(CommunicationDevice device) async {
+260:     _controller?.selectDevice(device);
+261:     final session = _session;
+262:     final gateway = _gateway;
+263:     if (session == null || gateway == null) return;
+264:     final generation = ++_loadGeneration;
+265:     final scope = session.scopeKey;
+266:     try {
+267:       final history = await gateway.calls(
+268:         eventId: _clean(widget.eventId),
+269:         deviceId: device.id,
+270:       );
+271:       if (!mounted ||
+272:           generation != _loadGeneration ||
+273:           scope != session.scopeKey) {
+274:         return;
+275:       }
+276:       setState(() => _history = history);
+277:     } catch (error) {
+278:       if (error is StaleSessionException) return;
+279:       if (mounted &&
+280:           generation == _loadGeneration &&
+281:           scope == session.scopeKey) {
+282:         setState(() => _loadError = error);
+283:       }
+284:     }
+285:   }
+286: 
+287:   @override
+288:   void dispose() {
+289:     _loadGeneration++;
+290:     WidgetsBinding.instance.removeObserver(this);
+291:     _controller?.removeListener(_onControllerChanged);
+292:     // Do not clear callActive during synchronous teardown. The session owns
+293:     // forced expiry and the controller invalidates late RTC continuations.
+294:     _controller?.dispose();
+295:     _tts.dispose();
+296:     _search.dispose();
+297:     super.dispose();
+298:   }
+299: 
+300:   @override
+301:   Widget build(BuildContext context) {
+302:     final controller = _controller;
+303:     return ColoredBox(
+304:       color: WearColors.background,
+305:       child: SafeArea(
+306:         child: Column(
+307:           children: [
+308:             if (controller?.activeCall != null)
+309:               Padding(
+310:                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+311:                 child: WearCard(child: _callControls(controller!)),
+312:               ),
+313:             Expanded(
+314:               child: _loading
+315:                   ? const Column(
+316:                       children: [
+317:                         _CommsHero(),
+318:                         Expanded(
+319:                           child: Center(child: CircularProgressIndicator()),
+320:                         ),
+321:                       ],
+322:                     )
+323:                   : _loadError != null
+324:                   ? Column(
+325:                       children: [
+326:                         const _CommsHero(),
+327:                         Expanded(
+328:                           child: WearEmpty(
+329:                             title: '通讯数据加载失败',
+330:                             detail: _errorText(_loadError!),
+331:                             onRetry: _load,
+332:                           ),
+333:                         ),
+334:                       ],
+335:                     )
+336:                   : RefreshIndicator(
+337:                       onRefresh: _load,
+338:                       child: ListView(
+339:                         physics: const AlwaysScrollableScrollPhysics(),
+340:                         padding: EdgeInsets.zero,
+341:                         children: [
+342:                           if (controller?.activeCall != null)
+343:                             Padding(
+344:                               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+345:                               child: _activeCallCard(controller!),
+346:                             ),
+347:                           _headerWithSearch(),
+348:                           Padding(
+349:                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+350:                             child: Column(
+351:                               crossAxisAlignment: CrossAxisAlignment.stretch,
+352:                               children: [
+353:                                 if (_selectedKeys.isNotEmpty ||
+354:                                     controller?.selectedDevice != null) ...[
+355:                                   KeyedSubtree(
+356:                                     key: _targetActionsKey,
+357:                                     child: _targetActions(controller),
+358:                                   ),
+359:                                   const SizedBox(height: 18),
+360:                                 ],
+361:                                 _selectionBar(),
+362:                                 const SizedBox(height: 10),
+363:                                 ..._visibleContacts.map(_contactTile),
+364:                                 if (_visibleContacts.isEmpty)
+365:                                   const Padding(
+366:                                     padding: EdgeInsets.symmetric(vertical: 18),
+367:                                     child: Text(
+368:                                       '没有匹配的人员或设备',
+369:                                       textAlign: TextAlign.center,
+370:                                       style: TextStyle(color: WearColors.muted),
+371:                                     ),
+372:                                   ),
+373:                                 const SizedBox(height: 14),
+374:                                 _historyCard(controller),
+375:                               ],
+376:                             ),
+377:                           ),
+378:                         ],
+379:                       ),
+380:                     ),
+381:             ),
+382:           ],
+383:         ),
+384:       ),
+385:     );
+386:   }
+387: 
+388:   Widget _targetActions(CommunicationsController? controller) {
+389:     final device = controller?.selectedDevice;
+390:     return Column(
+391:       crossAxisAlignment: CrossAxisAlignment.stretch,
+392:       children: [
+393:         Text(
+394:           device == null
+395:               ? '请选择联系对象'
+396:               : '当前目标 · ${device.personName == null ? '' : '${device.personName} · '}${device.sn.isEmpty ? device.id : device.sn}',
+397:           style: const TextStyle(
+398:             fontSize: 16,
+399:             fontWeight: FontWeight.w700,
+400:             color: WearColors.ink,
+401:           ),
+402:         ),
+403:         const SizedBox(height: 8),
+404:         Wrap(
+405:           spacing: 8,
+406:           children: [
+407:             for (final entry in const {
+408:               'intercom': '对讲',
+409:               'tts': '文字播报',
+410:               'video': '视频',
+411:             }.entries)
+412:               ChoiceChip(
+413:                 label: Text(entry.value),
+414:                 selected: _action == entry.key,
+415:                 onSelected: (_) => setState(() => _action = entry.key),
+416:               ),
+417:           ],
+418:         ),
+419:         const SizedBox(height: 10),
+420:         if (_action == 'tts')
+421:           if (device != null)
+422:             _ttsCard(controller!)
+423:           else
+424:             const WearCard(child: Text('选择人员或设备后，可输入文字并提交播报。'))
+425:         else
+426:           _originateCard(controller),
+427:       ],
+428:     );
+429:   }
+430: 
+431:   Widget _headerWithSearch() {
+432:     return Column(
+433:       children: [
+434:         const _CommsHero(),
+435:         Padding(
+436:           padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+437:           child: Material(
+438:             color: Colors.white,
+439:             elevation: 0,
+440:             borderRadius: BorderRadius.circular(16),
+441:             child: TextField(
+442:               controller: _search,
+443:               textInputAction: TextInputAction.search,
+444:               onChanged: (_) => setState(() {}),
+445:               onSubmitted: (_) => unawaited(_load()),
+446:               decoration: InputDecoration(
+447:                 hintText: '搜索人员或设备',
+448:                 hintStyle: const TextStyle(color: WearColors.muted),
+449:                 prefixIcon: const Icon(Icons.search, color: WearColors.muted),
+450:                 filled: true,
+451:                 fillColor: Colors.white,
+452:                 contentPadding: const EdgeInsets.symmetric(
+453:                   horizontal: 12,
+454:                   vertical: 12,
+455:                 ),
+456:                 border: OutlineInputBorder(
+457:                   borderRadius: BorderRadius.circular(16),
+458:                   borderSide: const BorderSide(color: WearColors.line),
+459:                 ),
+460:                 enabledBorder: OutlineInputBorder(
+461:                   borderRadius: BorderRadius.circular(16),
+462:                   borderSide: const BorderSide(color: WearColors.line),
+463:                 ),
+464:                 focusedBorder: OutlineInputBorder(
+465:                   borderRadius: BorderRadius.circular(16),
+466:                   borderSide: const BorderSide(color: WearColors.brand),
+467:                 ),
+468:               ),
+469:             ),
+470:           ),
+471:         ),
+472:       ],
+473:     );
+474:   }
+475: 
+476:   Widget _selectionBar() {
+477:     return Row(
+478:       children: [
+479:         const Text(
+480:           '已选 ',
+481:           style: TextStyle(
+482:             fontSize: 16,
+483:             fontWeight: FontWeight.w700,
+484:             color: WearColors.ink,
+485:           ),
+486:         ),
+487:         Text(
+488:           '${_selectedKeys.length} 人',
+489:           style: const TextStyle(
+490:             fontSize: 16,
+491:             fontWeight: FontWeight.w800,
+492:             color: WearColors.brand,
+493:           ),
+494:         ),
+495:         const Spacer(),
+496:         OutlinedButton(
+497:           onPressed: () => setState(() => _multiSelect = !_multiSelect),
+498:           style: OutlinedButton.styleFrom(
+499:             backgroundColor: _multiSelect ? WearColors.brand : Colors.white,
+500:             foregroundColor: _multiSelect ? Colors.white : WearColors.brand,
+501:             side: const BorderSide(color: WearColors.brand),
+502:             minimumSize: const Size(72, 36),
+503:             padding: const EdgeInsets.symmetric(horizontal: 14),
+504:             visualDensity: VisualDensity.compact,
+505:           ),
+506:           child: const Text('多选'),
+507:         ),
+508:       ],
+509:     );
+510:   }
+511: 
+512:   Widget _contactTile(_CommsContact contact) {
+513:     final selected = _selectedKeys.contains(contact.key);
+514:     return Padding(
+515:       padding: const EdgeInsets.only(bottom: 8),
+516:       child: Material(
+517:         color: Colors.white,
+518:         borderRadius: BorderRadius.circular(16),
+519:         child: InkWell(
+520:           borderRadius: BorderRadius.circular(16),
+521:           onTap: () => unawaited(_toggleContact(contact)),
+522:           child: Padding(
+523:             padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+524:             child: Row(
+525:               children: [
+526:                 _checkBox(selected),
+527:                 const SizedBox(width: 10),
+528:                 CircleAvatar(
+529:                   backgroundColor: const Color(0xFFF3F6FB),
+530:                   child: Icon(contact.icon, color: WearColors.brand, size: 22),
+531:                 ),
+532:                 const SizedBox(width: 10),
+533:                 Expanded(
+534:                   child: Column(
+535:                     crossAxisAlignment: CrossAxisAlignment.start,
+536:                     children: [
+537:                       Text(
+538:                         contact.title,
+539:                         maxLines: 1,
+540:                         overflow: TextOverflow.ellipsis,
+541:                         style: const TextStyle(
+542:                           fontSize: 16,
+543:                           fontWeight: FontWeight.w700,
+544:                           color: WearColors.ink,
+545:                         ),
+546:                       ),
+547:                       Text(
+548:                         contact.subtitle,
+549:                         maxLines: 1,
+550:                         overflow: TextOverflow.ellipsis,
+551:                         style: const TextStyle(
+552:                           fontSize: 12,
+553:                           color: WearColors.muted,
+554:                         ),
+555:                       ),
+556:                     ],
+557:                   ),
+558:                 ),
+559:                 IconButton(
+560:                   tooltip: '呼叫',
+561:                   onPressed: () => unawaited(_callContact(contact)),
+562:                   icon: const Icon(
+563:                     Icons.call_outlined,
+564:                     color: WearColors.brand,
+565:                   ),
+566:                 ),
+567:               ],
+568:             ),
+569:           ),
+570:         ),
+571:       ),
+572:     );
+573:   }
+574: 
+575:   Widget _checkBox(bool selected) {
+576:     return Container(
+577:       width: 22,
+578:       height: 22,
+579:       decoration: BoxDecoration(
+580:         color: selected ? WearColors.brand : Colors.white,
+581:         borderRadius: BorderRadius.circular(6),
+582:         border: Border.all(
+583:           color: selected ? WearColors.brand : const Color(0xFFC9D4E5),
+584:           width: 1.5,
+585:         ),
+586:       ),
+587:       child: selected
+588:           ? const Icon(Icons.check, size: 16, color: Colors.white)
+589:           : null,
+590:     );
+591:   }
+592: 
+593:   Widget _originateCard(CommunicationsController? controller) {
+594:     final helmet = _boundHelmet;
+595:     final helmetSn = textOf(helmet?['sn'], '');
+596:     final canVideo =
+597:         controller?.selectedDevice != null &&
+598:         controller!.policy.canStartVideo(controller.selectedDevice!);
+599:     return Column(
+600:       crossAxisAlignment: CrossAxisAlignment.start,
+601:       children: [
+602:         Row(
+603:           children: [
+604:             const Expanded(
+605:               child: Text(
+606:                 '选择发起设备',
+607:                 style: TextStyle(
+608:                   fontSize: 17,
+609:                   fontWeight: FontWeight.w800,
+610:                   color: WearColors.ink,
+611:                 ),
+612:               ),
+613:             ),
+614:             GestureDetector(
+615:               onTap: () => _snack('组呼与安全帽侧发起正在对接。当前可由本机向所选装备发起单呼。'),
+616:               child: const Row(
+617:                 children: [
+618:                   Text(
+619:                     '通讯服务待联调',
+620:                     style: TextStyle(fontSize: 12, color: WearColors.muted),
+621:                   ),
+622:                   SizedBox(width: 4),
+623:                   Icon(Icons.info_outline, size: 16, color: WearColors.muted),
+624:                 ],
+625:               ),
+626:             ),
+627:           ],
+628:         ),
+629:         const SizedBox(height: 8),
+630:         Row(
+631:           children: [
+632:             const Icon(
+633:               Icons.engineering_outlined,
+634:               size: 16,
+635:               color: WearColors.muted,
+636:             ),
+637:             const SizedBox(width: 6),
+638:             Expanded(
+639:               child: Text(
+640:                 helmet == null
+641:                     ? '未绑定安全帽'
+642:                     : '本人已绑定安全帽 ${helmetSn.isEmpty ? textOf(helmet['deviceId']) : helmetSn}',
+643:                 style: const TextStyle(fontSize: 13, color: WearColors.ink),
+644:               ),
+645:             ),
+646:           ],
+647:         ),
+648:         const SizedBox(height: 12),
+649:         if (_action == 'video' && canVideo) ...[
+650:           _originateButton(
+651:             filled: true,
+652:             icon: Icons.videocam_outlined,
+653:             title: '视频呼叫',
+654:             subtitle: '向所选装备发起视频',
+655:             enabled: !controller.busy,
+656:             onTap: () => unawaited(
+657:               _startCallForSelection(video: true, fromHelmet: false),
+658:             ),
+659:           ),
+660:           const SizedBox(height: 10),
+661:         ],
+662:         _originateButton(
+663:           filled: _action != 'video' || !canVideo,
+664:           icon: Icons.call_outlined,
+665:           title: '手机呼叫',
+666:           subtitle: '使用本机麦克风与扬声器',
+667:           enabled: controller != null && !controller.busy,
+668:           onTap: () => unawaited(
+669:             _startCallForSelection(video: false, fromHelmet: false),
+670:           ),
+671:         ),
+672:         const SizedBox(height: 10),
+673:         _originateButton(
+674:           filled: false,
+675:           icon: Icons.engineering_outlined,
+676:           title: '安全帽呼叫',
+677:           subtitle: '使用本人绑定安全帽发起',
+678:           enabled: controller != null && !controller.busy && helmet != null,
+679:           onTap: () =>
+680:               unawaited(_startCallForSelection(video: false, fromHelmet: true)),
+681:         ),
+682:         if (canVideo && _action != 'video') ...[
+683:           const SizedBox(height: 10),
+684:           _originateButton(
+685:             filled: false,
+686:             icon: Icons.videocam_outlined,
+687:             title: '视频呼叫',
+688:             subtitle: '向所选装备发起视频',
+689:             enabled: !controller.busy,
+690:             onTap: () => unawaited(
+691:               _startCallForSelection(video: true, fromHelmet: false),
+692:             ),
+693:           ),
+694:         ],
+695:         const Padding(
+696:           padding: EdgeInsets.only(top: 10),
+697:           child: Text(
+698:             '未绑定安全帽时，安全帽呼叫不可用',
+699:             style: TextStyle(fontSize: 12, color: WearColors.muted),
+700:           ),
+701:         ),
+702:         if (_action == 'video' &&
+703:             controller?.selectedDevice != null &&
+704:             !controller!.selectedDevice!.supports('video'))
+705:           const Padding(
+706:             padding: EdgeInsets.only(top: 8),
+707:             child: Text(
+708:               '该设备不支持视频，已保留语音入口。',
+709:               style: TextStyle(color: WearColors.warning),
+710:             ),
+711:           ),
+712:       ],
+713:     );
+714:   }
+715: 
+716:   Widget _originateButton({
+717:     required bool filled,
+718:     required IconData icon,
+719:     required String title,
+720:     required String subtitle,
+721:     required bool enabled,
+722:     required VoidCallback onTap,
+723:   }) {
+724:     final fg = filled ? Colors.white : WearColors.ink;
+725:     final sub = filled
+726:         ? Colors.white.withValues(alpha: 0.86)
+727:         : WearColors.muted;
+728:     return Material(
+729:       color: enabled
+730:           ? (filled ? WearColors.brand : Colors.white)
+731:           : (filled
+732:                 ? WearColors.brand.withValues(alpha: 0.4)
+733:                 : const Color(0xFFF7FAFF)),
+734:       borderRadius: BorderRadius.circular(16),
+735:       child: InkWell(
+736:         onTap: enabled ? onTap : null,
+737:         borderRadius: BorderRadius.circular(16),
+738:         child: Container(
+739:           padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+740:           decoration: filled
+741:               ? null
+742:               : BoxDecoration(
+743:                   borderRadius: BorderRadius.circular(16),
+744:                   border: Border.all(color: WearColors.line),
+745:                 ),
+746:           child: Row(
+747:             children: [
+748:               Icon(icon, color: enabled ? fg : WearColors.muted),
+749:               const SizedBox(width: 12),
+750:               Expanded(
+751:                 child: Column(
+752:                   crossAxisAlignment: CrossAxisAlignment.start,
+753:                   children: [
+754:                     Text(
+755:                       title,
+756:                       style: TextStyle(
+757:                         fontSize: 16,
+758:                         fontWeight: FontWeight.w800,
+759:                         color: enabled ? fg : WearColors.muted,
+760:                       ),
+761:                     ),
+762:                     Text(
+763:                       subtitle,
+764:                       style: TextStyle(
+765:                         fontSize: 12,
+766:                         color: enabled ? sub : WearColors.muted,
+767:                       ),
+768:                     ),
+769:                   ],
+770:                 ),
+771:               ),
+772:               Icon(Icons.chevron_right, color: enabled ? fg : WearColors.muted),
+773:             ],
+774:           ),
+775:         ),
+776:       ),
+777:     );
+778:   }
+779: 
+780:   Widget _activeCallCard(CommunicationsController controller) {
+781:     final call = controller.activeCall!;
+782:     final statusColor = call.demo
+783:         ? WearColors.warning
+784:         : call.status == WearCallStatus.connected
+785:         ? WearColors.primary
+786:         : call.status == WearCallStatus.failed ||
+787:               call.status == WearCallStatus.timedOut
+788:         ? WearColors.danger
+789:         : WearColors.muted;
+790:     return WearCard(
+791:       child: Column(
+792:         crossAxisAlignment: CrossAxisAlignment.start,
+793:         children: [
+794:           Row(
+795:             children: [
+796:               const Expanded(
+797:                 child: Text(
+798:                   '当前会话',
+799:                   style: TextStyle(
+800:                     fontSize: 17,
+801:                     fontWeight: FontWeight.w700,
+802:                     color: WearColors.ink,
+803:                   ),
+804:                 ),
+805:               ),
+806:               WearBadge(text: call.statusLabel, color: statusColor),
+807:             ],
+808:           ),
+809:           const SizedBox(height: 8),
+810:           Text(
+811:             '会话 ${call.id} · 设备 ${call.sn.isEmpty ? call.deviceId : call.sn}',
+812:             style: const TextStyle(color: WearColors.muted),
+813:           ),
+814:           if (controller.statusMessage.isNotEmpty)
+815:             Padding(
+816:               padding: const EdgeInsets.only(top: 8),
+817:               child: Text(
+818:                 controller.statusMessage,
+819:                 style: TextStyle(
+820:                   color: controller.rtcPhase == WearRtcPhase.failed
+821:                       ? WearColors.danger
+822:                       : WearColors.ink,
+823:                 ),
+824:               ),
+825:             ),
+826:           if (call.video) ...[
+827:             const SizedBox(height: 12),
+828:             _videoPanel(controller),
+829:           ],
+830:           if (!controller.policy.owns(call))
+831:             const Padding(
+832:               padding: EdgeInsets.only(top: 9),
+833:               child: Text(
+834:                 '仅会话发起人可加入、读取凭证或结束通话。',
+835:                 style: TextStyle(color: WearColors.muted),
+836:               ),
+837:             ),
+838:         ],
+839:       ),
+840:     );
+841:   }
+842: 
+843:   Widget _callControls(CommunicationsController controller) {
+844:     return Row(
+845:       children: [
+846:         Expanded(
+847:           child: OutlinedButton.icon(
+848:             onPressed: controller.isConnected
+849:                 ? controller.toggleMicrophone
+850:                 : null,
+851:             icon: Icon(
+852:               controller.microphoneMuted
+853:                   ? Icons.mic_off_outlined
+854:                   : Icons.mic_outlined,
+855:             ),
+856:             label: Text(controller.microphoneMuted ? '取消静音' : '麦克风'),
+857:           ),
+858:         ),
+859:         const SizedBox(width: 10),
+860:         Expanded(
+861:           child: FilledButton.icon(
+862:             style: FilledButton.styleFrom(backgroundColor: WearColors.danger),
+863:             onPressed: controller.policy.canEnd(controller.activeCall!)
+864:                 ? controller.hangUp
+865:                 : null,
+866:             icon: const Icon(Icons.call_end),
+867:             label: const Text('结束通话'),
+868:           ),
+869:         ),
+870:       ],
+871:     );
+872:   }
+873: 
+874:   Widget _videoPanel(CommunicationsController controller) {
+875:     final call = controller.activeCall;
+876:     final rtc = controller.rtc;
+877:     final engine = rtc is AgoraWearRtcEngine ? rtc.nativeEngine : null;
+878:     if (call == null ||
+879:         engine == null ||
+880:         call.demo ||
+881:         !controller.isConnected) {
+882:       return ClipRRect(
+883:         borderRadius: BorderRadius.circular(14),
+884:         child: Stack(
+885:           children: [
+886:             const WearAssetImage(
+887:               WearArt.videoPlaceholder,
+888:               width: double.infinity,
+889:               height: 180,
+890:               fit: BoxFit.cover,
+891:             ),
+892:             Positioned(
+893:               left: 10,
+894:               top: 10,
+895:               child: WearBadge(
+896:                 text: call?.demo == true ? '示例画面 · 非实时' : '等待远端视频',
+897:                 color: WearColors.warning,
+898:               ),
+899:             ),
+900:           ],
+901:         ),
+902:       );
+903:     }
+904:     final remoteUid = controller.remoteUid;
+905:     return ClipRRect(
+906:       borderRadius: BorderRadius.circular(14),
+907:       child: AspectRatio(
+908:         aspectRatio: 16 / 9,
+909:         child: remoteUid == null
+910:             ? Stack(
+911:                 children: [
+912:                   AgoraVideoView(
+913:                     controller: VideoViewController(
+914:                       rtcEngine: engine,
+915:                       canvas: const VideoCanvas(uid: 0),
+916:                     ),
+917:                   ),
+918:                   const Positioned.fill(
+919:                     child: Center(child: WearBadge(text: '等待远端视频')),
+920:                   ),
+921:                 ],
+922:               )
+923:             : AgoraVideoView(
+924:                 controller: VideoViewController.remote(
+925:                   rtcEngine: engine,
+926:                   canvas: VideoCanvas(uid: remoteUid),
+927:                   connection: RtcConnection(
+928:                     channelId: controller.activeCall!.channelName,
+929:                   ),
+930:                 ),
+931:               ),
+932:       ),
+933:     );
+934:   }
+935: 
+936:   Widget _ttsCard(CommunicationsController controller) {
+937:     final device = controller.selectedDevice!;
+938:     final enabled = controller.policy.canSendTts(device);
+939:     return WearCard(
+940:       child: Column(
+941:         crossAxisAlignment: CrossAxisAlignment.start,
+942:         children: [
+943:           const Text(
+944:             '文字播报',
+945:             style: TextStyle(
+946:               fontSize: 17,
+947:               fontWeight: FontWeight.w700,
+948:               color: WearColors.ink,
+949:             ),
+950:           ),
+951:           const SizedBox(height: 4),
+952:           const Text(
+953:             '提交成功仅表示指令已受理，不代表现场已经听到。',
+954:             style: TextStyle(color: WearColors.muted),
+955:           ),
+956:           const SizedBox(height: 12),
+957:           TextField(
+958:             controller: _tts,
+959:             minLines: 2,
+960:             maxLines: 4,
+961:             maxLength: 300,
+962:             onChanged: (value) => controller.ttsText = value,
+963:             decoration: const InputDecoration(
+964:               hintText: '输入要播报的内容',
+965:               border: OutlineInputBorder(),
+966:             ),
+967:           ),
+968:           SizedBox(
+969:             width: double.infinity,
+970:             child: FilledButton.icon(
+971:               onPressed: enabled && !controller.ttsBusy
+972:                   ? () => controller.sendTts(eventId: _clean(widget.eventId))
+973:                   : null,
+974:               icon: const Icon(Icons.campaign_outlined),
+975:               label: Text(controller.ttsBusy ? '提交中…' : '提交播报指令'),
+976:             ),
+977:           ),
+978:           if (controller.ttsMessage.isNotEmpty)
+979:             Padding(
+980:               padding: const EdgeInsets.only(top: 8),
+981:               child: Text(
+982:                 controller.ttsMessage,
+983:                 style: TextStyle(
+984:                   color: controller.ttsMessage.contains('失败')
+985:                       ? WearColors.danger
+986:                       : WearColors.ink,
+987:                 ),
+988:               ),
+989:             ),
+990:         ],
+991:       ),
+992:     );
+993:   }
+994: 
+995:   Widget _historyCard(CommunicationsController? controller) {
+996:     return WearCard(
+997:       child: Column(
+998:         crossAxisAlignment: CrossAxisAlignment.start,
+999:         children: [
+1000:           const Text(
+1001:             '相关会话',
+1002:             style: TextStyle(
+1003:               fontSize: 17,
+1004:               fontWeight: FontWeight.w700,
+1005:               color: WearColors.ink,
+1006:             ),
+1007:           ),
+1008:           const SizedBox(height: 10),
+1009:           if (_history.isEmpty)
+1010:             const Text('暂无相关通话记录', style: TextStyle(color: WearColors.muted))
+1011:           else
+1012:             ..._history.map((call) {
+1013:               final canResume =
+1014:                   controller != null &&
+1015:                   !controller.busy &&
+1016:                   !controller.hasActiveOwnedSession &&
+1017:                   controller.policy.canJoin(call);
+1018:               return ListTile(
+1019:                 contentPadding: EdgeInsets.zero,
+1020:                 leading: Icon(
+1021:                   call.video ? Icons.videocam_outlined : Icons.call_outlined,
+1022:                   color: WearColors.primary,
+1023:                 ),
+1024:                 title: Text(
+1025:                   '${call.kind == 'sos' ? 'SOS' : '单呼'} · ${call.sn.isEmpty ? call.deviceId : call.sn}',
+1026:                 ),
+1027:                 subtitle: Text(
+1028:                   '${call.statusLabel} · ${formatTime(call.startedAt)}',
+1029:                 ),
+1030:                 trailing: canResume ? const Icon(Icons.login) : null,
+1031:                 onTap: canResume ? () => controller.resumeCall(call) : null,
+1032:               );
+1033:             }),
+1034:         ],
+1035:       ),
+1036:     );
+1037:   }
+1038: 
+1039:   List<_CommsContact> get _allContacts {
+1040:     final seenDevices = <String>{};
+1041:     final items = <_CommsContact>[
+1042:       for (final person in _people) _CommsContact.person(person),
+1043:     ];
+1044:     for (final device in _devices) {
+1045:       seenDevices.add(device.id);
+1046:       items.add(_CommsContact.device(device));
+1047:     }
+1048:     for (final device in _equipment) {
+1049:       if (seenDevices.add(device.id)) {
+1050:         items.add(_CommsContact.device(device));
+1051:       }
+1052:     }
+1053:     return items;
+1054:   }
+1055: 
+1056:   List<_CommsContact> get _visibleContacts {
+1057:     final query = _search.text.trim().toLowerCase();
+1058:     if (query.isEmpty) return _allContacts;
+1059:     return _allContacts.where((item) => item.matches(query)).toList();
+1060:   }
+1061: 
+1062:   JsonMap? get _boundHelmet {
+1063:     for (final item in _myEquipment) {
+1064:       if (item['typeCode']?.toString() == 'helmet') return item;
+1065:     }
+1066:     return null;
+1067:   }
+1068: 
+1069:   Future<void> _toggleContact(_CommsContact contact) async {
+1070:     var selecting = true;
+1071:     setState(() {
+1072:       if (_multiSelect) {
+1073:         if (_selectedKeys.contains(contact.key)) {
+1074:           _selectedKeys.remove(contact.key);
+1075:           selecting = false;
+1076:         } else {
+1077:           _selectedKeys.add(contact.key);
+1078:         }
+1079:       } else {
+1080:         _selectedKeys
+1081:           ..clear()
+1082:           ..add(contact.key);
+1083:       }
+1084:     });
+1085:     if (selecting) {
+1086:       await _activateContact(contact);
+1087:       if (!mounted) return;
+1088:       WidgetsBinding.instance.addPostFrameCallback((_) {
+1089:         if (!mounted) return;
+1090:         final targetContext = _targetActionsKey.currentContext;
+1091:         if (targetContext != null) {
+1092:           unawaited(
+1093:             Scrollable.ensureVisible(
+1094:               targetContext,
+1095:               duration: const Duration(milliseconds: 200),
+1096:             ),
+1097:           );
+1098:         }
+1099:       });
+1100:     }
+1101:   }
+1102: 
+1103:   Future<void> _callContact(_CommsContact contact) async {
+1104:     setState(() {
+1105:       _selectedKeys
+1106:         ..clear()
+1107:         ..add(contact.key);
+1108:     });
+1109:     await _activateContact(contact);
+1110:     await _startCallForSelection(video: false, fromHelmet: false);
+1111:   }
+1112: 
+1113:   Future<void> _activateContact(_CommsContact contact) async {
+1114:     final person = contact.person;
+1115:     final device = contact.device;
+1116:     if (person != null) {
+1117:       await _selectPerson(person);
+1118:       return;
+1119:     }
+1120:     if (device != null) {
+1121:       await _selectDevice(device);
+1122:     }
+1123:   }
+1124: 
+1125:   Future<CommunicationDevice?> _deviceOf(_CommsContact contact) async {
+1126:     if (contact.device != null) return contact.device;
+1127:     final person = contact.person;
+1128:     if (person == null) return null;
+1129:     final cached = _equipmentByPerson[person.id];
+1130:     if (cached != null) {
+1131:       return cached.where((item) => item.supports('intercom')).firstOrNull ??
+1132:           cached.firstOrNull;
+1133:     }
+1134:     final gateway = _gateway;
+1135:     if (gateway == null) return null;
+1136:     try {
+1137:       final equipment = await gateway.equipmentForPerson(person.id);
+1138:       if (mounted) {
+1139:         setState(() => _equipmentByPerson[person.id] = equipment);
+1140:       }
+1141:       return equipment.where((item) => item.supports('intercom')).firstOrNull ??
+1142:           equipment.firstOrNull;
+1143:     } catch (_) {
+1144:       return null;
+1145:     }
+1146:   }
+1147: 
+1148:   Future<void> _startCallForSelection({
+1149:     required bool video,
+1150:     required bool fromHelmet,
+1151:   }) async {
+1152:     final controller = _controller;
+1153:     if (controller == null) return;
+1154:     if (fromHelmet && _boundHelmet == null) {
+1155:       _snack('未绑定安全帽时，安全帽呼叫不可用');
+1156:       return;
+1157:     }
+1158:     if (_selectedKeys.isEmpty) {
+1159:       _snack('请先选择联系人');
+1160:       return;
+1161:     }
+1162:     final resolved = <CommunicationDevice>[];
+1163:     final labels = <String>[];
+1164:     for (final contact in _allContacts) {
+1165:       if (!_selectedKeys.contains(contact.key)) continue;
+1166:       final device = await _deviceOf(contact);
+1167:       if (device == null) continue;
+1168:       final allowed = video
+1169:           ? controller.policy.canStartVideo(device)
+1170:           : controller.policy.canStartVoice(device);
+1171:       if (!allowed) continue;
+1172:       resolved.add(device);
+1173:       labels.add(contact.title);
+1174:     }
+1175:     if (resolved.isEmpty) {
+1176:       _snack(video ? '所选对象不支持视频通话' : '所选对象暂无可用通话装备');
+1177:       return;
+1178:     }
+1179:     controller.selectDevice(resolved.first);
+1180:     if (resolved.length > 1) {
+1181:       _snack('群体通话待服务端开通，已向「${labels.first}」发起单呼');
+1182:     }
+1183:     final eventId = _clean(widget.eventId);
+1184:     final kind = eventId != null && _eventType == 'sos' ? 'sos' : 'single';
+1185:     await controller.startCall(video: video, eventId: eventId, kind: kind);
+1186:   }
+1187: 
+1188:   void _snack(String text) {
+1189:     if (!mounted) return;
+1190:     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+1191:   }
+1192: 
+1193:   String _errorText(Object error) =>
+1194:       error is WearApiException ? error.message : '操作未完成，请稍后重试';
+1195: 
+1196:   String? _clean(String? value) {
+1197:     final text = value?.trim() ?? '';
+1198:     return text.isEmpty ? null : text;
+1199:   }
+1200: }
+1201: 
+1202: class _CommsHero extends StatelessWidget {
+1203:   const _CommsHero();
+1204: 
+1205:   @override
+1206:   Widget build(BuildContext context) {
+1207:     return const WearBrandHero(
+1208:       key: ValueKey('wear-page-hero-comms'),
+1209:       title: '通讯',
+1210:       subtitle: '高效协同，守护安全',
+1211:       background: WearArt.commsHero,
+1212:     );
+1213:   }
+1214: }
+1215: 
+1216: class _CommsContact {
+1217:   const _CommsContact._({required this.key, this.person, this.device});
+1218: 
+1219:   factory _CommsContact.person(PersonOption person) =>
+1220:       _CommsContact._(key: 'p:${person.id}', person: person);
+1221: 
+1222:   factory _CommsContact.device(CommunicationDevice device) =>
+1223:       _CommsContact._(key: 'd:${device.id}', device: device);
+1224: 
+1225:   final String key;
+1226:   final PersonOption? person;
+1227:   final CommunicationDevice? device;
+1228: 
+1229:   IconData get icon {
+1230:     if (person != null) return Icons.person_outline;
+1231:     return switch (device?.typeCode) {
+1232:       'helmet' => Icons.engineering_outlined,
+1233:       'belt' => Icons.safety_check_outlined,
+1234:       _ => Icons.devices_other_outlined,
+1235:     };
+1236:   }
+1237: 
+1238:   String get title {
+1239:     if (person != null) return person!.name;
+1240:     final item = device!;
+1241:     final type = _deviceTypeLabel(item.typeCode);
+1242:     final owner = item.personName?.trim() ?? '';
+1243:     if (owner.isNotEmpty) return '$owner的$type';
+1244:     return item.sn.isEmpty ? '设备 ${item.id}' : item.sn;
+1245:   }
+1246: 
+1247:   String get subtitle {
+1248:     if (person != null) {
+1249:       return person!.personCode.isEmpty ? '现场人员' : person!.personCode;
+1250:     }
+1251:     final item = device!;
+1252:     final sn = item.sn.isEmpty ? item.id : item.sn;
+1253:     return '$sn · ${_deviceTypeLabel(item.typeCode)}';
+1254:   }
+1255: 
+1256:   bool matches(String query) =>
+1257:       title.toLowerCase().contains(query) ||
+1258:       subtitle.toLowerCase().contains(query);
+1259: }
+1260: 
+1261: String _deviceTypeLabel(String typeCode) => switch (typeCode) {
+1262:   'helmet' => '安全帽',
+1263:   'belt' => '安全带',
+1264:   'watch' => '手表',
+1265:   _ => '设备',
+1266: };

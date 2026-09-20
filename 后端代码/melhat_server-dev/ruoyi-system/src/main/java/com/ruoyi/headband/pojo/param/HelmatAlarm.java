@@ -15,6 +15,12 @@ public class HelmatAlarm {
     @ApiModelProperty(value = "告警类型（silent：静默报警，removal：脱帽报警，fall：跌落报警，proximity：近电感应报警）")
     private String type;
 
+    @ApiModelProperty(value = "来源系统提供的告警名称（可选）")
+    private String alarmName;
+
+    @ApiModelProperty(value = "来源系统提供的告警描述（可选）")
+    private String alarmDescription;
+
     /**
      * helmetSn：帽子编号
      */

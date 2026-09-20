@@ -1,0 +1,322 @@
+[
+  {
+    "id": "01",
+    "title": "欢迎登录",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "02",
+    "title": "找回登录权限",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "03",
+    "title": "选择工作厂站",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "04",
+    "title": "现场",
+    "width": 390,
+    "height": 1299.640625,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "05",
+    "title": "作业任务",
+    "width": 390,
+    "height": 1017.046875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "06",
+    "title": "作业详情",
+    "width": 390,
+    "height": 1153.234375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "07",
+    "title": "现场人员",
+    "width": 390,
+    "height": 914.125,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "08",
+    "title": "人员详情",
+    "width": 390,
+    "height": 1083.96875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "09",
+    "title": "失去监护人员",
+    "width": 390,
+    "height": 871.515625,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "10",
+    "title": "设备台账",
+    "width": 390,
+    "height": 964.9375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "11",
+    "title": "设备详情",
+    "width": 390,
+    "height": 1097.9375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "12",
+    "title": "设备状态异常",
+    "width": 390,
+    "height": 931.0625,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "13",
+    "title": "轨迹回放",
+    "width": 390,
+    "height": 1059.765625,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "14",
+    "title": "电子围栏",
+    "width": 390,
+    "height": 1008.9375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "15",
+    "title": "围栏详情",
+    "width": 390,
+    "height": 1177.9375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "16",
+    "title": "轨迹查询 · 选择人员",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "17",
+    "title": "通讯",
+    "width": 390,
+    "height": 1047.125,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "18",
+    "title": "语音通话",
+    "width": 390,
+    "height": 888.015625,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "19",
+    "title": "视频通话",
+    "width": 390,
+    "height": 898.984375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "20",
+    "title": "语音播报",
+    "width": 390,
+    "height": 955.46875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "21",
+    "title": "通话记录",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "22",
+    "title": "消息",
+    "width": 390,
+    "height": 942.453125,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "23",
+    "title": "筛选事件",
+    "width": 390,
+    "height": 892.234375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "24",
+    "title": "事件详情",
+    "width": 390,
+    "height": 1058.53125,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "25",
+    "title": "异常核验",
+    "width": 390,
+    "height": 1089.40625,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "26",
+    "title": "SOS 协助",
+    "width": 390,
+    "height": 1039.46875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "27",
+    "title": "转交事件",
+    "width": 390,
+    "height": 887.921875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "28",
+    "title": "关联作业",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "29",
+    "title": "事件处置",
+    "width": 390,
+    "height": 899.921875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "30",
+    "title": "我的",
+    "width": 390,
+    "height": 1028.859375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "31",
+    "title": "我的装备",
+    "width": 390,
+    "height": 885.390625,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "32",
+    "title": "历史领用记录",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "33",
+    "title": "通讯服务",
+    "width": 390,
+    "height": 878.171875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "34",
+    "title": "设置",
+    "width": 390,
+    "height": 844,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "35",
+    "title": "值班交接",
+    "width": 390,
+    "height": 871.921875,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "36",
+    "title": "帮助与反馈",
+    "width": 390,
+    "height": 949.25,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "37",
+    "title": "通知权限未开启",
+    "width": 390,
+    "height": 894.84375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "38",
+    "title": "切换 / 退出账号",
+    "width": 390,
+    "height": 876,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "39",
+    "title": "页面空态",
+    "width": 390,
+    "height": 907.59375,
+    "broken": [],
+    "overflow": []
+  },
+  {
+    "id": "40",
+    "title": "网络异常与加载",
+    "width": 390,
+    "height": 936.9375,
+    "broken": [],
+    "overflow": []
+  }
+]

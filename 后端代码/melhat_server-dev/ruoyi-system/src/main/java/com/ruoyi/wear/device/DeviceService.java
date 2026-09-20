@@ -74,6 +74,8 @@ public class DeviceService
     private AssignmentService assignmentService;
     @Value("${melhat.telemetry.stale-after-seconds:180}")
     private int staleAfterSeconds;
+    @Autowired
+    private DeviceSimulationStateService simulationStates;
 
     public WearPage<DeviceDto> page(int current, int size, String typeCode, String modelId, String sn, String assetStatus)
     {
@@ -410,6 +412,7 @@ public class DeviceService
         dto.setSource(device.getLastReportedAt() == null ? "db" : "live");
         dto.setDemo("demo".equals(device.getCreateBy()));
         dto.setVersion(device.getVersion());
+        if (simulationStates != null) simulationStates.enrich(dto);
         if (device.getModelId() != null)
         {
             WearProductModel model = modelMapper.selectById(device.getModelId());

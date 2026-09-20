@@ -1,0 +1,77 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.List;
+4: import java.util.Map;
+5: import org.springframework.beans.factory.annotation.Autowired;
+6: import org.springframework.web.bind.annotation.GetMapping;
+7: import org.springframework.web.bind.annotation.PathVariable;
+8: import org.springframework.web.bind.annotation.PostMapping;
+9: import org.springframework.web.bind.annotation.RequestBody;
+10: import org.springframework.web.bind.annotation.RequestMapping;
+11: import org.springframework.web.bind.annotation.RestController;
+12: import com.ruoyi.common.core.domain.R;
+13: import com.ruoyi.wear.call.CallService;
+14: import com.ruoyi.wear.call.dto.CallCredentialsDto;
+15: import com.ruoyi.wear.call.dto.CallDto;
+16: 
+17: @RestController
+18: @RequestMapping("/api/v1")
+19: public class WearCallController
+20: {
+21:     @Autowired
+22:     private CallService callService;
+23: 
+24:     @PostMapping("/calls")
+25:     public R<CallDto> start(@RequestBody Map<String, Object> body)
+26:     {
+27:         Boolean video = body.get("video") == null ? Boolean.FALSE : Boolean.valueOf(String.valueOf(body.get("video")));
+28:         return R.ok(callService.start(str(body, "deviceId"), str(body, "eventId"), str(body, "kind"),
+29:                 video, str(body, "idempotencyKey")));
+30:     }
+31: 
+32:     @GetMapping("/calls/{id:\\d+}")
+33:     public R<CallDto> detail(@PathVariable Long id)
+34:     {
+35:         return R.ok(callService.detail(id));
+36:     }
+37: 
+38:     @GetMapping("/calls/{id:\\d+}/credentials")
+39:     public R<CallCredentialsDto> credentials(@PathVariable Long id)
+40:     {
+41:         return R.ok(callService.credentials(id));
+42:     }
+43: 
+44:     @PostMapping("/calls/{id:\\d+}/joined")
+45:     public R<CallDto> joined(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body)
+46:     {
+47:         return R.ok(callService.joined(id, body == null ? null : str(body, "agoraUid")));
+48:     }
+49: 
+50:     @PostMapping("/calls/{id:\\d+}/end")
+51:     public R<CallDto> end(@PathVariable Long id)
+52:     {
+53:         return R.ok(callService.end(id));
+54:     }
+55: 
+56:     @GetMapping("/events/{id:\\d+}/calls")
+57:     public R<List<CallDto>> eventCalls(@PathVariable Long id)
+58:     {
+59:         return R.ok(callService.forEvent(id));
+60:     }
+61: 
+62:     @GetMapping("/devices/{id:\\d+}/calls")
+63:     public R<List<CallDto>> deviceCalls(@PathVariable Long id)
+64:     {
+65:         return R.ok(callService.forDevice(id));
+66:     }
+67: 
+68:     private String str(Map<String, Object> body, String key)
+69:     {
+70:         if (body == null || body.get(key) == null)
+71:         {
+72:             return null;
+73:         }
+74:         String value = String.valueOf(body.get(key));
+75:         return "null".equals(value) ? null : value;
+76:     }
+77: }

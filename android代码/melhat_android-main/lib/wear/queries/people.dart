@@ -213,6 +213,12 @@ class PersonPage extends StatefulWidget {
 class _PersonPageState extends State<PersonPage> {
   WearSession? _session;
   JsonMap? _person;
+  JsonMap? _location;
+  bool _locationLoading = true;
+  bool _locationFailed = false;
+  List<JsonMap> _activeTasks = const [];
+  bool _tasksLoading = true;
+  bool _tasksFailed = false;
   List<JsonMap> _history = const [];
   bool _loading = true;
   Object? _error;
@@ -228,6 +234,12 @@ class _PersonPageState extends State<PersonPage> {
     }
   }
 
+  @override
+  void didUpdateWidget(covariant PersonPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id) _load();
+  }
+
   Future<void> _load() async {
     final session = _session;
     if (session == null) return;
@@ -236,7 +248,16 @@ class _PersonPageState extends State<PersonPage> {
     setState(() {
       _loading = true;
       _error = null;
+      _location = null;
+      _locationLoading = true;
+      _locationFailed = false;
+      _activeTasks = [];
+      _tasksLoading = true;
+      _tasksFailed = false;
     });
+    // Optional context must not block the personnel record or contact action.
+    _loadLocation(session, request, scopeKey);
+    _loadActiveTasks(session, request, scopeKey);
     try {
       final responses = await Future.wait([
         session.api.get('/api/v1/people/${widget.id}'),
@@ -258,6 +279,59 @@ class _PersonPageState extends State<PersonPage> {
       setState(() {
         _error = error;
         _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadActiveTasks(
+    WearSession session,
+    int request,
+    String scopeKey,
+  ) async {
+    try {
+      final tasks = await loadPersonActiveTasks(session.api, widget.id);
+      if (!mounted || request != _request || scopeKey != session.scopeKey) {
+        return;
+      }
+      setState(() {
+        _activeTasks = tasks;
+        _tasksLoading = false;
+      });
+    } catch (_) {
+      if (!mounted || request != _request || scopeKey != session.scopeKey) {
+        return;
+      }
+      setState(() {
+        _tasksFailed = true;
+        _tasksLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadLocation(
+    WearSession session,
+    int request,
+    String scopeKey,
+  ) async {
+    try {
+      final location = jsonMap(
+        await session.api.get('/api/v1/locations/people/${widget.id}'),
+      );
+      if (!mounted || request != _request || scopeKey != session.scopeKey) {
+        return;
+      }
+      setState(() {
+        _location = idOf(location['personId']) == widget.id ? location : null;
+        _locationLoading = false;
+      });
+    } catch (error) {
+      if (error is StaleSessionException) return;
+      if (!mounted || request != _request || scopeKey != session.scopeKey) {
+        return;
+      }
+      setState(() {
+        _locationLoading = false;
+        _locationFailed = true;
       });
     }
   }
@@ -307,8 +381,6 @@ class _PersonPageState extends State<PersonPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    EquipmentPanel(personId: widget.id),
-                    const SizedBox(height: 18),
                     FilledButton.icon(
                       onPressed: () => context.push(
                         communicationUri(personId: widget.id).toString(),
@@ -316,6 +388,18 @@ class _PersonPageState extends State<PersonPage> {
                       icon: const Icon(Icons.forum_outlined),
                       label: const Text('联系该人员'),
                     ),
+                    const SizedBox(height: 18),
+                    _PersonSiteContext(
+                      personId: widget.id,
+                      activeTasks: _activeTasks,
+                      tasksLoading: _tasksLoading,
+                      tasksFailed: _tasksFailed,
+                      location: _location,
+                      loading: _locationLoading,
+                      failed: _locationFailed,
+                    ),
+                    const SizedBox(height: 18),
+                    EquipmentPanel(personId: widget.id),
                     const SizedBox(height: 22),
                     QuerySection(
                       title: '历史领用记录（${_history.length}）',
@@ -336,6 +420,113 @@ class _PersonPageState extends State<PersonPage> {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+}
+
+class _PersonSiteContext extends StatelessWidget {
+  const _PersonSiteContext({
+    required this.activeTasks,
+    required this.tasksLoading,
+    required this.tasksFailed,
+    required this.personId,
+    required this.location,
+    required this.loading,
+    required this.failed,
+  });
+
+  final String personId;
+  final List<JsonMap> activeTasks;
+  final bool tasksLoading, tasksFailed;
+  final JsonMap? location;
+  final bool loading;
+  final bool failed;
+
+  @override
+  Widget build(BuildContext context) {
+    final lat = double.tryParse(location?['lat']?.toString() ?? '');
+    final lng = double.tryParse(location?['lng']?.toString() ?? '');
+    final hasPosition =
+        lat != null &&
+        lng != null &&
+        lat.isFinite &&
+        lng.isFinite &&
+        lat.abs() <= 90 &&
+        lng.abs() <= 180;
+    final quality = switch (location?['locationQuality']) {
+      'ok' when hasPosition => '定位正常',
+      'stale' => '定位已陈旧',
+      _ => '定位状态未知',
+    };
+    return WearCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined, color: WearColors.brand),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  '现场信息',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (location?['demo'] == true)
+                const WearBadge(text: '示例数据', color: WearColors.warning),
+            ],
+          ),
+          const SizedBox(height: 8),
+          DetailField(
+            label: '最近定位',
+            value: hasPosition
+                ? '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}'
+                : '未知',
+          ),
+          Text(
+            loading
+                ? '定位获取中'
+                : failed
+                ? '定位未获取'
+                : quality,
+            style: const TextStyle(color: WearColors.muted, fontSize: 12),
+          ),
+          if (hasPosition)
+            DetailField(
+              label: '定位时间',
+              value: formatTime(location?['occurredAt']),
+            ),
+          DetailField(
+            label: '当前作业',
+            value: tasksLoading
+                ? '获取中'
+                : tasksFailed
+                ? '未获取'
+                : activeTasks.isEmpty
+                ? '暂无进行中的作业'
+                : '${activeTasks.length} 项',
+          ),
+          for (final task in activeTasks)
+            TextButton.icon(
+              onPressed: () => context.push('/tasks/${idOf(task['id'])}'),
+              icon: const Icon(Icons.assignment_outlined, size: 18),
+              label: Text(textOf(task['title'], '作业 ${idOf(task['id'])}')),
+            ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => context.push(
+                Uri(
+                  path: '/tracks',
+                  queryParameters: {'personId': personId},
+                ).toString(),
+              ),
+              icon: const Icon(Icons.route_outlined),
+              label: const Text('查看轨迹'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -386,7 +577,7 @@ class _EquipmentPanelState extends State<EquipmentPanel> {
       final path = widget.personId == null
           ? '/api/v1/me/equipment'
           : '/api/v1/people/${widget.personId}/equipment';
-      final result = jsonList(await session.api.get(path));
+      final result = await loadEquipmentWithTelemetry(session.api, path);
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
         return;
       }

@@ -1,0 +1,633 @@
+1: import 'package:flutter/material.dart';
+2: import 'package:go_router/go_router.dart';
+3: 
+4: import '../core.dart';
+5: import 'query_utils.dart';
+6: import 'query_widgets.dart';
+7: 
+8: class PeoplePage extends StatefulWidget {
+9:   const PeoplePage({super.key, this.initialName});
+10: 
+11:   final String? initialName;
+12: 
+13:   @override
+14:   State<PeoplePage> createState() => _PeoplePageState();
+15: }
+16: 
+17: class _PeoplePageState extends State<PeoplePage> {
+18:   final _search = TextEditingController();
+19:   WearSession? _session;
+20:   List<JsonMap> _records = const [];
+21:   int _current = 1;
+22:   int _total = 0;
+23:   bool _hasMore = false;
+24:   bool _loading = true;
+25:   Object? _error;
+26:   String? _status;
+27:   int _request = 0;
+28:   bool _seededInitialName = false;
+29: 
+30:   @override
+31:   void didChangeDependencies() {
+32:     super.didChangeDependencies();
+33:     if (!_seededInitialName) {
+34:       _search.text = widget.initialName?.trim() ?? '';
+35:       _seededInitialName = true;
+36:     }
+37:     final session = WearScope.of(context);
+38:     if (!identical(session, _session)) {
+39:       _session = session;
+40:       _load(page: 1);
+41:     }
+42:   }
+43: 
+44:   @override
+45:   void didUpdateWidget(covariant PeoplePage oldWidget) {
+46:     super.didUpdateWidget(oldWidget);
+47:     if (oldWidget.initialName != widget.initialName) {
+48:       _search.text = widget.initialName?.trim() ?? '';
+49:       _load(page: 1);
+50:     }
+51:   }
+52: 
+53:   @override
+54:   void dispose() {
+55:     _search.dispose();
+56:     super.dispose();
+57:   }
+58: 
+59:   Future<void> _load({required int page}) async {
+60:     final session = _session;
+61:     if (session == null) return;
+62:     final request = ++_request;
+63:     final scopeKey = session.scopeKey;
+64:     setState(() {
+65:       _loading = true;
+66:       _error = null;
+67:     });
+68:     try {
+69:       final result = await session.api.page(
+70:         '/api/v1/people',
+71:         current: page,
+72:         size: 20,
+73:         query: {
+74:           if (_search.text.trim().isNotEmpty) 'name': _search.text.trim(),
+75:           if (_status != null) 'status': _status,
+76:         },
+77:       );
+78:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+79:         return;
+80:       }
+81:       setState(() {
+82:         _records = result.records;
+83:         _current = result.current;
+84:         _total = result.total;
+85:         _hasMore = result.hasMore;
+86:         _loading = false;
+87:       });
+88:     } catch (error) {
+89:       if (error is StaleSessionException) return;
+90:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+91:         return;
+92:       }
+93:       setState(() {
+94:         _error = error;
+95:         _loading = false;
+96:       });
+97:     }
+98:   }
+99: 
+100:   @override
+101:   Widget build(BuildContext context) {
+102:     return QueryPage(
+103:       title: '人员',
+104:       subtitle: '人员档案独立于登录账号，姓名重复时请核对人员编号。',
+105:       body: Column(
+106:         children: [
+107:           Padding(
+108:             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+109:             child: Row(
+110:               children: [
+111:                 Expanded(
+112:                   child: TextField(
+113:                     controller: _search,
+114:                     textInputAction: TextInputAction.search,
+115:                     onSubmitted: (_) => _load(page: 1),
+116:                     decoration: InputDecoration(
+117:                       hintText: '按姓名搜索',
+118:                       prefixIcon: const Icon(Icons.search),
+119:                       suffixIcon: _search.text.isEmpty
+120:                           ? null
+121:                           : IconButton(
+122:                               onPressed: () {
+123:                                 _search.clear();
+124:                                 _load(page: 1);
+125:                               },
+126:                               icon: const Icon(Icons.clear),
+127:                             ),
+128:                     ),
+129:                   ),
+130:                 ),
+131:                 const SizedBox(width: 8),
+132:                 PopupMenuButton<String>(
+133:                   tooltip: '人员状态',
+134:                   initialValue: _status ?? '',
+135:                   onSelected: (value) {
+136:                     setState(() => _status = value.isEmpty ? null : value);
+137:                     _load(page: 1);
+138:                   },
+139:                   itemBuilder: (_) => const [
+140:                     PopupMenuItem(value: '', child: Text('全部状态')),
+141:                     PopupMenuItem(value: '0', child: Text('在职')),
+142:                     PopupMenuItem(value: '1', child: Text('停用')),
+143:                   ],
+144:                   child: const Padding(
+145:                     padding: EdgeInsets.all(12),
+146:                     child: Icon(Icons.filter_list),
+147:                   ),
+148:                 ),
+149:               ],
+150:             ),
+151:           ),
+152:           Expanded(
+153:             child: QueryStateView(
+154:               loading: _loading,
+155:               error: _error,
+156:               empty: _records.isEmpty,
+157:               onRetry: () => _load(page: _current),
+158:               emptyTitle: '没有符合条件的人员',
+159:               child: RefreshIndicator(
+160:                 onRefresh: () => _load(page: _current),
+161:                 child: ListView.builder(
+162:                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+163:                   itemCount: _records.length,
+164:                   itemBuilder: (context, index) {
+165:                     final person = _records[index];
+166:                     return QueryRow(
+167:                       key: ValueKey('person-${idOf(person['id'])}'),
+168:                       title: textOf(person['name']),
+169:                       subtitle:
+170:                           '${textOf(person['personCode'])} · ${textOf(person['teamName'], '未分班组')}',
+171:                       leading: CircleAvatar(
+172:                         child: Text(
+173:                           textOf(person['name'], '?').characters.first,
+174:                         ),
+175:                       ),
+176:                       trailing: WearBadge(
+177:                         text: personStatusLabel(person['status']),
+178:                         color: person['status']?.toString() == '0'
+179:                             ? WearColors.primary
+180:                             : WearColors.muted,
+181:                       ),
+182:                       onTap: () =>
+183:                           context.push('/people/${idOf(person['id'])}'),
+184:                     );
+185:                   },
+186:                 ),
+187:               ),
+188:             ),
+189:           ),
+190:           PagingFooter(
+191:             current: _current,
+192:             total: _total,
+193:             hasMore: _hasMore,
+194:             busy: _loading,
+195:             onPrevious: () => _load(page: _current - 1),
+196:             onNext: () => _load(page: _current + 1),
+197:           ),
+198:         ],
+199:       ),
+200:     );
+201:   }
+202: }
+203: 
+204: class PersonPage extends StatefulWidget {
+205:   const PersonPage({super.key, required this.id});
+206: 
+207:   final String id;
+208: 
+209:   @override
+210:   State<PersonPage> createState() => _PersonPageState();
+211: }
+212: 
+213: class _PersonPageState extends State<PersonPage> {
+214:   WearSession? _session;
+215:   JsonMap? _person;
+216:   JsonMap? _location;
+217:   bool _locationLoading = true;
+218:   bool _locationFailed = false;
+219:   List<JsonMap> _history = const [];
+220:   bool _loading = true;
+221:   Object? _error;
+222:   int _request = 0;
+223: 
+224:   @override
+225:   void didChangeDependencies() {
+226:     super.didChangeDependencies();
+227:     final session = WearScope.of(context);
+228:     if (!identical(session, _session)) {
+229:       _session = session;
+230:       _load();
+231:     }
+232:   }
+233: 
+234:   @override
+235:   void didUpdateWidget(covariant PersonPage oldWidget) {
+236:     super.didUpdateWidget(oldWidget);
+237:     if (oldWidget.id != widget.id) _load();
+238:   }
+239: 
+240:   Future<void> _load() async {
+241:     final session = _session;
+242:     if (session == null) return;
+243:     final request = ++_request;
+244:     final scopeKey = session.scopeKey;
+245:     setState(() {
+246:       _loading = true;
+247:       _error = null;
+248:       _location = null;
+249:       _locationLoading = true;
+250:       _locationFailed = false;
+251:     });
+252:     // Optional context must not block the personnel record or contact action.
+253:     _loadLocation(session, request, scopeKey);
+254:     try {
+255:       final responses = await Future.wait([
+256:         session.api.get('/api/v1/people/${widget.id}'),
+257:         session.api.get('/api/v1/people/${widget.id}/assignments'),
+258:       ]);
+259:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+260:         return;
+261:       }
+262:       setState(() {
+263:         _person = jsonMap(responses[0]);
+264:         _history = jsonList(responses[1]);
+265:         _loading = false;
+266:       });
+267:     } catch (error) {
+268:       if (error is StaleSessionException) return;
+269:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+270:         return;
+271:       }
+272:       setState(() {
+273:         _error = error;
+274:         _loading = false;
+275:       });
+276:     }
+277:   }
+278: 
+279:   Future<void> _loadLocation(
+280:     WearSession session,
+281:     int request,
+282:     String scopeKey,
+283:   ) async {
+284:     try {
+285:       final location = jsonMap(
+286:         await session.api.get('/api/v1/locations/people/${widget.id}'),
+287:       );
+288:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+289:         return;
+290:       }
+291:       setState(() {
+292:         _location = idOf(location['personId']) == widget.id ? location : null;
+293:         _locationLoading = false;
+294:       });
+295:     } catch (error) {
+296:       if (error is StaleSessionException) return;
+297:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+298:         return;
+299:       }
+300:       setState(() {
+301:         _locationLoading = false;
+302:         _locationFailed = true;
+303:       });
+304:     }
+305:   }
+306: 
+307:   @override
+308:   Widget build(BuildContext context) {
+309:     final person = _person;
+310:     return QueryPage(
+311:       title: person == null ? '人员详情' : textOf(person['name']),
+312:       body: QueryStateView(
+313:         loading: _loading,
+314:         error: _error,
+315:         empty: person == null,
+316:         onRetry: _load,
+317:         child: person == null
+318:             ? const SizedBox.shrink()
+319:             : RefreshIndicator(
+320:                 onRefresh: _load,
+321:                 child: ListView(
+322:                   padding: const EdgeInsets.all(16),
+323:                   children: [
+324:                     WearCard(
+325:                       child: Column(
+326:                         children: [
+327:                           DetailField(
+328:                             label: '人员编号',
+329:                             value: textOf(person['personCode']),
+330:                           ),
+331:                           DetailField(
+332:                             label: '状态',
+333:                             value: personStatusLabel(person['status']),
+334:                           ),
+335:                           DetailField(
+336:                             label: '班组',
+337:                             value: textOf(person['teamName']),
+338:                           ),
+339:                           DetailField(
+340:                             label: '承包商',
+341:                             value: textOf(person['contractorName']),
+342:                           ),
+343:                           DetailField(
+344:                             label: '有效期',
+345:                             value:
+346:                                 '${textOf(person['validFrom'], '不限')} 至 ${textOf(person['validTo'], '不限')}',
+347:                           ),
+348:                         ],
+349:                       ),
+350:                     ),
+351:                     const SizedBox(height: 18),
+352:                     FilledButton.icon(
+353:                       onPressed: () => context.push(
+354:                         communicationUri(personId: widget.id).toString(),
+355:                       ),
+356:                       icon: const Icon(Icons.forum_outlined),
+357:                       label: const Text('联系该人员'),
+358:                     ),
+359:                     const SizedBox(height: 18),
+360:                     _PersonSiteContext(
+361:                       personId: widget.id,
+362:                       location: _location,
+363:                       loading: _locationLoading,
+364:                       failed: _locationFailed,
+365:                     ),
+366:                     const SizedBox(height: 18),
+367:                     EquipmentPanel(personId: widget.id),
+368:                     const SizedBox(height: 22),
+369:                     QuerySection(
+370:                       title: '历史领用记录（${_history.length}）',
+371:                       children: _history
+372:                           .map(
+373:                             (item) => QueryRow(
+374:                               title:
+375:                                   '${deviceTypeLabel(item['typeCode'])} · ${textOf(item['sn'])}',
+376:                               subtitle:
+377:                                   '${formatTime(item['issuedAt'])} 至 ${item['returnedAt'] == null ? '当前' : formatTime(item['returnedAt'])}',
+378:                               onTap: () => context.push(
+379:                                 '/devices/${idOf(item['deviceId'])}',
+380:                               ),
+381:                             ),
+382:                           )
+383:                           .toList(),
+384:                     ),
+385:                   ],
+386:                 ),
+387:               ),
+388:       ),
+389:     );
+390:   }
+391: }
+392: 
+393: class _PersonSiteContext extends StatelessWidget {
+394:   const _PersonSiteContext({
+395:     required this.personId,
+396:     required this.location,
+397:     required this.loading,
+398:     required this.failed,
+399:   });
+400: 
+401:   final String personId;
+402:   final JsonMap? location;
+403:   final bool loading;
+404:   final bool failed;
+405: 
+406:   @override
+407:   Widget build(BuildContext context) {
+408:     final lat = double.tryParse(location?['lat']?.toString() ?? '');
+409:     final lng = double.tryParse(location?['lng']?.toString() ?? '');
+410:     final hasPosition =
+411:         lat != null &&
+412:         lng != null &&
+413:         lat.isFinite &&
+414:         lng.isFinite &&
+415:         lat.abs() <= 90 &&
+416:         lng.abs() <= 180;
+417:     final quality = switch (location?['locationQuality']) {
+418:       'ok' when hasPosition => '定位正常',
+419:       'stale' => '定位已陈旧',
+420:       _ => '定位状态未知',
+421:     };
+422:     return WearCard(
+423:       child: Column(
+424:         crossAxisAlignment: CrossAxisAlignment.stretch,
+425:         children: [
+426:           Row(
+427:             children: [
+428:               const Icon(Icons.location_on_outlined, color: WearColors.brand),
+429:               const SizedBox(width: 8),
+430:               const Expanded(
+431:                 child: Text(
+432:                   '现场信息',
+433:                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+434:                 ),
+435:               ),
+436:               if (location?['demo'] == true)
+437:                 const WearBadge(text: '示例数据', color: WearColors.warning),
+438:             ],
+439:           ),
+440:           const SizedBox(height: 8),
+441:           DetailField(
+442:             label: '最近定位',
+443:             value: hasPosition
+444:                 ? '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}'
+445:                 : '未知',
+446:           ),
+447:           Text(
+448:             loading
+449:                 ? '定位获取中'
+450:                 : failed
+451:                 ? '定位未获取'
+452:                 : quality,
+453:             style: const TextStyle(color: WearColors.muted, fontSize: 12),
+454:           ),
+455:           if (hasPosition)
+456:             DetailField(
+457:               label: '定位时间',
+458:               value: formatTime(location?['occurredAt']),
+459:             ),
+460:           // The current API has no task query by person. Never substitute
+461:           // the signed-in user's tasks or scan every task in the factory.
+462:           const DetailField(label: '当前作业', value: '未获取'),
+463:           Align(
+464:             alignment: Alignment.centerLeft,
+465:             child: TextButton.icon(
+466:               onPressed: () => context.push(
+467:                 Uri(
+468:                   path: '/tracks',
+469:                   queryParameters: {'personId': personId},
+470:                 ).toString(),
+471:               ),
+472:               icon: const Icon(Icons.route_outlined),
+473:               label: const Text('查看轨迹'),
+474:             ),
+475:           ),
+476:         ],
+477:       ),
+478:     );
+479:   }
+480: }
+481: 
+482: class EquipmentPanel extends StatefulWidget {
+483:   const EquipmentPanel({super.key, this.personId});
+484: 
+485:   final String? personId;
+486: 
+487:   @override
+488:   State<EquipmentPanel> createState() => _EquipmentPanelState();
+489: }
+490: 
+491: class _EquipmentPanelState extends State<EquipmentPanel> {
+492:   WearSession? _session;
+493:   List<JsonMap> _items = const [];
+494:   bool _loading = true;
+495:   Object? _error;
+496:   int _request = 0;
+497: 
+498:   @override
+499:   void didChangeDependencies() {
+500:     super.didChangeDependencies();
+501:     final session = WearScope.of(context);
+502:     if (!identical(session, _session)) {
+503:       _session = session;
+504:       _load();
+505:     }
+506:   }
+507: 
+508:   @override
+509:   void didUpdateWidget(covariant EquipmentPanel oldWidget) {
+510:     super.didUpdateWidget(oldWidget);
+511:     if (oldWidget.personId != widget.personId) _load();
+512:   }
+513: 
+514:   Future<void> _load() async {
+515:     final session = _session;
+516:     if (session == null) return;
+517:     final request = ++_request;
+518:     final scopeKey = session.scopeKey;
+519:     setState(() {
+520:       _loading = true;
+521:       _error = null;
+522:     });
+523:     try {
+524:       final path = widget.personId == null
+525:           ? '/api/v1/me/equipment'
+526:           : '/api/v1/people/${widget.personId}/equipment';
+527:       final result = jsonList(await session.api.get(path));
+528:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+529:         return;
+530:       }
+531:       setState(() {
+532:         _items = result;
+533:         _loading = false;
+534:       });
+535:     } catch (error) {
+536:       if (error is StaleSessionException) return;
+537:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+538:         return;
+539:       }
+540:       setState(() {
+541:         _error = error;
+542:         _loading = false;
+543:       });
+544:     }
+545:   }
+546: 
+547:   @override
+548:   Widget build(BuildContext context) {
+549:     return QuerySection(
+550:       title: widget.personId == null ? '我的装备' : '当前装备',
+551:       children: [
+552:         QueryStateView(
+553:           loading: _loading,
+554:           error: _error,
+555:           empty: _items.isEmpty,
+556:           onRetry: _load,
+557:           emptyTitle: '暂无领用装备',
+558:           emptyDetail: widget.personId == null ? '当前账号可能尚未关联人员档案' : null,
+559:           child: Column(
+560:             children: _items
+561:                 .map(
+562:                   (item) => Padding(
+563:                     padding: const EdgeInsets.only(bottom: 10),
+564:                     child: WearCard(
+565:                       padding: const EdgeInsets.all(12),
+566:                       child: InkWell(
+567:                         onTap: () =>
+568:                             context.push('/devices/${idOf(item['deviceId'])}'),
+569:                         child: Row(
+570:                           children: [
+571:                             WearAssetImage(
+572:                               WearArt.equipment(item['typeCode']),
+573:                               width: 88,
+574:                               height: 88,
+575:                               borderRadius: BorderRadius.circular(14),
+576:                             ),
+577:                             const SizedBox(width: 12),
+578:                             Expanded(
+579:                               child: Column(
+580:                                 crossAxisAlignment: CrossAxisAlignment.start,
+581:                                 children: [
+582:                                   Text(
+583:                                     deviceTypeLabel(item['typeCode']),
+584:                                     style: const TextStyle(
+585:                                       fontSize: 17,
+586:                                       fontWeight: FontWeight.w800,
+587:                                       color: WearColors.ink,
+588:                                     ),
+589:                                   ),
+590:                                   const SizedBox(height: 4),
+591:                                   Text(
+592:                                     textOf(item['sn']),
+593:                                     style: const TextStyle(
+594:                                       color: WearColors.muted,
+595:                                     ),
+596:                                   ),
+597:                                   const SizedBox(height: 8),
+598:                                   WearStatusDot(
+599:                                     label: connectionLabel(item),
+600:                                     color: connectionLabel(item) == '在线'
+601:                                         ? WearColors.online
+602:                                         : connectionLabel(item) == '数据陈旧'
+603:                                         ? WearColors.warning
+604:                                         : WearColors.muted,
+605:                                   ),
+606:                                   const SizedBox(height: 4),
+607:                                   Text(
+608:                                     '领用时间 ${formatTime(item['issuedAt'])}',
+609:                                     style: const TextStyle(
+610:                                       fontSize: 12,
+611:                                       color: WearColors.muted,
+612:                                     ),
+613:                                   ),
+614:                                 ],
+615:                               ),
+616:                             ),
+617:                             const Icon(
+618:                               Icons.chevron_right,
+619:                               color: WearColors.muted,
+620:                             ),
+621:                           ],
+622:                         ),
+623:                       ),
+624:                     ),
+625:                   ),
+626:                 )
+627:                 .toList(),
+628:           ),
+629:         ),
+630:       ],
+631:     );
+632:   }
+633: }

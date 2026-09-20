@@ -1,0 +1,222 @@
+1: import 'package:flutter/material.dart';
+2: import 'package:go_router/go_router.dart';
+3: 
+4: import '../core.dart';
+5: import 'query_widgets.dart';
+6: 
+7: List<JsonMap> aggregateLostSupervision(
+8:   List<JsonMap> tasks,
+9:   Map<String, List<JsonMap>> checksByTask,
+10: ) {
+11:   final people = <String, JsonMap>{};
+12:   for (final task in tasks) {
+13:     final taskId = idOf(task['id']);
+14:     for (final check in checksByTask[taskId] ?? const <JsonMap>[]) {
+15:       if (check['typeCode']?.toString() != 'helmet' ||
+16:           check['result']?.toString() == 'ok') {
+17:         continue;
+18:       }
+19:       final personId = idOf(check['personId']);
+20:       if (personId.isEmpty) continue;
+21:       final person = people.putIfAbsent(
+22:         personId,
+23:         () => <String, dynamic>{
+24:           'personId': personId,
+25:           'personName': textOf(check['personName'], '未知人员'),
+26:           'tasks': <JsonMap>[],
+27:         },
+28:       );
+29:       (person['tasks'] as List<JsonMap>).add({
+30:         'taskId': taskId,
+31:         'taskTitle': textOf(task['title']),
+32:         'result': check['result'],
+33:         'needsConfirm': check['needsConfirm'] == true,
+34:       });
+35:     }
+36:   }
+37:   return people.values.toList();
+38: }
+39: 
+40: class SupervisionPage extends StatefulWidget {
+41:   const SupervisionPage({super.key});
+42: 
+43:   @override
+44:   State<SupervisionPage> createState() => _SupervisionPageState();
+45: }
+46: 
+47: class _SupervisionPageState extends State<SupervisionPage> {
+48:   WearSession? _session;
+49:   List<JsonMap> _people = const [];
+50:   bool _loading = true;
+51:   Object? _error;
+52:   int _request = 0;
+53: 
+54:   @override
+55:   void didChangeDependencies() {
+56:     super.didChangeDependencies();
+57:     final session = WearScope.of(context);
+58:     if (!identical(session, _session)) {
+59:       _session = session;
+60:       _load();
+61:     }
+62:   }
+63: 
+64:   Future<void> _load() async {
+65:     final session = _session;
+66:     if (session == null) return;
+67:     final request = ++_request;
+68:     final scopeKey = session.scopeKey;
+69:     setState(() {
+70:       _loading = true;
+71:       _error = null;
+72:     });
+73:     try {
+74:       final tasks = <JsonMap>[];
+75:       var current = 1;
+76:       while (true) {
+77:         final page = await session.api.page(
+78:           '/api/v1/work-tasks',
+79:           current: current,
+80:           size: 100,
+81:           query: const {'status': 'in_progress'},
+82:         );
+83:         if (!mounted || request != _request || scopeKey != session.scopeKey) {
+84:           return;
+85:         }
+86:         tasks.addAll(page.records);
+87:         if (!page.hasMore || page.records.isEmpty) break;
+88:         current++;
+89:       }
+90: 
+91:       final checks = <String, List<JsonMap>>{};
+92:       const batchSize = 8;
+93:       for (var offset = 0; offset < tasks.length; offset += batchSize) {
+94:         final end = (offset + batchSize).clamp(0, tasks.length);
+95:         final batch = tasks.sublist(offset, end);
+96:         final responses = await Future.wait(
+97:           batch.map(
+98:             (task) => session.api.get(
+99:               '/api/v1/work-tasks/${idOf(task['id'])}/equipment-check',
+100:             ),
+101:           ),
+102:         );
+103:         if (!mounted || request != _request || scopeKey != session.scopeKey) {
+104:           return;
+105:         }
+106:         for (var index = 0; index < batch.length; index++) {
+107:           checks[idOf(batch[index]['id'])] = jsonList(responses[index]);
+108:         }
+109:       }
+110: 
+111:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+112:         return;
+113:       }
+114:       setState(() {
+115:         _people = aggregateLostSupervision(tasks, checks);
+116:         _loading = false;
+117:       });
+118:     } catch (error) {
+119:       if (error is StaleSessionException) return;
+120:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+121:         return;
+122:       }
+123:       setState(() {
+124:         _error = error;
+125:         _loading = false;
+126:       });
+127:     }
+128:   }
+129: 
+130:   @override
+131:   Widget build(BuildContext context) {
+132:     return QueryPage(
+133:       title: '失去监护人员',
+134:       subtitle: '汇总全部进行中作业，安全帽缺失或状态未知的人员按稳定 ID 去重。',
+135:       body: QueryStateView(
+136:         loading: _loading,
+137:         error: _error,
+138:         empty: _people.isEmpty,
+139:         onRetry: _load,
+140:         emptyTitle: '当前没有失去监护人员',
+141:         emptyDetail: '仅安全帽检查结果为“缺少”或“未知”时列入。',
+142:         child: RefreshIndicator(
+143:           onRefresh: _load,
+144:           child: ListView.builder(
+145:             padding: const EdgeInsets.all(16),
+146:             itemCount: _people.length,
+147:             itemBuilder: (context, index) {
+148:               final person = _people[index];
+149:               final tasks = jsonList(person['tasks']);
+150:               return Padding(
+151:                 padding: const EdgeInsets.only(bottom: 12),
+152:                 child: WearCard(
+153:                   padding: const EdgeInsets.fromLTRB(14, 14, 10, 8),
+154:                   child: Column(
+155:                     crossAxisAlignment: CrossAxisAlignment.stretch,
+156:                     children: [
+157:                       Row(
+158:                         children: [
+159:                           const CircleAvatar(
+160:                             backgroundColor: Color(0xFFFFF2E1),
+161:                             child: Icon(
+162:                               Icons.person_off_outlined,
+163:                               color: WearColors.warning,
+164:                             ),
+165:                           ),
+166:                           const SizedBox(width: 10),
+167:                           Expanded(
+168:                             child: Column(
+169:                               crossAxisAlignment: CrossAxisAlignment.start,
+170:                               children: [
+171:                                 Text(
+172:                                   textOf(person['personName']),
+173:                                   style: const TextStyle(
+174:                                     fontSize: 16,
+175:                                     fontWeight: FontWeight.w700,
+176:                                   ),
+177:                                 ),
+178:                                 Text(
+179:                                   '人员 ID ${idOf(person['personId'])}',
+180:                                   style: const TextStyle(
+181:                                     color: WearColors.muted,
+182:                                     fontSize: 12,
+183:                                   ),
+184:                                 ),
+185:                               ],
+186:                             ),
+187:                           ),
+188:                           WearBadge(
+189:                             text: '${tasks.length} 项作业',
+190:                             color: WearColors.warning,
+191:                           ),
+192:                         ],
+193:                       ),
+194:                       const Divider(height: 22),
+195:                       for (final task in tasks)
+196:                         ListTile(
+197:                           contentPadding: EdgeInsets.zero,
+198:                           dense: true,
+199:                           title: Text(textOf(task['taskTitle'])),
+200:                           subtitle: Text(_reason(task)),
+201:                           trailing: const Icon(Icons.chevron_right),
+202:                           onTap: () =>
+203:                               context.push('/tasks/${idOf(task['taskId'])}'),
+204:                         ),
+205:                     ],
+206:                   ),
+207:                 ),
+208:               );
+209:             },
+210:           ),
+211:         ),
+212:       ),
+213:     );
+214:   }
+215: 
+216:   String _reason(JsonMap task) {
+217:     final reason = task['result']?.toString() == 'missing'
+218:         ? '缺少安全帽'
+219:         : '安全帽设备或遥测状态未知';
+220:     return task['needsConfirm'] == true ? '$reason · 需人工确认' : reason;
+221:   }
+222: }

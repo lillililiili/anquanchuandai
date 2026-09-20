@@ -1,12 +1,10 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core.dart';
 import 'notifications.dart';
 import 'package:flutter/services.dart';
-import 'queries/queries.dart';
+import 'queries/my_equipment_page.dart';
 
 class WearMinePage extends StatefulWidget {
   final WearNotifications notifications;
@@ -17,114 +15,15 @@ class WearMinePage extends StatefulWidget {
 
 class _WearMinePageState extends State<WearMinePage> {
   WearSession? _session;
-  List<JsonMap> _handovers = [];
-  String? _error, _confirming;
-  bool _loading = false;
-  int _request = 0;
-  final _detailTick = ValueNotifier<int>(0);
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final session = WearScope.of(context);
-    if (_session != session) {
-      _session?.refreshTick.removeListener(_refresh);
-      _session = session;
-      session.refreshTick.addListener(_refresh);
-      Future.microtask(_load);
-    }
-  }
-
-  void _refresh() {
-    unawaited(_load());
+    _session = WearScope.of(context);
   }
 
   Future<void> _load() async {
-    final request = ++_request;
-    if (!mounted) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    _detailTick.value++;
-    try {
-      final rows = jsonList(await _session!.api.get('/api/v1/duty/handovers'));
-      if (mounted && request == _request) setState(() => _handovers = rows);
-    } catch (e) {
-      if (mounted && request == _request && e is! StaleSessionException) {
-        setState(() => _error = e.toString());
-      }
-    } finally {
-      if (mounted && request == _request) {
-        setState(() => _loading = false);
-        _detailTick.value++;
-      }
-    }
-  }
-
-  Future<void> _confirm(JsonMap handover) async {
-    if (_confirming != null) return;
-    final approved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认接班'),
-        content: Text(
-          '确认接收 ${textOf(handover['fromUserName'])} 的交接责任？确认后请及时查看相关事件与作业。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('暂不接班'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('确认接班'),
-          ),
-        ],
-      ),
-    );
-    if (approved != true || !mounted) return;
-    setState(() => _confirming = idOf(handover['id']));
-    _detailTick.value++;
-    try {
-      await _session!.api.post(
-        '/api/v1/duty/handovers/$_confirming/confirm',
-        data: {},
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('接班已确认，请查看待处理事项')));
-      }
-      _session!.requestRefresh();
-    } catch (e) {
-      if (mounted && e is! StaleSessionException) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _confirming = null);
-        _detailTick.value++;
-      }
-    }
-  }
-
-  String _payloadSummary(JsonMap row) {
-    try {
-      final payload = jsonMap(jsonDecode(textOf(row['payloadJson'], '{}')));
-      return '${(payload['eventIds'] as List? ?? []).length} 条事件 · ${(payload['taskIds'] as List? ?? []).length} 项作业';
-    } catch (_) {
-      return '交接内容请查看工作台';
-    }
-  }
-
-  @override
-  void dispose() {
-    _request++;
-    _detailTick.dispose();
-    _session?.refreshTick.removeListener(_refresh);
-    super.dispose();
+    _session?.requestRefresh();
+    if (mounted) setState(() {});
   }
 
   static const _blue = Color(0xFF008FFF);
@@ -161,11 +60,7 @@ class _WearMinePageState extends State<WearMinePage> {
             ),
           ),
           body: AnimatedBuilder(
-            animation: Listenable.merge([
-              _detailTick,
-              widget.notifications,
-              _session!,
-            ]),
+            animation: Listenable.merge([widget.notifications, _session!]),
             builder: (ctx, _) => SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: SizedBox(width: double.infinity, child: contents(ctx)),
@@ -224,29 +119,25 @@ class _WearMinePageState extends State<WearMinePage> {
               child: Column(
                 children: [
                   SizedBox(
-                    height:
-                        (225 +
-                            (MediaQuery.textScalerOf(context).scale(1) - 1)
-                                    .clamp(0, 2) *
-                                110) *
-                        unit,
+                    key: const ValueKey('wear-page-hero-mine'),
+                    height: WearHeaderLayout.height(context),
                     child: Stack(
                       children: [
                         Positioned.fill(
                           child: Image.asset(
                             'assets/field-brand/preview/mine_reference_hero.png',
                             fit: BoxFit.cover,
-                            alignment: Alignment.bottomCenter,
+                            alignment: Alignment.center,
                           ),
                         ),
                         Positioned(
-                          top: 16 * unit,
-                          left: 22 * unit,
+                          top: 12,
+                          left: 16,
                           child: const WearRollingWordmark(height: 25),
                         ),
                         Positioned(
-                          top: 8 * unit,
-                          right: 16 * unit,
+                          top: 0,
+                          right: 16,
                           width: 140 * unit,
                           child: Tooltip(
                             message: session.callActive.value
@@ -273,7 +164,7 @@ class _WearMinePageState extends State<WearMinePage> {
                                       session.siteName,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 11 * unit),
+                                      style: TextStyle(fontSize: 11),
                                     ),
                                   ),
                                   Icon(Icons.expand_more, size: 16 * unit),
@@ -283,57 +174,43 @@ class _WearMinePageState extends State<WearMinePage> {
                           ),
                         ),
                         Positioned(
-                          left: 23 * unit,
-                          top: 65 * unit,
-                          width: 171 * unit,
-                          bottom: 8 * unit,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '我的',
-                                style: TextStyle(
-                                  fontSize: 34 * unit,
-                                  height: 1.15,
-                                  fontWeight: FontWeight.w900,
-                                  color: _ink,
+                          left: 16,
+                          top: 32,
+                          width: constraints.maxWidth * .46,
+                          bottom: 12,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '你好，$name！',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: WearHeaderLayout.titleSize,
+                                    height: 1.15,
+                                    fontWeight: FontWeight.w800,
+                                    color: WearColors.ink,
+                                  ),
                                 ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                '你好，',
-                                style: TextStyle(
-                                  fontSize: 16 * unit,
-                                  height: 1.25,
-                                  fontWeight: FontWeight.w600,
-                                  color: _ink,
+                                const SizedBox(height: 6),
+                                const Text(
+                                  '安全作业，平安每一天！',
+                                  style: TextStyle(
+                                    fontSize: WearHeaderLayout.subtitleSize,
+                                    height: 1.35,
+                                    color: WearColors.muted,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '$name！',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 23 * unit,
-                                  height: 1.3,
-                                  fontWeight: FontWeight.w800,
-                                  color: _ink,
-                                ),
-                              ),
-                              SizedBox(height: 7 * unit),
-                              Text(
-                                '安全作业，平安每一天！',
-                                style: TextStyle(
-                                  fontSize: 11 * unit,
-                                  color: _muted,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                         Positioned(
                           right: 7 * unit,
-                          top: 117 * unit,
+                          top: 88,
                           child: Transform.rotate(
                             angle: -0.16,
                             child: Text(
@@ -342,7 +219,7 @@ class _WearMinePageState extends State<WearMinePage> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: _blue,
-                                fontSize: 13 * unit,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 height: 1.3,
                               ),
@@ -430,7 +307,7 @@ class _WearMinePageState extends State<WearMinePage> {
                                         ),
                                         const SizedBox(height: 3),
                                         Text(
-                                          'SIP / Agora兼容性待验证',
+                                          '接警连接、通知权限与设备绑定',
                                           style: TextStyle(
                                             fontSize: 10.5 * unit,
                                             color: _muted,
@@ -452,7 +329,7 @@ class _WearMinePageState extends State<WearMinePage> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Text(
-                                      '!  待联调',
+                                      '查看状态',
                                       style: TextStyle(
                                         color: Color(0xFFF39800),
                                         fontSize: 12,
@@ -479,17 +356,17 @@ class _WearMinePageState extends State<WearMinePage> {
                                 Icons.safety_check,
                                 const Color(0xFF00BC75),
                                 '我的装备',
-                                () => _openDetail(
-                                  '我的装备',
-                                  (_) => const EquipmentPanel(),
+                                () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const MyEquipmentPage(),
+                                  ),
                                 ),
                               ),
                               _menuRow(
                                 Icons.settings,
                                 const Color(0xFF9256F8),
                                 '设置',
-                                () =>
-                                    _openDetail('设置', (ctx) => _settings(ctx)),
+                                () => context.push('/settings'),
                               ),
                               _menuRow(
                                 Icons.chat,
@@ -683,34 +560,6 @@ class _WearMinePageState extends State<WearMinePage> {
     ),
   );
 
-  Widget _settings(BuildContext ctx) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      _surface(
-        ListTile(
-          leading: const Icon(Icons.factory_outlined),
-          title: const Text('切换厂站'),
-          trailing: const Icon(Icons.chevron_right),
-          enabled: !_session!.callActive.value,
-          onTap: _session!.callActive.value
-              ? null
-              : () {
-                  Navigator.of(ctx).pop();
-                  context.go('/sites');
-                },
-        ),
-      ),
-      const SizedBox(height: 16),
-      _handoverCard(),
-      const SizedBox(height: 16),
-      const Text(
-        '智能穿戴管理平台 1.3.0',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: _muted, fontSize: 12),
-      ),
-    ],
-  );
-
   Widget _help(BuildContext ctx) => _surface(
     Padding(
       padding: const EdgeInsets.all(18),
@@ -813,78 +662,6 @@ class _WearMinePageState extends State<WearMinePage> {
       ),
     ),
   );
-
-  Widget _handoverCard() {
-    final session = _session!;
-    return WearCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  '值班交接',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-              ),
-              IconButton(
-                tooltip: '刷新交接',
-                onPressed: _loading ? null : _load,
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
-          if (_loading) const LinearProgressIndicator(),
-          if (_error != null)
-            WearEmpty(title: '交接加载失败', detail: _error, onRetry: _load)
-          else if (_handovers.isEmpty && !_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14),
-              child: Text('暂无交接记录', style: TextStyle(color: WearColors.muted)),
-            )
-          else
-            for (final row in _handovers)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${textOf(row['fromUserName'])} → ${textOf(row['toUserName'])}',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    Text(
-                      '${_payloadSummary(row)}\n${formatTime(row['createTime'])}',
-                      style: const TextStyle(
-                        color: WearColors.muted,
-                        height: 1.6,
-                      ),
-                    ),
-                    if (textOf(row['comment'], '').isNotEmpty)
-                      Text(textOf(row['comment'])),
-                    const SizedBox(height: 8),
-                    WearBadge(
-                      text: row['status'] == 'confirmed' ? '已接班' : '待接班',
-                    ),
-                    if (row['status'] == 'pending' &&
-                        idOf(row['toUserId']) == session.userId &&
-                        session.isDuty)
-                      FilledButton(
-                        onPressed: _confirming != null
-                            ? null
-                            : () => _confirm(row),
-                        child: Text(
-                          _confirming == idOf(row['id']) ? '正在确认…' : '确认接班',
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-        ],
-      ),
-    );
-  }
 }
 
 class _MineHelmetPainter extends CustomPainter {

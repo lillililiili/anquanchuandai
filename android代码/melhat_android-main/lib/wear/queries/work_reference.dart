@@ -82,16 +82,20 @@ class TaskReferenceView extends StatelessWidget {
     required this.onGuardian,
     required this.details,
     required this.equipmentDetails,
+    this.memberEquipment = const {},
     this.preview = false,
+    this.onManageMembers,
   });
   final JsonMap task;
   final List<JsonMap> equipment, events;
+  final Map<String, List<JsonMap>?> memberEquipment;
   final String owner, guardian;
   final VoidCallback onBack, onGuardian;
   final Future<void> Function() onRefresh;
   final void Function(JsonMap) onPerson, onEvent;
   final Widget details, equipmentDetails;
   final bool preview;
+  final VoidCallback? onManageMembers;
   static const ink = Color(0xFF101F43),
       muted = Color(0xFF6B88AF),
       blue = Color(0xFF008BFF);
@@ -154,7 +158,6 @@ class TaskReferenceView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = MediaQuery.textScalerOf(context).scale(1);
     final members = jsonList(task['members']);
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -163,7 +166,8 @@ class TaskReferenceView extends StatelessWidget {
         child: Column(
           children: [
             SizedBox(
-              height: 168 + (scale - 1).clamp(0, 2) * 52,
+              key: const ValueKey('wear-page-hero-task'),
+              height: WearHeaderLayout.height(context),
               child: Stack(
                 children: [
                   Positioned.fill(
@@ -205,15 +209,15 @@ class TaskReferenceView extends StatelessWidget {
                   ),
                   Positioned(
                     left: 18,
-                    top: 61,
-                    right: 160,
+                    top: 60,
+                    right: 150,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           '作业详情',
                           style: TextStyle(
-                            fontSize: 31,
+                            fontSize: WearHeaderLayout.titleSize,
                             fontWeight: FontWeight.w900,
                             color: ink,
                             height: 1.15,
@@ -331,7 +335,24 @@ class TaskReferenceView extends StatelessWidget {
                   _card(
                     Column(
                       children: [
-                        _heading(Icons.groups, '参与人员 · ${members.length} 人'),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _heading(
+                                Icons.groups,
+                                '参与人员 · ${members.length} 人',
+                              ),
+                            ),
+                            if (onManageMembers != null)
+                              TextButton(
+                                onPressed: onManageMembers,
+                                child: const Text(
+                                  '调整人员',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                          ],
+                        ),
                         _line(),
                         if (members.isEmpty)
                           const Padding(
@@ -527,15 +548,28 @@ class TaskReferenceView extends StatelessWidget {
   }
 
   Widget _memberStatus(JsonMap person, String type) {
-    final items = equipment.where(
+    final previewItems = equipment.where(
       (e) =>
           idOf(e['personId']) == idOf(person['personId']) &&
           e['typeCode'] == type,
     );
-    final result = items.isEmpty ? null : items.first['result'];
-    final color = result == 'ok'
+    final result = previewItems.isEmpty ? null : previewItems.first['result'];
+    final state = preview
+        ? (result == 'ok'
+              ? '正常'
+              : result == 'missing'
+              ? '缺少'
+              : result == null
+              ? '未关联'
+              : '待核验')
+        : taskMemberDeviceStatus(
+            memberEquipment[idOf(person['personId'])],
+            type,
+          );
+    final normal = state == '在线' || (preview && state == '正常');
+    final color = normal
         ? const Color(0xFF00BE95)
-        : result == null
+        : ['未关联', '状态未知', '离线', '未获取'].contains(state)
         ? muted
         : const Color(0xFFFFA000);
     final label = switch (type) {
@@ -543,14 +577,6 @@ class TaskReferenceView extends StatelessWidget {
       'belt' => '带',
       _ => '表',
     };
-    // Equipment-check verifies readiness, not a live connectivity feed.
-    final state = result == 'ok'
-        ? '正常'
-        : result == 'missing'
-        ? '缺少'
-        : result == null
-        ? '未关联'
-        : '待核验';
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -561,11 +587,30 @@ class TaskReferenceView extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           '$label$state',
-          style: TextStyle(fontSize: 11, color: result == 'ok' ? muted : color),
+          style: TextStyle(fontSize: 11, color: normal ? muted : color),
         ),
       ],
     );
   }
+}
+
+/// Missing requests, unassigned equipment and stale telemetry are distinct.
+/// When several devices of one type exist, surface a problem before "online".
+String taskMemberDeviceStatus(List<JsonMap>? assignments, String type) {
+  if (assignments == null) return '未获取';
+  final devices = assignments.where((device) => device['typeCode'] == type);
+  if (devices.isEmpty) return '未关联';
+  final states = devices.map((device) {
+    final connection = connectionLabel(device);
+    if (connection != '在线') return connection;
+    final status = device['simulationStatus']?.toString();
+    if (status != null && status.isNotEmpty && status != 'normal') {
+      final label = device['simulationStatusLabel']?.toString().trim();
+      return label != null && label.isNotEmpty ? label : '异常';
+    }
+    return connection;
+  }).toList();
+  return states.firstWhere((state) => state != '在线', orElse: () => '在线');
 }
 
 class _EquipmentGlyph extends CustomPainter {

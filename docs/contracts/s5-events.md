@@ -43,12 +43,15 @@ ID 为字符串。时间 ISO-8601 `+08:00`。`demo: true` 不得当作真实接�
 | `type` | `sos` `fall` `impact` `geofence` `realtime` |
 | `severity` | 由类型决定：`sos`/`fall`/`impact` → `high`；`geofence`/`realtime` → `low`。客户端不能改 |
 | `status` | `open` `claimed` `handling` `pending_review` `closed` |
+| `alarmCode` | 核心系统保存的具体告警编码，如 `helmet.fence_exit`、`belt.unhooked`；可空。不是处置状态，也不是来源事件编号 |
+| `alarmName` | 发生时的具体告警名称，由来源系统／核心场景数据提供；可空，最长255字符。客户端不按大类或来源编号猜测名称 |
+| `alarmDescription` | 发生时的告警说明，可包含后端记录的测量值；可空，最长1000字符 |
 | 人员/设备/厂站 | **发生时刻**快照。换绑不改历史。无领用则人员为空，禁止用当前绑定人回填 |
 | `locationQuality` | `unknown` / `stale` / `ok`。位置缺失不阻断事件 |
 | `source` | `simulator` / `legacy_sos` / `legacy_realtime` / `legacy_fence`；日后 `helmet` |
 | `sourceEventId` | 与 `source` 组成业务唯一键。重复入库不新建，只增加 `repeatCount` |
 
-动作时间线项：`id, action, actor, reason, fromStatus, toStatus, createTime`。  
+动作时间线项：`id, action, actor, reason, fromStatus, toStatus, createTime`。
 `action`：`ack` `claim` `handle` `transfer` `review` `close` `reopen` `escalate`。
 
 ## 2 状态机

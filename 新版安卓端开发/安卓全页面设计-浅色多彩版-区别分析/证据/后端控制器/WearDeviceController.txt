@@ -1,0 +1,97 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.List;
+4: import java.util.Map;
+5: import org.springframework.beans.factory.annotation.Autowired;
+6: import org.springframework.web.bind.annotation.GetMapping;
+7: import org.springframework.web.bind.annotation.PathVariable;
+8: import org.springframework.web.bind.annotation.PostMapping;
+9: import org.springframework.web.bind.annotation.PutMapping;
+10: import org.springframework.web.bind.annotation.RequestBody;
+11: import org.springframework.web.bind.annotation.RequestMapping;
+12: import org.springframework.web.bind.annotation.RequestParam;
+13: import org.springframework.web.bind.annotation.RestController;
+14: import com.ruoyi.common.core.domain.R;
+15: import com.ruoyi.wear.common.WearPage;
+16: import com.ruoyi.wear.device.DeviceService;
+17: import com.ruoyi.wear.device.dto.DeviceDto;
+18: import com.ruoyi.wear.device.dto.DeviceWriteRequest;
+19: import com.ruoyi.wear.helmet.HelmetQueryService;
+20: 
+21: @RestController
+22: @RequestMapping("/api/v1/devices")
+23: public class WearDeviceController
+24: {
+25:     @Autowired
+26:     private DeviceService deviceService;
+27:     @Autowired
+28:     private HelmetQueryService helmetQueryService;
+29: 
+30:     @GetMapping
+31:     public R<WearPage<DeviceDto>> page(
+32:             @RequestParam(defaultValue = "1") int current,
+33:             @RequestParam(defaultValue = "10") int size,
+34:             @RequestParam(required = false) String typeCode,
+35:             @RequestParam(required = false) String modelId,
+36:             @RequestParam(required = false) String sn,
+37:             @RequestParam(required = false) String assetStatus)
+38:     {
+39:         return R.ok(deviceService.page(current, size, typeCode, modelId, sn, assetStatus));
+40:     }
+41: 
+42:     @GetMapping("/legacy-preview")
+43:     public R<List<Map<String, String>>> legacyPreview()
+44:     {
+45:         return R.ok(deviceService.legacyPreview());
+46:     }
+47: 
+48:     @GetMapping("/{id}")
+49:     public R<DeviceDto> detail(@PathVariable Long id)
+50:     {
+51:         return R.ok(deviceService.detail(id));
+52:     }
+53: 
+54:     @GetMapping("/{id}/samples")
+55:     public R<List<Map<String, Object>>> samples(@PathVariable Long id)
+56:     {
+57:         return R.ok(helmetQueryService.samples(id));
+58:     }
+59: 
+60:     @GetMapping("/{id}/ingest")
+61:     public R<List<Map<String, Object>>> ingest(@PathVariable Long id)
+62:     {
+63:         return R.ok(helmetQueryService.ingest(id));
+64:     }
+65: 
+66:     @PostMapping
+67:     public R<DeviceDto> create(@RequestBody DeviceWriteRequest request)
+68:     {
+69:         return R.ok(deviceService.create(request));
+70:     }
+71: 
+72:     @PutMapping("/{id}")
+73:     public R<DeviceDto> update(@PathVariable Long id, @RequestBody DeviceWriteRequest request)
+74:     {
+75:         return R.ok(deviceService.update(id, request));
+76:     }
+77: 
+78:     @PutMapping("/{id}/site")
+79:     public R<DeviceDto> assignSite(@PathVariable Long id, @RequestBody Map<String, Object> body)
+80:     {
+81:         String siteId = body.get("siteId") == null ? null : String.valueOf(body.get("siteId"));
+82:         if (siteId != null && ("null".equals(siteId) || siteId.trim().isEmpty()))
+83:         {
+84:             siteId = null;
+85:         }
+86:         Integer version = body.get("version") == null ? null : Integer.valueOf(String.valueOf(body.get("version")));
+87:         return R.ok(deviceService.assignSite(id, siteId, version));
+88:     }
+89: 
+90:     @PutMapping("/{id}/asset-status")
+91:     public R<DeviceDto> changeAssetStatus(@PathVariable Long id, @RequestBody Map<String, Object> body)
+92:     {
+93:         String status = body.get("assetStatus") == null ? null : String.valueOf(body.get("assetStatus"));
+94:         Integer version = body.get("version") == null ? null : Integer.valueOf(String.valueOf(body.get("version")));
+95:         return R.ok(deviceService.changeAssetStatus(id, status, version));
+96:     }
+97: }

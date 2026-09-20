@@ -249,11 +249,140 @@ class _TaskPageState extends State<TaskPage> {
   WearSession? _session;
   JsonMap? _task;
   List<JsonMap> _equipment = const [];
+  Map<String, List<JsonMap>?> _memberEquipment = const {};
   List<JsonMap> _events = const [];
   bool _loading = true;
   Object? _error;
   int _request = 0;
   bool _preview = false;
+  bool _editingMembers = false;
+
+  Future<void> _manageMembers() async {
+    final session = _session!;
+    final scope = session.scopeKey;
+    if (_editingMembers || _preview) return;
+    setState(() => _editingMembers = true);
+    try {
+      final people = <JsonMap>[];
+      for (var page = 1; ; page++) {
+        final result = await session.api.page(
+          '/api/v1/people',
+          current: page,
+          size: 100,
+        );
+        people.addAll(result.records);
+        if (result.records.isEmpty || people.length >= result.total) break;
+      }
+      if (!mounted || scope != session.scopeKey) return;
+      final previous = jsonList(
+        _task?['members'],
+      ).map((p) => idOf(p['personId'])).toSet();
+      final selected = {...previous};
+      var query = '';
+      final approved = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, update) => SafeArea(
+            child: SizedBox(
+              height: MediaQuery.sizeOf(ctx).height * .75,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      '调整作业人员',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '保存后同步业务作业成员，并用于通讯中的作业组筛选。',
+                      style: TextStyle(fontSize: 12, color: WearColors.muted),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: '搜索姓名或工号',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (v) => update(() => query = v.trim()),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          for (final person in people.where(
+                            (p) =>
+                                (p['status'] == null ||
+                                    idOf(p['status']) == '0' ||
+                                    previous.contains(idOf(p['id']))) &&
+                                '${p['name']} ${p['personCode']}'.contains(
+                                  query,
+                                ),
+                          ))
+                            CheckboxListTile(
+                              value: selected.contains(idOf(person['id'])),
+                              title: Text(textOf(person['name'])),
+                              subtitle: Text(textOf(person['personCode'])),
+                              onChanged: (v) => update(() {
+                                if (v == true) {
+                                  selected.add(idOf(person['id']));
+                                } else {
+                                  selected.remove(idOf(person['id']));
+                                }
+                              }),
+                            ),
+                        ],
+                      ),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text('保存 · ${selected.length} 人'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      if (approved != true || !mounted || scope != session.scopeKey) return;
+      final added = selected.difference(previous).toList();
+      if (added.isNotEmpty) {
+        await session.api.post(
+          '/api/v1/work-tasks/${widget.id}/members',
+          data: {'personIds': added},
+        );
+      }
+      for (final id in previous.difference(selected)) {
+        if (scope != session.scopeKey) return;
+        await session.api.delete('/api/v1/work-tasks/${widget.id}/members/$id');
+      }
+      if (mounted && scope == session.scopeKey) {
+        session.requestRefresh();
+        await _load();
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('作业人员已更新')));
+        }
+      }
+    } catch (e) {
+      if (mounted && scope == session.scopeKey) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('人员调整未全部完成，请核对刷新后的名单：$e')));
+        session.requestRefresh();
+        await _load();
+      }
+    } finally {
+      if (mounted) setState(() => _editingMembers = false);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -284,12 +413,41 @@ class _TaskPageState extends State<TaskPage> {
         session.api.get('/api/v1/work-tasks/${widget.id}/equipment-check'),
         session.api.get('/api/v1/work-tasks/${widget.id}/events'),
       ]);
+      final task = jsonMap(results[0]);
+      final memberEquipment = <String, List<JsonMap>?>{};
+      final people = jsonList(task['members'])
+          .map((person) => idOf(person['personId']))
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+      // Read ownership and telemetry from the business API, independently of
+      // the work readiness check. A failed read must not imply no equipment.
+      for (var start = 0; start < people.length; start += 6) {
+        await Future.wait(
+          people.skip(start).take(6).map((id) async {
+            try {
+              memberEquipment[id] = await loadEquipmentWithTelemetry(
+                session.api,
+                '/api/v1/people/${Uri.encodeComponent(id)}/equipment',
+              );
+            } on StaleSessionException {
+              rethrow;
+            } catch (_) {
+              memberEquipment[id] = null;
+            }
+          }),
+        );
+        if (!mounted || request != _request || scopeKey != session.scopeKey) {
+          return;
+        }
+      }
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
         return;
       }
       setState(() {
-        _task = jsonMap(results[0]);
+        _task = task;
         _equipment = jsonList(results[1]);
+        _memberEquipment = memberEquipment;
         _events = jsonList(results[2]);
         _loading = false;
       });
@@ -379,6 +537,7 @@ class _TaskPageState extends State<TaskPage> {
         child: TaskReferenceView(
           task: task,
           equipment: _equipment,
+          memberEquipment: _memberEquipment,
           events: _events,
           owner: workOwnerLabel(task, _session!),
           guardian: workGuardianLabel(task),
@@ -409,6 +568,15 @@ class _TaskPageState extends State<TaskPage> {
             }
           },
           onGuardian: _contactGuardian,
+          onManageMembers:
+              !_preview &&
+                  !_editingMembers &&
+                  task['status'] != 'ended' &&
+                  (_session!.isDuty ||
+                      _session!.me?['admin'] == true ||
+                      _session!.hasRole('wear_platform_admin'))
+              ? _manageMembers
+              : null,
           details: Column(
             children: [
               DetailField(label: '状态', value: taskStatusLabel(task['status'])),

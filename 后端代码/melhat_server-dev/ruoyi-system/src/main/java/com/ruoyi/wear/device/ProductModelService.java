@@ -128,7 +128,8 @@ public class ProductModelService
             throw new ServiceException("型号编码、名称、类型和厂商不能为空", HttpStatus.BAD_REQUEST);
         }
         if (StringUtils.isNotEmpty(request.getTypeCode())
-                && !"helmet".equals(request.getTypeCode()) && !"belt".equals(request.getTypeCode()))
+                && !"helmet".equals(request.getTypeCode()) && !"belt".equals(request.getTypeCode())
+                && !"watch".equals(request.getTypeCode()))
         {
             throw new ServiceException("产品类型无效", HttpStatus.BAD_REQUEST);
         }

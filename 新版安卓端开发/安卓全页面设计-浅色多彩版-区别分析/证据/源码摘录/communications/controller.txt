@@ -1,0 +1,663 @@
+1: import 'dart:async';
+2: import 'dart:math';
+3: 
+4: import 'package:flutter/foundation.dart';
+5: 
+6: import 'models.dart';
+7: import 'policy.dart';
+8: import 'rtc_engine.dart';
+9: 
+10: abstract interface class CommunicationsGateway {
+11:   Future<StartedCall> startCall({
+12:     required String deviceId,
+13:     required String kind,
+14:     required bool video,
+15:     required String idempotencyKey,
+16:     String? eventId,
+17:   });
+18:   Future<CallSession> callDetails(String callId);
+19:   Future<RtcCredentials> credentialsFor(String callId);
+20:   Future<CallSession> markJoined(String callId, String uid);
+21:   Future<CallSession> endCall(String callId);
+22:   Future<List<TtsCommand>> sendTts({
+23:     required List<String> deviceIds,
+24:     required String text,
+25:     required String idempotencyKey,
+26:     String? eventId,
+27:   });
+28: }
+29: 
+30: enum WearRtcPhase { idle, joining, localJoined, demo, failed }
+31: 
+32: class CommunicationsController extends ChangeNotifier {
+33:   CommunicationsController({
+34:     required this.gateway,
+35:     required this.rtc,
+36:     required String userId,
+37:     required Set<String> permissions,
+38:   }) : policy = CommunicationsPolicy(userId: userId, permissions: permissions);
+39: 
+40:   final CommunicationsGateway gateway;
+41:   final WearRtcEngine rtc;
+42:   final CommunicationsPolicy policy;
+43:   final Random _random = Random.secure();
+44: 
+45:   CommunicationDevice? selectedDevice;
+46:   CallSession? activeCall;
+47:   WearRtcPhase rtcPhase = WearRtcPhase.idle;
+48:   String statusMessage = '';
+49:   String ttsText = '';
+50:   String ttsMessage = '';
+51:   bool busy = false;
+52:   bool ttsBusy = false;
+53:   bool microphoneMuted = false;
+54:   bool remotePresent = false;
+55:   int? remoteUid;
+56: 
+57:   bool _disposed = false;
+58:   bool _foreground = true;
+59:   bool _serverStateFresh = true;
+60:   bool _rtcActive = false;
+61:   bool _sessionOperationPending = false;
+62:   bool _ending = false;
+63:   int _operationGeneration = 0;
+64:   int _callGeneration = 0;
+65:   int _pollRequestGeneration = 0;
+66:   Timer? _pollTimer;
+67:   Future<void>? _pollInFlight;
+68:   int? _pollInFlightCallGeneration;
+69:   String? _pollInFlightCallId;
+70:   Completer<void>? _joinOutcome;
+71:   int? _joinOutcomeOperation;
+72:   Future<void>? _termination;
+73:   bool _notifierDisposed = false;
+74: 
+75:   bool get isConnected =>
+76:       _foreground &&
+77:       _serverStateFresh &&
+78:       _rtcActive &&
+79:       rtcPhase == WearRtcPhase.localJoined &&
+80:       remotePresent &&
+81:       activeCall?.isConnected == true;
+82: 
+83:   bool get hasActiveOwnedSession =>
+84:       _sessionOperationPending ||
+85:       (activeCall != null &&
+86:           policy.owns(activeCall!) &&
+87:           !activeCall!.isTerminal);
+88: 
+89:   void selectDevice(CommunicationDevice? device) {
+90:     if (_disposed) return;
+91:     selectedDevice = device;
+92:     _notify();
+93:   }
+94: 
+95:   Future<void> startCall({
+96:     bool video = false,
+97:     String? eventId,
+98:     String kind = 'single',
+99:   }) async {
+100:     if (_sessionOperationPending || busy || hasActiveOwnedSession) {
+101:       statusMessage = '请先结束当前通话';
+102:       _notify();
+103:       return;
+104:     }
+105:     final device = selectedDevice;
+106:     if (device == null) {
+107:       statusMessage = '请先选择人员装备';
+108:       _notify();
+109:       return;
+110:     }
+111:     if (video ? !policy.canStartVideo(device) : !policy.canStartVoice(device)) {
+112:       statusMessage = video ? '该设备不支持视频通话或当前账号无权限' : '该设备不支持通话或当前账号无权限';
+113:       _notify();
+114:       return;
+115:     }
+116: 
+117:     final operation = _beginSessionOperation('正在创建通话…');
+118:     try {
+119:       final started = await gateway.startCall(
+120:         deviceId: device.id,
+121:         eventId: eventId,
+122:         kind: kind,
+123:         video: video,
+124:         idempotencyKey: _idempotencyKey('call'),
+125:       );
+126:       if (!_acceptsOperation(operation)) return;
+127:       _replaceActiveCall(started.session, fresh: true);
+128:       _schedulePolling();
+129:       if (started.session.demo || started.credentials?.demo == true) {
+130:         rtcPhase = WearRtcPhase.demo;
+131:         statusMessage = '演示会话已建立，未连接真实设备';
+132:         return;
+133:       }
+134:       if (!policy.canJoin(started.session)) {
+135:         statusMessage = policy.owns(started.session)
+136:             ? started.session.statusLabel
+137:             : '仅发起人可以加入该通话';
+138:         return;
+139:       }
+140:       var credentials = started.credentials;
+141:       if (credentials == null) {
+142:         credentials = await gateway.credentialsFor(started.session.id);
+143:         if (!_acceptsCallOperation(operation, started.session.id)) return;
+144:       }
+145:       await _join(operation, started.session, credentials);
+146:       if (!_acceptsCallOperation(operation, started.session.id)) return;
+147:     } on RtcOperationCancelled {
+148:       if (_acceptsOperation(operation)) {
+149:         rtcPhase = WearRtcPhase.idle;
+150:         statusMessage = '通话加入已取消';
+151:       }
+152:     } on RtcPermissionDenied catch (error) {
+153:       if (!_acceptsOperation(operation)) return;
+154:       rtcPhase = WearRtcPhase.failed;
+155:       statusMessage = error.video ? '请允许麦克风和摄像头权限后重试' : '请允许麦克风权限后重试';
+156:     } catch (error) {
+157:       if (!_acceptsOperation(operation)) return;
+158:       rtcPhase = WearRtcPhase.failed;
+159:       statusMessage = _errorMessage(error, '通话建立失败');
+160:     } finally {
+161:       _finishSessionOperation(operation);
+162:     }
+163:   }
+164: 
+165:   Future<void> resumeCall(CallSession session) async {
+166:     if (_sessionOperationPending || busy || hasActiveOwnedSession) {
+167:       statusMessage = '请先结束当前通话';
+168:       _notify();
+169:       return;
+170:     }
+171:     if (!policy.canJoin(session)) {
+172:       statusMessage = session.demo ? '演示会话不连接真实 RTC' : '仅发起人可加入待接通会话';
+173:       _notify();
+174:       return;
+175:     }
+176: 
+177:     final operation = _beginSessionOperation('正在读取通话凭证…');
+178:     _replaceActiveCall(session, fresh: true);
+179:     _schedulePolling();
+180:     try {
+181:       final credentials = await gateway.credentialsFor(session.id);
+182:       if (!_acceptsCallOperation(operation, session.id)) return;
+183:       await _join(operation, session, credentials);
+184:       if (!_acceptsCallOperation(operation, session.id)) return;
+185:     } on RtcOperationCancelled {
+186:       if (_acceptsOperation(operation)) {
+187:         rtcPhase = WearRtcPhase.idle;
+188:         statusMessage = '通话加入已取消';
+189:       }
+190:     } on RtcPermissionDenied catch (error) {
+191:       if (!_acceptsOperation(operation)) return;
+192:       rtcPhase = WearRtcPhase.failed;
+193:       statusMessage = error.video ? '请允许麦克风和摄像头权限后重试' : '请允许麦克风权限后重试';
+194:     } catch (error) {
+195:       if (!_acceptsOperation(operation)) return;
+196:       rtcPhase = WearRtcPhase.failed;
+197:       statusMessage = _errorMessage(error, '加入通话失败');
+198:     } finally {
+199:       _finishSessionOperation(operation);
+200:     }
+201:   }
+202: 
+203:   int _beginSessionOperation(String message) {
+204:     final operation = ++_operationGeneration;
+205:     _sessionOperationPending = true;
+206:     busy = true;
+207:     _serverStateFresh = false;
+208:     statusMessage = message;
+209:     _notify();
+210:     return operation;
+211:   }
+212: 
+213:   void _finishSessionOperation(int operation) {
+214:     if (!_acceptsOperation(operation)) return;
+215:     _sessionOperationPending = false;
+216:     busy = false;
+217:     _notify();
+218:   }
+219: 
+220:   Future<void> _join(
+221:     int operation,
+222:     CallSession session,
+223:     RtcCredentials credentials,
+224:   ) async {
+225:     if (credentials.demo) {
+226:       rtcPhase = WearRtcPhase.demo;
+227:       statusMessage = '演示会话已建立，未连接真实设备';
+228:       return;
+229:     }
+230:     if (!credentials.isUsable || credentials.isExpired) {
+231:       throw const RtcJoinFailure('通话凭证无效或已过期');
+232:     }
+233:     if (!_acceptsCallOperation(operation, session.id)) {
+234:       throw const RtcOperationCancelled();
+235:     }
+236: 
+237:     rtcPhase = WearRtcPhase.joining;
+238:     statusMessage = '正在加入 RTC 频道…';
+239:     final outcome = Completer<void>();
+240:     _joinOutcome = outcome;
+241:     _joinOutcomeOperation = operation;
+242:     _notify();
+243:     await rtc.join(
+244:       credentials,
+245:       RtcCallbacks(
+246:         onLocalJoined: () =>
+247:             unawaited(_markLocalJoined(operation, session.id, credentials.uid)),
+248:         onRemoteJoined: (uid) => _onRemoteJoined(operation, session.id, uid),
+249:         onRemoteLeft: (uid) => _onRemoteLeft(operation, session.id, uid),
+250:         onTokenExpiring: () => unawaited(_refreshToken(operation, session.id)),
+251:         onFailure: (message) =>
+252:             _handleRtcFailure(operation, session.id, message),
+253:       ),
+254:     );
+255:     if (!_acceptsCallOperation(operation, session.id)) {
+256:       await rtc.leave();
+257:       throw const RtcOperationCancelled();
+258:     }
+259:     _rtcActive = true;
+260:     await outcome.future;
+261:     if (!_acceptsCallOperation(operation, session.id)) {
+262:       throw const RtcOperationCancelled();
+263:     }
+264:   }
+265: 
+266:   Future<void> _markLocalJoined(int operation, String callId, int uid) async {
+267:     if (!_acceptsCallOperation(operation, callId)) return;
+268:     _rtcActive = true;
+269:     rtcPhase = WearRtcPhase.localJoined;
+270:     statusMessage = '本端已加入，等待服务器确认…';
+271:     _notify();
+272:     try {
+273:       final server = await gateway.markJoined(callId, uid.toString());
+274:       if (!_acceptsCallOperation(operation, callId)) return;
+275:       _applyServerUpdate(server);
+276:       _serverStateFresh = true;
+277:       _syncConnectionMessage();
+278:       _completeJoin(operation);
+279:       _schedulePolling();
+280:     } catch (error) {
+281:       if (!_acceptsCallOperation(operation, callId)) return;
+282:       rtcPhase = WearRtcPhase.failed;
+283:       statusMessage = _errorMessage(error, '服务器未确认加入');
+284:       _completeJoin(operation, error: error);
+285:       await _releaseRtc();
+286:       if (!_acceptsOperation(operation)) return;
+287:     }
+288:     _notify();
+289:   }
+290: 
+291:   void _onRemoteJoined(int operation, String callId, int uid) {
+292:     if (!_acceptsCallOperation(operation, callId)) return;
+293:     remoteUid = uid;
+294:     remotePresent = true;
+295:     _syncConnectionMessage();
+296:     _notify();
+297:   }
+298: 
+299:   void _onRemoteLeft(int operation, String callId, int uid) {
+300:     if (!_acceptsCallOperation(operation, callId)) return;
+301:     if (remoteUid == uid) remoteUid = null;
+302:     remotePresent = false;
+303:     statusMessage = '设备已离开 RTC 频道';
+304:     _notify();
+305:   }
+306: 
+307:   Future<void> _refreshToken(int operation, String callId) async {
+308:     final call = activeCall;
+309:     if (!_acceptsCallOperation(operation, callId) ||
+310:         call == null ||
+311:         !policy.canReadCredentials(call)) {
+312:       return;
+313:     }
+314:     try {
+315:       final credentials = await gateway.credentialsFor(callId);
+316:       if (!_acceptsCallOperation(operation, callId)) return;
+317:       if (credentials.demo ||
+318:           credentials.isExpired ||
+319:           credentials.token.isEmpty) {
+320:         throw const RtcJoinFailure('通话凭证已过期');
+321:       }
+322:       await rtc.renewToken(credentials.token);
+323:       if (!_acceptsCallOperation(operation, callId)) return;
+324:     } catch (error) {
+325:       if (!_acceptsCallOperation(operation, callId)) return;
+326:       rtcPhase = WearRtcPhase.failed;
+327:       statusMessage = _errorMessage(error, '通话凭证更新失败');
+328:       await _releaseRtc();
+329:       if (!_acceptsOperation(operation)) return;
+330:     }
+331:     _notify();
+332:   }
+333: 
+334:   void _handleRtcFailure(int operation, String callId, String message) {
+335:     if (!_acceptsCallOperation(operation, callId)) return;
+336:     rtcPhase = WearRtcPhase.failed;
+337:     _rtcActive = false;
+338:     remotePresent = false;
+339:     remoteUid = null;
+340:     statusMessage = message;
+341:     _completeJoin(operation, error: RtcJoinFailure(message));
+342:     unawaited(_releaseRtc());
+343:     _notify();
+344:   }
+345: 
+346:   Future<void> refreshActiveCall() {
+347:     final current = activeCall;
+348:     if (_disposed || current == null || current.id.isEmpty) {
+349:       return Future<void>.value();
+350:     }
+351:     final callGeneration = _callGeneration;
+352:     final existing = _pollInFlight;
+353:     if (existing != null &&
+354:         _pollInFlightCallGeneration == callGeneration &&
+355:         _pollInFlightCallId == current.id) {
+356:       return existing;
+357:     }
+358:     final request = ++_pollRequestGeneration;
+359:     late final Future<void> poll;
+360:     poll = _refreshActiveCallOnce(current, callGeneration, request)
+361:         .whenComplete(() {
+362:           if (identical(_pollInFlight, poll)) {
+363:             _pollInFlight = null;
+364:             _pollInFlightCallGeneration = null;
+365:             _pollInFlightCallId = null;
+366:           }
+367:         });
+368:     _pollInFlight = poll;
+369:     _pollInFlightCallGeneration = callGeneration;
+370:     _pollInFlightCallId = current.id;
+371:     return poll;
+372:   }
+373: 
+374:   Future<void> _refreshActiveCallOnce(
+375:     CallSession current,
+376:     int callGeneration,
+377:     int request,
+378:   ) async {
+379:     try {
+380:       final server = await gateway.callDetails(current.id);
+381:       if (!_acceptsPoll(callGeneration, request, current.id)) return;
+382:       if (!_applyServerUpdate(server)) return;
+383:       _serverStateFresh = true;
+384:       _syncConnectionMessage();
+385:       if (server.isTerminal) {
+386:         _pollTimer?.cancel();
+387:         _cancelInteractiveOperation();
+388:         await _releaseRtc();
+389:         if (_disposed || activeCall?.id != current.id) return;
+390:       }
+391:     } catch (error) {
+392:       if (!_acceptsPoll(callGeneration, request, current.id)) return;
+393:       _serverStateFresh = false;
+394:       if (rtcPhase != WearRtcPhase.failed) {
+395:         statusMessage = _errorMessage(error, '通话状态刷新失败');
+396:       }
+397:     }
+398:     _notify();
+399:   }
+400: 
+401:   void setForeground(bool foreground) {
+402:     if (_disposed) return;
+403:     _foreground = foreground;
+404:     _serverStateFresh = false;
+405:     if (foreground) {
+406:       statusMessage = '正在校准通话状态…';
+407:       _schedulePolling();
+408:       unawaited(refreshActiveCall());
+409:     } else {
+410:       _pollTimer?.cancel();
+411:       if (activeCall != null && !activeCall!.isTerminal) {
+412:         statusMessage = '应用位于后台，音视频状态待返回前台确认';
+413:       }
+414:     }
+415:     _notify();
+416:   }
+417: 
+418:   void _schedulePolling() {
+419:     _pollTimer?.cancel();
+420:     if (_disposed ||
+421:         !_foreground ||
+422:         activeCall == null ||
+423:         activeCall!.isTerminal) {
+424:       return;
+425:     }
+426:     _pollTimer = Timer.periodic(
+427:       const Duration(seconds: 2),
+428:       (_) => unawaited(refreshActiveCall()),
+429:     );
+430:   }
+431: 
+432:   Future<void> hangUp() async {
+433:     final call = activeCall;
+434:     if (_disposed || _ending || call == null || !policy.canEnd(call)) return;
+435:     _ending = true;
+436:     busy = true;
+437:     _sessionOperationPending = true;
+438:     final operation = ++_operationGeneration;
+439:     ++_callGeneration;
+440:     ++_pollRequestGeneration;
+441:     _pollTimer?.cancel();
+442:     _completeAnyJoin();
+443:     statusMessage = '正在结束通话…';
+444:     _notify();
+445:     try {
+446:       await _releaseRtc();
+447:       if (!_acceptsOperation(operation) || activeCall?.id != call.id) return;
+448:       final ended = await gateway.endCall(call.id);
+449:       if (!_acceptsOperation(operation) || activeCall?.id != call.id) return;
+450:       activeCall = ended;
+451:       _serverStateFresh = true;
+452:       statusMessage = ended.statusLabel;
+453:     } catch (error) {
+454:       if (!_acceptsOperation(operation)) return;
+455:       _serverStateFresh = false;
+456:       statusMessage = _errorMessage(error, '结束通话失败');
+457:       _schedulePolling();
+458:     } finally {
+459:       if (_acceptsOperation(operation)) {
+460:         _sessionOperationPending = false;
+461:         _ending = false;
+462:         busy = false;
+463:         _notify();
+464:       }
+465:     }
+466:   }
+467: 
+468:   Future<void> toggleMicrophone() async {
+469:     final operation = _operationGeneration;
+470:     final callId = activeCall?.id;
+471:     if (!_rtcActive || callId == null) return;
+472:     final muted = !microphoneMuted;
+473:     try {
+474:       await rtc.setMicrophoneMuted(muted);
+475:       if (!_acceptsCallOperation(operation, callId)) return;
+476:       microphoneMuted = muted;
+477:     } catch (error) {
+478:       if (!_acceptsCallOperation(operation, callId)) return;
+479:       statusMessage = _errorMessage(error, '麦克风切换失败');
+480:     }
+481:     _notify();
+482:   }
+483: 
+484:   Future<void> sendTts({String? eventId}) async {
+485:     final device = selectedDevice;
+486:     final text = ttsText.trim();
+487:     if (device == null || !policy.canSendTts(device)) {
+488:       ttsMessage = '该设备不支持播报或当前账号无权限';
+489:       _notify();
+490:       return;
+491:     }
+492:     if (text.isEmpty) {
+493:       ttsMessage = '请输入播报内容';
+494:       _notify();
+495:       return;
+496:     }
+497:     if (ttsBusy) return;
+498:     ttsBusy = true;
+499:     ttsMessage = '正在提交…';
+500:     final operation = _operationGeneration;
+501:     _notify();
+502:     try {
+503:       final commands = await gateway.sendTts(
+504:         deviceIds: [device.id],
+505:         text: text,
+506:         eventId: eventId,
+507:         idempotencyKey: _idempotencyKey('tts'),
+508:       );
+509:       if (_disposed || operation != _operationGeneration) return;
+510:       final failed = commands.any(
+511:         (item) => item.status == TtsCommandStatus.failed,
+512:       );
+513:       ttsMessage = failed ? '指令提交失败，请查看设备结果' : '指令已提交（不代表现场已听到）';
+514:     } catch (error) {
+515:       if (_disposed || operation != _operationGeneration) return;
+516:       ttsMessage = _errorMessage(error, '指令提交失败');
+517:     } finally {
+518:       if (!_disposed && operation == _operationGeneration) {
+519:         ttsBusy = false;
+520:         _notify();
+521:       }
+522:     }
+523:   }
+524: 
+525:   void _replaceActiveCall(CallSession call, {required bool fresh}) {
+526:     activeCall = call;
+527:     _serverStateFresh = fresh;
+528:     ++_callGeneration;
+529:     ++_pollRequestGeneration;
+530:   }
+531: 
+532:   bool _applyServerUpdate(CallSession next) {
+533:     final current = activeCall;
+534:     if (current == null || current.id != next.id) return false;
+535:     if (current.isTerminal && current.status != next.status) return false;
+536:     if (current.version > 0 &&
+537:         next.version > 0 &&
+538:         next.version < current.version) {
+539:       return false;
+540:     }
+541:     if (_statusRank(next.status) < _statusRank(current.status)) return false;
+542:     activeCall = next;
+543:     return true;
+544:   }
+545: 
+546:   int _statusRank(WearCallStatus status) => switch (status) {
+547:     WearCallStatus.unknown => -1,
+548:     WearCallStatus.requesting => 0,
+549:     WearCallStatus.offered => 1,
+550:     WearCallStatus.connected => 2,
+551:     WearCallStatus.ended ||
+552:     WearCallStatus.failed ||
+553:     WearCallStatus.timedOut => 3,
+554:   };
+555: 
+556:   void _syncConnectionMessage() {
+557:     final call = activeCall;
+558:     if (call == null) return;
+559:     if (call.demo) {
+560:       statusMessage = call.statusLabel;
+561:     } else if (call.status == WearCallStatus.connected) {
+562:       if (rtcPhase == WearRtcPhase.failed) return;
+563:       statusMessage = !_rtcActive || rtcPhase != WearRtcPhase.localJoined
+564:           ? '服务器已确认，RTC 尚未就绪'
+565:           : remotePresent
+566:           ? '已接通'
+567:           : '服务器已确认，等待设备加入…';
+568:     } else {
+569:       statusMessage = call.failReason.isNotEmpty
+570:           ? '${call.statusLabel}：${call.failReason}'
+571:           : call.statusLabel;
+572:     }
+573:   }
+574: 
+575:   bool _acceptsOperation(int operation) =>
+576:       !_disposed && operation == _operationGeneration;
+577: 
+578:   bool _acceptsCallOperation(int operation, String callId) =>
+579:       _acceptsOperation(operation) && activeCall?.id == callId;
+580: 
+581:   bool _acceptsPoll(int callGeneration, int request, String callId) =>
+582:       !_disposed &&
+583:       callGeneration == _callGeneration &&
+584:       request == _pollRequestGeneration &&
+585:       activeCall?.id == callId;
+586: 
+587:   void _completeJoin(int operation, {Object? error}) {
+588:     if (_joinOutcomeOperation != operation) return;
+589:     final outcome = _joinOutcome;
+590:     _joinOutcome = null;
+591:     _joinOutcomeOperation = null;
+592:     if (outcome == null || outcome.isCompleted) return;
+593:     if (error == null) {
+594:       outcome.complete();
+595:     } else {
+596:       outcome.completeError(error);
+597:     }
+598:   }
+599: 
+600:   void _completeAnyJoin() {
+601:     final outcome = _joinOutcome;
+602:     _joinOutcome = null;
+603:     _joinOutcomeOperation = null;
+604:     if (outcome != null && !outcome.isCompleted) outcome.complete();
+605:   }
+606: 
+607:   void _cancelInteractiveOperation() {
+608:     ++_operationGeneration;
+609:     _sessionOperationPending = false;
+610:     busy = false;
+611:     _completeAnyJoin();
+612:   }
+613: 
+614:   Future<void> _releaseRtc() async {
+615:     _rtcActive = false;
+616:     remotePresent = false;
+617:     remoteUid = null;
+618:     microphoneMuted = false;
+619:     await rtc.leave();
+620:   }
+621: 
+622:   String _idempotencyKey(String prefix) =>
+623:       '$prefix-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
+624: 
+625:   String _errorMessage(Object error, String fallback) {
+626:     final dynamic value = error;
+627:     try {
+628:       final message = value.message?.toString().trim();
+629:       if (message != null && message.isNotEmpty) return '$fallback：$message';
+630:     } catch (_) {}
+631:     final text = error
+632:         .toString()
+633:         .replaceFirst(RegExp(r'^[A-Za-z]+(?:Exception|Error):\s*'), '')
+634:         .trim();
+635:     return text.isEmpty ? fallback : '$fallback：$text';
+636:   }
+637: 
+638:   void _notify() {
+639:     if (!_disposed) notifyListeners();
+640:   }
+641: 
+642:   Future<void> terminate() {
+643:     final existing = _termination;
+644:     if (existing != null) return existing;
+645:     _disposed = true;
+646:     ++_operationGeneration;
+647:     ++_callGeneration;
+648:     ++_pollRequestGeneration;
+649:     _pollTimer?.cancel();
+650:     _completeAnyJoin();
+651:     final future = rtc.dispose();
+652:     _termination = future;
+653:     return future;
+654:   }
+655: 
+656:   @override
+657:   void dispose() {
+658:     if (_notifierDisposed) return;
+659:     _notifierDisposed = true;
+660:     unawaited(terminate());
+661:     super.dispose();
+662:   }
+663: }

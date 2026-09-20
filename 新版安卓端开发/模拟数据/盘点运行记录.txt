@@ -1,0 +1,174 @@
+[
+  {
+    "count": 12,
+    "table": "demo_compat_record"
+  },
+  {
+    "count": 3,
+    "table": "electronic_fence"
+  },
+  {
+    "count": 6,
+    "table": "file_record"
+  },
+  {
+    "count": 4,
+    "table": "real_time_alarm"
+  },
+  {
+    "count": 6,
+    "table": "safety_hat_info"
+  },
+  {
+    "count": 48,
+    "table": "safety_hat_location_record"
+  },
+  {
+    "count": 4,
+    "table": "sos_alarm_record"
+  },
+  {
+    "count": 10,
+    "table": "sys_dept"
+  },
+  {
+    "count": 8,
+    "table": "sys_role"
+  },
+  {
+    "count": 16,
+    "table": "sys_user"
+  },
+  {
+    "count": 8,
+    "table": "sys_user_role"
+  },
+  {
+    "count": 0,
+    "table": "wear_adapter_alert"
+  },
+  {
+    "count": 0,
+    "table": "wear_asset_audit"
+  },
+  {
+    "count": 2,
+    "table": "wear_assignment"
+  },
+  {
+    "count": 0,
+    "table": "wear_call_session"
+  },
+  {
+    "count": 1,
+    "table": "wear_contractor"
+  },
+  {
+    "count": 10,
+    "table": "wear_device"
+  },
+  {
+    "count": 0,
+    "table": "wear_device_command"
+  },
+  {
+    "count": 6,
+    "table": "wear_device_legacy_hat"
+  },
+  {
+    "count": 0,
+    "table": "wear_device_sample"
+  },
+  {
+    "count": 0,
+    "table": "wear_device_site_transfer"
+  },
+  {
+    "count": 0,
+    "table": "wear_duty_handover"
+  },
+  {
+    "count": 5,
+    "table": "wear_event_action"
+  },
+  {
+    "count": 21,
+    "table": "wear_event_inbox"
+  },
+  {
+    "count": 0,
+    "table": "wear_event_legacy"
+  },
+  {
+    "count": 1,
+    "table": "wear_geo_fence"
+  },
+  {
+    "count": 0,
+    "table": "wear_geo_fence_person"
+  },
+  {
+    "count": 0,
+    "table": "wear_geo_fence_state"
+  },
+  {
+    "count": 0,
+    "table": "wear_idempotency"
+  },
+  {
+    "count": 0,
+    "table": "wear_ingest_raw"
+  },
+  {
+    "count": 8,
+    "table": "wear_person"
+  },
+  {
+    "count": 8,
+    "table": "wear_person_site"
+  },
+  {
+    "count": 3,
+    "table": "wear_product_model"
+  },
+  {
+    "count": 2,
+    "table": "wear_product_type"
+  },
+  {
+    "count": 4,
+    "table": "wear_safety_event"
+  },
+  {
+    "count": 2,
+    "table": "wear_site"
+  },
+  {
+    "count": 9,
+    "table": "wear_site_account"
+  },
+  {
+    "count": 2,
+    "table": "wear_space"
+  },
+  {
+    "count": 2,
+    "table": "wear_team"
+  },
+  {
+    "count": 2,
+    "table": "wear_work_task"
+  },
+  {
+    "count": 0,
+    "table": "wear_work_task_action"
+  },
+  {
+    "count": 1,
+    "table": "wear_work_task_member"
+  },
+  {
+    "count": 2,
+    "table": "wear_work_task_requirement"
+  }
+]

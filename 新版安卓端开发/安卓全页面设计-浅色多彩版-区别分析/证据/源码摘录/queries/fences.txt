@@ -1,0 +1,348 @@
+1: import 'package:flutter/material.dart';
+2: import 'package:flutter_map/flutter_map.dart';
+3: import 'package:go_router/go_router.dart';
+4: import 'package:latlong2/latlong.dart';
+5: 
+6: import '../core.dart';
+7: import 'query_widgets.dart';
+8: 
+9: class FencesPage extends StatefulWidget {
+10:   const FencesPage({super.key});
+11: 
+12:   @override
+13:   State<FencesPage> createState() => _FencesPageState();
+14: }
+15: 
+16: class _FencesPageState extends State<FencesPage> {
+17:   WearSession? _session;
+18:   List<JsonMap> _records = const [];
+19:   int _current = 1;
+20:   int _total = 0;
+21:   bool _hasMore = false;
+22:   bool _loading = true;
+23:   Object? _error;
+24:   int _request = 0;
+25: 
+26:   @override
+27:   void didChangeDependencies() {
+28:     super.didChangeDependencies();
+29:     final session = WearScope.of(context);
+30:     if (!identical(session, _session)) {
+31:       _session = session;
+32:       _load(page: 1);
+33:     }
+34:   }
+35: 
+36:   Future<void> _load({required int page}) async {
+37:     final session = _session;
+38:     if (session == null) return;
+39:     final request = ++_request;
+40:     final scopeKey = session.scopeKey;
+41:     setState(() {
+42:       _loading = true;
+43:       _error = null;
+44:     });
+45:     try {
+46:       final result = await session.api.page(
+47:         '/api/v1/fences',
+48:         current: page,
+49:         size: 20,
+50:       );
+51:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+52:         return;
+53:       }
+54:       setState(() {
+55:         _records = result.records;
+56:         _current = result.current;
+57:         _total = result.total;
+58:         _hasMore = result.hasMore;
+59:         _loading = false;
+60:       });
+61:     } catch (error) {
+62:       if (error is StaleSessionException) return;
+63:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+64:         return;
+65:       }
+66:       setState(() {
+67:         _error = error;
+68:         _loading = false;
+69:       });
+70:     }
+71:   }
+72: 
+73:   @override
+74:   Widget build(BuildContext context) {
+75:     return QueryPage(
+76:       title: '电子围栏',
+77:       subtitle: '只读查看平台围栏规则；禁用围栏仍保留历史事件。',
+78:       body: Column(
+79:         children: [
+80:           Expanded(
+81:             child: QueryStateView(
+82:               loading: _loading,
+83:               error: _error,
+84:               empty: _records.isEmpty,
+85:               onRetry: () => _load(page: _current),
+86:               emptyTitle: '暂无电子围栏',
+87:               child: RefreshIndicator(
+88:                 onRefresh: () => _load(page: _current),
+89:                 child: ListView.builder(
+90:                   padding: const EdgeInsets.all(16),
+91:                   itemCount: _records.length,
+92:                   itemBuilder: (context, index) {
+93:                     final fence = _records[index];
+94:                     final enabled = fence['enabled'] == true;
+95:                     final people = fence['applyMode']?.toString() == 'persons'
+96:                         ? '指定 ${jsonListIds(fence['personIds']).length} 人'
+97:                         : '全厂站';
+98:                     return QueryRow(
+99:                       key: ValueKey('fence-${idOf(fence['id'])}'),
+100:                       title: textOf(fence['name']),
+101:                       subtitle:
+102:                           '$people · 规则版本 ${textOf(fence['ruleVersion'])}',
+103:                       trailing: WearBadge(
+104:                         text: enabled ? '启用' : '停用',
+105:                         color: enabled ? WearColors.primary : WearColors.muted,
+106:                       ),
+107:                       onTap: () => context.push('/fences/${idOf(fence['id'])}'),
+108:                     );
+109:                   },
+110:                 ),
+111:               ),
+112:             ),
+113:           ),
+114:           PagingFooter(
+115:             current: _current,
+116:             total: _total,
+117:             hasMore: _hasMore,
+118:             busy: _loading,
+119:             onPrevious: () => _load(page: _current - 1),
+120:             onNext: () => _load(page: _current + 1),
+121:           ),
+122:         ],
+123:       ),
+124:     );
+125:   }
+126: }
+127: 
+128: List<String> jsonListIds(Object? value) {
+129:   if (value is! List) return const [];
+130:   return value.map(idOf).where((id) => id.isNotEmpty).toList();
+131: }
+132: 
+133: class FencePage extends StatefulWidget {
+134:   const FencePage({super.key, required this.id});
+135: 
+136:   final String id;
+137: 
+138:   @override
+139:   State<FencePage> createState() => _FencePageState();
+140: }
+141: 
+142: class _FencePageState extends State<FencePage> {
+143:   WearSession? _session;
+144:   JsonMap? _fence;
+145:   bool _loading = true;
+146:   Object? _error;
+147:   int _request = 0;
+148: 
+149:   @override
+150:   void didChangeDependencies() {
+151:     super.didChangeDependencies();
+152:     final session = WearScope.of(context);
+153:     if (!identical(session, _session)) {
+154:       _session = session;
+155:       _load();
+156:     }
+157:   }
+158: 
+159:   Future<void> _load() async {
+160:     final session = _session;
+161:     if (session == null) return;
+162:     final request = ++_request;
+163:     final scopeKey = session.scopeKey;
+164:     setState(() {
+165:       _loading = true;
+166:       _error = null;
+167:     });
+168:     try {
+169:       final result = jsonMap(
+170:         await session.api.get('/api/v1/fences/${widget.id}'),
+171:       );
+172:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+173:         return;
+174:       }
+175:       setState(() {
+176:         _fence = result;
+177:         _loading = false;
+178:       });
+179:     } catch (error) {
+180:       if (error is StaleSessionException) return;
+181:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+182:         return;
+183:       }
+184:       setState(() {
+185:         _error = error;
+186:         _loading = false;
+187:       });
+188:     }
+189:   }
+190: 
+191:   @override
+192:   Widget build(BuildContext context) {
+193:     final fence = _fence;
+194:     final points = fence == null
+195:         ? const <LatLng>[]
+196:         : _polygon(fence['polygon']);
+197:     return QueryPage(
+198:       title: fence == null ? '围栏详情' : textOf(fence['name']),
+199:       body: QueryStateView(
+200:         loading: _loading,
+201:         error: _error,
+202:         empty: fence == null,
+203:         onRetry: _load,
+204:         child: fence == null
+205:             ? const SizedBox.shrink()
+206:             : RefreshIndicator(
+207:                 onRefresh: _load,
+208:                 child: ListView(
+209:                   padding: const EdgeInsets.all(16),
+210:                   children: [
+211:                     SizedBox(
+212:                       height: 260,
+213:                       child: ClipRRect(
+214:                         borderRadius: BorderRadius.circular(22),
+215:                         child: points.length < 3
+216:                             ? const WearEmpty(title: '围栏坐标不完整')
+217:                             : FlutterMap(
+218:                                 options: MapOptions(
+219:                                   initialCenter: points.first,
+220:                                   initialZoom: 15,
+221:                                   initialCameraFit: CameraFit.bounds(
+222:                                     bounds: LatLngBounds.fromPoints(points),
+223:                                     padding: const EdgeInsets.all(28),
+224:                                   ),
+225:                                   interactionOptions: const InteractionOptions(
+226:                                     flags:
+227:                                         InteractiveFlag.pinchZoom |
+228:                                         InteractiveFlag.drag,
+229:                                   ),
+230:                                 ),
+231:                                 children: [
+232:                                   TileLayer(
+233:                                     urlTemplate:
+234:                                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+235:                                     userAgentPackageName:
+236:                                         'rolling_intelligence_headband',
+237:                                   ),
+238:                                   PolygonLayer(
+239:                                     polygons: [
+240:                                       Polygon(
+241:                                         points: points,
+242:                                         color: WearColors.primary.withValues(
+243:                                           alpha: .18,
+244:                                         ),
+245:                                         borderColor: WearColors.primary,
+246:                                         borderStrokeWidth: 3,
+247:                                       ),
+248:                                     ],
+249:                                   ),
+250:                                 ],
+251:                               ),
+252:                       ),
+253:                     ),
+254:                     const SizedBox(height: 16),
+255:                     WearCard(
+256:                       child: Column(
+257:                         children: [
+258:                           DetailField(
+259:                             label: '状态',
+260:                             value: fence['enabled'] == true ? '启用' : '停用',
+261:                           ),
+262:                           DetailField(
+263:                             label: '适用范围',
+264:                             value: fence['applyMode'] == 'persons'
+265:                                 ? '指定人员'
+266:                                 : '全厂站',
+267:                           ),
+268:                           DetailField(label: '生效时段', value: _timeWindow(fence)),
+269:                           DetailField(label: '触发方向', value: _direction(fence)),
+270:                           DetailField(
+271:                             label: '防抖时间',
+272:                             value: '${intOf(fence['debounceSeconds'])} 秒',
+273:                           ),
+274:                           DetailField(
+275:                             label: '规则版本',
+276:                             value: textOf(fence['ruleVersion']),
+277:                           ),
+278:                           if (fence['demo'] == true)
+279:                             const DetailField(label: '数据标识', value: '演示围栏'),
+280:                         ],
+281:                       ),
+282:                     ),
+283:                     if (fence['applyMode'] == 'persons') ...[
+284:                       const SizedBox(height: 18),
+285:                       QuerySection(
+286:                         title: '适用人员',
+287:                         children: jsonListIds(fence['personIds']).isEmpty
+288:                             ? [
+289:                                 const WearCard(
+290:                                   child: Text(
+291:                                     '未配置人员',
+292:                                     style: TextStyle(color: WearColors.muted),
+293:                                   ),
+294:                                 ),
+295:                               ]
+296:                             : jsonListIds(fence['personIds'])
+297:                                   .map(
+298:                                     (id) => QueryRow(
+299:                                       title: '人员 ID $id',
+300:                                       onTap: () => context.push('/people/$id'),
+301:                                     ),
+302:                                   )
+303:                                   .toList(),
+304:                       ),
+305:                     ],
+306:                     const SizedBox(height: 18),
+307:                     OutlinedButton.icon(
+308:                       onPressed: () => context.push('/events?type=geofence'),
+309:                       icon: const Icon(Icons.history),
+310:                       label: const Text('查看围栏事件'),
+311:                     ),
+312:                     const Padding(
+313:                       padding: EdgeInsets.only(top: 8),
+314:                       child: Text(
+315:                         '事件接口支持按围栏类型筛选；进入后可核对围栏名称与规则版本。',
+316:                         style: TextStyle(color: WearColors.muted, fontSize: 12),
+317:                       ),
+318:                     ),
+319:                   ],
+320:                 ),
+321:               ),
+322:       ),
+323:     );
+324:   }
+325: 
+326:   List<LatLng> _polygon(Object? value) {
+327:     return jsonList(value)
+328:         .map((point) {
+329:           final lat = double.tryParse(point['lat']?.toString() ?? '');
+330:           final lng = double.tryParse(point['lng']?.toString() ?? '');
+331:           return lat == null || lng == null ? null : LatLng(lat, lng);
+332:         })
+333:         .whereType<LatLng>()
+334:         .toList();
+335:   }
+336: 
+337:   String _timeWindow(JsonMap fence) {
+338:     if (fence['timeStart'] == null && fence['timeEnd'] == null) return '全天';
+339:     return '${textOf(fence['timeStart'], '00:00')}–${textOf(fence['timeEnd'], '24:00')}';
+340:   }
+341: 
+342:   String _direction(JsonMap fence) {
+343:     final values = <String>[];
+344:     if (fence['enterEnabled'] == true) values.add('进入');
+345:     if (fence['leaveEnabled'] == true) values.add('离开');
+346:     return values.isEmpty ? '未启用' : values.join('、');
+347:   }
+348: }

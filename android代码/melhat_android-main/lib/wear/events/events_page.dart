@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core.dart';
+import '../scroll_to_top.dart';
 import 'event_controller.dart';
 import 'event_models.dart';
 import 'event_repository.dart';
@@ -42,6 +43,9 @@ class _EventsPageState extends State<EventsPage> {
   String? _scopeKey;
   Timer? _scrollSave;
   int _routeGeneration = 0;
+  JsonMap? _dutySummary;
+  String? _summaryScope;
+  int _summaryRequest = 0;
 
   @override
   void didUpdateWidget(covariant EventsPage oldWidget) {
@@ -127,6 +131,43 @@ class _EventsPageState extends State<EventsPage> {
             .then((_) => _restoreScroll()),
       );
     }
+    if (_summaryScope != session.scopeKey) {
+      _dutySummary = null;
+      unawaited(_loadDutySummary());
+    }
+  }
+
+  Future<void> _loadDutySummary() async {
+    final session = _session;
+    if (session == null || widget.eventId?.isNotEmpty == true) return;
+    final scope = session.scopeKey;
+    _summaryScope = scope;
+    final request = ++_summaryRequest;
+    try {
+      final data = jsonMap(await session.api.get('/api/v1/duty/summary'));
+      if (!mounted ||
+          request != _summaryRequest ||
+          session != _session ||
+          scope != session.scopeKey) {
+        return;
+      }
+      setState(() => _dutySummary = data);
+    } catch (_) {
+      if (!mounted ||
+          request != _summaryRequest ||
+          session != _session ||
+          scope != session.scopeKey) {
+        return;
+      }
+      setState(() => _dutySummary = null);
+    }
+  }
+
+  Future<void> _refreshWorkspace() async {
+    await Future.wait([
+      if (_controller != null) _controller!.refreshFromSignal(),
+      _loadDutySummary(),
+    ]);
   }
 
   EventController _buildController(WearSession session) => EventController(
@@ -173,17 +214,31 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   void _changed() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadNearBottom());
+  }
+
+  void _loadNearBottom() {
+    if (!mounted || !_scroll.hasClients || widget.eventId?.isNotEmpty == true) {
+      return;
+    }
+    final controller = _controller;
+    if (controller == null || controller.loadMoreError != null) return;
+    if (_scroll.position.extentAfter < 240) {
+      unawaited(controller.loadMore());
+    }
   }
 
   void _serverSignaled() {
     final controller = _controller;
     if (controller != null && !controller.writing) {
-      unawaited(controller.refreshFromSignal());
+      unawaited(_refreshWorkspace());
     }
   }
 
   void _saveScroll() {
+    _loadNearBottom();
     _scrollSave?.cancel();
     _scrollSave = Timer(const Duration(milliseconds: 250), () {
       if (_scroll.hasClients) {
@@ -228,6 +283,7 @@ class _EventsPageState extends State<EventsPage> {
           controller: controller,
           onBack: _backToEvents,
           onSubmit: () => _execute(controller, EventCommand.handle),
+          onClaim: () => _execute(controller, EventCommand.claim),
           onCommunication: () => context.push(
             Uri(
               path: '/communications',
@@ -273,92 +329,83 @@ class _EventsPageState extends State<EventsPage> {
       child: Scaffold(
         backgroundColor: WearColors.background,
         body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: controller.refreshFromSignal,
-            child: ListView(
-              key: const ValueKey('wear-events-workspace'),
-              controller: _scroll,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
-              children: [
-                WearBrandHero(
-                  title: '消息',
-                  subtitle: '统一接警、认领、处置与复核',
-                  background: WearArt.eventsHero,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const WearSiteSwitcher(),
-                      IconButton(
-                        tooltip: '刷新最新状态',
-                        onPressed: controller.loading || controller.writing
-                            ? null
-                            : controller.refreshFromSignal,
-                        icon: const Icon(Icons.refresh),
-                      ),
-                    ],
+          child: WearScrollToTop(
+            controller: _scroll,
+            child: RefreshIndicator(
+              onRefresh: _refreshWorkspace,
+              child: ListView(
+                key: const ValueKey('wear-events-workspace'),
+                controller: _scroll,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
+                children: [
+                  WearBrandHero(
+                    key: const ValueKey('wear-page-hero-events'),
+                    title: '消息',
+                    subtitle: '统一接警、认领、处置与复核',
+                    background: WearArt.eventsHero,
                   ),
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _filters(controller),
-                ),
-                if (controller.loading) ...[
-                  const SizedBox(height: 8),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: LinearProgressIndicator(minHeight: 3),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _filters(controller),
+                  ),
+                  if (controller.loading) ...[
+                    const SizedBox(height: 8),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: LinearProgressIndicator(minHeight: 3),
+                    ),
+                  ],
+                  if (controller.errorMessage case final message?)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _notice(message, danger: true),
+                    ),
+                  if (controller.selected == null &&
+                      controller.conflictMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _notice(
+                        '${controller.conflictMessage!}；已重新读取服务器状态，未提交草稿仍保留。',
+                        danger: true,
+                      ),
+                    ),
+                  if (controller.selected == null &&
+                      controller.successMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _notice(controller.successMessage!),
+                    ),
+                  const SizedBox(height: 14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _resultHeader(controller),
+                  ),
+                  const SizedBox(height: 10),
+                  if (!controller.loading && controller.records.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: WearEmpty(
+                        title: '当前筛选没有事件',
+                        detail: '当前条件下没有待处理事项，可调整筛选或刷新。',
+                        onRetry: controller.reload,
+                      ),
+                    )
+                  else
+                    ...controller.records.map(
+                      (event) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _eventRow(controller, event),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _listEnd(controller),
                   ),
                 ],
-                if (controller.errorMessage case final message?)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _notice(message, danger: true),
-                  ),
-                if (controller.selected == null &&
-                    controller.conflictMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _notice(
-                      '${controller.conflictMessage!}；已重新读取服务器状态，未提交草稿仍保留。',
-                      danger: true,
-                    ),
-                  ),
-                if (controller.selected == null &&
-                    controller.successMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _notice(controller.successMessage!),
-                  ),
-                const SizedBox(height: 14),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _resultHeader(controller),
-                ),
-                const SizedBox(height: 10),
-                if (!controller.loading && controller.records.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: WearEmpty(
-                      title: '当前筛选没有事件',
-                      detail: '当前条件下没有待处理事项，可调整筛选或刷新。',
-                      onRetry: controller.reload,
-                    ),
-                  )
-                else
-                  ...controller.records.map(
-                    (event) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _eventRow(controller, event),
-                    ),
-                  ),
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _paging(controller),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -390,51 +437,205 @@ class _EventsPageState extends State<EventsPage> {
     _restoreScroll();
   }
 
-  Widget _filters(EventController controller) => WearCard(
-    padding: const EdgeInsets.all(14),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                '查询条件',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: WearColors.ink,
+  Widget _filters(EventController controller) {
+    final badges = <Widget>[
+      if (!['active', 'open'].contains(controller.filters.status))
+        WearBadge(text: _statusLabel(controller.filters.status)),
+      if (controller.filters.type.isNotEmpty)
+        WearBadge(text: _typeLabel(controller.filters.type)),
+      if (controller.filters.personId.isNotEmpty)
+        WearBadge(text: '人员 ${controller.filters.personId}'),
+      if (controller.filters.taskId.isNotEmpty)
+        WearBadge(text: '任务 ${controller.filters.taskId}'),
+      if (controller.filters.claimantUserId.isNotEmpty &&
+          controller.filters.claimantUserId != _session?.userId)
+        WearBadge(text: '认领人 ${controller.filters.claimantUserId}'),
+    ];
+    return WearCard(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '事件筛选',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: WearColors.ink,
+                      ),
+                    ),
+                    Text(
+                      '厂站待办',
+                      style: TextStyle(fontSize: 11, color: WearColors.muted),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            TextButton.icon(
-              onPressed: controller.writing
-                  ? null
-                  : () => _showFilters(controller),
-              icon: const Icon(Icons.tune, size: 19),
-              label: const Text('筛选'),
-            ),
+              TextButton.icon(
+                onPressed: controller.writing
+                    ? null
+                    : () => _showFilters(controller),
+                icon: const Icon(Icons.tune, size: 19),
+                label: const Text('筛选'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Keep four equal controls on normal screens; let larger text or
+              // counts use two columns instead of shrinking or clipping labels.
+              final singleWidth = (constraints.maxWidth - 18) / 4;
+              final labels = [
+                '未关闭 ${controller.inboxCount}',
+                _quickFilterLabel('待认领', 'unclaimed'),
+                _quickFilterLabel('我负责', 'mine'),
+                _quickFilterLabel('已升级', 'overdue'),
+              ];
+              final fits = labels.every((label) {
+                final painter = TextPainter(
+                  text: TextSpan(
+                    text: label,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  textDirection: Directionality.of(context),
+                  textScaler: MediaQuery.textScalerOf(context),
+                )..layout();
+                final fits = painter.width + 10 <= singleWidth;
+                painter.dispose();
+                return fits;
+              });
+              final width = fits ? singleWidth : (constraints.maxWidth - 6) / 2;
+              return Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  SizedBox(
+                    width: width,
+                    child: _quickFilter(
+                      controller,
+                      'active',
+                      '未关闭 ${controller.inboxCount}',
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _quickFilter(
+                      controller,
+                      'open',
+                      '待认领',
+                      countField: 'unclaimed',
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _quickFilter(
+                      controller,
+                      'mine',
+                      '我负责',
+                      countField: 'mine',
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _quickFilter(
+                      controller,
+                      'escalated',
+                      '已升级',
+                      countField: 'overdue',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          if (badges.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(spacing: 7, runSpacing: 7, children: badges),
           ],
+        ],
+      ),
+    );
+  }
+
+  String _quickFilterLabel(String label, String? countField) {
+    final count = countField == null ? null : _dutySummary?[countField];
+    return count == null ? label : '$label ${intOf(count)}';
+  }
+
+  Widget _quickFilter(
+    EventController controller,
+    String key,
+    String label, {
+    String? countField,
+  }) {
+    final filters = controller.filters;
+    final selected =
+        filters.type.isEmpty &&
+        filters.personId.isEmpty &&
+        filters.taskId.isEmpty &&
+        (switch (key) {
+          'mine' =>
+            filters.claimantUserId == _session?.userId &&
+                !filters.escalated &&
+                filters.status == 'active',
+          'escalated' =>
+            filters.escalated &&
+                filters.claimantUserId.isEmpty &&
+                filters.status == 'active',
+          _ =>
+            filters.status == key &&
+                filters.claimantUserId.isEmpty &&
+                !filters.escalated,
+        });
+    return Semantics(
+      selected: selected,
+      child: TextButton(
+        key: ValueKey('events-quick-$key'),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          foregroundColor: selected ? WearColors.brand : WearColors.muted,
+          backgroundColor: selected
+              ? const Color(0xFFE3EFFF)
+              : const Color(0xFFF5F8FC),
+          side: BorderSide(
+            color: selected ? const Color(0xFFBBD5FF) : WearColors.line,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
-        Wrap(
-          spacing: 7,
-          runSpacing: 7,
-          children: [
-            WearBadge(text: _statusLabel(controller.filters.status)),
-            if (controller.filters.type.isNotEmpty)
-              WearBadge(text: _typeLabel(controller.filters.type)),
-            if (controller.filters.personId.isNotEmpty)
-              WearBadge(text: '人员 ${controller.filters.personId}'),
-            if (controller.filters.taskId.isNotEmpty)
-              WearBadge(text: '任务 ${controller.filters.taskId}'),
-            if (controller.filters.claimantUserId.isNotEmpty)
-              WearBadge(text: '认领人 ${controller.filters.claimantUserId}'),
-            if (controller.filters.escalated)
-              const WearBadge(text: '仅已升级', color: WearColors.danger),
-          ],
+        onPressed: controller.loading || controller.writing
+            ? null
+            : () {
+                unawaited(
+                  controller.setFilters(
+                    EventFilters(
+                      status: key == 'open' ? 'open' : 'active',
+                      claimantUserId: key == 'mine' ? _session!.userId : '',
+                      escalated: key == 'escalated',
+                    ),
+                  ),
+                );
+              },
+        child: Text(
+          _quickFilterLabel(label, countField),
+          textAlign: TextAlign.center,
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   Widget _resultHeader(EventController controller) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,7 +650,7 @@ class _EventsPageState extends State<EventsPage> {
       ),
       const SizedBox(height: 4),
       Text(
-        '第 ${controller.current} 页 · 共 ${controller.total} 条 · 未关闭 ${controller.inboxCount}',
+        '共 ${controller.total} 条 · 全站未关闭 ${controller.inboxCount}',
         style: const TextStyle(color: WearColors.muted),
       ),
     ],
@@ -490,7 +691,7 @@ class _EventsPageState extends State<EventsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      event.typeLabel,
+                      event.alarmLabel,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         color: WearColors.ink,
@@ -555,7 +756,7 @@ class _EventsPageState extends State<EventsPage> {
           children: [
             Expanded(
               child: Text(
-                '${event.typeLabel} · #${event.id}',
+                '${event.alarmLabel} · #${event.id}',
                 style: const TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
@@ -603,6 +804,10 @@ class _EventsPageState extends State<EventsPage> {
           '${_known(event.sn)} · ID ${_known(event.deviceId)}',
         ),
         _line(Icons.schedule_outlined, '发生时间', formatTime(event.occurredAt)),
+        if (event.alarmCode.isNotEmpty)
+          _line(Icons.info_outline, '告警编码', event.alarmCode),
+        if (event.sourceEventId.isNotEmpty)
+          _line(Icons.link, '来源编号', event.sourceEventId),
         _line(
           Icons.location_on_outlined,
           '位置',
@@ -881,26 +1086,50 @@ class _EventsPageState extends State<EventsPage> {
     ),
   );
 
-  Widget _paging(EventController controller) => Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      OutlinedButton(
-        onPressed:
-            controller.current > 1 && !controller.loading && !controller.writing
-            ? controller.previousPage
-            : null,
-        child: const Text('上一页'),
+  Widget _listEnd(EventController controller) {
+    if (controller.loadingMore) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text(
+              '正在加载更多事件',
+              style: TextStyle(fontSize: 12, color: WearColors.muted),
+            ),
+          ],
+        ),
+      );
+    }
+    if (controller.loadMoreError != null) {
+      return Center(
+        child: TextButton.icon(
+          onPressed: controller.loading || controller.writing
+              ? null
+              : controller.loadMore,
+          icon: const Icon(Icons.refresh, size: 18),
+          label: const Text('加载失败，点击重试'),
+        ),
+      );
+    }
+    if (controller.loading || controller.records.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        controller.hasMore ? '继续向下浏览' : '没有更多事件了',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 12, color: WearColors.muted),
       ),
-      const SizedBox(width: 10),
-      OutlinedButton(
-        onPressed:
-            controller.hasMore && !controller.loading && !controller.writing
-            ? controller.nextPage
-            : null,
-        child: const Text('下一页'),
-      ),
-    ],
-  );
+    );
+  }
 
   Widget _line(IconData icon, String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 5),
@@ -938,7 +1167,21 @@ class _EventsPageState extends State<EventsPage> {
     EventCommand command,
   ) async {
     FocusScope.of(context).unfocus();
-    await controller.execute(command);
+    final eventId = controller.selected?.id;
+    final success = await controller.execute(command);
+    if (!mounted ||
+        command != EventCommand.handle ||
+        controller.selected?.id != eventId) {
+      return;
+    }
+    final message = success
+        ? '核验已提交，内容已保存。当前状态：${controller.selected!.statusLabel}'
+        : controller.conflictMessage ??
+              controller.errorMessage ??
+              '当前状态不可提交，请刷新后核对';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _editReason(
@@ -953,7 +1196,7 @@ class _EventsPageState extends State<EventsPage> {
       EventCommand.reopen => draft.reopenReason,
       _ => '',
     };
-    final text = TextEditingController(text: initial);
+    var reason = initial;
     String? error;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -967,8 +1210,10 @@ class _EventsPageState extends State<EventsPage> {
               EventCommand.reopen => '重开事件',
               _ => '填写说明',
             }),
-            content: TextField(
-              controller: text,
+            // The field owns its controller until the dialog exit animation
+            // finishes; showDialog completes as soon as the route is popped.
+            content: TextFormField(
+              initialValue: initial,
               autofocus: true,
               minLines: 2,
               maxLines: 5,
@@ -978,6 +1223,7 @@ class _EventsPageState extends State<EventsPage> {
                 alignLabelWithHint: true,
               ),
               onChanged: (value) {
+                reason = value;
                 final next = switch (command) {
                   EventCommand.close => draft.copyWith(closeReason: value),
                   EventCommand.reopen => draft.copyWith(reopenReason: value),
@@ -993,7 +1239,7 @@ class _EventsPageState extends State<EventsPage> {
               ),
               FilledButton(
                 onPressed: () {
-                  if (text.text.trim().isEmpty) {
+                  if (reason.trim().isEmpty) {
                     setDialog(() => error = '请填写原因');
                     return;
                   }
@@ -1006,7 +1252,6 @@ class _EventsPageState extends State<EventsPage> {
         ),
       ),
     );
-    text.dispose();
     if (confirmed == true && mounted) await _execute(controller, command);
   }
 
@@ -1352,7 +1597,6 @@ const _statuses = {
 
 const _types = {
   '': '全部类型',
-  'sos': 'SOS 求助',
   'fall': '跌倒',
   'impact': '撞击',
   'geofence': '围栏',

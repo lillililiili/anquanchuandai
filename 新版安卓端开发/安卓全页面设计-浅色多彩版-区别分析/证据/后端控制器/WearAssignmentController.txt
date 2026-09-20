@@ -1,0 +1,104 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.List;
+4: import java.util.Map;
+5: import javax.servlet.http.HttpServletRequest;
+6: import org.springframework.beans.factory.annotation.Autowired;
+7: import org.springframework.web.bind.annotation.GetMapping;
+8: import org.springframework.web.bind.annotation.PathVariable;
+9: import org.springframework.web.bind.annotation.PostMapping;
+10: import org.springframework.web.bind.annotation.RequestBody;
+11: import org.springframework.web.bind.annotation.RequestMapping;
+12: import org.springframework.web.bind.annotation.RequestParam;
+13: import org.springframework.web.bind.annotation.RestController;
+14: import com.ruoyi.common.core.domain.R;
+15: import com.ruoyi.wear.assignment.AssignmentService;
+16: import com.ruoyi.wear.assignment.dto.AssignmentDto;
+17: import com.ruoyi.wear.assignment.dto.IssueRequest;
+18: import com.ruoyi.wear.common.WearPage;
+19: 
+20: @RestController
+21: @RequestMapping("/api/v1")
+22: public class WearAssignmentController
+23: {
+24:     @Autowired
+25:     private AssignmentService assignmentService;
+26: 
+27:     @GetMapping("/assignments")
+28:     public R<WearPage<AssignmentDto>> page(
+29:             @RequestParam(defaultValue = "1") int current,
+30:             @RequestParam(defaultValue = "10") int size,
+31:             @RequestParam(required = false) String sn,
+32:             @RequestParam(required = false) String personKeyword,
+33:             @RequestParam(required = false) String status,
+34:             @RequestParam(required = false) String issuedFrom,
+35:             @RequestParam(required = false) String issuedTo)
+36:     {
+37:         return R.ok(assignmentService.page(current, size, sn, personKeyword, status, issuedFrom, issuedTo));
+38:     }
+39: 
+40:     @PostMapping("/assignments")
+41:     public R<AssignmentDto> issue(@RequestBody IssueRequest request, HttpServletRequest http)
+42:     {
+43:         return R.ok(assignmentService.issue(request, http.getHeader("Idempotency-Key")));
+44:     }
+45: 
+46:     @PostMapping("/assignments/{id}/return")
+47:     public R<AssignmentDto> giveBack(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body,
+48:             HttpServletRequest http)
+49:     {
+50:         String reason = body == null || body.get("reason") == null ? null : String.valueOf(body.get("reason"));
+51:         String key = body == null || body.get("idempotencyKey") == null ? null : String.valueOf(body.get("idempotencyKey"));
+52:         if (key == null)
+53:         {
+54:             key = http.getHeader("Idempotency-Key");
+55:         }
+56:         return R.ok(assignmentService.giveBack(id, reason, key));
+57:     }
+58: 
+59:     @PostMapping("/assignments/{id}/recover")
+60:     public R<AssignmentDto> recover(@PathVariable Long id, @RequestBody Map<String, Object> body,
+61:             HttpServletRequest http)
+62:     {
+63:         String reason = body.get("reason") == null ? null : String.valueOf(body.get("reason"));
+64:         String status = body.get("assetStatus") == null ? null : String.valueOf(body.get("assetStatus"));
+65:         String key = body.get("idempotencyKey") == null ? http.getHeader("Idempotency-Key") : String.valueOf(body.get("idempotencyKey"));
+66:         return R.ok(assignmentService.recover(id, reason, status, key));
+67:     }
+68: 
+69:     @GetMapping("/assignments/{id}")
+70:     public R<AssignmentDto> detail(@PathVariable Long id)
+71:     {
+72:         return R.ok(assignmentService.detail(id));
+73:     }
+74: 
+75:     @GetMapping("/devices/{id}/assignment")
+76:     public R<AssignmentDto> currentDevice(@PathVariable Long id)
+77:     {
+78:         return R.ok(assignmentService.currentForDevice(id));
+79:     }
+80: 
+81:     @GetMapping("/devices/{id}/assignments")
+82:     public R<List<AssignmentDto>> deviceHistory(@PathVariable Long id)
+83:     {
+84:         return R.ok(assignmentService.historyForDevice(id));
+85:     }
+86: 
+87:     @GetMapping("/people/{id}/equipment")
+88:     public R<List<AssignmentDto>> personEquipment(@PathVariable Long id)
+89:     {
+90:         return R.ok(assignmentService.equipmentForPerson(id));
+91:     }
+92: 
+93:     @GetMapping("/people/{id}/assignments")
+94:     public R<List<AssignmentDto>> personHistory(@PathVariable Long id)
+95:     {
+96:         return R.ok(assignmentService.historyForPerson(id));
+97:     }
+98: 
+99:     @GetMapping("/me/equipment")
+100:     public R<List<AssignmentDto>> myEquipment()
+101:     {
+102:         return R.ok(assignmentService.myEquipment());
+103:     }
+104: }

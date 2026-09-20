@@ -36,6 +36,10 @@ import com.ruoyi.wear.work.WorkTaskStateMachine;
 public class EventIngestService
 {
     @Autowired
+    private com.ruoyi.wear.device.mapper.WearProductModelMapper modelMapper;
+    @Autowired
+    private com.ruoyi.wear.event.mapper.WearEventActionMapper actionMapper;
+    @Autowired
     private WearSafetyEventMapper eventMapper;
     @Autowired
     private WearEventInboxMapper inboxMapper;
@@ -69,7 +73,38 @@ public class EventIngestService
         }
         Long siteId = siteAccessService.parseSiteId(request.getSiteId());
         siteAccessService.assertAuthorized(siteId);
+        if (request.getSourceEventId().trim().isEmpty() || request.getSourceEventId().trim().length() > 64)
+            throw new ServiceException("sourceEventId 必须为 1 至 64 字符", HttpStatus.BAD_REQUEST);
+        WearDevice selected = null;
+        if (StringUtils.isNotEmpty(request.getDeviceId()))
+        {
+            try { selected = deviceMapper.selectById(Long.valueOf(request.getDeviceId())); }
+            catch (NumberFormatException ex) { throw new ServiceException("设备 ID 无效", HttpStatus.BAD_REQUEST); }
+            if (selected == null || !siteId.equals(selected.getSiteId()))
+                throw new ServiceException("设备不存在或不属于当前厂站", HttpStatus.BAD_REQUEST);
+        }
+        String simulationDetail = null;
+        if (StringUtils.isNotEmpty(request.getScenarioCode()))
+        {
+            if (selected == null) throw new ServiceException("场景测试必须指定设备", HttpStatus.BAD_REQUEST);
+            com.ruoyi.wear.device.domain.WearProductModel model = modelMapper.selectById(selected.getModelId());
+            simulationDetail = SimulationScenarios.detail(request, model == null ? "" : model.getTypeCode());
+        }
+        else if (request.getMeasurements() != null && !request.getMeasurements().isEmpty())
+            throw new ServiceException("测试参数必须附带场景编码", HttpStatus.BAD_REQUEST);
+        if ((request.getLat() == null) != (request.getLng() == null)
+                || (request.getLat() != null && (request.getLat().abs().compareTo(new BigDecimal("90")) > 0
+                || request.getLng().abs().compareTo(new BigDecimal("180")) > 0)))
+            throw new ServiceException("经纬度必须成对提供且在有效范围内", HttpStatus.BAD_REQUEST);
         IngestRequest ingest = new IngestRequest();
+        ingest.setSimulationDetail(simulationDetail);
+        if (simulationDetail != null)
+        {
+            com.alibaba.fastjson2.JSONObject detail = com.alibaba.fastjson2.JSON.parseObject(simulationDetail);
+            ingest.setAlarmCode(detail.getString("scenarioCode"));
+            ingest.setAlarmName(detail.getString("label"));
+            ingest.setAlarmDescription(detail.getString("description"));
+        }
         ingest.setSource("simulator");
         ingest.setSourceEventId(request.getSourceEventId().trim());
         ingest.setType(request.getType());
@@ -108,12 +143,16 @@ public class EventIngestService
         {
             throw new ServiceException("不支持的事件类型", HttpStatus.BAD_REQUEST);
         }
+        validateAlarmText(request.getAlarmCode(), 128);
+        validateAlarmText(request.getAlarmName(), 255);
+        validateAlarmText(request.getAlarmDescription(), 1000);
         Long siteId = Long.valueOf(request.getSiteId());
         WearSafetyEvent existing = eventMapper.selectOne(new LambdaQueryWrapper<WearSafetyEvent>()
                 .eq(WearSafetyEvent::getSource, request.getSource())
                 .eq(WearSafetyEvent::getSourceEventId, request.getSourceEventId()));
         if (existing != null)
         {
+            assertSameSimulation(existing, request, siteId);
             eventMapper.bumpRepeat(existing.getId());
             return EventViews.toDto(eventMapper.selectById(existing.getId()));
         }
@@ -123,6 +162,9 @@ public class EventIngestService
         row.setSource(request.getSource());
         row.setSourceEventId(request.getSourceEventId());
         row.setEventType(request.getType());
+        row.setAlarmCode(request.getAlarmCode());
+        row.setAlarmName(request.getAlarmName());
+        row.setAlarmDescription(request.getAlarmDescription());
         row.setSeverity(EventStateMachine.severityOf(request.getType()));
         row.setStatus(EventStateMachine.OPEN);
         row.setOccurredAt(occurred);
@@ -156,13 +198,40 @@ public class EventIngestService
             {
                 throw ex;
             }
+            assertSameSimulation(raced, request, siteId);
             eventMapper.bumpRepeat(raced.getId());
             return EventViews.toDto(eventMapper.selectById(raced.getId()));
+        }
+        if (request.getSimulationDetail() != null && request.isDemo() && "simulator".equals(request.getSource()))
+        {
+            com.ruoyi.wear.event.domain.WearEventAction action = new com.ruoyi.wear.event.domain.WearEventAction();
+            action.setEventId(row.getId());
+            action.setAction("simulate");
+            action.setActor(actor);
+            action.setReason(request.getSimulationDetail());
+            action.setToStatus(EventStateMachine.OPEN);
+            action.setCreateTime(now);
+            actionMapper.insert(action);
         }
         fillInbox(row);
         eventTaskMatchService.applyOnInsert(row);
         notifyService.notifyAfterCommit(row);
         return EventViews.toDto(eventMapper.selectById(row.getId()));
+    }
+
+    private void assertSameSimulation(WearSafetyEvent existing, IngestRequest request, Long siteId)
+    {
+        if ("simulator".equals(request.getSource())
+                && (!siteId.equals(existing.getSiteId()) || !request.getType().equals(existing.getEventType())
+                || (StringUtils.isNotEmpty(request.getDeviceId())
+                && !request.getDeviceId().equals(String.valueOf(existing.getDeviceId())))))
+            throw new ServiceException("重复事件标识已用于其他厂站、设备或事件类型", HttpStatus.CONFLICT);
+    }
+
+    private void validateAlarmText(String text, int limit)
+    {
+        if (text != null && text.length() > limit)
+            throw new ServiceException("告警描述字段超过长度限制", HttpStatus.BAD_REQUEST);
     }
 
     private void applySnapshot(WearSafetyEvent row, IngestRequest request, Date occurred)

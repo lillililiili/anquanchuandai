@@ -1,0 +1,8 @@
+00:00 +0: loading C:/Users/qiyue/Desktop/开发项目/新版安卓端开发/安卓全页面设计-浅色多彩版-区别分析/tools/capture_latest_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: capture 01
+CAPTURE 01 1 frames; max=0.0
+00:02 +1: capture 02
+CAPTURE 02 1 frames; max=0.0
+00:04 +2: (tearDownAll)
+00:04 +2: All tests passed!

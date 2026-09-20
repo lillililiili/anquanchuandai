@@ -1,0 +1,52 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.List;
+4: import java.util.Map;
+5: import org.springframework.beans.factory.annotation.Autowired;
+6: import org.springframework.web.bind.annotation.GetMapping;
+7: import org.springframework.web.bind.annotation.PathVariable;
+8: import org.springframework.web.bind.annotation.PostMapping;
+9: import org.springframework.web.bind.annotation.RequestBody;
+10: import org.springframework.web.bind.annotation.RequestMapping;
+11: import org.springframework.web.bind.annotation.RestController;
+12: import com.ruoyi.common.core.domain.R;
+13: import com.ruoyi.wear.work.DutyService;
+14: import com.ruoyi.wear.work.dto.HandoverDto;
+15: 
+16: @RestController
+17: @RequestMapping("/api/v1/duty")
+18: public class WearDutyController
+19: {
+20:     @Autowired
+21:     private DutyService dutyService;
+22: 
+23:     @GetMapping("/summary")
+24:     public R<Map<String, Object>> summary()
+25:     {
+26:         return R.ok(dutyService.summary());
+27:     }
+28: 
+29:     @GetMapping("/operators")
+30:     public R<List<Map<String, String>>> operators()
+31:     {
+32:         return R.ok(dutyService.operators());
+33:     }
+34: 
+35:     @GetMapping("/handovers")
+36:     public R<List<HandoverDto>> handovers()
+37:     {
+38:         return R.ok(dutyService.handovers());
+39:     }
+40: 
+41:     @PostMapping("/handovers")
+42:     public R<HandoverDto> create(@RequestBody Map<String, Object> body)
+43:     {
+44:         return R.ok(dutyService.createHandover(body));
+45:     }
+46: 
+47:     @PostMapping("/handovers/{id:\\d+}/confirm")
+48:     public R<HandoverDto> confirm(@PathVariable Long id)
+49:     {
+50:         return R.ok(dutyService.confirm(id));
+51:     }
+52: }

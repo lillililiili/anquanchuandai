@@ -1,0 +1,124 @@
+1: import '../core.dart';
+2: 
+3: String personStatusLabel(Object? value) => switch (value?.toString()) {
+4:   '0' => '在职',
+5:   '1' => '停用',
+6:   _ => '未知',
+7: };
+8: 
+9: String deviceTypeLabel(Object? value) => switch (value?.toString()) {
+10:   'helmet' => '安全帽',
+11:   'belt' => '安全带',
+12:   _ => '未知类型',
+13: };
+14: 
+15: String assetStatusLabel(Object? value) => switch (value?.toString()) {
+16:   'unassigned' => '未分配',
+17:   'in_stock' => '在库',
+18:   'maintenance' => '维修中',
+19:   'disabled' => '已停用',
+20:   'scrapped' => '已报废',
+21:   _ => '未知',
+22: };
+23: 
+24: String taskStatusLabel(Object? value) => switch (value?.toString()) {
+25:   'draft' => '草稿',
+26:   'ready' => '待开始',
+27:   'in_progress' => '进行中',
+28:   'paused' => '已暂停',
+29:   'ended' => '已结束',
+30:   _ => '未知',
+31: };
+32: 
+33: String taskGroup(Object? value) => switch (value?.toString()) {
+34:   'in_progress' || 'paused' => '进行中',
+35:   'draft' || 'ready' => '待开始',
+36:   'ended' => '已结束',
+37:   _ => '状态未知',
+38: };
+39: 
+40: String equipmentResultLabel(Object? value) => switch (value?.toString()) {
+41:   'ok' => '符合要求',
+42:   'missing' => '缺少装备',
+43:   'unknown' => '状态未知',
+44:   _ => '状态未知',
+45: };
+46: 
+47: String eventTypeLabel(Object? value) => switch (value?.toString()) {
+48:   'sos' => 'SOS 求救',
+49:   'fall' => '跌倒告警',
+50:   'realtime' => '实时告警',
+51:   'geofence' => '围栏告警',
+52:   _ => '未知事件',
+53: };
+54: 
+55: String eventStatusLabel(Object? value) => switch (value?.toString()) {
+56:   'open' => '待认领',
+57:   'claimed' => '已认领',
+58:   'handling' => '处理中',
+59:   'pending_review' => '待复核',
+60:   'closed' => '已关闭',
+61:   _ => '状态未知',
+62: };
+63: 
+64: String connectionLabel(JsonMap item) {
+65:   return switch (item['connectionQuality']?.toString()) {
+66:     'ok' => item['online']?.toString() == '1' ? '在线' : '状态未知',
+67:     'stale' => '数据陈旧',
+68:     _ => '状态未知',
+69:   };
+70: }
+71: 
+72: String batteryLabel(Object? value) {
+73:   if (value == null) return '未知';
+74:   final number = num.tryParse(value.toString());
+75:   if (number == null) return '未知';
+76:   final percent = number <= 1 ? number * 100 : number;
+77:   return '${percent.round()}%';
+78: }
+79: 
+80: List<String> stringValues(Object? value) {
+81:   if (value is! List) return const [];
+82:   return value
+83:       .where((item) => item != null)
+84:       .map((item) => item.toString())
+85:       .toList();
+86: }
+87: 
+88: List<String> deviceActions(JsonMap device) {
+89:   final capabilities = jsonMap(device['capabilities']);
+90:   return stringValues(capabilities['actions']);
+91: }
+92: 
+93: int nearestPointIndex(List<JsonMap> points, DateTime target) {
+94:   if (points.isEmpty) return -1;
+95:   var best = 0;
+96:   var bestDistance = _distance(points.first['occurredAt'], target);
+97:   for (var index = 1; index < points.length; index++) {
+98:     final distance = _distance(points[index]['occurredAt'], target);
+99:     if (distance < bestDistance) {
+100:       best = index;
+101:       bestDistance = distance;
+102:     }
+103:   }
+104:   return best;
+105: }
+106: 
+107: Duration _distance(Object? raw, DateTime target) {
+108:   final parsed = DateTime.tryParse(raw?.toString() ?? '');
+109:   if (parsed == null) return const Duration(days: 365000);
+110:   final difference = parsed.difference(target);
+111:   return difference.isNegative ? -difference : difference;
+112: }
+113: 
+114: Uri communicationUri({String? deviceId, String? personId, String? action}) {
+115:   return Uri(
+116:     path: '/communications',
+117:     queryParameters: {
+118:       if (deviceId != null && deviceId.isNotEmpty) 'deviceId': deviceId,
+119:       if (personId != null && personId.isNotEmpty) 'personId': personId,
+120:       if (action != null && action.isNotEmpty) 'action': action,
+121:       if (action == 'video') 'video': '1',
+122:     },
+123:   );
+124: }

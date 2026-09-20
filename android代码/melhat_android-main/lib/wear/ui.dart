@@ -298,6 +298,14 @@ class WearSiteSwitcher extends StatelessWidget {
   }
 }
 
+class WearHeaderLayout {
+  // Measured from the existing home banner, excluding its old 8dp top gap.
+  static double height(BuildContext context) =>
+      148 + (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(0, 2) * 164;
+  static const titleSize = 16.0;
+  static const subtitleSize = 12.0;
+}
+
 class WearBrandHero extends StatelessWidget {
   const WearBrandHero({
     super.key,
@@ -307,7 +315,7 @@ class WearBrandHero extends StatelessWidget {
     this.alignment = const Alignment(0.18, 0),
     this.trailing,
     this.showSiteSwitcher = true,
-    this.height = 188,
+    this.height,
   });
 
   final String title;
@@ -316,23 +324,19 @@ class WearBrandHero extends StatelessWidget {
   final Alignment alignment;
   final Widget? trailing;
   final bool showSiteSwitcher;
-  final double height;
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
     final right =
         trailing ?? (showSiteSwitcher ? const WearSiteSwitcher() : null);
     return SizedBox(
-      height: height,
+      height: height ?? WearHeaderLayout.height(context),
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          WearAssetImage(
-            background,
-            fit: BoxFit.cover,
-            alignment: alignment,
-          ),
+          WearAssetImage(background, fit: BoxFit.cover, alignment: alignment),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             child: Column(
@@ -353,35 +357,31 @@ class WearBrandHero extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 118),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: WearHeaderLayout.titleSize,
+                              height: 1.15,
+                              fontWeight: FontWeight.w800,
+                              color: WearColors.ink,
+                            ),
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 6),
                             Text(
-                              title,
+                              subtitle!,
                               style: const TextStyle(
-                                fontSize: 28,
-                                height: 1.15,
-                                fontWeight: FontWeight.w800,
-                                color: WearColors.ink,
+                                fontSize: WearHeaderLayout.subtitleSize,
+                                height: 1.35,
+                                color: WearColors.muted,
                               ),
                             ),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: 6),
-                              Text(
-                                subtitle!,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  height: 1.35,
-                                  color: WearColors.muted,
-                                ),
-                              ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),

@@ -1,0 +1,32 @@
+name: wear-call-lab
+services:
+  call-lab:
+    build: .
+    ports:
+      - "${CALL_LAB_BIND:-127.0.0.1}:${CALL_LAB_PORT:-5188}:18766"
+    volumes:
+      - "./video:/app/video:ro"
+    environment:
+      PORT: "18766"
+      ICE_SERVERS_JSON: ${ICE_SERVERS_JSON:-[]}
+      AGORA_APP_ID: ${AGORA_APP_ID:-}
+      AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE:-}
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal:18084}
+      MYSQL_HOST: ${MYSQL_HOST:-host.docker.internal}
+      MYSQL_PORT: ${MYSQL_PORT:-3307}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-melhat}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-melhat_local}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:18766/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

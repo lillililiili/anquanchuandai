@@ -12,6 +12,9 @@ public class WearSafetyEvent
     @TableId(type = IdType.AUTO)
     private Long id;
     private String source;
+    private String alarmCode;
+    private String alarmName;
+    private String alarmDescription;
     private String sourceEventId;
     private String eventType;
     private String severity;
@@ -44,6 +47,12 @@ public class WearSafetyEvent
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public String getAlarmCode() { return alarmCode; }
+    public void setAlarmCode(String alarmCode) { this.alarmCode = alarmCode; }
+    public String getAlarmName() { return alarmName; }
+    public void setAlarmName(String alarmName) { this.alarmName = alarmName; }
+    public String getAlarmDescription() { return alarmDescription; }
+    public void setAlarmDescription(String alarmDescription) { this.alarmDescription = alarmDescription; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
     public String getSourceEventId() { return sourceEventId; }

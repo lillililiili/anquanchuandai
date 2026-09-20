@@ -20,6 +20,9 @@ public final class EventViews
         EventDto dto = new EventDto();
         dto.setId(str(row.getId()));
         dto.setType(row.getEventType());
+        dto.setAlarmCode(row.getAlarmCode());
+        dto.setAlarmName(row.getAlarmName());
+        dto.setAlarmDescription(row.getAlarmDescription());
         dto.setSeverity(row.getSeverity());
         dto.setStatus(row.getStatus());
         dto.setOccurredAt(row.getOccurredAt());

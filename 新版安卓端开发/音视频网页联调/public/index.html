@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ROLLING · 智能穿戴现场联调平台</title>
+  <link rel="icon" href="/icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- 统一顶部导航栏 -->
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="/icon.svg" alt="Logo">
+      <span>ROLLING <small>现场联调工作台</small></span>
+      <span class="brand-badge">V2.0</span>
+    </a>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="navPeople" data-target="viewPeople">
+        <span>👥</span> 现场人员与装备
+      </button>
+      <button class="nav-tab" id="navComms" data-target="viewComms">
+        <span>📞</span> 音视频与对讲
+      </button>
+      <button class="nav-tab" id="navAlarms" data-target="viewAlarms">
+        <span>🚨</span> 设备告警中心
+        <span id="navAlarmsBadge" class="tab-badge" style="display:none; background:#ef4444; color:#fff; border-radius:999px; padding:0.1rem 0.45rem; font-size:0.7rem; font-weight:700; margin-left:0.35rem;">0</span>
+      </button>
+    </nav>
+
+    <div class="topbar-right">
+      <div class="site-selector">
+        <label for="siteSelect">厂站:</label>
+        <select id="siteSelect">
+          <option value="1">演示厂站A</option>
+          <option value="2">演示厂站B</option>
+        </select>
+      </div>
+
+      <span id="backendPill" class="status-pill online"><i></i> 后端正常 (:18084)</span>
+      <span id="dispatcherPill" class="status-pill offline" title="值班端在线状态"><i></i> 无在线值班员</span>
+
+      <div class="duty-staff-badge" id="dutyStaffBadge" title="主系统当前自动检测到的值班人员">
+        <span class="duty-icon">🛡️</span>
+        <span class="duty-label">主项目值班员:</span>
+        <span id="dutyStaffName" class="duty-name">检测中...</span>
+        <span id="dutyStaffStatus" class="status-pill offline"><i></i> 待机</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主容器 -->
+  <main class="container">
+    <div id="noticeBanner" class="notice-banner info" hidden></div>
+
+    <!-- TAB 1: 现场人员与装备 (核心) -->
+    <section id="viewPeople" class="tab-content active">
+      <!-- 统计指标概览 -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-label"><span>👷</span> 现场人员总数</div>
+          <div class="stat-value" id="statTotalPeople">0</div>
+          <div class="stat-sub"><span id="statOnlinePeople" style="color:var(--success);font-weight:700">0</span> 在岗工作 · <span id="statOfflinePeople">0</span> 离线</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label"><span>🪖</span> 安全帽台账</div>
+          <div class="stat-value" id="statHelmets">0</div>
+          <div class="stat-sub">支持对讲 / 视频 / TTS</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label"><span>🪢</span> 安全带台账</div>
+          <div class="stat-value" id="statBelts">0</div>
+          <div class="stat-sub">挂钩状态 / 锁扣检测</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label"><span>⌚</span> 智能手表台账</div>
+          <div class="stat-value" id="statWatches">0</div>
+          <div class="stat-sub">离腕 / 生理体征监测</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label"><span>⚠️</span> 当前异常模拟</div>
+          <div class="stat-value" id="statAbnormalCount" style="color:var(--danger)">0</div>
+          <div class="stat-sub">已同步主系统告警</div>
+        </div>
+      </div>
+
+      <!-- 工具栏与筛选器 -->
+      <div class="toolbar-bar">
+        <div class="toolbar-left">
+          <input id="peopleSearch" class="search-input" placeholder="搜索姓名 / 编号 / 设备SN...">
+          <select id="taskFilter" class="filter-select" title="按作业任务筛选">
+            <option value="">全部作业任务</option>
+          </select>
+          <select id="teamFilter" class="filter-select" title="按人员班组筛选">
+            <option value="">全部人员班组</option>
+          </select>
+          <select id="statusFilter" class="filter-select" title="按人员在线/异常状态筛选">
+            <option value="">全部状态</option>
+            <option value="online">仅看在岗 (在线)</option>
+            <option value="offline">仅看离线</option>
+            <option value="abnormal">仅看异常模拟</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <button id="btnAllOnline" class="btn btn-success btn-sm">
+            ⚡ 一键全员在岗上线
+          </button>
+          <button id="btnAllOffline" class="btn btn-secondary btn-sm">
+            ⚪ 一键全员离线
+          </button>
+          <button id="btnRefreshRoster" class="btn btn-secondary btn-sm">
+            🔄 刷新名单
+          </button>
+        </div>
+      </div>
+
+      <!-- 多人员卡片流网格 -->
+      <div id="peopleGrid" class="people-grid">
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--ink-muted);">
+          正在加载人员与设备台账数据...
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: 音视频与对讲群聊 -->
+    <section id="viewComms" class="tab-content">
+      <div class="comms-layout">
+        <!-- 左侧: 呼叫控制面板与群聊 -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- 当前正在进行的通话 -->
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h2 style="font-size: 1.125rem; font-weight: 700;">📞 实时通话与对讲</h2>
+              <div style="display:flex; gap:0.5rem;">
+                <button id="btnAcceptAllCalls" class="btn btn-success btn-sm" disabled>一键全员接听</button>
+                <button id="btnEndAllCalls" class="btn btn-danger btn-sm" disabled>全员挂断</button>
+              </div>
+            </div>
+            <div id="activeCallsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="color: var(--ink-muted); font-size: 0.875rem; text-align: center; padding: 1.5rem 0;">
+                暂无进行中的通话。可由安全帽呼叫值班员，或由值班端呼入安全帽。
+              </div>
+            </div>
+          </div>
+
+          <!-- 主动发起呼叫 (安全帽端发起) -->
+          <div class="card">
+            <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">🪖 安全帽主动呼叫值班员</h2>
+            <p style="font-size: 0.8125rem; color: var(--ink-secondary); margin-bottom: 1rem;">
+              模拟正在佩戴安全帽的现场人员，按下安全帽通话按钮，呼叫当前在线的值班人员（手机端接听）。
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+              <div>
+                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-secondary);">发起安全帽:</label>
+                <select id="callSourceHelmet" class="filter-select" style="width: 100%; margin-top: 0.25rem;">
+                  <option value="">请选择已在线安全帽</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-secondary);">目标值班人员 (主项目自动检测):</label>
+                <div id="callTargetDutyDisplay" style="padding: 0.45rem 0.75rem; background: var(--surface-subtle); border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 0.8125rem; font-weight: 600; color: var(--ink-primary); margin-top: 0.25rem; min-height: 38px; display: flex; align-items: center;">
+                  检测中...
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <button id="btnStartHelmetCall" class="btn btn-primary" style="flex: 1;">
+                发起普通语音呼叫
+              </button>
+              <button id="btnStartHelmetSosCall" class="btn btn-danger" style="flex: 1;">
+                🚨 发起 SOS 紧急呼叫
+              </button>
+            </div>
+          </div>
+
+          <!-- 安全帽文字语音播报接收 (被动接收展示) -->
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h2 style="font-size: 1.125rem; font-weight: 700;">📢 安全帽播报接收箱 (被动接收)</h2>
+              <span class="tag tag-team">单向被动接收</span>
+            </div>
+            <p style="font-size: 0.8125rem; color: var(--ink-secondary); margin-bottom: 0.75rem;">
+              安全帽仅具备被动接收文字/语音播报能力（由主系统值班端下发），安全帽端接收后播放并向主系统回执。
+            </p>
+            <div id="helmetTtsInbox" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 220px; overflow-y: auto;">
+              <div style="color: var(--ink-muted); font-size: 0.8125rem; text-align: center; padding: 1.5rem 0;">
+                暂无接收到的文字语音播报。主系统值班端下发播报后，此处将即时呈现接收内容。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧: 模拟头盔摄像头画面与通话日志 -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h2 style="font-size: 1.125rem; font-weight: 700;">📷 安全帽摄像头监控画面 (单向推送)</h2>
+                <p id="videoStatusText" style="font-size: 0.75rem; color: var(--ink-muted);">当前未处于视频推送状态</p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span id="cameraPill" class="status-pill offline"><i></i> 待机</span>
+                <button id="btnToggleVideoStream" class="btn btn-secondary btn-sm" title="模拟开启/关闭摄像头单向监控视频流">
+                  🎥 模拟开启画面推流
+                </button>
+              </div>
+            </div>
+
+            <!-- 视频流监控展示区域 -->
+            <div class="stage-wrapper" id="videoStageWrapper">
+              <!-- 真实视频流播放器 (来自 /api/v1/lab/video/stream) -->
+              <video id="videoPov" autoplay muted loop playsinline controls style="width: 100%; height: 100%; object-fit: contain; background: #000; display: none;"></video>
+              
+              <!-- 待机占位图/提示 -->
+              <div id="videoPlaceholder" style="width: 100%; height: 100%; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b132b; color: #94a3b8; gap: 0.75rem; padding: 2rem;">
+                <div style="font-size: 2.5rem;">📷</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: #e2e8f0;">安全帽摄像头待机中</div>
+                <div style="font-size: 0.8rem; color: #64748b; max-width: 320px; text-align: center;">
+                  安全帽视频为单向被动推送。当值班人员在通话中请求开启视频，或通过视频接口拉流时，安全帽自动开始推送摄像头监控流。
+                </div>
+              </div>
+
+              <!-- HUD 监控参数浮层 -->
+              <div class="stage-hud-top">
+                <span class="hud-badge" id="hudHelmetSn">HELMET: STANDBY</span>
+                <span class="hud-badge" id="hudFps">LIVE STREAM · 1080P</span>
+              </div>
+              <div class="stage-hud-bottom">
+                <span class="hud-badge" id="hudTimestamp">2026-09-20 00:00:00</span>
+                <span class="hud-badge" id="hudStreamUrl" style="font-family: monospace; font-size: 0.7rem;">/api/v1/lab/video/stream</span>
+              </div>
+            </div>
+
+            <!-- 视频接口信息栏 -->
+            <div style="padding: 0.75rem 1.25rem; background: var(--surface-subtle); border-top: 1px solid var(--line); font-size: 0.8125rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-weight: 600; color: var(--ink-secondary);">📡 监控推流接口:</span>
+                <code style="background: var(--surface); border: 1px solid var(--line); padding: 0.15rem 0.5rem; border-radius: 4px; color: var(--brand); font-weight: 600;">GET /api/v1/lab/video/stream</code>
+              </div>
+              <a href="/api/v1/lab/video/stream" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration: none;">
+                🔗 在新标签页打开视频流
+              </a>
+            </div>
+          </div>
+
+          <!-- 播报接收与通话历史 -->
+          <div class="card">
+            <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.75rem;">📋 最近播报与通话历史</h2>
+            <div id="commsHistoryBox" style="max-height: 260px; overflow-y: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>类型</th>
+                    <th>对象</th>
+                    <th>状态 / 内容</th>
+                  </tr>
+                </thead>
+                <tbody id="commsHistoryBody">
+                  <tr><td colspan="4" style="text-align: center; color: var(--ink-muted); padding: 2rem;">暂无历史记录</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: 设备告警中心 -->
+    <section id="viewAlarms" class="tab-content">
+      <div class="alarms-grid">
+        <!-- 左侧: 场景选择与注入 -->
+        <div class="card">
+          <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">🚨 告警场景注入</h2>
+          <p style="font-size: 0.8125rem; color: var(--ink-secondary); margin-bottom: 1rem;">
+            选择具体设备并注入指定告警，自动生成模拟事件并同步推送给安卓端。
+          </p>
+
+          <div style="margin-bottom: 1rem;">
+            <!-- 方案切换复选/单选 -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; background: var(--surface-subtle); padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--ink-secondary);">定位设备方案:</span>
+              <div style="display: flex; gap: 0.85rem; font-size: 0.75rem;">
+                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; color: var(--ink-primary); font-weight: 600;">
+                  <input type="radio" name="alarmFilterMode" value="person" id="modePersonDevice" checked>
+                  👤 人员与设备联动
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; color: var(--ink-primary); font-weight: 600;">
+                  <input type="radio" name="alarmFilterMode" value="device" id="modeDeviceDirect">
+                  🔍 单独筛选设备
+                </label>
+              </div>
+            </div>
+
+            <!-- 方案一：人员与设备共同联动筛选 -->
+            <div id="alarmPersonFilterRow" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.6rem;">
+              <div>
+                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-secondary);">按人员筛选:</label>
+                <select id="alarmPersonSelect" class="filter-select" style="width: 100%; margin-top: 0.25rem;">
+                  <option value="">全部人员</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-secondary);">领用设备:</label>
+                <select id="alarmPersonDeviceSelect" class="filter-select" style="width: 100%; margin-top: 0.25rem;">
+                  <option value="">请选择设备</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 方案二：单独直接筛选设备 -->
+            <div id="alarmDeviceDirectRow" style="display: none; margin-bottom: 0.6rem;">
+              <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-secondary);">目标设备 (全部设备):</label>
+              <select id="alarmDeviceSelect" class="filter-select" style="width: 100%; margin-top: 0.25rem;">
+                <option value="">加载设备列表中...</option>
+              </select>
+            </div>
+
+            <!-- 当前选中的设备与责任人员信息提示 -->
+            <div id="alarmSelectedDeviceInfo" style="background: #f8fafc; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.45rem 0.65rem; font-size: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+              <span id="alarmSelectedDeviceText" style="color: var(--ink-secondary); font-weight: 600;">🎯 目标设备: 未选择</span>
+              <span id="alarmSelectedPersonText" class="tag tag-team" style="display: none;"></span>
+            </div>
+          </div>
+
+          <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-secondary); margin-bottom: 0.25rem; display: block;">选择测试场景:</label>
+          <div id="alarmScenarioList" class="scenario-list">
+            <div style="color: var(--ink-muted); font-size: 0.8125rem;">正在加载告警场景...</div>
+          </div>
+
+          <div id="alarmFieldsContainer" style="margin-top: 1rem;"></div>
+
+          <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <button id="btnInjectAlarm" class="btn btn-danger" style="flex: 1;">
+              生成告警并回读
+            </button>
+            <button id="btnRepeatAlarm" class="btn btn-secondary btn-sm" disabled title="重发上次事件测试去重">
+              重发
+            </button>
+          </div>
+        </div>
+
+        <!-- 右侧: 最近事件列表 -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div>
+                <h2 style="font-size: 1.125rem; font-weight: 700;">📋 项目安全事件台账</h2>
+                <p style="font-size: 0.8125rem; color: var(--ink-secondary);">显示当前厂站最近安全告警事件记录，供安卓端与联调测试验证。</p>
+              </div>
+              <button id="btnRefreshEvents" class="btn btn-secondary btn-sm">🔄 刷新事件</button>
+            </div>
+
+            <div style="max-height: 480px; overflow-y: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>事件ID</th>
+                    <th>类型</th>
+                    <th>设备 / 人员</th>
+                    <th>发生时间</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody id="eventsTableBody">
+                  <tr><td colspan="5" style="text-align: center; color: var(--ink-muted); padding: 2rem;">加载事件中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

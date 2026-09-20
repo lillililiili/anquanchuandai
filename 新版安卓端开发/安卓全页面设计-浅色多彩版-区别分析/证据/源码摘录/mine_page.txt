@@ -1,0 +1,916 @@
+1: import 'dart:async';
+2: import 'dart:convert';
+3: import 'package:flutter/material.dart';
+4: import 'package:go_router/go_router.dart';
+5: import 'package:permission_handler/permission_handler.dart';
+6: import 'core.dart';
+7: import 'notifications.dart';
+8: import 'package:flutter/services.dart';
+9: import 'queries/my_equipment_page.dart';
+10: 
+11: class WearMinePage extends StatefulWidget {
+12:   final WearNotifications notifications;
+13:   const WearMinePage({super.key, required this.notifications});
+14:   @override
+15:   State<WearMinePage> createState() => _WearMinePageState();
+16: }
+17: 
+18: class _WearMinePageState extends State<WearMinePage> {
+19:   WearSession? _session;
+20:   List<JsonMap> _handovers = [];
+21:   String? _error, _confirming;
+22:   bool _loading = false;
+23:   int _request = 0;
+24:   final _detailTick = ValueNotifier<int>(0);
+25:   @override
+26:   void didChangeDependencies() {
+27:     super.didChangeDependencies();
+28:     final session = WearScope.of(context);
+29:     if (_session != session) {
+30:       _session?.refreshTick.removeListener(_refresh);
+31:       _session = session;
+32:       session.refreshTick.addListener(_refresh);
+33:       Future.microtask(_load);
+34:     }
+35:   }
+36: 
+37:   void _refresh() {
+38:     unawaited(_load());
+39:   }
+40: 
+41:   Future<void> _load() async {
+42:     final request = ++_request;
+43:     if (!mounted) return;
+44:     setState(() {
+45:       _loading = true;
+46:       _error = null;
+47:     });
+48:     _detailTick.value++;
+49:     try {
+50:       final rows = jsonList(await _session!.api.get('/api/v1/duty/handovers'));
+51:       if (mounted && request == _request) setState(() => _handovers = rows);
+52:     } catch (e) {
+53:       if (mounted && request == _request && e is! StaleSessionException) {
+54:         setState(() => _error = e.toString());
+55:       }
+56:     } finally {
+57:       if (mounted && request == _request) {
+58:         setState(() => _loading = false);
+59:         _detailTick.value++;
+60:       }
+61:     }
+62:   }
+63: 
+64:   Future<void> _confirm(JsonMap handover) async {
+65:     if (_confirming != null) return;
+66:     final approved = await showDialog<bool>(
+67:       context: context,
+68:       builder: (ctx) => AlertDialog(
+69:         title: const Text('确认接班'),
+70:         content: Text(
+71:           '确认接收 ${textOf(handover['fromUserName'])} 的交接责任？确认后请及时查看相关事件与作业。',
+72:         ),
+73:         actions: [
+74:           TextButton(
+75:             onPressed: () => Navigator.pop(ctx, false),
+76:             child: const Text('暂不接班'),
+77:           ),
+78:           FilledButton(
+79:             onPressed: () => Navigator.pop(ctx, true),
+80:             child: const Text('确认接班'),
+81:           ),
+82:         ],
+83:       ),
+84:     );
+85:     if (approved != true || !mounted) return;
+86:     setState(() => _confirming = idOf(handover['id']));
+87:     _detailTick.value++;
+88:     try {
+89:       await _session!.api.post(
+90:         '/api/v1/duty/handovers/$_confirming/confirm',
+91:         data: {},
+92:       );
+93:       if (mounted) {
+94:         ScaffoldMessenger.of(
+95:           context,
+96:         ).showSnackBar(const SnackBar(content: Text('接班已确认，请查看待处理事项')));
+97:       }
+98:       _session!.requestRefresh();
+99:     } catch (e) {
+100:       if (mounted && e is! StaleSessionException) {
+101:         ScaffoldMessenger.of(
+102:           context,
+103:         ).showSnackBar(SnackBar(content: Text(e.toString())));
+104:       }
+105:     } finally {
+106:       if (mounted) {
+107:         setState(() => _confirming = null);
+108:         _detailTick.value++;
+109:       }
+110:     }
+111:   }
+112: 
+113:   String _payloadSummary(JsonMap row) {
+114:     try {
+115:       final payload = jsonMap(jsonDecode(textOf(row['payloadJson'], '{}')));
+116:       return '${(payload['eventIds'] as List? ?? []).length} 条事件 · ${(payload['taskIds'] as List? ?? []).length} 项作业';
+117:     } catch (_) {
+118:       return '交接内容请查看工作台';
+119:     }
+120:   }
+121: 
+122:   @override
+123:   void dispose() {
+124:     _request++;
+125:     _detailTick.dispose();
+126:     _session?.refreshTick.removeListener(_refresh);
+127:     super.dispose();
+128:   }
+129: 
+130:   static const _blue = Color(0xFF008FFF);
+131:   static const _ink = Color(0xFF112044);
+132:   static const _muted = Color(0xFF6F89AE);
+133: 
+134:   String _roleLabel(WearSession session) => session.roles
+135:       .map(
+136:         (role) =>
+137:             const {
+138:               'wear_duty': '值班员',
+139:               'wear_team_lead': '班组长',
+140:               'wear_reviewer': '复核员',
+141:               'wear_readonly': '只读',
+142:               'wear_device_admin': '设备管理员',
+143:               'wear_platform_admin': '平台管理员',
+144:               'admin': '管理员',
+145:             }[role] ??
+146:             role,
+147:       )
+148:       .join(' / ');
+149: 
+150:   void _openDetail(String title, Widget Function(BuildContext) contents) {
+151:     Navigator.of(context).push(
+152:       MaterialPageRoute<void>(
+153:         builder: (ctx) => Scaffold(
+154:           backgroundColor: const Color(0xFFEEF7FF),
+155:           appBar: AppBar(
+156:             title: Text(title),
+157:             leading: IconButton(
+158:               tooltip: '返回我的',
+159:               icon: const Icon(Icons.arrow_back),
+160:               onPressed: () => Navigator.of(ctx).pop(),
+161:             ),
+162:           ),
+163:           body: AnimatedBuilder(
+164:             animation: Listenable.merge([
+165:               _detailTick,
+166:               widget.notifications,
+167:               _session!,
+168:             ]),
+169:             builder: (ctx, _) => SingleChildScrollView(
+170:               padding: const EdgeInsets.all(16),
+171:               child: SizedBox(width: double.infinity, child: contents(ctx)),
+172:             ),
+173:           ),
+174:         ),
+175:       ),
+176:     );
+177:   }
+178: 
+179:   Future<void> _leaveAccount({required bool switching}) async {
+180:     final session = _session!;
+181:     if (session.busy || session.callActive.value) return;
+182:     final accepted = await showDialog<bool>(
+183:       context: context,
+184:       builder: (ctx) => AlertDialog(
+185:         title: Text(switching ? '切换当前账号？' : '退出当前账号？'),
+186:         content: Text(
+187:           switching ? '退出当前账号并返回登录页，当前账号的本机草稿和缓存将被清除。' : '退出后将清除当前账号的本机草稿和缓存。',
+188:         ),
+189:         actions: [
+190:           TextButton(
+191:             onPressed: () => Navigator.pop(ctx, false),
+192:             child: const Text('取消'),
+193:           ),
+194:           FilledButton(
+195:             onPressed: () => Navigator.pop(ctx, true),
+196:             child: Text(switching ? '确认切换' : '确认退出'),
+197:           ),
+198:         ],
+199:       ),
+200:     );
+201:     if (accepted == true && mounted && !session.callActive.value) {
+202:       await session.logout();
+203:     }
+204:   }
+205: 
+206:   @override
+207:   Widget build(BuildContext context) {
+208:     final session = WearScope.of(context);
+209:     final name = textOf(
+210:       session.me?['nickName'],
+211:       textOf(session.me?['userName'], '值班员'),
+212:     );
+213:     final role = _roleLabel(session);
+214:     return LayoutBuilder(
+215:       builder: (context, constraints) {
+216:         final unit = (constraints.maxWidth / 390).clamp(0.85, 1.3);
+217:         return RefreshIndicator(
+218:           onRefresh: _load,
+219:           child: SingleChildScrollView(
+220:             key: const PageStorageKey('mine-reference'),
+221:             physics: const AlwaysScrollableScrollPhysics(),
+222:             child: ColoredBox(
+223:               color: const Color(0xFFEEF8FF),
+224:               child: Column(
+225:                 children: [
+226:                   SizedBox(
+227:                     key: const ValueKey('wear-page-hero-mine'),
+228:                     height: WearHeaderLayout.height(context),
+229:                     child: Stack(
+230:                       children: [
+231:                         Positioned.fill(
+232:                           child: Image.asset(
+233:                             'assets/field-brand/preview/mine_reference_hero.png',
+234:                             fit: BoxFit.cover,
+235:                             alignment: Alignment.center,
+236:                           ),
+237:                         ),
+238:                         Positioned(
+239:                           top: 12,
+240:                           left: 16,
+241:                           child: const WearRollingWordmark(height: 25),
+242:                         ),
+243:                         Positioned(
+244:                           top: 0,
+245:                           right: 16,
+246:                           width: 140 * unit,
+247:                           child: Tooltip(
+248:                             message: session.callActive.value
+249:                                 ? '通话中不能切换厂站'
+250:                                 : '切换厂站',
+251:                             child: TextButton(
+252:                               key: const ValueKey('mine-header-site'),
+253:                               onPressed:
+254:                                   session.busy || session.callActive.value
+255:                                   ? null
+256:                                   : () => context.go('/sites'),
+257:                               style: TextButton.styleFrom(
+258:                                 foregroundColor: _muted,
+259:                                 minimumSize: const Size(48, 48),
+260:                                 padding: EdgeInsets.symmetric(
+261:                                   horizontal: 4 * unit,
+262:                                 ),
+263:                               ),
+264:                               child: Row(
+265:                                 mainAxisAlignment: MainAxisAlignment.end,
+266:                                 children: [
+267:                                   Flexible(
+268:                                     child: Text(
+269:                                       session.siteName,
+270:                                       maxLines: 1,
+271:                                       overflow: TextOverflow.ellipsis,
+272:                                       style: TextStyle(fontSize: 11),
+273:                                     ),
+274:                                   ),
+275:                                   Icon(Icons.expand_more, size: 16 * unit),
+276:                                 ],
+277:                               ),
+278:                             ),
+279:                           ),
+280:                         ),
+281:                         Positioned(
+282:                           left: 16,
+283:                           top: 32,
+284:                           width: constraints.maxWidth * .46,
+285:                           bottom: 12,
+286:                           child: Align(
+287:                             alignment: Alignment.centerLeft,
+288:                             child: Column(
+289:                               crossAxisAlignment: CrossAxisAlignment.start,
+290:                               mainAxisSize: MainAxisSize.min,
+291:                               children: [
+292:                                 Text(
+293:                                   '你好，$name！',
+294:                                   maxLines: 1,
+295:                                   overflow: TextOverflow.ellipsis,
+296:                                   style: const TextStyle(
+297:                                     fontSize: WearHeaderLayout.titleSize,
+298:                                     height: 1.15,
+299:                                     fontWeight: FontWeight.w800,
+300:                                     color: WearColors.ink,
+301:                                   ),
+302:                                 ),
+303:                                 const SizedBox(height: 6),
+304:                                 const Text(
+305:                                   '安全作业，平安每一天！',
+306:                                   style: TextStyle(
+307:                                     fontSize: WearHeaderLayout.subtitleSize,
+308:                                     height: 1.35,
+309:                                     color: WearColors.muted,
+310:                                   ),
+311:                                 ),
+312:                               ],
+313:                             ),
+314:                           ),
+315:                         ),
+316:                         Positioned(
+317:                           right: 7 * unit,
+318:                           top: 88,
+319:                           child: Transform.rotate(
+320:                             angle: -0.16,
+321:                             child: Text(
+322:                               '安全\n从我做起！',
+323:                               textScaler: TextScaler.noScaling,
+324:                               textAlign: TextAlign.center,
+325:                               style: TextStyle(
+326:                                 color: _blue,
+327:                                 fontSize: 11,
+328:                                 fontWeight: FontWeight.w800,
+329:                                 height: 1.3,
+330:                               ),
+331:                             ),
+332:                           ),
+333:                         ),
+334:                       ],
+335:                     ),
+336:                   ),
+337:                   Padding(
+338:                     padding: EdgeInsets.fromLTRB(
+339:                       15 * unit,
+340:                       0,
+341:                       15 * unit,
+342:                       20 * unit,
+343:                     ),
+344:                     child: Column(
+345:                       crossAxisAlignment: CrossAxisAlignment.stretch,
+346:                       children: [
+347:                         _surface(
+348:                           Column(
+349:                             children: [
+350:                               _profileRow(
+351:                                 Icons.person_outline,
+352:                                 '姓名',
+353:                                 name,
+354:                                 blue: true,
+355:                                 suffix: role,
+356:                               ),
+357:                               _profileRow(
+358:                                 Icons.person_outline,
+359:                                 '账号',
+360:                                 textOf(session.me?['userName']),
+361:                                 blue: true,
+362:                               ),
+363:                               _profileRow(
+364:                                 Icons.business_outlined,
+365:                                 '厂站',
+366:                                 session.siteName,
+367:                               ),
+368:                               _profileRow(
+369:                                 Icons.engineering_outlined,
+370:                                 '角色',
+371:                                 role,
+372:                               ),
+373:                               _profileRow(
+374:                                 Icons.badge_outlined,
+375:                                 'SIP ID',
+376:                                 textOf(session.me?['sipId'], '未分配'),
+377:                                 last: true,
+378:                               ),
+379:                             ],
+380:                           ),
+381:                         ),
+382:                         SizedBox(height: 11 * unit),
+383:                         _surface(
+384:                           InkWell(
+385:                             onTap: () =>
+386:                                 _openDetail('通讯服务', (_) => _notificationCard()),
+387:                             child: Padding(
+388:                               padding: EdgeInsets.symmetric(
+389:                                 horizontal: 13 * unit,
+390:                                 vertical: 13 * unit,
+391:                               ),
+392:                               child: Row(
+393:                                 children: [
+394:                                   Icon(
+395:                                     Icons.cell_tower,
+396:                                     color: const Color(0xFFFF9800),
+397:                                     size: 34 * unit,
+398:                                   ),
+399:                                   SizedBox(width: 10 * unit),
+400:                                   Expanded(
+401:                                     child: Column(
+402:                                       crossAxisAlignment:
+403:                                           CrossAxisAlignment.start,
+404:                                       children: [
+405:                                         const Text(
+406:                                           '通讯服务',
+407:                                           style: TextStyle(
+408:                                             fontSize: 16,
+409:                                             fontWeight: FontWeight.w700,
+410:                                             color: _ink,
+411:                                           ),
+412:                                         ),
+413:                                         const SizedBox(height: 3),
+414:                                         Text(
+415:                                           '接警连接、通知权限与设备绑定',
+416:                                           style: TextStyle(
+417:                                             fontSize: 10.5 * unit,
+418:                                             color: _muted,
+419:                                           ),
+420:                                         ),
+421:                                       ],
+422:                                     ),
+423:                                   ),
+424:                                   Container(
+425:                                     padding: const EdgeInsets.symmetric(
+426:                                       horizontal: 7,
+427:                                       vertical: 5,
+428:                                     ),
+429:                                     decoration: BoxDecoration(
+430:                                       color: const Color(0xFFFFF4D1),
+431:                                       border: Border.all(
+432:                                         color: const Color(0xFFFFDE87),
+433:                                       ),
+434:                                       borderRadius: BorderRadius.circular(8),
+435:                                     ),
+436:                                     child: const Text(
+437:                                       '查看状态',
+438:                                       style: TextStyle(
+439:                                         color: Color(0xFFF39800),
+440:                                         fontSize: 12,
+441:                                         fontWeight: FontWeight.w700,
+442:                                       ),
+443:                                     ),
+444:                                   ),
+445:                                   const SizedBox(width: 6),
+446:                                   const Icon(
+447:                                     Icons.chevron_right,
+448:                                     size: 20,
+449:                                     color: _muted,
+450:                                   ),
+451:                                 ],
+452:                               ),
+453:                             ),
+454:                           ),
+455:                         ),
+456:                         SizedBox(height: 11 * unit),
+457:                         _surface(
+458:                           Column(
+459:                             children: [
+460:                               _menuRow(
+461:                                 Icons.safety_check,
+462:                                 const Color(0xFF00BC75),
+463:                                 '我的装备',
+464:                                 () => Navigator.of(context).push(
+465:                                   MaterialPageRoute<void>(
+466:                                     builder: (_) => const MyEquipmentPage(),
+467:                                   ),
+468:                                 ),
+469:                               ),
+470:                               _menuRow(
+471:                                 Icons.settings,
+472:                                 const Color(0xFF9256F8),
+473:                                 '设置',
+474:                                 () =>
+475:                                     _openDetail('设置', (ctx) => _settings(ctx)),
+476:                               ),
+477:                               _menuRow(
+478:                                 Icons.chat,
+479:                                 _blue,
+480:                                 '帮助与反馈',
+481:                                 () => _openDetail('帮助与反馈', (ctx) => _help(ctx)),
+482:                                 last: true,
+483:                               ),
+484:                             ],
+485:                           ),
+486:                         ),
+487:                         SizedBox(height: 12 * unit),
+488:                         OutlinedButton.icon(
+489:                           onPressed: session.busy || session.callActive.value
+490:                               ? null
+491:                               : () => _leaveAccount(switching: true),
+492:                           style: OutlinedButton.styleFrom(
+493:                             minimumSize: const Size(48, 44),
+494:                             foregroundColor: _blue,
+495:                             side: const BorderSide(color: _blue),
+496:                             shape: RoundedRectangleBorder(
+497:                               borderRadius: BorderRadius.circular(9),
+498:                             ),
+499:                           ),
+500:                           icon: const Icon(Icons.login, size: 22),
+501:                           label: const Text(
+502:                             '切换账号',
+503:                             style: TextStyle(
+504:                               fontSize: 17,
+505:                               fontWeight: FontWeight.w700,
+506:                             ),
+507:                           ),
+508:                         ),
+509:                         SizedBox(height: 10 * unit),
+510:                         FilledButton.icon(
+511:                           onPressed: session.busy || session.callActive.value
+512:                               ? null
+513:                               : () => _leaveAccount(switching: false),
+514:                           style: FilledButton.styleFrom(
+515:                             minimumSize: const Size(48, 44),
+516:                             elevation: 0,
+517:                             backgroundColor: const Color(0xFFFFE9EF),
+518:                             foregroundColor: const Color(0xFFEF1644),
+519:                             shape: RoundedRectangleBorder(
+520:                               borderRadius: BorderRadius.circular(9),
+521:                             ),
+522:                           ),
+523:                           icon: const Icon(Icons.logout, size: 22),
+524:                           label: const Text(
+525:                             '退出登录',
+526:                             style: TextStyle(
+527:                               fontSize: 17,
+528:                               fontWeight: FontWeight.w700,
+529:                             ),
+530:                           ),
+531:                         ),
+532:                       ],
+533:                     ),
+534:                   ),
+535:                 ],
+536:               ),
+537:             ),
+538:           ),
+539:         );
+540:       },
+541:     );
+542:   }
+543: 
+544:   Widget _surface(Widget child) => Material(
+545:     color: Colors.white.withValues(alpha: 0.96),
+546:     borderRadius: BorderRadius.circular(14),
+547:     clipBehavior: Clip.antiAlias,
+548:     child: child,
+549:   );
+550: 
+551:   Widget _profileRow(
+552:     IconData icon,
+553:     String label,
+554:     String value, {
+555:     bool blue = false,
+556:     bool last = false,
+557:     String? suffix,
+558:   }) {
+559:     final accent = blue ? _blue : const Color(0xFF9564EF);
+560:     return Padding(
+561:       padding: const EdgeInsets.symmetric(horizontal: 12),
+562:       child: Row(
+563:         children: [
+564:           Container(
+565:             width: 31,
+566:             height: 31,
+567:             decoration: BoxDecoration(
+568:               color: accent.withValues(alpha: 0.09),
+569:               shape: BoxShape.circle,
+570:             ),
+571:             child: Icon(icon, color: accent, size: 23),
+572:           ),
+573:           const SizedBox(width: 10),
+574:           Expanded(
+575:             child: Container(
+576:               padding: const EdgeInsets.symmetric(vertical: 10),
+577:               decoration: BoxDecoration(
+578:                 border: last
+579:                     ? null
+580:                     : const Border(
+581:                         bottom: BorderSide(color: Color(0xFFE9F0F8)),
+582:                       ),
+583:               ),
+584:               child: Row(
+585:                 children: [
+586:                   SizedBox(
+587:                     width: 62,
+588:                     child: Text(
+589:                       label,
+590:                       style: const TextStyle(color: _muted, fontSize: 14),
+591:                     ),
+592:                   ),
+593:                   Expanded(
+594:                     child: Text(
+595:                       value,
+596:                       style: const TextStyle(
+597:                         color: _ink,
+598:                         fontSize: 14,
+599:                         fontWeight: FontWeight.w600,
+600:                       ),
+601:                     ),
+602:                   ),
+603:                   if (suffix != null &&
+604:                       MediaQuery.textScalerOf(context).scale(1) <= 1.1)
+605:                     Flexible(
+606:                       child: Padding(
+607:                         padding: const EdgeInsets.only(left: 6),
+608:                         child: Text(
+609:                           suffix,
+610:                           maxLines: 1,
+611:                           overflow: TextOverflow.ellipsis,
+612:                           style: const TextStyle(color: _muted, fontSize: 11),
+613:                         ),
+614:                       ),
+615:                     ),
+616:                 ],
+617:               ),
+618:             ),
+619:           ),
+620:         ],
+621:       ),
+622:     );
+623:   }
+624: 
+625:   Widget _menuRow(
+626:     IconData icon,
+627:     Color color,
+628:     String title,
+629:     VoidCallback onTap, {
+630:     bool last = false,
+631:   }) => InkWell(
+632:     onTap: onTap,
+633:     child: Padding(
+634:       padding: const EdgeInsets.symmetric(horizontal: 15),
+635:       child: Container(
+636:         constraints: const BoxConstraints(minHeight: 48),
+637:         padding: const EdgeInsets.symmetric(vertical: 9),
+638:         decoration: BoxDecoration(
+639:           border: last
+640:               ? null
+641:               : const Border(bottom: BorderSide(color: Color(0xFFE9F0F8))),
+642:         ),
+643:         child: Row(
+644:           children: [
+645:             title == '我的装备'
+646:                 ? const CustomPaint(
+647:                     size: Size(27, 27),
+648:                     painter: _MineHelmetPainter(),
+649:                   )
+650:                 : Icon(icon, color: color, size: 27),
+651:             const SizedBox(width: 15),
+652:             Expanded(
+653:               child: Text(
+654:                 title,
+655:                 style: const TextStyle(
+656:                   fontSize: 16,
+657:                   color: _ink,
+658:                   fontWeight: FontWeight.w700,
+659:                 ),
+660:               ),
+661:             ),
+662:             const Icon(Icons.chevron_right, color: _muted, size: 23),
+663:           ],
+664:         ),
+665:       ),
+666:     ),
+667:   );
+668: 
+669:   Widget _settings(BuildContext ctx) => Column(
+670:     crossAxisAlignment: CrossAxisAlignment.stretch,
+671:     children: [
+672:       _surface(
+673:         ListTile(
+674:           leading: const Icon(Icons.factory_outlined),
+675:           title: const Text('切换厂站'),
+676:           trailing: const Icon(Icons.chevron_right),
+677:           enabled: !_session!.callActive.value,
+678:           onTap: _session!.callActive.value
+679:               ? null
+680:               : () {
+681:                   Navigator.of(ctx).pop();
+682:                   context.go('/sites');
+683:                 },
+684:         ),
+685:       ),
+686:       const SizedBox(height: 16),
+687:       _handoverCard(),
+688:       const SizedBox(height: 16),
+689:       const Text(
+690:         '智能穿戴管理平台 1.3.0',
+691:         textAlign: TextAlign.center,
+692:         style: TextStyle(color: _muted, fontSize: 12),
+693:       ),
+694:     ],
+695:   );
+696: 
+697:   Widget _help(BuildContext ctx) => _surface(
+698:     Padding(
+699:       padding: const EdgeInsets.all(18),
+700:       child: Column(
+701:         crossAxisAlignment: CrossAxisAlignment.stretch,
+702:         children: [
+703:           const Text(
+704:             '使用帮助',
+705:             style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+706:           ),
+707:           const SizedBox(height: 14),
+708:           const Text(
+709:             '我的装备：查看当前账号关联人员的设备和绑定记录。\n\n通讯服务：查看接警连接、通知权限和绑定状态。\n\n设置：切换厂站、查看并确认值班交接。\n\n账号操作：确认后退出当前账号；通话中请先结束通话。',
+710:             style: TextStyle(height: 1.6),
+711:           ),
+712:           const SizedBox(height: 18),
+713:           const Text(
+714:             '遇到问题时，可复制以下诊断信息交给管理员；不会包含密码或登录凭证。',
+715:             style: TextStyle(color: _muted, height: 1.5),
+716:           ),
+717:           TextButton.icon(
+718:             icon: const Icon(Icons.copy_outlined),
+719:             label: const Text('复制诊断信息'),
+720:             onPressed: () async {
+721:               await Clipboard.setData(
+722:                 ClipboardData(
+723:                   text:
+724:                       '智能穿戴管理平台 1.3.0\n厂站：${_session!.siteName}\n通知：${widget.notifications.status}',
+725:                 ),
+726:               );
+727:               if (ctx.mounted) {
+728:                 ScaffoldMessenger.of(
+729:                   ctx,
+730:                 ).showSnackBar(const SnackBar(content: Text('诊断信息已复制')));
+731:               }
+732:             },
+733:           ),
+734:         ],
+735:       ),
+736:     ),
+737:   );
+738: 
+739:   Widget _notificationCard() => ListenableBuilder(
+740:     listenable: widget.notifications,
+741:     builder: (context, _) => WearCard(
+742:       child: Column(
+743:         crossAxisAlignment: CrossAxisAlignment.start,
+744:         children: [
+745:           const Text(
+746:             '接警状态',
+747:             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+748:           ),
+749:           const SizedBox(height: 12),
+750:           Wrap(
+751:             spacing: 8,
+752:             runSpacing: 8,
+753:             children: [
+754:               WearBadge(
+755:                 text: widget.notifications.socketConnected
+756:                     ? '前台连接正常'
+757:                     : '前台连接重试中',
+758:                 color: widget.notifications.socketConnected
+759:                     ? WearColors.primary
+760:                     : WearColors.warning,
+761:               ),
+762:               WearBadge(
+763:                 text: widget.notifications.permissionGranted
+764:                     ? '通知权限已开启'
+765:                     : '通知权限未开启',
+766:                 color: widget.notifications.permissionGranted
+767:                     ? WearColors.primary
+768:                     : WearColors.warning,
+769:               ),
+770:             ],
+771:           ),
+772:           const SizedBox(height: 12),
+773:           Text(
+774:             widget.notifications.status,
+775:             style: const TextStyle(color: WearColors.muted),
+776:           ),
+777:           const SizedBox(height: 10),
+778:           Wrap(
+779:             spacing: 8,
+780:             children: [
+781:               TextButton.icon(
+782:                 onPressed: widget.notifications.requestPermission,
+783:                 icon: const Icon(Icons.notifications_outlined),
+784:                 label: const Text('开启通知'),
+785:               ),
+786:               TextButton(onPressed: openAppSettings, child: const Text('系统设置')),
+787:               if (widget.notifications.configured &&
+788:                   !widget.notifications.registered)
+789:                 TextButton(
+790:                   onPressed: widget.notifications.bind,
+791:                   child: const Text('重试绑定'),
+792:                 ),
+793:             ],
+794:           ),
+795:         ],
+796:       ),
+797:     ),
+798:   );
+799: 
+800:   Widget _handoverCard() {
+801:     final session = _session!;
+802:     return WearCard(
+803:       child: Column(
+804:         crossAxisAlignment: CrossAxisAlignment.start,
+805:         children: [
+806:           Row(
+807:             children: [
+808:               const Expanded(
+809:                 child: Text(
+810:                   '值班交接',
+811:                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+812:                 ),
+813:               ),
+814:               IconButton(
+815:                 tooltip: '刷新交接',
+816:                 onPressed: _loading ? null : _load,
+817:                 icon: const Icon(Icons.refresh),
+818:               ),
+819:             ],
+820:           ),
+821:           if (_loading) const LinearProgressIndicator(),
+822:           if (_error != null)
+823:             WearEmpty(title: '交接加载失败', detail: _error, onRetry: _load)
+824:           else if (_handovers.isEmpty && !_loading)
+825:             const Padding(
+826:               padding: EdgeInsets.symmetric(vertical: 14),
+827:               child: Text('暂无交接记录', style: TextStyle(color: WearColors.muted)),
+828:             )
+829:           else
+830:             for (final row in _handovers)
+831:               Padding(
+832:                 padding: const EdgeInsets.symmetric(vertical: 10),
+833:                 child: Column(
+834:                   crossAxisAlignment: CrossAxisAlignment.start,
+835:                   children: [
+836:                     Text(
+837:                       '${textOf(row['fromUserName'])} → ${textOf(row['toUserName'])}',
+838:                       style: const TextStyle(fontWeight: FontWeight.w700),
+839:                     ),
+840:                     Text(
+841:                       '${_payloadSummary(row)}\n${formatTime(row['createTime'])}',
+842:                       style: const TextStyle(
+843:                         color: WearColors.muted,
+844:                         height: 1.6,
+845:                       ),
+846:                     ),
+847:                     if (textOf(row['comment'], '').isNotEmpty)
+848:                       Text(textOf(row['comment'])),
+849:                     const SizedBox(height: 8),
+850:                     WearBadge(
+851:                       text: row['status'] == 'confirmed' ? '已接班' : '待接班',
+852:                     ),
+853:                     if (row['status'] == 'pending' &&
+854:                         idOf(row['toUserId']) == session.userId &&
+855:                         session.isDuty)
+856:                       FilledButton(
+857:                         onPressed: _confirming != null
+858:                             ? null
+859:                             : () => _confirm(row),
+860:                         child: Text(
+861:                           _confirming == idOf(row['id']) ? '正在确认…' : '确认接班',
+862:                         ),
+863:                       ),
+864:                   ],
+865:                 ),
+866:               ),
+867:         ],
+868:       ),
+869:     );
+870:   }
+871: }
+872: 
+873: class _MineHelmetPainter extends CustomPainter {
+874:   const _MineHelmetPainter();
+875:   @override
+876:   void paint(Canvas canvas, Size size) {
+877:     canvas.save();
+878:     canvas.scale(size.width / 28, size.height / 28);
+879:     final green = Paint()..color = const Color(0xFF00BD75);
+880:     canvas.drawPath(
+881:       Path()
+882:         ..moveTo(4, 21)
+883:         ..lineTo(4, 15)
+884:         ..quadraticBezierTo(4, 6, 14, 5)
+885:         ..quadraticBezierTo(24, 6, 24, 15)
+886:         ..lineTo(24, 21)
+887:         ..close(),
+888:       green,
+889:     );
+890:     canvas.drawRRect(
+891:       RRect.fromRectAndRadius(
+892:         const Rect.fromLTWH(12, 3, 4, 18),
+893:         const Radius.circular(2),
+894:       ),
+895:       Paint()..color = const Color(0xFF00A765),
+896:     );
+897:     canvas.drawRRect(
+898:       RRect.fromRectAndRadius(
+899:         const Rect.fromLTWH(1, 20, 26, 5),
+900:         const Radius.circular(2.5),
+901:       ),
+902:       green,
+903:     );
+904:     canvas.drawLine(
+905:       const Offset(5, 23),
+906:       const Offset(23, 23),
+907:       Paint()
+908:         ..color = const Color(0xFF00965D)
+909:         ..strokeWidth = 1.5,
+910:     );
+911:     canvas.restore();
+912:   }
+913: 
+914:   @override
+915:   bool shouldRepaint(covariant _MineHelmetPainter oldDelegate) => false;
+916: }

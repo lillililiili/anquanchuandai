@@ -72,6 +72,8 @@ public class HelmetAdapter
     {
         Map<String, Object> payload = new LinkedHashMap<String, Object>();
         payload.put("type", param == null ? null : param.getType());
+        payload.put("alarmName", param == null ? null : param.getAlarmName());
+        payload.put("alarmDescription", param == null ? null : param.getAlarmDescription());
         payload.put("helmetSn", param == null ? null : param.getHelmetSn());
         payload.put("startTime", param == null ? null : param.getStartTime());
         payload.put("endTime", param == null ? null : param.getEndTime());
@@ -179,6 +181,9 @@ public class HelmetAdapter
         ingest.setSource("helmet");
         ingest.setSourceEventId(messageKey);
         ingest.setType(eventType);
+        ingest.setAlarmCode("helmet." + ("sos".equals(eventType) ? "sos" : alarmType));
+        ingest.setAlarmName(str(payload.get("alarmName")));
+        ingest.setAlarmDescription(str(payload.get("alarmDescription")));
         ingest.setSiteId(String.valueOf(device.getSiteId()));
         ingest.setDeviceId(String.valueOf(device.getId()));
         ingest.setOccurredAt(occurred);

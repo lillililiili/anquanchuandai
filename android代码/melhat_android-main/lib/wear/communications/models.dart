@@ -1,3 +1,5 @@
+import '../device_status.dart';
+
 typedef JsonMap = Map<String, dynamic>;
 
 String _stringOf(Object? value, [String fallback = '']) {
@@ -162,17 +164,23 @@ class PersonOption {
     required this.id,
     required this.name,
     required this.personCode,
+    this.teamId = '',
+    this.teamName = '',
   });
 
   factory PersonOption.fromJson(JsonMap json) => PersonOption(
     id: _stringOf(json['id']),
     name: _stringOf(json['name'], '未命名人员'),
     personCode: _stringOf(json['personCode']),
+    teamId: _stringOf(json['teamId']),
+    teamName: _stringOf(json['teamName']),
   );
 
   final String id;
   final String name;
   final String personCode;
+  final String teamId;
+  final String teamName;
 }
 
 class CommunicationDevice {
@@ -184,10 +192,18 @@ class CommunicationDevice {
     this.personName,
     this.typeCode = '',
     this.modelName = '',
+    this.online = 'unknown',
+    this.connectionQuality = '',
+    this.simulationStatus = '',
+    this.simulationStatusLabel = '',
+    this.simulatedPresence = false,
     this.demo = false,
   });
 
   factory CommunicationDevice.fromJson(JsonMap json, {JsonMap? assignment}) {
+    assignment ??= json['currentAssignment'] is Map
+        ? Map<String, dynamic>.from(json['currentAssignment'] as Map)
+        : null;
     final capabilities = json['capabilities'];
     final actions = capabilities is Map
         ? _strings(capabilities['actions'])
@@ -199,6 +215,11 @@ class CommunicationDevice {
       personName: _nullableString(assignment?['personName']),
       typeCode: _stringOf(json['typeCode'] ?? assignment?['typeCode']),
       modelName: _stringOf(json['modelName']),
+      online: devicePresence(json),
+      connectionQuality: _stringOf(json['connectionQuality']),
+      simulationStatus: _stringOf(json['simulationStatus']),
+      simulationStatusLabel: _stringOf(json['simulationStatusLabel']),
+      simulatedPresence: _boolOf(json['simulation']),
       actions: actions,
       demo: _boolOf(json['demo']),
     );
@@ -210,10 +231,50 @@ class CommunicationDevice {
   final String? personName;
   final String typeCode;
   final String modelName;
+  final String online;
+  final String connectionQuality;
+  final String simulationStatus;
+  final String simulationStatusLabel;
+  final bool simulatedPresence;
   final Set<String> actions;
   final bool demo;
 
   bool supports(String action) => actions.contains(action);
+
+  bool get isNormalOnline => online == 'online' && !isAbnormal;
+  bool get isAbnormal =>
+      simulationStatus.isNotEmpty && simulationStatus != 'normal';
+
+  String get stateLabel {
+    if (connectionQuality == 'stale') return '数据陈旧';
+    if (online == 'offline') return '离线';
+    if (online != 'online') return '状态未知';
+    if (isAbnormal) {
+      return simulationStatusLabel.isEmpty ? '异常' : simulationStatusLabel;
+    }
+    return '在线';
+  }
+}
+
+/// Personnel presence follows assigned helmets, never an unrelated wearable or
+/// a test console's in-memory person toggle.
+class PersonHelmetStatus {
+  PersonHelmetStatus(String personId, Iterable<CommunicationDevice> devices) {
+    final helmets = devices
+        .where((d) => d.personId == personId && d.typeCode == 'helmet')
+        .toList();
+    device =
+        helmets.where((d) => d.isNormalOnline).firstOrNull ??
+        helmets.firstOrNull;
+  }
+
+  late final CommunicationDevice? device;
+  bool get isOnline => device?.isNormalOnline ?? false;
+  String get label => device == null
+      ? '安全帽未关联'
+      : isOnline
+      ? '在线'
+      : '安全帽${device!.stateLabel}';
 }
 
 enum TtsCommandStatus { accepted, sent, failed, unknown }

@@ -1,0 +1,22 @@
+{
+  "id": "13",
+  "width": 360,
+  "height": 616,
+  "pixelRatio": 3,
+  "frames": [
+    {
+      "file": "01.png",
+      "offset": 0.0,
+      "max": 75.0,
+      "top": 175.0,
+      "height": 180.0
+    },
+    {
+      "file": "02.png",
+      "offset": 75.0,
+      "max": 75.0,
+      "top": 175.0,
+      "height": 180.0
+    }
+  ]
+}

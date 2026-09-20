@@ -1,0 +1,1514 @@
+{
+  "generatedAt": "2026-09-18T15:16:08",
+  "sourceCommit": "fd49d9e",
+  "sourceType": "当前工作区（含未提交修改）",
+  "captureMethod": "Flutter 原组件渲染；360×616 逻辑像素，3倍输出；本地 Noto CJK 字体。业务数据均为示例；非雷电系统截图。",
+  "items": [
+    {
+      "id": "01",
+      "title": "欢迎登录",
+      "group": "账号",
+      "parent": null,
+      "kind": "页面",
+      "entry": "启动应用",
+      "note": "登录表单和验证码布局已实现；展示使用本地演示身份。",
+      "source": "lib/wear/auth_pages.dart",
+      "otherParents": [],
+      "referenceTitle": "欢迎登录",
+      "image": "页面图片/01.jpg",
+      "thumb": "页面图片/01-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/01/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "02",
+      "title": "找回登录权限",
+      "group": "账号",
+      "parent": "01",
+      "kind": "弹层",
+      "entry": "登录 → 登录遇到问题",
+      "note": "当前仅关闭弹层并提示联系管理员，未调用密码重置接口。",
+      "source": "lib/wear/auth_pages.dart",
+      "otherParents": [],
+      "referenceTitle": "找回登录权限",
+      "image": "页面图片/02.jpg",
+      "thumb": "页面图片/02-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/02/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "03",
+      "title": "选择工作厂站",
+      "group": "账号",
+      "parent": "01",
+      "kind": "页面",
+      "entry": "登录后选择厂站；现场或我的也可切站",
+      "note": "读取授权厂站并执行切站的代码已实现；此处为演示厂站。",
+      "source": "lib/wear/auth_pages.dart",
+      "otherParents": [
+        "04",
+        "30",
+        "34"
+      ],
+      "referenceTitle": "选择工作厂站",
+      "image": "页面图片/03.jpg",
+      "thumb": "页面图片/03-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/03/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "04",
+      "title": "现场",
+      "group": "现场",
+      "parent": "03",
+      "kind": "主页面",
+      "entry": "底部导航 → 现场",
+      "note": "当前工作台：作业、我的装备和现场入口；保留最新顶部及底栏比例。",
+      "source": "lib/wear/queries/workbench.dart",
+      "otherParents": [],
+      "referenceTitle": "现场",
+      "image": "页面图片/04.jpg",
+      "thumb": "页面图片/04-首屏.jpg",
+      "width": 1080,
+      "height": 3270,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 474.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/04/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 400.0,
+          "max": 474.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/04/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 474.0,
+          "max": 474.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/04/03.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "05",
+      "title": "作业任务",
+      "group": "现场",
+      "parent": "04",
+      "kind": "子页面",
+      "entry": "现场 → 作业任务",
+      "note": "作业列表和详情跳转已实现，数据为示例。",
+      "source": "lib/wear/queries/tasks.dart",
+      "otherParents": [],
+      "referenceTitle": "作业任务",
+      "image": "页面图片/05.jpg",
+      "thumb": "页面图片/05-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/05/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "06",
+      "title": "作业详情",
+      "group": "现场",
+      "parent": "05",
+      "kind": "子页面",
+      "entry": "作业任务 → 任务；现场 → 查看作业",
+      "note": "包含作业信息、人员、装备核查和相关事件；当前子页隐藏底部导航。",
+      "source": "lib/wear/queries/tasks.dart",
+      "otherParents": [
+        "04"
+      ],
+      "referenceTitle": "作业详情",
+      "image": "页面图片/06.jpg",
+      "thumb": "页面图片/06-首屏.jpg",
+      "width": 1080,
+      "height": 2748,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 300.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/06/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 300.0,
+          "max": 300.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/06/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "07",
+      "title": "现场人员",
+      "group": "现场",
+      "parent": "04",
+      "kind": "子页面",
+      "entry": "现场 → 人员",
+      "note": "人员列表、姓名搜索和详情入口已实现。",
+      "source": "lib/wear/queries/people.dart",
+      "otherParents": [],
+      "referenceTitle": "现场人员",
+      "image": "页面图片/07.jpg",
+      "thumb": "页面图片/07-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/07/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "08",
+      "title": "人员详情",
+      "group": "现场",
+      "parent": "07",
+      "kind": "子页面",
+      "entry": "现场人员 → 人员；作业详情 → 成员",
+      "note": "展示人员资料、装备和相关事件入口。",
+      "source": "lib/wear/queries/people.dart",
+      "otherParents": [
+        "06"
+      ],
+      "referenceTitle": "人员详情",
+      "image": "页面图片/08.jpg",
+      "thumb": "页面图片/08-首屏.jpg",
+      "width": 1080,
+      "height": 4194,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 738.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/08/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 360.0,
+          "max": 782.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/08/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 720.0,
+          "max": 782.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/08/03.png"
+        },
+        {
+          "file": "04.png",
+          "offset": 782.0,
+          "max": 782.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/08/04.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "09",
+      "title": "失去监护人员",
+      "group": "现场",
+      "parent": "04",
+      "kind": "子页面",
+      "entry": "现场 → 失去监护人员",
+      "note": "根据作业装备核查聚合；当前示例均正常，因此展示真实空态。",
+      "source": "lib/wear/queries/supervision.dart",
+      "otherParents": [],
+      "referenceTitle": "失去监护人员",
+      "image": "页面图片/09.jpg",
+      "thumb": "页面图片/09-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/09/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "10",
+      "title": "设备台账",
+      "group": "现场",
+      "parent": "04",
+      "kind": "子页面",
+      "entry": "现场 → 设备",
+      "note": "设备列表及类型/状态筛选已实现。",
+      "source": "lib/wear/queries/devices.dart",
+      "otherParents": [],
+      "referenceTitle": "设备台账",
+      "image": "页面图片/10.jpg",
+      "thumb": "页面图片/10-首屏.jpg",
+      "width": 1080,
+      "height": 1896,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 16.0,
+          "top": 221.0,
+          "height": 269.0,
+          "url": "captures/10/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 16.0,
+          "max": 16.0,
+          "top": 221.0,
+          "height": 269.0,
+          "url": "captures/10/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "11",
+      "title": "设备详情",
+      "group": "现场",
+      "parent": "10",
+      "kind": "子页面",
+      "entry": "设备台账 → 设备；人员详情 → 装备",
+      "note": "包含状态、能力及绑定信息，通信入口按设备能力显示。",
+      "source": "lib/wear/queries/devices.dart",
+      "otherParents": [
+        "08",
+        "31"
+      ],
+      "referenceTitle": "设备详情",
+      "image": "页面图片/11.jpg",
+      "thumb": "页面图片/11-首屏.jpg",
+      "width": 1080,
+      "height": 2607,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 253.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/11/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 253.0,
+          "max": 253.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/11/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "12",
+      "title": "设备状态异常",
+      "group": "现场",
+      "parent": "11",
+      "kind": "状态",
+      "entry": "设备详情 → 离线设备状态",
+      "note": "同一设备详情组件，注入离线示例；不是新增独立页面。",
+      "source": "lib/wear/queries/devices.dart",
+      "otherParents": [],
+      "referenceTitle": "设备状态异常",
+      "image": "页面图片/12.jpg",
+      "thumb": "页面图片/12-首屏.jpg",
+      "width": 1080,
+      "height": 2607,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 253.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/12/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 253.0,
+          "max": 253.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/12/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "13",
+      "title": "轨迹回放",
+      "group": "现场",
+      "parent": "04",
+      "kind": "页面 · 部分异常",
+      "entry": "现场 → 轨迹；人员详情 → 轨迹",
+      "note": "展示原页面的未选择人员状态。当前源码在选中人员、轨迹为空时预先构造回放内容，触发 ArgumentError；原始诊断截图另行保留，轨迹播放未标为验收完成。",
+      "source": "lib/wear/queries/tracks.dart",
+      "otherParents": [
+        "08"
+      ],
+      "referenceTitle": "轨迹回放",
+      "image": "页面图片/13.jpg",
+      "thumb": "页面图片/13-首屏.jpg",
+      "width": 1080,
+      "height": 2073,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 75.0,
+          "top": 175.0,
+          "height": 180.0,
+          "url": "captures/13/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 75.0,
+          "max": 75.0,
+          "top": 175.0,
+          "height": 180.0,
+          "url": "captures/13/02.png"
+        }
+      ],
+      "long": true,
+      "issue": true
+    },
+    {
+      "id": "14",
+      "title": "电子围栏",
+      "group": "现场",
+      "parent": "04",
+      "kind": "子页面",
+      "entry": "现场 → 围栏",
+      "note": "围栏列表已实现；本展示使用本地示例围栏。",
+      "source": "lib/wear/queries/fences.dart",
+      "otherParents": [],
+      "referenceTitle": "电子围栏",
+      "image": "页面图片/14.jpg",
+      "thumb": "页面图片/14-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/14/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "15",
+      "title": "围栏详情",
+      "group": "现场",
+      "parent": "14",
+      "kind": "子页面",
+      "entry": "电子围栏 → 围栏",
+      "note": "规则和边界展示已实现；示例未提供 geometry，按现有页面显示无边界数据。",
+      "source": "lib/wear/queries/fences.dart",
+      "otherParents": [],
+      "referenceTitle": "围栏详情",
+      "image": "页面图片/15.jpg",
+      "thumb": "页面图片/15-首屏.jpg",
+      "width": 1080,
+      "height": 2316,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 156.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/15/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 156.0,
+          "max": 156.0,
+          "top": 56.0,
+          "height": 500.0,
+          "url": "captures/15/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "16",
+      "title": "轨迹查询 · 选择人员",
+      "group": "现场",
+      "parent": "13",
+      "kind": "状态",
+      "entry": "轨迹入口 → 搜索并选择人员",
+      "note": "轨迹页的人员选择状态，尚未触发空轨迹异常。",
+      "source": "lib/wear/queries/tracks.dart",
+      "otherParents": [],
+      "referenceTitle": "轨迹查询 · 选择人员",
+      "image": "页面图片/16.jpg",
+      "thumb": "页面图片/16-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/16/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "17",
+      "title": "通讯",
+      "group": "通讯",
+      "parent": "03",
+      "kind": "主页面",
+      "entry": "底部导航 → 通讯",
+      "note": "人员/设备选择及通信功能区已实现；仅使用本地数据。",
+      "source": "lib/wear/communications/communications_page.dart",
+      "otherParents": [
+        "08",
+        "11",
+        "25",
+        "26"
+      ],
+      "referenceTitle": "通讯",
+      "image": "页面图片/17.jpg",
+      "thumb": "页面图片/17-首屏.jpg",
+      "width": 1080,
+      "height": 2739,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 297.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/17/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 297.0,
+          "max": 297.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/17/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "18",
+      "title": "语音通话",
+      "group": "通讯",
+      "parent": "17",
+      "kind": "状态",
+      "entry": "通讯 → 选择装备 → 手机呼叫",
+      "note": "原通信组件的演示会话状态，不连接真实 RTC 或麦克风。",
+      "source": "lib/wear/communications/communications_page.dart",
+      "otherParents": [],
+      "referenceTitle": "语音通话",
+      "image": "页面图片/18.jpg",
+      "thumb": "页面图片/18-首屏.jpg",
+      "width": 1080,
+      "height": 4715,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/18/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 325.44,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/18/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 650.88,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/18/03.png"
+        },
+        {
+          "file": "04.png",
+          "offset": 956.0,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/18/04.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "19",
+      "title": "视频通话",
+      "group": "通讯",
+      "parent": "17",
+      "kind": "状态",
+      "entry": "通讯 → 选择装备 → 视频呼叫",
+      "note": "原通信组件的视频状态；示例画面不是实时视频。",
+      "source": "lib/wear/communications/communications_page.dart",
+      "otherParents": [],
+      "referenceTitle": "视频通话",
+      "image": "页面图片/19.jpg",
+      "thumb": "页面图片/19-首屏.jpg",
+      "width": 1080,
+      "height": 5291,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 1148.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/19/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 325.44,
+          "max": 1148.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/19/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 650.88,
+          "max": 1148.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/19/03.png"
+        },
+        {
+          "file": "04.png",
+          "offset": 976.3199999999999,
+          "max": 1148.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/19/04.png"
+        },
+        {
+          "file": "05.png",
+          "offset": 1148.0,
+          "max": 1148.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/19/05.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "20",
+      "title": "语音播报",
+      "group": "通讯",
+      "parent": "17",
+      "kind": "功能区",
+      "entry": "通讯 → 语音播报 → 选择装备",
+      "note": "原通讯页内的文字播报表单；本地示例不会向设备下发指令。",
+      "source": "lib/wear/communications/communications_page.dart",
+      "otherParents": [],
+      "referenceTitle": "语音播报",
+      "image": "页面图片/20.jpg",
+      "thumb": "页面图片/20-首屏.jpg",
+      "width": 1080,
+      "height": 3840,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 664.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/20/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 400.0,
+          "max": 664.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/20/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 664.0,
+          "max": 664.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/20/03.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "21",
+      "title": "通话记录",
+      "group": "通讯",
+      "parent": "17",
+      "kind": "功能区",
+      "entry": "通讯 → 选择装备 → 下滑查看记录",
+      "note": "通话历史位于同一个通讯页面底部，并非独立路由。",
+      "source": "lib/wear/communications/communications_page.dart",
+      "otherParents": [],
+      "referenceTitle": "通话记录",
+      "image": "页面图片/21.jpg",
+      "thumb": "页面图片/21-首屏.jpg",
+      "width": 1080,
+      "height": 4715,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/21/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 325.44,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/21/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 650.88,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/21/03.png"
+        },
+        {
+          "file": "04.png",
+          "offset": 956.0,
+          "max": 956.0,
+          "top": 104.0,
+          "height": 452.0,
+          "url": "captures/21/04.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "22",
+      "title": "消息",
+      "group": "消息",
+      "parent": "03",
+      "kind": "主页面",
+      "entry": "底部导航 → 消息",
+      "note": "使用当前连续滚动列表与紧凑筛选区；异常和 SOS 分别进入对应详情。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [
+        "04",
+        "06",
+        "08"
+      ],
+      "referenceTitle": "消息",
+      "image": "页面图片/22.jpg",
+      "thumb": "页面图片/22-首屏.jpg",
+      "width": 1080,
+      "height": 2331,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 161.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/22/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 161.0,
+          "max": 161.0,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/22/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "23",
+      "title": "筛选事件",
+      "group": "消息",
+      "parent": "22",
+      "kind": "弹层",
+      "entry": "消息 → 筛选",
+      "note": "底部筛选弹层，保留实际字段与按钮。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [],
+      "referenceTitle": "筛选事件",
+      "image": "页面图片/23.jpg",
+      "thumb": "页面图片/23-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/23/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "24",
+      "title": "事件详情 · 更多处置与记录",
+      "group": "消息",
+      "parent": "25",
+      "kind": "展开状态",
+      "entry": "异常核验 → 更多处置与记录",
+      "note": "事件详情由异常核验/SOS共用；本项展示展开的原始处置与记录区。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [
+        "26"
+      ],
+      "referenceTitle": "事件详情",
+      "image": "页面图片/24.jpg",
+      "thumb": "页面图片/24-首屏.jpg",
+      "width": 1080,
+      "height": 5337,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 1163.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/24/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 400.0,
+          "max": 1163.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/24/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 800.0,
+          "max": 1163.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/24/03.png"
+        },
+        {
+          "file": "04.png",
+          "offset": 1163.0,
+          "max": 1163.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/24/04.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "25",
+      "title": "异常核验",
+      "group": "消息",
+      "parent": "22",
+      "kind": "子页面",
+      "entry": "消息 → 普通事件；作业详情 → 相关事件",
+      "note": "核验表单已实现；照片功能目前为示例添加/预览/删除，不上传服务器。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [],
+      "referenceTitle": "异常核验",
+      "image": "页面图片/25.jpg",
+      "thumb": "页面图片/25-首屏.jpg",
+      "width": 1080,
+      "height": 3591,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 581.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/25/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 400.0,
+          "max": 581.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/25/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 581.0,
+          "max": 581.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/25/03.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "26",
+      "title": "SOS 协助",
+      "group": "消息",
+      "parent": "22",
+      "kind": "子页面",
+      "entry": "消息 → SOS 事件",
+      "note": "SOS 详情已实现；示意地图、附件及协助组体验仍为示例，协助组服务未接入。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [],
+      "referenceTitle": "SOS 协助",
+      "image": "页面图片/26.jpg",
+      "thumb": "页面图片/26-首屏.jpg",
+      "width": 1080,
+      "height": 3214,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 455.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/26/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 400.0,
+          "max": 455.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/26/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 455.2941176470588,
+          "max": 455.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/26/03.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "27",
+      "title": "转交事件",
+      "group": "消息",
+      "parent": "24",
+      "kind": "弹层",
+      "entry": "事件更多处置 → 转交",
+      "note": "同站值班人员与原因表单已实现；此处仅展示本地演示操作。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [],
+      "referenceTitle": "转交事件",
+      "image": "页面图片/27.jpg",
+      "thumb": "页面图片/27-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/27/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "28",
+      "title": "关联作业",
+      "group": "消息",
+      "parent": "24",
+      "kind": "弹层",
+      "entry": "待确认关联的事件 → 确认关联任务",
+      "note": "仅 taskMatch=pending 且有权限时显示；截图使用这一条件的示例事件。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [],
+      "referenceTitle": "关联作业",
+      "image": "页面图片/28.jpg",
+      "thumb": "页面图片/28-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/28/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "29",
+      "title": "事件处置",
+      "group": "消息",
+      "parent": "26",
+      "kind": "展开状态",
+      "entry": "已认领的 SOS → 更多处置与记录",
+      "note": "展示原始处置说明表单和操作区，使用已认领的 SOS 示例，保留操作权限和事件状态约束。",
+      "source": "lib/wear/events/events_page.dart + events/event_reference_view.dart",
+      "otherParents": [],
+      "referenceTitle": "事件处置",
+      "image": "页面图片/29.jpg",
+      "thumb": "页面图片/29-首屏.jpg",
+      "width": 1080,
+      "height": 6088,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 1413.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/29/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 400.0,
+          "max": 1413.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/29/02.png"
+        },
+        {
+          "file": "03.png",
+          "offset": 800.0,
+          "max": 1413.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/29/03.png"
+        },
+        {
+          "file": "04.png",
+          "offset": 1200.0,
+          "max": 1413.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/29/04.png"
+        },
+        {
+          "file": "05.png",
+          "offset": 1413.2941176470588,
+          "max": 1413.2941176470588,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/29/05.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "30",
+      "title": "我的",
+      "group": "我的",
+      "parent": "03",
+      "kind": "主页面",
+      "entry": "底部导航 → 我的",
+      "note": "当前问候、账号资料、通讯服务、装备、设置与账号操作。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "我的",
+      "image": "页面图片/30.jpg",
+      "thumb": "页面图片/30-首屏.jpg",
+      "width": 1080,
+      "height": 2325,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 159.0769230769231,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/30/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 159.0769230769231,
+          "max": 159.0769230769231,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/30/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "31",
+      "title": "我的装备",
+      "group": "我的",
+      "parent": "30",
+      "kind": "子页面",
+      "entry": "我的 → 我的装备；现场 → 查看全部",
+      "note": "使用当前紧凑装备页，保留三类装备及绑定历史入口。",
+      "source": "lib/wear/queries/my_equipment_page.dart",
+      "otherParents": [
+        "04"
+      ],
+      "referenceTitle": "我的装备",
+      "image": "页面图片/31.jpg",
+      "thumb": "页面图片/31-首屏.jpg",
+      "width": 1080,
+      "height": 2164,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 105.29342723004697,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/31/01.png"
+        },
+        {
+          "file": "02.png",
+          "offset": 105.29342723004697,
+          "max": 105.29342723004697,
+          "top": 0.0,
+          "height": 556.0,
+          "url": "captures/31/02.png"
+        }
+      ],
+      "long": true,
+      "issue": false
+    },
+    {
+      "id": "32",
+      "title": "绑定历史",
+      "group": "我的",
+      "parent": "31",
+      "kind": "弹层",
+      "entry": "我的装备 → 绑定历史",
+      "note": "当前实现为底部弹层，参考稿的“历史领用记录”在这里对应绑定历史。",
+      "source": "lib/wear/queries/my_equipment_page.dart",
+      "otherParents": [],
+      "referenceTitle": "历史领用记录",
+      "image": "页面图片/32.jpg",
+      "thumb": "页面图片/32-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/32/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "33",
+      "title": "通讯服务",
+      "group": "我的",
+      "parent": "30",
+      "kind": "子页面",
+      "entry": "我的 → 查看状态",
+      "note": "接警连接、通知权限、账号及绑定状态；截图未启动真实推送服务。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "通讯服务",
+      "image": "页面图片/33.jpg",
+      "thumb": "页面图片/33-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/33/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "34",
+      "title": "设置",
+      "group": "我的",
+      "parent": "30",
+      "kind": "子页面",
+      "entry": "我的 → 设置",
+      "note": "设置保留切站和交接记录；没有亮暗切换。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "设置",
+      "image": "页面图片/34.jpg",
+      "thumb": "页面图片/34-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/34/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "35",
+      "title": "值班交接 · 确认接班",
+      "group": "我的",
+      "parent": "34",
+      "kind": "弹层",
+      "entry": "设置 → 待接班记录 → 确认接班",
+      "note": "交接记录和确认弹层已实现；为显示弹层注入一条待接班示例。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "值班交接",
+      "image": "页面图片/35.jpg",
+      "thumb": "页面图片/35-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/35/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "36",
+      "title": "帮助与反馈",
+      "group": "我的",
+      "parent": "30",
+      "kind": "子页面",
+      "entry": "我的 → 帮助与反馈",
+      "note": "使用帮助及复制诊断信息已实现，没有独立意见提交服务。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "帮助与反馈",
+      "image": "页面图片/36.jpg",
+      "thumb": "页面图片/36-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/36/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "37",
+      "title": "通知权限未开启",
+      "group": "我的",
+      "parent": "33",
+      "kind": "状态",
+      "entry": "通讯服务 → 通知权限状态",
+      "note": "与通讯服务共用页面；展示未授权状态，不代表真实手机权限。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "通知权限未开启",
+      "image": "页面图片/37.jpg",
+      "thumb": "页面图片/37-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/37/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "38",
+      "title": "退出登录",
+      "group": "我的",
+      "parent": "30",
+      "kind": "弹层",
+      "entry": "我的 → 退出登录",
+      "note": "当前退出确认弹层；确认后清理会话并回到登录。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "切换 / 退出账号",
+      "image": "页面图片/38.jpg",
+      "thumb": "页面图片/38-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/38/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "39",
+      "title": "页面空态",
+      "group": "通用",
+      "parent": "07",
+      "kind": "状态",
+      "entry": "现场人员 → 无匹配姓名",
+      "note": "由人员列表零结果触发的原始空态组件。",
+      "source": "lib/wear/queries/people.dart",
+      "otherParents": [],
+      "referenceTitle": "页面空态",
+      "image": "页面图片/39.jpg",
+      "thumb": "页面图片/39-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/39/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "40",
+      "title": "网络异常",
+      "group": "通用",
+      "parent": "10",
+      "kind": "状态",
+      "entry": "设备列表 → 请求失败",
+      "note": "通过演示适配器注入 503，展示原页面失败/重试状态。",
+      "source": "lib/wear/queries/devices.dart",
+      "otherParents": [],
+      "referenceTitle": "网络异常与加载",
+      "image": "页面图片/40.jpg",
+      "thumb": "页面图片/40-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/40/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "41",
+      "title": "加载中",
+      "group": "通用",
+      "parent": "10",
+      "kind": "状态",
+      "entry": "设备列表 → 等待响应",
+      "note": "保留请求未完成状态，展示原始加载组件。",
+      "source": "lib/wear/queries/devices.dart",
+      "otherParents": [],
+      "referenceTitle": "补充状态",
+      "image": "页面图片/41.jpg",
+      "thumb": "页面图片/41-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/41/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    },
+    {
+      "id": "42",
+      "title": "切换账号",
+      "group": "我的",
+      "parent": "30",
+      "kind": "弹层",
+      "entry": "我的 → 切换账号",
+      "note": "补充与退出登录分开的实际确认弹层。",
+      "source": "lib/wear/mine_page.dart",
+      "otherParents": [],
+      "referenceTitle": "补充状态",
+      "image": "页面图片/42.jpg",
+      "thumb": "页面图片/42-首屏.jpg",
+      "width": 1080,
+      "height": 1848,
+      "frames": [
+        {
+          "file": "01.png",
+          "offset": 0.0,
+          "max": 0.0,
+          "top": 0.0,
+          "height": 616.0,
+          "url": "captures/42/01.png"
+        }
+      ],
+      "long": false,
+      "issue": false
+    }
+  ]
+}

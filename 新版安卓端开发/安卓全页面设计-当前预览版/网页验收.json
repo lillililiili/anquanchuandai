@@ -1,0 +1,307 @@
+{
+  "verifiedAt": "2026-09-18T07:16:15.992Z",
+  "protocol": "file:// (直接双击离线打开)",
+  "desktop": "1440x1060",
+  "mobile": "390x844",
+  "search": true,
+  "moduleFilters": true,
+  "treeNodes": 42,
+  "parentNavigation": true,
+  "consoleErrors": [],
+  "checks": [
+    {
+      "id": "01",
+      "frames": 1,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "02",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "03",
+      "frames": 1,
+      "parentLinks": 8,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "04",
+      "frames": 3,
+      "parentLinks": 7,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "05",
+      "frames": 1,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "06",
+      "frames": 2,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "07",
+      "frames": 1,
+      "parentLinks": 3,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "08",
+      "frames": 4,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "09",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "10",
+      "frames": 2,
+      "parentLinks": 4,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "11",
+      "frames": 2,
+      "parentLinks": 4,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "12",
+      "frames": 2,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "13",
+      "frames": 2,
+      "parentLinks": 3,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "14",
+      "frames": 1,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "15",
+      "frames": 2,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "16",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "17",
+      "frames": 2,
+      "parentLinks": 9,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "18",
+      "frames": 4,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "19",
+      "frames": 5,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "20",
+      "frames": 3,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "21",
+      "frames": 4,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "22",
+      "frames": 2,
+      "parentLinks": 7,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "23",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "24",
+      "frames": 4,
+      "parentLinks": 4,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "25",
+      "frames": 3,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "26",
+      "frames": 3,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "27",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "28",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "29",
+      "frames": 5,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "30",
+      "frames": 2,
+      "parentLinks": 7,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "31",
+      "frames": 2,
+      "parentLinks": 3,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "32",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "33",
+      "frames": 1,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "34",
+      "frames": 1,
+      "parentLinks": 2,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "35",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "36",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "37",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "38",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "39",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "40",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "41",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    },
+    {
+      "id": "42",
+      "frames": 1,
+      "parentLinks": 1,
+      "images": true,
+      "bottom": true
+    }
+  ]
+}

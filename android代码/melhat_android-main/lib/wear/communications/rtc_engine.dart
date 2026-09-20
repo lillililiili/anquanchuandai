@@ -27,6 +27,20 @@ abstract interface class WearRtcEngine {
   Future<void> dispose();
 }
 
+abstract interface class WearRtcAudioRoute {
+  Future<void> setSpeakerphone(bool enabled);
+}
+
+/// Android duty calls never publish phone camera tracks, including old video credentials.
+ChannelMediaOptions wearAudioOnlyChannelOptions() => const ChannelMediaOptions(
+  clientRoleType: ClientRoleType.clientRoleBroadcaster,
+  channelProfile: ChannelProfileType.channelProfileCommunication,
+  publishMicrophoneTrack: true,
+  publishCameraTrack: false,
+  autoSubscribeAudio: true,
+  autoSubscribeVideo: false,
+);
+
 class RtcPermissionDenied implements Exception {
   const RtcPermissionDenied({required this.video});
   final bool video;
@@ -60,6 +74,7 @@ abstract interface class AgoraRtcDriver {
   Future<void> enableVideo();
   Future<void> disableVideo();
   Future<void> setSpeakerphoneEnabled();
+  Future<void> setSpeakerphone(bool enabled);
   void registerCallbacks(RtcCallbacks callbacks);
   Future<void> joinChannel(RtcCredentials credentials);
   Future<void> renewToken(String token);
@@ -68,7 +83,7 @@ abstract interface class AgoraRtcDriver {
   Future<void> release();
 }
 
-class AgoraWearRtcEngine implements WearRtcEngine {
+class AgoraWearRtcEngine implements WearRtcEngine, WearRtcAudioRoute {
   AgoraWearRtcEngine({
     AgoraDriverFactory? driverFactory,
     RtcPermissionRequester? requestPermissions,
@@ -103,9 +118,9 @@ class AgoraWearRtcEngine implements WearRtcEngine {
       await _requireCurrent(operation);
     }
 
-    final granted = await _requestPermissions(credentials.video);
+    final granted = await _requestPermissions(false);
     await _requireCurrent(operation);
-    if (!granted) throw RtcPermissionDenied(video: credentials.video);
+    if (!granted) throw const RtcPermissionDenied(video: false);
 
     final driver = _driverFactory();
     if (!_accepts(operation)) {
@@ -136,11 +151,9 @@ class AgoraWearRtcEngine implements WearRtcEngine {
       await _requireCurrent(operation, driver);
       await driver.enableAudio();
       await _requireCurrent(operation, driver);
-      if (credentials.video) {
-        await driver.enableVideo();
-      } else {
-        await driver.disableVideo();
-      }
+      // Existing video flags must not enable local capture. The backend has no
+      // same-session helmet-video request protocol; stay audio-only until one exists.
+      await driver.disableVideo();
       await _requireCurrent(operation, driver);
       await driver.setSpeakerphoneEnabled();
       await _requireCurrent(operation, driver);
@@ -177,6 +190,15 @@ class AgoraWearRtcEngine implements WearRtcEngine {
     final operation = _generation;
     if (_disposed || driver == null) throw const RtcOperationCancelled();
     await driver.setMicrophoneMuted(muted);
+    await _requireCurrent(operation, driver);
+  }
+
+  @override
+  Future<void> setSpeakerphone(bool enabled) async {
+    final driver = _driver;
+    final operation = _generation;
+    if (_disposed || driver == null) throw const RtcOperationCancelled();
+    await driver.setSpeakerphone(enabled);
     await _requireCurrent(operation, driver);
   }
 
@@ -240,7 +262,7 @@ class AgoraWearRtcEngine implements WearRtcEngine {
 
   static Future<bool> _requestSdkPermissions(bool video) async {
     final permissions = <Permission>[Permission.microphone];
-    if (video) permissions.add(Permission.camera);
+    // Helmet video is receive-only; never request the phone camera permission.
     final results = await permissions.request();
     return results.values.every((status) => status.isGranted);
   }
@@ -272,6 +294,10 @@ class SdkAgoraRtcDriver implements AgoraRtcDriver {
       _engine.setDefaultAudioRouteToSpeakerphone(true);
 
   @override
+  Future<void> setSpeakerphone(bool enabled) =>
+      _engine.setEnableSpeakerphone(enabled);
+
+  @override
   void registerCallbacks(RtcCallbacks callbacks) {
     _engine.registerEventHandler(
       RtcEngineEventHandler(
@@ -297,14 +323,7 @@ class SdkAgoraRtcDriver implements AgoraRtcDriver {
     token: credentials.token,
     channelId: credentials.channelName,
     uid: credentials.uid,
-    options: ChannelMediaOptions(
-      clientRoleType: ClientRoleType.clientRoleBroadcaster,
-      channelProfile: ChannelProfileType.channelProfileCommunication,
-      publishMicrophoneTrack: true,
-      publishCameraTrack: credentials.video,
-      autoSubscribeAudio: true,
-      autoSubscribeVideo: credentials.video,
-    ),
+    options: wearAudioOnlyChannelOptions(),
   );
 
   @override

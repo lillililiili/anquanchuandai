@@ -1,0 +1,153 @@
+1: import '../core.dart';
+2: import 'controller.dart';
+3: import 'models.dart' hide JsonMap;
+4: 
+5: class WearCommunicationsGateway implements CommunicationsGateway {
+6:   const WearCommunicationsGateway(this.api);
+7: 
+8:   final WearApi api;
+9: 
+10:   @override
+11:   Future<StartedCall> startCall({
+12:     required String deviceId,
+13:     required String kind,
+14:     required bool video,
+15:     required String idempotencyKey,
+16:     String? eventId,
+17:   }) async {
+18:     final data = jsonMap(
+19:       await api.post(
+20:         '/api/v1/calls',
+21:         data: {
+22:           'deviceId': deviceId,
+23:           if (eventId != null && eventId.isNotEmpty) 'eventId': eventId,
+24:           'kind': kind,
+25:           'video': video,
+26:           'idempotencyKey': idempotencyKey,
+27:         },
+28:       ),
+29:     );
+30:     final rawCredentials = data['credentials'];
+31:     return StartedCall(
+32:       CallSession.fromJson(data),
+33:       rawCredentials is Map
+34:           ? RtcCredentials.fromJson(jsonMap(rawCredentials))
+35:           : null,
+36:     );
+37:   }
+38: 
+39:   @override
+40:   Future<CallSession> callDetails(String callId) async =>
+41:       CallSession.fromJson(jsonMap(await api.get('/api/v1/calls/$callId')));
+42: 
+43:   @override
+44:   Future<RtcCredentials> credentialsFor(String callId) async =>
+45:       RtcCredentials.fromJson(
+46:         jsonMap(await api.get('/api/v1/calls/$callId/credentials')),
+47:       );
+48: 
+49:   @override
+50:   Future<CallSession> markJoined(String callId, String uid) async =>
+51:       CallSession.fromJson(
+52:         jsonMap(
+53:           await api.post(
+54:             '/api/v1/calls/$callId/joined',
+55:             data: {'agoraUid': uid},
+56:           ),
+57:         ),
+58:       );
+59: 
+60:   @override
+61:   Future<CallSession> endCall(String callId) async => CallSession.fromJson(
+62:     jsonMap(await api.post('/api/v1/calls/$callId/end')),
+63:   );
+64: 
+65:   @override
+66:   Future<List<TtsCommand>> sendTts({
+67:     required List<String> deviceIds,
+68:     required String text,
+69:     required String idempotencyKey,
+70:     String? eventId,
+71:   }) async => jsonList(
+72:     await api.post(
+73:       '/api/v1/commands/tts',
+74:       data: {
+75:         'deviceIds': deviceIds,
+76:         'text': text,
+77:         if (eventId != null && eventId.isNotEmpty) 'eventId': eventId,
+78:         'idempotencyKey': idempotencyKey,
+79:       },
+80:     ),
+81:   ).map(TtsCommand.fromJson).toList(growable: false);
+82: 
+83:   Future<List<PersonOption>> peopleOptions({String? name}) async {
+84:     final query = name == null || name.trim().isEmpty
+85:         ? null
+86:         : {'name': name.trim()};
+87:     return jsonList(
+88:       await api.get('/api/v1/people/options', query: query),
+89:     ).map(PersonOption.fromJson).toList(growable: false);
+90:   }
+91: 
+92:   Future<List<CommunicationDevice>> listDevices({String? sn}) async {
+93:     try {
+94:       final page = await api.page(
+95:         '/api/v1/devices',
+96:         size: 50,
+97:         query: {if (sn != null && sn.trim().isNotEmpty) 'sn': sn.trim()},
+98:       );
+99:       return page.records
+100:           .map(CommunicationDevice.fromJson)
+101:           .toList(growable: false);
+102:     } catch (_) {
+103:       return const [];
+104:     }
+105:   }
+106: 
+107:   Future<List<JsonMap>> meEquipment() async {
+108:     try {
+109:       return jsonList(await api.get('/api/v1/me/equipment'));
+110:     } catch (_) {
+111:       return const [];
+112:     }
+113:   }
+114: 
+115:   Future<PersonOption> person(String personId) async =>
+116:       PersonOption.fromJson(jsonMap(await api.get('/api/v1/people/$personId')));
+117: 
+118:   Future<CommunicationDevice> device(
+119:     String deviceId, {
+120:     JsonMap? assignment,
+121:   }) async => CommunicationDevice.fromJson(
+122:     jsonMap(await api.get('/api/v1/devices/$deviceId')),
+123:     assignment: assignment,
+124:   );
+125: 
+126:   Future<List<CommunicationDevice>> equipmentForPerson(String personId) async {
+127:     final assignments = jsonList(
+128:       await api.get('/api/v1/people/$personId/equipment'),
+129:     );
+130:     return Future.wait(
+131:       assignments.map((assignment) async {
+132:         final deviceId = idOf(assignment['deviceId']);
+133:         if (deviceId.isEmpty) throw const FormatException('人员装备缺少设备编号');
+134:         return device(deviceId, assignment: assignment);
+135:       }),
+136:     );
+137:   }
+138: 
+139:   Future<JsonMap> event(String eventId) async =>
+140:       jsonMap(await api.get('/api/v1/events/$eventId'));
+141: 
+142:   Future<List<CallSession>> calls({String? eventId, String? deviceId}) async {
+143:     final path = eventId != null && eventId.isNotEmpty
+144:         ? '/api/v1/events/$eventId/calls'
+145:         : deviceId != null && deviceId.isNotEmpty
+146:         ? '/api/v1/devices/$deviceId/calls'
+147:         : null;
+148:     if (path == null) return const [];
+149:     return jsonList(
+150:       await api.get(path),
+151:     ).map(CallSession.fromJson).toList(growable: false);
+152:   }
+153: }

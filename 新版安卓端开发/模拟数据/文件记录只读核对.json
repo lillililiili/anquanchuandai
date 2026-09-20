@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "sn": "MH-DEMO-001",
+    "url": "demo://file/MH-DEMO-001/inspection.mp4",
+    "name": "演示巡检影像-MH-DEMO-001.mp4",
+    "type": "video",
+    "hatId": 1
+  },
+  {
+    "id": 2,
+    "sn": "MH-DEMO-002",
+    "url": "demo://file/MH-DEMO-002/device.jpg",
+    "name": "演示设备照片-MH-DEMO-002.jpg",
+    "type": "image",
+    "hatId": 2
+  },
+  {
+    "id": 3,
+    "sn": "MH-DEMO-003",
+    "url": "demo://file/MH-DEMO-003/voice.mp3",
+    "name": "演示语音记录-MH-DEMO-003.mp3",
+    "type": "audio",
+    "hatId": 3
+  },
+  {
+    "id": 4,
+    "sn": "MH-DEMO-004",
+    "url": "demo://file/MH-DEMO-004/inspection.mp4",
+    "name": "演示巡检影像-MH-DEMO-004.mp4",
+    "type": "video",
+    "hatId": 4
+  },
+  {
+    "id": 5,
+    "sn": "MH-DEMO-005",
+    "url": "demo://file/MH-DEMO-005/offline.jpg",
+    "name": "演示离线照片-MH-DEMO-005.jpg",
+    "type": "image",
+    "hatId": 5
+  },
+  {
+    "id": 6,
+    "sn": "MH-DEMO-006",
+    "url": "demo://file/MH-DEMO-006/handover.mp3",
+    "name": "演示交接记录-MH-DEMO-006.mp3",
+    "type": "audio",
+    "hatId": 6
+  }
+]

@@ -1,0 +1,71 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.List;
+4: import java.util.Map;
+5: import org.springframework.beans.factory.annotation.Autowired;
+6: import org.springframework.web.bind.annotation.GetMapping;
+7: import org.springframework.web.bind.annotation.PathVariable;
+8: import org.springframework.web.bind.annotation.PostMapping;
+9: import org.springframework.web.bind.annotation.PutMapping;
+10: import org.springframework.web.bind.annotation.RequestBody;
+11: import org.springframework.web.bind.annotation.RequestMapping;
+12: import org.springframework.web.bind.annotation.RequestParam;
+13: import org.springframework.web.bind.annotation.RestController;
+14: import com.ruoyi.common.core.domain.R;
+15: import com.ruoyi.wear.common.WearPage;
+16: import com.ruoyi.wear.person.PersonService;
+17: import com.ruoyi.wear.person.dto.PersonDto;
+18: import com.ruoyi.wear.person.dto.PersonWriteRequest;
+19: 
+20: @RestController
+21: @RequestMapping("/api/v1/people")
+22: public class WearPeopleController
+23: {
+24:     @Autowired
+25:     private PersonService personService;
+26: 
+27:     @GetMapping
+28:     public R<WearPage<PersonDto>> page(
+29:             @RequestParam(defaultValue = "1") int current,
+30:             @RequestParam(defaultValue = "10") int size,
+31:             @RequestParam(required = false) String name,
+32:             @RequestParam(required = false) String personCode,
+33:             @RequestParam(required = false) String status,
+34:             @RequestParam(required = false) String teamId,
+35:             @RequestParam(required = false) String contractorId)
+36:     {
+37:         return R.ok(personService.page(current, size, name, personCode, status, teamId, contractorId));
+38:     }
+39: 
+40:     @GetMapping("/options")
+41:     public R<List<PersonDto>> options(@RequestParam(required = false) String name)
+42:     {
+43:         return R.ok(personService.options(name));
+44:     }
+45: 
+46:     @GetMapping("/{id}")
+47:     public R<PersonDto> detail(@PathVariable Long id)
+48:     {
+49:         return R.ok(personService.detail(id));
+50:     }
+51: 
+52:     @PostMapping
+53:     public R<PersonDto> create(@RequestBody PersonWriteRequest request)
+54:     {
+55:         return R.ok(personService.create(request));
+56:     }
+57: 
+58:     @PutMapping("/{id}")
+59:     public R<PersonDto> update(@PathVariable Long id, @RequestBody PersonWriteRequest request)
+60:     {
+61:         return R.ok(personService.update(id, request));
+62:     }
+63: 
+64:     @PutMapping("/{id}/status")
+65:     public R<PersonDto> changeStatus(@PathVariable Long id, @RequestBody Map<String, Object> body)
+66:     {
+67:         String status = body.get("status") == null ? null : String.valueOf(body.get("status"));
+68:         Integer version = body.get("version") == null ? null : Integer.valueOf(String.valueOf(body.get("version")));
+69:         return R.ok(personService.changeStatus(id, status, version));
+70:     }
+71: }

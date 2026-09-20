@@ -1,0 +1,124 @@
+1: package com.ruoyi.wear.web.v1;
+2: 
+3: import java.util.List;
+4: import java.util.Map;
+5: import org.springframework.beans.factory.annotation.Autowired;
+6: import org.springframework.web.bind.annotation.DeleteMapping;
+7: import org.springframework.web.bind.annotation.GetMapping;
+8: import org.springframework.web.bind.annotation.PathVariable;
+9: import org.springframework.web.bind.annotation.PostMapping;
+10: import org.springframework.web.bind.annotation.PutMapping;
+11: import org.springframework.web.bind.annotation.RequestBody;
+12: import org.springframework.web.bind.annotation.RequestMapping;
+13: import org.springframework.web.bind.annotation.RequestParam;
+14: import org.springframework.web.bind.annotation.RestController;
+15: import com.ruoyi.common.core.domain.R;
+16: import com.ruoyi.wear.common.WearPage;
+17: import com.ruoyi.wear.event.dto.EventDto;
+18: import com.ruoyi.wear.work.WorkTaskService;
+19: import com.ruoyi.wear.work.dto.EquipmentCheckDto;
+20: import com.ruoyi.wear.work.dto.WorkTaskDto;
+21: 
+22: @RestController
+23: @RequestMapping("/api/v1/work-tasks")
+24: public class WearWorkTaskController
+25: {
+26:     @Autowired
+27:     private WorkTaskService workTaskService;
+28: 
+29:     @GetMapping
+30:     public R<WearPage<WorkTaskDto>> page(
+31:             @RequestParam(defaultValue = "1") int current,
+32:             @RequestParam(defaultValue = "10") int size,
+33:             @RequestParam(required = false) String status,
+34:             @RequestParam(required = false) String workType)
+35:     {
+36:         return R.ok(workTaskService.page(current, size, status, workType));
+37:     }
+38: 
+39:     @GetMapping("/mine")
+40:     public R<WearPage<WorkTaskDto>> mine(
+41:             @RequestParam(defaultValue = "1") int current,
+42:             @RequestParam(defaultValue = "10") int size)
+43:     {
+44:         return R.ok(workTaskService.mine(current, size));
+45:     }
+46: 
+47:     @PostMapping
+48:     public R<WorkTaskDto> create(@RequestBody Map<String, Object> body)
+49:     {
+50:         return R.ok(workTaskService.create(body));
+51:     }
+52: 
+53:     @GetMapping("/{id:\\d+}")
+54:     public R<WorkTaskDto> detail(@PathVariable Long id)
+55:     {
+56:         return R.ok(workTaskService.detail(id));
+57:     }
+58: 
+59:     @PutMapping("/{id:\\d+}")
+60:     public R<WorkTaskDto> update(@PathVariable Long id, @RequestBody Map<String, Object> body)
+61:     {
+62:         return R.ok(workTaskService.update(id, body));
+63:     }
+64: 
+65:     @PostMapping("/{id:\\d+}/members")
+66:     public R<WorkTaskDto> addMembers(@PathVariable Long id, @RequestBody Map<String, Object> body)
+67:     {
+68:         return R.ok(workTaskService.addMembers(id, body));
+69:     }
+70: 
+71:     @DeleteMapping("/{id:\\d+}/members/{personId:\\d+}")
+72:     public R<WorkTaskDto> removeMember(@PathVariable Long id, @PathVariable Long personId)
+73:     {
+74:         return R.ok(workTaskService.removeMember(id, personId));
+75:     }
+76: 
+77:     @PostMapping("/{id:\\d+}/start")
+78:     public R<WorkTaskDto> start(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body)
+79:     {
+80:         return R.ok(workTaskService.start(id, intVal(body, "version")));
+81:     }
+82: 
+83:     @PostMapping("/{id:\\d+}/pause")
+84:     public R<WorkTaskDto> pause(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body)
+85:     {
+86:         return R.ok(workTaskService.pause(id, intVal(body, "version")));
+87:     }
+88: 
+89:     @PostMapping("/{id:\\d+}/end")
+90:     public R<WorkTaskDto> end(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body)
+91:     {
+92:         boolean ack = body != null && (Boolean.TRUE.equals(body.get("acknowledgeOpenHighRisk"))
+93:                 || "true".equalsIgnoreCase(String.valueOf(body.get("acknowledgeOpenHighRisk"))));
+94:         return R.ok(workTaskService.end(id, intVal(body, "version"), ack));
+95:     }
+96: 
+97:     @GetMapping("/{id:\\d+}/equipment-check")
+98:     public R<List<EquipmentCheckDto>> equipment(@PathVariable Long id)
+99:     {
+100:         return R.ok(workTaskService.equipmentCheck(id));
+101:     }
+102: 
+103:     @GetMapping("/{id:\\d+}/events")
+104:     public R<List<EventDto>> events(@PathVariable Long id)
+105:     {
+106:         return R.ok(workTaskService.events(id));
+107:     }
+108: 
+109:     private Integer intVal(Map<String, Object> body, String key)
+110:     {
+111:         if (body == null || body.get(key) == null || String.valueOf(body.get(key)).trim().isEmpty())
+112:         {
+113:             return null;
+114:         }
+115:         try
+116:         {
+117:             return Integer.valueOf(String.valueOf(body.get(key)));
+118:         }
+119:         catch (NumberFormatException ex)
+120:         {
+121:             return null;
+122:         }
+123:     }
+124: }

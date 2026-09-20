@@ -1,0 +1,42 @@
+{
+  "origin": "http://127.0.0.1:18084",
+  "deviceId": "67",
+  "sn": "CALL-LAB-HELMET-1",
+  "checks": [
+    {
+      "concurrentHeartbeats": 10,
+      "accepted": 10
+    },
+    {
+      "label": "online",
+      "online": "1",
+      "status": "normal",
+      "source": "simulation"
+    },
+    {
+      "label": "abnormal",
+      "online": "1",
+      "status": "abnormal",
+      "source": "simulation"
+    },
+    {
+      "label": "offline",
+      "online": "0",
+      "status": "normal",
+      "source": "simulation"
+    },
+    {
+      "range": "bytes=0-1023",
+      "status": 206,
+      "contentRange": "bytes 0-1023/48123122"
+    },
+    {
+      "range": "bytes=1024-2047",
+      "status": 206,
+      "contentRange": "bytes 1024-2047/48123122"
+    },
+    {
+      "videoDisabled": 409
+    }
+  ]
+}

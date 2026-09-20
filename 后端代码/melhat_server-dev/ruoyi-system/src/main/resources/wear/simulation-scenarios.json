@@ -1,0 +1,371 @@
+[
+  {
+    "id": "helmet.sos",
+    "deviceType": "helmet",
+    "label": "SOS 求救",
+    "type": "sos",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "helmet.fall",
+    "deviceType": "helmet",
+    "label": "跌落",
+    "type": "fall",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "helmet.impact",
+    "deviceType": "helmet",
+    "label": "撞击",
+    "type": "impact",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "helmet.removal",
+    "deviceType": "helmet",
+    "label": "脱帽",
+    "type": "realtime",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf",
+    "optional": false,
+    "fields": [
+      {
+        "key": "durationSeconds",
+        "label": "持续时间",
+        "unit": "秒",
+        "value": 60,
+        "min": 0,
+        "max": 86400
+      }
+    ]
+  },
+  {
+    "id": "helmet.silent",
+    "deviceType": "helmet",
+    "label": "静默 / 长时间静止",
+    "type": "realtime",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf",
+    "optional": false,
+    "fields": [
+      {
+        "key": "durationSeconds",
+        "label": "持续时间",
+        "unit": "秒",
+        "value": 60,
+        "min": 0,
+        "max": 86400
+      }
+    ]
+  },
+  {
+    "id": "helmet.battery",
+    "deviceType": "helmet",
+    "label": "低电量",
+    "type": "realtime",
+    "basis": "安全帽参数.docx：低于 5% 本地提示；此处模拟平台事件",
+    "optional": false,
+    "fields": [
+      {
+        "key": "battery",
+        "label": "电量",
+        "unit": "%",
+        "value": 4,
+        "min": 0,
+        "max": 100
+      }
+    ]
+  },
+  {
+    "id": "helmet.temperature",
+    "deviceType": "helmet",
+    "label": "CPU 温度异常",
+    "type": "realtime",
+    "basis": "安全帽参数.docx：CPU 过温，阈值未提供",
+    "optional": false,
+    "fields": [
+      {
+        "key": "temperature",
+        "label": "温度（测试值）",
+        "unit": "℃",
+        "value": 80,
+        "min": -50,
+        "max": 150
+      }
+    ]
+  },
+  {
+    "id": "helmet.fence_enter",
+    "deviceType": "helmet",
+    "label": "进入禁区",
+    "type": "geofence",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "helmet.fence_exit",
+    "deviceType": "helmet",
+    "label": "离开指定区域",
+    "type": "geofence",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "helmet.proximity",
+    "deviceType": "helmet",
+    "label": "近电",
+    "type": "realtime",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf：选配近电模块",
+    "optional": true,
+    "fields": []
+  },
+  {
+    "id": "helmet.climb",
+    "deviceType": "helmet",
+    "label": "登高",
+    "type": "realtime",
+    "basis": "安全帽参数.docx；智能安全帽1.pdf：选配气压登高模块",
+    "optional": true,
+    "fields": [
+      {
+        "key": "height",
+        "label": "高度（测试值）",
+        "unit": "米",
+        "value": 5,
+        "min": 0,
+        "max": 1000
+      }
+    ]
+  },
+  {
+    "id": "belt.sos",
+    "deviceType": "belt",
+    "label": "SOS 求救",
+    "type": "sos",
+    "basis": "联调假设：待安全腰带厂商协议确认",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "belt.fall",
+    "deviceType": "belt",
+    "label": "坠落",
+    "type": "fall",
+    "basis": "联调假设：待安全腰带厂商协议确认",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "belt.unhooked",
+    "deviceType": "belt",
+    "label": "安全钩未挂接",
+    "type": "realtime",
+    "basis": "联调假设：待安全腰带厂商协议确认",
+    "optional": false,
+    "fields": [
+      {
+        "key": "durationSeconds",
+        "label": "持续时间",
+        "unit": "秒",
+        "value": 60,
+        "min": 0,
+        "max": 86400
+      }
+    ]
+  },
+  {
+    "id": "belt.unfastened",
+    "deviceType": "belt",
+    "label": "腰带未扣紧",
+    "type": "realtime",
+    "basis": "联调假设：待安全腰带厂商协议确认",
+    "optional": false,
+    "fields": [
+      {
+        "key": "durationSeconds",
+        "label": "持续时间",
+        "unit": "秒",
+        "value": 60,
+        "min": 0,
+        "max": 86400
+      }
+    ]
+  },
+  {
+    "id": "belt.low_anchor",
+    "deviceType": "belt",
+    "label": "低挂高用",
+    "type": "realtime",
+    "basis": "联调假设：待安全腰带厂商协议确认",
+    "optional": false,
+    "fields": [
+      {
+        "key": "height",
+        "label": "高度（测试值）",
+        "unit": "米",
+        "value": 5,
+        "min": 0,
+        "max": 1000
+      }
+    ]
+  },
+  {
+    "id": "belt.battery",
+    "deviceType": "belt",
+    "label": "低电量",
+    "type": "realtime",
+    "basis": "联调假设：待安全腰带厂商协议确认",
+    "optional": false,
+    "fields": [
+      {
+        "key": "battery",
+        "label": "电量",
+        "unit": "%",
+        "value": 4,
+        "min": 0,
+        "max": 100
+      }
+    ]
+  },
+  {
+    "id": "watch.sos",
+    "deviceType": "watch",
+    "label": "SOS 求救",
+    "type": "sos",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "watch.fall",
+    "deviceType": "watch",
+    "label": "跌倒",
+    "type": "fall",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": []
+  },
+  {
+    "id": "watch.heart_high",
+    "deviceType": "watch",
+    "label": "心率偏高",
+    "type": "realtime",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": [
+      {
+        "key": "heartRate",
+        "label": "心率（测试值）",
+        "unit": "次/分",
+        "value": 130,
+        "min": 1,
+        "max": 300
+      }
+    ]
+  },
+  {
+    "id": "watch.heart_low",
+    "deviceType": "watch",
+    "label": "心率偏低",
+    "type": "realtime",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": [
+      {
+        "key": "heartRate",
+        "label": "心率（测试值）",
+        "unit": "次/分",
+        "value": 45,
+        "min": 1,
+        "max": 300
+      }
+    ]
+  },
+  {
+    "id": "watch.oxygen",
+    "deviceType": "watch",
+    "label": "血氧偏低",
+    "type": "realtime",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": [
+      {
+        "key": "spo2",
+        "label": "血氧（测试值）",
+        "unit": "%",
+        "value": 88,
+        "min": 0,
+        "max": 100
+      }
+    ]
+  },
+  {
+    "id": "watch.temperature",
+    "deviceType": "watch",
+    "label": "体温偏高",
+    "type": "realtime",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": [
+      {
+        "key": "temperature",
+        "label": "温度（测试值）",
+        "unit": "℃",
+        "value": 39,
+        "min": 20,
+        "max": 50
+      }
+    ]
+  },
+  {
+    "id": "watch.off_wrist",
+    "deviceType": "watch",
+    "label": "离腕",
+    "type": "realtime",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": [
+      {
+        "key": "durationSeconds",
+        "label": "持续时间",
+        "unit": "秒",
+        "value": 60,
+        "min": 0,
+        "max": 86400
+      }
+    ]
+  },
+  {
+    "id": "watch.battery",
+    "deviceType": "watch",
+    "label": "低电量",
+    "type": "realtime",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": [
+      {
+        "key": "battery",
+        "label": "电量",
+        "unit": "%",
+        "value": 4,
+        "min": 0,
+        "max": 100
+      }
+    ]
+  },
+  {
+    "id": "watch.fence_exit",
+    "deviceType": "watch",
+    "label": "越界",
+    "type": "geofence",
+    "basis": "联调假设：待手表厂商协议确认；生理数值仅为测试数据",
+    "optional": false,
+    "fields": []
+  }
+]

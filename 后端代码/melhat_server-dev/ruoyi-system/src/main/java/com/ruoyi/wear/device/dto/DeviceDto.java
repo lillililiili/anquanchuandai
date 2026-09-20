@@ -30,6 +30,9 @@ public class DeviceDto
     private String legacyHatId;
     private String source;
     private boolean demo;
+    private boolean simulation;
+    private String simulationStatus;
+    private String simulationStatusLabel;
     private AssignmentDto currentAssignment;
     private Integer version;
 
@@ -74,6 +77,12 @@ public class DeviceDto
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
     public boolean isDemo() { return demo; }
+    public boolean isSimulation() { return simulation; }
+    public void setSimulation(boolean simulation) { this.simulation = simulation; }
+    public String getSimulationStatus() { return simulationStatus; }
+    public void setSimulationStatus(String value) { this.simulationStatus = value; }
+    public String getSimulationStatusLabel() { return simulationStatusLabel; }
+    public void setSimulationStatusLabel(String value) { this.simulationStatusLabel = value; }
     public void setDemo(boolean demo) { this.demo = demo; }
     public AssignmentDto getCurrentAssignment() { return currentAssignment; }
     public void setCurrentAssignment(AssignmentDto currentAssignment) { this.currentAssignment = currentAssignment; }

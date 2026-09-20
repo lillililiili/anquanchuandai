@@ -1,0 +1,627 @@
+{
+  "peopleTotal": 33,
+  "selectablePeople": [
+    {
+      "id": "1",
+      "name": "演示人员03"
+    },
+    {
+      "id": "2",
+      "name": "演示人员02"
+    },
+    {
+      "id": "3",
+      "name": "演示人员01"
+    },
+    {
+      "id": "8",
+      "name": "演示人员01"
+    },
+    {
+      "id": "10",
+      "name": "陈建国"
+    },
+    {
+      "id": "11",
+      "name": "周明"
+    },
+    {
+      "id": "12",
+      "name": "李志远"
+    },
+    {
+      "id": "13",
+      "name": "赵启航"
+    },
+    {
+      "id": "14",
+      "name": "孙立"
+    },
+    {
+      "id": "15",
+      "name": "王海涛"
+    },
+    {
+      "id": "16",
+      "name": "刘文博"
+    },
+    {
+      "id": "17",
+      "name": "张俊峰"
+    },
+    {
+      "id": "18",
+      "name": "马伟"
+    },
+    {
+      "id": "19",
+      "name": "黄磊"
+    },
+    {
+      "id": "20",
+      "name": "杨帆"
+    },
+    {
+      "id": "21",
+      "name": "吴志强"
+    },
+    {
+      "id": "22",
+      "name": "徐成"
+    },
+    {
+      "id": "23",
+      "name": "何军"
+    },
+    {
+      "id": "24",
+      "name": "高鹏"
+    },
+    {
+      "id": "25",
+      "name": "林浩"
+    },
+    {
+      "id": "26",
+      "name": "郭健"
+    },
+    {
+      "id": "27",
+      "name": "罗文"
+    },
+    {
+      "id": "28",
+      "name": "宋涛"
+    },
+    {
+      "id": "29",
+      "name": "郑凯"
+    },
+    {
+      "id": "30",
+      "name": "许晨"
+    },
+    {
+      "id": "31",
+      "name": "邓平"
+    },
+    {
+      "id": "32",
+      "name": "冯源"
+    },
+    {
+      "id": "33",
+      "name": "曹斌"
+    },
+    {
+      "id": "42",
+      "name": "潘毅"
+    },
+    {
+      "id": "43",
+      "name": "袁超"
+    }
+  ],
+  "devices": [
+    {
+      "id": "1",
+      "sn": "MH-DEMO-001",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "3"
+    },
+    {
+      "id": "2",
+      "sn": "MH-DEMO-002",
+      "type": "helmet",
+      "online": "1",
+      "quality": "stale",
+      "simulation": false,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ]
+    },
+    {
+      "id": "3",
+      "sn": "MH-DEMO-003",
+      "type": "helmet",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ]
+    },
+    {
+      "id": "8",
+      "sn": "MH-DEMO-NOV-A",
+      "type": "helmet",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": [
+        "tts"
+      ]
+    },
+    {
+      "id": "9",
+      "sn": "BL-DEMO-001",
+      "type": "belt",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [],
+      "personId": "3"
+    },
+    {
+      "id": "12",
+      "sn": "RL-H001",
+      "type": "helmet",
+      "online": "0",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "10"
+    },
+    {
+      "id": "13",
+      "sn": "QA-H002",
+      "type": "helmet",
+      "online": "0",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom"
+      ],
+      "personId": "11"
+    },
+    {
+      "id": "14",
+      "sn": "QA-H003",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "12"
+    },
+    {
+      "id": "15",
+      "sn": "QA-H004",
+      "type": "helmet",
+      "online": "0",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "13"
+    },
+    {
+      "id": "16",
+      "sn": "QA-H005",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts"
+      ],
+      "personId": "14"
+    },
+    {
+      "id": "17",
+      "sn": "QA-H006",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "15"
+    },
+    {
+      "id": "18",
+      "sn": "QA-H007",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom"
+      ],
+      "personId": "16"
+    },
+    {
+      "id": "19",
+      "sn": "QA-H008",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "17"
+    },
+    {
+      "id": "20",
+      "sn": "QA-H009",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "18"
+    },
+    {
+      "id": "21",
+      "sn": "QA-H010",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "19"
+    },
+    {
+      "id": "22",
+      "sn": "QA-H011",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "20"
+    },
+    {
+      "id": "23",
+      "sn": "QA-H012",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "21"
+    },
+    {
+      "id": "24",
+      "sn": "QA-H013",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom"
+      ],
+      "personId": "22"
+    },
+    {
+      "id": "25",
+      "sn": "QA-H014",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "23"
+    },
+    {
+      "id": "26",
+      "sn": "QA-H015",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "24"
+    },
+    {
+      "id": "27",
+      "sn": "QA-H016",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "25"
+    },
+    {
+      "id": "28",
+      "sn": "QA-H017",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "26"
+    },
+    {
+      "id": "29",
+      "sn": "QA-H018",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "27"
+    },
+    {
+      "id": "30",
+      "sn": "QA-H019",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "28"
+    },
+    {
+      "id": "31",
+      "sn": "QA-H020",
+      "type": "helmet",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ],
+      "personId": "29"
+    },
+    {
+      "id": "41",
+      "sn": "QA-H030",
+      "type": "helmet",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": [
+        "tts",
+        "intercom",
+        "video"
+      ]
+    },
+    {
+      "id": "44",
+      "sn": "RL-B001",
+      "type": "belt",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [],
+      "personId": "10"
+    },
+    {
+      "id": "45",
+      "sn": "QA-B002",
+      "type": "belt",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [],
+      "personId": "11"
+    },
+    {
+      "id": "46",
+      "sn": "QA-B003",
+      "type": "belt",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [],
+      "personId": "12"
+    },
+    {
+      "id": "47",
+      "sn": "QA-B004",
+      "type": "belt",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [],
+      "personId": "15"
+    },
+    {
+      "id": "48",
+      "sn": "QA-B005",
+      "type": "belt",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [],
+      "personId": "16"
+    },
+    {
+      "id": "49",
+      "sn": "QA-B006",
+      "type": "belt",
+      "online": "1",
+      "quality": "ok",
+      "simulation": true,
+      "actions": [],
+      "personId": "17"
+    },
+    {
+      "id": "54",
+      "sn": "QA-B011",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "56",
+      "sn": "QA-B013",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "58",
+      "sn": "QA-B015",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "60",
+      "sn": "QA-B017",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "62",
+      "sn": "QA-B019",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "64",
+      "sn": "QA-B021",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "66",
+      "sn": "QA-B023",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "67",
+      "sn": "CALL-LAB-HELMET-1",
+      "type": "helmet",
+      "online": "0",
+      "quality": "ok",
+      "simulation": true,
+      "actions": []
+    },
+    {
+      "id": "68",
+      "sn": "CALL-LAB-BELT-1",
+      "type": "belt",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    },
+    {
+      "id": "69",
+      "sn": "CALL-LAB-WATCH-1",
+      "type": "watch",
+      "online": null,
+      "quality": "unknown",
+      "simulation": false,
+      "actions": []
+    }
+  ],
+  "calls": []
+}

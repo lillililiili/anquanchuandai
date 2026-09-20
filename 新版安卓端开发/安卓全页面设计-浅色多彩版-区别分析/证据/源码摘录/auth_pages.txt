@@ -1,0 +1,652 @@
+1: import 'dart:convert';
+2: import 'dart:math';
+3: import 'dart:typed_data';
+4: import 'package:flutter/material.dart';
+5: import 'package:go_router/go_router.dart';
+6: import 'core.dart';
+7: import 'password_reset_page.dart';
+8: 
+9: class WearLoginPage extends StatefulWidget {
+10:   const WearLoginPage({super.key});
+11:   @override
+12:   State<WearLoginPage> createState() => _WearLoginPageState();
+13: }
+14: 
+15: class _WearLoginPageState extends State<WearLoginPage> {
+16:   final _form = GlobalKey<FormState>();
+17:   final _username = TextEditingController(),
+18:       _password = TextEditingController(),
+19:       _code = TextEditingController();
+20:   bool _obscure = true, _captchaEnabled = false, _captchaLoading = false;
+21:   String? _uuid, _captchaError, _localCode;
+22:   Uint8List? _captchaBytes;
+23:   WearSession? _session;
+24:   final _rand = Random();
+25:   @override
+26:   void initState() {
+27:     super.initState();
+28:     _localCode = _newLocalCode();
+29:   }
+30: 
+31:   @override
+32:   void didChangeDependencies() {
+33:     super.didChangeDependencies();
+34:     final session = WearScope.of(context);
+35:     if (_session != session) {
+36:       _session = session;
+37:       Future.microtask(_captcha);
+38:     }
+39:   }
+40: 
+41:   bool get _isWidgetTest => WidgetsBinding.instance.runtimeType
+42:       .toString()
+43:       .contains('TestWidgetsFlutterBinding');
+44: 
+45:   String _newLocalCode() {
+46:     if (_isWidgetTest) return '7K4P';
+47:     const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+48:     return List.generate(4, (_) => chars[_rand.nextInt(chars.length)]).join();
+49:   }
+50: 
+51:   Uint8List? _decodeImage(Object? raw) {
+52:     var text = raw?.toString().trim() ?? '';
+53:     if (text.isEmpty || text == 'null') return null;
+54:     final marker = text.indexOf('base64,');
+55:     if (marker >= 0) text = text.substring(marker + 7);
+56:     text = text.replaceAll(RegExp(r'\s'), '');
+57:     try {
+58:       return base64Decode(text);
+59:     } catch (_) {
+60:       return null;
+61:     }
+62:   }
+63: 
+64:   void _useLocalCaptcha({String? error}) {
+65:     setState(() {
+66:       _captchaBytes = null;
+67:       _localCode = _newLocalCode();
+68:       _uuid = null;
+69:       _code.clear();
+70:       _captchaError = error;
+71:     });
+72:   }
+73: 
+74:   Future<void> _captcha() async {
+75:     if (_captchaLoading || !mounted) return;
+76:     setState(() {
+77:       _captchaLoading = true;
+78:       _captchaError = null;
+79:     });
+80:     try {
+81:       final data = jsonMap(
+82:         await _session!.api.request('GET', '/captchaImage', raw: true),
+83:       );
+84:       if (!mounted) return;
+85:       final enabled = data['captchaEnabled'] != false;
+86:       final bytes = _decodeImage(data['img']);
+87:       setState(() {
+88:         _captchaEnabled = enabled;
+89:         _uuid = data['uuid']?.toString();
+90:         _captchaBytes = bytes;
+91:         _localCode = bytes == null ? _newLocalCode() : null;
+92:         _code.clear();
+93:         _captchaError = null;
+94:       });
+95:     } catch (e) {
+96:       if (mounted && e is! StaleSessionException) {
+97:         _useLocalCaptcha();
+98:       }
+99:     } finally {
+100:       if (mounted) setState(() => _captchaLoading = false);
+101:     }
+102:   }
+103: 
+104:   Future<void> _submit() async {
+105:     if (_session!.busy || !_form.currentState!.validate()) return;
+106:     final typed = _code.text.trim();
+107:     if (typed.isEmpty) {
+108:       setState(() => _captchaError = '请输入验证码');
+109:       return;
+110:     }
+111:     if (!_captchaEnabled &&
+112:         _localCode != null &&
+113:         typed.toUpperCase() != _localCode) {
+114:       _useLocalCaptcha(error: '验证码错误，请重新输入');
+115:       return;
+116:     }
+117:     FocusScope.of(context).unfocus();
+118:     try {
+119:       await _session!.login(
+120:         _username.text,
+121:         _password.text,
+122:         code: _captchaEnabled ? typed : null,
+123:         uuid: _captchaEnabled ? _uuid : null,
+124:       );
+125:       if (mounted) _password.clear();
+126:     } catch (_) {
+127:       if (mounted) _captcha();
+128:     }
+129:   }
+130: 
+131:   @override
+132:   void dispose() {
+133:     _username.dispose();
+134:     _password.dispose();
+135:     _code.dispose();
+136:     super.dispose();
+137:   }
+138: 
+139:   void _openPasswordReset() {
+140:     Navigator.of(context).push(
+141:       MaterialPageRoute<void>(
+142:         builder: (_) =>
+143:             WearPasswordResetPage(initialAccount: _username.text.trim()),
+144:       ),
+145:     );
+146:   }
+147: 
+148:   @override
+149:   Widget build(BuildContext context) {
+150:     final session = WearScope.of(context);
+151:     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+152:     final form = _loginForm(session);
+153:     final bottom = MediaQuery.paddingOf(context).bottom;
+154:     return Scaffold(
+155:       backgroundColor: const Color(0xFFEEF6FF),
+156:       resizeToAvoidBottomInset: true,
+157:       body: keyboardOpen
+158:           ? SafeArea(
+159:               child: SingleChildScrollView(
+160:                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+161:                 child: form,
+162:               ),
+163:             )
+164:           : SafeArea(
+165:               bottom: false,
+166:               child: SingleChildScrollView(
+167:                 child: Column(
+168:                   children: [
+169:                     SizedBox(
+170:                       key: const ValueKey('wear-page-hero-login'),
+171:                       height: WearHeaderLayout.height(context),
+172:                       child: _heroPanel(),
+173:                     ),
+174:                     Padding(
+175:                       padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + bottom),
+176:                       child: form,
+177:                     ),
+178:                   ],
+179:                 ),
+180:               ),
+181:             ),
+182:     );
+183:   }
+184: 
+185:   Widget _heroPanel() {
+186:     return Stack(
+187:       fit: StackFit.expand,
+188:       children: [
+189:         const WearAssetImage(
+190:           WearArt.loginStillLife,
+191:           fit: BoxFit.cover,
+192:           alignment: Alignment(0.55, 0.35),
+193:         ),
+194:         const Positioned(
+195:           top: 0,
+196:           left: 0,
+197:           right: 0,
+198:           height: 88,
+199:           child: DecoratedBox(
+200:             decoration: BoxDecoration(
+201:               gradient: LinearGradient(
+202:                 begin: Alignment.topCenter,
+203:                 end: Alignment.bottomCenter,
+204:                 colors: [Color(0xAAF4FAFF), Color(0x00F4FAFF)],
+205:               ),
+206:             ),
+207:           ),
+208:         ),
+209:         SafeArea(
+210:           bottom: false,
+211:           child: Padding(
+212:             padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+213:             child: _heroCopy(),
+214:           ),
+215:         ),
+216:         const Positioned(
+217:           top: 38,
+218:           right: 16,
+219:           child: IgnorePointer(
+220:             child: Text(
+221:               '安全\n从我做起！',
+222:               textAlign: TextAlign.right,
+223:               style: TextStyle(
+224:                 color: WearColors.brand,
+225:                 fontSize: 16,
+226:                 height: 1.2,
+227:                 fontWeight: FontWeight.w700,
+228:                 fontStyle: FontStyle.italic,
+229:               ),
+230:             ),
+231:           ),
+232:         ),
+233:       ],
+234:     );
+235:   }
+236: 
+237:   Widget _heroCopy() {
+238:     return const Column(
+239:       crossAxisAlignment: CrossAxisAlignment.start,
+240:       children: [
+241:         WearRollingWordmark(height: 30),
+242:         SizedBox(height: 10),
+243:         Text(
+244:           '欢迎登录',
+245:           style: TextStyle(
+246:             fontSize: WearHeaderLayout.titleSize,
+247:             height: 1.15,
+248:             fontWeight: FontWeight.w800,
+249:             color: WearColors.ink,
+250:           ),
+251:         ),
+252:         SizedBox(height: 6),
+253:         Text(
+254:           '智能穿戴安全监护平台',
+255:           style: TextStyle(
+256:             fontSize: WearHeaderLayout.subtitleSize,
+257:             color: WearColors.muted,
+258:           ),
+259:         ),
+260:         SizedBox(height: 10),
+261:         Row(
+262:           children: [
+263:             Icon(Icons.apartment_outlined, size: 18, color: WearColors.brand),
+264:             SizedBox(width: 6),
+265:             Text(
+266:               '临江示范电厂',
+267:               style: TextStyle(
+268:                 fontSize: WearHeaderLayout.subtitleSize,
+269:                 fontWeight: FontWeight.w600,
+270:                 color: WearColors.ink,
+271:               ),
+272:             ),
+273:           ],
+274:         ),
+275:       ],
+276:     );
+277:   }
+278: 
+279:   InputDecoration _field({
+280:     required String hint,
+281:     required Widget prefix,
+282:     Widget? suffix,
+283:   }) {
+284:     return InputDecoration(
+285:       hintText: hint,
+286:       prefixIcon: prefix,
+287:       suffixIcon: suffix,
+288:       isDense: true,
+289:       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+290:     );
+291:   }
+292: 
+293:   Widget _captchaBoard() {
+294:     if (_captchaLoading) {
+295:       return const Center(
+296:         child: SizedBox(
+297:           width: 18,
+298:           height: 18,
+299:           child: CircularProgressIndicator(strokeWidth: 2),
+300:         ),
+301:       );
+302:     }
+303:     if (_captchaBytes != null) {
+304:       return Image.memory(
+305:         _captchaBytes!,
+306:         fit: BoxFit.fill,
+307:         semanticLabel: '图形验证码',
+308:         errorBuilder: (_, _, _) =>
+309:             _LocalCaptchaView(code: _localCode ?? '----'),
+310:       );
+311:     }
+312:     return _LocalCaptchaView(code: _localCode ?? '7K4P');
+313:   }
+314: 
+315:   Widget _loginForm(WearSession session) {
+316:     return AutofillGroup(
+317:       child: Form(
+318:         key: _form,
+319:         child: WearCard(
+320:           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+321:           child: Column(
+322:             mainAxisSize: MainAxisSize.min,
+323:             crossAxisAlignment: CrossAxisAlignment.stretch,
+324:             children: [
+325:               const Text(
+326:                 '账号',
+327:                 style: TextStyle(
+328:                   fontWeight: FontWeight.w600,
+329:                   color: WearColors.ink,
+330:                 ),
+331:               ),
+332:               const SizedBox(height: 6),
+333:               TextFormField(
+334:                 controller: _username,
+335:                 enabled: !session.busy,
+336:                 autofillHints: const [AutofillHints.username],
+337:                 textInputAction: TextInputAction.next,
+338:                 decoration: _field(
+339:                   hint: '请输入账号',
+340:                   prefix: const Icon(Icons.person_outline),
+341:                 ),
+342:                 validator: (value) =>
+343:                     value == null || value.trim().isEmpty ? '请输入账号' : null,
+344:               ),
+345:               const SizedBox(height: 10),
+346:               const Text(
+347:                 '密码',
+348:                 style: TextStyle(
+349:                   fontWeight: FontWeight.w600,
+350:                   color: WearColors.ink,
+351:                 ),
+352:               ),
+353:               const SizedBox(height: 6),
+354:               TextFormField(
+355:                 controller: _password,
+356:                 enabled: !session.busy,
+357:                 obscureText: _obscure,
+358:                 autofillHints: const [AutofillHints.password],
+359:                 textInputAction: TextInputAction.next,
+360:                 decoration: _field(
+361:                   hint: '请输入密码',
+362:                   prefix: const Icon(Icons.lock_outline),
+363:                   suffix: IconButton(
+364:                     tooltip: _obscure ? '显示密码' : '隐藏密码',
+365:                     onPressed: () => setState(() => _obscure = !_obscure),
+366:                     icon: Icon(
+367:                       _obscure
+368:                           ? Icons.visibility_outlined
+369:                           : Icons.visibility_off_outlined,
+370:                     ),
+371:                   ),
+372:                 ),
+373:                 validator: (value) =>
+374:                     value == null || value.isEmpty ? '请输入密码' : null,
+375:               ),
+376:               const SizedBox(height: 10),
+377:               const Text(
+378:                 '图形验证码',
+379:                 style: TextStyle(
+380:                   fontWeight: FontWeight.w600,
+381:                   color: WearColors.ink,
+382:                 ),
+383:               ),
+384:               const SizedBox(height: 6),
+385:               Row(
+386:                 children: [
+387:                   Expanded(
+388:                     child: TextFormField(
+389:                       controller: _code,
+390:                       enabled: !session.busy,
+391:                       textInputAction: TextInputAction.done,
+392:                       onFieldSubmitted: (_) => _submit(),
+393:                       decoration: _field(
+394:                         hint: '请输入图形验证码',
+395:                         prefix: const Icon(Icons.image_outlined),
+396:                       ),
+397:                       validator: (value) =>
+398:                           value == null || value.trim().isEmpty
+399:                           ? '请输入验证码'
+400:                           : null,
+401:                     ),
+402:                   ),
+403:                   const SizedBox(width: 8),
+404:                   GestureDetector(
+405:                     onTap: session.busy ? null : _captcha,
+406:                     child: ClipRRect(
+407:                       borderRadius: BorderRadius.circular(10),
+408:                       child: SizedBox(
+409:                         width: 96,
+410:                         height: 44,
+411:                         child: _captchaBoard(),
+412:                       ),
+413:                     ),
+414:                   ),
+415:                   const SizedBox(width: 6),
+416:                   InkWell(
+417:                     onTap: session.busy ? null : _captcha,
+418:                     borderRadius: BorderRadius.circular(10),
+419:                     child: const SizedBox(
+420:                       width: 40,
+421:                       height: 44,
+422:                       child: Column(
+423:                         mainAxisAlignment: MainAxisAlignment.center,
+424:                         children: [
+425:                           Icon(
+426:                             Icons.refresh,
+427:                             size: 18,
+428:                             color: WearColors.brand,
+429:                           ),
+430:                           Text(
+431:                             '刷新',
+432:                             style: TextStyle(
+433:                               fontSize: 10,
+434:                               color: WearColors.brand,
+435:                             ),
+436:                           ),
+437:                         ],
+438:                       ),
+439:                     ),
+440:                   ),
+441:                 ],
+442:               ),
+443:               const SizedBox(height: 4),
+444:               GestureDetector(
+445:                 onTap: session.busy ? null : _captcha,
+446:                 child: const Text(
+447:                   '验证码不清楚？点击刷新',
+448:                   style: TextStyle(fontSize: 12, color: WearColors.muted),
+449:                 ),
+450:               ),
+451:               if (_captchaError != null)
+452:                 Padding(
+453:                   padding: const EdgeInsets.only(top: 4),
+454:                   child: Text(
+455:                     _captchaError!,
+456:                     style: const TextStyle(color: WearColors.danger),
+457:                   ),
+458:                 ),
+459:               if (session.error != null)
+460:                 Padding(
+461:                   padding: const EdgeInsets.only(top: 6),
+462:                   child: Text(
+463:                     session.error!,
+464:                     style: const TextStyle(color: WearColors.danger),
+465:                   ),
+466:                 ),
+467:               const SizedBox(height: 12),
+468:               FilledButton(
+469:                 onPressed: session.busy ? null : _submit,
+470:                 child: session.busy
+471:                     ? const SizedBox(
+472:                         width: 20,
+473:                         height: 20,
+474:                         child: CircularProgressIndicator(strokeWidth: 2),
+475:                       )
+476:                     : const Text('登录'),
+477:               ),
+478:               TextButton(
+479:                 onPressed: session.busy ? null : _openPasswordReset,
+480:                 child: const Text('忘记密码 / 申请重置  >'),
+481:               ),
+482:               if (session.token != null && session.me == null && !session.busy)
+483:                 TextButton(
+484:                   onPressed: session.initialize,
+485:                   child: const Text('重新验证已有会话'),
+486:                 ),
+487:             ],
+488:           ),
+489:         ),
+490:       ),
+491:     );
+492:   }
+493: }
+494: 
+495: class _LocalCaptchaView extends StatelessWidget {
+496:   const _LocalCaptchaView({required this.code});
+497: 
+498:   final String code;
+499: 
+500:   @override
+501:   Widget build(BuildContext context) {
+502:     return ColoredBox(
+503:       color: const Color(0xFFF4F7FF),
+504:       child: CustomPaint(
+505:         painter: _CaptchaPainter(code),
+506:         child: const SizedBox.expand(),
+507:       ),
+508:     );
+509:   }
+510: }
+511: 
+512: class _CaptchaPainter extends CustomPainter {
+513:   _CaptchaPainter(this.code);
+514:   final String code;
+515: 
+516:   static const _colors = [
+517:     Color(0xFF16A34A),
+518:     Color(0xFFEA580C),
+519:     Color(0xFF2563EB),
+520:     Color(0xFF7C3AED),
+521:   ];
+522: 
+523:   @override
+524:   void paint(Canvas canvas, Size size) {
+525:     final noise = Paint()
+526:       ..color = const Color(0x332563EB)
+527:       ..strokeWidth = 1;
+528:     for (var i = 0; i < 6; i++) {
+529:       canvas.drawLine(
+530:         Offset(size.width * (0.05 + i * 0.15), 4),
+531:         Offset(size.width * (0.2 + i * 0.12), size.height - 4),
+532:         noise,
+533:       );
+534:     }
+535:     for (var i = 0; i < code.length; i++) {
+536:       final tp = TextPainter(
+537:         text: TextSpan(
+538:           text: code[i],
+539:           style: TextStyle(
+540:             color: _colors[i % _colors.length],
+541:             fontSize: size.height * 0.62,
+542:             fontWeight: FontWeight.w800,
+543:             fontStyle: i.isOdd ? FontStyle.italic : FontStyle.normal,
+544:           ),
+545:         ),
+546:         textDirection: TextDirection.ltr,
+547:       )..layout();
+548:       final dx = size.width * (0.08 + i * 0.22);
+549:       final dy = (size.height - tp.height) / 2 + (i.isEven ? -2 : 3);
+550:       canvas.save();
+551:       canvas.translate(dx + tp.width / 2, dy + tp.height / 2);
+552:       canvas.rotate((i - 1.5) * 0.12);
+553:       tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+554:       canvas.restore();
+555:     }
+556:   }
+557: 
+558:   @override
+559:   bool shouldRepaint(covariant _CaptchaPainter oldDelegate) =>
+560:       oldDelegate.code != code;
+561: }
+562: 
+563: class WearSitesPage extends StatelessWidget {
+564:   const WearSitesPage({super.key});
+565:   @override
+566:   Widget build(BuildContext context) {
+567:     final session = WearScope.of(context);
+568:     return Scaffold(
+569:       appBar: AppBar(
+570:         title: const Row(
+571:           children: [
+572:             WearRollingWordmark(height: 22),
+573:             SizedBox(width: 10),
+574:             Expanded(child: Text('选择工作厂站')),
+575:           ],
+576:         ),
+577:         automaticallyImplyLeading: false,
+578:         leading: session.siteId != null
+579:             ? IconButton(
+580:                 tooltip: '返回工作台',
+581:                 onPressed: () => context.go('/workbench'),
+582:                 icon: const Icon(Icons.arrow_back),
+583:               )
+584:             : null,
+585:       ),
+586:       body: SafeArea(
+587:         child: ListView(
+588:           padding: const EdgeInsets.all(20),
+589:           children: [
+590:             const Padding(
+591:               padding: EdgeInsets.only(bottom: 16),
+592:               child: Text(
+593:                 '今天在哪个厂站工作？切换后，待办、人员、装备和通讯同步更新。',
+594:                 style: TextStyle(color: WearColors.muted, height: 1.5),
+595:               ),
+596:             ),
+597:             if (session.error != null)
+598:               Padding(
+599:                 padding: const EdgeInsets.only(bottom: 12),
+600:                 child: Text(
+601:                   session.error!,
+602:                   style: const TextStyle(color: WearColors.danger),
+603:                 ),
+604:               ),
+605:             if (session.sites.isEmpty)
+606:               const WearEmpty(title: '暂无可访问的厂站', detail: '请联系管理员为此账号分配有效厂站。'),
+607:             for (final site in session.sites)
+608:               Padding(
+609:                 padding: const EdgeInsets.only(bottom: 12),
+610:                 child: WearCard(
+611:                   padding: EdgeInsets.zero,
+612:                   child: ListTile(
+613:                     contentPadding: const EdgeInsets.symmetric(
+614:                       horizontal: 20,
+615:                       vertical: 12,
+616:                     ),
+617:                     leading: const Icon(Icons.factory_outlined),
+618:                     title: Text(textOf(site['name'])),
+619:                     subtitle: Text(textOf(site['siteCode'])),
+620:                     trailing: idOf(site['id']) == session.siteId
+621:                         ? const Icon(
+622:                             Icons.check_circle,
+623:                             color: WearColors.primary,
+624:                           )
+625:                         : const Icon(Icons.chevron_right),
+626:                     enabled: !session.busy,
+627:                     onTap: () async {
+628:                       try {
+629:                         await session.selectSite(idOf(site['id']));
+630:                         if (context.mounted) context.go('/workbench');
+631:                       } catch (e) {
+632:                         if (context.mounted) {
+633:                           ScaffoldMessenger.of(
+634:                             context,
+635:                           ).showSnackBar(SnackBar(content: Text(e.toString())));
+636:                         }
+637:                       }
+638:                     },
+639:                   ),
+640:                 ),
+641:               ),
+642:             if (session.busy) const Center(child: CircularProgressIndicator()),
+643:             TextButton(
+644:               onPressed: session.busy ? null : session.logout,
+645:               child: const Text('退出当前账号'),
+646:             ),
+647:           ],
+648:         ),
+649:       ),
+650:     );
+651:   }
+652: }

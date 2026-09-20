@@ -1,0 +1,35 @@
+1: import 'models.dart';
+2: 
+3: class CommunicationsPolicy {
+4:   const CommunicationsPolicy({required this.userId, required this.permissions});
+5: 
+6:   final String userId;
+7:   final Set<String> permissions;
+8: 
+9:   bool get canStartCalls => permissions.contains('wear:call:start');
+10:   bool get canSubmitTts => permissions.contains('wear:command:tts');
+11: 
+12:   bool canStartVoice(CommunicationDevice device) =>
+13:       canStartCalls && device.supports('intercom');
+14: 
+15:   bool canStartVideo(CommunicationDevice device) =>
+16:       canStartVoice(device) && device.supports('video');
+17: 
+18:   bool canSendTts(CommunicationDevice device) =>
+19:       canSubmitTts && device.supports('tts');
+20: 
+21:   bool owns(CallSession session) =>
+22:       userId.isNotEmpty && userId == session.requesterUserId;
+23: 
+24:   bool canReadCredentials(CallSession session) =>
+25:       owns(session) && !session.isTerminal && !session.demo;
+26: 
+27:   bool canJoin(CallSession session) =>
+28:       canStartCalls &&
+29:       owns(session) &&
+30:       session.status == WearCallStatus.offered &&
+31:       !session.demo;
+32: 
+33:   bool canEnd(CallSession session) =>
+34:       canStartCalls && owns(session) && !session.isTerminal;
+35: }

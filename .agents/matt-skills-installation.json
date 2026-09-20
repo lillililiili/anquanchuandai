@@ -1,0 +1,37 @@
+{
+  "source": "https://github.com/mattpocock/skills",
+  "commit": "74ca5fe077456a0b3b2f5310cf9430999fd0b5fd",
+  "installedAt": "2026-09-18",
+  "scope": "project",
+  "groups": [
+    "engineering",
+    "productivity"
+  ],
+  "skills": [
+    "ask-matt",
+    "code-review",
+    "codebase-design",
+    "diagnosing-bugs",
+    "domain-modeling",
+    "grill-me",
+    "grill-with-docs",
+    "grilling",
+    "handoff",
+    "implement",
+    "improve-codebase-architecture",
+    "prototype",
+    "research",
+    "resolving-merge-conflicts",
+    "setup-matt-pocock-skills",
+    "tdd",
+    "teach",
+    "to-questionnaire",
+    "to-spec",
+    "to-tickets",
+    "triage",
+    "wait-what",
+    "wayfinder",
+    "wizard",
+    "writing-for-agents"
+  ]
+}

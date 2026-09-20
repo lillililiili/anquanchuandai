@@ -268,6 +268,15 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       gateway.pageRequests.single.complete(
         EventPageData(
+          records: [_event(id: 'first')],
+          total: 21,
+          current: 1,
+          size: 20,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      gateway.pageRequests.last.complete(
+        EventPageData(
           records: [gateway.detail],
           total: 21,
           current: 2,
@@ -280,6 +289,7 @@ void main() {
       expect(controller.filters.type, 'fall');
       expect(controller.current, 2);
       expect(controller.total, 21);
+      expect(controller.records.map((event) => event.id), ['first', '9']);
       expect(controller.selected?.id, '9');
       expect(controller.scrollOffset, 180);
       expect(controller.draftFor('9').closeReason, '误报');

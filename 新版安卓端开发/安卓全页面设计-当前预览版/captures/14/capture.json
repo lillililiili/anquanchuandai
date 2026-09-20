@@ -1,0 +1,15 @@
+{
+  "id": "14",
+  "width": 360,
+  "height": 616,
+  "pixelRatio": 3,
+  "frames": [
+    {
+      "file": "01.png",
+      "offset": 0.0,
+      "max": 0.0,
+      "top": 0.0,
+      "height": 616.0
+    }
+  ]
+}

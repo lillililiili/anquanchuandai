@@ -39,6 +39,9 @@ class WearEvent {
     required this.fenceId,
     required this.fenceAction,
     required this.version,
+    this.alarmCode = '',
+    this.alarmName = '',
+    this.alarmDescription = '',
   });
 
   factory WearEvent.fromJson(EventJson json) {
@@ -47,6 +50,9 @@ class WearEvent {
     return WearEvent(
       id: id,
       type: _text(json['type']),
+      alarmCode: _text(json['alarmCode']),
+      alarmName: _text(json['alarmName']),
+      alarmDescription: _text(json['alarmDescription']),
       severity: _text(json['severity']),
       status: _text(json['status']),
       occurredAt: _text(json['occurredAt']),
@@ -77,6 +83,9 @@ class WearEvent {
 
   final String id;
   final String type;
+  final String alarmCode;
+  final String alarmName;
+  final String alarmDescription;
   final String severity;
   final String status;
   final String occurredAt;
@@ -105,6 +114,19 @@ class WearEvent {
 
   bool get isHighRisk => const {'sos', 'fall', 'impact'}.contains(type);
   bool get isClosed => status == 'closed';
+
+  // Names describe the event-time alarm, never the device's current state.
+  String get alarmLabel => alarmName.isNotEmpty
+      ? alarmName
+      : alarmCode.isNotEmpty
+      ? alarmCode
+      : '告警名称未提供';
+
+  String get descriptionLabel => alarmDescription.isNotEmpty
+      ? alarmDescription
+      : alarmName.isNotEmpty
+      ? alarmName
+      : '核心系统暂未提供告警描述';
 
   String get typeLabel =>
       const {

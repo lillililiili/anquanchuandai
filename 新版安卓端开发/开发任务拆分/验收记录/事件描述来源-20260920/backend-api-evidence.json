@@ -1,0 +1,24 @@
+{
+  "event167": {
+    "id": "167",
+    "type": "geofence",
+    "alarmCode": "helmet.fence_exit",
+    "alarmName": "离开指定区域",
+    "alarmDescription": "离开指定区域",
+    "status": "open",
+    "demo": true
+  },
+  "checkedEventCount": 120,
+  "listDetailConsistent": true,
+  "existingScenarioNames": {
+    "helmet.silent": "静默 / 长时间静止",
+    "helmet.fence_exit": "离开指定区域",
+    "helmet.battery": "低电量",
+    "helmet.fall": "跌落",
+    "helmet.sos": "SOS 求救",
+    "helmet.proximity": "近电",
+    "helmet.removal": "脱帽",
+    "watch.heart_high": "心率偏高",
+    "belt.unhooked": "安全钩未挂接"
+  }
+}

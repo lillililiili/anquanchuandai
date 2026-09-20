@@ -1,0 +1,1064 @@
+1: import 'dart:async';
+2: import 'package:flutter/material.dart';
+3: import '../core.dart';
+4: import 'event_controller.dart';
+5: import 'event_models.dart';
+6: 
+7: const _ink = Color(0xFF101F43),
+8:     _muted = Color(0xFF6B88AF),
+9:     _blue = Color(0xFF008BFF),
+10:     _red = Color(0xFFFF3C55),
+11:     _amber = Color(0xFFFFA000);
+12: 
+13: /// Presentation only: original controller retains permissions, versions and writes.
+14: class EventReferenceView extends StatefulWidget {
+15:   const EventReferenceView({
+16:     super.key,
+17:     required this.controller,
+18:     required this.onBack,
+19:     required this.onSubmit,
+20:     required this.onCommunication,
+21:     required this.legacyDetail,
+22:     this.onClaim,
+23:   });
+24:   final EventController controller;
+25:   final VoidCallback onBack, onSubmit, onCommunication;
+26:   final Widget legacyDetail;
+27:   final VoidCallback? onClaim;
+28:   @override
+29:   State<EventReferenceView> createState() => _EventReferenceViewState();
+30: }
+31: 
+32: class _EventReferenceViewState extends State<EventReferenceView> {
+33:   late final TextEditingController _note = TextEditingController(
+34:     text: widget.controller
+35:         .draftFor(widget.controller.selected!.id)
+36:         .handleComment,
+37:   );
+38:   final _photos = <String>[];
+39:   bool _demoJoined = false;
+40:   final _legacyAnchor = GlobalKey();
+41:   final _formAnchor = GlobalKey();
+42:   final _legacyController = ExpansibleController();
+43:   EventController get c => widget.controller;
+44:   WearEvent get e => c.selected!;
+45:   bool get sos => e.type == 'sos';
+46:   @override
+47:   void dispose() {
+48:     _note.dispose();
+49:     _legacyController.dispose();
+50:     super.dispose();
+51:   }
+52: 
+53:   String known(String value, [String fallback = '未关联']) =>
+54:       value.isEmpty ? fallback : value;
+55:   void message(String text) =>
+56:       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+57:   Widget card(Widget child, {EdgeInsets padding = const EdgeInsets.all(12)}) =>
+58:       Material(
+59:         color: Colors.white,
+60:         borderRadius: BorderRadius.circular(13),
+61:         clipBehavior: Clip.antiAlias,
+62:         child: Padding(padding: padding, child: child),
+63:       );
+64:   Widget gap() => const SizedBox(height: 10);
+65:   Widget heading(String text) => Text(
+66:     text,
+67:     style: const TextStyle(
+68:       fontSize: 16,
+69:       fontWeight: FontWeight.w800,
+70:       color: _ink,
+71:     ),
+72:   );
+73:   Widget line() => const Divider(height: 17, color: Color(0xFFEDF2F8));
+74:   Widget iconCircle(IconData icon, {Color color = _blue, double size = 36}) =>
+75:       Container(
+76:         width: size,
+77:         height: size,
+78:         decoration: BoxDecoration(
+79:           color: color.withValues(alpha: .08),
+80:           shape: BoxShape.circle,
+81:         ),
+82:         child: Icon(icon, color: color, size: size * .62),
+83:       );
+84:   Widget infoRow(
+85:     IconData icon,
+86:     String title,
+87:     String sub, {
+88:     Color color = _blue,
+89:     VoidCallback? onTap,
+90:   }) => InkWell(
+91:     onTap: onTap,
+92:     child: Padding(
+93:       padding: const EdgeInsets.symmetric(vertical: 5),
+94:       child: Row(
+95:         children: [
+96:           iconCircle(icon, color: color),
+97:           const SizedBox(width: 12),
+98:           Expanded(
+99:             child: Column(
+100:               crossAxisAlignment: CrossAxisAlignment.start,
+101:               children: [
+102:                 Text(
+103:                   title,
+104:                   style: const TextStyle(
+105:                     fontSize: 14,
+106:                     fontWeight: FontWeight.w600,
+107:                     color: _ink,
+108:                   ),
+109:                 ),
+110:                 const SizedBox(height: 3),
+111:                 Text(sub, style: const TextStyle(fontSize: 12, color: _muted)),
+112:               ],
+113:             ),
+114:           ),
+115:           if (onTap != null) const Icon(Icons.chevron_right, color: _muted),
+116:         ],
+117:       ),
+118:     ),
+119:   );
+120:   ButtonStyle button({bool red = false}) => FilledButton.styleFrom(
+121:     backgroundColor: red ? _red : _blue,
+122:     foregroundColor: Colors.white,
+123:     minimumSize: const Size.fromHeight(44),
+124:     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+125:     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+126:     textStyle: const TextStyle(
+127:       fontSize: 16,
+128:       fontWeight: FontWeight.w700,
+129:       decoration: TextDecoration.none,
+130:     ),
+131:   );
+132:   ButtonStyle outline({bool red = false}) => OutlinedButton.styleFrom(
+133:     foregroundColor: red ? _red : _blue,
+134:     minimumSize: const Size.fromHeight(44),
+135:     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+136:     side: BorderSide(color: red ? _red : _blue),
+137:     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+138:     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+139:   );
+140:   @override
+141:   Widget build(BuildContext context) {
+142:     final draft = c.draftFor(e.id).handleComment;
+143:     if (_note.text != draft) {
+144:       _note.value = TextEditingValue(
+145:         text: draft,
+146:         selection: TextSelection.collapsed(offset: draft.length),
+147:       );
+148:     }
+149:     return PopScope(
+150:       canPop: !c.writing,
+151:       child: Scaffold(
+152:         backgroundColor: const Color(0xFFEEF8FF),
+153:         body: SafeArea(
+154:           child: RefreshIndicator(
+155:             onRefresh: c.refreshFromSignal,
+156:             child: SingleChildScrollView(
+157:               physics: const AlwaysScrollableScrollPhysics(),
+158:               child: Column(
+159:                 children: [
+160:                   _hero(context),
+161:                   Padding(
+162:                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 18),
+163:                     child: Column(
+164:                       crossAxisAlignment: CrossAxisAlignment.stretch,
+165:                       children: [
+166:                         if (c.detailLoading || c.writing)
+167:                           const LinearProgressIndicator(minHeight: 2),
+168:                         if (c.errorMessage != null) _notice(c.errorMessage!),
+169:                         if (c.conflictMessage != null)
+170:                           _notice('${c.conflictMessage!}；草稿已保留，请核对最新状态'),
+171:                         if (c.successMessage != null)
+172:                           _notice(c.successMessage!),
+173:                         _nextStep(),
+174:                         gap(),
+175:                         if (sos) ..._sosContent() else ..._abnormalContent(),
+176:                         gap(),
+177:                         card(
+178:                           Theme(
+179:                             data: Theme.of(
+180:                               context,
+181:                             ).copyWith(dividerColor: Colors.transparent),
+182:                             child: ExpansionTile(
+183:                               controller: _legacyController,
+184:                               expansionAnimationStyle:
+185:                                   AnimationStyle.noAnimation,
+186:                               key: const ValueKey('event-original-actions'),
+187:                               tilePadding: EdgeInsets.zero,
+188:                               title: const Text(
+189:                                 '更多处置与事件记录',
+190:                                 style: TextStyle(fontSize: 13, color: _muted),
+191:                               ),
+192:                               subtitle: const Text(
+193:                                 '认领、转交、复核、关联与时间线',
+194:                                 style: TextStyle(fontSize: 10, color: _muted),
+195:                               ),
+196:                               children: [
+197:                                 Container(
+198:                                   key: _legacyAnchor,
+199:                                   child: widget.legacyDetail,
+200:                                 ),
+201:                               ],
+202:                             ),
+203:                           ),
+204:                         ),
+205:                       ],
+206:                     ),
+207:                   ),
+208:                 ],
+209:               ),
+210:             ),
+211:           ),
+212:         ),
+213:       ),
+214:     );
+215:   }
+216: 
+217:   Widget _notice(String text) => Padding(
+218:     padding: const EdgeInsets.only(bottom: 8),
+219:     child: card(
+220:       Text(text, style: const TextStyle(color: _muted, fontSize: 12)),
+221:     ),
+222:   );
+223: 
+224:   void _showOriginalActions() {
+225:     _legacyController.expand();
+226:     WidgetsBinding.instance.addPostFrameCallback((_) {
+227:       if (!mounted) return;
+228:       final anchor = _legacyAnchor.currentContext;
+229:       if (anchor != null) {
+230:         Scrollable.ensureVisible(
+231:           anchor,
+232:           duration: const Duration(milliseconds: 250),
+233:           alignment: .1,
+234:         );
+235:       }
+236:     });
+237:   }
+238: 
+239:   Widget _nextStep() {
+240:     final canClaim = c.can(EventCommand.claim) && widget.onClaim != null;
+241:     final canHandle = c.can(EventCommand.handle);
+242:     final instruction = canClaim
+243:         ? '先认领，再记录现场核验与处置情况'
+244:         : canHandle
+245:         ? '核验完成后提交处置说明'
+246:         : e.status == 'closed'
+247:         ? '事件已关闭，可查看处置记录'
+248:         : e.status == 'pending_review'
+249:         ? '等待复核，可在更多处置中查看可用操作'
+250:         : '按当前权限查看资料或执行处置';
+251:     return card(
+252:       Column(
+253:         crossAxisAlignment: CrossAxisAlignment.stretch,
+254:         children: [
+255:           Row(
+256:             children: [
+257:               Icon(
+258:                 sos ? Icons.sos : Icons.fact_check_outlined,
+259:                 color: sos ? _red : _amber,
+260:                 size: 22,
+261:               ),
+262:               const SizedBox(width: 8),
+263:               Expanded(
+264:                 child: Text(
+265:                   '当前状态 · ${e.statusLabel}',
+266:                   style: const TextStyle(
+267:                     fontSize: 14,
+268:                     fontWeight: FontWeight.w700,
+269:                     color: _ink,
+270:                   ),
+271:                 ),
+272:               ),
+273:             ],
+274:           ),
+275:           const SizedBox(height: 5),
+276:           Text(
+277:             instruction,
+278:             style: const TextStyle(fontSize: 12, color: _muted),
+279:           ),
+280:           const SizedBox(height: 8),
+281:           Wrap(
+282:             spacing: 8,
+283:             runSpacing: 6,
+284:             children: [
+285:               if (canClaim)
+286:                 FilledButton.icon(
+287:                   key: const ValueKey('event-next-claim'),
+288:                   onPressed: c.writing ? null : widget.onClaim,
+289:                   icon: const Icon(Icons.pan_tool_alt_outlined, size: 18),
+290:                   label: const Text('认领事件'),
+291:                 )
+292:               else if (canHandle)
+293:                 FilledButton.icon(
+294:                   onPressed: c.writing
+295:                       ? null
+296:                       : () {
+297:                           final anchor = _formAnchor.currentContext;
+298:                           if (!sos && anchor != null) {
+299:                             Scrollable.ensureVisible(
+300:                               anchor,
+301:                               duration: const Duration(milliseconds: 250),
+302:                               alignment: .1,
+303:                             );
+304:                           } else {
+305:                             _showOriginalActions();
+306:                           }
+307:                         },
+308:                   icon: const Icon(Icons.edit_note, size: 18),
+309:                   label: const Text('填写处置说明'),
+310:                 ),
+311:               OutlinedButton(
+312:                 onPressed: c.writing ? null : _showOriginalActions,
+313:                 child: const Text('更多处置与记录'),
+314:               ),
+315:             ],
+316:           ),
+317:         ],
+318:       ),
+319:     );
+320:   }
+321: 
+322:   Widget _hero(BuildContext context) {
+323:     return SizedBox(
+324:       key: ValueKey(sos ? 'wear-page-hero-sos' : 'wear-page-hero-verify'),
+325:       height: WearHeaderLayout.height(context),
+326:       child: Stack(
+327:         children: [
+328:           Positioned.fill(
+329:             child: Image.asset(
+330:               sos
+331:                   ? 'assets/field-brand/preview/sos_reference_hero.png'
+332:                   : 'assets/field-brand/preview/verify_reference_hero.png',
+333:               fit: BoxFit.cover,
+334:             ),
+335:           ),
+336:           Positioned(
+337:             top: 4,
+338:             left: sos ? 15 : 0,
+339:             right: 14,
+340:             child: Row(
+341:               children: [
+342:                 if (!sos)
+343:                   IconButton(
+344:                     tooltip: '返回事件列表',
+345:                     onPressed: c.writing ? null : widget.onBack,
+346:                     icon: const Icon(
+347:                       Icons.arrow_back_ios_new,
+348:                       color: _ink,
+349:                       size: 22,
+350:                     ),
+351:                   ),
+352:                 const WearRollingWordmark(height: 23),
+353:                 const Spacer(),
+354:                 Flexible(
+355:                   child: Container(
+356:                     padding: const EdgeInsets.symmetric(
+357:                       horizontal: 6,
+358:                       vertical: 3,
+359:                     ),
+360:                     decoration: BoxDecoration(
+361:                       color: Colors.white.withValues(alpha: .85),
+362:                       borderRadius: BorderRadius.circular(6),
+363:                     ),
+364:                     child: Text(
+365:                       e.demo ? '演示事件' : '事件信息',
+366:                       textAlign: TextAlign.right,
+367:                       style: const TextStyle(fontSize: 10, color: _muted),
+368:                     ),
+369:                   ),
+370:                 ),
+371:               ],
+372:             ),
+373:           ),
+374:           Positioned(
+375:             left: sos ? 0 : 18,
+376:             top: sos ? 44 : 58,
+377:             right: sos ? 135 : 158,
+378:             child: sos
+379:                 ? Row(
+380:                     children: [
+381:                       IconButton(
+382:                         tooltip: '返回事件列表',
+383:                         onPressed: c.writing ? null : widget.onBack,
+384:                         icon: const Icon(
+385:                           Icons.arrow_back_ios_new,
+386:                           color: _ink,
+387:                           size: 22,
+388:                         ),
+389:                       ),
+390:                       const Expanded(
+391:                         child: Text(
+392:                           'SOS协助',
+393:                           style: TextStyle(
+394:                             fontSize: WearHeaderLayout.titleSize,
+395:                             fontWeight: FontWeight.w900,
+396:                             color: _ink,
+397:                           ),
+398:                         ),
+399:                       ),
+400:                     ],
+401:                   )
+402:                 : Column(
+403:                     crossAxisAlignment: CrossAxisAlignment.start,
+404:                     children: [
+405:                       const Text(
+406:                         '异常核验',
+407:                         style: TextStyle(
+408:                           fontSize: WearHeaderLayout.titleSize,
+409:                           fontWeight: FontWeight.w900,
+410:                           color: _ink,
+411:                         ),
+412:                       ),
+413:                       const SizedBox(height: 10),
+414:                       const Text(
+415:                         '安全无小事\n核查每一个风险！',
+416:                         style: TextStyle(
+417:                           fontSize: WearHeaderLayout.subtitleSize,
+418:                           color: Color(0xFF315D8F),
+419:                           height: 1.4,
+420:                         ),
+421:                       ),
+422:                       Container(
+423:                         margin: const EdgeInsets.only(top: 5),
+424:                         height: 2,
+425:                         width: 110,
+426:                         color: _blue.withValues(alpha: .5),
+427:                       ),
+428:                     ],
+429:                   ),
+430:           ),
+431:           if (sos)
+432:             Positioned(
+433:               left: 12,
+434:               top:
+435:                   88 +
+436:                   (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(0, 2) *
+437:                       50,
+438:               right: 145,
+439:               child: Container(
+440:                 padding: const EdgeInsets.symmetric(
+441:                   vertical: 5,
+442:                   horizontal: 10,
+443:                 ),
+444:                 decoration: BoxDecoration(
+445:                   color: _red,
+446:                   borderRadius: BorderRadius.circular(10),
+447:                 ),
+448:                 child: Column(
+449:                   children: [
+450:                     Row(
+451:                       children: [
+452:                         const Icon(
+453:                           Icons.warning_rounded,
+454:                           color: Colors.white,
+455:                           size: 22,
+456:                         ),
+457:                         const SizedBox(width: 8),
+458:                         Expanded(
+459:                           child: Text(
+460:                             e.demo ? 'SOS演练' : 'SOS求救',
+461:                             style: const TextStyle(
+462:                               fontSize: WearHeaderLayout.titleSize,
+463:                               fontWeight: FontWeight.w800,
+464:                               color: Colors.white,
+465:                             ),
+466:                           ),
+467:                         ),
+468:                       ],
+469:                     ),
+470:                     Text(
+471:                       e.demo ? '演示场景' : '紧急求助 · ${e.statusLabel}',
+472:                       style: const TextStyle(fontSize: 12, color: Colors.white),
+473:                     ),
+474:                   ],
+475:                 ),
+476:               ),
+477:             ),
+478:         ],
+479:       ),
+480:     );
+481:   }
+482: 
+483:   List<Widget> _abnormalContent() => [
+484:     card(
+485:       Column(
+486:         children: [
+487:           Row(
+488:             crossAxisAlignment: CrossAxisAlignment.start,
+489:             children: [
+490:               Container(
+491:                 width: 46,
+492:                 height: 46,
+493:                 decoration: BoxDecoration(
+494:                   color: _amber.withValues(alpha: .12),
+495:                   borderRadius: BorderRadius.circular(12),
+496:                 ),
+497:                 child: const Icon(
+498:                   Icons.warning_amber_rounded,
+499:                   size: 35,
+500:                   color: _amber,
+501:                 ),
+502:               ),
+503:               const SizedBox(width: 12),
+504:               Expanded(
+505:                 child: Column(
+506:                   crossAxisAlignment: CrossAxisAlignment.start,
+507:                   children: [
+508:                     Text(
+509:                       e.type == 'geofence' ? '围栏异常' : e.typeLabel,
+510:                       style: const TextStyle(
+511:                         fontSize: 18,
+512:                         fontWeight: FontWeight.w800,
+513:                         color: _ink,
+514:                       ),
+515:                     ),
+516:                     Text(
+517:                       '事件 #${e.id}',
+518:                       style: const TextStyle(fontSize: 12, color: _muted),
+519:                     ),
+520:                     const SizedBox(height: 4),
+521:                     const Text(
+522:                       '告警需现场核验，不直接判定违规',
+523:                       style: TextStyle(fontSize: 10, color: _muted),
+524:                     ),
+525:                   ],
+526:                 ),
+527:               ),
+528:               const SizedBox(width: 5),
+529:               Container(
+530:                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+531:                 decoration: BoxDecoration(
+532:                   color: const Color(0xFFFFF3C2),
+533:                   border: Border.all(color: const Color(0xFFFFD566)),
+534:                   borderRadius: BorderRadius.circular(6),
+535:                 ),
+536:                 child: Text(
+537:                   e.statusLabel,
+538:                   style: const TextStyle(
+539:                     color: Color(0xFF996000),
+540:                     fontSize: 11,
+541:                     fontWeight: FontWeight.w700,
+542:                   ),
+543:                 ),
+544:               ),
+545:             ],
+546:           ),
+547:           line(),
+548:           Row(
+549:             children: [
+550:               iconCircle(Icons.person_outline),
+551:               const SizedBox(width: 8),
+552:               Expanded(
+553:                 child: Column(
+554:                   crossAxisAlignment: CrossAxisAlignment.start,
+555:                   children: [
+556:                     Text(
+557:                       '${known(e.personName)} · ${known(e.sn)}',
+558:                       style: const TextStyle(
+559:                         fontSize: 13,
+560:                         fontWeight: FontWeight.w700,
+561:                         color: _ink,
+562:                       ),
+563:                     ),
+564:                     Text(
+565:                       e.taskId.isEmpty ? '未关联作业' : '关联作业 ${e.taskId}',
+566:                       style: const TextStyle(fontSize: 11, color: _muted),
+567:                     ),
+568:                   ],
+569:                 ),
+570:               ),
+571:               const SizedBox(width: 8),
+572:               Container(width: 1, height: 34, color: const Color(0xFFE8EFF8)),
+573:               const SizedBox(width: 10),
+574:               const Icon(Icons.schedule, color: _blue, size: 22),
+575:               const SizedBox(width: 8),
+576:               Expanded(
+577:                 child: Column(
+578:                   crossAxisAlignment: CrossAxisAlignment.start,
+579:                   children: [
+580:                     const Text(
+581:                       '设备数据时间',
+582:                       style: TextStyle(fontSize: 10, color: _muted),
+583:                     ),
+584:                     Text(
+585:                       formatTime(e.occurredAt),
+586:                       style: const TextStyle(fontSize: 12, color: _ink),
+587:                     ),
+588:                   ],
+589:                 ),
+590:               ),
+591:             ],
+592:           ),
+593:         ],
+594:       ),
+595:     ),
+596:     gap(),
+597:     card(
+598:       Column(
+599:         children: [
+600:           infoRow(
+601:             Icons.description_outlined,
+602:             '原安监事件',
+603:             known(e.sourceEventId, '暂未关联原安监事件'),
+604:           ),
+605:           line(),
+606:           infoRow(Icons.lock_outline, e.statusLabel, '源记录只读；现场操作仍按原权限执行'),
+607:         ],
+608:       ),
+609:     ),
+610:     gap(),
+611:     card(
+612:       Column(
+613:         crossAxisAlignment: CrossAxisAlignment.start,
+614:         children: [
+615:           Container(key: _formAnchor, child: heading('现场核验说明')),
+616:           const SizedBox(height: 9),
+617:           TextField(
+618:             key: ValueKey('event-handle-input-${e.id}'),
+619:             controller: _note,
+620:             enabled: !c.writing,
+621:             minLines: 3,
+622:             maxLines: 5,
+623:             maxLength: 500,
+624:             style: const TextStyle(fontSize: 14, color: _ink),
+625:             decoration: InputDecoration(
+626:               hintText: '记录现场核实情况和已采取的措施',
+627:               filled: true,
+628:               fillColor: const Color(0xFFF9FCFF),
+629:               contentPadding: const EdgeInsets.all(10),
+630:               border: OutlineInputBorder(
+631:                 borderRadius: BorderRadius.circular(8),
+632:                 borderSide: const BorderSide(color: Color(0xFFD8E4F3)),
+633:               ),
+634:               counterStyle: const TextStyle(fontSize: 10, color: _muted),
+635:             ),
+636:             onChanged: (value) => unawaited(
+637:               c.updateDraft(
+638:                 e.id,
+639:                 c.draftFor(e.id).copyWith(handleComment: value),
+640:               ),
+641:             ),
+642:           ),
+643:         ],
+644:       ),
+645:     ),
+646:     gap(),
+647:     _attachmentCard(),
+648:     gap(),
+649:     Row(
+650:       children: [
+651:         Expanded(
+652:           child: OutlinedButton(
+653:             style: outline(),
+654:             onPressed: c.writing
+655:                 ? null
+656:                 : () async {
+657:                     await c.updateDraft(e.id, c.draftFor(e.id));
+658:                     if (mounted) message('草稿已保存在本机；示例附件未上传');
+659:                   },
+660:             child: const Text('保存草稿'),
+661:           ),
+662:         ),
+663:         const SizedBox(width: 8),
+664:         Expanded(
+665:           child: FilledButton(
+666:             key: ValueKey('event-handle-submit-${e.id}'),
+667:             style: button(),
+668:             onPressed: c.writing || !c.can(EventCommand.handle)
+669:                 ? null
+670:                 : widget.onSubmit,
+671:             child: const Text('提交核验'),
+672:           ),
+673:         ),
+674:       ],
+675:     ),
+676:     if (!c.can(EventCommand.handle))
+677:       Padding(
+678:         padding: const EdgeInsets.only(top: 6),
+679:         child: Text(
+680:           e.status == 'open' && c.can(EventCommand.claim)
+681:               ? '请先使用上方“认领事件”；草稿可先保存。'
+682:               : '当前角色或事件状态不可提交核验，可查看“更多处置与记录”。',
+683:           style: const TextStyle(fontSize: 10, color: _muted),
+684:         ),
+685:       ),
+686:     const Padding(
+687:       padding: EdgeInsets.only(top: 10),
+688:       child: Row(
+689:         mainAxisAlignment: MainAxisAlignment.center,
+690:         children: [
+691:           Icon(Icons.info_outline, color: _muted, size: 18),
+692:           SizedBox(width: 8),
+693:           Flexible(
+694:             child: Text(
+695:               '正式结案按原系统权限与流程办理',
+696:               style: TextStyle(fontSize: 10, color: _muted),
+697:             ),
+698:           ),
+699:         ],
+700:       ),
+701:     ),
+702:   ];
+703:   Widget _attachmentCard() => card(
+704:     Column(
+705:       crossAxisAlignment: CrossAxisAlignment.start,
+706:       children: [
+707:         Row(
+708:           children: [
+709:             heading('现场附件'),
+710:             const Spacer(),
+711:             const Flexible(
+712:               child: Text(
+713:                 '最多4张 · 本地UI示例',
+714:                 style: TextStyle(fontSize: 10, color: _muted),
+715:               ),
+716:             ),
+717:           ],
+718:         ),
+719:         const SizedBox(height: 9),
+720:         Wrap(
+721:           spacing: 10,
+722:           runSpacing: 8,
+723:           children: [
+724:             if (_photos.length < 4)
+725:               SizedBox(
+726:                 width: 96,
+727:                 height: 92,
+728:                 child: OutlinedButton(
+729:                   style: OutlinedButton.styleFrom(
+730:                     padding: EdgeInsets.zero,
+731:                     side: const BorderSide(color: Color(0xFFB9D0E9)),
+732:                     shape: RoundedRectangleBorder(
+733:                       borderRadius: BorderRadius.circular(7),
+734:                     ),
+735:                   ),
+736:                   onPressed: c.writing ? null : _addPhoto,
+737:                   child: const Column(
+738:                     mainAxisAlignment: MainAxisAlignment.center,
+739:                     children: [
+740:                       Icon(Icons.add, size: 37, color: _blue),
+741:                       Text(
+742:                         '添加照片',
+743:                         style: TextStyle(fontSize: 11, color: _muted),
+744:                       ),
+745:                     ],
+746:                   ),
+747:                 ),
+748:               ),
+749:             for (var i = 0; i < _photos.length; i++)
+750:               SizedBox(
+751:                 width: 96,
+752: 
+753:                 child: Column(
+754:                   children: [
+755:                     SizedBox(
+756:                       height: 90,
+757:                       child: Stack(
+758:                         children: [
+759:                           Positioned.fill(
+760:                             child: InkWell(
+761:                               onTap: () => showDialog<void>(
+762:                                 context: context,
+763:                                 builder: (ctx) => AlertDialog(
+764:                                   content: Image.asset(_photos[i]),
+765:                                   actions: [
+766:                                     TextButton(
+767:                                       onPressed: () => Navigator.pop(ctx),
+768:                                       child: const Text('关闭'),
+769:                                     ),
+770:                                   ],
+771:                                 ),
+772:                               ),
+773:                               child: ClipRRect(
+774:                                 borderRadius: BorderRadius.circular(7),
+775:                                 child: Image.asset(
+776:                                   _photos[i],
+777:                                   fit: BoxFit.cover,
+778:                                 ),
+779:                               ),
+780:                             ),
+781:                           ),
+782:                           Positioned(
+783:                             right: 0,
+784:                             top: 0,
+785:                             child: IconButton(
+786:                               tooltip: '删除示例照片',
+787:                               constraints: const BoxConstraints.tightFor(
+788:                                 width: 30,
+789:                                 height: 30,
+790:                               ),
+791:                               padding: EdgeInsets.zero,
+792:                               style: IconButton.styleFrom(
+793:                                 backgroundColor: Colors.black54,
+794:                               ),
+795:                               onPressed: c.writing
+796:                                   ? null
+797:                                   : () => setState(() => _photos.removeAt(i)),
+798:                               icon: const Icon(
+799:                                 Icons.close,
+800:                                 color: Colors.white,
+801:                                 size: 19,
+802:                               ),
+803:                             ),
+804:                           ),
+805:                         ],
+806:                       ),
+807:                     ),
+808:                     const Text(
+809:                       '现场照片（示例）',
+810:                       style: TextStyle(fontSize: 10, color: _muted),
+811:                     ),
+812:                   ],
+813:                 ),
+814:               ),
+815:           ],
+816:         ),
+817:         const SizedBox(height: 6),
+818:         const Text(
+819:           '示例图片仅用于本页预览，尚未接入相册与上传',
+820:           style: TextStyle(fontSize: 9, color: _muted),
+821:         ),
+822:       ],
+823:     ),
+824:   );
+825:   Future<void> _addPhoto() async {
+826:     final accepted = await showDialog<bool>(
+827:       context: context,
+828:       builder: (ctx) => AlertDialog(
+829:         title: const Text('添加照片示例'),
+830:         content: const Text('当前先体验附件布局，可添加、预览、删除示例照片；不会上传到事件。'),
+831:         actions: [
+832:           TextButton(
+833:             onPressed: () => Navigator.pop(ctx, false),
+834:             child: const Text('取消'),
+835:           ),
+836:           FilledButton(
+837:             onPressed: () => Navigator.pop(ctx, true),
+838:             child: const Text('添加示例照片'),
+839:           ),
+840:         ],
+841:       ),
+842:     );
+843:     if (accepted == true && mounted && _photos.length < 4) {
+844:       setState(
+845:         () =>
+846:             _photos.add('assets/field-brand/preview/work_reference_scene.png'),
+847:       );
+848:     }
+849:   }
+850: 
+851:   List<Widget> _sosContent() => [
+852:     card(
+853:       Column(
+854:         children: [
+855:           Row(
+856:             children: [
+857:               Container(
+858:                 width: 56,
+859:                 height: 56,
+860:                 decoration: const BoxDecoration(
+861:                   color: _blue,
+862:                   shape: BoxShape.circle,
+863:                 ),
+864:                 child: const Padding(
+865:                   padding: EdgeInsets.all(10),
+866:                   child: CustomPaint(painter: _SosHelmetPainter()),
+867:                 ),
+868:               ),
+869:               const SizedBox(width: 14),
+870:               Expanded(
+871:                 child: Column(
+872:                   crossAxisAlignment: CrossAxisAlignment.start,
+873:                   children: [
+874:                     Text(
+875:                       known(e.personName, '人员未知'),
+876:                       style: const TextStyle(
+877:                         fontSize: 21,
+878:                         fontWeight: FontWeight.w800,
+879:                         color: _ink,
+880:                       ),
+881:                     ),
+882:                     Text(
+883:                       '求助设备 ${known(e.sn, '未知')}',
+884:                       style: const TextStyle(fontSize: 14, color: _muted),
+885:                     ),
+886:                   ],
+887:                 ),
+888:               ),
+889:             ],
+890:           ),
+891:           const SizedBox(height: 12),
+892:           ClipRRect(
+893:             borderRadius: BorderRadius.circular(8),
+894:             child: AspectRatio(
+895:               aspectRatio: 1.36,
+896:               child: Stack(
+897:                 children: [
+898:                   Positioned.fill(
+899:                     child: Transform.scale(
+900:                       scale: 1.2,
+901:                       child: const Image(
+902:                         image: AssetImage(WearArt.plantMap),
+903:                         fit: BoxFit.cover,
+904:                       ),
+905:                     ),
+906:                   ),
+907:                   Positioned.fill(
+908:                     child: ColoredBox(
+909:                       color: Colors.blue.withValues(alpha: .04),
+910:                     ),
+911:                   ),
+912:                   const Positioned(
+913:                     left: 5,
+914:                     bottom: 5,
+915:                     child: ColoredBox(
+916:                       color: Color(0xCC143448),
+917:                       child: Padding(
+918:                         padding: EdgeInsets.symmetric(
+919:                           horizontal: 8,
+920:                           vertical: 5,
+921:                         ),
+922:                         child: Text(
+923:                           '厂区示意 · 非实时地图',
+924:                           style: TextStyle(fontSize: 11, color: Colors.white),
+925:                         ),
+926:                       ),
+927:                     ),
+928:                   ),
+929:                 ],
+930:               ),
+931:             ),
+932:           ),
+933:         ],
+934:       ),
+935:       padding: const EdgeInsets.all(8),
+936:     ),
+937:     gap(),
+938:     card(
+939:       infoRow(
+940:         Icons.location_on,
+941:         '位置来源：设备 ${known(e.sn, '未知')}',
+942:         e.locationLat.isEmpty || e.locationLng.isEmpty
+943:             ? '位置未知 · 不阻断协助\n事件时间 ${formatTime(e.occurredAt)}'
+944:             : '事件快照 ${e.locationLat}, ${e.locationLng}\n${formatTime(e.occurredAt)} · 非实时定位',
+945:       ),
+946:     ),
+947:     gap(),
+948:     card(
+949:       infoRow(
+950:         Icons.people_outline,
+951:         '协助组：待接入',
+952:         _demoJoined ? '本地演示已加入 · 未建立实际会话' : '暂无已接入的协助组信息',
+953:         color: const Color(0xFF8A56F8),
+954:         onTap: _assist,
+955:       ),
+956:     ),
+957:     gap(),
+958:     Row(
+959:       children: [
+960:         Expanded(
+961:           child: FilledButton.icon(
+962:             style: button(),
+963:             onPressed: c.writing ? null : _assist,
+964:             icon: const Icon(Icons.person_add_alt_1, size: 22),
+965:             label: Text(_demoJoined ? '已加入（示例）' : '加入协助'),
+966:           ),
+967:         ),
+968:         const SizedBox(width: 8),
+969:         Expanded(
+970:           child: OutlinedButton.icon(
+971:             style: outline(red: true),
+972:             onPressed: c.writing
+973:                 ? null
+974:                 : () {
+975:                     if (_demoJoined) {
+976:                       setState(() => _demoJoined = false);
+977:                       message('本地协助演示已结束，未关闭事件');
+978:                     } else {
+979:                       message('当前没有本页建立的协助会话；事件状态未改变');
+980:                     }
+981:                   },
+982:             icon: const Icon(Icons.call_end, size: 22),
+983:             label: const Text('结束协助'),
+984:           ),
+985:         ),
+986:       ],
+987:     ),
+988:     gap(),
+989:     card(
+990:       infoRow(Icons.info_outline, '原设备行为待联调', '帽端长按SOS 3秒退出\n当前为说明，未验证硬件行为'),
+991:     ),
+992:   ];
+993:   Future<void> _assist() async {
+994:     await showDialog<void>(
+995:       context: context,
+996:       builder: (ctx) => AlertDialog(
+997:         title: const Text('协助组服务尚未接入'),
+998:         content: Text(
+999:           '求助人员：${known(e.personName)}\n设备：${known(e.sn)}\n可打开已有通信能力，或体验本地协助状态。两者都不会自动呼叫或关闭事件。',
+1000:         ),
+1001:         actions: [
+1002:           TextButton(
+1003:             onPressed: () => Navigator.pop(ctx),
+1004:             child: const Text('关闭'),
+1005:           ),
+1006:           TextButton(
+1007:             onPressed: () {
+1008:               Navigator.pop(ctx);
+1009:               setState(() => _demoJoined = true);
+1010:             },
+1011:             child: const Text('体验本地加入'),
+1012:           ),
+1013:           if (e.deviceId.isNotEmpty)
+1014:             FilledButton(
+1015:               onPressed: () {
+1016:                 Navigator.pop(ctx);
+1017:                 widget.onCommunication();
+1018:               },
+1019:               child: const Text('打开已有通信'),
+1020:             ),
+1021:         ],
+1022:       ),
+1023:     );
+1024:   }
+1025: }
+1026: 
+1027: class _SosHelmetPainter extends CustomPainter {
+1028:   const _SosHelmetPainter();
+1029:   @override
+1030:   void paint(Canvas canvas, Size size) {
+1031:     canvas.save();
+1032:     canvas.scale(size.width / 28, size.height / 28);
+1033:     final white = Paint()..color = Colors.white;
+1034:     canvas.drawPath(
+1035:       Path()
+1036:         ..moveTo(4, 21)
+1037:         ..lineTo(4, 15)
+1038:         ..quadraticBezierTo(4, 6, 14, 5)
+1039:         ..quadraticBezierTo(24, 6, 24, 15)
+1040:         ..lineTo(24, 21)
+1041:         ..close(),
+1042:       white,
+1043:     );
+1044:     canvas.drawRRect(
+1045:       RRect.fromRectAndRadius(
+1046:         const Rect.fromLTWH(12, 2, 4, 18),
+1047:         const Radius.circular(2),
+1048:       ),
+1049:       white,
+1050:     );
+1051:     canvas.drawRRect(
+1052:       RRect.fromRectAndRadius(
+1053:         const Rect.fromLTWH(2, 20, 24, 5),
+1054:         const Radius.circular(2),
+1055:       ),
+1056:       white,
+1057:     );
+1058:     canvas.drawCircle(const Offset(14, 14), 3, Paint()..color = _blue);
+1059:     canvas.restore();
+1060:   }
+1061: 
+1062:   @override
+1063:   bool shouldRepaint(_SosHelmetPainter oldDelegate) => false;
+1064: }

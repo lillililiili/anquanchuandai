@@ -1,0 +1,268 @@
+diff --git "a/垃圾桶\\2026-09-18-找回密码页面整改前\\android代码\\melhat_android-main\\lib\\wear\\auth_pages.dart" "b/android代码\\melhat_android-main\\lib\\wear\\auth_pages.dart"
+index 41858cd..f973c01 100644
+--- "a/垃圾桶\\2026-09-18-找回密码页面整改前\\android代码\\melhat_android-main\\lib\\wear\\auth_pages.dart"
++++ "b/android代码\\melhat_android-main\\lib\\wear\\auth_pages.dart"
+@@ -4,6 +4,7 @@ import 'dart:typed_data';
+ import 'package:flutter/material.dart';
+ import 'package:go_router/go_router.dart';
+ import 'core.dart';
++import 'password_reset_page.dart';
+ 
+ class WearLoginPage extends StatefulWidget {
+   const WearLoginPage({super.key});
+@@ -136,93 +137,12 @@ class _WearLoginPageState extends State<WearLoginPage> {
+   }
+ 
+   void _openPasswordReset() {
+-    final account = TextEditingController(text: _username.text);
+-    final next = TextEditingController();
+-    final confirm = TextEditingController();
+-    final form = GlobalKey<FormState>();
+-    showModalBottomSheet<void>(
+-      context: context,
+-      isScrollControlled: true,
+-      showDragHandle: true,
+-      builder: (ctx) => Padding(
+-        padding: EdgeInsets.fromLTRB(
+-          20,
+-          4,
+-          20,
+-          MediaQuery.viewInsetsOf(ctx).bottom + 20,
+-        ),
+-        child: Form(
+-          key: form,
+-          child: SingleChildScrollView(
+-            child: Column(
+-              mainAxisSize: MainAxisSize.min,
+-              crossAxisAlignment: CrossAxisAlignment.stretch,
+-              children: [
+-                const Text(
+-                  '登录遇到问题',
+-                  style: TextStyle(
+-                    fontSize: 20,
+-                    fontWeight: FontWeight.w800,
+-                    color: WearColors.ink,
+-                  ),
+-                ),
+-                const SizedBox(height: 6),
+-                const Text(
+-                  '验证码看不清请点刷新。忘记密码时填写账号和新密码，由厂站管理员在后台确认后生效。',
+-                  style: TextStyle(color: WearColors.muted, height: 1.5),
+-                ),
+-                const SizedBox(height: 16),
+-                TextFormField(
+-                  controller: account,
+-                  decoration: const InputDecoration(
+-                    labelText: '账号',
+-                    prefixIcon: Icon(Icons.person_outline),
+-                  ),
+-                  validator: (v) =>
+-                      v == null || v.trim().isEmpty ? '请输入账号' : null,
+-                ),
+-                const SizedBox(height: 12),
+-                TextFormField(
+-                  controller: next,
+-                  obscureText: true,
+-                  decoration: const InputDecoration(
+-                    labelText: '新密码',
+-                    prefixIcon: Icon(Icons.lock_outline),
+-                  ),
+-                  validator: (v) =>
+-                      v == null || v.length < 6 ? '新密码至少 6 位' : null,
+-                ),
+-                const SizedBox(height: 12),
+-                TextFormField(
+-                  controller: confirm,
+-                  obscureText: true,
+-                  decoration: const InputDecoration(
+-                    labelText: '确认新密码',
+-                    prefixIcon: Icon(Icons.lock_reset_outlined),
+-                  ),
+-                  validator: (v) => v != next.text ? '两次输入的新密码不一致' : null,
+-                ),
+-                const SizedBox(height: 16),
+-                FilledButton(
+-                  onPressed: () {
+-                    if (form.currentState?.validate() != true) return;
+-                    Navigator.pop(ctx);
+-                    ScaffoldMessenger.of(context).showSnackBar(
+-                      const SnackBar(content: Text('重置申请已记录，请联系管理员在后台确认后生效')),
+-                    );
+-                  },
+-                  child: const Text('提交密码重置'),
+-                ),
+-              ],
+-            ),
+-          ),
+-        ),
++    Navigator.of(context).push(
++      MaterialPageRoute<void>(
++        builder: (_) =>
++            WearPasswordResetPage(initialAccount: _username.text.trim()),
+       ),
+-    ).whenComplete(() {
+-      account.dispose();
+-      next.dispose();
+-      confirm.dispose();
+-    });
++    );
+   }
+ 
+   @override
+@@ -557,7 +477,7 @@ class _WearLoginPageState extends State<WearLoginPage> {
+               ),
+               TextButton(
+                 onPressed: session.busy ? null : _openPasswordReset,
+-                child: const Text('登录遇到问题  >'),
++                child: const Text('忘记密码 / 申请重置  >'),
+               ),
+               if (session.token != null && session.me == null && !session.busy)
+                 TextButton(
+diff --git "a/垃圾桶\\2026-09-18-找回密码页面整改前\\android代码\\melhat_android-main\\test\\wear_app_test.dart" "b/android代码\\melhat_android-main\\test\\wear_app_test.dart"
+index 5bd25b7..d8738d5 100644
+--- "a/垃圾桶\\2026-09-18-找回密码页面整改前\\android代码\\melhat_android-main\\test\\wear_app_test.dart"
++++ "b/android代码\\melhat_android-main\\test\\wear_app_test.dart"
+@@ -82,69 +82,71 @@ void main() {
+       await tester.pumpWidget(const SizedBox.shrink());
+     },
+   );
+-  testWidgets('duty operator can create a handover and current user is excluded', (
+-    tester,
+-  ) async {
+-    final requests = <RequestOptions>[];
+-    final session = WearSession(
+-      credentials: MemoryCredentials(),
+-      dio: transport((request) {
+-        requests.add(request);
+-        if (request.path == '/api/v1/duty/summary') {
+-          return reply({
+-            'unclaimed': 0,
+-            'mine': 0,
+-            'overdue': 0,
+-            'lostSupervision': 0,
+-            'peopleCount': 0,
+-            'deviceCount': 0,
+-            'activeTasks': [],
+-            'recentEvents': [],
+-          });
+-        }
+-        if (request.path == '/api/v1/duty/operators') {
+-          return reply([
+-            {'userId': '12', 'userName': 'current', 'nickName': '当前用户'},
+-            {'userId': '23', 'userName': 'leader', 'nickName': '王班长'},
+-          ]);
+-        }
+-        if (request.path == '/api/v1/duty/handovers' &&
+-            request.method == 'POST') {
+-          return reply({'id': '9', 'status': 'pending'});
+-        }
+-        if (request.path.endsWith('/inbox/count')) return reply({'count': 0});
+-        return reply({'records': [], 'total': 0, 'current': 1, 'size': 20});
+-      }),
+-    );
+-    session
+-      ..initialized = true
+-      ..me = identity()
+-      ..siteId = '1'
+-      ..token = 'test-only';
+-    addTearDown(session.dispose);
+-    await tester.pumpWidget(
+-      WearApp(session: session, enableNotifications: false),
+-    );
+-    await tester.pumpAndSettle();
+-    await tester.tap(find.text('发起值班交接'));
+-    await tester.pumpAndSettle();
+-    expect(find.text('当前用户'), findsNothing);
+-    expect(find.text('王班长'), findsNothing);
+-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+-    await tester.pumpAndSettle();
+-    await tester.tap(find.text('王班长').last);
+-    await tester.pumpAndSettle();
+-    await tester.tap(find.text('提交交接'));
+-    await tester.pumpAndSettle();
+-    final created = requests.lastWhere(
+-      (request) =>
+-          request.path == '/api/v1/duty/handovers' && request.method == 'POST',
+-    );
+-    expect((created.data as Map)['toUserId'], '23');
+-    expect((created.data as Map).containsKey('eventIds'), false);
+-    expect(find.text('交接已发起，等待接班人确认'), findsOneWidget);
+-    await tester.pumpWidget(const SizedBox.shrink());
+-  });
++  testWidgets(
++    'duty operator can create a handover and current user is excluded',
++    (tester) async {
++      final requests = <RequestOptions>[];
++      final session = WearSession(
++        credentials: MemoryCredentials(),
++        dio: transport((request) {
++          requests.add(request);
++          if (request.path == '/api/v1/duty/summary') {
++            return reply({
++              'unclaimed': 0,
++              'mine': 0,
++              'overdue': 0,
++              'lostSupervision': 0,
++              'peopleCount': 0,
++              'deviceCount': 0,
++              'activeTasks': [],
++              'recentEvents': [],
++            });
++          }
++          if (request.path == '/api/v1/duty/operators') {
++            return reply([
++              {'userId': '12', 'userName': 'current', 'nickName': '当前用户'},
++              {'userId': '23', 'userName': 'leader', 'nickName': '王班长'},
++            ]);
++          }
++          if (request.path == '/api/v1/duty/handovers' &&
++              request.method == 'POST') {
++            return reply({'id': '9', 'status': 'pending'});
++          }
++          if (request.path.endsWith('/inbox/count')) return reply({'count': 0});
++          return reply({'records': [], 'total': 0, 'current': 1, 'size': 20});
++        }),
++      );
++      session
++        ..initialized = true
++        ..me = identity()
++        ..siteId = '1'
++        ..token = 'test-only';
++      addTearDown(session.dispose);
++      await tester.pumpWidget(
++        WearApp(session: session, enableNotifications: false),
++      );
++      await tester.pumpAndSettle();
++      await tester.tap(find.text('发起值班交接'));
++      await tester.pumpAndSettle();
++      expect(find.text('当前用户'), findsNothing);
++      expect(find.text('王班长'), findsNothing);
++      await tester.tap(find.byType(DropdownButtonFormField<String>));
++      await tester.pumpAndSettle();
++      await tester.tap(find.text('王班长').last);
++      await tester.pumpAndSettle();
++      await tester.tap(find.text('提交交接'));
++      await tester.pumpAndSettle();
++      final created = requests.lastWhere(
++        (request) =>
++            request.path == '/api/v1/duty/handovers' &&
++            request.method == 'POST',
++      );
++      expect((created.data as Map)['toUserId'], '23');
++      expect((created.data as Map).containsKey('eventIds'), false);
++      expect(find.text('交接已发起，等待接班人确认'), findsOneWidget);
++      await tester.pumpWidget(const SizedBox.shrink());
++    },
++  );
+   testWidgets('default login submits v1 identity and opens actual workbench', (
+     tester,
+   ) async {
+@@ -157,7 +159,7 @@ void main() {
+     expect(find.text('欢迎登录'), findsOneWidget);
+     expect(find.text('临江示范电厂'), findsOneWidget);
+     expect(find.text('图形验证码'), findsOneWidget);
+-    expect(find.text('登录遇到问题  >'), findsOneWidget);
++    expect(find.text('忘记密码 / 申请重置  >'), findsOneWidget);
+     await tester.enterText(find.byType(TextFormField).at(0), 'operator');
+     await tester.enterText(find.byType(TextFormField).at(1), 'test-password');
+     await tester.enterText(find.byType(TextFormField).at(2), '7K4P');

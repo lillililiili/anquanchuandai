@@ -1,0 +1,62 @@
+1: import 'event_models.dart';
+2: 
+3: class EventActor {
+4:   const EventActor({
+5:     required this.userId,
+6:     required this.roles,
+7:     required this.permissions,
+8:     this.userName = '',
+9:   });
+10: 
+11:   final String userId;
+12:   final Set<String> roles;
+13:   final Set<String> permissions;
+14:   final String userName;
+15: 
+16:   bool _can(String permission) =>
+17:       permissions.contains(permission) || permissions.contains('*:*:*');
+18: 
+19:   bool get canRead => _can('wear:event:list') || _can('wear:event:query');
+20: 
+21:   bool get isDuty =>
+22:       _can('wear:event:claim') &&
+23:       (roles.contains('wear_duty') || roles.contains('wear_team_lead'));
+24: 
+25:   bool get isReviewer =>
+26:       _can('wear:event:review') &&
+27:       (roles.contains('wear_reviewer') ||
+28:           roles.contains('wear_platform_admin') ||
+29:           roles.contains('admin'));
+30: 
+31:   bool get canAssignTask =>
+32:       _can('wear:task:edit') &&
+33:       (roles.contains('wear_duty') || roles.contains('wear_team_lead'));
+34: }
+35: 
+36: abstract final class EventPolicy {
+37:   static bool can(EventCommand command, WearEvent event, EventActor actor) {
+38:     switch (command) {
+39:       case EventCommand.ack:
+40:         return actor.canRead;
+41:       case EventCommand.claim:
+42:         return actor.isDuty && event.status == 'open';
+43:       case EventCommand.handle:
+44:         return actor.isDuty &&
+45:             event.claimantUserId == actor.userId &&
+46:             const {'claimed', 'handling'}.contains(event.status);
+47:       case EventCommand.transfer:
+48:         return actor.isDuty &&
+49:             event.claimantUserId == actor.userId &&
+50:             const {'claimed', 'handling'}.contains(event.status);
+51:       case EventCommand.close:
+52:         if (event.isHighRisk) {
+53:           return actor.isReviewer && event.status == 'pending_review';
+54:         }
+55:         return actor.isDuty && event.status == 'handling';
+56:       case EventCommand.reopen:
+57:         return actor.isReviewer && event.status == 'closed';
+58:       case EventCommand.assignTask:
+59:         return actor.canAssignTask && event.taskMatch == 'pending';
+60:     }
+61:   }
+62: }

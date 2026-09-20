@@ -78,6 +78,9 @@ class EventController extends ChangeNotifier {
   int current = 1;
   double scrollOffset = 0;
   bool loading = false;
+  bool loadingMore = false;
+  bool _endReached = false;
+  String? loadMoreError;
   bool detailLoading = false;
   bool writing = false;
   bool taskCandidatesLoading = false;
@@ -86,12 +89,31 @@ class EventController extends ChangeNotifier {
   String? successMessage;
   final Map<String, EventDraft> _drafts = {};
   final Set<String> _ackedLocally = {};
+  final Map<String, String> _submittedHandleComments = {};
 
   String get scopeKey => _scopeKey;
   EventActor get actor => _actor;
-  bool get hasMore => current * pageSize < total;
+  bool get hasMore => !_endReached && current * pageSize < total;
 
   EventDraft draftFor(String eventId) => _drafts[eventId] ?? const EventDraft();
+
+  String? submittedHandleCommentFor(String eventId) {
+    final confirmed = _submittedHandleComments[eventId];
+    if (confirmed != null) return confirmed;
+    if (selected?.id == eventId) {
+      // The API returns the action timeline newest first.
+      for (final action in actions) {
+        if (action.action == 'reopen') break;
+        if (action.action == 'handle') return action.reason.trim();
+      }
+    }
+    return null;
+  }
+
+  bool isHandleCommentSubmitted(String eventId) {
+    final text = draftFor(eventId).handleComment.trim();
+    return text.isNotEmpty && text == submittedHandleCommentFor(eventId);
+  }
 
   Future<void> initialize({bool applyInitial = true}) async {
     final scope = _scopeGeneration;
@@ -115,6 +137,13 @@ class EventController extends ChangeNotifier {
         type: initialType ?? filters.type,
       );
     }
+    // Older home-detail links persisted a hidden SOS-only list filter.
+    // Emergency filtering now uses the existing escalated control instead.
+    if (filters.type == 'sos') {
+      filters = filters.copyWith(type: '');
+      current = 1;
+      scrollOffset = 0;
+    }
     final target = applyInitial
         ? initialEventId ?? restored?.selectedEventId ?? ''
         : restored?.selectedEventId ?? '';
@@ -137,6 +166,9 @@ class EventController extends ChangeNotifier {
     _store = store;
     filters = const EventFilters();
     records = const [];
+    loadingMore = false;
+    loadMoreError = null;
+    _endReached = false;
     actions = const [];
     operators = const [];
     taskCandidates = const [];
@@ -149,6 +181,7 @@ class EventController extends ChangeNotifier {
     scrollOffset = 0;
     _drafts.clear();
     _ackedLocally.clear();
+    _submittedHandleComments.clear();
     notifyListeners();
     await initialize(applyInitial: false);
   }
@@ -157,16 +190,42 @@ class EventController extends ChangeNotifier {
     final request = ++_pageGeneration;
     final scope = _scopeGeneration;
     final targetPage = current ?? this.current;
+    final requestedFilters = filters;
+    loadingMore = false;
+    loadMoreError = null;
     loading = true;
     errorMessage = null;
     notifyListeners();
     unawaited(_reloadInboxCount(scope));
     try {
-      final page = await gateway.fetchPage(filters, targetPage, pageSize);
-      if (!_acceptPage(scope, request)) return;
-      records = page.records;
-      total = page.total;
-      this.current = page.current;
+      // Rebuild all previously loaded batches so refreshing/returning never
+      // replaces a continuous list with only its final batch.
+      final rows = <String, WearEvent>{};
+      var reachedEnd = false;
+      var loadedPage = 1;
+      var latestTotal = 0;
+      for (var number = 1; number <= targetPage; number++) {
+        final page = await gateway.fetchPage(
+          requestedFilters,
+          number,
+          pageSize,
+        );
+        if (!_acceptPage(scope, request)) return;
+        for (final event in page.records) {
+          rows[event.id] = event;
+        }
+        loadedPage = page.current;
+        latestTotal = page.total;
+        reachedEnd =
+            page.records.isEmpty ||
+            page.current < number ||
+            page.current * pageSize >= page.total;
+        if (reachedEnd) break;
+      }
+      records = rows.values.toList();
+      total = latestTotal;
+      this.current = loadedPage;
+      _endReached = reachedEnd;
     } catch (error) {
       if (!_acceptPage(scope, request)) return;
       if (error is! EventStaleScope) errorMessage = error.toString();
@@ -182,6 +241,13 @@ class EventController extends ChangeNotifier {
   Future<void> setFilters(EventFilters value) async {
     conflictMessage = null;
     successMessage = null;
+    // Invalidate a pending append before persistence yields to its response.
+    _pageGeneration++;
+    loadingMore = false;
+    loadMoreError = null;
+    _endReached = false;
+    records = const [];
+    total = 0;
     filters = value;
     current = 1;
     scrollOffset = 0;
@@ -189,12 +255,43 @@ class EventController extends ChangeNotifier {
     await reload(current: 1);
   }
 
-  Future<void> nextPage() =>
-      hasMore ? reload(current: current + 1) : Future.value();
-  Future<void> previousPage() =>
-      current > 1 ? reload(current: current - 1) : Future.value();
+  Future<void> loadMore() async {
+    if (loading || loadingMore || writing || !hasMore) return;
+    final request = ++_pageGeneration;
+    final scope = _scopeGeneration;
+    final targetPage = current + 1;
+    loadingMore = true;
+    loadMoreError = null;
+    notifyListeners();
+    try {
+      final page = await gateway.fetchPage(filters, targetPage, pageSize);
+      if (!_acceptPage(scope, request)) return;
+      final rows = {for (final event in records) event.id: event};
+      for (final event in page.records) {
+        rows[event.id] = event;
+      }
+      records = rows.values.toList();
+      total = page.total;
+      _endReached =
+          page.records.isEmpty ||
+          page.current < targetPage ||
+          page.current * pageSize >= page.total;
+      current = page.current;
+    } catch (error) {
+      if (_acceptPage(scope, request) && error is! EventStaleScope) {
+        loadMoreError = '后续事件加载失败';
+      }
+    } finally {
+      if (_acceptPage(scope, request)) {
+        loadingMore = false;
+        notifyListeners();
+        unawaited(_persist());
+      }
+    }
+  }
 
   Future<void> select(String eventId) async {
+    final entering = selected?.id != eventId;
     final request = ++_detailGeneration;
     final scope = _scopeGeneration;
     detailLoading = true;
@@ -210,6 +307,13 @@ class EventController extends ChangeNotifier {
       if (!_acceptDetail(scope, request)) return;
       selected = result[0] as WearEvent;
       actions = result[1] as List<EventAction>;
+      _submittedHandleComments.remove(eventId);
+      if (entering && !_drafts.containsKey(eventId)) {
+        final submitted = submittedHandleCommentFor(eventId);
+        if (submitted != null && submitted.isNotEmpty) {
+          _drafts[eventId] = EventDraft(handleComment: submitted);
+        }
+      }
       await _persist();
     } catch (error) {
       if (!_acceptDetail(scope, request)) return;
@@ -305,6 +409,15 @@ class EventController extends ChangeNotifier {
     if (writing || event == null || !can(command)) {
       return false;
     }
+    final submittedDraft = draftFor(event.id);
+    if (command == EventCommand.handle &&
+        submittedDraft.handleComment.trim().isEmpty) {
+      errorMessage = '请填写现场核验说明后再提交';
+      successMessage = null;
+      conflictMessage = null;
+      notifyListeners();
+      return false;
+    }
     writing = true;
     errorMessage = null;
     conflictMessage = null;
@@ -313,9 +426,18 @@ class EventController extends ChangeNotifier {
     final scope = _scopeGeneration;
     final selectionGeneration = _detailGeneration;
     try {
-      final latest = await gateway.execute(command, event, draftFor(event.id));
+      final latest = await gateway.execute(command, event, submittedDraft);
       if (!_acceptScope(scope)) return false;
-      if (command != EventCommand.ack) _drafts.remove(event.id);
+      if (command == EventCommand.handle) {
+        // Keep the visible note; only a confirmed POST marks it as submitted.
+        _submittedHandleComments[event.id] = submittedDraft.handleComment
+            .trim();
+      } else if (command != EventCommand.ack && command != EventCommand.claim) {
+        _drafts.remove(event.id);
+      }
+      if (command == EventCommand.reopen) {
+        _submittedHandleComments.remove(event.id);
+      }
       if (command == EventCommand.ack) _ackedLocally.add(event.id);
       successMessage = _successText(command);
       if (selectionGeneration != _detailGeneration ||

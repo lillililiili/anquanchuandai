@@ -1,0 +1,463 @@
+1: import 'dart:async';
+2: import 'package:flutter/material.dart';
+3: import 'package:flutter_localizations/flutter_localizations.dart';
+4: import 'package:go_router/go_router.dart';
+5: import 'core.dart';
+6: import 'auth_pages.dart';
+7: import 'notifications.dart';
+8: import 'mine_page.dart';
+9: import 'queries/queries.dart';
+10: import 'events/events_page.dart';
+11: import 'communications/communications.dart';
+12: import '../theme/app_theme.dart';
+13: 
+14: class WearApp extends StatefulWidget {
+15:   final WearSession? session;
+16:   final bool enableNotifications;
+17:   // Optional bundled font for the browser demo; Android keeps its original theme.
+18:   final String? fontFamily;
+19:   const WearApp({
+20:     super.key,
+21:     this.session,
+22:     this.enableNotifications = true,
+23:     this.fontFamily,
+24:   });
+25:   @override
+26:   State<WearApp> createState() => _WearAppState();
+27: }
+28: 
+29: class _WearAppState extends State<WearApp> {
+30:   late final WearSession _session = widget.session ?? WearSession();
+31:   late final WearNotifications _notifications;
+32:   late final GoRouter _router;
+33:   @override
+34:   void initState() {
+35:     super.initState();
+36:     _notifications = WearNotifications(
+37:       session: _session,
+38:       openEvent: _openNotice,
+39:     );
+40:     _router = GoRouter(
+41:       initialLocation: '/workbench',
+42:       refreshListenable: _session,
+43:       redirect: (context, state) {
+44:         final path = state.uri.path;
+45:         if (_session.me == null) return path == '/login' ? null : '/login';
+46:         if (_session.siteId == null) return path == '/sites' ? null : '/sites';
+47:         if (path == '/sites' && _session.callActive.value) {
+48:           return '/communications';
+49:         }
+50:         if (path == '/login') return '/workbench';
+51:         return null;
+52:       },
+53:       errorBuilder: (context, state) => Scaffold(
+54:         body: Center(
+55:           child: WearEmpty(
+56:             title: '页面暂不可用',
+57:             onRetry: () => context.go('/workbench'),
+58:           ),
+59:         ),
+60:       ),
+61:       routes: [
+62:         GoRoute(path: '/login', builder: (_, _) => const WearLoginPage()),
+63:         GoRoute(path: '/sites', builder: (_, _) => const WearSitesPage()),
+64:         StatefulShellRoute.indexedStack(
+65:           builder: (context, state, shell) =>
+66:               WearShell(shell: shell, notifications: _notifications),
+67:           branches: [
+68:             StatefulShellBranch(
+69:               routes: [
+70:                 GoRoute(
+71:                   path: '/workbench',
+72:                   builder: (_, _) => const WorkbenchPage(),
+73:                 ),
+74:                 GoRoute(
+75:                   path: '/people',
+76:                   builder: (_, s) =>
+77:                       PeoplePage(initialName: s.uri.queryParameters['name']),
+78:                 ),
+79:                 GoRoute(
+80:                   path: '/supervision',
+81:                   builder: (_, _) => const SupervisionPage(),
+82:                 ),
+83:                 GoRoute(
+84:                   path: '/people/:id',
+85:                   builder: (_, s) => PersonPage(id: s.pathParameters['id']!),
+86:                 ),
+87:                 GoRoute(
+88:                   path: '/devices',
+89:                   builder: (_, _) => const DevicesPage(),
+90:                 ),
+91:                 GoRoute(
+92:                   path: '/devices/:id',
+93:                   builder: (_, s) => DevicePage(id: s.pathParameters['id']!),
+94:                 ),
+95:                 GoRoute(
+96:                   path: '/tracks',
+97:                   builder: (_, s) =>
+98:                       TracksPage(personId: s.uri.queryParameters['personId']),
+99:                 ),
+100:                 GoRoute(path: '/fences', builder: (_, _) => const FencesPage()),
+101:                 GoRoute(
+102:                   path: '/fences/:id',
+103:                   builder: (_, s) => FencePage(id: s.pathParameters['id']!),
+104:                 ),
+105:                 GoRoute(path: '/tasks', builder: (_, _) => const TasksPage()),
+106:                 GoRoute(
+107:                   path: '/tasks/:id',
+108:                   builder: (_, s) => TaskPage(id: s.pathParameters['id']!),
+109:                 ),
+110:               ],
+111:             ),
+112:             StatefulShellBranch(
+113:               routes: [
+114:                 GoRoute(
+115:                   path: '/communications',
+116:                   builder: (_, s) => CommunicationsPage(
+117:                     action: s.uri.queryParameters['action'],
+118:                     deviceId: s.uri.queryParameters['deviceId'],
+119:                     personId: s.uri.queryParameters['personId'],
+120:                     eventId: s.uri.queryParameters['eventId'],
+121:                     video: const [
+122:                       'true',
+123:                       '1',
+124:                     ].contains(s.uri.queryParameters['video']),
+125:                   ),
+126:                 ),
+127:               ],
+128:             ),
+129:             StatefulShellBranch(
+130:               routes: [
+131:                 GoRoute(
+132:                   path: '/events',
+133:                   builder: (_, s) => EventsPage(
+134:                     eventId: s.uri.queryParameters['eventId'],
+135:                     personId: s.uri.queryParameters['personId'],
+136:                     taskId: s.uri.queryParameters['taskId'],
+137:                     initialStatus: s.uri.queryParameters['status'],
+138:                     initialType: s.uri.queryParameters['type'],
+139:                     initialClaimantUserId:
+140:                         s.uri.queryParameters['claimantUserId'],
+141:                     initialEscalated:
+142:                         s.uri.queryParameters.containsKey('escalated')
+143:                         ? s.uri.queryParameters['escalated'] == 'true'
+144:                         : null,
+145:                   ),
+146:                 ),
+147:               ],
+148:             ),
+149:             StatefulShellBranch(
+150:               routes: [
+151:                 GoRoute(
+152:                   path: '/me',
+153:                   builder: (_, _) =>
+154:                       WearMinePage(notifications: _notifications),
+155:                 ),
+156:               ],
+157:             ),
+158:           ],
+159:         ),
+160:       ],
+161:     );
+162:     if (!_session.initialized) unawaited(_session.initialize());
+163:     if (widget.enableNotifications) unawaited(_notifications.start());
+164:   }
+165: 
+166:   Future<void> _openNotice(WearNotice notice) async {
+167:     final user = _session.userId;
+168:     if (_session.siteId != notice.siteId) {
+169:       await _session.selectSite(notice.siteId);
+170:     }
+171:     final event = jsonMap(
+172:       await _session.api.get('/api/v1/events/${notice.eventId}'),
+173:     );
+174:     if (_session.userId != user ||
+175:         idOf(event['siteId']) != _session.siteId ||
+176:         idOf(event['id']) != notice.eventId) {
+177:       throw const StaleSessionException();
+178:     }
+179:     if (mounted) {
+180:       _router.go('/events?eventId=${Uri.encodeComponent(notice.eventId)}');
+181:       _session.requestRefresh();
+182:     }
+183:   }
+184: 
+185:   @override
+186:   void dispose() {
+187:     _notifications.dispose();
+188:     _router.dispose();
+189:     if (widget.session == null) _session.dispose();
+190:     super.dispose();
+191:   }
+192: 
+193:   @override
+194:   Widget build(BuildContext context) {
+195:     final originalTheme = AppTheme.lightTheme;
+196:     final cargoTheme = widget.fontFamily == null
+197:         ? originalTheme
+198:         : originalTheme.copyWith(
+199:             textTheme: originalTheme.textTheme.apply(
+200:               fontFamily: widget.fontFamily,
+201:             ),
+202:             primaryTextTheme: originalTheme.primaryTextTheme.apply(
+203:               fontFamily: widget.fontFamily,
+204:             ),
+205:           );
+206:     return WearScope(
+207:       session: _session,
+208:       child: MaterialApp.router(
+209:         title: '智能穿戴管理平台',
+210:         debugShowCheckedModeBanner: false,
+211:         routerConfig: _router,
+212:         themeMode: ThemeMode.light,
+213:         theme: cargoTheme.copyWith(
+214:           colorScheme: cargoTheme.colorScheme.copyWith(
+215:             primary: WearColors.brand,
+216:             onPrimary: Colors.white,
+217:             primaryContainer: const Color(0xFFE8F1FF),
+218:             secondary: WearColors.brand,
+219:             onSecondary: Colors.white,
+220:           ),
+221:           scaffoldBackgroundColor: WearColors.background,
+222:           appBarTheme: const AppBarTheme(
+223:             backgroundColor: WearColors.background,
+224:             foregroundColor: WearColors.ink,
+225:             scrolledUnderElevation: 0,
+226:             centerTitle: false,
+227:             titleTextStyle: TextStyle(
+228:               fontSize: 23,
+229:               height: 1.3,
+230:               fontWeight: FontWeight.w800,
+231:               color: WearColors.ink,
+232:             ),
+233:           ),
+234:           inputDecorationTheme: InputDecorationTheme(
+235:             filled: true,
+236:             fillColor: Colors.white,
+237:             contentPadding: const EdgeInsets.symmetric(
+238:               horizontal: 16,
+239:               vertical: 16,
+240:             ),
+241:             enabledBorder: OutlineInputBorder(
+242:               borderRadius: BorderRadius.circular(16),
+243:               borderSide: const BorderSide(color: WearColors.line),
+244:             ),
+245:             focusedBorder: OutlineInputBorder(
+246:               borderRadius: BorderRadius.circular(16),
+247:               borderSide: const BorderSide(color: WearColors.brand, width: 2),
+248:             ),
+249:             border: OutlineInputBorder(
+250:               borderRadius: BorderRadius.circular(16),
+251:               borderSide: const BorderSide(color: WearColors.line),
+252:             ),
+253:           ),
+254:           filledButtonTheme: FilledButtonThemeData(
+255:             style: FilledButton.styleFrom(
+256:               minimumSize: const Size(48, 48),
+257:               backgroundColor: WearColors.brand,
+258:               foregroundColor: Colors.white,
+259:               textStyle: const TextStyle(
+260:                 fontSize: 15,
+261:                 fontWeight: FontWeight.w700,
+262:               ),
+263:               shape: RoundedRectangleBorder(
+264:                 borderRadius: BorderRadius.circular(16),
+265:               ),
+266:             ),
+267:           ),
+268:           outlinedButtonTheme: OutlinedButtonThemeData(
+269:             style: OutlinedButton.styleFrom(
+270:               minimumSize: const Size(48, 48),
+271:               foregroundColor: WearColors.brand,
+272:               side: const BorderSide(color: WearColors.brand),
+273:               shape: RoundedRectangleBorder(
+274:                 borderRadius: BorderRadius.circular(16),
+275:               ),
+276:             ),
+277:           ),
+278:           navigationBarTheme: NavigationBarThemeData(
+279:             elevation: 0,
+280:             backgroundColor: Colors.white,
+281:             indicatorColor: WearColors.brand.withValues(alpha: 0.14),
+282:             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+283:             iconTheme: WidgetStateProperty.resolveWith((states) {
+284:               final selected = states.contains(WidgetState.selected);
+285:               return IconThemeData(
+286:                 color: selected ? WearColors.brand : WearColors.muted,
+287:               );
+288:             }),
+289:             labelTextStyle: WidgetStateProperty.resolveWith((states) {
+290:               final selected = states.contains(WidgetState.selected);
+291:               return TextStyle(
+292:                 fontSize: 12,
+293:                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+294:                 color: selected ? WearColors.brand : WearColors.muted,
+295:               );
+296:             }),
+297:           ),
+298:         ),
+299:         localizationsDelegates: const [
+300:           GlobalMaterialLocalizations.delegate,
+301:           GlobalWidgetsLocalizations.delegate,
+302:           GlobalCupertinoLocalizations.delegate,
+303:         ],
+304:         supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
+305:         locale: const Locale('zh', 'CN'),
+306:       ),
+307:     );
+308:   }
+309: }
+310: 
+311: class WearShell extends StatefulWidget {
+312:   final StatefulNavigationShell shell;
+313:   final WearNotifications notifications;
+314:   const WearShell({
+315:     super.key,
+316:     required this.shell,
+317:     required this.notifications,
+318:   });
+319:   @override
+320:   State<WearShell> createState() => _WearShellState();
+321: }
+322: 
+323: class _WearShellState extends State<WearShell> {
+324:   WearSession? _session;
+325:   int? _count;
+326:   int _generation = 0;
+327:   @override
+328:   void didChangeDependencies() {
+329:     super.didChangeDependencies();
+330:     final session = WearScope.of(context);
+331:     if (_session != session) {
+332:       _session?.refreshTick.removeListener(_refresh);
+333:       _session = session;
+334:       session.refreshTick.addListener(_refresh);
+335:       Future.microtask(_loadCount);
+336:     }
+337:   }
+338: 
+339:   void _refresh() {
+340:     unawaited(_loadCount());
+341:   }
+342: 
+343:   Future<void> _loadCount() async {
+344:     if (_session == null || _session!.busy || _session!.siteId == null) return;
+345:     final generation = ++_generation;
+346:     try {
+347:       final data = jsonMap(
+348:         await _session!.api.get('/api/v1/events/inbox/count'),
+349:       );
+350:       if (mounted && generation == _generation) {
+351:         setState(() => _count = intOf(data['count']));
+352:       }
+353:     } catch (_) {
+354:       if (mounted && generation == _generation) setState(() => _count = null);
+355:     }
+356:   }
+357: 
+358:   @override
+359:   void dispose() {
+360:     _generation++;
+361:     _session?.refreshTick.removeListener(_refresh);
+362:     super.dispose();
+363:   }
+364: 
+365:   @override
+366:   Widget build(BuildContext context) {
+367:     final session = WearScope.of(context);
+368:     return Scaffold(
+369:       body: SafeArea(
+370:         bottom: false,
+371:         child: Column(
+372:           children: [
+373:             ListenableBuilder(
+374:               listenable: widget.notifications,
+375:               builder: (context, _) {
+376:                 final notices = widget.notifications;
+377:                 if (notices.latest == null && notices.error == null) {
+378:                   return const SizedBox.shrink();
+379:                 }
+380:                 return Material(
+381:                   color: const Color(0xFFFFF0D9),
+382:                   child: ListTile(
+383:                     dense: true,
+384:                     leading: const Icon(
+385:                       Icons.notifications_active_outlined,
+386:                       color: WearColors.warning,
+387:                     ),
+388:                     title: Text(notices.error ?? '有新的现场事件'),
+389:                     subtitle: notices.error == null
+390:                         ? const Text('点击查看最新状态')
+391:                         : null,
+392:                     onTap: notices.openLatest,
+393:                     trailing: IconButton(
+394:                       tooltip: '收起提示',
+395:                       onPressed: notices.dismissLatest,
+396:                       icon: const Icon(Icons.close),
+397:                     ),
+398:                   ),
+399:                 );
+400:               },
+401:             ),
+402:             Expanded(
+403:               child: session.busy
+404:                   ? const Center(child: CircularProgressIndicator())
+405:                   : KeyedSubtree(
+406:                       key: ValueKey(session.scopeKey),
+407:                       child: widget.shell,
+408:                     ),
+409:             ),
+410:           ],
+411:         ),
+412:       ),
+413:       bottomNavigationBar:
+414:           RegExp(
+415:                 r'^/tasks/[^/]+$',
+416:               ).hasMatch(GoRouterState.of(context).uri.path) ||
+417:               (GoRouterState.of(context).uri.path == '/events' &&
+418:                   (GoRouterState.of(
+419:                         context,
+420:                       ).uri.queryParameters['eventId']?.isNotEmpty ??
+421:                       false))
+422:           ? null
+423:           : NavigationBar(
+424:               height: 60,
+425:               selectedIndex: widget.shell.currentIndex,
+426:               onDestinationSelected: session.busy
+427:                   ? null
+428:                   : (index) {
+429:                       FocusScope.of(context).unfocus();
+430:                       widget.shell.goBranch(index);
+431:                     },
+432:               destinations: [
+433:                 const NavigationDestination(
+434:                   icon: Icon(Icons.home_outlined),
+435:                   selectedIcon: Icon(Icons.home),
+436:                   label: '现场',
+437:                 ),
+438:                 const NavigationDestination(
+439:                   icon: Icon(Icons.call_outlined),
+440:                   selectedIcon: Icon(Icons.call),
+441:                   label: '通讯',
+442:                 ),
+443:                 NavigationDestination(
+444:                   icon: Badge(
+445:                     isLabelVisible: (_count ?? 0) > 0,
+446:                     child: const Icon(Icons.chat_bubble_outline),
+447:                   ),
+448:                   selectedIcon: Badge(
+449:                     isLabelVisible: (_count ?? 0) > 0,
+450:                     child: const Icon(Icons.chat_bubble),
+451:                   ),
+452:                   label: '消息',
+453:                 ),
+454:                 const NavigationDestination(
+455:                   icon: Icon(Icons.person_outline),
+456:                   selectedIcon: Icon(Icons.person),
+457:                   label: '我的',
+458:                 ),
+459:               ],
+460:             ),
+461:     );
+462:   }
+463: }

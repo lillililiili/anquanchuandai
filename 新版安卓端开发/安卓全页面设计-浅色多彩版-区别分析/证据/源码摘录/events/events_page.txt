@@ -1,0 +1,1612 @@
+1: import 'dart:async';
+2: 
+3: import 'package:flutter/material.dart';
+4: import 'package:go_router/go_router.dart';
+5: 
+6: import '../core.dart';
+7: import 'event_controller.dart';
+8: import 'event_models.dart';
+9: import 'event_repository.dart';
+10: import 'event_state_store.dart';
+11: import 'event_reference_view.dart';
+12: 
+13: class EventsPage extends StatefulWidget {
+14:   const EventsPage({
+15:     super.key,
+16:     this.eventId,
+17:     this.personId,
+18:     this.taskId,
+19:     this.initialClaimantUserId,
+20:     this.initialEscalated,
+21:     this.initialStatus,
+22:     this.initialType,
+23:   });
+24: 
+25:   final String? eventId;
+26:   final String? personId;
+27:   final String? taskId;
+28:   final String? initialClaimantUserId;
+29:   final bool? initialEscalated;
+30:   final String? initialStatus;
+31:   final String? initialType;
+32: 
+33:   @override
+34:   State<EventsPage> createState() => _EventsPageState();
+35: }
+36: 
+37: class _EventsPageState extends State<EventsPage> {
+38:   final ScrollController _scroll = ScrollController();
+39:   final Map<String, TextEditingController> _handleEditors = {};
+40:   EventController? _controller;
+41:   WearSession? _session;
+42:   String? _scopeKey;
+43:   Timer? _scrollSave;
+44:   int _routeGeneration = 0;
+45:   JsonMap? _dutySummary;
+46:   String? _summaryScope;
+47:   int _summaryRequest = 0;
+48: 
+49:   @override
+50:   void didUpdateWidget(covariant EventsPage oldWidget) {
+51:     super.didUpdateWidget(oldWidget);
+52:     final controller = _controller;
+53:     if (controller == null) return;
+54:     var next = controller.filters;
+55:     var filtersChanged = false;
+56:     if (oldWidget.personId != widget.personId) {
+57:       next = next.copyWith(personId: widget.personId ?? '');
+58:       filtersChanged = true;
+59:     }
+60:     if (oldWidget.taskId != widget.taskId) {
+61:       next = next.copyWith(taskId: widget.taskId ?? '');
+62:       filtersChanged = true;
+63:     }
+64:     if (oldWidget.initialClaimantUserId != widget.initialClaimantUserId) {
+65:       next = next.copyWith(claimantUserId: widget.initialClaimantUserId ?? '');
+66:       filtersChanged = true;
+67:     }
+68:     if (oldWidget.initialEscalated != widget.initialEscalated) {
+69:       next = next.copyWith(escalated: widget.initialEscalated ?? false);
+70:       filtersChanged = true;
+71:     }
+72:     if (oldWidget.initialStatus != widget.initialStatus) {
+73:       next = next.copyWith(status: widget.initialStatus ?? 'active');
+74:       filtersChanged = true;
+75:     }
+76:     if (oldWidget.initialType != widget.initialType) {
+77:       next = next.copyWith(type: widget.initialType ?? '');
+78:       filtersChanged = true;
+79:     }
+80:     final eventChanged = oldWidget.eventId != widget.eventId;
+81:     if (!filtersChanged && !eventChanged) return;
+82:     final routeRequest = ++_routeGeneration;
+83:     unawaited(() async {
+84:       if (filtersChanged) await controller.setFilters(next);
+85:       if (!mounted ||
+86:           !identical(controller, _controller) ||
+87:           routeRequest != _routeGeneration ||
+88:           !eventChanged) {
+89:         return;
+90:       }
+91:       if (widget.eventId case final eventId? when eventId.isNotEmpty) {
+92:         await controller.select(eventId);
+93:       } else {
+94:         await controller.closeDetail();
+95:       }
+96:     }());
+97:   }
+98: 
+99:   @override
+100:   void didChangeDependencies() {
+101:     super.didChangeDependencies();
+102:     final session = WearScope.of(context);
+103:     if (_controller == null) {
+104:       _session = session;
+105:       _scopeKey = session.scopeKey;
+106:       _controller = _buildController(session)..addListener(_changed);
+107:       session.refreshTick.addListener(_serverSignaled);
+108:       unawaited(_initializeAndRestoreScroll());
+109:     } else if (!identical(_session, session)) {
+110:       _session?.refreshTick.removeListener(_serverSignaled);
+111:       _controller?.removeListener(_changed);
+112:       _controller?.dispose();
+113:       _session = session;
+114:       _scopeKey = session.scopeKey;
+115:       _controller = _buildController(session)..addListener(_changed);
+116:       session.refreshTick.addListener(_serverSignaled);
+117:       unawaited(_initializeAndRestoreScroll());
+118:     } else if (_scopeKey != session.scopeKey) {
+119:       _session?.refreshTick.removeListener(_serverSignaled);
+120:       _session = session;
+121:       _scopeKey = session.scopeKey;
+122:       session.refreshTick.addListener(_serverSignaled);
+123:       unawaited(
+124:         _controller!
+125:             .replaceScope(
+126:               scopeKey: session.scopeKey,
+127:               actor: _actor(session),
+128:               store: _store(session),
+129:             )
+130:             .then((_) => _restoreScroll()),
+131:       );
+132:     }
+133:     if (_summaryScope != session.scopeKey) {
+134:       _dutySummary = null;
+135:       unawaited(_loadDutySummary());
+136:     }
+137:   }
+138: 
+139:   Future<void> _loadDutySummary() async {
+140:     final session = _session;
+141:     if (session == null || widget.eventId?.isNotEmpty == true) return;
+142:     final scope = session.scopeKey;
+143:     _summaryScope = scope;
+144:     final request = ++_summaryRequest;
+145:     try {
+146:       final data = jsonMap(await session.api.get('/api/v1/duty/summary'));
+147:       if (!mounted ||
+148:           request != _summaryRequest ||
+149:           session != _session ||
+150:           scope != session.scopeKey) {
+151:         return;
+152:       }
+153:       setState(() => _dutySummary = data);
+154:     } catch (_) {
+155:       if (!mounted ||
+156:           request != _summaryRequest ||
+157:           session != _session ||
+158:           scope != session.scopeKey) {
+159:         return;
+160:       }
+161:       setState(() => _dutySummary = null);
+162:     }
+163:   }
+164: 
+165:   Future<void> _refreshWorkspace() async {
+166:     await Future.wait([
+167:       if (_controller != null) _controller!.refreshFromSignal(),
+168:       _loadDutySummary(),
+169:     ]);
+170:   }
+171: 
+172:   EventController _buildController(WearSession session) => EventController(
+173:     gateway: ApiEventGateway(session.api),
+174:     store: _store(session),
+175:     scopeKey: session.scopeKey,
+176:     actor: _actor(session),
+177:     initialEventId: widget.eventId,
+178:     initialPersonId: widget.personId,
+179:     initialTaskId: widget.taskId,
+180:     initialClaimantUserId: widget.initialClaimantUserId,
+181:     initialEscalated: widget.initialEscalated,
+182:     initialStatus: widget.initialStatus,
+183:     initialType: widget.initialType,
+184:   );
+185: 
+186:   SharedPreferencesEventStateStore _store(WearSession session) =>
+187:       SharedPreferencesEventStateStore(
+188:         userId: session.userId,
+189:         siteId: session.siteId ?? '',
+190:       );
+191: 
+192:   EventActor _actor(WearSession session) => EventActor(
+193:     userId: session.userId,
+194:     roles: {...session.roles, if (session.me?['admin'] == true) 'admin'},
+195:     permissions: session.permissions,
+196:     userName: idOf(session.me?['userName']),
+197:   );
+198: 
+199:   Future<void> _initializeAndRestoreScroll() async {
+200:     await _controller!.initialize();
+201:     _restoreScroll();
+202:   }
+203: 
+204:   void _restoreScroll() {
+205:     WidgetsBinding.instance.addPostFrameCallback((_) {
+206:       if (!mounted || !_scroll.hasClients) return;
+207:       final offset = _controller!.scrollOffset.clamp(
+208:         0.0,
+209:         _scroll.position.maxScrollExtent,
+210:       );
+211:       _scroll.jumpTo(offset);
+212:     });
+213:   }
+214: 
+215:   void _changed() {
+216:     if (!mounted) return;
+217:     setState(() {});
+218:     WidgetsBinding.instance.addPostFrameCallback((_) => _loadNearBottom());
+219:   }
+220: 
+221:   void _loadNearBottom() {
+222:     if (!mounted || !_scroll.hasClients || widget.eventId?.isNotEmpty == true) {
+223:       return;
+224:     }
+225:     final controller = _controller;
+226:     if (controller == null || controller.loadMoreError != null) return;
+227:     if (_scroll.position.extentAfter < 240) {
+228:       unawaited(controller.loadMore());
+229:     }
+230:   }
+231: 
+232:   void _serverSignaled() {
+233:     final controller = _controller;
+234:     if (controller != null && !controller.writing) {
+235:       unawaited(_refreshWorkspace());
+236:     }
+237:   }
+238: 
+239:   void _saveScroll() {
+240:     _loadNearBottom();
+241:     _scrollSave?.cancel();
+242:     _scrollSave = Timer(const Duration(milliseconds: 250), () {
+243:       if (_scroll.hasClients) {
+244:         unawaited(_controller?.updateScroll(_scroll.offset));
+245:       }
+246:     });
+247:   }
+248: 
+249:   @override
+250:   void initState() {
+251:     super.initState();
+252:     _scroll.addListener(_saveScroll);
+253:   }
+254: 
+255:   @override
+256:   void dispose() {
+257:     _scrollSave?.cancel();
+258:     if (_scroll.hasClients && _controller != null) {
+259:       unawaited(_controller!.updateScroll(_scroll.offset));
+260:     }
+261:     _session?.refreshTick.removeListener(_serverSignaled);
+262:     _controller?.removeListener(_changed);
+263:     _controller?.dispose();
+264:     for (final editor in _handleEditors.values) {
+265:       editor.dispose();
+266:     }
+267:     _scroll.dispose();
+268:     super.dispose();
+269:   }
+270: 
+271:   @override
+272:   Widget build(BuildContext context) {
+273:     final controller = _controller;
+274:     if (controller == null) {
+275:       return const Center(child: CircularProgressIndicator());
+276:     }
+277:     if (widget.eventId?.isNotEmpty == true) {
+278:       final event = controller.selected;
+279:       if (event != null && event.id == widget.eventId) {
+280:         return EventReferenceView(
+281:           key: ValueKey('${controller.scopeKey}:${event.id}'),
+282:           controller: controller,
+283:           onBack: _backToEvents,
+284:           onSubmit: () => _execute(controller, EventCommand.handle),
+285:           onClaim: () => _execute(controller, EventCommand.claim),
+286:           onCommunication: () => context.push(
+287:             Uri(
+288:               path: '/communications',
+289:               queryParameters: {
+290:                 'eventId': event.id,
+291:                 if (event.deviceId.isNotEmpty) 'deviceId': event.deviceId,
+292:                 if (event.personId.isNotEmpty) 'personId': event.personId,
+293:               },
+294:             ).toString(),
+295:           ),
+296:           legacyDetail: _detail(
+297:             controller,
+298:             event,
+299:             includeHandle: event.type == 'sos',
+300:           ),
+301:         );
+302:       }
+303:       return Scaffold(
+304:         appBar: AppBar(
+305:           leading: BackButton(onPressed: _backToEvents),
+306:           title: const Text('事件详情'),
+307:         ),
+308:         body: controller.detailLoading || controller.loading
+309:             ? const Center(child: CircularProgressIndicator())
+310:             : WearEmpty(
+311:                 title: '事件详情暂不可用',
+312:                 detail: controller.errorMessage,
+313:                 onRetry: () => controller.select(widget.eventId!),
+314:               ),
+315:       );
+316:     }
+317:     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+318:     return PopScope(
+319:       canPop: !controller.writing,
+320:       onPopInvokedWithResult: (didPop, result) {
+321:         if (didPop || controller.writing) return;
+322:         if (keyboardOpen) {
+323:           FocusScope.of(context).unfocus();
+324:         } else if (controller.selected != null) {
+325:           unawaited(controller.closeDetail());
+326:         }
+327:       },
+328:       child: Scaffold(
+329:         backgroundColor: WearColors.background,
+330:         body: SafeArea(
+331:           child: RefreshIndicator(
+332:             onRefresh: _refreshWorkspace,
+333:             child: ListView(
+334:               key: const ValueKey('wear-events-workspace'),
+335:               controller: _scroll,
+336:               physics: const AlwaysScrollableScrollPhysics(),
+337:               padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
+338:               children: [
+339:                 WearBrandHero(
+340:                   key: const ValueKey('wear-page-hero-events'),
+341:                   title: '消息',
+342:                   subtitle: '统一接警、认领、处置与复核',
+343:                   background: WearArt.eventsHero,
+344:                 ),
+345:                 const SizedBox(height: 12),
+346:                 Padding(
+347:                   padding: const EdgeInsets.symmetric(horizontal: 16),
+348:                   child: _filters(controller),
+349:                 ),
+350:                 if (controller.loading) ...[
+351:                   const SizedBox(height: 8),
+352:                   const Padding(
+353:                     padding: EdgeInsets.symmetric(horizontal: 16),
+354:                     child: LinearProgressIndicator(minHeight: 3),
+355:                   ),
+356:                 ],
+357:                 if (controller.errorMessage case final message?)
+358:                   Padding(
+359:                     padding: const EdgeInsets.symmetric(horizontal: 16),
+360:                     child: _notice(message, danger: true),
+361:                   ),
+362:                 if (controller.selected == null &&
+363:                     controller.conflictMessage != null)
+364:                   Padding(
+365:                     padding: const EdgeInsets.symmetric(horizontal: 16),
+366:                     child: _notice(
+367:                       '${controller.conflictMessage!}；已重新读取服务器状态，未提交草稿仍保留。',
+368:                       danger: true,
+369:                     ),
+370:                   ),
+371:                 if (controller.selected == null &&
+372:                     controller.successMessage != null)
+373:                   Padding(
+374:                     padding: const EdgeInsets.symmetric(horizontal: 16),
+375:                     child: _notice(controller.successMessage!),
+376:                   ),
+377:                 const SizedBox(height: 14),
+378:                 Padding(
+379:                   padding: const EdgeInsets.symmetric(horizontal: 16),
+380:                   child: _resultHeader(controller),
+381:                 ),
+382:                 const SizedBox(height: 10),
+383:                 if (!controller.loading && controller.records.isEmpty)
+384:                   Padding(
+385:                     padding: const EdgeInsets.symmetric(horizontal: 16),
+386:                     child: WearEmpty(
+387:                       title: '当前筛选没有事件',
+388:                       detail: '当前条件下没有待处理事项，可调整筛选或刷新。',
+389:                       onRetry: controller.reload,
+390:                     ),
+391:                   )
+392:                 else
+393:                   ...controller.records.map(
+394:                     (event) => Padding(
+395:                       padding: const EdgeInsets.symmetric(horizontal: 16),
+396:                       child: _eventRow(controller, event),
+397:                     ),
+398:                   ),
+399:                 const SizedBox(height: 10),
+400:                 Padding(
+401:                   padding: const EdgeInsets.symmetric(horizontal: 16),
+402:                   child: _listEnd(controller),
+403:                 ),
+404:               ],
+405:             ),
+406:           ),
+407:         ),
+408:       ),
+409:     );
+410:   }
+411: 
+412:   void _backToEvents() {
+413:     if (_controller?.writing == true) return;
+414:     if (context.canPop()) {
+415:       context.pop();
+416:     } else {
+417:       context.go('/events');
+418:     }
+419:   }
+420: 
+421:   Future<void> _openEvent(EventController controller, String id) async {
+422:     await context.push(
+423:       Uri(path: '/events', queryParameters: {'eventId': id}).toString(),
+424:     );
+425:     if (!mounted || !identical(controller, _controller)) return;
+426:     // Read persisted child drafts before refreshing the underlying list.
+427:     final session = _session!;
+428:     await controller.replaceScope(
+429:       scopeKey: session.scopeKey,
+430:       actor: _actor(session),
+431:       store: _store(session),
+432:     );
+433:     _restoreScroll();
+434:   }
+435: 
+436:   Widget _filters(EventController controller) {
+437:     final badges = <Widget>[
+438:       if (!['active', 'open'].contains(controller.filters.status))
+439:         WearBadge(text: _statusLabel(controller.filters.status)),
+440:       if (controller.filters.type.isNotEmpty)
+441:         WearBadge(text: _typeLabel(controller.filters.type)),
+442:       if (controller.filters.personId.isNotEmpty)
+443:         WearBadge(text: '人员 ${controller.filters.personId}'),
+444:       if (controller.filters.taskId.isNotEmpty)
+445:         WearBadge(text: '任务 ${controller.filters.taskId}'),
+446:       if (controller.filters.claimantUserId.isNotEmpty &&
+447:           controller.filters.claimantUserId != _session?.userId)
+448:         WearBadge(text: '认领人 ${controller.filters.claimantUserId}'),
+449:     ];
+450:     return WearCard(
+451:       padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+452:       child: Column(
+453:         crossAxisAlignment: CrossAxisAlignment.start,
+454:         children: [
+455:           Row(
+456:             children: [
+457:               const Expanded(
+458:                 child: Column(
+459:                   crossAxisAlignment: CrossAxisAlignment.start,
+460:                   children: [
+461:                     Text(
+462:                       '事件筛选',
+463:                       style: TextStyle(
+464:                         fontWeight: FontWeight.w700,
+465:                         color: WearColors.ink,
+466:                       ),
+467:                     ),
+468:                     Text(
+469:                       '厂站待办',
+470:                       style: TextStyle(fontSize: 11, color: WearColors.muted),
+471:                     ),
+472:                   ],
+473:                 ),
+474:               ),
+475:               TextButton.icon(
+476:                 onPressed: controller.writing
+477:                     ? null
+478:                     : () => _showFilters(controller),
+479:                 icon: const Icon(Icons.tune, size: 19),
+480:                 label: const Text('筛选'),
+481:               ),
+482:             ],
+483:           ),
+484:           const SizedBox(height: 6),
+485:           LayoutBuilder(
+486:             builder: (context, constraints) {
+487:               // Keep four equal controls on normal screens; let larger text or
+488:               // counts use two columns instead of shrinking or clipping labels.
+489:               final singleWidth = (constraints.maxWidth - 18) / 4;
+490:               final labels = [
+491:                 '未关闭',
+492:                 _quickFilterLabel('待认领', 'unclaimed'),
+493:                 _quickFilterLabel('我负责', 'mine'),
+494:                 _quickFilterLabel('已升级', 'overdue'),
+495:               ];
+496:               final fits = labels.every((label) {
+497:                 final painter = TextPainter(
+498:                   text: TextSpan(
+499:                     text: label,
+500:                     style: const TextStyle(
+501:                       fontSize: 12,
+502:                       fontWeight: FontWeight.w600,
+503:                     ),
+504:                   ),
+505:                   textDirection: Directionality.of(context),
+506:                   textScaler: MediaQuery.textScalerOf(context),
+507:                 )..layout();
+508:                 final fits = painter.width + 10 <= singleWidth;
+509:                 painter.dispose();
+510:                 return fits;
+511:               });
+512:               final width = fits ? singleWidth : (constraints.maxWidth - 6) / 2;
+513:               return Wrap(
+514:                 spacing: 6,
+515:                 runSpacing: 6,
+516:                 children: [
+517:                   SizedBox(
+518:                     width: width,
+519:                     child: _quickFilter(controller, 'active', '未关闭'),
+520:                   ),
+521:                   SizedBox(
+522:                     width: width,
+523:                     child: _quickFilter(
+524:                       controller,
+525:                       'open',
+526:                       '待认领',
+527:                       countField: 'unclaimed',
+528:                     ),
+529:                   ),
+530:                   SizedBox(
+531:                     width: width,
+532:                     child: _quickFilter(
+533:                       controller,
+534:                       'mine',
+535:                       '我负责',
+536:                       countField: 'mine',
+537:                     ),
+538:                   ),
+539:                   SizedBox(
+540:                     width: width,
+541:                     child: _quickFilter(
+542:                       controller,
+543:                       'escalated',
+544:                       '已升级',
+545:                       countField: 'overdue',
+546:                     ),
+547:                   ),
+548:                 ],
+549:               );
+550:             },
+551:           ),
+552:           if (badges.isNotEmpty) ...[
+553:             const SizedBox(height: 8),
+554:             Wrap(spacing: 7, runSpacing: 7, children: badges),
+555:           ],
+556:         ],
+557:       ),
+558:     );
+559:   }
+560: 
+561:   String _quickFilterLabel(String label, String? countField) {
+562:     final count = countField == null ? null : _dutySummary?[countField];
+563:     return count == null ? label : '$label ${intOf(count)}';
+564:   }
+565: 
+566:   Widget _quickFilter(
+567:     EventController controller,
+568:     String key,
+569:     String label, {
+570:     String? countField,
+571:   }) {
+572:     final filters = controller.filters;
+573:     final selected = switch (key) {
+574:       'mine' =>
+575:         filters.claimantUserId == _session?.userId &&
+576:             !filters.escalated &&
+577:             filters.status == 'active',
+578:       'escalated' =>
+579:         filters.escalated &&
+580:             filters.claimantUserId.isEmpty &&
+581:             filters.status == 'active',
+582:       _ =>
+583:         filters.status == key &&
+584:             filters.claimantUserId.isEmpty &&
+585:             !filters.escalated,
+586:     };
+587:     return Semantics(
+588:       selected: selected,
+589:       child: TextButton(
+590:         key: ValueKey('events-quick-$key'),
+591:         style: TextButton.styleFrom(
+592:           minimumSize: const Size(0, 48),
+593:           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+594:           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+595:           foregroundColor: selected ? WearColors.brand : WearColors.muted,
+596:           backgroundColor: selected
+597:               ? const Color(0xFFE3EFFF)
+598:               : const Color(0xFFF5F8FC),
+599:           side: BorderSide(
+600:             color: selected ? const Color(0xFFBBD5FF) : WearColors.line,
+601:           ),
+602:           shape: RoundedRectangleBorder(
+603:             borderRadius: BorderRadius.circular(10),
+604:           ),
+605:           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+606:         ),
+607:         onPressed: controller.loading || controller.writing
+608:             ? null
+609:             : () {
+610:                 unawaited(
+611:                   controller.setFilters(
+612:                     filters.copyWith(
+613:                       status: key == 'open' ? 'open' : 'active',
+614:                       claimantUserId: key == 'mine' ? _session!.userId : '',
+615:                       escalated: key == 'escalated',
+616:                     ),
+617:                   ),
+618:                 );
+619:               },
+620:         child: Text(
+621:           _quickFilterLabel(label, countField),
+622:           textAlign: TextAlign.center,
+623:         ),
+624:       ),
+625:     );
+626:   }
+627: 
+628:   Widget _resultHeader(EventController controller) => Column(
+629:     crossAxisAlignment: CrossAxisAlignment.start,
+630:     children: [
+631:       const Text(
+632:         '事件列表',
+633:         style: TextStyle(
+634:           fontSize: 18,
+635:           fontWeight: FontWeight.w800,
+636:           color: WearColors.ink,
+637:         ),
+638:       ),
+639:       const SizedBox(height: 4),
+640:       Text(
+641:         '共 ${controller.total} 条 · 未关闭 ${controller.inboxCount}',
+642:         style: const TextStyle(color: WearColors.muted),
+643:       ),
+644:     ],
+645:   );
+646: 
+647:   Widget _eventRow(EventController controller, WearEvent event) => Padding(
+648:     padding: const EdgeInsets.only(bottom: 10),
+649:     child: WearCard(
+650:       padding: EdgeInsets.zero,
+651:       child: InkWell(
+652:         key: ValueKey('wear-event-${event.id}'),
+653:         borderRadius: BorderRadius.circular(22),
+654:         onTap: controller.writing
+655:             ? null
+656:             : () => _openEvent(controller, event.id),
+657:         child: Padding(
+658:           padding: const EdgeInsets.all(16),
+659:           child: Row(
+660:             crossAxisAlignment: CrossAxisAlignment.start,
+661:             children: [
+662:               Container(
+663:                 width: 42,
+664:                 height: 42,
+665:                 decoration: BoxDecoration(
+666:                   color: _eventColor(event).withValues(alpha: .10),
+667:                   borderRadius: BorderRadius.circular(13),
+668:                 ),
+669:                 child: Icon(
+670:                   event.type == 'sos'
+671:                       ? Icons.error_rounded
+672:                       : Icons.warning_amber_rounded,
+673:                   color: _eventColor(event),
+674:                 ),
+675:               ),
+676:               const SizedBox(width: 12),
+677:               Expanded(
+678:                 child: Column(
+679:                   crossAxisAlignment: CrossAxisAlignment.start,
+680:                   children: [
+681:                     Text(
+682:                       event.typeLabel,
+683:                       style: const TextStyle(
+684:                         fontWeight: FontWeight.w800,
+685:                         color: WearColors.ink,
+686:                       ),
+687:                     ),
+688:                     const SizedBox(height: 5),
+689:                     Text(
+690:                       '${event.personName.isEmpty ? '人员未知' : event.personName} · ${event.sn.isEmpty ? '设备未知' : event.sn}',
+691:                       style: const TextStyle(color: WearColors.muted),
+692:                     ),
+693:                     const SizedBox(height: 8),
+694:                     Wrap(
+695:                       spacing: 6,
+696:                       runSpacing: 5,
+697:                       children: [
+698:                         WearBadge(
+699:                           text: event.statusLabel,
+700:                           color: _statusColor(event.status),
+701:                         ),
+702:                         if (event.escalated)
+703:                           const WearBadge(
+704:                             text: '已升级',
+705:                             color: WearColors.danger,
+706:                           ),
+707:                         if (event.demo)
+708:                           const WearBadge(
+709:                             text: '演示',
+710:                             color: WearColors.warning,
+711:                           ),
+712:                         if (event.repeatCount > 0)
+713:                           WearBadge(text: '重复 ${event.repeatCount} 次'),
+714:                       ],
+715:                     ),
+716:                     const SizedBox(height: 7),
+717:                     Text(
+718:                       formatTime(event.occurredAt),
+719:                       style: const TextStyle(
+720:                         fontSize: 12,
+721:                         color: WearColors.muted,
+722:                       ),
+723:                     ),
+724:                   ],
+725:                 ),
+726:               ),
+727:               const Icon(Icons.chevron_right, color: WearColors.muted),
+728:             ],
+729:           ),
+730:         ),
+731:       ),
+732:     ),
+733:   );
+734: 
+735:   Widget _detail(
+736:     EventController controller,
+737:     WearEvent event, {
+738:     bool includeHandle = true,
+739:   }) => WearCard(
+740:     child: Column(
+741:       crossAxisAlignment: CrossAxisAlignment.start,
+742:       children: [
+743:         Row(
+744:           children: [
+745:             Expanded(
+746:               child: Text(
+747:                 '${event.typeLabel} · #${event.id}',
+748:                 style: const TextStyle(
+749:                   fontSize: 19,
+750:                   fontWeight: FontWeight.w800,
+751:                   color: WearColors.ink,
+752:                 ),
+753:               ),
+754:             ),
+755:             IconButton(
+756:               tooltip: '收起详情',
+757:               onPressed: controller.writing ? null : _backToEvents,
+758:               icon: const Icon(Icons.close),
+759:             ),
+760:           ],
+761:         ),
+762:         Wrap(
+763:           spacing: 7,
+764:           runSpacing: 7,
+765:           children: [
+766:             WearBadge(
+767:               text: event.statusLabel,
+768:               color: _statusColor(event.status),
+769:             ),
+770:             WearBadge(
+771:               text: event.isHighRisk ? '高风险' : '低风险',
+772:               color: event.isHighRisk ? WearColors.danger : WearColors.warning,
+773:             ),
+774:             if (event.demo)
+775:               const WearBadge(text: '演示事件', color: WearColors.warning),
+776:           ],
+777:         ),
+778:         const Divider(height: 26),
+779:         const Text(
+780:           '事件发生时快照',
+781:           style: TextStyle(fontWeight: FontWeight.w700, color: WearColors.ink),
+782:         ),
+783:         const SizedBox(height: 9),
+784:         _line(
+785:           Icons.person_outline,
+786:           '人员',
+787:           '${_known(event.personName)} · ${_known(event.personCode)}',
+788:         ),
+789:         _line(
+790:           Icons.health_and_safety_outlined,
+791:           '设备',
+792:           '${_known(event.sn)} · ID ${_known(event.deviceId)}',
+793:         ),
+794:         _line(Icons.schedule_outlined, '发生时间', formatTime(event.occurredAt)),
+795:         _line(
+796:           Icons.location_on_outlined,
+797:           '位置',
+798:           event.locationLat.isEmpty || event.locationLng.isEmpty
+799:               ? '位置未知（不阻断处置）'
+800:               : '${event.locationLat}, ${event.locationLng} · ${_locationLabel(event.locationQuality)}',
+801:         ),
+802:         if (event.type == 'sos') ...[
+803:           const SizedBox(height: 10),
+804:           ClipRRect(
+805:             borderRadius: BorderRadius.circular(14),
+806:             child: Stack(
+807:               children: [
+808:                 const WearAssetImage(
+809:                   WearArt.plantMap,
+810:                   width: double.infinity,
+811:                   height: 168,
+812:                   fit: BoxFit.cover,
+813:                 ),
+814:                 Positioned(
+815:                   left: 10,
+816:                   bottom: 10,
+817:                   child: WearBadge(
+818:                     text: event.demo ? 'SOS 演示 · 厂区示意 · 非实测' : '厂区示意 · 非实测',
+819:                     color: WearColors.warning,
+820:                   ),
+821:                 ),
+822:               ],
+823:             ),
+824:           ),
+825:         ],
+826:         if (event.taskId.isNotEmpty)
+827:           _line(
+828:             Icons.assignment_outlined,
+829:             '关联任务',
+830:             '${event.taskId} · ${_known(event.taskMatch)}',
+831:           ),
+832:         if (event.claimantUserId.isNotEmpty)
+833:           _line(Icons.badge_outlined, '当前认领人', '用户 ${event.claimantUserId}'),
+834:         if (event.deviceId.isNotEmpty) ...[
+835:           const SizedBox(height: 8),
+836:           OutlinedButton.icon(
+837:             onPressed: controller.writing
+838:                 ? null
+839:                 : () => context.push(
+840:                     '/communications?eventId=${Uri.encodeQueryComponent(event.id)}&deviceId=${Uri.encodeQueryComponent(event.deviceId)}',
+841:                   ),
+842:             icon: const Icon(Icons.call_outlined),
+843:             label: const Text('打开可用通信能力'),
+844:           ),
+845:         ],
+846:         const Divider(height: 28),
+847:         _actions(controller, includeHandle: includeHandle),
+848:         const Divider(height: 28),
+849:         const Text(
+850:           '处置时间线',
+851:           style: TextStyle(fontWeight: FontWeight.w700, color: WearColors.ink),
+852:         ),
+853:         const SizedBox(height: 8),
+854:         if (controller.detailLoading)
+855:           const LinearProgressIndicator(minHeight: 3)
+856:         else if (controller.actions.isEmpty)
+857:           const Text('暂无动作记录', style: TextStyle(color: WearColors.muted))
+858:         else
+859:           ...controller.actions.map(_actionRow),
+860:       ],
+861:     ),
+862:   );
+863: 
+864:   Widget _actions(EventController controller, {bool includeHandle = true}) {
+865:     final canHandle = controller.can(EventCommand.handle);
+866:     final buttons = <Widget>[
+867:       if (controller.can(EventCommand.ack))
+868:         OutlinedButton.icon(
+869:           key: const ValueKey('event-ack'),
+870:           onPressed: controller.writing
+871:               ? null
+872:               : () => _execute(controller, EventCommand.ack),
+873:           icon: const Icon(Icons.visibility_outlined),
+874:           label: const Text('确认看见'),
+875:         ),
+876:       if (controller.can(EventCommand.claim))
+877:         FilledButton.icon(
+878:           key: const ValueKey('event-claim'),
+879:           onPressed: controller.writing
+880:               ? null
+881:               : () => _execute(controller, EventCommand.claim),
+882:           icon: const Icon(Icons.pan_tool_alt_outlined),
+883:           label: const Text('认领'),
+884:         ),
+885:       if (controller.can(EventCommand.transfer))
+886:         OutlinedButton.icon(
+887:           onPressed: controller.writing ? null : () => _transfer(controller),
+888:           icon: const Icon(Icons.swap_horiz),
+889:           label: const Text('转交'),
+890:         ),
+891:       if (controller.can(EventCommand.close))
+892:         FilledButton.icon(
+893:           onPressed: controller.writing
+894:               ? null
+895:               : () => _editReason(controller, EventCommand.close),
+896:           icon: const Icon(Icons.task_alt),
+897:           label: const Text('关闭'),
+898:         ),
+899:       if (controller.can(EventCommand.reopen))
+900:         OutlinedButton.icon(
+901:           onPressed: controller.writing
+902:               ? null
+903:               : () => _editReason(controller, EventCommand.reopen),
+904:           icon: const Icon(Icons.restart_alt),
+905:           label: const Text('重开'),
+906:         ),
+907:       if (controller.can(EventCommand.assignTask))
+908:         OutlinedButton.icon(
+909:           key: const ValueKey('event-assign-task'),
+910:           onPressed: controller.writing ? null : () => _assignTask(controller),
+911:           icon: const Icon(Icons.assignment_turned_in_outlined),
+912:           label: const Text('确认关联任务'),
+913:         ),
+914:     ];
+915:     return Column(
+916:       crossAxisAlignment: CrossAxisAlignment.start,
+917:       children: [
+918:         const Text(
+919:           '可执行操作',
+920:           style: TextStyle(fontWeight: FontWeight.w700, color: WearColors.ink),
+921:         ),
+922:         const SizedBox(height: 10),
+923:         if (controller.conflictMessage case final message?
+924:             when widget.eventId == null) ...[
+925:           _actionNotice('$message；已重新读取服务器状态，未提交草稿仍保留。', danger: true),
+926:           const SizedBox(height: 10),
+927:         ],
+928:         if (controller.successMessage case final message?
+929:             when widget.eventId == null) ...[
+930:           _actionNotice(message),
+931:           const SizedBox(height: 10),
+932:         ],
+933:         if (controller.writing) const LinearProgressIndicator(minHeight: 3),
+934:         if (canHandle && includeHandle) ...[
+935:           _handleForm(controller),
+936:           const SizedBox(height: 12),
+937:         ],
+938:         Wrap(spacing: 8, runSpacing: 8, children: buttons),
+939:         if (!canHandle && buttons.isEmpty)
+940:           const Text(
+941:             '当前角色、责任人与事件状态下没有可执行操作。',
+942:             style: TextStyle(color: WearColors.muted),
+943:           ),
+944:       ],
+945:     );
+946:   }
+947: 
+948:   Widget _actionNotice(String message, {bool danger = false}) => Container(
+949:     width: double.infinity,
+950:     padding: const EdgeInsets.all(12),
+951:     decoration: BoxDecoration(
+952:       color: (danger ? WearColors.danger : WearColors.primary).withValues(
+953:         alpha: .08,
+954:       ),
+955:       borderRadius: BorderRadius.circular(12),
+956:     ),
+957:     child: Text(
+958:       message,
+959:       style: TextStyle(color: danger ? WearColors.danger : WearColors.primary),
+960:     ),
+961:   );
+962: 
+963:   Widget _handleForm(EventController controller) {
+964:     final event = controller.selected!;
+965:     final draft = controller.draftFor(event.id);
+966:     final editor = _handleEditors.putIfAbsent(
+967:       event.id,
+968:       () => TextEditingController(text: draft.handleComment),
+969:     );
+970:     if (editor.text != draft.handleComment) {
+971:       editor.value = TextEditingValue(
+972:         text: draft.handleComment,
+973:         selection: TextSelection.collapsed(offset: draft.handleComment.length),
+974:       );
+975:     }
+976:     return Column(
+977:       crossAxisAlignment: CrossAxisAlignment.stretch,
+978:       children: [
+979:         TextFormField(
+980:           key: ValueKey('event-handle-input-${event.id}'),
+981:           controller: editor,
+982:           enabled: !controller.writing,
+983:           minLines: 2,
+984:           maxLines: 5,
+985:           textInputAction: TextInputAction.newline,
+986:           decoration: const InputDecoration(
+987:             labelText: '处置说明（可选）',
+988:             hintText: '记录现场核实情况和已采取的措施',
+989:             alignLabelWithHint: true,
+990:           ),
+991:           onChanged: (value) => unawaited(
+992:             controller.updateDraft(
+993:               event.id,
+994:               controller.draftFor(event.id).copyWith(handleComment: value),
+995:             ),
+996:           ),
+997:         ),
+998:         const SizedBox(height: 10),
+999:         Row(
+1000:           children: [
+1001:             Expanded(
+1002:               child: OutlinedButton(
+1003:                 onPressed: controller.writing
+1004:                     ? null
+1005:                     : () {
+1006:                         ScaffoldMessenger.of(context).showSnackBar(
+1007:                           const SnackBar(content: Text('草稿已保存在本机')),
+1008:                         );
+1009:                       },
+1010:                 child: const Text('保存草稿'),
+1011:               ),
+1012:             ),
+1013:             const SizedBox(width: 10),
+1014:             Expanded(
+1015:               child: FilledButton.icon(
+1016:                 key: ValueKey('event-handle-submit-${event.id}'),
+1017:                 onPressed: controller.writing
+1018:                     ? null
+1019:                     : () => _execute(controller, EventCommand.handle),
+1020:                 icon: const Icon(Icons.build_outlined),
+1021:                 label: const Text('提交处置'),
+1022:               ),
+1023:             ),
+1024:           ],
+1025:         ),
+1026:       ],
+1027:     );
+1028:   }
+1029: 
+1030:   Widget _actionRow(EventAction action) => Padding(
+1031:     padding: const EdgeInsets.symmetric(vertical: 7),
+1032:     child: Row(
+1033:       crossAxisAlignment: CrossAxisAlignment.start,
+1034:       children: [
+1035:         const Icon(
+1036:           Icons.radio_button_checked,
+1037:           size: 16,
+1038:           color: WearColors.primary,
+1039:         ),
+1040:         const SizedBox(width: 9),
+1041:         Expanded(
+1042:           child: Column(
+1043:             crossAxisAlignment: CrossAxisAlignment.start,
+1044:             children: [
+1045:               Text(
+1046:                 '${_actionLabel(action.action)} · ${_known(action.actor)}',
+1047:                 style: const TextStyle(
+1048:                   fontWeight: FontWeight.w600,
+1049:                   color: WearColors.ink,
+1050:                 ),
+1051:               ),
+1052:               if (action.fromStatus.isNotEmpty || action.toStatus.isNotEmpty)
+1053:                 Text(
+1054:                   '${_statusLabel(action.fromStatus)} → ${_statusLabel(action.toStatus)}',
+1055:                   style: const TextStyle(fontSize: 12, color: WearColors.muted),
+1056:                 ),
+1057:               if (action.reason.isNotEmpty)
+1058:                 Text(
+1059:                   action.reason,
+1060:                   style: const TextStyle(color: WearColors.muted),
+1061:                 ),
+1062:               Text(
+1063:                 formatTime(action.createTime),
+1064:                 style: const TextStyle(fontSize: 12, color: WearColors.muted),
+1065:               ),
+1066:             ],
+1067:           ),
+1068:         ),
+1069:       ],
+1070:     ),
+1071:   );
+1072: 
+1073:   Widget _listEnd(EventController controller) {
+1074:     if (controller.loadingMore) {
+1075:       return const Padding(
+1076:         padding: EdgeInsets.all(12),
+1077:         child: Row(
+1078:           mainAxisAlignment: MainAxisAlignment.center,
+1079:           children: [
+1080:             SizedBox(
+1081:               width: 16,
+1082:               height: 16,
+1083:               child: CircularProgressIndicator(strokeWidth: 2),
+1084:             ),
+1085:             SizedBox(width: 8),
+1086:             Text(
+1087:               '正在加载更多事件',
+1088:               style: TextStyle(fontSize: 12, color: WearColors.muted),
+1089:             ),
+1090:           ],
+1091:         ),
+1092:       );
+1093:     }
+1094:     if (controller.loadMoreError != null) {
+1095:       return Center(
+1096:         child: TextButton.icon(
+1097:           onPressed: controller.loading || controller.writing
+1098:               ? null
+1099:               : controller.loadMore,
+1100:           icon: const Icon(Icons.refresh, size: 18),
+1101:           label: const Text('加载失败，点击重试'),
+1102:         ),
+1103:       );
+1104:     }
+1105:     if (controller.loading || controller.records.isEmpty) {
+1106:       return const SizedBox.shrink();
+1107:     }
+1108:     return Padding(
+1109:       padding: const EdgeInsets.symmetric(vertical: 8),
+1110:       child: Text(
+1111:         controller.hasMore ? '继续向下浏览' : '没有更多事件了',
+1112:         textAlign: TextAlign.center,
+1113:         style: const TextStyle(fontSize: 12, color: WearColors.muted),
+1114:       ),
+1115:     );
+1116:   }
+1117: 
+1118:   Widget _line(IconData icon, String label, String value) => Padding(
+1119:     padding: const EdgeInsets.symmetric(vertical: 5),
+1120:     child: Row(
+1121:       crossAxisAlignment: CrossAxisAlignment.start,
+1122:       children: [
+1123:         Icon(icon, size: 18, color: WearColors.primary),
+1124:         const SizedBox(width: 9),
+1125:         SizedBox(
+1126:           width: 72,
+1127:           child: Text(label, style: const TextStyle(color: WearColors.muted)),
+1128:         ),
+1129:         Expanded(
+1130:           child: Text(value, style: const TextStyle(color: WearColors.ink)),
+1131:         ),
+1132:       ],
+1133:     ),
+1134:   );
+1135: 
+1136:   Widget _notice(String message, {bool danger = false}) => Padding(
+1137:     padding: const EdgeInsets.only(top: 12),
+1138:     child: WearCard(
+1139:       padding: const EdgeInsets.all(12),
+1140:       child: Text(
+1141:         message,
+1142:         style: TextStyle(
+1143:           color: danger ? WearColors.danger : WearColors.primary,
+1144:         ),
+1145:       ),
+1146:     ),
+1147:   );
+1148: 
+1149:   Future<void> _execute(
+1150:     EventController controller,
+1151:     EventCommand command,
+1152:   ) async {
+1153:     FocusScope.of(context).unfocus();
+1154:     await controller.execute(command);
+1155:   }
+1156: 
+1157:   Future<void> _editReason(
+1158:     EventController controller,
+1159:     EventCommand command,
+1160:   ) async {
+1161:     FocusScope.of(context).unfocus();
+1162:     final event = controller.selected!;
+1163:     final draft = controller.draftFor(event.id);
+1164:     final initial = switch (command) {
+1165:       EventCommand.close => draft.closeReason,
+1166:       EventCommand.reopen => draft.reopenReason,
+1167:       _ => '',
+1168:     };
+1169:     final text = TextEditingController(text: initial);
+1170:     String? error;
+1171:     final confirmed = await showDialog<bool>(
+1172:       context: context,
+1173:       barrierDismissible: !controller.writing,
+1174:       builder: (dialogContext) => StatefulBuilder(
+1175:         builder: (context, setDialog) => PopScope(
+1176:           canPop: !controller.writing,
+1177:           child: AlertDialog(
+1178:             title: Text(switch (command) {
+1179:               EventCommand.close => '关闭事件',
+1180:               EventCommand.reopen => '重开事件',
+1181:               _ => '填写说明',
+1182:             }),
+1183:             content: TextField(
+1184:               controller: text,
+1185:               autofocus: true,
+1186:               minLines: 2,
+1187:               maxLines: 5,
+1188:               decoration: InputDecoration(
+1189:                 labelText: '原因',
+1190:                 errorText: error,
+1191:                 alignLabelWithHint: true,
+1192:               ),
+1193:               onChanged: (value) {
+1194:                 final next = switch (command) {
+1195:                   EventCommand.close => draft.copyWith(closeReason: value),
+1196:                   EventCommand.reopen => draft.copyWith(reopenReason: value),
+1197:                   _ => draft,
+1198:                 };
+1199:                 unawaited(controller.updateDraft(event.id, next));
+1200:               },
+1201:             ),
+1202:             actions: [
+1203:               TextButton(
+1204:                 onPressed: () => Navigator.pop(dialogContext, false),
+1205:                 child: const Text('取消'),
+1206:               ),
+1207:               FilledButton(
+1208:                 onPressed: () {
+1209:                   if (text.text.trim().isEmpty) {
+1210:                     setDialog(() => error = '请填写原因');
+1211:                     return;
+1212:                   }
+1213:                   Navigator.pop(dialogContext, true);
+1214:                 },
+1215:                 child: const Text('确认提交'),
+1216:               ),
+1217:             ],
+1218:           ),
+1219:         ),
+1220:       ),
+1221:     );
+1222:     text.dispose();
+1223:     if (confirmed == true && mounted) await _execute(controller, command);
+1224:   }
+1225: 
+1226:   Future<void> _transfer(EventController controller) async {
+1227:     FocusScope.of(context).unfocus();
+1228:     await controller.loadOperators();
+1229:     if (!mounted || controller.selected == null) return;
+1230:     final event = controller.selected!;
+1231:     var draft = controller.draftFor(event.id);
+1232:     final reason = TextEditingController(text: draft.transferReason);
+1233:     String? userId = draft.transferUserId.isEmpty ? null : draft.transferUserId;
+1234:     String? error;
+1235:     final confirmed = await showDialog<bool>(
+1236:       context: context,
+1237:       builder: (dialogContext) => StatefulBuilder(
+1238:         builder: (context, setDialog) => AlertDialog(
+1239:           title: const Text('转交事件'),
+1240:           content: Column(
+1241:             mainAxisSize: MainAxisSize.min,
+1242:             children: [
+1243:               DropdownButtonFormField<String>(
+1244:                 initialValue:
+1245:                     controller.operators.any((item) => item.userId == userId)
+1246:                     ? userId
+1247:                     : null,
+1248:                 decoration: const InputDecoration(labelText: '同站值班人员'),
+1249:                 items: controller.operators
+1250:                     .map(
+1251:                       (item) => DropdownMenuItem(
+1252:                         value: item.userId,
+1253:                         child: Text(item.displayName),
+1254:                       ),
+1255:                     )
+1256:                     .toList(),
+1257:                 onChanged: (value) {
+1258:                   userId = value;
+1259:                   draft = draft.copyWith(transferUserId: value ?? '');
+1260:                   unawaited(controller.updateDraft(event.id, draft));
+1261:                 },
+1262:               ),
+1263:               const SizedBox(height: 12),
+1264:               TextField(
+1265:                 controller: reason,
+1266:                 minLines: 2,
+1267:                 maxLines: 4,
+1268:                 decoration: InputDecoration(
+1269:                   labelText: '转交原因',
+1270:                   errorText: error,
+1271:                 ),
+1272:                 onChanged: (value) {
+1273:                   draft = draft.copyWith(transferReason: value);
+1274:                   unawaited(controller.updateDraft(event.id, draft));
+1275:                 },
+1276:               ),
+1277:               if (controller.operators.isEmpty)
+1278:                 const Padding(
+1279:                   padding: EdgeInsets.only(top: 10),
+1280:                   child: Text(
+1281:                     '当前厂站没有其他可转交值班人员。',
+1282:                     style: TextStyle(color: WearColors.muted),
+1283:                   ),
+1284:                 ),
+1285:             ],
+1286:           ),
+1287:           actions: [
+1288:             TextButton(
+1289:               onPressed: () => Navigator.pop(dialogContext, false),
+1290:               child: const Text('取消'),
+1291:             ),
+1292:             FilledButton(
+1293:               onPressed: controller.operators.isEmpty
+1294:                   ? null
+1295:                   : () {
+1296:                       if (userId == null || reason.text.trim().isEmpty) {
+1297:                         setDialog(() => error = '请选择人员并填写转交原因');
+1298:                         return;
+1299:                       }
+1300:                       Navigator.pop(dialogContext, true);
+1301:                     },
+1302:               child: const Text('确认转交'),
+1303:             ),
+1304:           ],
+1305:         ),
+1306:       ),
+1307:     );
+1308:     reason.dispose();
+1309:     if (confirmed == true && mounted) {
+1310:       await _execute(controller, EventCommand.transfer);
+1311:     }
+1312:   }
+1313: 
+1314:   Future<void> _assignTask(EventController controller) async {
+1315:     FocusScope.of(context).unfocus();
+1316:     await controller.loadTaskCandidates();
+1317:     if (!mounted || controller.selected == null) return;
+1318:     final event = controller.selected!;
+1319:     var selectedTaskId = controller.draftFor(event.id).taskId;
+1320:     final confirmed = await showDialog<bool>(
+1321:       context: context,
+1322:       builder: (dialogContext) => StatefulBuilder(
+1323:         builder: (context, setDialog) {
+1324:           final pageCount = controller.taskCandidateTotal == 0
+1325:               ? 1
+1326:               : ((controller.taskCandidateTotal - 1) ~/ 10) + 1;
+1327:           return PopScope(
+1328:             canPop: !controller.writing && !controller.taskCandidatesLoading,
+1329:             child: AlertDialog(
+1330:               title: const Text('确认事件关联任务'),
+1331:               content: SizedBox(
+1332:                 width: double.maxFinite,
+1333:                 child: Column(
+1334:                   mainAxisSize: MainAxisSize.min,
+1335:                   children: [
+1336:                     const Text(
+1337:                       '当前事件存在多个候选任务，请人工核对后选择。系统不会自动指定。',
+1338:                       style: TextStyle(color: WearColors.muted),
+1339:                     ),
+1340:                     const SizedBox(height: 10),
+1341:                     if (controller.taskCandidatesLoading)
+1342:                       const LinearProgressIndicator(minHeight: 3)
+1343:                     else if (controller.taskCandidates.isEmpty)
+1344:                       const WearEmpty(title: '当前页没有可选任务')
+1345:                     else
+1346:                       Flexible(
+1347:                         child: ListView(
+1348:                           shrinkWrap: true,
+1349:                           children: controller.taskCandidates
+1350:                               .map(
+1351:                                 (task) => ListTile(
+1352:                                   selected: selectedTaskId == task.id,
+1353:                                   leading: Icon(
+1354:                                     selectedTaskId == task.id
+1355:                                         ? Icons.radio_button_checked
+1356:                                         : Icons.radio_button_off,
+1357:                                     color: selectedTaskId == task.id
+1358:                                         ? WearColors.primary
+1359:                                         : WearColors.muted,
+1360:                                   ),
+1361:                                   title: Text(
+1362:                                     task.title.isEmpty
+1363:                                         ? '任务 #${task.id}'
+1364:                                         : task.title,
+1365:                                   ),
+1366:                                   subtitle: Text(
+1367:                                     '${_taskStatusLabel(task.status)}${task.spaceName.isEmpty ? '' : ' · ${task.spaceName}'}${task.demo ? ' · 演示' : ''}',
+1368:                                   ),
+1369:                                   onTap: () {
+1370:                                     setDialog(() => selectedTaskId = task.id);
+1371:                                     unawaited(
+1372:                                       controller.updateDraft(
+1373:                                         event.id,
+1374:                                         controller
+1375:                                             .draftFor(event.id)
+1376:                                             .copyWith(taskId: task.id),
+1377:                                       ),
+1378:                                     );
+1379:                                   },
+1380:                                 ),
+1381:                               )
+1382:                               .toList(),
+1383:                         ),
+1384:                       ),
+1385:                     Row(
+1386:                       mainAxisAlignment: MainAxisAlignment.center,
+1387:                       children: [
+1388:                         IconButton(
+1389:                           tooltip: '上一页任务',
+1390:                           onPressed:
+1391:                               controller.taskCandidateCurrent > 1 &&
+1392:                                   !controller.taskCandidatesLoading
+1393:                               ? () async {
+1394:                                   await controller.loadTaskCandidates(
+1395:                                     current:
+1396:                                         controller.taskCandidateCurrent - 1,
+1397:                                   );
+1398:                                   if (dialogContext.mounted) setDialog(() {});
+1399:                                 }
+1400:                               : null,
+1401:                           icon: const Icon(Icons.chevron_left),
+1402:                         ),
+1403:                         Text('${controller.taskCandidateCurrent} / $pageCount'),
+1404:                         IconButton(
+1405:                           tooltip: '下一页任务',
+1406:                           onPressed:
+1407:                               controller.taskCandidateCurrent < pageCount &&
+1408:                                   !controller.taskCandidatesLoading
+1409:                               ? () async {
+1410:                                   await controller.loadTaskCandidates(
+1411:                                     current:
+1412:                                         controller.taskCandidateCurrent + 1,
+1413:                                   );
+1414:                                   if (dialogContext.mounted) setDialog(() {});
+1415:                                 }
+1416:                               : null,
+1417:                           icon: const Icon(Icons.chevron_right),
+1418:                         ),
+1419:                       ],
+1420:                     ),
+1421:                   ],
+1422:                 ),
+1423:               ),
+1424:               actions: [
+1425:                 TextButton(
+1426:                   onPressed: () => Navigator.pop(dialogContext, false),
+1427:                   child: const Text('取消'),
+1428:                 ),
+1429:                 FilledButton(
+1430:                   onPressed: selectedTaskId.isEmpty
+1431:                       ? null
+1432:                       : () => Navigator.pop(dialogContext, true),
+1433:                   child: const Text('确认关联'),
+1434:                 ),
+1435:               ],
+1436:             ),
+1437:           );
+1438:         },
+1439:       ),
+1440:     );
+1441:     if (confirmed == true && mounted) {
+1442:       await _execute(controller, EventCommand.assignTask);
+1443:     }
+1444:   }
+1445: 
+1446:   Future<void> _showFilters(EventController controller) async {
+1447:     FocusScope.of(context).unfocus();
+1448:     var status = controller.filters.status;
+1449:     var type = controller.filters.type;
+1450:     final person = TextEditingController(text: controller.filters.personId);
+1451:     final task = TextEditingController(text: controller.filters.taskId);
+1452:     final claimant = TextEditingController(
+1453:       text: controller.filters.claimantUserId,
+1454:     );
+1455:     var escalated = controller.filters.escalated;
+1456:     final result = await showModalBottomSheet<EventFilters>(
+1457:       context: context,
+1458:       isScrollControlled: true,
+1459:       builder: (sheetContext) => StatefulBuilder(
+1460:         builder: (context, setSheet) => SafeArea(
+1461:           child: Padding(
+1462:             padding: EdgeInsets.fromLTRB(
+1463:               18,
+1464:               18,
+1465:               18,
+1466:               18 + MediaQuery.viewInsetsOf(context).bottom,
+1467:             ),
+1468:             child: SingleChildScrollView(
+1469:               child: Column(
+1470:                 crossAxisAlignment: CrossAxisAlignment.stretch,
+1471:                 children: [
+1472:                   const Text(
+1473:                     '筛选事件',
+1474:                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+1475:                   ),
+1476:                   const SizedBox(height: 16),
+1477:                   DropdownButtonFormField<String>(
+1478:                     initialValue: status,
+1479:                     decoration: const InputDecoration(labelText: '状态'),
+1480:                     items: _statuses.entries
+1481:                         .map(
+1482:                           (entry) => DropdownMenuItem(
+1483:                             value: entry.key,
+1484:                             child: Text(entry.value),
+1485:                           ),
+1486:                         )
+1487:                         .toList(),
+1488:                     onChanged: (value) =>
+1489:                         setSheet(() => status = value ?? 'active'),
+1490:                   ),
+1491:                   const SizedBox(height: 12),
+1492:                   DropdownButtonFormField<String>(
+1493:                     initialValue: type,
+1494:                     decoration: const InputDecoration(labelText: '类型'),
+1495:                     items: _types.entries
+1496:                         .map(
+1497:                           (entry) => DropdownMenuItem(
+1498:                             value: entry.key,
+1499:                             child: Text(entry.value),
+1500:                           ),
+1501:                         )
+1502:                         .toList(),
+1503:                     onChanged: (value) => setSheet(() => type = value ?? ''),
+1504:                   ),
+1505:                   const SizedBox(height: 12),
+1506:                   TextField(
+1507:                     controller: person,
+1508:                     decoration: const InputDecoration(labelText: '人员 ID（可选）'),
+1509:                   ),
+1510:                   const SizedBox(height: 12),
+1511:                   TextField(
+1512:                     controller: task,
+1513:                     decoration: const InputDecoration(labelText: '任务 ID（可选）'),
+1514:                   ),
+1515:                   const SizedBox(height: 12),
+1516:                   TextField(
+1517:                     controller: claimant,
+1518:                     decoration: const InputDecoration(
+1519:                       labelText: '认领人用户 ID（可选）',
+1520:                     ),
+1521:                   ),
+1522:                   SwitchListTile(
+1523:                     contentPadding: EdgeInsets.zero,
+1524:                     value: escalated,
+1525:                     title: const Text('仅看已升级事件'),
+1526:                     onChanged: (value) => setSheet(() => escalated = value),
+1527:                   ),
+1528:                   const SizedBox(height: 18),
+1529:                   FilledButton(
+1530:                     onPressed: () => Navigator.pop(
+1531:                       sheetContext,
+1532:                       EventFilters(
+1533:                         status: status,
+1534:                         type: type,
+1535:                         personId: person.text.trim(),
+1536:                         taskId: task.text.trim(),
+1537:                         claimantUserId: claimant.text.trim(),
+1538:                         escalated: escalated,
+1539:                       ),
+1540:                     ),
+1541:                     child: const Text('应用筛选'),
+1542:                   ),
+1543:                 ],
+1544:               ),
+1545:             ),
+1546:           ),
+1547:         ),
+1548:       ),
+1549:     );
+1550:     person.dispose();
+1551:     task.dispose();
+1552:     claimant.dispose();
+1553:     if (result != null && mounted) await controller.setFilters(result);
+1554:   }
+1555: }
+1556: 
+1557: const _statuses = {
+1558:   'active': '未关闭',
+1559:   'open': '待认领',
+1560:   'claimed': '已认领',
+1561:   'handling': '处置中',
+1562:   'pending_review': '待复核',
+1563:   'closed': '已关闭',
+1564: };
+1565: 
+1566: const _types = {
+1567:   '': '全部类型',
+1568:   'sos': 'SOS 求助',
+1569:   'fall': '跌倒',
+1570:   'impact': '撞击',
+1571:   'geofence': '围栏',
+1572:   'realtime': '实时告警',
+1573: };
+1574: 
+1575: String _known(String value) => value.isEmpty ? '未知' : value;
+1576: String _statusLabel(String value) =>
+1577:     _statuses[value] ?? (value.isEmpty ? '未知状态' : value);
+1578: String _typeLabel(String value) =>
+1579:     _types[value] ?? (value.isEmpty ? '全部类型' : value);
+1580: String _actionLabel(String value) =>
+1581:     const {
+1582:       'ack': '确认看见',
+1583:       'claim': '认领',
+1584:       'handle': '处置',
+1585:       'transfer': '转交',
+1586:       'review': '复核',
+1587:       'close': '关闭',
+1588:       'reopen': '重开',
+1589:       'escalate': '升级',
+1590:     }[value] ??
+1591:     value;
+1592: String _locationLabel(String value) =>
+1593:     const {'ok': '定位正常', 'stale': '定位已过期', 'unknown': '定位质量未知'}[value] ??
+1594:     '定位质量未知';
+1595: String _taskStatusLabel(String value) =>
+1596:     const {
+1597:       'draft': '草稿',
+1598:       'ready': '待开始',
+1599:       'in_progress': '进行中',
+1600:       'paused': '已暂停',
+1601:       'ended': '已结束',
+1602:     }[value] ??
+1603:     (value.isEmpty ? '状态未知' : value);
+1604: 
+1605: Color _eventColor(WearEvent event) =>
+1606:     event.type == 'sos' ? WearColors.danger : WearColors.warning;
+1607: Color _statusColor(String status) => switch (status) {
+1608:   'closed' => WearColors.muted,
+1609:   'pending_review' => WearColors.warning,
+1610:   'open' => WearColors.danger,
+1611:   _ => WearColors.primary,
+1612: };

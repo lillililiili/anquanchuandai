@@ -104,6 +104,20 @@ void main() {
                       'activeTasks': [task],
                     });
                   }
+                  if (request.path == '/api/v1/people') {
+                    return reply({
+                      'records': [
+                        {'id': '77', 'name': '真实监护人', 'personCode': 'P-77'},
+                      ],
+                      'total': 1,
+                    });
+                  }
+                  if (request.path == '/api/v1/work-tasks') {
+                    return reply({
+                      'records': [task],
+                      'total': 1,
+                    });
+                  }
                   if (request.path == '/api/v1/work-tasks/41') {
                     return reply(task);
                   }
@@ -148,7 +162,7 @@ void main() {
           WearApp(session: session, enableNotifications: false),
         );
         await tester.pumpAndSettle();
-        expect(find.text('查看待认领事件'), findsOneWidget);
+        expect(find.text('查看待认领事件'), findsNothing);
         expect(find.text('发起值班交接'), findsOneWidget);
         await tester.tap(find.byKey(const ValueKey('view-current-work')));
         await tester.pumpAndSettle();
@@ -199,7 +213,7 @@ void main() {
               .personId,
           '77',
         );
-        expect(find.text('1 人'), findsOneWidget);
+        expect(find.text('1 项'), findsOneWidget);
         expect(calls.where((r) => r.method != 'GET'), isEmpty);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();

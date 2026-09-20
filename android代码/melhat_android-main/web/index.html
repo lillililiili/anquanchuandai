@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><base href="$FLUTTER_BASE_HREF"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>ROLLING · 安卓页面演示</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#eaf2fa;color:#152449;font-family:Arial,"Microsoft YaHei",sans-serif}body{display:flex;align-items:center;justify-content:center}.phone{width:360px;height:640px;position:relative;flex:none;overflow:hidden;box-shadow:0 18px 65px #345a7a30;background:#eff6fd}.status{height:24px;padding:3px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#59666c;background:#edf4f9}#app{width:360px;height:616px;position:relative}#loading{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:12px;background:#edf6fe}#loading b{color:#307cff;font-size:24px}.guide{position:fixed;left:30px;top:30px;width:230px;font-size:14px;line-height:1.8}.guide strong{font-size:20px}.guide p{color:#607290}.guide button{padding:9px 16px;background:white;border:1px solid #d2dfea;border-radius:8px;color:#24529a;cursor:pointer}@media(max-width:950px){.guide{display:none}}
+</style></head><body>
+<aside class="guide"><strong>ROLLING 安卓展示</strong><p>与当前安卓端共用页面组件。<br>账号、密码、验证码任意填写，即可体验登录及页面跳转。</p><p>所有数据为本地示例，不连接业务服务器。滚动手机区域查看完整页面。</p><button onclick="location.hash='/login';location.reload()">重新体验登录</button></aside>
+<main class="phone" id="phone"><div class="status"><span>10:42</span><span aria-label="信号及电量">▰ ◢ ▮</span></div><div id="app"><div id="loading"><b>ROLLING</b><span>正在打开安卓展示页面…</span></div></div></main>
+<script>
+function fit(){const s=Math.min(innerWidth/360,(innerHeight-(innerWidth>600?40:0))/640);document.querySelector('#phone').style.transform=`scale(${s})`;}
+addEventListener('resize',fit);fit();
+if(location.protocol==='file:'){document.querySelector('#loading').innerHTML='<b>ROLLING</b><span>请双击同目录的「打开安卓演示.cmd」<br>即可自动启动并打开网页。</span>';}else{const s=document.createElement('script');s.src='flutter_bootstrap.js';document.body.appendChild(s);}
+</script></body></html>

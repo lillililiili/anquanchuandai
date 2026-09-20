@@ -1,0 +1,6144 @@
+{
+  "capturedAt": "2026-09-18T16:29:10.072396+08:00",
+  "mode": "READ ONLY; no writes",
+  "database": "melhat_local",
+  "counts": [
+    {
+      "count": 12,
+      "table": "demo_compat_record"
+    },
+    {
+      "count": 3,
+      "table": "electronic_fence"
+    },
+    {
+      "count": 6,
+      "table": "file_record"
+    },
+    {
+      "count": 4,
+      "table": "real_time_alarm"
+    },
+    {
+      "count": 6,
+      "table": "safety_hat_info"
+    },
+    {
+      "count": 48,
+      "table": "safety_hat_location_record"
+    },
+    {
+      "count": 4,
+      "table": "sos_alarm_record"
+    },
+    {
+      "count": 10,
+      "table": "sys_dept"
+    },
+    {
+      "count": 8,
+      "table": "sys_role"
+    },
+    {
+      "count": 16,
+      "table": "sys_user"
+    },
+    {
+      "count": 8,
+      "table": "sys_user_role"
+    },
+    {
+      "count": 0,
+      "table": "wear_adapter_alert"
+    },
+    {
+      "count": 0,
+      "table": "wear_asset_audit"
+    },
+    {
+      "count": 2,
+      "table": "wear_assignment"
+    },
+    {
+      "count": 0,
+      "table": "wear_call_session"
+    },
+    {
+      "count": 1,
+      "table": "wear_contractor"
+    },
+    {
+      "count": 10,
+      "table": "wear_device"
+    },
+    {
+      "count": 0,
+      "table": "wear_device_command"
+    },
+    {
+      "count": 6,
+      "table": "wear_device_legacy_hat"
+    },
+    {
+      "count": 0,
+      "table": "wear_device_sample"
+    },
+    {
+      "count": 0,
+      "table": "wear_device_site_transfer"
+    },
+    {
+      "count": 0,
+      "table": "wear_duty_handover"
+    },
+    {
+      "count": 5,
+      "table": "wear_event_action"
+    },
+    {
+      "count": 21,
+      "table": "wear_event_inbox"
+    },
+    {
+      "count": 0,
+      "table": "wear_event_legacy"
+    },
+    {
+      "count": 1,
+      "table": "wear_geo_fence"
+    },
+    {
+      "count": 0,
+      "table": "wear_geo_fence_person"
+    },
+    {
+      "count": 0,
+      "table": "wear_geo_fence_state"
+    },
+    {
+      "count": 0,
+      "table": "wear_idempotency"
+    },
+    {
+      "count": 0,
+      "table": "wear_ingest_raw"
+    },
+    {
+      "count": 8,
+      "table": "wear_person"
+    },
+    {
+      "count": 8,
+      "table": "wear_person_site"
+    },
+    {
+      "count": 3,
+      "table": "wear_product_model"
+    },
+    {
+      "count": 2,
+      "table": "wear_product_type"
+    },
+    {
+      "count": 4,
+      "table": "wear_safety_event"
+    },
+    {
+      "count": 2,
+      "table": "wear_site"
+    },
+    {
+      "count": 9,
+      "table": "wear_site_account"
+    },
+    {
+      "count": 2,
+      "table": "wear_space"
+    },
+    {
+      "count": 2,
+      "table": "wear_team"
+    },
+    {
+      "count": 2,
+      "table": "wear_work_task"
+    },
+    {
+      "count": 0,
+      "table": "wear_work_task_action"
+    },
+    {
+      "count": 1,
+      "table": "wear_work_task_member"
+    },
+    {
+      "count": 2,
+      "table": "wear_work_task_requirement"
+    }
+  ],
+  "schema": [
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "demo_compat_record",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(40)",
+      "table": "demo_compat_record",
+      "column": "module_key",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(80)",
+      "table": "demo_compat_record",
+      "column": "business_key",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "json",
+      "table": "demo_compat_record",
+      "column": "payload",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "demo_compat_record",
+      "column": "create_time",
+      "comment": "",
+      "default": "CURRENT_TIMESTAMP",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "demo_compat_record",
+      "column": "update_time",
+      "comment": "",
+      "default": "CURRENT_TIMESTAMP",
+      "nullable": "NO"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "electronic_fence",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(100)",
+      "table": "electronic_fence",
+      "column": "fence_name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(32)",
+      "table": "electronic_fence",
+      "column": "fence_type",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "electronic_fence",
+      "column": "fence_shape",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "electronic_fence",
+      "column": "alert_count",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "electronic_fence",
+      "column": "status",
+      "comment": "",
+      "default": "1",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "electronic_fence",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "electronic_fence",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "electronic_fence",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "electronic_fence",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "electronic_fence",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "file_record",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(255)",
+      "table": "file_record",
+      "column": "file_name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(32)",
+      "table": "file_record",
+      "column": "file_type",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "file_record",
+      "column": "file_url",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "file_record",
+      "column": "hat_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "file_record",
+      "column": "hat_number",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "file_record",
+      "column": "user_name",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,2)",
+      "table": "file_record",
+      "column": "file_size",
+      "comment": "",
+      "default": "0.00",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "file_record",
+      "column": "upload_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "file_record",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "file_record",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "file_record",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "file_record",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "file_record",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "real_time_alarm",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "real_time_alarm",
+      "column": "user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "real_time_alarm",
+      "column": "user_name",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "real_time_alarm",
+      "column": "hat_number",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "real_time_alarm",
+      "column": "hat_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "real_time_alarm",
+      "column": "alarm_type",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "real_time_alarm",
+      "column": "alarm_level",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "real_time_alarm",
+      "column": "alarm_start_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "real_time_alarm",
+      "column": "alarm_end_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(1000)",
+      "table": "real_time_alarm",
+      "column": "description",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "int",
+      "table": "real_time_alarm",
+      "column": "is_handled",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "real_time_alarm",
+      "column": "handle_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "real_time_alarm",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "real_time_alarm",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "real_time_alarm",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "real_time_alarm",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "real_time_alarm",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "safety_hat_info",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "safety_hat_info",
+      "column": "site_id",
+      "comment": "所属厂站",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "UNI",
+      "type": "varchar(64)",
+      "table": "safety_hat_info",
+      "column": "hat_number",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "safety_hat_info",
+      "column": "bind_user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_info",
+      "column": "bind_user_name",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "safety_hat_info",
+      "column": "bind_group_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(100)",
+      "table": "safety_hat_info",
+      "column": "bind_group",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "safety_hat_info",
+      "column": "bind_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(20)",
+      "table": "safety_hat_info",
+      "column": "status",
+      "comment": "",
+      "default": "offline",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,2)",
+      "table": "safety_hat_info",
+      "column": "cpu_usage",
+      "comment": "",
+      "default": "0.00",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,2)",
+      "table": "safety_hat_info",
+      "column": "storage_usage",
+      "comment": "",
+      "default": "0.00",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,2)",
+      "table": "safety_hat_info",
+      "column": "electricity_usage",
+      "comment": "",
+      "default": "0.00",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "safety_hat_info",
+      "column": "alarm_count",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "safety_hat_info",
+      "column": "video_url",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "text",
+      "table": "safety_hat_info",
+      "column": "rtc_play_config",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_info",
+      "column": "uid",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "safety_hat_info",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_info",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "safety_hat_info",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_info",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "safety_hat_info",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "safety_hat_location_record",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "safety_hat_location_record",
+      "column": "hat_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_location_record",
+      "column": "hat_number",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "safety_hat_location_record",
+      "column": "user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_location_record",
+      "column": "user_name",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "safety_hat_location_record",
+      "column": "lng",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "safety_hat_location_record",
+      "column": "lat",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "safety_hat_location_record",
+      "column": "speed",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "safety_hat_location_record",
+      "column": "timestamp",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "safety_hat_location_record",
+      "column": "altitude",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "safety_hat_location_record",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "safety_hat_location_record",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_location_record",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "safety_hat_location_record",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "safety_hat_location_record",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "sos_alarm_record",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "sos_alarm_record",
+      "column": "user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sos_alarm_record",
+      "column": "user_name",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "sos_alarm_record",
+      "column": "hat_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sos_alarm_record",
+      "column": "hat_number",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "sos_alarm_record",
+      "column": "lng",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "sos_alarm_record",
+      "column": "lat",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sos_alarm_record",
+      "column": "call_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(1000)",
+      "table": "sos_alarm_record",
+      "column": "description",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "tinyint",
+      "table": "sos_alarm_record",
+      "column": "process_status",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sos_alarm_record",
+      "column": "handler",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sos_alarm_record",
+      "column": "handle_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sos_alarm_record",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sos_alarm_record",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sos_alarm_record",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sos_alarm_record",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sos_alarm_record",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "sys_dept",
+      "column": "dept_id",
+      "comment": "部门id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "sys_dept",
+      "column": "parent_id",
+      "comment": "父部门id",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(50)",
+      "table": "sys_dept",
+      "column": "ancestors",
+      "comment": "祖级列表",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(30)",
+      "table": "sys_dept",
+      "column": "dept_name",
+      "comment": "部门名称",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "UNI",
+      "type": "varchar(64)",
+      "table": "sys_dept",
+      "column": "dept_code",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "sys_dept",
+      "column": "order_num",
+      "comment": "显示顺序",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(20)",
+      "table": "sys_dept",
+      "column": "leader",
+      "comment": "负责人",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(11)",
+      "table": "sys_dept",
+      "column": "phone",
+      "comment": "联系电话",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(50)",
+      "table": "sys_dept",
+      "column": "email",
+      "comment": "邮箱",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_dept",
+      "column": "status",
+      "comment": "部门状态（0正常 1停用）",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_dept",
+      "column": "del_flag",
+      "comment": "删除标志（0代表存在 2代表删除）",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_dept",
+      "column": "create_by",
+      "comment": "创建者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_dept",
+      "column": "create_time",
+      "comment": "创建时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_dept",
+      "column": "update_by",
+      "comment": "更新者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_dept",
+      "column": "update_time",
+      "comment": "更新时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "sys_role",
+      "column": "role_id",
+      "comment": "角色ID",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(30)",
+      "table": "sys_role",
+      "column": "role_name",
+      "comment": "角色名称",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(100)",
+      "table": "sys_role",
+      "column": "role_key",
+      "comment": "角色权限字符串",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "sys_role",
+      "column": "role_sort",
+      "comment": "显示顺序",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_role",
+      "column": "data_scope",
+      "comment": "数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）",
+      "default": "1",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "sys_role",
+      "column": "menu_check_strictly",
+      "comment": "菜单树选择项是否关联显示",
+      "default": "1",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "sys_role",
+      "column": "dept_check_strictly",
+      "comment": "部门树选择项是否关联显示",
+      "default": "1",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_role",
+      "column": "status",
+      "comment": "角色状态（0正常 1停用）",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_role",
+      "column": "del_flag",
+      "comment": "删除标志（0代表存在 2代表删除）",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_role",
+      "column": "create_by",
+      "comment": "创建者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_role",
+      "column": "create_time",
+      "comment": "创建时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_role",
+      "column": "update_by",
+      "comment": "更新者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_role",
+      "column": "update_time",
+      "comment": "更新时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "sys_role",
+      "column": "remark",
+      "comment": "备注",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "sys_user",
+      "column": "user_id",
+      "comment": "用户ID",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "sys_user",
+      "column": "dept_id",
+      "comment": "部门ID",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(30)",
+      "table": "sys_user",
+      "column": "user_name",
+      "comment": "用户账号",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(30)",
+      "table": "sys_user",
+      "column": "nick_name",
+      "comment": "用户昵称",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(2)",
+      "table": "sys_user",
+      "column": "user_type",
+      "comment": "用户类型（00系统用户）",
+      "default": "00",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(50)",
+      "table": "sys_user",
+      "column": "email",
+      "comment": "用户邮箱",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(11)",
+      "table": "sys_user",
+      "column": "phonenumber",
+      "comment": "手机号码",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_user",
+      "column": "sex",
+      "comment": "用户性别（0男 1女 2未知）",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(100)",
+      "table": "sys_user",
+      "column": "avatar",
+      "comment": "头像地址",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(100)",
+      "table": "sys_user",
+      "column": "password",
+      "comment": "密码",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_user",
+      "column": "status",
+      "comment": "帐号状态（0正常 1停用）",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "sys_user",
+      "column": "del_flag",
+      "comment": "删除标志（0代表存在 2代表删除）",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "sys_user",
+      "column": "login_ip",
+      "comment": "最后登录IP",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_user",
+      "column": "login_date",
+      "comment": "最后登录时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_user",
+      "column": "create_by",
+      "comment": "创建者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_user",
+      "column": "create_time",
+      "comment": "创建时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_user",
+      "column": "update_by",
+      "comment": "更新者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_user",
+      "column": "update_time",
+      "comment": "更新时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "sys_user",
+      "column": "remark",
+      "comment": "备注",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(20)",
+      "table": "sys_user",
+      "column": "result",
+      "comment": "审批结果",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_user",
+      "column": "approver",
+      "comment": "审批人",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "sys_user",
+      "column": "approval_time",
+      "comment": "审批时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(20)",
+      "table": "sys_user",
+      "column": "birthday",
+      "comment": "生日",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "sys_user",
+      "column": "identification_card",
+      "comment": "身份证号",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_user",
+      "column": "wechat",
+      "comment": "微信号",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(255)",
+      "table": "sys_user",
+      "column": "native_place",
+      "comment": "籍贯",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "sys_user",
+      "column": "address",
+      "comment": "家庭住址",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(255)",
+      "table": "sys_user",
+      "column": "card_is",
+      "comment": "身份证正面",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(255)",
+      "table": "sys_user",
+      "column": "card_the",
+      "comment": "身份证反面",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(255)",
+      "table": "sys_user",
+      "column": "shackup_card",
+      "comment": "暂住证",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "text",
+      "table": "sys_user",
+      "column": "electronic_signature",
+      "comment": "电子签名",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "sys_user",
+      "column": "sip_id",
+      "comment": "视频通话身份",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "sys_user",
+      "column": "assist_group",
+      "comment": "协助组",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "sys_user_role",
+      "column": "user_id",
+      "comment": "用户ID",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "sys_user_role",
+      "column": "role_id",
+      "comment": "角色ID",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_adapter_alert",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "wear_adapter_alert",
+      "column": "kind",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(1000)",
+      "table": "wear_adapter_alert",
+      "column": "summary",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "datetime",
+      "table": "wear_adapter_alert",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_asset_audit",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "wear_asset_audit",
+      "column": "action",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_asset_audit",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_asset_audit",
+      "column": "assignment_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_asset_audit",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_asset_audit",
+      "column": "operator",
+      "comment": "",
+      "default": "",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(1000)",
+      "table": "wear_asset_audit",
+      "column": "summary",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_asset_audit",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_assignment",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_assignment",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_assignment",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_assignment",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_assignment",
+      "column": "issued_at",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_assignment",
+      "column": "returned_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_assignment",
+      "column": "issued_by",
+      "comment": "",
+      "default": "",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_assignment",
+      "column": "returned_by",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_assignment",
+      "column": "return_reason",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_assignment",
+      "column": "return_kind",
+      "comment": "normal/recover",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_assignment",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_assignment",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_assignment",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_assignment",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_assignment",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_call_session",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_call_session",
+      "column": "kind",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_call_session",
+      "column": "event_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_call_session",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_call_session",
+      "column": "sn",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_call_session",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_call_session",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_call_session",
+      "column": "requester_user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_call_session",
+      "column": "status",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(64)",
+      "table": "wear_call_session",
+      "column": "channel_name",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_call_session",
+      "column": "agora_uid",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_call_session",
+      "column": "video",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_call_session",
+      "column": "demo",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_call_session",
+      "column": "expires_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_call_session",
+      "column": "started_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_call_session",
+      "column": "connected_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_call_session",
+      "column": "ended_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_call_session",
+      "column": "fail_reason",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_call_session",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_call_session",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_call_session",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_call_session",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_call_session",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_contractor",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "wear_contractor",
+      "column": "name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_contractor",
+      "column": "status",
+      "comment": "0正常 1停用",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_contractor",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_contractor",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_contractor",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_contractor",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_contractor",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_device",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(64)",
+      "table": "wear_device",
+      "column": "manufacturer_code",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device",
+      "column": "sn",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_device",
+      "column": "model_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_device",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_device",
+      "column": "asset_status",
+      "comment": "unassigned/in_stock/maintenance/disabled/scrapped",
+      "default": "unassigned",
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_device",
+      "column": "current_assignment_id",
+      "comment": "当前有效领用",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device",
+      "column": "external_code",
+      "comment": "厂商标识，如帽号，不是平台ID",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_device",
+      "column": "online",
+      "comment": "连接状态，空=未知",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,2)",
+      "table": "wear_device",
+      "column": "battery",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device",
+      "column": "last_reported_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device",
+      "column": "last_telemetry_at",
+      "comment": "已采纳遥测发生时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_device",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_device",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_device",
+      "column": "remark",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_device_command",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_device_command",
+      "column": "kind",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_device_command",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device_command",
+      "column": "sn",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_device_command",
+      "column": "call_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_device_command",
+      "column": "event_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(1000)",
+      "table": "wear_device_command",
+      "column": "payload",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_device_command",
+      "column": "status",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_device_command",
+      "column": "vendor_msg",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device_command",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device_command",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_device_legacy_hat",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "UNI",
+      "type": "bigint",
+      "table": "wear_device_legacy_hat",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "UNI",
+      "type": "bigint",
+      "table": "wear_device_legacy_hat",
+      "column": "hat_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device_legacy_hat",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device_legacy_hat",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_device_sample",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_device_sample",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device_sample",
+      "column": "occurred_at",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device_sample",
+      "column": "received_at",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,7)",
+      "table": "wear_device_sample",
+      "column": "lat",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,7)",
+      "table": "wear_device_sample",
+      "column": "lng",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "wear_device_sample",
+      "column": "altitude",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "wear_device_sample",
+      "column": "speed",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(8,2)",
+      "table": "wear_device_sample",
+      "column": "battery",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(8)",
+      "table": "wear_device_sample",
+      "column": "online",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_device_sample",
+      "column": "location_quality",
+      "comment": "",
+      "default": "unknown",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device_sample",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_device_site_transfer",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_device_site_transfer",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_device_site_transfer",
+      "column": "from_site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_device_site_transfer",
+      "column": "to_site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_device_site_transfer",
+      "column": "operator",
+      "comment": "",
+      "default": "",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_device_site_transfer",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_duty_handover",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_duty_handover",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_duty_handover",
+      "column": "from_user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_duty_handover",
+      "column": "to_user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_duty_handover",
+      "column": "status",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(2000)",
+      "table": "wear_duty_handover",
+      "column": "payload_json",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_duty_handover",
+      "column": "comment",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_duty_handover",
+      "column": "confirmed_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_duty_handover",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_duty_handover",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_duty_handover",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_duty_handover",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_duty_handover",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_event_action",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_event_action",
+      "column": "event_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_event_action",
+      "column": "action",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_event_action",
+      "column": "actor",
+      "comment": "",
+      "default": "",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_event_action",
+      "column": "reason",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(24)",
+      "table": "wear_event_action",
+      "column": "from_status",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(24)",
+      "table": "wear_event_action",
+      "column": "to_status",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_event_action",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_event_inbox",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_event_inbox",
+      "column": "user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_event_inbox",
+      "column": "event_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_event_inbox",
+      "column": "acked",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_event_inbox",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_event_legacy",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(16)",
+      "table": "wear_event_legacy",
+      "column": "source_kind",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_event_legacy",
+      "column": "old_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_event_legacy",
+      "column": "event_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_event_legacy",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_geo_fence",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_geo_fence",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "wear_geo_fence",
+      "column": "name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "text",
+      "table": "wear_geo_fence",
+      "column": "polygon_json",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_geo_fence",
+      "column": "enabled",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_geo_fence",
+      "column": "apply_mode",
+      "comment": "",
+      "default": "all_site",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(8)",
+      "table": "wear_geo_fence",
+      "column": "time_start",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(8)",
+      "table": "wear_geo_fence",
+      "column": "time_end",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_geo_fence",
+      "column": "enter_enabled",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_geo_fence",
+      "column": "leave_enabled",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_geo_fence",
+      "column": "debounce_seconds",
+      "comment": "",
+      "default": "60",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_geo_fence",
+      "column": "rule_version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_geo_fence",
+      "column": "demo",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_geo_fence",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_geo_fence",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_geo_fence",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_geo_fence",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_geo_fence",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_geo_fence_person",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_geo_fence_person",
+      "column": "fence_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_geo_fence_person",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_geo_fence_state",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_geo_fence_state",
+      "column": "fence_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_geo_fence_state",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_geo_fence_state",
+      "column": "inside",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_geo_fence_state",
+      "column": "candidate_inside",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_geo_fence_state",
+      "column": "since",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_geo_fence_state",
+      "column": "last_eval_at",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_idempotency",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(64)",
+      "table": "wear_idempotency",
+      "column": "scope",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_idempotency",
+      "column": "idem_key",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_idempotency",
+      "column": "resource_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_idempotency",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_ingest_raw",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_ingest_raw",
+      "column": "path",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_ingest_raw",
+      "column": "helmet_sn",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_ingest_raw",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(128)",
+      "table": "wear_ingest_raw",
+      "column": "message_key",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_ingest_raw",
+      "column": "received_at",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "mediumtext",
+      "table": "wear_ingest_raw",
+      "column": "payload_json",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_ingest_raw",
+      "column": "auth_ok",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_ingest_raw",
+      "column": "process_status",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_ingest_raw",
+      "column": "error",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_ingest_raw",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_person",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "UNI",
+      "type": "varchar(64)",
+      "table": "wear_person",
+      "column": "person_code",
+      "comment": "工号/外部标识",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_person",
+      "column": "name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_person",
+      "column": "org_dept_id",
+      "comment": "若依部门，仅单位",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_person",
+      "column": "team_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_person",
+      "column": "contractor_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "UNI",
+      "type": "bigint",
+      "table": "wear_person",
+      "column": "account_user_id",
+      "comment": "可选登录账号",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_person",
+      "column": "status",
+      "comment": "0在职 1停用",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "date",
+      "table": "wear_person",
+      "column": "valid_from",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "date",
+      "table": "wear_person",
+      "column": "valid_to",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_person",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_person",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_person",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_person",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_person",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_person",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_person",
+      "column": "remark",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_person_site",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_person_site",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_person_site",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_person_site",
+      "column": "status",
+      "comment": "0有效 1调离",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_person_site",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_person_site",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_person_site",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_person_site",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_product_model",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(32)",
+      "table": "wear_product_model",
+      "column": "type_code",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "UNI",
+      "type": "varchar(64)",
+      "table": "wear_product_model",
+      "column": "model_code",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_product_model",
+      "column": "manufacturer_code",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "wear_product_model",
+      "column": "name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_product_model",
+      "column": "protocol_version",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "text",
+      "table": "wear_product_model",
+      "column": "capabilities",
+      "comment": "JSON: attributes/events/actions",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_product_model",
+      "column": "status",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_product_model",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_product_model",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_product_model",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_product_model",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_product_model",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_product_model",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "varchar(32)",
+      "table": "wear_product_type",
+      "column": "code",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_product_type",
+      "column": "name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_product_type",
+      "column": "status",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_product_type",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_product_type",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_safety_event",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "varchar(32)",
+      "table": "wear_safety_event",
+      "column": "source",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_safety_event",
+      "column": "source_event_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "wear_safety_event",
+      "column": "event_type",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(8)",
+      "table": "wear_safety_event",
+      "column": "severity",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(24)",
+      "table": "wear_safety_event",
+      "column": "status",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_safety_event",
+      "column": "occurred_at",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_safety_event",
+      "column": "received_at",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_safety_event",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_safety_event",
+      "column": "person_code",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_safety_event",
+      "column": "person_name",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_safety_event",
+      "column": "device_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_safety_event",
+      "column": "sn",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_safety_event",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,7)",
+      "table": "wear_safety_event",
+      "column": "location_lat",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "decimal(10,7)",
+      "table": "wear_safety_event",
+      "column": "location_lng",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_safety_event",
+      "column": "location_quality",
+      "comment": "",
+      "default": "unknown",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_safety_event",
+      "column": "claimant_user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_safety_event",
+      "column": "repeat_count",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_safety_event",
+      "column": "escalated",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_safety_event",
+      "column": "rule_version",
+      "comment": "",
+      "default": "s5-1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_safety_event",
+      "column": "demo",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_safety_event",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_safety_event",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_safety_event",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_safety_event",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "MUL",
+      "type": "datetime",
+      "table": "wear_safety_event",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_safety_event",
+      "column": "task_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_safety_event",
+      "column": "task_match",
+      "comment": "",
+      "default": "none",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_safety_event",
+      "column": "fence_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_safety_event",
+      "column": "fence_action",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_site",
+      "column": "id",
+      "comment": "厂站ID",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "UNI",
+      "type": "varchar(64)",
+      "table": "wear_site",
+      "column": "site_code",
+      "comment": "厂站编码",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "wear_site",
+      "column": "name",
+      "comment": "厂站名称",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_site",
+      "column": "status",
+      "comment": "0正常 1停用",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_site",
+      "column": "timezone",
+      "comment": "显示时区",
+      "default": "Asia/Shanghai",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_site",
+      "column": "version",
+      "comment": "乐观锁",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_site",
+      "column": "del_flag",
+      "comment": "0存在 2删除",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_site",
+      "column": "create_by",
+      "comment": "创建者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_site",
+      "column": "create_time",
+      "comment": "创建时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_site",
+      "column": "update_by",
+      "comment": "更新者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_site",
+      "column": "update_time",
+      "comment": "更新时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_site",
+      "column": "remark",
+      "comment": "备注",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_site_account",
+      "column": "id",
+      "comment": "授权ID",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_site_account",
+      "column": "site_id",
+      "comment": "厂站ID",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_site_account",
+      "column": "user_id",
+      "comment": "登录账号",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_site_account",
+      "column": "status",
+      "comment": "0有效 1撤销",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_site_account",
+      "column": "create_by",
+      "comment": "创建者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_site_account",
+      "column": "create_time",
+      "comment": "创建时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_site_account",
+      "column": "update_by",
+      "comment": "更新者",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_site_account",
+      "column": "update_time",
+      "comment": "更新时间",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_space",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_space",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_space",
+      "column": "parent_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_space",
+      "column": "space_type",
+      "comment": "area/facility/floor",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "wear_space",
+      "column": "name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_space",
+      "column": "status",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_space",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_space",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_space",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_space",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_space",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_space",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_team",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_team",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "wear_team",
+      "column": "name",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_team",
+      "column": "status",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "char(1)",
+      "table": "wear_team",
+      "column": "del_flag",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_team",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_team",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_team",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_team",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_work_task",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_work_task",
+      "column": "site_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(128)",
+      "table": "wear_work_task",
+      "column": "title",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_work_task",
+      "column": "work_type",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_work_task",
+      "column": "space_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task",
+      "column": "planned_start",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task",
+      "column": "planned_end",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task",
+      "column": "actual_start",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task",
+      "column": "actual_end",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_work_task",
+      "column": "status",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_work_task",
+      "column": "owner_user_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "bigint",
+      "table": "wear_work_task",
+      "column": "guardian_person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_work_task",
+      "column": "ticket_required",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_work_task",
+      "column": "ticket_no",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_work_task",
+      "column": "ticket_status",
+      "comment": "",
+      "default": "none",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "tinyint(1)",
+      "table": "wear_work_task",
+      "column": "demo",
+      "comment": "",
+      "default": "0",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "int",
+      "table": "wear_work_task",
+      "column": "version",
+      "comment": "",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_work_task",
+      "column": "create_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_work_task",
+      "column": "update_by",
+      "comment": "",
+      "default": "",
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task",
+      "column": "update_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_work_task_action",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_work_task_action",
+      "column": "task_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_work_task_action",
+      "column": "action",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(64)",
+      "table": "wear_work_task_action",
+      "column": "actor",
+      "comment": "",
+      "default": "",
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(500)",
+      "table": "wear_work_task_action",
+      "column": "reason",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_work_task_action",
+      "column": "from_status",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "varchar(16)",
+      "table": "wear_work_task_action",
+      "column": "to_status",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task_action",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_work_task_member",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_work_task_member",
+      "column": "task_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_work_task_member",
+      "column": "person_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "datetime",
+      "table": "wear_work_task_member",
+      "column": "create_time",
+      "comment": "",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "key": "PRI",
+      "type": "bigint",
+      "table": "wear_work_task_requirement",
+      "column": "id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "MUL",
+      "type": "bigint",
+      "table": "wear_work_task_requirement",
+      "column": "task_id",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "key": "",
+      "type": "varchar(32)",
+      "table": "wear_work_task_requirement",
+      "column": "type_code",
+      "comment": "",
+      "default": null,
+      "nullable": "NO"
+    }
+  ],
+  "records": {
+    "wear_adapter_alert": [],
+    "wear_asset_audit": [],
+    "wear_assignment": [
+      {
+        "id": 1,
+        "site_id": 1,
+        "version": 1,
+        "create_by": "demo",
+        "device_id": 9,
+        "issued_at": "2026-09-14 14:29:29.000000",
+        "issued_by": "demo",
+        "person_id": 3,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "return_kind": null,
+        "returned_at": null,
+        "returned_by": null,
+        "update_time": null,
+        "return_reason": null
+      },
+      {
+        "id": 2,
+        "site_id": 1,
+        "version": 1,
+        "create_by": "demo",
+        "device_id": 1,
+        "issued_at": "2026-09-14 14:29:29.000000",
+        "issued_by": "demo",
+        "person_id": 3,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "return_kind": null,
+        "returned_at": null,
+        "returned_by": null,
+        "update_time": null,
+        "return_reason": null
+      }
+    ],
+    "wear_call_session": [],
+    "wear_contractor": [
+      {
+        "id": 1,
+        "name": "演示承包商甲",
+        "status": "0",
+        "del_flag": "0",
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      }
+    ],
+    "wear_device": [
+      {
+        "id": 1,
+        "sn": "MH-DEMO-001",
+        "online": null,
+        "remark": "S3 由演示帽子映射",
+        "battery": null,
+        "site_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "issued",
+        "external_code": "MH-DEMO-001",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": 2
+      },
+      {
+        "id": 2,
+        "sn": "MH-DEMO-002",
+        "online": null,
+        "remark": "S3 由演示帽子映射",
+        "battery": null,
+        "site_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "in_stock",
+        "external_code": "MH-DEMO-002",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      },
+      {
+        "id": 3,
+        "sn": "MH-DEMO-003",
+        "online": null,
+        "remark": "S3 由演示帽子映射",
+        "battery": null,
+        "site_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "in_stock",
+        "external_code": "MH-DEMO-003",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      },
+      {
+        "id": 4,
+        "sn": "MH-DEMO-004",
+        "online": null,
+        "remark": "S3 由演示帽子映射",
+        "battery": null,
+        "site_id": 2,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "in_stock",
+        "external_code": "MH-DEMO-004",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      },
+      {
+        "id": 5,
+        "sn": "MH-DEMO-005",
+        "online": null,
+        "remark": "S3 由演示帽子映射",
+        "battery": null,
+        "site_id": 2,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "in_stock",
+        "external_code": "MH-DEMO-005",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      },
+      {
+        "id": 6,
+        "sn": "MH-DEMO-006",
+        "online": null,
+        "remark": "S3 由演示帽子映射",
+        "battery": null,
+        "site_id": 2,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "in_stock",
+        "external_code": "MH-DEMO-006",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      },
+      {
+        "id": 8,
+        "sn": "MH-DEMO-NOV-A",
+        "online": null,
+        "remark": "S3 无视频型号",
+        "battery": null,
+        "site_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 2,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "in_stock",
+        "external_code": "MH-DEMO-NOV-A",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      },
+      {
+        "id": 9,
+        "sn": "BL-DEMO-001",
+        "online": null,
+        "remark": "S3 演示安全带 A",
+        "battery": null,
+        "site_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 3,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "issued",
+        "external_code": "BL-DEMO-001",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": 1
+      },
+      {
+        "id": 10,
+        "sn": "BL-DEMO-002",
+        "online": null,
+        "remark": "S3 演示安全带 B",
+        "battery": null,
+        "site_id": 2,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 3,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "in_stock",
+        "external_code": "BL-DEMO-002",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      },
+      {
+        "id": 11,
+        "sn": "MH-UNASSIGNED",
+        "online": null,
+        "remark": "S3 未分配，仅平台管理员可见",
+        "battery": null,
+        "site_id": null,
+        "version": 1,
+        "del_flag": "0",
+        "model_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "asset_status": "unassigned",
+        "external_code": "MH-UNASSIGNED",
+        "last_reported_at": null,
+        "last_telemetry_at": null,
+        "manufacturer_code": "MELHAT",
+        "current_assignment_id": null
+      }
+    ],
+    "wear_device_command": [],
+    "wear_device_legacy_hat": [
+      {
+        "id": 1,
+        "hat_id": 1,
+        "create_by": "demo",
+        "device_id": 1,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 2,
+        "hat_id": 2,
+        "create_by": "demo",
+        "device_id": 2,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 3,
+        "hat_id": 3,
+        "create_by": "demo",
+        "device_id": 3,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 4,
+        "hat_id": 4,
+        "create_by": "demo",
+        "device_id": 4,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 5,
+        "hat_id": 5,
+        "create_by": "demo",
+        "device_id": 5,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 6,
+        "hat_id": 6,
+        "create_by": "demo",
+        "device_id": 6,
+        "create_time": "2026-09-14 14:29:29.000000"
+      }
+    ],
+    "wear_device_sample": [],
+    "wear_device_site_transfer": [],
+    "wear_duty_handover": [],
+    "wear_event_action": [
+      {
+        "id": 1,
+        "actor": "demo",
+        "action": "close",
+        "reason": "seed closed",
+        "event_id": 4,
+        "to_status": "closed",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "from_status": "handling"
+      },
+      {
+        "id": 2,
+        "actor": "system",
+        "action": "escalate",
+        "reason": "SOS超过5分钟未认领",
+        "event_id": 1,
+        "to_status": "open",
+        "create_time": "2026-09-14 14:35:29.000000",
+        "from_status": "open"
+      },
+      {
+        "id": 3,
+        "actor": "system",
+        "action": "escalate",
+        "reason": "SOS超过5分钟未认领",
+        "event_id": 3,
+        "to_status": "open",
+        "create_time": "2026-09-14 14:35:29.000000",
+        "from_status": "open"
+      },
+      {
+        "id": 4,
+        "actor": "siteA_duty",
+        "action": "ack",
+        "reason": null,
+        "event_id": 2,
+        "to_status": "open",
+        "create_time": "2026-09-15 16:04:03.000000",
+        "from_status": "open"
+      },
+      {
+        "id": 5,
+        "actor": "siteA_duty",
+        "action": "ack",
+        "reason": null,
+        "event_id": 1,
+        "to_status": "open",
+        "create_time": "2026-09-15 16:04:11.000000",
+        "from_status": "open"
+      }
+    ],
+    "wear_event_inbox": [
+      {
+        "id": 1,
+        "acked": 0,
+        "user_id": 1,
+        "event_id": 3,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 2,
+        "acked": 1,
+        "user_id": 1,
+        "event_id": 4,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 3,
+        "acked": 0,
+        "user_id": 1,
+        "event_id": 1,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 4,
+        "acked": 0,
+        "user_id": 1,
+        "event_id": 2,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 5,
+        "acked": 0,
+        "user_id": 108,
+        "event_id": 3,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 6,
+        "acked": 1,
+        "user_id": 108,
+        "event_id": 4,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 7,
+        "acked": 0,
+        "user_id": 108,
+        "event_id": 1,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 8,
+        "acked": 0,
+        "user_id": 108,
+        "event_id": 2,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 9,
+        "acked": 1,
+        "user_id": 109,
+        "event_id": 4,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 10,
+        "acked": 1,
+        "user_id": 109,
+        "event_id": 1,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 11,
+        "acked": 1,
+        "user_id": 109,
+        "event_id": 2,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 12,
+        "acked": 1,
+        "user_id": 111,
+        "event_id": 4,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 13,
+        "acked": 0,
+        "user_id": 111,
+        "event_id": 1,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 14,
+        "acked": 0,
+        "user_id": 111,
+        "event_id": 2,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 15,
+        "acked": 0,
+        "user_id": 110,
+        "event_id": 3,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 16,
+        "acked": 1,
+        "user_id": 112,
+        "event_id": 4,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 17,
+        "acked": 0,
+        "user_id": 112,
+        "event_id": 1,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 18,
+        "acked": 0,
+        "user_id": 112,
+        "event_id": 2,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 19,
+        "acked": 1,
+        "user_id": 113,
+        "event_id": 4,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 20,
+        "acked": 0,
+        "user_id": 113,
+        "event_id": 1,
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "id": 21,
+        "acked": 0,
+        "user_id": 113,
+        "event_id": 2,
+        "create_time": "2026-09-14 14:29:29.000000"
+      }
+    ],
+    "wear_event_legacy": [],
+    "wear_geo_fence": [
+      {
+        "id": 1,
+        "demo": 1,
+        "name": "东区演示围栏",
+        "enabled": 1,
+        "site_id": 1,
+        "version": 1,
+        "time_end": null,
+        "create_by": "demo",
+        "update_by": "",
+        "apply_mode": "all_site",
+        "time_start": null,
+        "create_time": "2026-09-14 14:29:30.000000",
+        "update_time": null,
+        "polygon_json": "[{\"lng\":117.10,\"lat\":36.10},{\"lng\":117.14,\"lat\":36.10},{\"lng\":117.14,\"lat\":36.14},{\"lng\":117.10,\"lat\":36.14}]",
+        "rule_version": 1,
+        "enter_enabled": 1,
+        "leave_enabled": 1,
+        "debounce_seconds": 0
+      }
+    ],
+    "wear_geo_fence_person": [],
+    "wear_geo_fence_state": [],
+    "wear_idempotency": [],
+    "wear_ingest_raw": [],
+    "wear_person": [
+      {
+        "id": 1,
+        "name": "演示人员03",
+        "remark": "S2 由演示账号映射",
+        "status": "0",
+        "team_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": null,
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-003",
+        "update_time": null,
+        "contractor_id": null,
+        "account_user_id": 102
+      },
+      {
+        "id": 2,
+        "name": "演示人员02",
+        "remark": "S2 由演示账号映射",
+        "status": "0",
+        "team_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": null,
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-002",
+        "update_time": null,
+        "contractor_id": null,
+        "account_user_id": 101
+      },
+      {
+        "id": 3,
+        "name": "演示人员01",
+        "remark": "S2 由演示账号映射",
+        "status": "0",
+        "team_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": null,
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-001",
+        "update_time": null,
+        "contractor_id": null,
+        "account_user_id": 100
+      },
+      {
+        "id": 4,
+        "name": "演示人员06",
+        "remark": "S2 由演示账号映射",
+        "status": "0",
+        "team_id": 2,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": null,
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-006",
+        "update_time": null,
+        "contractor_id": null,
+        "account_user_id": 105
+      },
+      {
+        "id": 5,
+        "name": "演示人员05",
+        "remark": "S2 由演示账号映射",
+        "status": "0",
+        "team_id": 2,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": null,
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-005",
+        "update_time": null,
+        "contractor_id": null,
+        "account_user_id": 104
+      },
+      {
+        "id": 6,
+        "name": "演示人员04",
+        "remark": "S2 由演示账号映射",
+        "status": "0",
+        "team_id": 2,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": null,
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-004",
+        "update_time": null,
+        "contractor_id": null,
+        "account_user_id": 103
+      },
+      {
+        "id": 8,
+        "name": "演示人员01",
+        "remark": "S2 无登录账号，姓名与 P-DEMO-001 重复",
+        "status": "0",
+        "team_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": null,
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-NOACCT",
+        "update_time": null,
+        "contractor_id": 1,
+        "account_user_id": null
+      },
+      {
+        "id": 9,
+        "name": "过期人员",
+        "remark": "S2 有效期已过，选择器不可选",
+        "status": "0",
+        "team_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "valid_to": "2020-01-01",
+        "create_by": "demo",
+        "update_by": "",
+        "valid_from": null,
+        "create_time": "2026-09-14 14:29:29.000000",
+        "org_dept_id": null,
+        "person_code": "P-DEMO-EXPIRED",
+        "update_time": null,
+        "contractor_id": null,
+        "account_user_id": null
+      }
+    ],
+    "wear_person_site": [
+      {
+        "id": 1,
+        "status": "0",
+        "site_id": 1,
+        "create_by": "demo",
+        "person_id": 1,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 2,
+        "status": "0",
+        "site_id": 1,
+        "create_by": "demo",
+        "person_id": 2,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 3,
+        "status": "0",
+        "site_id": 1,
+        "create_by": "demo",
+        "person_id": 3,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 4,
+        "status": "0",
+        "site_id": 2,
+        "create_by": "demo",
+        "person_id": 4,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 5,
+        "status": "0",
+        "site_id": 2,
+        "create_by": "demo",
+        "person_id": 5,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 6,
+        "status": "0",
+        "site_id": 2,
+        "create_by": "demo",
+        "person_id": 6,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 7,
+        "status": "0",
+        "site_id": 1,
+        "create_by": "demo",
+        "person_id": 8,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 8,
+        "status": "0",
+        "site_id": 1,
+        "create_by": "demo",
+        "person_id": 9,
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      }
+    ],
+    "wear_product_model": [
+      {
+        "id": 1,
+        "name": "演示摄像安全帽",
+        "status": "0",
+        "version": 1,
+        "del_flag": "0",
+        "create_by": "demo",
+        "type_code": "helmet",
+        "update_by": "",
+        "model_code": "HAT-MH-CAM",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "capabilities": "{\"protocolVersion\":\"demo-hat-v1\",\"attributes\":[\"battery\",\"online\",\"gnss\"],\"events\":[\"sos\",\"fall\"],\"actions\":[\"tts\",\"intercom\",\"video\"]}",
+        "protocol_version": "demo-hat-v1",
+        "manufacturer_code": "MELHAT"
+      },
+      {
+        "id": 2,
+        "name": "演示无视频安全帽",
+        "status": "0",
+        "version": 1,
+        "del_flag": "0",
+        "create_by": "demo",
+        "type_code": "helmet",
+        "update_by": "",
+        "model_code": "HAT-MH-NOV",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "capabilities": "{\"protocolVersion\":\"demo-hat-v1\",\"attributes\":[\"battery\",\"online\",\"gnss\"],\"events\":[\"sos\"],\"actions\":[\"tts\"]}",
+        "protocol_version": "demo-hat-v1",
+        "manufacturer_code": "MELHAT"
+      },
+      {
+        "id": 3,
+        "name": "演示安全带",
+        "status": "0",
+        "version": 1,
+        "del_flag": "0",
+        "create_by": "demo",
+        "type_code": "belt",
+        "update_by": "",
+        "model_code": "BELT-STD",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null,
+        "capabilities": "{\"protocolVersion\":\"demo-belt-v1\",\"attributes\":[\"online\"],\"events\":[\"unbuckled\",\"impact\"],\"actions\":[]}",
+        "protocol_version": "demo-belt-v1",
+        "manufacturer_code": "MELHAT"
+      }
+    ],
+    "wear_product_type": [
+      {
+        "code": "belt",
+        "name": "安全带",
+        "status": "0",
+        "create_by": "demo",
+        "create_time": "2026-09-14 14:29:29.000000"
+      },
+      {
+        "code": "helmet",
+        "name": "安全帽",
+        "status": "0",
+        "create_by": "demo",
+        "create_time": "2026-09-14 14:29:29.000000"
+      }
+    ],
+    "wear_safety_event": [
+      {
+        "id": 1,
+        "sn": "MH-DEMO-001",
+        "demo": 1,
+        "source": "simulator",
+        "status": "open",
+        "site_id": 1,
+        "task_id": 1,
+        "version": 2,
+        "fence_id": null,
+        "severity": "high",
+        "create_by": "demo",
+        "device_id": 1,
+        "escalated": 1,
+        "person_id": 3,
+        "update_by": "",
+        "event_type": "sos",
+        "task_match": "matched",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "occurred_at": "2026-09-14 14:29:29.000000",
+        "person_code": "P-DEMO-001",
+        "person_name": "演示人员01",
+        "received_at": "2026-09-14 14:29:29.000000",
+        "update_time": "2026-09-14 14:35:29.000000",
+        "fence_action": null,
+        "location_lat": null,
+        "location_lng": null,
+        "repeat_count": 0,
+        "rule_version": "s5-1",
+        "source_event_id": "seed-sos-a",
+        "claimant_user_id": null,
+        "location_quality": "unknown"
+      },
+      {
+        "id": 2,
+        "sn": "MH-DEMO-001",
+        "demo": 1,
+        "source": "simulator",
+        "status": "open",
+        "site_id": 1,
+        "task_id": 1,
+        "version": 1,
+        "fence_id": null,
+        "severity": "low",
+        "create_by": "demo",
+        "device_id": 1,
+        "escalated": 0,
+        "person_id": 3,
+        "update_by": "",
+        "event_type": "geofence",
+        "task_match": "matched",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "occurred_at": "2026-09-14 14:29:29.000000",
+        "person_code": "P-DEMO-001",
+        "person_name": "演示人员01",
+        "received_at": "2026-09-14 14:29:29.000000",
+        "update_time": "2026-09-14 14:29:29.000000",
+        "fence_action": null,
+        "location_lat": null,
+        "location_lng": null,
+        "repeat_count": 0,
+        "rule_version": "s5-1",
+        "source_event_id": "seed-fence-a",
+        "claimant_user_id": null,
+        "location_quality": "unknown"
+      },
+      {
+        "id": 3,
+        "sn": null,
+        "demo": 1,
+        "source": "simulator",
+        "status": "open",
+        "site_id": 2,
+        "task_id": null,
+        "version": 2,
+        "fence_id": null,
+        "severity": "high",
+        "create_by": "demo",
+        "device_id": null,
+        "escalated": 1,
+        "person_id": null,
+        "update_by": "",
+        "event_type": "sos",
+        "task_match": "none",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "occurred_at": "2026-09-14 14:29:29.000000",
+        "person_code": null,
+        "person_name": null,
+        "received_at": "2026-09-14 14:29:29.000000",
+        "update_time": "2026-09-14 14:35:29.000000",
+        "fence_action": null,
+        "location_lat": null,
+        "location_lng": null,
+        "repeat_count": 0,
+        "rule_version": "s5-1",
+        "source_event_id": "seed-sos-b",
+        "claimant_user_id": null,
+        "location_quality": "unknown"
+      },
+      {
+        "id": 4,
+        "sn": "MH-DEMO-001",
+        "demo": 1,
+        "source": "simulator",
+        "status": "closed",
+        "site_id": 1,
+        "task_id": null,
+        "version": 1,
+        "fence_id": null,
+        "severity": "low",
+        "create_by": "demo",
+        "device_id": 1,
+        "escalated": 0,
+        "person_id": 3,
+        "update_by": "",
+        "event_type": "geofence",
+        "task_match": "none",
+        "create_time": "2026-09-14 12:29:29.000000",
+        "occurred_at": "2026-09-14 12:29:29.000000",
+        "person_code": "P-DEMO-001",
+        "person_name": "演示人员01",
+        "received_at": "2026-09-14 12:29:29.000000",
+        "update_time": "2026-09-14 14:29:29.000000",
+        "fence_action": null,
+        "location_lat": null,
+        "location_lng": null,
+        "repeat_count": 0,
+        "rule_version": "s5-1",
+        "source_event_id": "seed-closed-a",
+        "claimant_user_id": null,
+        "location_quality": "unknown"
+      }
+    ],
+    "wear_site": [
+      {
+        "id": 1,
+        "name": "演示厂站A",
+        "remark": "S1 反向权限测试",
+        "status": "0",
+        "version": 1,
+        "del_flag": "0",
+        "timezone": "Asia/Shanghai",
+        "create_by": "demo",
+        "site_code": "SITE-DEMO-A",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 2,
+        "name": "演示厂站B",
+        "remark": "S1 反向权限测试",
+        "status": "0",
+        "version": 1,
+        "del_flag": "0",
+        "timezone": "Asia/Shanghai",
+        "create_by": "demo",
+        "site_code": "SITE-DEMO-B",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      }
+    ],
+    "wear_site_account": [
+      {
+        "id": 1,
+        "status": "0",
+        "site_id": 2,
+        "user_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 2,
+        "status": "0",
+        "site_id": 1,
+        "user_id": 1,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 3,
+        "status": "0",
+        "site_id": 2,
+        "user_id": 108,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 4,
+        "status": "0",
+        "site_id": 1,
+        "user_id": 108,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 8,
+        "status": "0",
+        "site_id": 1,
+        "user_id": 109,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 9,
+        "status": "0",
+        "site_id": 1,
+        "user_id": 111,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 11,
+        "status": "0",
+        "site_id": 2,
+        "user_id": 110,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:28.000000",
+        "update_time": null
+      },
+      {
+        "id": 12,
+        "status": "0",
+        "site_id": 1,
+        "user_id": 112,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 13,
+        "status": "0",
+        "site_id": 1,
+        "user_id": 113,
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      }
+    ],
+    "wear_space": [
+      {
+        "id": 1,
+        "name": "东区作业区",
+        "status": "0",
+        "site_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "create_by": "demo",
+        "parent_id": null,
+        "update_by": "",
+        "space_type": "area",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 2,
+        "name": "循环水泵房",
+        "status": "0",
+        "site_id": 1,
+        "version": 1,
+        "del_flag": "0",
+        "create_by": "demo",
+        "parent_id": null,
+        "update_by": "",
+        "space_type": "area",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      }
+    ],
+    "wear_team": [
+      {
+        "id": 1,
+        "name": "A站巡检班",
+        "status": "0",
+        "site_id": 1,
+        "del_flag": "0",
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      },
+      {
+        "id": 2,
+        "name": "B站巡检班",
+        "status": "0",
+        "site_id": 2,
+        "del_flag": "0",
+        "create_by": "demo",
+        "update_by": "",
+        "create_time": "2026-09-14 14:29:29.000000",
+        "update_time": null
+      }
+    ],
+    "wear_work_task": [
+      {
+        "id": 1,
+        "demo": 1,
+        "title": "东区巡检",
+        "status": "in_progress",
+        "site_id": 1,
+        "version": 1,
+        "space_id": 1,
+        "create_by": "demo",
+        "ticket_no": null,
+        "update_by": "",
+        "work_type": "patrol",
+        "actual_end": null,
+        "create_time": "2026-09-14 14:29:30.000000",
+        "planned_end": "2026-09-15 00:29:30.000000",
+        "update_time": null,
+        "actual_start": "2026-09-14 12:29:30.000000",
+        "owner_user_id": 109,
+        "planned_start": "2026-09-14 12:29:30.000000",
+        "ticket_status": "none",
+        "ticket_required": 0,
+        "guardian_person_id": 3
+      },
+      {
+        "id": 2,
+        "demo": 1,
+        "title": "高处待核实票",
+        "status": "draft",
+        "site_id": 1,
+        "version": 1,
+        "space_id": 1,
+        "create_by": "demo",
+        "ticket_no": null,
+        "update_by": "",
+        "work_type": "height",
+        "actual_end": null,
+        "create_time": "2026-09-14 14:29:30.000000",
+        "planned_end": "2026-09-14 19:29:30.000000",
+        "update_time": null,
+        "actual_start": null,
+        "owner_user_id": 109,
+        "planned_start": "2026-09-14 15:29:30.000000",
+        "ticket_status": "unverified",
+        "ticket_required": 1,
+        "guardian_person_id": null
+      }
+    ],
+    "wear_work_task_action": [],
+    "wear_work_task_member": [
+      {
+        "id": 1,
+        "task_id": 1,
+        "person_id": 3,
+        "create_time": "2026-09-14 14:29:30.000000"
+      }
+    ],
+    "wear_work_task_requirement": [
+      {
+        "id": 2,
+        "task_id": 1,
+        "type_code": "belt"
+      },
+      {
+        "id": 1,
+        "task_id": 1,
+        "type_code": "helmet"
+      }
+    ],
+    "sys_user": [
+      {
+        "id": 1,
+        "deptId": 103,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "若依",
+        "username": "admin"
+      },
+      {
+        "id": 2,
+        "deptId": 105,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "若依",
+        "username": "ry"
+      },
+      {
+        "id": 100,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员01",
+        "username": "demo01"
+      },
+      {
+        "id": 101,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员02",
+        "username": "demo02"
+      },
+      {
+        "id": 102,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员03",
+        "username": "demo03"
+      },
+      {
+        "id": 103,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员04",
+        "username": "demo04"
+      },
+      {
+        "id": 104,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员05",
+        "username": "demo05"
+      },
+      {
+        "id": 105,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员06",
+        "username": "demo06"
+      },
+      {
+        "id": 106,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员07",
+        "username": "demo07"
+      },
+      {
+        "id": 107,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "演示人员08",
+        "username": "demo08"
+      },
+      {
+        "id": 108,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "穿戴平台管理员",
+        "username": "wear_admin"
+      },
+      {
+        "id": 109,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "A站值班员",
+        "username": "siteA_duty"
+      },
+      {
+        "id": 110,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "B站值班员",
+        "username": "siteB_duty"
+      },
+      {
+        "id": 111,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "A站只读",
+        "username": "siteA_readonly"
+      },
+      {
+        "id": 112,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "A站复核员",
+        "username": "siteA_reviewer"
+      },
+      {
+        "id": 113,
+        "deptId": null,
+        "status": "0",
+        "deleted": "0",
+        "nickname": "A站班组长",
+        "username": "siteA_team_lead"
+      }
+    ],
+    "sys_role": [
+      {
+        "id": 1,
+        "key": "admin",
+        "name": "超级管理员",
+        "status": "0"
+      },
+      {
+        "id": 2,
+        "key": "common",
+        "name": "普通角色",
+        "status": "0"
+      },
+      {
+        "id": 201,
+        "key": "wear_platform_admin",
+        "name": "平台管理员",
+        "status": "0"
+      },
+      {
+        "id": 202,
+        "key": "wear_device_admin",
+        "name": "设备管理员",
+        "status": "0"
+      },
+      {
+        "id": 203,
+        "key": "wear_duty",
+        "name": "值班员",
+        "status": "0"
+      },
+      {
+        "id": 204,
+        "key": "wear_reviewer",
+        "name": "安全复核员",
+        "status": "0"
+      },
+      {
+        "id": 205,
+        "key": "wear_team_lead",
+        "name": "班组长",
+        "status": "0"
+      },
+      {
+        "id": 206,
+        "key": "wear_readonly",
+        "name": "只读",
+        "status": "0"
+      }
+    ],
+    "sys_user_role": [
+      {
+        "roleId": 1,
+        "userId": 1
+      },
+      {
+        "roleId": 2,
+        "userId": 2
+      },
+      {
+        "roleId": 201,
+        "userId": 108
+      },
+      {
+        "roleId": 203,
+        "userId": 109
+      },
+      {
+        "roleId": 203,
+        "userId": 110
+      },
+      {
+        "roleId": 206,
+        "userId": 111
+      },
+      {
+        "roleId": 204,
+        "userId": 112
+      },
+      {
+        "roleId": 205,
+        "userId": 113
+      }
+    ]
+  }
+}

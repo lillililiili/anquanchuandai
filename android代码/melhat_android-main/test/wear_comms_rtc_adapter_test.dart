@@ -64,6 +64,39 @@ void main() {
       expect(driver.releaseCount, 1);
     },
   );
+  test(
+    'legacy video credential never requests camera, enables capture or publishes camera',
+    () async {
+      final driver = FakeAgoraDriver();
+      final permissionRequests = <bool>[];
+      final adapter = AgoraWearRtcEngine(
+        driverFactory: () => driver,
+        requestPermissions: (video) async {
+          permissionRequests.add(video);
+          return true;
+        },
+      );
+      await adapter.join(
+        const RtcCredentials(
+          appId: 'app',
+          channelName: 'call',
+          uid: 7,
+          token: 'token',
+          video: true,
+        ),
+        callbacks,
+      );
+      expect(permissionRequests, [false]);
+      expect(driver.enableVideoCount, 0);
+      expect(driver.disableVideoCount, 1);
+      expect(wearAudioOnlyChannelOptions().publishCameraTrack, false);
+      expect(wearAudioOnlyChannelOptions().publishMicrophoneTrack, true);
+      expect(wearAudioOnlyChannelOptions().autoSubscribeVideo, false);
+      await adapter.setSpeakerphone(false);
+      expect(driver.speakerphone, false);
+      await adapter.dispose();
+    },
+  );
 }
 
 class FakeAgoraDriver implements AgoraRtcDriver {
@@ -72,6 +105,9 @@ class FakeAgoraDriver implements AgoraRtcDriver {
   int joinCount = 0;
   int leaveCount = 0;
   int releaseCount = 0;
+  int enableVideoCount = 0;
+  int disableVideoCount = 0;
+  bool speakerphone = true;
 
   @override
   RtcEngine? get nativeEngine => null;
@@ -86,13 +122,22 @@ class FakeAgoraDriver implements AgoraRtcDriver {
   Future<void> enableAudio() async {}
 
   @override
-  Future<void> enableVideo() async {}
+  Future<void> enableVideo() async {
+    enableVideoCount++;
+  }
 
   @override
-  Future<void> disableVideo() async {}
+  Future<void> disableVideo() async {
+    disableVideoCount++;
+  }
 
   @override
   Future<void> setSpeakerphoneEnabled() async {}
+
+  @override
+  Future<void> setSpeakerphone(bool enabled) async {
+    speakerphone = enabled;
+  }
 
   @override
   void registerCallbacks(RtcCallbacks callbacks) {}

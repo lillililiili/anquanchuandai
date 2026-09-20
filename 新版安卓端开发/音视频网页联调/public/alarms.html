@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Call Lab · 设备告警联调</title><link rel="icon" href="/icon.svg"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/alarms.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="/"><img src="/icon.svg" alt=""><span>ROLLING <small>现场联调工作台</small></span></a><nav><a href="/">👥 现场人员与装备</a><a href="/?tab=comms">📞 音视频与对讲</a><a href="/?tab=alarms" aria-current="page">🚨 设备告警</a></nav><span class="pill neutral">项目测试环境</span></header>
+<main>
+  <div class="page-heading"><div><p class="eyebrow">DEVICE TEST WORKSPACE</p><h1>从设备告警，到处置闭环。</h1><p>读取项目设备，注入模拟告警，再从真实接口核对结果。</p></div><span id="connection" class="pill neutral">尚未登录项目</span></div>
+  <div class="test-banner">此页操作会写入项目数据库。告警固定标记为 <b>simulator / demo</b>，可在安卓与管理端查看。测试数值用于联调，不代表设备实测或正式告警阈值。</div>
+  <div id="notice" class="notice" role="status" hidden></div>
+  <div class="alarm-layout">
+    <aside>
+      <section class="card">
+        <div class="section-label">01 / 项目账号 <span>与通话身份独立</span></div>
+        <form id="loginForm">
+          <label for="username">账号</label><input id="username" autocomplete="username" placeholder="例如 siteA_duty" required>
+          <label for="password">密码</label><input id="password" type="password" autocomplete="current-password" required>
+          <div id="captchaBox" hidden><label for="captcha">验证码</label><div class="captcha-row"><input id="captcha" autocomplete="off"><button type="button" class="secondary" id="refreshCaptcha"><img id="captchaImage" alt="点击刷新验证码"></button></div></div>
+          <button type="submit" id="signIn" class="primary full">登录 / 切换账号</button>
+        </form>
+        <p id="accountInfo" class="hint">使用项目业务账号。密码与令牌仅保留在当前页面内存，刷新需重新登录。</p>
+        <button id="signOut" class="secondary full" disabled>退出当前账号</button>
+        <label for="site">工作厂站</label><select id="site" disabled><option>请先登录</option></select>
+        <p class="hint">厂站与操作权限由项目后端校验。值班员可生成、认领和处置；设备管理员维护台账；复核员关闭高风险告警。</p>
+      </section>
+      <section class="card">
+        <div class="section-label">02 / 目标设备 <button class="text-button" id="refreshDevices" disabled>刷新</button></div>
+        <label for="deviceType">设备类型</label><select id="deviceType"><option value="helmet">安全帽</option><option value="belt">安全腰带</option><option value="watch">手表</option></select>
+        <label for="device">项目设备</label><select id="device" disabled><option>请先登录</option></select>
+        <p id="deviceInfo" class="hint">读取当前厂站的设备台账及佩戴人。</p>
+        <details><summary>没有合适的设备？创建测试设备</summary><p class="hint">每类每厂站创建一个 CALL-LAB 前缀的设备及独立测试型号，重复操作复用已有设备。需要设备维护权限。</p><button id="createDevice" class="secondary full" disabled>创建 / 选择该类测试设备</button></details>
+        <details><summary>修改设备台账</summary><label for="externalCode">资产编码</label><input id="externalCode" maxlength="64"><button id="saveDevice" class="secondary full" disabled>保存到项目并回读</button><p class="hint">只修改所选设备的资产编码，使用版本号防止覆盖并发编辑。</p></details>
+      </section>
+    </aside>
+    <div class="main-column">
+      <section class="card">
+        <div class="section-label">03 / 告警场景 <span id="catalogStatus">等待连接</span></div>
+        <div id="scenarios" class="scenario-grid"><p class="hint">登录后从后端加载可用测试场景。</p></div>
+        <div id="scenarioDescription" class="scenario-description">安全帽按提供的资料设计；安全腰带、手表采用待厂商确认的测试场景。</div>
+        <form id="alarmForm">
+          <div id="measurements" class="field-grid"></div>
+          <div class="field-grid"><div><label for="lat">纬度 <span class="optional">可选</span></label><input id="lat" type="number" min="-90" max="90" step="any" placeholder="例如 31.2304"></div><div><label for="lng">经度 <span class="optional">可选</span></label><input id="lng" type="number" min="-180" max="180" step="any" placeholder="例如 121.4737"></div></div>
+          <p class="hint">点击即注入该场景事件，不经过传感器阈值判断。SOS / 跌落 / 撞击沿用项目高风险流程，其余归入实时或围栏告警。场景名称和参数保存在事件操作记录。</p>
+          <div class="button-row"><button id="sendAlarm" type="submit" class="primary" disabled>生成告警并回读</button><button id="repeatAlarm" type="button" class="secondary" disabled>重发上次事件（去重测试）</button></div>
+        </form>
+        <p id="lastSend" class="hint">每次生成一个新事件；重发使用相同标识，只应增加重复次数。</p>
+      </section>
+      <section class="card">
+        <div class="section-label">04 / 项目事件与处置 <button class="text-button" id="refreshEvents" disabled>回读最新数据</button></div>
+        <p class="hint">显示所选设备最近 100 条事件，包含已关闭事件。仅允许在此页处置 CALL-LAB 生成的模拟事件。</p>
+        <div id="events" class="event-list"><p class="empty">选择设备后读取事件</p></div>
+        <div id="eventPanel" hidden>
+          <div class="event-heading"><h2 id="eventTitle"></h2><span id="eventStatus" class="pill neutral"></span></div>
+          <div id="eventFacts" class="hint"></div>
+          <div id="eventActions" class="actions-list"></div>
+          <label for="reason">处置说明 / 关闭原因</label><input id="reason" maxlength="300" value="CALL-LAB 联调验证完成">
+          <div class="button-row"><button id="claimEvent" class="secondary" disabled>认领</button><button id="handleEvent" class="secondary" disabled>提交处置</button><button id="closeEvent" class="secondary" disabled>关闭 / 复核关闭</button></div>
+          <p id="workflowHint" class="hint"></p>
+        </div>
+      </section>
+      <details class="card"><summary>接口请求与回读结果</summary><p class="hint">不显示密码和认证令牌。发送后可核对事件 ID、demo 标记、来源、重复次数和状态。</p><pre id="result">暂无请求</pre></details>
+    </div>
+  </div>
+  <footer><span><i class="footer-dot"></i> SIMULATED ALARMS · PROJECT DATA</span><span>无实体传感器 · 不需要 Agora 凭证</span></footer>
+</main><script type="module" src="/alarms.js"></script>
+</body></html>

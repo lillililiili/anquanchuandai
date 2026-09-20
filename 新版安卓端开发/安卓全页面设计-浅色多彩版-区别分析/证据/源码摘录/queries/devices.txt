@@ -1,0 +1,416 @@
+1: import 'package:flutter/material.dart';
+2: import 'package:go_router/go_router.dart';
+3: 
+4: import '../core.dart';
+5: import 'query_utils.dart';
+6: import 'query_widgets.dart';
+7: 
+8: class DevicesPage extends StatefulWidget {
+9:   const DevicesPage({super.key});
+10: 
+11:   @override
+12:   State<DevicesPage> createState() => _DevicesPageState();
+13: }
+14: 
+15: class _DevicesPageState extends State<DevicesPage> {
+16:   final _sn = TextEditingController();
+17:   WearSession? _session;
+18:   List<JsonMap> _records = const [];
+19:   int _current = 1;
+20:   int _total = 0;
+21:   bool _hasMore = false;
+22:   bool _loading = true;
+23:   Object? _error;
+24:   String? _typeCode;
+25:   String? _assetStatus;
+26:   int _request = 0;
+27: 
+28:   @override
+29:   void didChangeDependencies() {
+30:     super.didChangeDependencies();
+31:     final session = WearScope.of(context);
+32:     if (!identical(session, _session)) {
+33:       _session = session;
+34:       _load(page: 1);
+35:     }
+36:   }
+37: 
+38:   @override
+39:   void dispose() {
+40:     _sn.dispose();
+41:     super.dispose();
+42:   }
+43: 
+44:   Future<void> _load({required int page}) async {
+45:     final session = _session;
+46:     if (session == null) return;
+47:     final request = ++_request;
+48:     final scopeKey = session.scopeKey;
+49:     setState(() {
+50:       _loading = true;
+51:       _error = null;
+52:     });
+53:     try {
+54:       final result = await session.api.page(
+55:         '/api/v1/devices',
+56:         current: page,
+57:         size: 20,
+58:         query: {
+59:           if (_sn.text.trim().isNotEmpty) 'sn': _sn.text.trim(),
+60:           if (_typeCode != null) 'typeCode': _typeCode,
+61:           if (_assetStatus != null) 'assetStatus': _assetStatus,
+62:         },
+63:       );
+64:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+65:         return;
+66:       }
+67:       setState(() {
+68:         _records = result.records;
+69:         _current = result.current;
+70:         _total = result.total;
+71:         _hasMore = result.hasMore;
+72:         _loading = false;
+73:       });
+74:     } catch (error) {
+75:       if (error is StaleSessionException) return;
+76:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+77:         return;
+78:       }
+79:       setState(() {
+80:         _error = error;
+81:         _loading = false;
+82:       });
+83:     }
+84:   }
+85: 
+86:   @override
+87:   Widget build(BuildContext context) {
+88:     return QueryPage(
+89:       title: '设备台账',
+90:       subtitle: '连接、电量和定位状态均来自设备上报，未知或陈旧状态会明确标出。',
+91:       body: Column(
+92:         children: [
+93:           Padding(
+94:             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+95:             child: TextField(
+96:               controller: _sn,
+97:               textInputAction: TextInputAction.search,
+98:               onSubmitted: (_) => _load(page: 1),
+99:               decoration: const InputDecoration(
+100:                 prefixIcon: Icon(Icons.search),
+101:                 hintText: '按设备 SN 搜索',
+102:               ),
+103:             ),
+104:           ),
+105:           SingleChildScrollView(
+106:             scrollDirection: Axis.horizontal,
+107:             padding: const EdgeInsets.symmetric(horizontal: 12),
+108:             child: Row(
+109:               children: [
+110:                 _filterChip('全部类型', _typeCode == null, () => _setType(null)),
+111:                 _filterChip(
+112:                   '安全帽',
+113:                   _typeCode == 'helmet',
+114:                   () => _setType('helmet'),
+115:                 ),
+116:                 _filterChip('安全带', _typeCode == 'belt', () => _setType('belt')),
+117:                 const SizedBox(width: 8),
+118:                 PopupMenuButton<String>(
+119:                   tooltip: '资产状态',
+120:                   initialValue: _assetStatus ?? '',
+121:                   onSelected: (value) {
+122:                     setState(() => _assetStatus = value.isEmpty ? null : value);
+123:                     _load(page: 1);
+124:                   },
+125:                   itemBuilder: (_) => const [
+126:                     PopupMenuItem(value: '', child: Text('全部资产状态')),
+127:                     PopupMenuItem(value: 'unassigned', child: Text('未分配')),
+128:                     PopupMenuItem(value: 'in_stock', child: Text('在库')),
+129:                     PopupMenuItem(value: 'maintenance', child: Text('维修中')),
+130:                     PopupMenuItem(value: 'disabled', child: Text('已停用')),
+131:                     PopupMenuItem(value: 'scrapped', child: Text('已报废')),
+132:                   ],
+133:                   child: Chip(
+134:                     label: Text(
+135:                       _assetStatus == null
+136:                           ? '资产状态'
+137:                           : assetStatusLabel(_assetStatus),
+138:                     ),
+139:                   ),
+140:                 ),
+141:               ],
+142:             ),
+143:           ),
+144:           Expanded(
+145:             child: QueryStateView(
+146:               loading: _loading,
+147:               error: _error,
+148:               empty: _records.isEmpty,
+149:               onRetry: () => _load(page: _current),
+150:               emptyTitle: '没有符合条件的设备',
+151:               child: RefreshIndicator(
+152:                 onRefresh: () => _load(page: _current),
+153:                 child: ListView.builder(
+154:                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+155:                   itemCount: _records.length,
+156:                   itemBuilder: (context, index) {
+157:                     final device = _records[index];
+158:                     final quality = connectionLabel(device);
+159:                     final qualityColor = switch (device['connectionQuality']
+160:                         ?.toString()) {
+161:                       'ok' => WearColors.primary,
+162:                       'stale' => WearColors.warning,
+163:                       _ => WearColors.muted,
+164:                     };
+165:                     return QueryRow(
+166:                       key: ValueKey('device-${idOf(device['id'])}'),
+167:                       title: textOf(device['sn']),
+168:                       subtitle:
+169:                           '${deviceTypeLabel(device['typeCode'])} · ${textOf(device['modelName'])}\n${assetStatusLabel(device['assetStatus'])} · 电量 ${batteryLabel(device['battery'])}',
+170:                       leading: Icon(
+171:                         device['typeCode'] == 'belt'
+172:                             ? Icons.safety_check
+173:                             : Icons.engineering_outlined,
+174:                       ),
+175:                       trailing: WearBadge(text: quality, color: qualityColor),
+176:                       onTap: () =>
+177:                           context.push('/devices/${idOf(device['id'])}'),
+178:                     );
+179:                   },
+180:                 ),
+181:               ),
+182:             ),
+183:           ),
+184:           PagingFooter(
+185:             current: _current,
+186:             total: _total,
+187:             hasMore: _hasMore,
+188:             busy: _loading,
+189:             onPrevious: () => _load(page: _current - 1),
+190:             onNext: () => _load(page: _current + 1),
+191:           ),
+192:         ],
+193:       ),
+194:     );
+195:   }
+196: 
+197:   Widget _filterChip(String label, bool selected, VoidCallback onTap) {
+198:     return Padding(
+199:       padding: const EdgeInsets.symmetric(horizontal: 4),
+200:       child: FilterChip(
+201:         label: Text(label),
+202:         selected: selected,
+203:         onSelected: (_) => onTap(),
+204:       ),
+205:     );
+206:   }
+207: 
+208:   void _setType(String? value) {
+209:     setState(() => _typeCode = value);
+210:     _load(page: 1);
+211:   }
+212: }
+213: 
+214: class DevicePage extends StatefulWidget {
+215:   const DevicePage({super.key, required this.id});
+216: 
+217:   final String id;
+218: 
+219:   @override
+220:   State<DevicePage> createState() => _DevicePageState();
+221: }
+222: 
+223: class _DevicePageState extends State<DevicePage> {
+224:   WearSession? _session;
+225:   JsonMap? _device;
+226:   List<JsonMap> _history = const [];
+227:   bool _loading = true;
+228:   Object? _error;
+229:   int _request = 0;
+230: 
+231:   @override
+232:   void didChangeDependencies() {
+233:     super.didChangeDependencies();
+234:     final session = WearScope.of(context);
+235:     if (!identical(session, _session)) {
+236:       _session = session;
+237:       _load();
+238:     }
+239:   }
+240: 
+241:   Future<void> _load() async {
+242:     final session = _session;
+243:     if (session == null) return;
+244:     final request = ++_request;
+245:     final scopeKey = session.scopeKey;
+246:     setState(() {
+247:       _loading = true;
+248:       _error = null;
+249:     });
+250:     try {
+251:       final responses = await Future.wait([
+252:         session.api.get('/api/v1/devices/${widget.id}'),
+253:         session.api.get('/api/v1/devices/${widget.id}/assignments'),
+254:       ]);
+255:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+256:         return;
+257:       }
+258:       setState(() {
+259:         _device = jsonMap(responses[0]);
+260:         _history = jsonList(responses[1]);
+261:         _loading = false;
+262:       });
+263:     } catch (error) {
+264:       if (error is StaleSessionException) return;
+265:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+266:         return;
+267:       }
+268:       setState(() {
+269:         _error = error;
+270:         _loading = false;
+271:       });
+272:     }
+273:   }
+274: 
+275:   @override
+276:   Widget build(BuildContext context) {
+277:     final device = _device;
+278:     return QueryPage(
+279:       title: device == null ? '设备详情' : textOf(device['sn']),
+280:       body: QueryStateView(
+281:         loading: _loading,
+282:         error: _error,
+283:         empty: device == null,
+284:         onRetry: _load,
+285:         child: device == null
+286:             ? const SizedBox.shrink()
+287:             : RefreshIndicator(
+288:                 onRefresh: _load,
+289:                 child: ListView(
+290:                   padding: const EdgeInsets.all(16),
+291:                   children: [
+292:                     WearCard(
+293:                       child: Column(
+294:                         children: [
+295:                           DetailField(
+296:                             label: '设备类型',
+297:                             value: deviceTypeLabel(device['typeCode']),
+298:                           ),
+299:                           DetailField(
+300:                             label: '产品型号',
+301:                             value: textOf(device['modelName']),
+302:                           ),
+303:                           DetailField(
+304:                             label: '所在厂站',
+305:                             value: textOf(device['siteName']),
+306:                           ),
+307:                           DetailField(
+308:                             label: '资产状态',
+309:                             value: assetStatusLabel(device['assetStatus']),
+310:                           ),
+311:                           DetailField(
+312:                             label: '连接状态',
+313:                             value: connectionLabel(device),
+314:                           ),
+315:                           DetailField(
+316:                             label: '电量',
+317:                             value: batteryLabel(device['battery']),
+318:                           ),
+319:                           DetailField(
+320:                             label: '最后上报',
+321:                             value: formatTime(device['lastReportedAt']),
+322:                           ),
+323:                           if (device['demo'] == true)
+324:                             const DetailField(label: '数据标识', value: '演示数据'),
+325:                         ],
+326:                       ),
+327:                     ),
+328:                     const SizedBox(height: 18),
+329:                     _actionPanel(context, device),
+330:                     const SizedBox(height: 22),
+331:                     QuerySection(
+332:                       title: '历史领用记录（${_history.length}）',
+333:                       children: _history
+334:                           .map(
+335:                             (item) => QueryRow(
+336:                               title: textOf(item['personName'], '未关联人员'),
+337:                               subtitle:
+338:                                   '${formatTime(item['issuedAt'])} 至 ${item['returnedAt'] == null ? '当前' : formatTime(item['returnedAt'])}',
+339:                               onTap: item['personId'] == null
+340:                                   ? null
+341:                                   : () => context.push(
+342:                                       '/people/${textOf(item['personId'])}',
+343:                                     ),
+344:                             ),
+345:                           )
+346:                           .toList(),
+347:                     ),
+348:                   ],
+349:                 ),
+350:               ),
+351:       ),
+352:     );
+353:   }
+354: 
+355:   Widget _actionPanel(BuildContext context, JsonMap device) {
+356:     final actions = deviceActions(device);
+357:     final assignment = jsonMap(device['currentAssignment']);
+358:     final personId = assignment['personId']?.toString();
+359:     if (actions.isEmpty) {
+360:       return const WearCard(
+361:         child: Text('该型号未声明可用通讯能力。', style: TextStyle(color: WearColors.muted)),
+362:       );
+363:     }
+364:     final buttons = <Widget>[];
+365:     if (actions.contains('tts')) {
+366:       buttons.add(
+367:         OutlinedButton.icon(
+368:           onPressed: () =>
+369:               _openCommunications(context, personId: personId, action: 'tts'),
+370:           icon: const Icon(Icons.campaign_outlined),
+371:           label: const Text('TTS'),
+372:         ),
+373:       );
+374:     }
+375:     if (actions.contains('intercom')) {
+376:       buttons.add(
+377:         OutlinedButton.icon(
+378:           onPressed: () => _openCommunications(
+379:             context,
+380:             personId: personId,
+381:             action: 'intercom',
+382:           ),
+383:           icon: const Icon(Icons.call_outlined),
+384:           label: const Text('对讲'),
+385:         ),
+386:       );
+387:     }
+388:     if (actions.contains('video')) {
+389:       buttons.add(
+390:         FilledButton.icon(
+391:           onPressed: () =>
+392:               _openCommunications(context, personId: personId, action: 'video'),
+393:           icon: const Icon(Icons.videocam_outlined),
+394:           label: const Text('视频'),
+395:         ),
+396:       );
+397:     }
+398:     return QuerySection(
+399:       title: '设备能力',
+400:       children: [Wrap(spacing: 8, runSpacing: 8, children: buttons)],
+401:     );
+402:   }
+403: 
+404:   void _openCommunications(
+405:     BuildContext context, {
+406:     String? personId,
+407:     required String action,
+408:   }) {
+409:     final uri = communicationUri(
+410:       deviceId: widget.id,
+411:       personId: personId,
+412:       action: action,
+413:     );
+414:     context.push(uri.toString());
+415:   }
+416: }

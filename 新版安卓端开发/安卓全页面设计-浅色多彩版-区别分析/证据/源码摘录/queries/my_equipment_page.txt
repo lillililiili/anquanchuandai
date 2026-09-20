@@ -1,0 +1,784 @@
+1: import 'package:flutter/material.dart';
+2: import 'package:go_router/go_router.dart';
+3: 
+4: import '../core.dart';
+5: import 'query_utils.dart';
+6: 
+7: /// Shared personal equipment reference, reachable from Mine and Workbench.
+8: class MyEquipmentPage extends StatefulWidget {
+9:   const MyEquipmentPage({super.key, this.backLabel = '返回我的'});
+10: 
+11:   final String backLabel;
+12: 
+13:   @override
+14:   State<MyEquipmentPage> createState() => _MyEquipmentPageState();
+15: }
+16: 
+17: class _MyEquipmentPageState extends State<MyEquipmentPage> {
+18:   static const _ink = Color(0xFF112044);
+19:   static const _muted = Color(0xFF6B89B3);
+20:   static const _blue = Color(0xFF008FFF);
+21:   static const _bg = Color(0xFFEEF8FF);
+22:   // Compact reference: reduce natural layout height; never stretch artwork/text.
+23:   WearSession? _session;
+24:   String? _scope;
+25:   List<JsonMap> _items = [];
+26:   Object? _error;
+27:   bool _loading = true;
+28:   bool _preview = false;
+29:   int _request = 0;
+30: 
+31:   static const _examples = <JsonMap>[
+32:     {
+33:       'typeCode': 'helmet',
+34:       'sn': 'RL-H001',
+35:       'connectionQuality': 'ok',
+36:       'online': '1',
+37:       'lastReportedAt': '2026-09-15T10:42:00+08:00',
+38:       'issuedAt': '2026-09-15T08:10:00+08:00',
+39:     },
+40:     {
+41:       'typeCode': 'belt',
+42:       'sn': 'RL-B001',
+43:       'connectionQuality': 'stale',
+44:       'online': '0',
+45:       'lastReportedAt': '2026-09-15T10:39:00+08:00',
+46:       'issuedAt': '2026-09-15T08:10:00+08:00',
+47:     },
+48:     {
+49:       'typeCode': 'watch',
+50:       'sn': 'RL-W001',
+51:       'connectionQuality': 'ok',
+52:       'online': '1',
+53:       'lastReportedAt': '2026-09-15T10:42:00+08:00',
+54:       'issuedAt': '2026-09-15T08:10:00+08:00',
+55:     },
+56:   ];
+57: 
+58:   @override
+59:   void didChangeDependencies() {
+60:     super.didChangeDependencies();
+61:     final session = WearScope.of(context);
+62:     if (_scope != session.scopeKey || !identical(session, _session)) {
+63:       _session?.refreshTick.removeListener(_load);
+64:       _session = session;
+65:       _scope = session.scopeKey;
+66:       session.refreshTick.addListener(_load);
+67:       _items = [];
+68:       _preview = false;
+69:       _load();
+70:     }
+71:   }
+72: 
+73:   @override
+74:   void dispose() {
+75:     _session?.refreshTick.removeListener(_load);
+76:     super.dispose();
+77:   }
+78: 
+79:   Future<void> _load() async {
+80:     final session = _session!;
+81:     final scope = session.scopeKey;
+82:     final request = ++_request;
+83:     setState(() {
+84:       _loading = true;
+85:       _error = null;
+86:     });
+87:     try {
+88:       final assignments = jsonList(
+89:         await session.api.get('/api/v1/me/equipment'),
+90:       );
+91:       final rows = await Future.wait(
+92:         assignments.map((row) async {
+93:           final id = idOf(row['deviceId']);
+94:           if (id.isEmpty) return row;
+95:           try {
+96:             final device = jsonMap(
+97:               await session.api.get(
+98:                 '/api/v1/devices/${Uri.encodeComponent(id)}',
+99:               ),
+100:             );
+101:             return <String, dynamic>{
+102:               ...row,
+103:               'online': device['online'],
+104:               'connectionQuality': device['connectionQuality'],
+105:               'lastReportedAt': device['lastReportedAt'],
+106:               'lastTelemetryAt': device['lastTelemetryAt'],
+107:             };
+108:           } on StaleSessionException {
+109:             rethrow;
+110:           } catch (_) {
+111:             // Assignment remains usable when device telemetry is not readable.
+112:             return <String, dynamic>{...row, 'telemetryUnavailable': true};
+113:           }
+114:         }),
+115:       );
+116:       if (!mounted || request != _request || scope != session.scopeKey) return;
+117:       setState(() {
+118:         _items = rows;
+119:         _loading = false;
+120:       });
+121:     } catch (error) {
+122:       if (!mounted ||
+123:           error is StaleSessionException ||
+124:           request != _request ||
+125:           scope != session.scopeKey) {
+126:         return;
+127:       }
+128:       setState(() {
+129:         _error = error;
+130:         _loading = false;
+131:       });
+132:     }
+133:   }
+134: 
+135:   bool get _showExamples =>
+136:       _preview || (!_loading && _error == null && _items.isEmpty);
+137: 
+138:   String _name(JsonMap item) => switch (item['typeCode']?.toString()) {
+139:     'watch' => '智能手表',
+140:     _ => deviceTypeLabel(item['typeCode']),
+141:   };
+142: 
+143:   String _status(JsonMap item) =>
+144:       item['online']?.toString() == '0' ? '连接中断' : connectionLabel(item);
+145: 
+146:   @override
+147:   Widget build(BuildContext context) {
+148:     final examples = _showExamples;
+149:     final rows = examples ? _examples : _items;
+150:     return Scaffold(
+151:       backgroundColor: _bg,
+152:       body: SafeArea(
+153:         bottom: false,
+154:         child: RefreshIndicator(
+155:           onRefresh: () async {
+156:             setState(() => _preview = false);
+157:             await _load();
+158:           },
+159:           child: SingleChildScrollView(
+160:             key: const PageStorageKey('my-equipment-reference'),
+161:             physics: const AlwaysScrollableScrollPhysics(),
+162:             child: Column(
+163:               children: [
+164:                 _header(examples),
+165:                 if (_loading)
+166:                   const Padding(
+167:                     padding: EdgeInsets.all(24),
+168:                     child: CircularProgressIndicator(),
+169:                   ),
+170:                 if (_error != null && !examples)
+171:                   Padding(
+172:                     padding: const EdgeInsets.all(16),
+173:                     child: WearEmpty(
+174:                       title: '装备信息暂不可用',
+175:                       detail: '请检查网络或访问权限后重试',
+176:                       onRetry: _load,
+177:                     ),
+178:                   ),
+179:                 if (examples)
+180:                   Padding(
+181:                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+182:                     child: Text(
+183:                       _items.isEmpty && _error == null
+184:                           ? '当前账号暂无领用装备 · 以下为示例预览'
+185:                           : '仅预览示例，不代表当前账号实际装备',
+186:                       style: const TextStyle(color: _muted, fontSize: 10),
+187:                     ),
+188:                   ),
+189:                 Padding(
+190:                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+191:                   child: Column(
+192:                     children: [
+193:                       if (!_loading || examples)
+194:                         for (final item in rows) _card(item, examples),
+195:                       if (!_loading && (_error == null || examples))
+196:                         _historyRow(rows, examples),
+197:                     ],
+198:                   ),
+199:                 ),
+200:               ],
+201:             ),
+202:           ),
+203:         ),
+204:       ),
+205:     );
+206:   }
+207: 
+208:   Widget _header(bool examples) {
+209:     final session = _session!;
+210:     final person = _items.isEmpty ? '' : textOf(_items.first['personName'], '');
+211:     final name = examples
+212:         ? '陈建国'
+213:         : person.isNotEmpty
+214:         ? person
+215:         : textOf(
+216:             session.me?['nickName'],
+217:             textOf(session.me?['userName'], '当前用户'),
+218:           );
+219:     final roles = session.roles
+220:         .map(
+221:           (r) =>
+222:               const {
+223:                 'admin': '管理员',
+224:                 'wear_platform_admin': '平台管理员',
+225:                 'wear_duty': '值班员',
+226:                 'wear_team_lead': '班组长',
+227:                 'wear_readonly': '只读人员',
+228:                 'wear_reviewer': '复核员',
+229:                 'wear_device_admin': '设备管理员',
+230:               }[r] ??
+231:               r,
+232:         )
+233:         .join(' / ');
+234:     return Container(
+235:       key: const ValueKey('wear-page-hero-equipment'),
+236:       height: WearHeaderLayout.height(context),
+237:       decoration: const BoxDecoration(
+238:         image: DecorationImage(
+239:           image: AssetImage(
+240:             'assets/field-brand/preview/equipment_reference_header.png',
+241:           ),
+242:           fit: BoxFit.cover,
+243:           alignment: Alignment.bottomCenter,
+244:         ),
+245:       ),
+246:       padding: const EdgeInsets.only(bottom: 3),
+247:       child: Column(
+248:         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+249:         children: [
+250:           Padding(
+251:             padding: const EdgeInsets.only(right: 10, top: 2),
+252:             child: Row(
+253:               children: [
+254:                 IconButton(
+255:                   tooltip: widget.backLabel,
+256:                   onPressed: () => Navigator.of(context).pop(),
+257:                   icon: const Icon(
+258:                     Icons.arrow_back_ios_new,
+259:                     color: _ink,
+260:                     size: 22,
+261:                   ),
+262:                 ),
+263:                 const WearRollingWordmark(height: 23),
+264:                 const SizedBox(width: 8),
+265:                 Expanded(
+266:                   child: Align(
+267:                     alignment: Alignment.centerRight,
+268:                     child: TextButton(
+269:                       key: const ValueKey('equipment-preview-toggle'),
+270:                       onPressed: _loading
+271:                           ? null
+272:                           : () {
+273:                               if (_items.isEmpty && _error == null) {
+274:                                 ScaffoldMessenger.of(context).showSnackBar(
+275:                                   const SnackBar(
+276:                                     content: Text('当前账号尚无领用装备，正在展示示例数据'),
+277:                                   ),
+278:                                 );
+279:                               } else {
+280:                                 setState(() => _preview = !_preview);
+281:                               }
+282:                             },
+283:                       style: TextButton.styleFrom(
+284:                         padding: const EdgeInsets.symmetric(horizontal: 2),
+285:                         foregroundColor: _muted,
+286:                       ),
+287:                       child: Text(
+288:                         examples ? '设计预览 · 示例数据' : '预览示例',
+289:                         textAlign: TextAlign.right,
+290:                         style: const TextStyle(fontSize: 10),
+291:                       ),
+292:                     ),
+293:                   ),
+294:                 ),
+295:               ],
+296:             ),
+297:           ),
+298:           Padding(
+299:             padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+300:             child: LayoutBuilder(
+301:               builder: (context, box) {
+302:                 final largeText =
+303:                     MediaQuery.textScalerOf(context).scale(1) > 1.2;
+304:                 final profile = Row(
+305:                   mainAxisSize: MainAxisSize.min,
+306:                   children: [
+307:                     const WearAssetImage(
+308:                       WearArt.characterAvatar,
+309:                       width: 43,
+310:                       height: 43,
+311:                       borderRadius: BorderRadius.all(Radius.circular(30)),
+312:                     ),
+313:                     const SizedBox(width: 7),
+314:                     Flexible(
+315:                       child: Column(
+316:                         crossAxisAlignment: CrossAxisAlignment.start,
+317:                         children: [
+318:                           Text(
+319:                             name,
+320:                             style: const TextStyle(
+321:                               color: _ink,
+322:                               fontSize: 13,
+323:                               fontWeight: FontWeight.w800,
+324:                             ),
+325:                           ),
+326:                           const SizedBox(height: 2),
+327:                           Text(
+328:                             examples
+329:                                 ? '一线作业人员'
+330:                                 : roles.isEmpty
+331:                                 ? '当前人员'
+332:                                 : roles,
+333:                             style: const TextStyle(color: _muted, fontSize: 10),
+334:                           ),
+335:                         ],
+336:                       ),
+337:                     ),
+338:                   ],
+339:                 );
+340:                 final title = Text(
+341:                   '我的装备',
+342:                   style: TextStyle(
+343:                     color: _ink,
+344:                     fontSize: WearHeaderLayout.titleSize,
+345:                     fontWeight: FontWeight.w900,
+346:                     height: 1.2,
+347:                   ),
+348:                 );
+349:                 if (largeText) {
+350:                   return Column(
+351:                     crossAxisAlignment: CrossAxisAlignment.start,
+352:                     children: [title, const SizedBox(height: 8), profile],
+353:                   );
+354:                 }
+355:                 return Row(
+356:                   crossAxisAlignment: CrossAxisAlignment.center,
+357:                   children: [
+358:                     Expanded(flex: 5, child: title),
+359:                     const SizedBox(width: 5),
+360:                     Expanded(flex: 4, child: profile),
+361:                   ],
+362:                 );
+363:               },
+364:             ),
+365:           ),
+366:           const Padding(
+367:             padding: EdgeInsets.only(left: 22),
+368:             child: Align(
+369:               alignment: Alignment.centerLeft,
+370:               child: Text(
+371:                 '安全，从我做起！',
+372:                 style: TextStyle(
+373:                   color: _blue,
+374:                   fontSize: 11,
+375:                   fontWeight: FontWeight.w600,
+376:                 ),
+377:               ),
+378:             ),
+379:           ),
+380:         ],
+381:       ),
+382:     );
+383:   }
+384: 
+385:   Widget _card(JsonMap item, bool example) {
+386:     final type = item['typeCode']?.toString();
+387:     final status = _status(item);
+388:     final color = status == '在线'
+389:         ? const Color(0xFF00C7A0)
+390:         : status == '连接中断' || status == '数据陈旧'
+391:         ? const Color(0xFFFFA000)
+392:         : _muted;
+393:     final time = item['lastReportedAt'] ?? item['lastTelemetryAt'];
+394:     final timestamp = example && time != null
+395:         ? time.toString().substring(11, 16)
+396:         : time == null
+397:         ? '未知'
+398:         : formatTime(time);
+399:     final extra = type == 'belt' || type == 'watch';
+400:     return Padding(
+401:       padding: const EdgeInsets.only(bottom: 4),
+402:       child: Material(
+403:         color: Colors.white,
+404:         borderRadius: BorderRadius.circular(15),
+405:         clipBehavior: Clip.antiAlias,
+406:         child: InkWell(
+407:           key: ValueKey(
+408:             'equipment-card-${example ? type : idOf(item['deviceId'])}',
+409:           ),
+410:           onTap: () => _openDevice(item, example),
+411:           child: Padding(
+412:             padding: const EdgeInsets.all(5),
+413:             child: Column(
+414:               children: [
+415:                 IntrinsicHeight(
+416:                   child: Row(
+417:                     crossAxisAlignment: CrossAxisAlignment.stretch,
+418:                     children: [
+419:                       Expanded(
+420:                         flex: 35,
+421:                         child: ClipRRect(
+422:                           borderRadius: BorderRadius.circular(10),
+423:                           child: Stack(
+424:                             fit: StackFit.expand,
+425:                             children: [
+426:                               Image.asset(
+427:                                 WearArt.equipment(type),
+428:                                 fit: BoxFit.cover,
+429:                               ),
+430:                               if (type == 'belt' && status != '在线')
+431:                                 const Positioned(
+432:                                   left: 7,
+433:                                   top: 9,
+434:                                   child: Icon(
+435:                                     Icons.warning_rounded,
+436:                                     color: Color(0xFFFFA000),
+437:                                     size: 24,
+438:                                   ),
+439:                                 ),
+440:                             ],
+441:                           ),
+442:                         ),
+443:                       ),
+444:                       const SizedBox(width: 12),
+445:                       Expanded(
+446:                         flex: 61,
+447:                         child: ConstrainedBox(
+448:                           constraints: BoxConstraints(
+449:                             minHeight: extra ? 106 : 81,
+450:                           ),
+451:                           child: Column(
+452:                             crossAxisAlignment: CrossAxisAlignment.start,
+453:                             children: [
+454:                               Text(
+455:                                 _name(item),
+456:                                 style: const TextStyle(
+457:                                   fontSize: 18,
+458:                                   fontWeight: FontWeight.w800,
+459:                                   color: _ink,
+460:                                   height: 1.2,
+461:                                 ),
+462:                               ),
+463:                               const SizedBox(height: 2),
+464:                               Row(
+465:                                 crossAxisAlignment: CrossAxisAlignment.start,
+466:                                 children: [
+467:                                   Expanded(
+468:                                     child: Text(
+469:                                       textOf(item['sn']),
+470:                                       style: const TextStyle(
+471:                                         fontSize: 13,
+472:                                         color: _muted,
+473:                                       ),
+474:                                     ),
+475:                                   ),
+476:                                   const Icon(
+477:                                     Icons.chevron_right,
+478:                                     size: 24,
+479:                                     color: _muted,
+480:                                   ),
+481:                                 ],
+482:                               ),
+483:                               const SizedBox(height: 4),
+484:                               Row(
+485:                                 children: [
+486:                                   Container(
+487:                                     width: 12,
+488:                                     height: 12,
+489:                                     decoration: BoxDecoration(
+490:                                       color: color,
+491:                                       shape: BoxShape.circle,
+492:                                     ),
+493:                                   ),
+494:                                   const SizedBox(width: 7),
+495:                                   Flexible(
+496:                                     child: Text(
+497:                                       status,
+498:                                       style: TextStyle(
+499:                                         color: color,
+500:                                         fontSize: 13,
+501:                                         fontWeight: FontWeight.w700,
+502:                                       ),
+503:                                     ),
+504:                                   ),
+505:                                 ],
+506:                               ),
+507:                               const SizedBox(height: 2),
+508:                               Text(
+509:                                 '${status == '连接中断' || status == '数据陈旧' ? '最后数据' : '更新'} $timestamp',
+510:                                 style: const TextStyle(
+511:                                   fontSize: 11,
+512:                                   color: _muted,
+513:                                 ),
+514:                               ),
+515:                               if (item['telemetryUnavailable'] == true)
+516:                                 const Text(
+517:                                   '设备状态暂不可用',
+518:                                   style: TextStyle(fontSize: 10, color: _muted),
+519:                                 ),
+520:                               if (extra)
+521:                                 Padding(
+522:                                   padding: const EdgeInsets.only(top: 2),
+523:                                   child: _notice(type == 'belt'),
+524:                                 ),
+525:                             ],
+526:                           ),
+527:                         ),
+528:                       ),
+529:                     ],
+530:                   ),
+531:                 ),
+532:                 if (type != 'watch')
+533:                   Container(
+534:                     margin: const EdgeInsets.only(top: 4),
+535:                     padding: const EdgeInsets.symmetric(
+536:                       horizontal: 8,
+537:                       vertical: 3,
+538:                     ),
+539:                     width: double.infinity,
+540:                     decoration: BoxDecoration(
+541:                       color: const Color(0xFFEAF6FF),
+542:                       borderRadius: BorderRadius.circular(8),
+543:                     ),
+544:                     child: Text(
+545:                       type == 'belt'
+546:                           ? '用于高处作业防护监测'
+547:                           : type == 'helmet'
+548:                           ? '用于人员定位与安全监测'
+549:                           : '查看设备信息与领用记录',
+550:                       style: const TextStyle(fontSize: 11, color: _muted),
+551:                     ),
+552:                   ),
+553:               ],
+554:             ),
+555:           ),
+556:         ),
+557:       ),
+558:     );
+559:   }
+560: 
+561:   Widget _notice(bool belt) => Container(
+562:     width: double.infinity,
+563:     padding: const EdgeInsets.all(5),
+564:     decoration: BoxDecoration(
+565:       color: belt ? const Color(0xFFFFF8EB) : const Color(0xFFEAF6FF),
+566:       borderRadius: BorderRadius.circular(7),
+567:       border: Border.all(
+568:         color: belt ? const Color(0xFFFFE2A3) : const Color(0xFFC3E4FF),
+569:       ),
+570:     ),
+571:     child: Row(
+572:       crossAxisAlignment: CrossAxisAlignment.start,
+573:       children: [
+574:         Icon(
+575:           belt ? Icons.error : Icons.info,
+576:           color: belt ? const Color(0xFFFFA000) : _blue,
+577:           size: 20,
+578:         ),
+579:         const SizedBox(width: 6),
+580:         Expanded(
+581:           child: Column(
+582:             crossAxisAlignment: CrossAxisAlignment.start,
+583:             children: [
+584:               Text(
+585:                 belt ? '断连不直接判定违规' : '传感能力待确认',
+586:                 style: TextStyle(
+587:                   fontSize: 10,
+588:                   color: belt ? const Color(0xFF845129) : _ink,
+589:                   fontWeight: FontWeight.w700,
+590:                 ),
+591:               ),
+592:               Text(
+593:                 belt ? '挂接 / 受力状态待协议确认' : '具体功能以设备协议为准',
+594:                 style: const TextStyle(fontSize: 10, color: _muted),
+595:               ),
+596:             ],
+597:           ),
+598:         ),
+599:       ],
+600:     ),
+601:   );
+602: 
+603:   Widget _historyRow(List<JsonMap> rows, bool example) {
+604:     final issued =
+605:         rows.map((r) => r['issuedAt']?.toString()).whereType<String>().toList()
+606:           ..sort();
+607:     return Material(
+608:       color: Colors.white,
+609:       borderRadius: BorderRadius.circular(14),
+610:       clipBehavior: Clip.antiAlias,
+611:       child: InkWell(
+612:         onTap: () => _history(rows, example),
+613:         child: Padding(
+614:           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+615:           child: Row(
+616:             children: [
+617:               Container(
+618:                 padding: const EdgeInsets.all(8),
+619:                 decoration: const BoxDecoration(
+620:                   color: Color(0xFFE5F4FF),
+621:                   shape: BoxShape.circle,
+622:                 ),
+623:                 child: const Icon(Icons.assignment, color: _blue, size: 25),
+624:               ),
+625:               const SizedBox(width: 10),
+626:               Expanded(
+627:                 child: Column(
+628:                   crossAxisAlignment: CrossAxisAlignment.start,
+629:                   children: [
+630:                     const Text(
+631:                       '绑定历史',
+632:                       style: TextStyle(
+633:                         color: _ink,
+634:                         fontWeight: FontWeight.w800,
+635:                         fontSize: 16,
+636:                       ),
+637:                     ),
+638:                     Text(
+639:                       issued.isEmpty
+640:                           ? '暂无当前领用记录'
+641:                           : '本次领用 ${formatTime(issued.last)}',
+642:                       style: const TextStyle(color: _muted, fontSize: 12),
+643:                     ),
+644:                   ],
+645:                 ),
+646:               ),
+647:               const Icon(Icons.chevron_right, color: _muted),
+648:             ],
+649:           ),
+650:         ),
+651:       ),
+652:     );
+653:   }
+654: 
+655:   void _openDevice(JsonMap item, bool example) {
+656:     if (example) {
+657:       showDialog<void>(
+658:         context: context,
+659:         builder: (ctx) => AlertDialog(
+660:           title: Text('${_name(item)} · 示例'),
+661:           content: Text(
+662:             '${textOf(item['sn'])}\n${_status(item)}\n\n这是预览数据，不代表已绑定设备。实际装备可进入原设备详情。',
+663:           ),
+664:           actions: [
+665:             TextButton(
+666:               onPressed: () => Navigator.pop(ctx),
+667:               child: const Text('关闭'),
+668:             ),
+669:           ],
+670:         ),
+671:       );
+672:     } else {
+673:       final id = idOf(item['deviceId']);
+674:       if (id.isNotEmpty) context.push('/devices/${Uri.encodeComponent(id)}');
+675:     }
+676:   }
+677: 
+678:   Future<List<JsonMap>> _fetchHistory(List<JsonMap> rows) async {
+679:     final session = _session!;
+680:     final scope = session.scopeKey;
+681:     final ids = rows
+682:         .map((r) => idOf(r['personId']))
+683:         .where((id) => id.isNotEmpty)
+684:         .toSet();
+685:     if (ids.isEmpty) return [];
+686:     final results = await Future.wait(
+687:       ids.map(
+688:         (id) async => jsonList(
+689:           await session.api.get(
+690:             '/api/v1/people/${Uri.encodeComponent(id)}/assignments',
+691:           ),
+692:         ),
+693:       ),
+694:     );
+695:     if (scope != session.scopeKey) throw StaleSessionException();
+696:     return results.expand((r) => r).toList();
+697:   }
+698: 
+699:   void _history(List<JsonMap> rows, bool example) {
+700:     Future<List<JsonMap>>? future;
+701:     final scope = _session!.scopeKey;
+702:     showModalBottomSheet<void>(
+703:       context: context,
+704:       isScrollControlled: true,
+705:       backgroundColor: _bg,
+706:       builder: (ctx) => StatefulBuilder(
+707:         builder: (ctx, update) => SafeArea(
+708:           child: SizedBox(
+709:             height: MediaQuery.sizeOf(ctx).height * .65,
+710:             child: Column(
+711:               children: [
+712:                 Padding(
+713:                   padding: const EdgeInsets.fromLTRB(18, 10, 10, 4),
+714:                   child: Row(
+715:                     children: [
+716:                       Expanded(
+717:                         child: Text(
+718:                           example ? '示例绑定记录' : '绑定历史',
+719:                           style: const TextStyle(
+720:                             color: _ink,
+721:                             fontSize: 20,
+722:                             fontWeight: FontWeight.w800,
+723:                           ),
+724:                         ),
+725:                       ),
+726:                       TextButton(
+727:                         onPressed: () => Navigator.pop(ctx),
+728:                         child: const Text('关闭'),
+729:                       ),
+730:                     ],
+731:                   ),
+732:                 ),
+733:                 Expanded(
+734:                   child: FutureBuilder<List<JsonMap>>(
+735:                     future: future ??= example
+736:                         ? Future.value(rows)
+737:                         : _fetchHistory(rows),
+738:                     builder: (ctx, snapshot) {
+739:                       if (scope != WearScope.of(ctx).scopeKey) {
+740:                         return const Center(child: Text('账号或厂站已切换，请重新打开'));
+741:                       }
+742:                       if (snapshot.connectionState != ConnectionState.done) {
+743:                         return const Center(child: CircularProgressIndicator());
+744:                       }
+745:                       if (snapshot.hasError) {
+746:                         return WearEmpty(
+747:                           title: '绑定历史暂不可用',
+748:                           onRetry: () => update(() => future = null),
+749:                         );
+750:                       }
+751:                       final records = snapshot.data ?? [];
+752:                       if (records.isEmpty) {
+753:                         return const Center(child: Text('暂无可查询的绑定历史'));
+754:                       }
+755:                       return ListView(
+756:                         padding: const EdgeInsets.all(16),
+757:                         children: records
+758:                             .map(
+759:                               (row) => Card(
+760:                                 color: Colors.white,
+761:                                 child: ListTile(
+762:                                   title: Text(
+763:                                     '${_name(row)} · ${textOf(row['sn'])}',
+764:                                   ),
+765:                                   subtitle: Text(
+766:                                     '领用 ${formatTime(row['issuedAt'])}\n${row['returnedAt'] == null ? '当前领用' : '归还 ${formatTime(row['returnedAt'])}'}${row['returnReason'] == null ? '' : '\n原因 ${textOf(row['returnReason'])}'}',
+767:                                   ),
+768:                                   isThreeLine: true,
+769:                                 ),
+770:                               ),
+771:                             )
+772:                             .toList(),
+773:                       );
+774:                     },
+775:                   ),
+776:                 ),
+777:               ],
+778:             ),
+779:           ),
+780:         ),
+781:       ),
+782:     );
+783:   }
+784: }

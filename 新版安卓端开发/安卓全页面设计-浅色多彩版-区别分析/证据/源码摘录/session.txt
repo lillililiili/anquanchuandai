@@ -1,0 +1,288 @@
+1: import 'dart:async';
+2: import 'package:dio/dio.dart';
+3: import 'package:flutter/material.dart';
+4: import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+5: import 'package:shared_preferences/shared_preferences.dart';
+6: import 'api.dart';
+7: import 'data.dart';
+8: import 'events/event_state_store.dart';
+9: 
+10: abstract interface class CredentialStore {
+11:   Future<String?> read();
+12:   Future<void> write(String? token);
+13: }
+14: 
+15: class SecureCredentialStore implements CredentialStore {
+16:   final FlutterSecureStorage storage;
+17:   const SecureCredentialStore([this.storage = const FlutterSecureStorage()]);
+18:   @override
+19:   Future<String?> read() => storage.read(key: 'wear.access-token');
+20:   @override
+21:   Future<void> write(String? token) => token == null
+22:       ? storage.delete(key: 'wear.access-token')
+23:       : storage.write(key: 'wear.access-token', value: token);
+24: }
+25: 
+26: class WearSession extends ChangeNotifier {
+27:   late final WearApi api;
+28:   final CredentialStore credentials;
+29:   JsonMap? me;
+30:   String? token;
+31:   String? siteId;
+32:   int _epoch = 0;
+33:   bool busy = false;
+34:   bool initialized = false;
+35:   String? error;
+36:   bool _disposed = false;
+37:   Future<void> _credentialWrite = Future.value();
+38:   Future<void> Function()? beforeLogout;
+39:   Future<void> Function()? terminateCall;
+40:   final ValueNotifier<int> refreshTick = ValueNotifier(0);
+41:   final ValueNotifier<bool> callActive = ValueNotifier(false);
+42:   WearSession({Dio? dio, CredentialStore? credentials})
+43:     : credentials = credentials ?? const SecureCredentialStore() {
+44:     api = WearApi(
+45:       dio: dio,
+46:       token: () => token,
+47:       siteId: () => siteId,
+48:       epoch: () => _epoch,
+49:       onUnauthorized: expire,
+50:     );
+51:     callActive.addListener(_emit);
+52:   }
+53:   String get userId => idOf(me?['userId']);
+54:   String get scopeKey => '$userId.${siteId ?? "none"}.$_epoch';
+55:   Set<String> get roles =>
+56:       (me?['roles'] as List? ?? []).map((e) => e.toString()).toSet();
+57:   Set<String> get permissions =>
+58:       (me?['permissions'] as List? ?? []).map((e) => e.toString()).toSet();
+59:   bool hasRole(String role) => roles.contains(role);
+60:   bool can(String permission) =>
+61:       permissions.contains(permission) || permissions.contains('*:*:*');
+62:   bool get isDuty => hasRole('wear_duty') || hasRole('wear_team_lead');
+63:   bool get isReviewer =>
+64:       hasRole('wear_reviewer') ||
+65:       hasRole('wear_platform_admin') ||
+66:       me?['admin'] == true;
+67:   List<JsonMap> get sites => jsonList(
+68:     me?['authorizedSites'],
+69:   ).where((e) => e['status'] == null || idOf(e['status']) == '0').toList();
+70:   String get siteName =>
+71:       sites
+72:           .where((e) => idOf(e['id']) == siteId)
+73:           .map((e) => textOf(e['name']))
+74:           .firstOrNull ??
+75:       '选择厂站';
+76: 
+77:   void _emit() {
+78:     if (!_disposed) notifyListeners();
+79:   }
+80: 
+81:   void requestRefresh() {
+82:     if (!_disposed && me != null) refreshTick.value++;
+83:   }
+84: 
+85:   void _invalidate() {
+86:     _epoch++;
+87:     api.invalidate();
+88:   }
+89: 
+90:   // Expiry and a rapid re-login must reach the native keystore in that order.
+91:   Future<void> _saveCredential(String? value) {
+92:     final next = _credentialWrite
+93:         .catchError((_) {})
+94:         .then((_) => credentials.write(value));
+95:     _credentialWrite = next;
+96:     return next;
+97:   }
+98: 
+99:   void _endSessionCall() {
+100:     final ending = terminateCall?.call();
+101:     if (ending != null) unawaited(ending.catchError((_) {}));
+102:     callActive.value = false;
+103:   }
+104: 
+105:   Future<void> initialize() async {
+106:     if (busy) return;
+107:     busy = true;
+108:     error = null;
+109:     _emit();
+110:     try {
+111:       token = await credentials.read();
+112:       // Do not trust cached identity or the former plain-text legacy token.
+113:       if (token != null) await _loadIdentity();
+114:     } catch (e) {
+115:       if (e is! StaleSessionException) {
+116:         error = e is WearApiException ? e.message : '无法读取登录状态，请重新登录';
+117:       }
+118:     } finally {
+119:       initialized = true;
+120:       busy = false;
+121:       _emit();
+122:     }
+123:   }
+124: 
+125:   Future<void> login(
+126:     String username,
+127:     String password, {
+128:     String? code,
+129:     String? uuid,
+130:   }) async {
+131:     if (busy) return;
+132:     busy = true;
+133:     error = null;
+134:     _invalidate();
+135:     _endSessionCall();
+136:     me = null;
+137:     siteId = null;
+138:     token = null;
+139:     _emit();
+140:     try {
+141:       final response = jsonMap(
+142:         await api.request(
+143:           'POST',
+144:           '/login',
+145:           raw: true,
+146:           data: {
+147:             'username': username.trim(),
+148:             'password': password,
+149:             'code': ?code,
+150:             'uuid': ?uuid,
+151:           },
+152:         ),
+153:       );
+154:       final value = idOf(response['token']);
+155:       if (value.isEmpty) throw const WearApiException(502, '登录响应缺少凭据，请联系管理员');
+156:       token = value;
+157:       await _saveCredential(token);
+158:       await _loadIdentity();
+159:     } catch (e) {
+160:       error = e is WearApiException ? e.message : '登录未完成，请稍后重试';
+161:       rethrow;
+162:     } finally {
+163:       busy = false;
+164:       initialized = true;
+165:       _emit();
+166:     }
+167:   }
+168: 
+169:   Future<void> _loadIdentity() async {
+170:     final identity = jsonMap(await api.get('/api/v1/me'));
+171:     if (idOf(identity['userId']).isEmpty || idOf(identity['status']) != '0') {
+172:       expire();
+173:       throw const WearApiException(401, '账号不可用，请联系管理员');
+174:     }
+175:     me = identity;
+176:     final selected = idOf(identity['currentSiteId']);
+177:     siteId = sites.any((e) => idOf(e['id']) == selected) ? selected : null;
+178:     if (siteId == null && sites.length == 1) {
+179:       final id = idOf(sites.single['id']);
+180:       await api.put('/api/v1/me/current-site', data: {'siteId': id});
+181:       siteId = id;
+182:       me!['currentSiteId'] = id;
+183:     }
+184:   }
+185: 
+186:   Future<void> selectSite(String id) async {
+187:     if (busy || id == siteId) return;
+188:     if (callActive.value) throw const WearApiException(409, '请先在通讯页结束通话，再切换厂站');
+189:     if (!sites.any((e) => idOf(e['id']) == id)) {
+190:       throw const WearApiException(403, '没有该厂站的访问权限');
+191:     }
+192:     busy = true;
+193:     error = null;
+194:     _invalidate();
+195:     _emit();
+196:     try {
+197:       final result = jsonMap(
+198:         await api.put('/api/v1/me/current-site', data: {'siteId': id}),
+199:       );
+200:       if (idOf(result['currentSiteId']) != id) {
+201:         throw const WearApiException(502, '厂站切换未确认，请重试');
+202:       }
+203:       siteId = id;
+204:       me?['currentSiteId'] = id;
+205:     } catch (e) {
+206:       error = e.toString();
+207:       rethrow;
+208:     } finally {
+209:       busy = false;
+210:       _emit();
+211:       requestRefresh();
+212:     }
+213:   }
+214: 
+215:   void expire() {
+216:     _endSessionCall();
+217:     _invalidate();
+218:     token = null;
+219:     me = null;
+220:     siteId = null;
+221:     error = '登录已过期，请重新登录';
+222:     unawaited(_saveCredential(null).catchError((_) {}));
+223:     _emit();
+224:   }
+225: 
+226:   Future<void> logout() async {
+227:     if (busy) return;
+228:     if (callActive.value) throw const WearApiException(409, '请先在通讯页结束通话，再退出账号');
+229:     busy = true;
+230:     _emit();
+231:     final oldUser = userId;
+232:     String? logoutWarning;
+233:     try {
+234:       try {
+235:         await beforeLogout?.call().timeout(const Duration(seconds: 3));
+236:       } catch (_) {
+237:         logoutWarning = '本地已退出，推送解绑未确认';
+238:       }
+239:       try {
+240:         await api.post('/logout').timeout(const Duration(seconds: 5));
+241:       } catch (_) {
+242:         logoutWarning = '本地已退出，服务端会话注销未确认';
+243:       }
+244:     } finally {
+245:       _invalidate();
+246:       token = null;
+247:       me = null;
+248:       siteId = null;
+249:       try {
+250:         await SharedPreferencesEventStateStore.revokeUser(oldUser);
+251:         await _saveCredential(null);
+252:         final prefs = await SharedPreferences.getInstance();
+253:         for (final key
+254:             in prefs
+255:                 .getKeys()
+256:                 .where((key) => key.startsWith('wear.$oldUser.'))
+257:                 .toList()) {
+258:           await prefs.remove(key);
+259:         }
+260:         await prefs.remove('user_token');
+261:         await prefs.remove('user_info');
+262:       } finally {
+263:         busy = false;
+264:         error = logoutWarning;
+265:         _emit();
+266:       }
+267:     }
+268:   }
+269: 
+270:   @override
+271:   void dispose() {
+272:     _disposed = true;
+273:     _invalidate();
+274:     refreshTick.dispose();
+275:     callActive.dispose();
+276:     super.dispose();
+277:   }
+278: }
+279: 
+280: class WearScope extends InheritedNotifier<WearSession> {
+281:   const WearScope({
+282:     super.key,
+283:     required WearSession session,
+284:     required super.child,
+285:   }) : super(notifier: session);
+286:   static WearSession of(BuildContext context) =>
+287:       context.dependOnInheritedWidgetOfExactType<WearScope>()!.notifier!;
+288: }

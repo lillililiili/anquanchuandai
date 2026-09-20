@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ROLLING · 多人业务通信联调</title>
+  <link rel="icon" href="/icon.svg"><link rel="stylesheet" href="/business.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><img src="/icon.svg" alt="">ROLLING <small>现场联调工作台</small></a><nav><a href="/">👥 现场人员与装备</a><a href="/?tab=comms" aria-current="page">📞 音视频与对讲</a><a href="/?tab=alarms">🚨 设备告警</a></nav></header>
+  <main>
+    <section class="heading"><span class="eyebrow">仅供开发测试 · 业务身份</span><h1>多人在线，双向呼叫。</h1><p>同步安卓值班端与虚拟设备的呼叫、接听及播报回执状态；不采集或传输真实音视频。</p></section>
+    <div id="notice" role="status" class="notice" hidden></div>
+    <section class="card account"><div class="section-heading"><h2>连接项目</h2><span id="connection" class="badge">尚未登录</span></div>
+      <form id="loginForm" class="login-grid">
+        <label>业务账号<input id="username" autocomplete="username" required></label>
+        <label>密码<input id="password" type="password" autocomplete="current-password" required></label>
+        <div id="captchaBox" hidden><label>验证码<div class="captcha-row"><input id="captcha" autocomplete="off"><button id="refreshCaptcha" type="button" class="captcha-button" title="刷新验证码"><img id="captchaImage" alt="验证码，点击刷新"></button></div></label></div>
+        <button id="signIn" type="submit" class="primary">登录业务账号</button>
+      </form>
+      <div class="account-row"><label>工作厂站<select id="site" disabled><option value="">请先登录</option></select></label><button id="signOut" class="secondary" disabled>退出账号</button></div>
+      <p id="accountInfo" class="hint">密码与令牌仅在当前页面内存中使用，不写入本地存储。</p>
+    </section>
+    <div id="workspace" hidden>
+      <section class="card"><div class="section-heading"><div><h2>虚拟人员与设备</h2><p class="hint">使用现有台账。测试佩戴人、在线与异常仅影响本联调服务，不改设备台账。</p></div><button id="refreshRoster" class="secondary">刷新名单</button></div>
+        <div class="filters"><label>搜索人员 / 设备<input id="search" type="search" placeholder="姓名、编号或 SN"></label><label>设备类型<select id="deviceType"><option value="">全部设备</option><option value="helmet">安全帽</option><option value="belt">安全腰带</option><option value="watch">手表</option></select></label><label>作业组<select id="taskFilter"><option value="">全部作业</option></select></label></div>
+        <div class="toolbar"><label class="check"><input id="selectVisible" type="checkbox">选择当前显示设备</label><span id="selectedCount">已选 0 台</span><button id="onlineSelected" class="primary">所选上线</button><button id="offlineSelected" class="secondary">所选离线</button></div>
+        <p class="hint">勾选设备后批量上下线，或逐台设置。页面每 2 秒续期；关闭页面或中断连接约 25 秒后自动离线。</p>
+        <p class="hint">设备配置属于管理员测试面板。安全帽没有屏幕：帽端只模拟“呼叫 / 接听”和“挂断”两个按键，呼出自动联系当前在线值班人，无法选择联系人。</p><div id="devices" class="device-grid"></div>
+      </section>
+      <div class="two-columns">
+        <section class="card"><h2>管理员测试注入</h2><p class="hint">此区域不是安全帽屏幕。每次选择 1 台在线安全帽，注入普通来电或 SOS；服务自动路由至当前在线值班人，帽端不选联系人。画面由值班端开启，安全帽被动上传，无需第二次确认；本工具仅同步状态。SOS 同时写入模拟事件。</p><p class="hint">在线值班路由状态</p><div id="dispatcher" class="badge">暂无在线值班账号</div><div class="actions"><button id="normalCall" class="primary">注入普通来电</button><button id="sosCall" class="danger">注入 SOS 紧急呼叫</button></div><p id="dispatcherHint" class="hint">请在安卓使用具有值班角色的账号登录并启用联调。</p></section>
+        <section class="card"><h2>群发文字播报</h2><p class="hint">向上方所选设备发送测试播报；设备回执需下方手动确认，不代表已实际播放声音。</p><label>播报内容<textarea id="ttsText" maxlength="500" rows="3" placeholder="请输入测试播报内容"></textarea></label><button id="sendTts" class="primary">发送到所选设备</button></section>
+      </div>
+      <section class="card"><div class="section-heading"><h2>双端通话状态</h2><span id="heartbeat" class="hint">等待同步</span></div><p class="hint">安卓外呼后，使用上方安全帽“呼叫 / 接听”键接听，或用“挂断”键拒绝来电；安全帽呼出由安卓接听。群呼逐人显示状态，画面查看由值班端控制。</p><div id="calls" class="stack"></div></section>
+      <section class="card"><h2>播报与逐设备回执</h2><div id="messages" class="stack"></div></section>
+      <section class="card"><div class="section-heading"><div><h2>作业临时组</h2><p class="hint">以下是业务作业的真实成员。只有点击“保存作业成员”才会提交修改，安卓可按该作业组筛选、群呼和群发。</p></div></div><label>选择作业<select id="editTask"></select></label><p id="taskInfo" class="hint"></p><div id="taskMembers" class="member-grid"></div><button id="saveMembers" class="primary">保存作业成员（业务数据）</button><p class="hint">作业状态及当前账号权限由业务接口校验；新增与移除不是单次事务，部分失败时会回读实际成员。</p></section>
+    </div>
+    <footer>状态联调 · 不传输音视频 · 不自动修改业务作业成员</footer>
+  </main>
+  <script type="module" src="/business.js"></script>
+</body>
+</html>

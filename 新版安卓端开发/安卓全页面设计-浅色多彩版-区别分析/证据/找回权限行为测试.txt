@@ -1,0 +1,4 @@
+00:00 +0: loading C:/Users/qiyue/Desktop/开发项目/android代码/melhat_android-main/test/wear_password_reset_test.dart
+00:00 +0: reset request validates and returns without sending or changing password at 1.0
+00:03 +1: reset request validates and returns without sending or changing password at 1.5
+00:04 +2: All tests passed!

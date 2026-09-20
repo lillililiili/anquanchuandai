@@ -6,15 +6,25 @@ import 'core.dart';
 import 'auth_pages.dart';
 import 'notifications.dart';
 import 'mine_page.dart';
+import 'duty_pages.dart';
 import 'queries/queries.dart';
 import 'events/events_page.dart';
+import 'events/sos_events_page.dart';
 import 'communications/communications.dart';
+import 'communications/lab_calls.dart';
 import '../theme/app_theme.dart';
 
 class WearApp extends StatefulWidget {
   final WearSession? session;
   final bool enableNotifications;
-  const WearApp({super.key, this.session, this.enableNotifications = true});
+  // Optional bundled font for the browser demo; Android keeps its original theme.
+  final String? fontFamily;
+  const WearApp({
+    super.key,
+    this.session,
+    this.enableNotifications = true,
+    this.fontFamily,
+  });
   @override
   State<WearApp> createState() => _WearAppState();
 }
@@ -52,6 +62,10 @@ class _WearAppState extends State<WearApp> {
         ),
       ),
       routes: [
+        GoRoute(
+          path: '/lab-call/:id',
+          builder: (_, s) => LabCallPage(id: s.pathParameters['id']!),
+        ),
         GoRoute(path: '/login', builder: (_, _) => const WearLoginPage()),
         GoRoute(path: '/sites', builder: (_, _) => const WearSitesPage()),
         StatefulShellRoute.indexedStack(
@@ -63,6 +77,10 @@ class _WearAppState extends State<WearApp> {
                 GoRoute(
                   path: '/workbench',
                   builder: (_, _) => const WorkbenchPage(),
+                ),
+                GoRoute(
+                  path: '/sos-events',
+                  builder: (_, _) => const SosEventsPage(),
                 ),
                 GoRoute(
                   path: '/people',
@@ -107,6 +125,7 @@ class _WearAppState extends State<WearApp> {
                 GoRoute(
                   path: '/communications',
                   builder: (_, s) => CommunicationsPage(
+                    action: s.uri.queryParameters['action'],
                     deviceId: s.uri.queryParameters['deviceId'],
                     personId: s.uri.queryParameters['personId'],
                     eventId: s.uri.queryParameters['eventId'],
@@ -144,6 +163,14 @@ class _WearAppState extends State<WearApp> {
                   path: '/me',
                   builder: (_, _) =>
                       WearMinePage(notifications: _notifications),
+                ),
+                GoRoute(
+                  path: '/settings',
+                  builder: (_, _) => const WearDutyPage(settings: true),
+                ),
+                GoRoute(
+                  path: '/handovers',
+                  builder: (_, _) => const WearDutyPage(),
                 ),
               ],
             ),
@@ -184,10 +211,34 @@ class _WearAppState extends State<WearApp> {
 
   @override
   Widget build(BuildContext context) {
-    final cargoTheme = AppTheme.lightTheme;
+    final originalTheme = AppTheme.lightTheme;
+    final cargoTheme = widget.fontFamily == null
+        ? originalTheme
+        : originalTheme.copyWith(
+            textTheme: originalTheme.textTheme.apply(
+              fontFamily: widget.fontFamily,
+            ),
+            primaryTextTheme: originalTheme.primaryTextTheme.apply(
+              fontFamily: widget.fontFamily,
+            ),
+          );
     return WearScope(
       session: _session,
       child: MaterialApp.router(
+        builder: (context, child) => LabCallHost(
+          routeChanges: _router.routerDelegate,
+          // The URI can still describe the parent for imperative pushes.
+          // The last match is the actual top page, including pushed routes.
+          callPageVisible: () => _router
+              .routerDelegate
+              .currentConfiguration
+              .last
+              .matchedLocation
+              .startsWith('/lab-call/'),
+          session: _session,
+          openCall: (id) => _router.push('/lab-call/$id'),
+          child: child ?? const SizedBox.shrink(),
+        ),
         title: '智能穿戴管理平台',
         debugShowCheckedModeBanner: false,
         routerConfig: _router,

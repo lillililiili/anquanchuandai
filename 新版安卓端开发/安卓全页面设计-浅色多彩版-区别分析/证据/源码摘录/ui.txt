@@ -1,0 +1,547 @@
+1: import 'package:flutter/material.dart';
+2: import 'package:go_router/go_router.dart';
+3: 
+4: import '../theme/app_colors.dart';
+5: import 'session.dart';
+6: 
+7: class WearColors {
+8:   static const ink = SpringColors.textPrimaryLight;
+9:   static const muted = SpringColors.textSecondaryLight;
+10:   // Existing primary usages are foreground text/icons on light surfaces.
+11:   static const primary = ink;
+12:   static const brand = Color(0xFF2F7BFF);
+13:   static const accent = brand;
+14:   static const background = Color(0xFFEEF5FC);
+15:   static const line = Color(0xFFE2E7F0);
+16:   static const danger = Color(0xFFBA433C);
+17:   static const warning = Color(0xFFD97706);
+18:   static const online = Color(0xFF16A34A);
+19: }
+20: 
+21: class WearRollingWordmark extends StatelessWidget {
+22:   const WearRollingWordmark({super.key, this.height = 28});
+23: 
+24:   final double height;
+25: 
+26:   @override
+27:   Widget build(BuildContext context) {
+28:     return SizedBox(
+29:       height: height,
+30:       child: Row(
+31:         mainAxisSize: MainAxisSize.min,
+32:         children: [
+33:           CustomPaint(
+34:             size: Size(height, height),
+35:             painter: const _RollingMarkPainter(),
+36:           ),
+37:           SizedBox(width: height * 0.2),
+38:           Text(
+39:             'ROLLING',
+40:             style: TextStyle(
+41:               color: const Color(0xFF163A7A),
+42:               fontSize: height * 0.7,
+43:               fontWeight: FontWeight.w800,
+44:               letterSpacing: height * 0.02,
+45:               height: 1,
+46:             ),
+47:           ),
+48:         ],
+49:       ),
+50:     );
+51:   }
+52: }
+53: 
+54: class _RollingMarkPainter extends CustomPainter {
+55:   const _RollingMarkPainter();
+56: 
+57:   @override
+58:   void paint(Canvas canvas, Size size) {
+59:     final stroke = size.width * 0.2;
+60:     final ring = Paint()
+61:       ..color = WearColors.brand
+62:       ..style = PaintingStyle.stroke
+63:       ..strokeWidth = stroke;
+64:     final fill = Paint()..color = WearColors.brand;
+65:     final c = Offset(size.width / 2, size.height / 2);
+66:     final r = size.width / 2 - stroke / 2;
+67:     canvas.drawCircle(c, r, ring);
+68:     canvas.drawCircle(c, r * 0.36, fill);
+69:   }
+70: 
+71:   @override
+72:   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+73: }
+74: 
+75: class WearArt {
+76:   static const _base = 'assets/field-brand/preview/';
+77:   static const characterThumbsup = '${_base}character_thumbsup.jpg';
+78:   static const characterPhone = '${_base}character_phone.jpg';
+79:   static const commsHero = '${_base}comms_hero.jpg';
+80:   static const eventsHero = '${_base}events_hero.jpg';
+81:   static const mineHero = '${_base}mine_hero.jpg';
+82:   static const characterWalkie = '${_base}character_walkie.jpg';
+83:   static const characterClipboard = '${_base}character_clipboard.jpg';
+84:   static const characterAvatar = '${_base}character_avatar.jpg';
+85:   static const helmet = '${_base}helmet.jpg';
+86:   static const belt = '${_base}belt.jpg';
+87:   static const watch = '${_base}watch.jpg';
+88:   static const loginStillLife = '${_base}login_stilllife.jpg';
+89:   static const workScene = '${_base}work_scene.jpg';
+90:   static const plantMap = '${_base}plant_map.jpg';
+91:   static const videoPlaceholder = '${_base}video_placeholder.jpg';
+92:   static const sitePhoto = '${_base}site_photo.jpg';
+93:   static const skyHeader = '${_base}sky_header.jpg';
+94:   static const slogan = '${_base}slogan.png';
+95:   static const logoWordmark = '${_base}logo_wordmark.png';
+96:   static const warningTriangle = '${_base}warning_triangle.jpg';
+97:   static const sosBubble = '${_base}sos_bubble.jpg';
+98: 
+99:   static String equipment(Object? typeCode) => switch (typeCode?.toString()) {
+100:     'helmet' => helmet,
+101:     'belt' => belt,
+102:     'watch' => watch,
+103:     _ => helmet,
+104:   };
+105: }
+106: 
+107: class WearCard extends StatelessWidget {
+108:   final Widget child;
+109:   final EdgeInsetsGeometry? padding;
+110:   const WearCard({super.key, required this.child, this.padding});
+111:   @override
+112:   Widget build(BuildContext context) => Material(
+113:     color: Colors.white,
+114:     shape: RoundedRectangleBorder(
+115:       borderRadius: BorderRadius.circular(20),
+116:       side: const BorderSide(color: WearColors.line),
+117:     ),
+118:     clipBehavior: Clip.antiAlias,
+119:     child: Padding(padding: padding ?? const EdgeInsets.all(18), child: child),
+120:   );
+121: }
+122: 
+123: class WearEmpty extends StatelessWidget {
+124:   final String title;
+125:   final String? detail;
+126:   final VoidCallback? onRetry;
+127:   const WearEmpty({super.key, required this.title, this.detail, this.onRetry});
+128:   @override
+129:   Widget build(BuildContext context) => Padding(
+130:     padding: const EdgeInsets.all(24),
+131:     child: Column(
+132:       mainAxisSize: MainAxisSize.min,
+133:       children: [
+134:         const Icon(Icons.inbox_outlined, size: 40, color: WearColors.muted),
+135:         const SizedBox(height: 12),
+136:         Text(
+137:           title,
+138:           textAlign: TextAlign.center,
+139:           style: const TextStyle(
+140:             fontWeight: FontWeight.w700,
+141:             color: WearColors.ink,
+142:           ),
+143:         ),
+144:         if (detail != null)
+145:           Padding(
+146:             padding: const EdgeInsets.only(top: 8),
+147:             child: Text(
+148:               detail!,
+149:               textAlign: TextAlign.center,
+150:               style: const TextStyle(color: WearColors.muted),
+151:             ),
+152:           ),
+153:         if (onRetry != null)
+154:           TextButton.icon(
+155:             onPressed: onRetry,
+156:             icon: const Icon(Icons.refresh),
+157:             label: const Text('重新加载'),
+158:           ),
+159:       ],
+160:     ),
+161:   );
+162: }
+163: 
+164: class WearBadge extends StatelessWidget {
+165:   final String text;
+166:   final Color? color;
+167:   const WearBadge({super.key, required this.text, this.color});
+168:   @override
+169:   Widget build(BuildContext context) => Container(
+170:     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+171:     decoration: BoxDecoration(
+172:       color: (color ?? WearColors.primary).withValues(alpha: .08),
+173:       borderRadius: BorderRadius.circular(8),
+174:     ),
+175:     child: Text(
+176:       text,
+177:       style: TextStyle(
+178:         color: color ?? WearColors.primary,
+179:         fontSize: 12,
+180:         fontWeight: FontWeight.w600,
+181:       ),
+182:     ),
+183:   );
+184: }
+185: 
+186: class WearPageHeader extends StatelessWidget {
+187:   final String title;
+188:   final String? subtitle;
+189:   final Widget? trailing;
+190:   const WearPageHeader({
+191:     super.key,
+192:     required this.title,
+193:     this.subtitle,
+194:     this.trailing,
+195:   });
+196:   @override
+197:   Widget build(BuildContext context) => Padding(
+198:     padding: const EdgeInsets.only(bottom: 18),
+199:     child: Row(
+200:       crossAxisAlignment: CrossAxisAlignment.start,
+201:       children: [
+202:         Expanded(
+203:           child: Column(
+204:             crossAxisAlignment: CrossAxisAlignment.start,
+205:             children: [
+206:               Text(
+207:                 title,
+208:                 style: const TextStyle(
+209:                   fontSize: 25,
+210:                   height: 1.3,
+211:                   fontWeight: FontWeight.w800,
+212:                   color: WearColors.ink,
+213:                 ),
+214:               ),
+215:               if (subtitle != null)
+216:                 Padding(
+217:                   padding: const EdgeInsets.only(top: 7),
+218:                   child: Text(
+219:                     subtitle!,
+220:                     style: const TextStyle(
+221:                       color: WearColors.muted,
+222:                       height: 1.5,
+223:                     ),
+224:                   ),
+225:                 ),
+226:             ],
+227:           ),
+228:         ),
+229:         ?trailing,
+230:       ],
+231:     ),
+232:   );
+233: }
+234: 
+235: class WearAssetImage extends StatelessWidget {
+236:   const WearAssetImage(
+237:     this.asset, {
+238:     super.key,
+239:     this.width,
+240:     this.height,
+241:     this.fit = BoxFit.cover,
+242:     this.alignment = Alignment.center,
+243:     this.borderRadius,
+244:   });
+245: 
+246:   final String asset;
+247:   final double? width;
+248:   final double? height;
+249:   final BoxFit fit;
+250:   final Alignment alignment;
+251:   final BorderRadius? borderRadius;
+252: 
+253:   @override
+254:   Widget build(BuildContext context) {
+255:     final image = Image.asset(
+256:       asset,
+257:       width: width,
+258:       height: height,
+259:       fit: fit,
+260:       alignment: alignment,
+261:       excludeFromSemantics: true,
+262:       errorBuilder: (_, _, _) => ColoredBox(
+263:         color: const Color(0xFFE8F1FF),
+264:         child: SizedBox(width: width, height: height),
+265:       ),
+266:     );
+267:     if (borderRadius == null) return image;
+268:     return ClipRRect(borderRadius: borderRadius!, child: image);
+269:   }
+270: }
+271: 
+272: class WearSiteSwitcher extends StatelessWidget {
+273:   const WearSiteSwitcher({super.key});
+274: 
+275:   @override
+276:   Widget build(BuildContext context) {
+277:     final session = WearScope.of(context);
+278:     return InkWell(
+279:       onTap: session.busy || session.callActive.value
+280:           ? null
+281:           : () => context.go('/sites'),
+282:       child: Row(
+283:         mainAxisSize: MainAxisSize.min,
+284:         children: [
+285:           ConstrainedBox(
+286:             constraints: const BoxConstraints(maxWidth: 132),
+287:             child: Text(
+288:               session.siteName,
+289:               maxLines: 1,
+290:               overflow: TextOverflow.ellipsis,
+291:               style: const TextStyle(fontSize: 12, color: WearColors.muted),
+292:             ),
+293:           ),
+294:           const Icon(Icons.expand_more, size: 16, color: WearColors.muted),
+295:         ],
+296:       ),
+297:     );
+298:   }
+299: }
+300: 
+301: class WearHeaderLayout {
+302:   // Measured from the existing home banner, excluding its old 8dp top gap.
+303:   static double height(BuildContext context) =>
+304:       148 + (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(0, 2) * 164;
+305:   static const titleSize = 16.0;
+306:   static const subtitleSize = 12.0;
+307: }
+308: 
+309: class WearBrandHero extends StatelessWidget {
+310:   const WearBrandHero({
+311:     super.key,
+312:     required this.title,
+313:     this.subtitle,
+314:     required this.background,
+315:     this.alignment = const Alignment(0.18, 0),
+316:     this.trailing,
+317:     this.showSiteSwitcher = true,
+318:     this.height,
+319:   });
+320: 
+321:   final String title;
+322:   final String? subtitle;
+323:   final String background;
+324:   final Alignment alignment;
+325:   final Widget? trailing;
+326:   final bool showSiteSwitcher;
+327:   final double? height;
+328: 
+329:   @override
+330:   Widget build(BuildContext context) {
+331:     final right =
+332:         trailing ?? (showSiteSwitcher ? const WearSiteSwitcher() : null);
+333:     return SizedBox(
+334:       height: height ?? WearHeaderLayout.height(context),
+335:       width: double.infinity,
+336:       child: Stack(
+337:         fit: StackFit.expand,
+338:         children: [
+339:           WearAssetImage(background, fit: BoxFit.cover, alignment: alignment),
+340:           Padding(
+341:             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+342:             child: Column(
+343:               crossAxisAlignment: CrossAxisAlignment.start,
+344:               children: [
+345:                 Row(
+346:                   children: [
+347:                     const FittedBox(
+348:                       fit: BoxFit.scaleDown,
+349:                       child: WearRollingWordmark(height: 22),
+350:                     ),
+351:                     const Spacer(),
+352:                     ?right,
+353:                   ],
+354:                 ),
+355:                 Expanded(
+356:                   child: Padding(
+357:                     padding: const EdgeInsets.only(right: 118),
+358:                     child: Align(
+359:                       alignment: Alignment.centerLeft,
+360:                       child: Column(
+361:                         crossAxisAlignment: CrossAxisAlignment.start,
+362:                         mainAxisSize: MainAxisSize.min,
+363:                         children: [
+364:                           Text(
+365:                             title,
+366:                             style: const TextStyle(
+367:                               fontSize: WearHeaderLayout.titleSize,
+368:                               height: 1.15,
+369:                               fontWeight: FontWeight.w800,
+370:                               color: WearColors.ink,
+371:                             ),
+372:                           ),
+373:                           if (subtitle != null) ...[
+374:                             const SizedBox(height: 6),
+375:                             Text(
+376:                               subtitle!,
+377:                               style: const TextStyle(
+378:                                 fontSize: WearHeaderLayout.subtitleSize,
+379:                                 height: 1.35,
+380:                                 color: WearColors.muted,
+381:                               ),
+382:                             ),
+383:                           ],
+384:                         ],
+385:                       ),
+386:                     ),
+387:                   ),
+388:                 ),
+389:               ],
+390:             ),
+391:           ),
+392:         ],
+393:       ),
+394:     );
+395:   }
+396: }
+397: 
+398: class WearSkyHeader extends StatelessWidget {
+399:   const WearSkyHeader({
+400:     super.key,
+401:     required this.title,
+402:     this.subtitle,
+403:     this.art,
+404:     this.artWidth = 132,
+405:     this.artHeight = 132,
+406:     this.trailing,
+407:     this.padding = const EdgeInsets.fromLTRB(18, 16, 8, 12),
+408:   });
+409: 
+410:   final String title;
+411:   final String? subtitle;
+412:   final String? art;
+413:   final double artWidth;
+414:   final double artHeight;
+415:   final Widget? trailing;
+416:   final EdgeInsetsGeometry padding;
+417: 
+418:   @override
+419:   Widget build(BuildContext context) {
+420:     return ClipRRect(
+421:       borderRadius: BorderRadius.circular(20),
+422:       child: Stack(
+423:         children: [
+424:           const Positioned.fill(
+425:             child: WearAssetImage(
+426:               WearArt.skyHeader,
+427:               fit: BoxFit.cover,
+428:               alignment: Alignment.centerRight,
+429:             ),
+430:           ),
+431:           Padding(
+432:             padding: padding,
+433:             child: Row(
+434:               crossAxisAlignment: CrossAxisAlignment.start,
+435:               children: [
+436:                 Expanded(
+437:                   child: Column(
+438:                     crossAxisAlignment: CrossAxisAlignment.start,
+439:                     children: [
+440:                       Text(
+441:                         title,
+442:                         style: const TextStyle(
+443:                           fontSize: 26,
+444:                           height: 1.25,
+445:                           fontWeight: FontWeight.w800,
+446:                           color: WearColors.ink,
+447:                         ),
+448:                       ),
+449:                       if (subtitle != null)
+450:                         Padding(
+451:                           padding: const EdgeInsets.only(top: 6),
+452:                           child: Text(
+453:                             subtitle!,
+454:                             style: const TextStyle(
+455:                               color: WearColors.muted,
+456:                               height: 1.5,
+457:                             ),
+458:                           ),
+459:                         ),
+460:                     ],
+461:                   ),
+462:                 ),
+463:                 ?trailing,
+464:                 if (art != null)
+465:                   WearAssetImage(
+466:                     art!,
+467:                     width: artWidth,
+468:                     height: artHeight,
+469:                     fit: BoxFit.contain,
+470:                     alignment: Alignment.bottomRight,
+471:                   ),
+472:               ],
+473:             ),
+474:           ),
+475:         ],
+476:       ),
+477:     );
+478:   }
+479: }
+480: 
+481: class WearSectionTitle extends StatelessWidget {
+482:   const WearSectionTitle(this.title, {super.key, this.trailing});
+483: 
+484:   final String title;
+485:   final Widget? trailing;
+486: 
+487:   @override
+488:   Widget build(BuildContext context) {
+489:     return Padding(
+490:       padding: const EdgeInsets.only(bottom: 10),
+491:       child: Row(
+492:         children: [
+493:           Container(
+494:             width: 4,
+495:             height: 16,
+496:             decoration: BoxDecoration(
+497:               color: WearColors.brand,
+498:               borderRadius: BorderRadius.circular(2),
+499:             ),
+500:           ),
+501:           const SizedBox(width: 8),
+502:           Expanded(
+503:             child: Text(
+504:               title,
+505:               style: const TextStyle(
+506:                 fontSize: 17,
+507:                 fontWeight: FontWeight.w800,
+508:                 color: WearColors.ink,
+509:               ),
+510:             ),
+511:           ),
+512:           ?trailing,
+513:         ],
+514:       ),
+515:     );
+516:   }
+517: }
+518: 
+519: class WearStatusDot extends StatelessWidget {
+520:   const WearStatusDot({super.key, required this.label, required this.color});
+521: 
+522:   final String label;
+523:   final Color color;
+524: 
+525:   @override
+526:   Widget build(BuildContext context) {
+527:     return Row(
+528:       mainAxisSize: MainAxisSize.min,
+529:       children: [
+530:         Container(
+531:           width: 8,
+532:           height: 8,
+533:           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+534:         ),
+535:         const SizedBox(width: 6),
+536:         Text(
+537:           label,
+538:           style: TextStyle(
+539:             color: color,
+540:             fontSize: 13,
+541:             fontWeight: FontWeight.w600,
+542:           ),
+543:         ),
+544:       ],
+545:     );
+546:   }
+547: }

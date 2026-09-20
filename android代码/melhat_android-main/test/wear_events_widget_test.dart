@@ -117,8 +117,9 @@ void main() {
     final firstSession = _session(backend);
     await tester.pumpWidget(_app(firstSession));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('wear-event-event-1')),
+      180,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wear-event-event-1')));
@@ -128,7 +129,7 @@ void main() {
       find.byKey(const ValueKey('event-original-actions')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('事件资料与原处置功能'));
+    await tester.tap(find.byKey(const ValueKey('event-original-actions')));
     await tester.pumpAndSettle();
     final firstInput = find.byKey(const ValueKey('event-handle-input-event-1'));
     await tester.ensureVisible(firstInput);
@@ -147,8 +148,9 @@ void main() {
     await tester.pumpWidget(_app(secondSession));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('wear-event-event-1')),
+      180,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wear-event-event-1')));
@@ -157,7 +159,7 @@ void main() {
       find.byKey(const ValueKey('event-original-actions')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('事件资料与原处置功能'));
+    await tester.tap(find.byKey(const ValueKey('event-original-actions')));
     await tester.pumpAndSettle();
     final restoredInput = find.byKey(
       const ValueKey('event-handle-input-event-1'),
@@ -202,10 +204,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     }
     expect(find.text('处置记录已提交'), findsOneWidget);
-    final clearedEditor = tester.widget<EditableText>(
+    final submittedEditor = tester.widget<EditableText>(
       find.descendant(of: restoredInput, matching: find.byType(EditableText)),
     );
-    expect(clearedEditor.controller.text, isEmpty);
+    expect(submittedEditor.controller.text, '已联系现场，人员安全');
     expect(tester.takeException(), isNull);
   });
 }

@@ -1,0 +1,29 @@
+{
+  "id": "25",
+  "width": 360,
+  "height": 616,
+  "pixelRatio": 3,
+  "frames": [
+    {
+      "file": "01.png",
+      "offset": 0.0,
+      "max": 581.0,
+      "top": 0.0,
+      "height": 616.0
+    },
+    {
+      "file": "02.png",
+      "offset": 400.0,
+      "max": 581.0,
+      "top": 0.0,
+      "height": 616.0
+    },
+    {
+      "file": "03.png",
+      "offset": 581.0,
+      "max": 581.0,
+      "top": 0.0,
+      "height": 616.0
+    }
+  ]
+}

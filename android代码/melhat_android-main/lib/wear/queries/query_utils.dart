@@ -1,4 +1,5 @@
 import '../core.dart';
+import '../device_status.dart';
 
 String personStatusLabel(Object? value) => switch (value?.toString()) {
   '0' => '在职',
@@ -9,12 +10,14 @@ String personStatusLabel(Object? value) => switch (value?.toString()) {
 String deviceTypeLabel(Object? value) => switch (value?.toString()) {
   'helmet' => '安全帽',
   'belt' => '安全带',
+  'watch' => '智能手表',
   _ => '未知类型',
 };
 
 String assetStatusLabel(Object? value) => switch (value?.toString()) {
   'unassigned' => '未分配',
   'in_stock' => '在库',
+  'issued' => '已领用',
   'maintenance' => '维修中',
   'disabled' => '已停用',
   'scrapped' => '已报废',
@@ -63,10 +66,104 @@ String eventStatusLabel(Object? value) => switch (value?.toString()) {
 
 String connectionLabel(JsonMap item) {
   return switch (item['connectionQuality']?.toString()) {
-    'ok' => item['online']?.toString() == '1' ? '在线' : '状态未知',
+    'ok' => switch (devicePresence(item)) {
+      'online' => '在线',
+      'offline' => '离线',
+      _ => '状态未知',
+    },
     'stale' => '数据陈旧',
     _ => '状态未知',
   };
+}
+
+/// Assignment DTOs carry ownership, while device DTOs carry telemetry.
+Future<List<JsonMap>> loadEquipmentWithTelemetry(
+  WearApi api,
+  String path,
+) async {
+  final assignments = jsonList(await api.get(path));
+  return Future.wait(
+    assignments.map((assignment) async {
+      final id = idOf(assignment['deviceId']);
+      if (id.isEmpty) return assignment;
+      try {
+        final device = jsonMap(
+          await api.get('/api/v1/devices/${Uri.encodeComponent(id)}'),
+        );
+        return <String, dynamic>{
+          ...assignment,
+          for (final key in [
+            'online',
+            'connectionQuality',
+            'simulation',
+            'simulationStatus',
+            'simulationStatusLabel',
+            'lastReportedAt',
+            'lastTelemetryAt',
+            'battery',
+            'demo',
+          ])
+            key: device[key],
+        };
+      } on StaleSessionException {
+        rethrow;
+      } catch (_) {
+        return <String, dynamic>{
+          ...assignment,
+          'online': null,
+          'connectionQuality': 'unknown',
+          'telemetryUnavailable': true,
+        };
+      }
+    }),
+  );
+}
+
+/// Use server membership; account IDs and personnel IDs are different domains.
+Future<List<JsonMap>> loadPersonActiveTasks(
+  WearApi api,
+  String personId,
+) async {
+  final rows = <String, JsonMap>{};
+  for (final status in ['in_progress', 'paused']) {
+    for (var current = 1; ; current++) {
+      final page = await api.page(
+        '/api/v1/work-tasks',
+        current: current,
+        size: 100,
+        query: {'status': status},
+      );
+      final before = rows.length;
+      for (final row in page.records) {
+        if (row['status'] == 'in_progress' || row['status'] == 'paused') {
+          rows[idOf(row['id'])] = row;
+        }
+      }
+      if (!page.hasMore) break;
+      if (before == rows.length) throw const FormatException('作业分页未继续返回');
+    }
+  }
+  final tasks = <JsonMap>[];
+  final ids = rows.keys.toList();
+  for (var offset = 0; offset < ids.length; offset += 6) {
+    final details = await Future.wait(
+      ids
+          .skip(offset)
+          .take(6)
+          .map((id) async => jsonMap(await api.get('/api/v1/work-tasks/$id'))),
+    );
+    tasks.addAll(
+      details.where(
+        (task) =>
+            (task['status'] == 'in_progress' || task['status'] == 'paused') &&
+            (idOf(task['guardianPersonId']) == personId ||
+                jsonList(
+                  task['members'],
+                ).any((member) => idOf(member['personId']) == personId)),
+      ),
+    );
+  }
+  return tasks;
 }
 
 String batteryLabel(Object? value) {
@@ -111,12 +208,14 @@ Duration _distance(Object? raw, DateTime target) {
   return difference.isNegative ? -difference : difference;
 }
 
-Uri communicationUri({String? deviceId, String? personId}) {
+Uri communicationUri({String? deviceId, String? personId, String? action}) {
   return Uri(
     path: '/communications',
     queryParameters: {
       if (deviceId != null && deviceId.isNotEmpty) 'deviceId': deviceId,
       if (personId != null && personId.isNotEmpty) 'personId': personId,
+      if (action != null && action.isNotEmpty) 'action': action,
+      if (action == 'video') 'video': '1',
     },
   );
 }

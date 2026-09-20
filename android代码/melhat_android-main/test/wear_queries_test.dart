@@ -105,80 +105,94 @@ void main() {
     expect(eventTypeLabel('new_server_code'), '未知事件');
   });
 
-  testWidgets('workbench presents authoritative duty counts', (tester) async {
-    tester.view.physicalSize = const Size(360, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final dio = Dio();
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          expect(options.path, '/api/v1/duty/summary');
-          handler.resolve(
-            Response(
-              requestOptions: options,
-              statusCode: 200,
-              data: {
-                'code': 200,
-                'msg': 'ok',
-                'data': {
-                  'unclaimed': 17,
-                  'mine': 4,
-                  'overdue': 3,
-                  'lostSupervision': 2,
-                  'peopleCount': 61,
-                  'deviceCount': 49,
-                  'activeTasks': const [],
-                  'recentEvents': [
-                    {'id': '8', 'type': 'sos', 'status': 'open'},
-                  ],
+  testWidgets(
+    'workbench retains server supervision count without duplicate dashboard',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (options.path != '/api/v1/duty/summary') {
+              handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {
+                    'code': 200,
+                    'data': options.path.endsWith('/equipment')
+                        ? []
+                        : {'count': 17},
+                  },
+                ),
+              );
+              return;
+            }
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {
+                  'code': 200,
+                  'msg': 'ok',
+                  'data': {
+                    'unclaimed': 17,
+                    'mine': 4,
+                    'overdue': 3,
+                    'lostSupervision': 2,
+                    'peopleCount': 61,
+                    'deviceCount': 49,
+                    'activeTasks': const [],
+                    'recentEvents': [
+                      {'id': '8', 'type': 'sos', 'status': 'open'},
+                    ],
+                  },
                 },
-              },
-            ),
-          );
-        },
-      ),
-    );
-    final session = WearSession(dio: dio, credentials: _MemoryCredentials())
-      ..token = 'token'
-      ..siteId = '1'
-      ..me = {
-        'userId': '7',
-        'authorizedSites': [
-          {'id': '1', 'name': '一号厂站'},
-        ],
-      };
-    addTearDown(session.dispose);
+              ),
+            );
+          },
+        ),
+      );
+      final session = WearSession(dio: dio, credentials: _MemoryCredentials())
+        ..token = 'token'
+        ..siteId = '1'
+        ..me = {
+          'userId': '7',
+          'authorizedSites': [
+            {'id': '1', 'name': '一号厂站'},
+          ],
+        };
+      addTearDown(session.dispose);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: WearScope(session: session, child: const WorkbenchPage()),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WearScope(session: session, child: const WorkbenchPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('17'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('17'), findsOneWidget);
-    expect(find.text('待认领事件'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('61'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('61'), findsOneWidget);
-    expect(find.text('49'), findsOneWidget);
-    expect(find.text('已领用人员'), findsOneWidget);
-    expect(find.text('在用装备'), findsOneWidget);
-    expect(find.text('近期未关闭事件'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('home-tool-supervision')),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('home-tool-supervision')),
+          matching: find.text('2'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('已领用人员'), findsNothing);
+      expect(find.text('在用装备'), findsNothing);
+      expect(find.text('近期未关闭事件'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _MemoryCredentials implements CredentialStore {

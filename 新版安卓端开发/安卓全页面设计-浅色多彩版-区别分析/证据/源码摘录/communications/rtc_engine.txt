@@ -1,0 +1,322 @@
+1: import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+2: import 'package:permission_handler/permission_handler.dart';
+3: 
+4: import 'models.dart';
+5: 
+6: class RtcCallbacks {
+7:   const RtcCallbacks({
+8:     required this.onLocalJoined,
+9:     required this.onRemoteJoined,
+10:     required this.onRemoteLeft,
+11:     required this.onTokenExpiring,
+12:     required this.onFailure,
+13:   });
+14: 
+15:   final void Function() onLocalJoined;
+16:   final void Function(int uid) onRemoteJoined;
+17:   final void Function(int uid) onRemoteLeft;
+18:   final void Function() onTokenExpiring;
+19:   final void Function(String message) onFailure;
+20: }
+21: 
+22: abstract interface class WearRtcEngine {
+23:   Future<void> join(RtcCredentials credentials, RtcCallbacks callbacks);
+24:   Future<void> renewToken(String token);
+25:   Future<void> setMicrophoneMuted(bool muted);
+26:   Future<void> leave();
+27:   Future<void> dispose();
+28: }
+29: 
+30: class RtcPermissionDenied implements Exception {
+31:   const RtcPermissionDenied({required this.video});
+32:   final bool video;
+33: 
+34:   @override
+35:   String toString() => video ? '需要麦克风和摄像头权限' : '需要麦克风权限';
+36: }
+37: 
+38: class RtcJoinFailure implements Exception {
+39:   const RtcJoinFailure(this.message);
+40:   final String message;
+41: 
+42:   @override
+43:   String toString() => message;
+44: }
+45: 
+46: class RtcOperationCancelled implements Exception {
+47:   const RtcOperationCancelled();
+48: 
+49:   @override
+50:   String toString() => 'RTC 操作已取消';
+51: }
+52: 
+53: typedef AgoraDriverFactory = AgoraRtcDriver Function();
+54: typedef RtcPermissionRequester = Future<bool> Function(bool video);
+55: 
+56: abstract interface class AgoraRtcDriver {
+57:   RtcEngine? get nativeEngine;
+58:   Future<void> initialize(String appId);
+59:   Future<void> enableAudio();
+60:   Future<void> enableVideo();
+61:   Future<void> disableVideo();
+62:   Future<void> setSpeakerphoneEnabled();
+63:   void registerCallbacks(RtcCallbacks callbacks);
+64:   Future<void> joinChannel(RtcCredentials credentials);
+65:   Future<void> renewToken(String token);
+66:   Future<void> setMicrophoneMuted(bool muted);
+67:   Future<void> leaveChannel();
+68:   Future<void> release();
+69: }
+70: 
+71: class AgoraWearRtcEngine implements WearRtcEngine {
+72:   AgoraWearRtcEngine({
+73:     AgoraDriverFactory? driverFactory,
+74:     RtcPermissionRequester? requestPermissions,
+75:   }) : _driverFactory = driverFactory ?? SdkAgoraRtcDriver.new,
+76:        _requestPermissions = requestPermissions ?? _requestSdkPermissions;
+77: 
+78:   final AgoraDriverFactory _driverFactory;
+79:   final RtcPermissionRequester _requestPermissions;
+80:   final Map<AgoraRtcDriver, Future<void>> _closing = {};
+81:   final Set<AgoraRtcDriver> _closed = {};
+82:   AgoraRtcDriver? _driver;
+83:   int _generation = 0;
+84:   bool _disposed = false;
+85: 
+86:   RtcEngine? get nativeEngine => _driver?.nativeEngine;
+87: 
+88:   @override
+89:   Future<void> join(RtcCredentials credentials, RtcCallbacks callbacks) async {
+90:     if (_disposed) throw const RtcOperationCancelled();
+91:     if (credentials.demo) {
+92:       throw const RtcJoinFailure('演示凭证不能初始化 RTC 引擎');
+93:     }
+94:     if (!credentials.isUsable || credentials.isExpired) {
+95:       throw const RtcJoinFailure('通话凭证无效或已过期');
+96:     }
+97: 
+98:     final operation = ++_generation;
+99:     final previous = _driver;
+100:     _driver = null;
+101:     if (previous != null) {
+102:       await _close(previous);
+103:       await _requireCurrent(operation);
+104:     }
+105: 
+106:     final granted = await _requestPermissions(credentials.video);
+107:     await _requireCurrent(operation);
+108:     if (!granted) throw RtcPermissionDenied(video: credentials.video);
+109: 
+110:     final driver = _driverFactory();
+111:     if (!_accepts(operation)) {
+112:       await _close(driver);
+113:       throw const RtcOperationCancelled();
+114:     }
+115:     _driver = driver;
+116:     final guardedCallbacks = RtcCallbacks(
+117:       onLocalJoined: () {
+118:         if (_acceptsDriver(operation, driver)) callbacks.onLocalJoined();
+119:       },
+120:       onRemoteJoined: (uid) {
+121:         if (_acceptsDriver(operation, driver)) callbacks.onRemoteJoined(uid);
+122:       },
+123:       onRemoteLeft: (uid) {
+124:         if (_acceptsDriver(operation, driver)) callbacks.onRemoteLeft(uid);
+125:       },
+126:       onTokenExpiring: () {
+127:         if (_acceptsDriver(operation, driver)) callbacks.onTokenExpiring();
+128:       },
+129:       onFailure: (message) {
+130:         if (_acceptsDriver(operation, driver)) callbacks.onFailure(message);
+131:       },
+132:     );
+133: 
+134:     try {
+135:       await driver.initialize(credentials.appId);
+136:       await _requireCurrent(operation, driver);
+137:       await driver.enableAudio();
+138:       await _requireCurrent(operation, driver);
+139:       if (credentials.video) {
+140:         await driver.enableVideo();
+141:       } else {
+142:         await driver.disableVideo();
+143:       }
+144:       await _requireCurrent(operation, driver);
+145:       await driver.setSpeakerphoneEnabled();
+146:       await _requireCurrent(operation, driver);
+147:       driver.registerCallbacks(guardedCallbacks);
+148:       if (!_acceptsDriver(operation, driver)) {
+149:         await _closeAndDetach(driver);
+150:         throw const RtcOperationCancelled();
+151:       }
+152:       await driver.joinChannel(credentials);
+153:       await _requireCurrent(operation, driver);
+154:     } catch (error) {
+155:       await _closeAndDetach(driver);
+156:       if (!_accepts(operation) && error is! RtcOperationCancelled) {
+157:         throw const RtcOperationCancelled();
+158:       }
+159:       rethrow;
+160:     }
+161:   }
+162: 
+163:   @override
+164:   Future<void> renewToken(String token) async {
+165:     final driver = _driver;
+166:     final operation = _generation;
+167:     if (_disposed || token.isEmpty || driver == null) {
+168:       throw const RtcJoinFailure('无法更新已过期的通话凭证');
+169:     }
+170:     await driver.renewToken(token);
+171:     await _requireCurrent(operation, driver);
+172:   }
+173: 
+174:   @override
+175:   Future<void> setMicrophoneMuted(bool muted) async {
+176:     final driver = _driver;
+177:     final operation = _generation;
+178:     if (_disposed || driver == null) throw const RtcOperationCancelled();
+179:     await driver.setMicrophoneMuted(muted);
+180:     await _requireCurrent(operation, driver);
+181:   }
+182: 
+183:   @override
+184:   Future<void> leave() async {
+185:     ++_generation;
+186:     final driver = _driver;
+187:     _driver = null;
+188:     if (driver != null) await _close(driver);
+189:   }
+190: 
+191:   @override
+192:   Future<void> dispose() async {
+193:     if (_disposed) return;
+194:     _disposed = true;
+195:     ++_generation;
+196:     final driver = _driver;
+197:     _driver = null;
+198:     if (driver != null) await _close(driver);
+199:   }
+200: 
+201:   bool _accepts(int operation) => !_disposed && operation == _generation;
+202: 
+203:   bool _acceptsDriver(int operation, AgoraRtcDriver driver) =>
+204:       _accepts(operation) && identical(_driver, driver);
+205: 
+206:   Future<void> _requireCurrent(int operation, [AgoraRtcDriver? driver]) async {
+207:     final valid = driver == null
+208:         ? _accepts(operation)
+209:         : _acceptsDriver(operation, driver);
+210:     if (valid) return;
+211:     if (driver != null) await _closeAndDetach(driver);
+212:     throw const RtcOperationCancelled();
+213:   }
+214: 
+215:   Future<void> _closeAndDetach(AgoraRtcDriver driver) async {
+216:     if (identical(_driver, driver)) _driver = null;
+217:     await _close(driver);
+218:   }
+219: 
+220:   Future<void> _close(AgoraRtcDriver driver) {
+221:     if (_closed.contains(driver)) return Future<void>.value();
+222:     final existing = _closing[driver];
+223:     if (existing != null) return existing;
+224:     final future = _closeOnce(driver);
+225:     _closing[driver] = future;
+226:     return future.whenComplete(() => _closing.remove(driver));
+227:   }
+228: 
+229:   Future<void> _closeOnce(AgoraRtcDriver driver) async {
+230:     try {
+231:       await driver.leaveChannel();
+232:     } finally {
+233:       try {
+234:         await driver.release();
+235:       } finally {
+236:         _closed.add(driver);
+237:       }
+238:     }
+239:   }
+240: 
+241:   static Future<bool> _requestSdkPermissions(bool video) async {
+242:     final permissions = <Permission>[Permission.microphone];
+243:     if (video) permissions.add(Permission.camera);
+244:     final results = await permissions.request();
+245:     return results.values.every((status) => status.isGranted);
+246:   }
+247: }
+248: 
+249: class SdkAgoraRtcDriver implements AgoraRtcDriver {
+250:   SdkAgoraRtcDriver() : _engine = createAgoraRtcEngine();
+251: 
+252:   final RtcEngine _engine;
+253: 
+254:   @override
+255:   RtcEngine get nativeEngine => _engine;
+256: 
+257:   @override
+258:   Future<void> initialize(String appId) =>
+259:       _engine.initialize(RtcEngineContext(appId: appId));
+260: 
+261:   @override
+262:   Future<void> enableAudio() => _engine.enableAudio();
+263: 
+264:   @override
+265:   Future<void> enableVideo() => _engine.enableVideo();
+266: 
+267:   @override
+268:   Future<void> disableVideo() => _engine.disableVideo();
+269: 
+270:   @override
+271:   Future<void> setSpeakerphoneEnabled() =>
+272:       _engine.setDefaultAudioRouteToSpeakerphone(true);
+273: 
+274:   @override
+275:   void registerCallbacks(RtcCallbacks callbacks) {
+276:     _engine.registerEventHandler(
+277:       RtcEngineEventHandler(
+278:         onJoinChannelSuccess: (_, _) => callbacks.onLocalJoined(),
+279:         onUserJoined: (_, uid, _) => callbacks.onRemoteJoined(uid),
+280:         onUserOffline: (_, uid, _) => callbacks.onRemoteLeft(uid),
+281:         onTokenPrivilegeWillExpire: (_, _) => callbacks.onTokenExpiring(),
+282:         onRequestToken: (_) => callbacks.onTokenExpiring(),
+283:         onConnectionLost: (_) => callbacks.onFailure('RTC 连接已断开'),
+284:         onError: (code, message) =>
+285:             callbacks.onFailure(message.isNotEmpty ? message : 'RTC 错误：$code'),
+286:         onConnectionStateChanged: (_, state, reason) {
+287:           if (state == ConnectionStateType.connectionStateFailed) {
+288:             callbacks.onFailure('RTC 连接失败：$reason');
+289:           }
+290:         },
+291:       ),
+292:     );
+293:   }
+294: 
+295:   @override
+296:   Future<void> joinChannel(RtcCredentials credentials) => _engine.joinChannel(
+297:     token: credentials.token,
+298:     channelId: credentials.channelName,
+299:     uid: credentials.uid,
+300:     options: ChannelMediaOptions(
+301:       clientRoleType: ClientRoleType.clientRoleBroadcaster,
+302:       channelProfile: ChannelProfileType.channelProfileCommunication,
+303:       publishMicrophoneTrack: true,
+304:       publishCameraTrack: credentials.video,
+305:       autoSubscribeAudio: true,
+306:       autoSubscribeVideo: credentials.video,
+307:     ),
+308:   );
+309: 
+310:   @override
+311:   Future<void> renewToken(String token) => _engine.renewToken(token);
+312: 
+313:   @override
+314:   Future<void> setMicrophoneMuted(bool muted) =>
+315:       _engine.muteLocalAudioStream(muted);
+316: 
+317:   @override
+318:   Future<void> leaveChannel() => _engine.leaveChannel();
+319: 
+320:   @override
+321:   Future<void> release() => _engine.release();
+322: }

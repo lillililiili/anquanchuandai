@@ -19,10 +19,12 @@ class EventReferenceView extends StatefulWidget {
     required this.onSubmit,
     required this.onCommunication,
     required this.legacyDetail,
+    this.onClaim,
   });
   final EventController controller;
   final VoidCallback onBack, onSubmit, onCommunication;
   final Widget legacyDetail;
+  final VoidCallback? onClaim;
   @override
   State<EventReferenceView> createState() => _EventReferenceViewState();
 }
@@ -35,12 +37,16 @@ class _EventReferenceViewState extends State<EventReferenceView> {
   );
   final _photos = <String>[];
   bool _demoJoined = false;
+  final _legacyAnchor = GlobalKey();
+  final _formAnchor = GlobalKey();
+  final _legacyController = ExpansibleController();
   EventController get c => widget.controller;
   WearEvent get e => c.selected!;
   bool get sos => e.type == 'sos';
   @override
   void dispose() {
     _note.dispose();
+    _legacyController.dispose();
     super.dispose();
   }
 
@@ -164,6 +170,8 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                           _notice('${c.conflictMessage!}；草稿已保留，请核对最新状态'),
                         if (c.successMessage != null)
                           _notice(c.successMessage!),
+                        _nextStep(),
+                        gap(),
                         if (sos) ..._sosContent() else ..._abnormalContent(),
                         gap(),
                         card(
@@ -172,17 +180,25 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                               context,
                             ).copyWith(dividerColor: Colors.transparent),
                             child: ExpansionTile(
+                              controller: _legacyController,
+                              expansionAnimationStyle:
+                                  AnimationStyle.noAnimation,
                               key: const ValueKey('event-original-actions'),
                               tilePadding: EdgeInsets.zero,
                               title: const Text(
-                                '事件资料与原处置功能',
+                                '更多处置与事件记录',
                                 style: TextStyle(fontSize: 13, color: _muted),
                               ),
                               subtitle: const Text(
                                 '认领、转交、复核、关联与时间线',
                                 style: TextStyle(fontSize: 10, color: _muted),
                               ),
-                              children: [widget.legacyDetail],
+                              children: [
+                                Container(
+                                  key: _legacyAnchor,
+                                  child: widget.legacyDetail,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -204,10 +220,112 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       Text(text, style: const TextStyle(color: _muted, fontSize: 12)),
     ),
   );
+
+  void _showOriginalActions() {
+    _legacyController.expand();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final anchor = _legacyAnchor.currentContext;
+      if (anchor != null) {
+        Scrollable.ensureVisible(
+          anchor,
+          duration: const Duration(milliseconds: 250),
+          alignment: .1,
+        );
+      }
+    });
+  }
+
+  Widget _nextStep() {
+    final canClaim = c.can(EventCommand.claim) && widget.onClaim != null;
+    final canHandle = c.can(EventCommand.handle);
+    final submitted = c.isHandleCommentSubmitted(e.id);
+    final instruction = canClaim
+        ? '先认领，再记录现场核验与处置情况'
+        : canHandle && submitted
+        ? '核验已提交；可补充说明，处置完成后在更多处置中关闭事件'
+        : canHandle
+        ? '核验完成后提交处置说明'
+        : e.status == 'closed'
+        ? '事件已关闭，可查看处置记录'
+        : e.status == 'pending_review'
+        ? '等待复核，可在更多处置中查看可用操作'
+        : '按当前权限查看资料或执行处置';
+    return card(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                sos ? Icons.sos : Icons.fact_check_outlined,
+                color: sos ? _red : _amber,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '当前状态 · ${e.statusLabel}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            instruction,
+            style: const TextStyle(fontSize: 12, color: _muted),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              if (canClaim)
+                FilledButton.icon(
+                  key: const ValueKey('event-next-claim'),
+                  onPressed: c.writing ? null : widget.onClaim,
+                  icon: const Icon(Icons.pan_tool_alt_outlined, size: 18),
+                  label: const Text('认领事件'),
+                )
+              else if (canHandle)
+                FilledButton.icon(
+                  onPressed: c.writing
+                      ? null
+                      : () {
+                          final anchor = _formAnchor.currentContext;
+                          if (!sos && anchor != null) {
+                            Scrollable.ensureVisible(
+                              anchor,
+                              duration: const Duration(milliseconds: 250),
+                              alignment: .1,
+                            );
+                          } else {
+                            _showOriginalActions();
+                          }
+                        },
+                  icon: const Icon(Icons.edit_note, size: 18),
+                  label: Text(submitted ? '补充核验说明' : '填写处置说明'),
+                ),
+              OutlinedButton(
+                onPressed: c.writing ? null : _showOriginalActions,
+                child: const Text('更多处置与记录'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _hero(BuildContext context) {
-    final scale = MediaQuery.textScalerOf(context).scale(1);
     return SizedBox(
-      height: (sos ? 194.0 : 176.0) + (scale - 1).clamp(0, 2) * 66,
+      key: ValueKey(sos ? 'wear-page-hero-sos' : 'wear-page-hero-verify'),
+      height: WearHeaderLayout.height(context),
       child: Stack(
         children: [
           Positioned.fill(
@@ -237,10 +355,20 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                 const WearRollingWordmark(height: 23),
                 const Spacer(),
                 Flexible(
-                  child: Text(
-                    e.demo ? '演示事件' : '事件信息',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontSize: 10, color: _muted),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .85),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      e.demo ? '演示事件' : '事件信息',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontSize: 10, color: _muted),
+                    ),
                   ),
                 ),
               ],
@@ -248,7 +376,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           ),
           Positioned(
             left: sos ? 0 : 18,
-            top: sos ? 55 : 60,
+            top: sos ? 44 : 58,
             right: sos ? 135 : 158,
             child: sos
                 ? Row(
@@ -266,7 +394,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                         child: Text(
                           'SOS协助',
                           style: TextStyle(
-                            fontSize: 23,
+                            fontSize: WearHeaderLayout.titleSize,
                             fontWeight: FontWeight.w900,
                             color: _ink,
                           ),
@@ -280,7 +408,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                       const Text(
                         '异常核验',
                         style: TextStyle(
-                          fontSize: 30,
+                          fontSize: WearHeaderLayout.titleSize,
                           fontWeight: FontWeight.w900,
                           color: _ink,
                         ),
@@ -289,7 +417,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                       const Text(
                         '安全无小事\n核查每一个风险！',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: WearHeaderLayout.subtitleSize,
                           color: Color(0xFF315D8F),
                           height: 1.4,
                         ),
@@ -306,11 +434,14 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           if (sos)
             Positioned(
               left: 12,
-              top: 116,
+              top:
+                  88 +
+                  (MediaQuery.textScalerOf(context).scale(1) - 1).clamp(0, 2) *
+                      50,
               right: 145,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 10,
+                  vertical: 5,
                   horizontal: 10,
                 ),
                 decoration: BoxDecoration(
@@ -324,14 +455,14 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                         const Icon(
                           Icons.warning_rounded,
                           color: Colors.white,
-                          size: 31,
+                          size: 22,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             e.demo ? 'SOS演练' : 'SOS求救',
                             style: const TextStyle(
-                              fontSize: 23,
+                              fontSize: WearHeaderLayout.titleSize,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
@@ -378,7 +509,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      e.type == 'geofence' ? '围栏异常' : e.typeLabel,
+                      e.alarmLabel,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -469,11 +600,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
     card(
       Column(
         children: [
-          infoRow(
-            Icons.description_outlined,
-            '原安监事件',
-            known(e.sourceEventId, '暂未关联原安监事件'),
-          ),
+          infoRow(Icons.description_outlined, '告警描述', e.descriptionLabel),
           line(),
           infoRow(Icons.lock_outline, e.statusLabel, '源记录只读；现场操作仍按原权限执行'),
         ],
@@ -484,7 +611,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          heading('现场核验说明'),
+          Container(key: _formAnchor, child: heading('现场核验说明')),
           const SizedBox(height: 9),
           TextField(
             key: ValueKey('event-handle-input-${e.id}'),
@@ -537,21 +664,41 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           child: FilledButton(
             key: ValueKey('event-handle-submit-${e.id}'),
             style: button(),
-            onPressed: c.writing || !c.can(EventCommand.handle)
+            onPressed:
+                c.writing ||
+                    !c.can(EventCommand.handle) ||
+                    c.isHandleCommentSubmitted(e.id)
                 ? null
                 : widget.onSubmit,
-            child: const Text('提交核验'),
+            child: Text(
+              c.writing
+                  ? '提交中…'
+                  : c.isHandleCommentSubmitted(e.id)
+                  ? '已提交核验'
+                  : '提交核验',
+            ),
           ),
         ),
       ],
     ),
+    if (_handleFeedback case final feedback?)
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: card(
+          Text(
+            feedback,
+            key: ValueKey('event-handle-feedback-${e.id}'),
+            style: const TextStyle(fontSize: 12, color: _muted),
+          ),
+        ),
+      ),
     if (!c.can(EventCommand.handle))
       Padding(
         padding: const EdgeInsets.only(top: 6),
         child: Text(
           e.status == 'open' && c.can(EventCommand.claim)
-              ? '请先在下方原处置功能中认领；草稿可先保存。'
-              : '当前角色或事件状态不可提交核验，原处置操作见下方。',
+              ? '请先使用上方“认领事件”；草稿可先保存。'
+              : '当前角色或事件状态不可提交核验，可查看“更多处置与记录”。',
           style: const TextStyle(fontSize: 10, color: _muted),
         ),
       ),
@@ -572,6 +719,27 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       ),
     ),
   ];
+  String? get _handleFeedback {
+    if (c.conflictMessage != null) {
+      return '${c.conflictMessage}；填写内容已保留，请核对最新状态后重试。';
+    }
+    final submitted = c.isHandleCommentSubmitted(e.id);
+    if (c.errorMessage != null) {
+      return submitted
+          ? '核验已提交，内容已保存；最新数据刷新失败：${c.errorMessage}。请稍后刷新，勿重复提交。'
+          : '${c.errorMessage}；填写内容已保留。';
+    }
+    if (!submitted) return null;
+    if (e.status == 'pending_review') {
+      return '核验已提交，内容已保存。当前待复核，请等待复核人员确认。';
+    }
+    if (e.status == 'closed') return '核验内容已保存，事件已关闭。';
+    if (c.can(EventCommand.close)) {
+      return '核验已提交，内容已保存。确认处置完成后，可在“更多处置与记录”中关闭事件；修改说明后可补充提交。';
+    }
+    return '核验已提交，内容已保存。当前状态：${e.statusLabel}。';
+  }
+
   Widget _attachmentCard() => card(
     Column(
       crossAxisAlignment: CrossAxisAlignment.start,

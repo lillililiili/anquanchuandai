@@ -1,0 +1,43 @@
+{
+  "id": "19",
+  "width": 360,
+  "height": 616,
+  "pixelRatio": 3,
+  "frames": [
+    {
+      "file": "01.png",
+      "offset": 0.0,
+      "max": 1148.0,
+      "top": 104.0,
+      "height": 452.0
+    },
+    {
+      "file": "02.png",
+      "offset": 325.44,
+      "max": 1148.0,
+      "top": 104.0,
+      "height": 452.0
+    },
+    {
+      "file": "03.png",
+      "offset": 650.88,
+      "max": 1148.0,
+      "top": 104.0,
+      "height": 452.0
+    },
+    {
+      "file": "04.png",
+      "offset": 976.3199999999999,
+      "max": 1148.0,
+      "top": 104.0,
+      "height": 452.0
+    },
+    {
+      "file": "05.png",
+      "offset": 1148.0,
+      "max": 1148.0,
+      "top": 104.0,
+      "height": 452.0
+    }
+  ]
+}

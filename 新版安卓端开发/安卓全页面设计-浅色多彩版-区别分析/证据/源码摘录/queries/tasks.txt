@@ -1,0 +1,478 @@
+1: import 'package:flutter/material.dart';
+2: import 'package:go_router/go_router.dart';
+3: 
+4: import '../core.dart';
+5: import 'query_utils.dart';
+6: import 'query_widgets.dart';
+7: import 'work_reference.dart';
+8: 
+9: String _workTypeLabel(Object? value) => switch (value?.toString()) {
+10:   'patrol' => '巡检',
+11:   'height' => '高处作业',
+12:   'other' => '其他作业',
+13:   _ => '类型未知',
+14: };
+15: 
+16: class TasksPage extends StatefulWidget {
+17:   const TasksPage({super.key});
+18: 
+19:   @override
+20:   State<TasksPage> createState() => _TasksPageState();
+21: }
+22: 
+23: class _TasksPageState extends State<TasksPage> {
+24:   WearSession? _session;
+25:   List<JsonMap> _records = const [];
+26:   int _current = 1;
+27:   int _total = 0;
+28:   bool _hasMore = false;
+29:   bool _loading = true;
+30:   Object? _error;
+31:   String? _status;
+32:   String? _workType;
+33:   bool _mine = true;
+34:   int _request = 0;
+35: 
+36:   @override
+37:   void didChangeDependencies() {
+38:     super.didChangeDependencies();
+39:     final session = WearScope.of(context);
+40:     if (!identical(session, _session)) {
+41:       _session = session;
+42:       _load(page: 1);
+43:     }
+44:   }
+45: 
+46:   Future<void> _load({required int page}) async {
+47:     final session = _session;
+48:     if (session == null) return;
+49:     final request = ++_request;
+50:     final scopeKey = session.scopeKey;
+51:     setState(() {
+52:       _loading = true;
+53:       _error = null;
+54:     });
+55:     try {
+56:       final result = await session.api.page(
+57:         _mine ? '/api/v1/work-tasks/mine' : '/api/v1/work-tasks',
+58:         current: page,
+59:         size: 20,
+60:         query: {
+61:           if (!_mine && _status != null) 'status': _status,
+62:           if (!_mine && _workType != null) 'workType': _workType,
+63:         },
+64:       );
+65:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+66:         return;
+67:       }
+68:       setState(() {
+69:         _records = result.records;
+70:         _current = result.current;
+71:         _total = result.total;
+72:         _hasMore = result.hasMore;
+73:         _loading = false;
+74:       });
+75:     } catch (error) {
+76:       if (error is StaleSessionException) return;
+77:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+78:         return;
+79:       }
+80:       setState(() {
+81:         _error = error;
+82:         _loading = false;
+83:       });
+84:     }
+85:   }
+86: 
+87:   @override
+88:   Widget build(BuildContext context) {
+89:     final groups = <String, List<JsonMap>>{};
+90:     for (final task in _records) {
+91:       groups.putIfAbsent(taskGroup(task['status']), () => []).add(task);
+92:     }
+93:     const order = ['进行中', '待开始', '已结束', '状态未知'];
+94:     return QueryPage(
+95:       title: '作业任务',
+96:       subtitle: _mine ? '我负责或参与的作业 · 按服务端结果分页' : '当前厂站的授权作业 · 可按状态和类型筛选',
+97:       body: Column(
+98:         children: [
+99:           SingleChildScrollView(
+100:             scrollDirection: Axis.horizontal,
+101:             padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+102:             child: Row(
+103:               children: [
+104:                 ChoiceChip(
+105:                   label: const Text('我的任务'),
+106:                   selected: _mine,
+107:                   onSelected: _loading
+108:                       ? null
+109:                       : (_) {
+110:                           setState(() => _mine = true);
+111:                           _load(page: 1);
+112:                         },
+113:                 ),
+114:                 const SizedBox(width: 8),
+115:                 ChoiceChip(
+116:                   label: const Text('全站作业'),
+117:                   selected: !_mine,
+118:                   onSelected: _loading
+119:                       ? null
+120:                       : (_) {
+121:                           setState(() => _mine = false);
+122:                           _load(page: 1);
+123:                         },
+124:                 ),
+125:                 if (!_mine) ...[
+126:                   const SizedBox(width: 8),
+127:                   _menu(
+128:                     label: _status == null ? '全部状态' : taskStatusLabel(_status),
+129:                     value: _status ?? '',
+130:                     values: const [
+131:                       '',
+132:                       'draft',
+133:                       'ready',
+134:                       'in_progress',
+135:                       'paused',
+136:                       'ended',
+137:                     ],
+138:                     labelOf: (value) =>
+139:                         value.isEmpty ? '全部状态' : taskStatusLabel(value),
+140:                     onSelected: (value) {
+141:                       setState(() => _status = value.isEmpty ? null : value);
+142:                       _load(page: 1);
+143:                     },
+144:                   ),
+145:                   const SizedBox(width: 8),
+146:                   _menu(
+147:                     label: _workType == null
+148:                         ? '全部类型'
+149:                         : _workTypeLabel(_workType),
+150:                     value: _workType ?? '',
+151:                     values: const ['', 'patrol', 'height', 'other'],
+152:                     labelOf: (value) =>
+153:                         value.isEmpty ? '全部类型' : _workTypeLabel(value),
+154:                     onSelected: (value) {
+155:                       setState(() => _workType = value.isEmpty ? null : value);
+156:                       _load(page: 1);
+157:                     },
+158:                   ),
+159:                 ],
+160:               ],
+161:             ),
+162:           ),
+163:           Expanded(
+164:             child: QueryStateView(
+165:               loading: _loading,
+166:               error: _error,
+167:               empty: _records.isEmpty,
+168:               onRetry: () => _load(page: _current),
+169:               emptyTitle: '没有符合条件的作业',
+170:               child: RefreshIndicator(
+171:                 onRefresh: () => _load(page: _current),
+172:                 child: ListView(
+173:                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+174:                   children: [
+175:                     for (final group in order)
+176:                       if (groups[group]?.isNotEmpty == true) ...[
+177:                         Padding(
+178:                           padding: const EdgeInsets.fromLTRB(2, 12, 2, 9),
+179:                           child: Text(
+180:                             '$group（${groups[group]!.length}）',
+181:                             style: const TextStyle(
+182:                               fontSize: 17,
+183:                               fontWeight: FontWeight.w700,
+184:                             ),
+185:                           ),
+186:                         ),
+187:                         for (final task in groups[group]!)
+188:                           QueryRow(
+189:                             key: ValueKey('task-${idOf(task['id'])}'),
+190:                             title: textOf(task['title']),
+191:                             subtitle:
+192:                                 '${_workTypeLabel(task['workType'])} · ${textOf(task['spaceName'])}\n${formatTime(task['plannedStart'])} 至 ${formatTime(task['plannedEnd'])}',
+193:                             trailing: WearBadge(
+194:                               text: taskStatusLabel(task['status']),
+195:                             ),
+196:                             onTap: () =>
+197:                                 context.push('/tasks/${idOf(task['id'])}'),
+198:                           ),
+199:                       ],
+200:                   ],
+201:                 ),
+202:               ),
+203:             ),
+204:           ),
+205:           PagingFooter(
+206:             current: _current,
+207:             total: _total,
+208:             hasMore: _hasMore,
+209:             busy: _loading,
+210:             onPrevious: () => _load(page: _current - 1),
+211:             onNext: () => _load(page: _current + 1),
+212:           ),
+213:         ],
+214:       ),
+215:     );
+216:   }
+217: 
+218:   Widget _menu({
+219:     required String label,
+220:     required String value,
+221:     required List<String> values,
+222:     required String Function(String) labelOf,
+223:     required ValueChanged<String> onSelected,
+224:   }) {
+225:     return PopupMenuButton<String>(
+226:       initialValue: value,
+227:       onSelected: onSelected,
+228:       itemBuilder: (_) => values
+229:           .map((item) => PopupMenuItem(value: item, child: Text(labelOf(item))))
+230:           .toList(),
+231:       child: Chip(
+232:         label: Text(label),
+233:         avatar: const Icon(Icons.filter_list, size: 17),
+234:       ),
+235:     );
+236:   }
+237: }
+238: 
+239: class TaskPage extends StatefulWidget {
+240:   const TaskPage({super.key, required this.id});
+241: 
+242:   final String id;
+243: 
+244:   @override
+245:   State<TaskPage> createState() => _TaskPageState();
+246: }
+247: 
+248: class _TaskPageState extends State<TaskPage> {
+249:   WearSession? _session;
+250:   JsonMap? _task;
+251:   List<JsonMap> _equipment = const [];
+252:   List<JsonMap> _events = const [];
+253:   bool _loading = true;
+254:   Object? _error;
+255:   int _request = 0;
+256:   bool _preview = false;
+257: 
+258:   @override
+259:   void didChangeDependencies() {
+260:     super.didChangeDependencies();
+261:     final session = WearScope.of(context);
+262:     if (!identical(session, _session)) {
+263:       _session = session;
+264:       _load();
+265:     }
+266:   }
+267: 
+268:   Future<void> _load() async {
+269:     if (widget.id == 'ui-preview') {
+270:       await _showPreview();
+271:       return;
+272:     }
+273:     final session = _session;
+274:     if (session == null) return;
+275:     final request = ++_request;
+276:     final scopeKey = session.scopeKey;
+277:     setState(() {
+278:       _loading = true;
+279:       _error = null;
+280:     });
+281:     try {
+282:       final results = await Future.wait([
+283:         session.api.get('/api/v1/work-tasks/${widget.id}'),
+284:         session.api.get('/api/v1/work-tasks/${widget.id}/equipment-check'),
+285:         session.api.get('/api/v1/work-tasks/${widget.id}/events'),
+286:       ]);
+287:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+288:         return;
+289:       }
+290:       setState(() {
+291:         _task = jsonMap(results[0]);
+292:         _equipment = jsonList(results[1]);
+293:         _events = jsonList(results[2]);
+294:         _loading = false;
+295:       });
+296:     } catch (error) {
+297:       if (error is StaleSessionException) return;
+298:       if (!mounted || request != _request || scopeKey != session.scopeKey) {
+299:         return;
+300:       }
+301:       setState(() {
+302:         _error = error;
+303:         _loading = false;
+304:       });
+305:     }
+306:   }
+307: 
+308:   void _back() {
+309:     if (context.canPop()) {
+310:       context.pop();
+311:     } else {
+312:       context.go('/workbench');
+313:     }
+314:   }
+315: 
+316:   void _exampleAction() {
+317:     ScaffoldMessenger.of(
+318:       context,
+319:     ).showSnackBar(const SnackBar(content: Text('界面示例：未连接真实人员、事件或通话服务')));
+320:   }
+321: 
+322:   Future<void> _showPreview() async {
+323:     final task = await workReferencePreview();
+324:     if (!mounted) return;
+325:     setState(() {
+326:       _preview = true;
+327:       _task = task;
+328:       _equipment = jsonList(task['equipmentCheck']);
+329:       _events = jsonList(task['events']);
+330:       _loading = false;
+331:       _error = null;
+332:     });
+333:   }
+334: 
+335:   void _contactGuardian() {
+336:     if (_preview) {
+337:       _exampleAction();
+338:       return;
+339:     }
+340:     final id = idOf(_task?['guardianPersonId']);
+341:     if (id.isEmpty) {
+342:       ScaffoldMessenger.of(
+343:         context,
+344:       ).showSnackBar(const SnackBar(content: Text('尚未关联监护人，无法发起联系')));
+345:       return;
+346:     }
+347:     context.push(communicationUri(personId: id).toString());
+348:   }
+349: 
+350:   @override
+351:   Widget build(BuildContext context) {
+352:     final task = _task;
+353:     final unavailable =
+354:         _error is WearApiException &&
+355:         [404, 501].contains((_error as WearApiException).code);
+356:     if (_loading || _error != null || task == null) {
+357:       return QueryPage(
+358:         title: '作业详情',
+359:         body: Column(
+360:           children: [
+361:             Expanded(
+362:               child: QueryStateView(
+363:                 loading: _loading,
+364:                 error: _error,
+365:                 empty: task == null,
+366:                 onRetry: _load,
+367:                 child: const SizedBox.shrink(),
+368:               ),
+369:             ),
+370:             if (unavailable)
+371:               TextButton(onPressed: _showPreview, child: const Text('查看界面示例')),
+372:           ],
+373:         ),
+374:       );
+375:     }
+376:     return Scaffold(
+377:       backgroundColor: const Color(0xFFEEF8FF),
+378:       body: SafeArea(
+379:         child: TaskReferenceView(
+380:           task: task,
+381:           equipment: _equipment,
+382:           events: _events,
+383:           owner: workOwnerLabel(task, _session!),
+384:           guardian: workGuardianLabel(task),
+385:           preview: _preview,
+386:           onBack: _back,
+387:           onRefresh: _preview ? _showPreview : _load,
+388:           onPerson: (person) {
+389:             if (_preview) {
+390:               _exampleAction();
+391:               return;
+392:             }
+393:             final id = idOf(person['personId']);
+394:             if (id.isNotEmpty) context.push('/people/$id');
+395:           },
+396:           onEvent: (event) {
+397:             if (_preview) {
+398:               _exampleAction();
+399:               return;
+400:             }
+401:             final id = idOf(event['id']);
+402:             if (id.isNotEmpty) {
+403:               context.push(
+404:                 Uri(
+405:                   path: '/events',
+406:                   queryParameters: {'eventId': id},
+407:                 ).toString(),
+408:               );
+409:             }
+410:           },
+411:           onGuardian: _contactGuardian,
+412:           details: Column(
+413:             children: [
+414:               DetailField(label: '状态', value: taskStatusLabel(task['status'])),
+415:               DetailField(
+416:                 label: '作业类型',
+417:                 value: _workTypeLabel(task['workType']),
+418:               ),
+419:               DetailField(label: '作业区域', value: textOf(task['spaceName'])),
+420:               DetailField(
+421:                 label: '计划时间',
+422:                 value:
+423:                     '${formatTime(task['plannedStart'])} 至 ${formatTime(task['plannedEnd'])}',
+424:               ),
+425:               DetailField(
+426:                 label: '实际时间',
+427:                 value:
+428:                     '${formatTime(task['actualStart'])} 至 ${formatTime(task['actualEnd'])}',
+429:               ),
+430:               DetailField(label: '工作票', value: _ticketLabel(task)),
+431:               if (task['demo'] == true)
+432:                 const DetailField(label: '数据标识', value: '演示作业，不作为生产依据'),
+433:               for (final person in jsonList(task['members']))
+434:                 DetailField(
+435:                   label: textOf(person['name']),
+436:                   value: textOf(person['personCode']),
+437:                 ),
+438:             ],
+439:           ),
+440:           equipmentDetails: Column(
+441:             children: _equipment.isEmpty
+442:                 ? [
+443:                     const Padding(
+444:                       padding: EdgeInsets.all(12),
+445:                       child: Text('该任务没有装备检查项'),
+446:                     ),
+447:                   ]
+448:                 : _equipment.map(_equipmentRow).toList(),
+449:           ),
+450:         ),
+451:       ),
+452:     );
+453:   }
+454: 
+455:   Widget _equipmentRow(JsonMap item) {
+456:     final result = item['result']?.toString();
+457:     final color = switch (result) {
+458:       'ok' => WearColors.primary,
+459:       'missing' => WearColors.danger,
+460:       _ => WearColors.warning,
+461:     };
+462:     return QueryRow(
+463:       title:
+464:           '${textOf(item['personName'])} · ${deviceTypeLabel(item['typeCode'])}',
+465:       subtitle: item['sn'] == null ? '设备 SN 未知' : '设备 ${textOf(item['sn'])}',
+466:       trailing: WearBadge(text: equipmentResultLabel(result), color: color),
+467:     );
+468:   }
+469: 
+470:   String _ticketLabel(JsonMap task) {
+471:     if (task['ticketRequired'] != true) return '无需工作票';
+472:     return switch (task['ticketStatus']?.toString()) {
+473:       'provided' => textOf(task['ticketNo']),
+474:       'unverified' => '待核实',
+475:       _ => '状态未知',
+476:     };
+477:   }
+478: }

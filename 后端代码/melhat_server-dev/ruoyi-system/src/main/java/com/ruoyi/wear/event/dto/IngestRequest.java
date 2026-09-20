@@ -6,6 +6,12 @@ import java.util.Date;
 public class IngestRequest
 {
     private String source;
+    private String alarmCode;
+    private String alarmName;
+    private String alarmDescription;
+    private String simulationDetail;
+    public String getSimulationDetail() { return simulationDetail; }
+    public void setSimulationDetail(String value) { simulationDetail = value; }
     private String sourceEventId;
     private String type;
     private String siteId;
@@ -21,6 +27,12 @@ public class IngestRequest
     private String fenceAction;
     private String ruleVersion;
 
+    public String getAlarmCode() { return alarmCode; }
+    public void setAlarmCode(String alarmCode) { this.alarmCode = alarmCode; }
+    public String getAlarmName() { return alarmName; }
+    public void setAlarmName(String alarmName) { this.alarmName = alarmName; }
+    public String getAlarmDescription() { return alarmDescription; }
+    public void setAlarmDescription(String alarmDescription) { this.alarmDescription = alarmDescription; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
     public String getSourceEventId() { return sourceEventId; }

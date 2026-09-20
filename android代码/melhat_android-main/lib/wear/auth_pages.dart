@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'core.dart';
+import 'password_reset_page.dart';
+export 'sites_page.dart';
 
 class WearLoginPage extends StatefulWidget {
   const WearLoginPage({super.key});
@@ -136,96 +137,12 @@ class _WearLoginPageState extends State<WearLoginPage> {
   }
 
   void _openPasswordReset() {
-    final account = TextEditingController(text: _username.text);
-    final next = TextEditingController();
-    final confirm = TextEditingController();
-    final form = GlobalKey<FormState>();
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          4,
-          20,
-          MediaQuery.viewInsetsOf(ctx).bottom + 20,
-        ),
-        child: Form(
-          key: form,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  '登录遇到问题',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: WearColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '验证码看不清请点刷新。忘记密码时填写账号和新密码，由厂站管理员在后台确认后生效。',
-                  style: TextStyle(color: WearColors.muted, height: 1.5),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: account,
-                  decoration: const InputDecoration(
-                    labelText: '账号',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? '请输入账号' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: next,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: '新密码',
-                    prefixIcon: Icon(Icons.lock_outline),
-                  ),
-                  validator: (v) =>
-                      v == null || v.length < 6 ? '新密码至少 6 位' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: confirm,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: '确认新密码',
-                    prefixIcon: Icon(Icons.lock_reset_outlined),
-                  ),
-                  validator: (v) =>
-                      v != next.text ? '两次输入的新密码不一致' : null,
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () {
-                    if (form.currentState?.validate() != true) return;
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('重置申请已记录，请联系管理员在后台确认后生效'),
-                      ),
-                    );
-                  },
-                  child: const Text('提交密码重置'),
-                ),
-              ],
-            ),
-          ),
-        ),
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            WearPasswordResetPage(initialAccount: _username.text.trim()),
       ),
-    ).whenComplete(() {
-      account.dispose();
-      next.dispose();
-      confirm.dispose();
-    });
+    );
   }
 
   @override
@@ -244,14 +161,23 @@ class _WearLoginPageState extends State<WearLoginPage> {
                 child: form,
               ),
             )
-          : Column(
-              children: [
-                Expanded(flex: 5, child: _heroPanel()),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8 + bottom),
-                  child: form,
+          : SafeArea(
+              bottom: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      key: const ValueKey('wear-page-hero-login'),
+                      height: WearHeaderLayout.height(context),
+                      child: _heroPanel(),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + bottom),
+                      child: form,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
     );
   }
@@ -313,11 +239,11 @@ class _WearLoginPageState extends State<WearLoginPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         WearRollingWordmark(height: 30),
-        SizedBox(height: 18),
+        SizedBox(height: 10),
         Text(
           '欢迎登录',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: WearHeaderLayout.titleSize,
             height: 1.15,
             fontWeight: FontWeight.w800,
             color: WearColors.ink,
@@ -326,7 +252,10 @@ class _WearLoginPageState extends State<WearLoginPage> {
         SizedBox(height: 6),
         Text(
           '智能穿戴安全监护平台',
-          style: TextStyle(fontSize: 15, color: WearColors.muted),
+          style: TextStyle(
+            fontSize: WearHeaderLayout.subtitleSize,
+            color: WearColors.muted,
+          ),
         ),
         SizedBox(height: 10),
         Row(
@@ -336,7 +265,7 @@ class _WearLoginPageState extends State<WearLoginPage> {
             Text(
               '临江示范电厂',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: WearHeaderLayout.subtitleSize,
                 fontWeight: FontWeight.w600,
                 color: WearColors.ink,
               ),
@@ -376,7 +305,8 @@ class _WearLoginPageState extends State<WearLoginPage> {
         _captchaBytes!,
         fit: BoxFit.fill,
         semanticLabel: '图形验证码',
-        errorBuilder: (_, _, _) => _LocalCaptchaView(code: _localCode ?? '----'),
+        errorBuilder: (_, _, _) =>
+            _LocalCaptchaView(code: _localCode ?? '----'),
       );
     }
     return _LocalCaptchaView(code: _localCode ?? '7K4P');
@@ -464,7 +394,8 @@ class _WearLoginPageState extends State<WearLoginPage> {
                         hint: '请输入图形验证码',
                         prefix: const Icon(Icons.image_outlined),
                       ),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? '请输入验证码'
                           : null,
                     ),
@@ -491,7 +422,11 @@ class _WearLoginPageState extends State<WearLoginPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.refresh, size: 18, color: WearColors.brand),
+                          Icon(
+                            Icons.refresh,
+                            size: 18,
+                            color: WearColors.brand,
+                          ),
                           Text(
                             '刷新',
                             style: TextStyle(
@@ -542,7 +477,7 @@ class _WearLoginPageState extends State<WearLoginPage> {
               ),
               TextButton(
                 onPressed: session.busy ? null : _openPasswordReset,
-                child: const Text('登录遇到问题  >'),
+                child: const Text('忘记密码 / 申请重置  >'),
               ),
               if (session.token != null && session.me == null && !session.busy)
                 TextButton(
@@ -623,95 +558,4 @@ class _CaptchaPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _CaptchaPainter oldDelegate) =>
       oldDelegate.code != code;
-}
-
-class WearSitesPage extends StatelessWidget {
-  const WearSitesPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final session = WearScope.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            WearRollingWordmark(height: 22),
-            SizedBox(width: 10),
-            Expanded(child: Text('选择工作厂站')),
-          ],
-        ),
-        automaticallyImplyLeading: false,
-        leading: session.siteId != null
-            ? IconButton(
-                tooltip: '返回工作台',
-                onPressed: () => context.go('/workbench'),
-                icon: const Icon(Icons.arrow_back),
-              )
-            : null,
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: Text(
-                '今天在哪个厂站工作？切换后，待办、人员、装备和通讯同步更新。',
-                style: TextStyle(color: WearColors.muted, height: 1.5),
-              ),
-            ),
-            if (session.error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  session.error!,
-                  style: const TextStyle(color: WearColors.danger),
-                ),
-              ),
-            if (session.sites.isEmpty)
-              const WearEmpty(title: '暂无可访问的厂站', detail: '请联系管理员为此账号分配有效厂站。'),
-            for (final site in session.sites)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: WearCard(
-                  padding: EdgeInsets.zero,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    leading: const Icon(Icons.factory_outlined),
-                    title: Text(textOf(site['name'])),
-                    subtitle: Text(textOf(site['siteCode'])),
-                    trailing: idOf(site['id']) == session.siteId
-                        ? const Icon(
-                            Icons.check_circle,
-                            color: WearColors.primary,
-                          )
-                        : const Icon(Icons.chevron_right),
-                    enabled: !session.busy,
-                    onTap: () async {
-                      try {
-                        await session.selectSite(idOf(site['id']));
-                        if (context.mounted) context.go('/workbench');
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text(e.toString())));
-                        }
-                      }
-                    },
-                  ),
-                ),
-              ),
-            if (session.busy) const Center(child: CircularProgressIndicator()),
-            TextButton(
-              onPressed: session.busy ? null : session.logout,
-              child: const Text('退出当前账号'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

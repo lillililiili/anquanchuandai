@@ -1,0 +1,47 @@
+1: typedef JsonMap = Map<String, dynamic>;
+2: 
+3: JsonMap jsonMap(Object? value) => value is Map
+4:     ? value.map((key, value) => MapEntry(key.toString(), value))
+5:     : <String, dynamic>{};
+6: List<JsonMap> jsonList(Object? value) =>
+7:     value is List ? value.whereType<Map>().map(jsonMap).toList() : <JsonMap>[];
+8: String idOf(Object? value) => value == null ? '' : value.toString();
+9: String textOf(Object? value, [String fallback = '—']) =>
+10:     value == null || value.toString().trim().isEmpty
+11:     ? fallback
+12:     : value.toString();
+13: int intOf(Object? value, [int fallback = 0]) => value is num
+14:     ? value.toInt()
+15:     : int.tryParse(value?.toString() ?? '') ?? fallback;
+16: String formatTime(Object? value) {
+17:   final date = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
+18:   if (date == null) return '时间未知';
+19:   String two(int n) => n.toString().padLeft(2, '0');
+20:   return '${date.year}-${two(date.month)}-${two(date.day)} ${two(date.hour)}:${two(date.minute)}:${two(date.second)}';
+21: }
+22: 
+23: class WearPage {
+24:   final List<JsonMap> records;
+25:   final int total;
+26:   final int current;
+27:   final int size;
+28:   const WearPage({
+29:     required this.records,
+30:     required this.total,
+31:     required this.current,
+32:     required this.size,
+33:   });
+34:   bool get hasMore => current * size < total;
+35:   factory WearPage.fromJson(Object? value) {
+36:     final data = jsonMap(value);
+37:     if (data['records'] is! List || data['total'] == null) {
+38:       throw const FormatException('分页响应缺少 records 或 total');
+39:     }
+40:     return WearPage(
+41:       records: jsonList(data['records']),
+42:       total: intOf(data['total']),
+43:       current: intOf(data['current'], 1),
+44:       size: intOf(data['size'], 20),
+45:     );
+46:   }
+47: }

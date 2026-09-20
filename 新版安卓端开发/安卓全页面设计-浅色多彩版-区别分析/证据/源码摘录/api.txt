@@ -1,0 +1,150 @@
+1: import 'package:dio/dio.dart';
+2: import 'data.dart';
+3: 
+4: class WearApiException implements Exception {
+5:   final int code;
+6:   final String message;
+7:   const WearApiException(this.code, this.message);
+8:   @override
+9:   String toString() => message;
+10: }
+11: 
+12: class StaleSessionException extends WearApiException {
+13:   const StaleSessionException() : super(-1, '会话或厂站已变化');
+14: }
+15: 
+16: /// The request captures the identity and site; late responses never enter a new session.
+17: class WearApi {
+18:   final Dio dio;
+19:   final String? Function() token;
+20:   final String? Function() siteId;
+21:   final int Function() epoch;
+22:   final void Function()? onUnauthorized;
+23:   CancelToken _cancel = CancelToken();
+24:   WearApi({
+25:     Dio? dio,
+26:     required this.token,
+27:     required this.siteId,
+28:     required this.epoch,
+29:     this.onUnauthorized,
+30:   }) : dio =
+31:            dio ??
+32:            Dio(
+33:              BaseOptions(
+34:                baseUrl: const String.fromEnvironment(
+35:                  'API_BASE_URL',
+36:                  defaultValue: 'http://10.0.2.2:18084',
+37:                ),
+38:                connectTimeout: const Duration(seconds: 15),
+39:                receiveTimeout: const Duration(seconds: 20),
+40:                sendTimeout: const Duration(seconds: 20),
+41:                contentType: Headers.jsonContentType,
+42:              ),
+43:            );
+44: 
+45:   void invalidate() {
+46:     _cancel.cancel('session changed');
+47:     _cancel = CancelToken();
+48:   }
+49: 
+50:   Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>
+51:       request('GET', path, query: query);
+52:   Future<dynamic> post(String path, {Object? data}) =>
+53:       request('POST', path, data: data);
+54:   Future<dynamic> put(String path, {Object? data}) =>
+55:       request('PUT', path, data: data);
+56:   Future<dynamic> delete(String path) => request('DELETE', path);
+57:   Future<WearPage> page(
+58:     String path, {
+59:     Map<String, dynamic>? query,
+60:     int current = 1,
+61:     int size = 20,
+62:   }) async => WearPage.fromJson(
+63:     await get(path, query: {'current': current, 'size': size, ...?query}),
+64:   );
+65: 
+66:   Future<dynamic> request(
+67:     String method,
+68:     String path, {
+69:     Map<String, dynamic>? query,
+70:     Object? data,
+71:     bool raw = false,
+72:   }) async {
+73:     final requestEpoch = epoch();
+74:     final headers = <String, dynamic>{};
+75:     final accessToken = token();
+76:     if (path != '/login' && accessToken != null) {
+77:       headers['Authorization'] = 'Bearer $accessToken';
+78:     }
+79:     final station = siteId();
+80:     if (station != null &&
+81:         path.startsWith('/api/v1/') &&
+82:         !const [
+83:           '/api/v1/me',
+84:           '/api/v1/sites',
+85:           '/api/v1/me/current-site',
+86:         ].contains(path)) {
+87:       headers['X-Site-Id'] = station;
+88:     }
+89:     try {
+90:       final response = await dio.request<dynamic>(
+91:         path,
+92:         data: data,
+93:         queryParameters: query,
+94:         cancelToken: _cancel,
+95:         options: Options(
+96:           method: method,
+97:           headers: headers,
+98:           validateStatus: (_) => true,
+99:         ),
+100:       );
+101:       if (requestEpoch != epoch()) throw const StaleSessionException();
+102:       final body = jsonMap(response.data);
+103:       final code = intOf(body['code'], response.statusCode ?? 0);
+104:       if (code != 200 || (response.statusCode ?? 500) >= 400) {
+105:         final effectiveCode = (response.statusCode ?? 0) >= 400
+106:             ? response.statusCode!
+107:             : code;
+108:         if (effectiveCode == 401 && path != '/login') onUnauthorized?.call();
+109:         throw WearApiException(
+110:           effectiveCode,
+111:           _safeMessage(body['msg'], effectiveCode),
+112:         );
+113:       }
+114:       if (response.data is! Map) {
+115:         throw const WearApiException(502, '服务响应格式不正确，请稍后重试');
+116:       }
+117:       return raw ? body : body['data'];
+118:     } on DioException catch (error) {
+119:       if (requestEpoch != epoch() || error.type == DioExceptionType.cancel) {
+120:         throw const StaleSessionException();
+121:       }
+122:       throw WearApiException(0, switch (error.type) {
+123:         DioExceptionType.connectionTimeout ||
+124:         DioExceptionType.receiveTimeout ||
+125:         DioExceptionType.sendTimeout => '网络超时，请检查连接后重试',
+126:         DioExceptionType.badCertificate => '连接证书校验失败，请联系管理员',
+127:         _ => '无法连接服务，请检查网络后重试',
+128:       });
+129:     }
+130:   }
+131: 
+132:   static String _safeMessage(Object? value, int code) {
+133:     final message = value?.toString() ?? '';
+134:     if (message.isNotEmpty &&
+135:         message.length < 180 &&
+136:         !RegExp(
+137:           r'Exception|SELECT |INSERT |UPDATE |Bearer |password|token|jdbc:',
+138:           caseSensitive: false,
+139:         ).hasMatch(message)) {
+140:       return message;
+141:     }
+142:     return switch (code) {
+143:       401 => '登录已过期，请重新登录',
+144:       403 => '没有权限执行该操作',
+145:       404 => '记录或接口不存在，请刷新后重试',
+146:       409 => '当前状态已变化，请刷新后重试',
+147:       _ => '操作未完成，请稍后重试',
+148:     };
+149:   }
+150: }

@@ -1,0 +1,104 @@
+1: import 'dart:convert';
+2: 
+3: import 'package:shared_preferences/shared_preferences.dart';
+4: 
+5: import 'event_controller.dart';
+6: import 'event_models.dart';
+7: 
+8: class SharedPreferencesEventStateStore implements EventStateStore {
+9:   SharedPreferencesEventStateStore({required this.userId, required this.siteId})
+10:     : _writeGeneration = _writeGenerations[userId] ?? 0;
+11: 
+12:   static final Map<String, int> _writeGenerations = {};
+13:   static final Map<String, Future<void>> _writeTails = {};
+14: 
+15:   final String userId;
+16:   final String siteId;
+17:   final int _writeGeneration;
+18: 
+19:   /// Invalidates existing writers and drains writes that reached preferences.
+20:   /// Call this before deleting keys with the `wear.<userId>.` prefix.
+21:   static Future<void> revokeUser(String userId) async {
+22:     _writeGenerations[userId] = (_writeGenerations[userId] ?? 0) + 1;
+23:     await (_writeTails[userId] ?? Future<void>.value()).catchError((_) {});
+24:   }
+25: 
+26:   String get _base => 'wear.$userId.events.${siteId.isEmpty ? 'all' : siteId}';
+27:   String get _stateKey => '$_base.state';
+28:   String get _draftPrefix => '$_base.draft.';
+29: 
+30:   @override
+31:   Future<EventWorkspaceState?> read() async {
+32:     final prefs = await SharedPreferences.getInstance();
+33:     EventWorkspaceState state;
+34:     try {
+35:       final raw = prefs.getString(_stateKey);
+36:       state = raw == null
+37:           ? const EventWorkspaceState()
+38:           : EventWorkspaceState.fromJson(jsonDecode(raw));
+39:     } catch (_) {
+40:       state = const EventWorkspaceState();
+41:     }
+42:     final drafts = <String, EventDraft>{};
+43:     for (final key in prefs.getKeys().where(
+44:       (key) => key.startsWith(_draftPrefix),
+45:     )) {
+46:       try {
+47:         final raw = prefs.getString(key);
+48:         if (raw == null) continue;
+49:         final draft = EventDraft.fromJson(jsonDecode(raw));
+50:         if (!draft.isEmpty) drafts[key.substring(_draftPrefix.length)] = draft;
+51:       } catch (_) {
+52:         // One corrupt event draft must not block recovery of the remaining workspace.
+53:       }
+54:     }
+55:     return EventWorkspaceState(
+56:       filters: state.filters,
+57:       current: state.current,
+58:       selectedEventId: state.selectedEventId,
+59:       scrollOffset: state.scrollOffset,
+60:       drafts: drafts,
+61:     );
+62:   }
+63: 
+64:   @override
+65:   Future<void> write(EventWorkspaceState value) async {
+66:     if ((_writeGenerations[userId] ?? 0) != _writeGeneration) return;
+67:     final previous = _writeTails[userId] ?? Future<void>.value();
+68:     final operation = previous.catchError((_) {}).then((_) async {
+69:       if ((_writeGenerations[userId] ?? 0) != _writeGeneration) return;
+70:       await _writeNow(value);
+71:     });
+72:     _writeTails[userId] = operation.catchError((_) {});
+73:     await operation;
+74:   }
+75: 
+76:   Future<void> _writeNow(EventWorkspaceState value) async {
+77:     final prefs = await SharedPreferences.getInstance();
+78:     await prefs.setString(
+79:       _stateKey,
+80:       jsonEncode(
+81:         EventWorkspaceState(
+82:           filters: value.filters,
+83:           current: value.current,
+84:           selectedEventId: value.selectedEventId,
+85:           scrollOffset: value.scrollOffset,
+86:         ).toJson(),
+87:       ),
+88:     );
+89:     final desired = value.drafts.keys.map((id) => '$_draftPrefix$id').toSet();
+90:     final stale = prefs
+91:         .getKeys()
+92:         .where((key) => key.startsWith(_draftPrefix) && !desired.contains(key))
+93:         .toList();
+94:     for (final key in stale) {
+95:       await prefs.remove(key);
+96:     }
+97:     for (final entry in value.drafts.entries) {
+98:       await prefs.setString(
+99:         '$_draftPrefix${entry.key}',
+100:         jsonEncode(entry.value.toJson()),
+101:       );
+102:     }
+103:   }
+104: }

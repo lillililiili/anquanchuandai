@@ -1,0 +1,21 @@
+# Optional overlay for the EXISTING Java backend. Apply only in the local test environment.
+# docker compose -p melhat -f ../../docker/compose.yaml -f backend-link.compose.yaml up -d --no-deps backend
+services:
+  backend:
+    environment:
+      MELHAT_DEMO_MODE: "false"
+      MELHAT_SIMULATION_ENABLED: "true"
+      HEADBAND_SERVER: http://call-lab:18766
+      HEADBAND_TOKEN_URL: /api/token
+      HEADBAND_TOKEN_USERNAME: call-lab
+      HEADBAND_TOKEN_PASSWORD: call-lab
+      HEADBAND_DEVICE_CALL_AGORATOKEN: /api/agora/token
+      HEADBAND_DEVICE_CALL_AGORAEND: /api/monitor/call/end
+      HEADBAND_DEVICE_CALL_END: /api/intercom/end
+    networks:
+      - default
+      - call_lab
+networks:
+  call_lab:
+    external: true
+    name: wear-call-lab_default
