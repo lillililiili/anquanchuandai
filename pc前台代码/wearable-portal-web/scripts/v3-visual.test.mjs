@@ -49,6 +49,8 @@ test('V3 rollout covers workspaces without external assets or viewport overrides
   assert.match(style, /prefers-reduced-motion:reduce/)
   const main = read('src/main.js')
   assert.ok(main.indexOf('v3-workspaces.scss') < main.indexOf('workspace-layout.scss'))
+  assert.ok(main.indexOf('v4-vivid.scss') < main.indexOf('v5-luminous.scss'))
+  assert.ok(main.indexOf('v5-luminous.scss') < main.indexOf('v6-chromatic.scss'))
   assert.match(read('src/layouts/PortalLayout.vue'), /:data-workspace="menuOwner\(route.path\)"/)
   assert.match(read('src/components/personnel/DataState.vue'), /:data-state="state"/)
 })

@@ -6,7 +6,7 @@ import { spatialCommand, spatialRead } from './spatial-service.js'
 import { inspectFile, decodeFile } from './local-file.js'
 import { videoAccess, privacyCommand } from './video-service.js'
 import { queryWorks, workEditor, workCommand } from './work-service.js'
-import { eventEditor, eventCommand } from './event-service.js'
+import { eventCommand } from './event-service.js'
 import { queryDispatch, dispatchCommand } from './dispatch-service.js'
 export const MOCK_TOKEN_KEY = 'Wearable-Portal-Mock-Token'
 export function delay(ms, signal) {
@@ -62,7 +62,6 @@ export function createTransport({ read, update, session, wait = delay }) {
         })
         return { code: 200, data: result, requestId }
       }
-      if (path === '/mock-events/editor' && method === 'GET') return { code: 200, data: eventEditor(dataset, role, config.params), requestId }
       if (path.startsWith('/mock-events/') && method === 'POST') {
         let result
         await update(draft => {

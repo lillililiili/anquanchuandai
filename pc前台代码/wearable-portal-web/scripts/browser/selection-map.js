@@ -8,7 +8,10 @@ async page => {
     const s = el.__vueParentComponent.setupState;
     return { points: s.pointOverlays.length, fences: s.fenceOverlays.length, ids: s.props.fences.map(f => f.id), pointIds: s.props.points.map(p => p.recordId), center: s.map.getCenter().toArray() };
   });
-  await page.waitForFunction(() => document.querySelector('.amap-scene')?.__vueParentComponent.setupState.fenceOverlays.length > 1);
+  await page.waitForFunction(() => {
+    const s = document.querySelector('.amap-scene')?.__vueParentComponent.setupState;
+    return s?.fenceOverlays.length === 1 && s.props.fences[0]?.id === 'fence-1-1';
+  });
   await page.screenshot({ path: 'output/playwright/selection-fences-overview.png' });
   for (const index of [0, 8, 2]) {
     await page.locator('.s2-list-row').nth(index).click();

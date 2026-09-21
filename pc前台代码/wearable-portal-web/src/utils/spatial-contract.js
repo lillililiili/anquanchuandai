@@ -37,7 +37,7 @@ export function safeWorkspaceReturn(value) {
     if (u.hash) return '/personnel'
     if (u.pathname === '/supervision' || /^\/supervision\/[A-Za-z0-9_-]{1,64}$/.test(u.pathname)) return safeWorkReturn(value, true)
     if (u.pathname === '/equipment' || /^\/equipment\/[A-Za-z0-9_-]{1,64}$/.test(u.pathname)) return safeEquipmentReturn(value, true)
-    if (u.pathname === '/alarms' || /^\/alarms\/[A-Za-z0-9_-]{1,64}\/verification$/.test(u.pathname)) return safeEventReturn(value, true)
+    if (u.pathname === '/alarms' || /^\/alarms\/[A-Za-z0-9_-]{1,64}(?:\/verification)?$/.test(u.pathname)) return safeEventReturn(value, true)
     if (u.pathname === '/video' || /^\/video\/[A-Za-z0-9_-]{1,64}$/.test(u.pathname)) return safeVideoReturn(value, true)
     if (u.pathname === '/personnel') return safePersonnelReturn(value)
     const raw = Object.fromEntries(u.searchParams)

@@ -17,6 +17,6 @@ export function seedMonitoring(d) {
 export function workSummary(d, w) {
   const m = d.relations.monitoring?.find(m => m.workId === w.workId && m.siteId === w.siteId)
   return { ...w, monitorState: m?.state || 'PENDING', participantCount: new Set(m?.personIds || []).size,
-    openEventCount: d.config.module === 'events' && d.config.mode !== 'normal' ? null : d.entities.events.filter(e => e.siteId === w.siteId && e.workId === w.workId && ['UNCLAIMED', 'PROCESSING', 'AWAITING_VERIFICATION'].includes(e.phase)).length,
+    openEventCount: d.config.module === 'events' && d.config.mode !== 'normal' ? null : d.entities.events.filter(e => e.siteId === w.siteId && e.workId === w.workId && e.handlingStatus === 'UNHANDLED').length,
     localSupervisorId: m?.supervisorId || null, localSupervisorName: d.entities.people.find(p => p.siteId === w.siteId && p.personId === m?.supervisorId)?.name || null }
 }

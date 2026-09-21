@@ -17,6 +17,10 @@ import request from './request'
 const props = defineProps({ device: { type: Object, default: null }, compact: Boolean, captureEnabled: Boolean })
 const user = useUserStore(), context = useContextStore(), workspace = useWorkspaceStore(), route = useRoute()
 const media = ref(null), panel = ref(null), state = ref({ state: 'IDLE', muted: true }), recording = ref(false), seconds = ref(0), pending = ref(null), busy = ref(false), error = ref(''), saved = ref('')
+const previewUrl = ref('')
+watch(pending, value => { if (previewUrl.value) URL.revokeObjectURL(previewUrl.value); previewUrl.value = value ? URL.createObjectURL(value.blob) : '' }, { flush: 'sync' })
+const captureReason = computed(() => !captureAccess.value.allowed ? captureAccess.value.reason : !videoAccess.value.allowed ? videoAccess.value.reason : pending.value ? '请先保存或丢弃已生成的媒体' : recording.value ? '请先停止录像' : '')
+const recordReason = computed(() => !recordAccess.value.allowed ? recordAccess.value.reason : !videoAccess.value.allowed ? videoAccess.value.reason : !canRecord ? '浏览器不支持本地录像' : pending.value ? '请先保存或丢弃已生成的媒体' : recording.value ? '正在录像' : '')
 let player, recorder, controller = new AbortController(), generation = 0
 const siteId = computed(() => String(route.query.siteId || context.selectedSiteId || ''))
 const access = key => capabilityDecision(props.device, key, { mock: true, permitted: key === 'video' ? user.permissions.includes('portal:video:read') || user.permissions.includes('*:*:*') : user.roles.includes('owner'), moduleEnabled: true })
@@ -43,15 +47,47 @@ onBeforeUnmount(() => { clean(); player?.destroy(); document.removeEventListener
 async function play() { if (!videoAccess.value.allowed || busy.value || pending.value || recording.value) return; error.value = ''; media.value.loop = true; await player.start() }
 async function fullscreen() { if (!await player.fullscreen(panel.value)) error.value = '浏览器拒绝全屏，请使用窗口查看' }
 function stage(blob, method) { pending.value = { blob, method, generatedAt: new Date().toISOString(), operationId: crypto.randomUUID(), deviceId: props.device.deviceId, siteId: siteId.value }; saved.value = '' }
-async function capture() {
-  if (!captureAccess.value.allowed || !advancing.value || busy.value || pending.value || recording.value) return
-  const current = generation; busy.value = true; error.value = ''
-  try { const blob = await captureImage(media.value); if (generation === current) stage(blob, 'MOCK_CAPTURE') } catch (e) { error.value = e.message } finally { if (generation === current) busy.value = false }
+async function ensurePlayback(signal) {
+  if (advancing.value) return
+  media.value.loop = true
+  await new Promise((resolve, reject) => {
+    let unwatch
+    const finish = failure => { clearTimeout(timer); unwatch?.(); signal.removeEventListener('abort', abort); failure ? reject(failure) : resolve() }
+    const abort = () => finish(new Error('操作已取消'))
+    const timer = setTimeout(() => finish(new Error('视频未能开始播放，请重试')), 10000)
+    unwatch = watch(() => state.value.state, value => {
+      if (value === 'PLAYING') finish()
+      else if (['ERROR', 'FORBIDDEN', 'NOT_INTEGRATED', 'INTERRUPTED'].includes(value)) finish(new Error(state.value.reason || '画面不可用，请重试'))
+    }, { flush: 'sync' })
+    signal.addEventListener('abort', abort, { once: true })
+    if (signal.aborted) abort()
+    else if (state.value.state !== 'CONNECTING') player.start().catch(finish)
+  })
 }
-function record() {
-  if (!recordAccess.value.allowed || !advancing.value || !canRecord || pending.value || busy.value || recording.value) return
-  error.value = ''; seconds.value = 0
-  try { recorder = recordMedia(media.value, blob => { recording.value = false; stage(blob, 'MOCK_RECORD') }, e => { recording.value = false; error.value = e.message }, n => { seconds.value = n }); recording.value = true } catch (e) { error.value = e.message }
+async function capture() {
+  if (captureReason.value || busy.value) return
+  const current = generation; busy.value = true; error.value = ''
+  try {
+    await ensurePlayback(controller.signal)
+    if (generation !== current) return
+    const blob = await captureImage(media.value)
+    if (generation === current) stage(blob, 'MOCK_CAPTURE')
+  } catch (e) { if (generation === current) error.value = e.message }
+  finally { if (generation === current) busy.value = false }
+}
+async function record() {
+  if (recordReason.value || busy.value) return
+  const current = generation; busy.value = true; error.value = ''; seconds.value = 0
+  try {
+    await ensurePlayback(controller.signal)
+    if (generation !== current) return
+    recorder = recordMedia(media.value,
+      blob => { if (generation === current) { recording.value = false; stage(blob, 'MOCK_RECORD') } },
+      e => { if (generation === current) { recording.value = false; error.value = e.message } },
+      n => { if (generation === current) seconds.value = n })
+    recording.value = true
+  } catch (e) { if (generation === current) error.value = e.message }
+  finally { if (generation === current) busy.value = false }
 }
 async function save() {
   if (!pending.value || busy.value) return
@@ -87,14 +123,16 @@ async function privacy() {
     </div>
     <template v-if="captureEnabled && device">
       <p class="video-note">仅本地合成片段，无声音；播放状态不代表设备在线。抓拍/录像不等于设备远程拍摄或设备本地录像。</p>
-      <div class="mock-play-controls"><button class="video-button" :disabled="!captureAccess.allowed || !advancing || busy || !!pending || recording" @click="capture">预置抓拍</button><button class="video-button" :disabled="!recordAccess.allowed || !canRecord || !advancing || busy || !!pending || recording" @click="record">开始预置录像</button><button v-if="recording" class="video-button" @click="recorder.stop()">停止录像</button><span v-if="recording" role="status">录像中 {{ seconds }} / 60 秒 · 最多50MB</span><button class="video-button" :disabled="!user.roles.includes('owner') || busy" @click="privacy">本地隐私上报：{{ device.profile?.privacy === 'ON' ? '关闭' : '开启' }}</button></div>
-      <p class="video-note">抓拍：{{ captureAccess.reason }}；录像：{{ !canRecord ? '浏览器不支持MediaRecorder或画布流' : recordAccess.reason }}。需画面实际播放。隐私仅本地上报，不发送远程开关。</p>
-      <section v-if="pending" class="mock-pending" aria-label="待保存媒体"><strong>{{ pending.method === 'MOCK_CAPTURE' ? '抓拍' : '录像' }}已生成，尚未保存</strong><p>{{ (pending.blob.size / 1024).toFixed(1) }} KB · 保存计入200MB总预算 · 刷新清空</p><button class="video-button" :disabled="busy" @click="save">{{ busy ? '保存中' : '保存为现场资料' }}</button><button class="video-button" :disabled="busy" @click="discard">丢弃</button></section>
+      <div class="mock-play-controls"><button class="video-button" :disabled="!!captureReason || busy" :title="captureReason || '自动播放本地视频并抓拍'" @click="capture">预置抓拍</button><button class="video-button" :disabled="!!recordReason || busy" :title="recordReason || '自动播放本地视频并开始录像'" @click="record">开始预置录像</button><button v-if="recording" class="video-button" @click="recorder.stop()">停止录像</button><span v-if="recording" role="status">录像中 {{ seconds }} / 60 秒 · 最多50MB</span><button class="video-button" :disabled="!user.roles.includes('owner') || busy" @click="privacy">本地隐私上报：{{ device.profile?.privacy === 'ON' ? '关闭' : '开启' }}</button></div>
+      <p class="video-note">抓拍：{{ captureReason || '点击后自动播放并生成图片' }}；录像：{{ recordReason || '点击开始，停止后可预览和保存，最长60秒' }}。隐私仅本地上报，不发送远程开关。</p>
+      <p v-if="busy" role="status" class="video-note">正在处理，请稍候…</p>
+      <section v-if="pending" class="mock-pending" aria-label="待保存媒体"><img v-if="pending.method === 'MOCK_CAPTURE'" :src="previewUrl" alt="本地抓拍预览（非现场画面）" class="capture-preview" /><video v-else :src="previewUrl" controls playsinline preload="metadata" aria-label="本地录像预览" class="capture-preview" /><strong>{{ pending.method === 'MOCK_CAPTURE' ? '抓拍' : '录像' }}已生成，尚未保存</strong><p>{{ (pending.blob.size / 1024).toFixed(1) }} KB · 保存计入200MB总预算 · 刷新清空</p><button class="video-button" :disabled="busy" @click="save">{{ busy ? '保存中' : '保存为现场资料' }}</button><a class="video-button" :href="previewUrl" :download="pending.method === 'MOCK_CAPTURE' ? '本地抓拍.png' : '本地录像.webm'">下载到本机</a><button class="video-button" :disabled="busy" @click="discard">丢弃</button></section>
       <router-link v-if="saved" class="video-button" :to="{ path: '/materials', query: { siteId, selectedId: saved } }">查看生成资料</router-link>
     </template>
     <p v-if="device && !videoAccess.allowed" class="video-note">{{ videoAccess.reason }}</p><p v-if="error" role="alert" class="video-note">{{ error }}</p>
   </div>
 </template>
 <style scoped>
+.capture-preview { display:block; width:100%; max-height:320px; object-fit:contain; background:#001322; border-radius:6px; margin-bottom:12px; }
 .mock-monitor { min-width: 0; }.mock-play-controls { display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px; }.mock-pending { border:1px solid var(--cyan);padding:14px;margin:12px 0;background:var(--panel-bg); }.mock-pending button { margin-right:8px; }.compact .mock-play-controls { gap:4px;padding:4px; }.compact .video-button { min-height:30px;font-size:12px;padding:4px; }.video-player header,.video-player footer { background:#001d30dd; }.video-note { padding:0 8px;overflow-wrap:anywhere; }
 </style>

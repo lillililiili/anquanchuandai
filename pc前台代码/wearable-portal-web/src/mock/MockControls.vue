@@ -27,7 +27,7 @@ function expire() { open.value = false; expireSession() }
     <p class="mock-explanation">页面中“已接入”均为预置数据；不会访问真实设备、后端或外部系统。场景只影响选择的模块，不修改种子事实。</p>
     <p class="mock-explanation">数据与场景仅保存在内存中：切换菜单继续保留，刷新恢复初始状态。本地身份进入会话单独保留。</p>
     <form class="mock-form" @submit.prevent="apply()">
-      <label for="mock-module">目标模块</label><select id="mock-module" v-model="form.module"><option v-for="(name, key) in { dispatch: '调度协同', works: '作业监护', people: '人员', equipment: '装备与领用', vitals: '生命体征', locations: '定位', tracks: '轨迹', fences: '围栏', materials: '资料', video: '视频元数据', events: '事件与核验' }" :key="key" :value="key">{{ name }}</option></select>
+      <label for="mock-module">目标模块</label><select id="mock-module" v-model="form.module"><option v-for="(name, key) in { dispatch: '调度协同', works: '作业监护', people: '人员', equipment: '装备与领用', vitals: '生命体征', locations: '定位', tracks: '轨迹', fences: '围栏', materials: '资料', video: '视频元数据', events: '告警事件' }" :key="key" :value="key">{{ name }}</option></select>
       <label for="mock-scenario">查询场景</label><select id="mock-scenario" v-model="form.mode"><option value="normal">正常</option><option value="not-integrated">来源未接入</option><option value="failure">请求失败</option><option value="forbidden">详情或关联分区无权限</option></select>
       <label class="mock-checkbox"><input v-model="form.slowNext" type="checkbox" />该模块下一次查询延迟 3 秒</label>
       <p class="mock-explanation">离线、过期、未知和冲突使用固定样例。空数据请选“空厂站”。源时间以初始化基准为准：{{ mock.baseTime }}；不会按浏览器时间伪造设备上报。</p>

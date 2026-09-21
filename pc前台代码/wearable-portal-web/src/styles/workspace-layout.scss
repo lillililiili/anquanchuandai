@@ -5,7 +5,7 @@
 .route-surface { flex:1; min-height:0; min-width:0; overflow:auto; scrollbar-gutter:stable; }
 .route-surface > * { min-width:0; }
 .main-content .workspace-navigation { margin-bottom:14px; gap:8px; padding-bottom:10px; }
-.personnel-pagination, .s2-pagination { display:block; padding:0; margin:0; }
+.personnel-pagination, .s2-pagination, .event-pagination { display:block; padding:0; margin:0; }
 .portal-pagination { width:100%; }
 .table-scroll, .equipment-table-wrap, .event-table-scroll, .work-table-scroll,
 .s2-material-grid, .workspace-list-scroll { overscroll-behavior:contain; scrollbar-gutter:stable; }
@@ -36,6 +36,7 @@
   .route-surface:is([data-route='/personnel'],[data-route='/equipment'],[data-route='/alarms'],[data-route='/materials'],[data-route='/location'],[data-route='/supervision'],[data-route='/video']) > * { flex-shrink:0; }
   .route-surface > :is(.personnel-page,.equipment-page,.event-workspace,.s2-page,.work-monitor,.video-workspace) { flex:1; display:flex; flex-direction:column; min-height:0; gap:12px; }
   .route-surface > :is(.personnel-page,.equipment-page,.event-workspace,.s2-page,.work-monitor,.video-workspace) > * { flex-shrink:0; }
+  .event-workspace > .event-table-panel { flex:1; min-height:0; flex-shrink:1; }
   .personnel-page-heading, .s2-heading, .event-heading, .video-heading { margin-bottom:0; }
   .personnel-list-layout, .event-list-columns, .s2-material-layout, .s2-location-grid, .s2-fence-grid, .work-columns:not(.standalone), .video-columns:not(.single-video) { flex:1; min-height:0; align-items:stretch; }
   .personnel-list-main, .personnel-table-panel, .event-table-panel, .s2-material-main, .s2-list { display:flex; flex-direction:column; min-height:0; }
@@ -44,7 +45,7 @@
   .personnel-side { min-height:0; height:100%; }
   .personnel-table-panel > .table-scroll, .equipment-page > .equipment-table-wrap, .event-table-panel > .event-table-scroll,
   .s2-material-main > .s2-material-grid, .s2-list > .workspace-list-scroll { flex:1; min-height:0; max-height:none; overflow:auto; }
-  .personnel-pagination, .s2-pagination { margin-top:auto; }
+  .personnel-pagination, .s2-pagination, .event-pagination { margin-top:auto; }
   .personnel-filters { margin-bottom:12px; }
   .event-table-panel { padding-bottom:0; }
   .event-aside, .s2-detail { height:100%; min-height:0; max-height:none; overflow:auto; align-self:stretch; }

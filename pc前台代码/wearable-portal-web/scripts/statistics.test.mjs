@@ -30,15 +30,16 @@ test('historical interval is half-open; unknown source time and date grouping se
   assert.equal(metric(d, 'captureUnknown').count, 8)
   assert.equal(result.timeZone, 'Asia/Shanghai')
 })
-test('seed completion and submitted verification are not explicit completion', () => {
-  const d = createSeed(), eventId = 'event-1-1'
-  assert.equal(metric(d, 'phase-LOCAL_COMPLETED').count, 5); assert.equal(metric(d, 'completed').count, 0)
-  const command = (action, extra = {}) => eventCommand(d, 'owner', action, { siteId, eventId, operationId:'stats-' + action, expectedVersion: d.entities.events.find(e => e.eventId === eventId).version || 1, ...extra })
-  command('claim'); command('verify'); command('submit', { form: { conclusion:'COMMUNICATION_ISSUE', scene:'预置确认', measures:'', evidence:[] } })
-  assert.equal(metric(d, 'completed').count, 0)
-  command('complete'); assert.equal(metric(d, 'completed').count, 1)
-  command('receipt', { channel:'summary', result:'SUCCESS' }); assert.equal(metric(d, 'completed').count, 1)
+test('alarm handling counts by handled time, independently of occurrence', () => {
+  const d = createSeed('2000-01-01T00:00:00Z'), eventId = 'event-1-1'
+  const recent = id => buildStatistics(d, 'owner', { siteId, from: '2026-01-01T00:00:00Z', to: '2099-01-01T00:00:00Z' }).metrics.find(m => m.id === id)
+  assert.equal(metric(d, 'status-HANDLED').count, 6); assert.equal(recent('completed').count, 0)
+  eventCommand(d, 'owner', 'handle', { siteId, eventId, operationId: 'stats-handle', expectedVersion: 1, description: '已检查' })
+  assert.equal(recent('completed').count, 1)
+  assert.equal(metric(d, 'status-HANDLED').count, 7)
+  assert.equal(recent('occurred').count, 0)
 })
+
 test('source identity dedup does not merge same identifier from different systems', () => {
   const e = { siteId, eventId:'1', sourceSystem:'A', sourceEventId:'10' }
   assert.equal(distinctEvents([e, { ...e, eventId:'2' }, { ...e, eventId:'3', sourceSystem:'B' }]).length, 2)

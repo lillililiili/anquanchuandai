@@ -17,16 +17,16 @@ test('seven work entrances retain all nine original page registrations', () => {
 test('workbench metrics and complete drilldown share facts, not page totals', () => {
   const data = createSeed(), w = read(data)
   assert.equal(w.duty.data.length, 25); assert.equal(w.equipment.data.length, 68)
-  assert.equal(w.open.data.length, 15); assert.equal(w.unknown.data.length, 5)
+  assert.equal(w.open.data.length, 19); assert.equal(w.unknown.data.length, 0)
   assert.ok(w.mine.data.length > 0)
-  assert.ok(w.mine.data.every(e => e.ownerUserId === 'mock-owner' && w.open.data.includes(e)))
+  assert.ok(w.mine.data.every(e => e.handlingStatus === 'UNHANDLED' && w.open.data.includes(e)))
   assert.equal(new Set(w.equipment.data.map(d => d.deviceId)).size, w.equipment.data.length)
   assert.ok(w.duty.data.every(p => typeof p.personId === 'string'))
 })
 test('identity, site and data availability are independent', () => {
   const data = createSeed()
   assert.equal(read(data, 'reader').mine.state, 'FORBIDDEN')
-  assert.ok(read(data, 'verifier').mine.data.every(e => e.ownerUserId === 'mock-verifier'))
+  assert.ok(read(data, 'verifier').mine.data.every(e => e.handlingStatus === 'UNHANDLED'))
   assert.equal(read(data, 'owner', 'mock-site-empty').duty.data.length, 0)
   assert.throws(() => read(data, 'verifier', 'mock-site-2'), e => e.code === 403)
   assert.throws(() => read(data, ''), e => e.code === 401)
@@ -37,11 +37,11 @@ test('identity, site and data availability are independent', () => {
 })
 test('revision commits only successful updates, read never mutates, reset restores seeds', () => {
   const repo = createMemoryRepository(), before = repo.readDataset()
-  repo.transact(d => { d.entities.events[1].phase = 'LOCAL_COMPLETED' })
+  repo.transact(d => { d.entities.events[1].handlingStatus = 'HANDLED' })
   assert.equal(repo.readDataset().meta.businessRevision, 1)
   assert.throws(() => repo.transact(d => { d.entities.people = []; throw new Error('failed') }))
   assert.equal(repo.readDataset().entities.people.length, 50)
-  assert.equal(repo.resetDataset().entities.events[1].phase, before.entities.events[1].phase)
+  assert.equal(repo.resetDataset().entities.events[1].handlingStatus, before.entities.events[1].handlingStatus)
 })
 test('same-site monitor selection only and safe workbench return', () => {
   const selection = { siteId, deviceId: 'device-1-1-helmet' }

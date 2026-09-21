@@ -15,6 +15,9 @@ const fences = computed(() => {
   if (!selectedId.value) return list.data?.items || []
   return detail.state === 'READY' && detail.data?.id === selectedId.value ? [detail.data] : []
 })
+watch(() => list.data, data => {
+  if (data?.state === 'AVAILABLE' && !selectedId.value && data.items?.length) select(data.items[0].id)
+})
 </script>
 <template>
   <FenceEditor :site-id="siteId" :item="detail.data" :available="availableSite" />

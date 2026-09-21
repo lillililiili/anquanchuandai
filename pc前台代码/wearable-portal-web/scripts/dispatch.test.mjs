@@ -5,7 +5,7 @@ import { queryDispatch, dispatchCommand, dispatchData, closeActiveDispatch } fro
 import { safeDispatchReturn, dispatchQuery } from '../src/utils/dispatch-route.js'
 import { createTransport, MOCK_TOKEN_KEY } from '../src/mock/transport.js'
 import { queryDataset } from '../src/mock/engine.js'
-import { validateEventDetail, validateEventPage } from '../src/utils/event-contract.js'
+import { validateAlarmDetail, validateAlarmPage } from '../src/utils/alarm-contract.js'
 import { validateDispatch } from '../src/utils/dispatch-contract.js'
 const siteId = 'mock-site-1', one = 'device-1-1-helmet', two = 'device-1-2-helmet'
 function setup() { const repo = createMemoryRepository(); let n = 0; return { repo, read: () => repo.readDataset(), run(action, extra = {}, role = 'owner') { let r; repo.transact(d => { r = dispatchCommand(d, role, action, { siteId, expectedVersion: dispatchData(d).version, operationId: 'dispatch-test-' + ++n, ...extra }) }); return r } } }
@@ -60,11 +60,11 @@ test('broadcast independent task validates text and per-target receipts', () => 
 test('SOS independent of session, unknown attribution and event contract remain valid', () => {
   const s = setup(), r = s.run('sos', { deviceId: 'device-1-1-belt' }), d = s.read(), event = d.entities.events[0]
   assert.equal(event.eventId, r.eventId); assert.equal(event.person.data, null); assert.equal(event.workId, null); assert.equal(dispatchData(d).sessions.length, 0)
-  validateEventDetail(queryDataset(d, 'owner', '/api/portal/v1/events/' + r.eventId, { siteId }), siteId, r.eventId)
-  validateEventPage(queryDataset(d, 'owner', '/api/portal/v1/events', { siteId }), { siteId })
+  validateAlarmDetail(queryDataset(d, 'owner', '/api/portal/v1/events/' + r.eventId, { siteId }), siteId, r.eventId)
+  validateAlarmPage(queryDataset(d, 'owner', '/api/portal/v1/events', { siteId }), { siteId })
   const helmet = s.run('sos', { deviceId: one }), session = s.run('start', { deviceIds: [one], mode: 'VOICE', eventId: helmet.eventId })
   s.run('end', { sessionId: session.id })
-  assert.equal(s.read().entities.events.find(e => e.eventId === helmet.eventId).phase, 'UNCLAIMED')
+  assert.equal(s.read().entities.events.find(e => e.eventId === helmet.eventId).handlingStatus, 'UNHANDLED')
   s.repo.resetDataset(); assert.equal(s.read().entities.events.length, 50)
 })
 test('dispatch unavailable, failure and source section masking do not invent data', () => {

@@ -36,7 +36,7 @@ async function loadHistory(page = 1) {
 }
 watch([personId, siteId, () => context.state, () => user.token], () => { historyPage.value = 1; reload() }, { immediate: true })
 watch(() => detail.data, () => loadHistory(historyPage.value))
-useBusinessRevision(['people', 'history'], reload)
+useBusinessRevision(['people', 'history', 'events'], reload)
 </script>
 <template>
   <div class="person-detail-page">
@@ -60,7 +60,7 @@ useBusinessRevision(['people', 'history'], reload)
       </div>
       <div class="person-detail-secondary">
         <PortalPanel title="作业信息"><RelatedSection :section="detail.data.works" /></PortalPanel>
-        <PortalPanel title="待现场核验事件"><RelatedSection :section="detail.data.events" kind="events" /></PortalPanel>
+        <PortalPanel title="关联告警事件"><RelatedSection :section="detail.data.events" kind="events" /></PortalPanel>
         <PortalPanel title="现场视频"><DataState :state="detail.data.media.state === 'AVAILABLE' ? 'NOT_INTEGRATED' : detail.data.media.state" :reason="detail.data.media.reasonCode" message="现场视频暂未开放" /><div class="person-actions"><el-button disabled title="本阶段暂未开放">查看视频</el-button><el-button disabled title="真实对讲未接入；本地协同使用上方联系协助入口">真实对讲未接入</el-button><el-button disabled title="本阶段暂未开放">查看事件</el-button></div></PortalPanel>
       </div>
     </div>

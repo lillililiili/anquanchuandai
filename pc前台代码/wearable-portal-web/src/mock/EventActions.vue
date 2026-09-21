@@ -1,64 +1,63 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useWorkspaceStore } from '@/store/workspace'
 import { useLocalEditor } from './useLocalEditor'
-import { editor, command } from './event-provider'
-import EvidencePicker from './EvidencePicker.vue'
-import { conclusionLabels } from '@/utils/event-contract'
-import './spatial-editor.scss'
+import { command } from './event-provider'
 const props = defineProps({ event: { type: Object, required: true }, siteId: String })
-const mode = ref('verification'), form = ref({}), options = ref([]), target = ref(''), version = ref(1), picked = ref(null), workspace = useWorkspaceStore()
-const { user, open, dirty, busy, error, clear, close, run } = useLocalEditor(() => { form.value = {}; picked.value = null; target.value = '' })
+const description = ref(''), version = ref(0), operationId = ref(''), lastInput = ref('')
+const workspace = useWorkspaceStore()
+const { user, open, dirty, busy, error, clear, close, run } = useLocalEditor(() => { description.value = ''; lastInput.value = '' })
+const allowed = computed(() => ['owner', 'verifier'].some(r => user.roles.includes(r)) && props.event.handlingStatus === 'UNHANDLED')
 watch(() => props.event.eventId, clear)
-const writable = computed(() => ['owner', 'verifier'].some(r => user.roles.includes(r)))
-const responsible = computed(() => props.event.ownerUserId === user.user?.userId)
-const active = computed(() => ['PROCESSING', 'AWAITING_VERIFICATION'].includes(props.event.phase))
-async function start(next) {
-  clear(); mode.value = next; open.value = true
+function start() { clear(); version.value = props.event.version; operationId.value = crypto.randomUUID(); open.value = true }
+async function submit() {
+  const note = description.value.trim()
+  if (!note || [...note].length > 1000) { error.value = '请填写1—1000字的处理说明'; return }
+  if (lastInput.value && lastInput.value !== note) operationId.value = crypto.randomUUID()
+  lastInput.value = note
   await run(async signal => {
-    const result = await editor({ siteId: props.siteId, eventId: props.event.eventId, mode: next }, signal)
+    const r = await command('handle', { siteId: props.siteId, eventId: props.event.eventId, expectedVersion: version.value, operationId: operationId.value, description: note }, signal)
     if (signal.aborted) return
-    version.value = result.data.version; options.value = result.data.assignees
-    const draft = result.data.draft
-    form.value = { conclusion: draft?.conclusion || '', scene: draft?.scene || '', measures: draft?.measures || '', evidence: (draft?.evidence?.data || []).map(e => ({ id: e.id, version: e.version, name: e.name })) }
-  })
-}
-function addEvidence() { if (picked.value && !form.value.evidence.some(e => e.id === picked.value.id)) { form.value.evidence.push({ id: picked.value.id, version: picked.value.version, name: picked.value.name }); dirty.value = true } }
-async function execute(action, extra = {}) {
-  const input = { siteId: props.siteId, eventId: props.event.eventId, expectedVersion: open.value ? version.value : props.event.version || 1, operationId: crypto.randomUUID(), ...extra }, token = user.token
-  if (['complete', 'submit', 'transfer'].includes(action)) {
-    try { await ElMessageBox.confirm(action === 'submit' ? '提交后生成不可修改的核验版本，不会自动完成跟进。' : action === 'complete' ? '确认完成本地跟进？不代表原系统结案，本期不支持重开。' : '确认转交给所选处置人？', '确认本地操作', { confirmButtonText: '确认操作', cancelButtonText: '取消', closeOnHashChange: false }) } catch { return }
-    if (user.token !== token || props.event.eventId !== input.eventId || props.siteId !== input.siteId) return
-  }
-  await run(async signal => {
-    const result = await command(action, input, signal)
-    if (signal.aborted) return
-    dirty.value = false; clear(); ElMessage.success('操作已本地暂存；刷新恢复种子，未发送外部系统')
-    if (!result.data.replayed) workspace.invalidate(result.data.changedEntities)
+    dirty.value = false; clear()
+    ElMessage.success('告警已标记为已处理')
+    workspace.invalidate(r.data.changedEntities)
   })
 }
 </script>
 <template>
-  <section class="local-toolbar" aria-label="本地事件处置">
-    <strong>事件处置 · 前端内存预置</strong><p>草稿不改变阶段；提交不自动完成；回执不代表结案。</p>
-    <div class="s2-actions"><el-button :disabled="!writable || event.phase !== 'UNCLAIMED' || busy" @click="execute('claim')">认领事件</el-button><el-button :disabled="!writable || !responsible || !active || busy" @click="start('transfer')">转交事件</el-button><el-button :disabled="!writable || !responsible || event.phase !== 'PROCESSING' || busy" @click="execute('verify')">转现场核验</el-button><el-button :disabled="!writable || event.phase !== 'AWAITING_VERIFICATION' || busy" @click="start('verification')">编写核验 / 我的草稿</el-button><el-button :disabled="!writable || !responsible || event.phase !== 'AWAITING_VERIFICATION' || busy" @click="execute('complete')">完成本地跟进</el-button><el-button :disabled="!writable || !responsible || busy" @click="start('receipt')">本地回执</el-button></div>
-    <p v-if="!writable">只读身份不能处置事件或编辑核验。</p><p v-else-if="event.phase === 'LOCAL_COMPLETED'">本地跟进已完成；不提供重开、转交或再次提交。</p><p v-else>认领仅限待认领；转交、转核验和完成仅限当前负责人。核验仅在待现场核验阶段开放，未知阶段须先核实。</p><p v-if="error && !open" role="alert">{{ error }}</p>
-  </section>
-  <el-dialog :model-value="open" :title="mode === 'verification' ? '本地核验编辑' : mode === 'transfer' ? '本地事件转交' : '本地外部回执（不联网）'" width="min(760px, 94vw)" append-to-body :close-on-click-modal="false" :before-close="close">
-    <div class="local-editor event-editor">
-      <template v-if="mode === 'verification'"><label>核验结论<select aria-label="核验结论" v-model="form.conclusion" :disabled="busy" @change="dirty = true"><option value="">请选择结论</option><option v-for="(label, key) in conclusionLabels" :key="key" :value="key">{{ label }}</option></select></label><label>现场情况<textarea v-model="form.scene" rows="4" maxlength="4000" :disabled="busy" @input="dirty = true" /></label><label>后续措施<textarea v-model="form.measures" rows="3" maxlength="4000" :disabled="busy" @input="dirty = true" /></label><p>提交需结论和现场情况；“需现场处理”必须填写措施。“无法确认”保持待现场核验。</p><EvidencePicker v-if="form.evidence" :site-id="siteId" @select="picked = $event" /><el-button :disabled="busy || !picked || form.evidence?.length >= 20" @click="addEvidence">加入核验证据</el-button><p v-if="!form.evidence?.length">无附件；允许明确无影像核验，不虚构证据。</p><ul><li v-for="e in form.evidence" :key="e.id">{{ e.name }} · 版本{{ e.version }} <el-button :disabled="busy" @click="form.evidence = form.evidence.filter(i => i.id !== e.id); dirty = true">移除</el-button></li></ul><div class="s2-actions"><el-button :disabled="busy || !form.evidence" @click="execute('draft', { form })">保存核验草稿</el-button><el-button type="primary" :disabled="busy || !form.evidence" @click="execute('submit', { form })">提交核验</el-button></div></template>
-      <template v-else-if="mode === 'transfer'"><label>转交处置人<select aria-label="转交处置人" v-model="target" :disabled="busy" @change="dirty = true"><option value="">请选择处置人</option><option v-for="a in options.filter(a => a.id !== user.user?.userId)" :key="a.id" :value="a.id">{{ a.name }}</option></select></label><el-button :disabled="busy || !target" @click="execute('transfer', { assigneeId: target })">确认转交</el-button></template>
-      <template v-else><p>仅生成成功或失败的本地回执和时间线，未发送外部系统，也不改变原系统状态。</p><div v-for="channel in ['summary', 'verification']" :key="channel" class="s2-actions"><span>{{ channel === 'summary' ? '摘要回执' : '核验回执' }}</span><el-button :disabled="busy" @click="execute('receipt', { channel, result: 'SUCCESS' })">{{ channel === 'summary' ? '摘要' : '核验' }}本地成功</el-button><el-button :disabled="busy" @click="execute('receipt', { channel, result: 'FAILED' })">{{ channel === 'summary' ? '摘要' : '核验' }}本地失败</el-button></div></template>
-      <p v-if="error" class="s2-error" role="alert">{{ error }}；版本冲突请关闭并重新打开，输入不会自动重试。</p><el-button :disabled="busy" @click="close">关闭编辑</el-button>
-    </div>
+  <button v-if="event.handlingStatus !== 'HANDLED'" type="button" class="alarm-handle-button" :disabled="!allowed || busy" :title="allowed ? '填写处理说明' : '当前身份无处理权限或状态未知'" @click="start"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M8 12l3 3 5-6" /><circle cx="12" cy="12" r="9" /></svg><span>处理</span></button>
+  <el-dialog :model-value="open" title="处理告警" width="min(560px, 94vw)" append-to-body :close-on-click-modal="false" :before-close="close">
+    <form class="alarm-handle-form" @submit.prevent="submit">
+      <p>{{ event.eventTypeName || event.title }} · {{ event.deviceCode }}</p>
+      <label :for="'alarm-handling-note-' + event.eventId">处理说明 <span aria-hidden="true">*</span></label>
+      <textarea :id="'alarm-handling-note-' + event.eventId" v-model="description" rows="5" :disabled="busy" placeholder="填写现场检查情况与已采取的措施" @input="dirty = true; error = ''" />
+      <small>{{ [...description.trim()].length }} / 1000 字；标记已处理不代表设备异常已恢复。</small>
+      <p v-if="error" role="alert">{{ error }}</p>
+      <div class="alarm-form-actions"><button type="button" class="event-button" :disabled="busy" @click="close">取消</button><button class="event-button primary" :disabled="busy">{{ busy ? '正在提交…' : '确认处理' }}</button></div>
+    </form>
   </el-dialog>
 </template>
 <style scoped>
-.event-editor { max-height: 68vh; overflow-y: auto; padding: 4px 8px 8px 4px; }
-.event-editor > label { display: grid; gap: 8px; }
-.event-editor textarea { width: 100%; resize: vertical; min-height: 80px; padding: 10px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border); font: inherit; line-height: 1.6; }
-.event-editor textarea:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-.event-editor :deep(section[aria-label="资料证据选择器"]) { max-height: 240px; overflow-y: auto; padding: 8px; border: 1px solid var(--border); }
-.event-editor li { overflow-wrap: anywhere; }
+.alarm-handle-button {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  height:40px; min-width:88px; box-sizing:border-box; padding:0 16px;
+  border:1px solid #e9b44e; border-radius:6px;
+  background:#f4bd50; color:#182536; font:inherit; font-size:14px;
+  font-weight:600; line-height:1; white-space:nowrap; cursor:pointer;
+  box-shadow:0 2px 5px #0000001f;
+  transition:background-color 150ms, border-color 150ms, box-shadow 150ms;
+}
+.alarm-handle-button svg { width:16px; height:16px; flex:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.alarm-handle-button:hover:not(:disabled) { background:#ffd27b; border-color:#ffd27b; box-shadow:0 3px 8px #00000029; }
+.alarm-handle-button:active:not(:disabled) { background:#e5aa36; box-shadow:inset 0 1px 3px #00000026; }
+.alarm-handle-button:focus-visible { outline:2px solid var(--cyan, #2efff0); outline-offset:3px; }
+.alarm-handle-button:disabled { background:#243549; border-color:#425267; color:#91a2b5; box-shadow:none; cursor:not-allowed; }
+@media (prefers-reduced-motion:reduce) { .alarm-handle-button { transition:none; } }
+
+.alarm-handle-form { display:grid; gap:14px; }
+textarea { width:100%; box-sizing:border-box; padding:12px; font:inherit; color:var(--text-primary); background:var(--input-bg); border:1px solid var(--border); border-radius:8px; resize:vertical; }
+textarea:focus-visible { outline:2px solid var(--cyan); }
+.alarm-form-actions { display:flex; justify-content:flex-end; gap:12px; }
+[role="alert"] { color:var(--danger, #e45757); overflow-wrap:anywhere; }
 </style>

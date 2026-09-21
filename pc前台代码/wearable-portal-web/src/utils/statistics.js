@@ -1,6 +1,6 @@
 import { personIdPattern } from './portal-route.js'
 import { validUtc } from './work-route.js'
-export const statisticTabs = { comprehensive: '综合', people: '人员', equipment: '装备', tasks: '任务', events: '事件' }
+export const statisticTabs = { comprehensive: '综合', people: '人员', equipment: '装备', tasks: '任务', events: '告警' }
 export function statisticsQuery(raw = {}) {
   const q = {}
   if (typeof raw.siteId === 'string' && personIdPattern.test(raw.siteId)) q.siteId = raw.siteId

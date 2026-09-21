@@ -1,4 +1,5 @@
-import { available, missing, identities, permissionsFor, phases } from './seed.js'
+import { alarmTypes } from './event-reports.js'
+import { available, missing, identities, permissionsFor } from './seed.js'
 import { workSummary, workSection } from './work-model.js'
 import { buildWorkbench } from './workbench.js'
 import { buildStatistics } from './statistics-service.js'
@@ -48,7 +49,7 @@ export function queryDataset(dataset, role, path, q = {}) {
     validateQuery(q, [])
     const sites = e.sites.filter(s => identity.sites.includes(s.siteId))
     return { sites, selectedSiteId: sites[0]?.siteId || null, teams: e.teams.filter(t => identity.sites.includes(t.siteId)), areas: e.areas.filter(t => identity.sites.includes(t.siteId)), shifts: e.shifts.filter(t => identity.sites.includes(t.siteId)), permissions,
-      availability: { roster: 'AVAILABLE', areas: 'AVAILABLE', teams: 'AVAILABLE', shifts: 'AVAILABLE' }, capabilities: Object.fromEntries(['dispatch', 'works', 'people', 'equipmentHistory', 'locations', 'tracks', 'fences', 'materials', 'video', 'events', 'verifications'].map(k => [k, { state: 'SUPPORTED', source: 'MOCK', reasonCode: null }])) }
+      availability: { roster: 'AVAILABLE', areas: 'AVAILABLE', teams: 'AVAILABLE', shifts: 'AVAILABLE' }, capabilities: Object.fromEntries(['dispatch', 'works', 'people', 'equipmentHistory', 'locations', 'tracks', 'fences', 'materials', 'video', 'events'].map(k => [k, { state: 'SUPPORTED', source: 'MOCK', reasonCode: null }])) }
   }
   if (!q.siteId || typeof q.siteId !== 'string') throw failure(400, '请选择有效厂站')
   if (!identity.sites.includes(q.siteId)) throw failure(403, '当前身份无权访问该厂站')
@@ -56,7 +57,6 @@ export function queryDataset(dataset, role, path, q = {}) {
   if (p === '/statistics') return buildStatistics(dataset, role, q)
   const required = { people: 'person:read', locations: 'location:read', tracks: 'track:read', fences: 'fence:read', materials: 'material:read', video: 'video:read', events: 'event:read' }[module]
   if (required && !permissions.includes('portal:' + required)) throw failure(403, '当前身份无模块权限')
-  if (p.endsWith('/verifications') && !permissions.includes('portal:event:verification:read')) throw failure(403, '当前身份无权查看核验记录')
   const scoped = key => e[key].filter(i => i.siteId === q.siteId)
   const find = (key, id, field = 'id') => { const item = scoped(key).find(i => i[field] === id); if (!item) throw failure(404, '对象不存在或当前身份不可见'); return item }
   // Validate object scope before applying scenario responses.
@@ -125,18 +125,20 @@ export function queryDataset(dataset, role, path, q = {}) {
   }
   if (parts[0] === 'events') {
     const listRequest = parts.length === 1 || parts[1] === 'summary'
-    validateQuery(q, listRequest ? ['siteId', 'keyword', 'from', 'to', 'eventType', 'phase', 'mine', ...(parts.length === 1 ? ['pageNum', 'pageSize'] : [])] : ['siteId', ...(parts.length === 3 ? ['pageNum', 'pageSize'] : [])])
-    if (q.phase && !phases.includes(q.phase) || q.eventType && !['MOCK_INSPECTION', 'UNKNOWN'].includes(q.eventType)) throw failure(400, '事件筛选值无效')
-    if (q.mine && q.mine !== 'true') throw failure(400, '待办筛选无效')
-    const rows = filter(scoped('events'), q, 'occurredAt').filter(e => !q.mine || role !== 'reader' && e.ownerUserId === 'mock-' + role && ['UNCLAIMED', 'PROCESSING', 'AWAITING_VERIFICATION'].includes(e.phase))
-    if (parts.length === 1) return page(rows, 20, { filters: { keyword: true, timeRange: true, phase: true, eventTypes: available([{ value: 'MOCK_INSPECTION', label: '本地人工巡检发现' }, { value: 'UNKNOWN', label: '本地未知类型' }]) } })
-    if (parts[1] === 'summary' && parts.length === 2) return section({ total: rows.length, counts: Object.fromEntries(phases.map(p => [p, rows.filter(e => e.phase === p).length])), sourceTime: dataset.meta.baseTime })
-    if (parts.length === 3 && ['timeline', 'verifications'].includes(parts[2])) return page(mode === 'forbidden' ? [] : [...(parts[2] === 'verifications' ? (r.eventDrafts || []).filter(i => i.actorId === 'mock-' + role) : []), ...r[parts[2]]].filter(i => i.siteId === q.siteId && i.eventId === object.eventId), 20, { scope: { siteId: q.siteId, eventId: object.eventId }, ...(mode === 'forbidden' ? { state: 'FORBIDDEN', total: null, reasonCode: 'SECTION_FORBIDDEN' } : {}) })
+    validateQuery(q, listRequest ? ['siteId', 'keyword', 'from', 'to', 'eventType', 'handlingStatus', 'deviceType', ...(parts.length === 1 ? ['pageNum', 'pageSize'] : [])] : ['siteId'])
+    if (q.handlingStatus && !['UNHANDLED', 'HANDLED'].includes(q.handlingStatus) || q.deviceType && !['HELMET', 'BELT', 'WATCH'].includes(q.deviceType)) throw failure(400, '告警筛选值无效')
+    const types = [...alarmTypes]
+    for (const ev of scoped('events')) if (!types.some(t => t.value === ev.eventType)) types.push({ value: ev.eventType, label: ev.eventTypeName || ev.title, deviceType: ev.deviceType })
+    if (q.eventType && !types.some(t => t.value === q.eventType)) throw failure(400, '告警类型无效')
+    if (mode === 'forbidden') throw failure(403, '无告警查询权限')
+    const rows = scoped('events').filter(ev => (!q.handlingStatus || ev.handlingStatus === q.handlingStatus) && (!q.deviceType || ev.deviceType === q.deviceType) && (!q.eventType || ev.eventType === q.eventType) && (!q.keyword || [ev.deviceCode, ...(ev.person?.data || []).map(p => p.name)].join(' ').toLowerCase().includes(q.keyword.toLowerCase())) && (!q.from || ev.occurredAt && Date.parse(ev.occurredAt) >= Date.parse(q.from) && Date.parse(ev.occurredAt) < Date.parse(q.to)))
+    if (parts.length === 1) return page(rows, 20, { filters: { keyword: true, timeRange: true, deviceType: true, handlingStatus: true, eventTypes: available(types) } })
+    if (parts[1] === 'summary' && parts.length === 2) return section({ total: rows.length, counts: Object.fromEntries(['UNHANDLED', 'HANDLED'].map(status => [status, rows.filter(ev => ev.handlingStatus === status).length])), sourceTime: dataset.meta.baseTime })
     if (parts.length === 2 && object) {
-      const frozen = (r.materialReferences || []).filter(m => m.siteId === q.siteId && m.eventId === object.eventId).map(m => ({ ...m, id: m.materialId, attribution: 'MANUAL_MOCK', associationSource: 'MANUAL_MOCK', evidenceId: 'mock-frozen-' + m.materialId, frozen: true }))
-      const uniqueFrozen = frozen.filter((m, index) => frozen.findIndex(f => f.id === m.id && f.version === m.version) === index)
-      const materials = [...uniqueFrozen, ...scoped('materials').filter(m => m.eventId === object.eventId && !frozen.some(f => f.id === m.id)).map(m => ({ ...m, attribution: m.associationSource === 'MANUAL_MOCK' ? 'MANUAL_MOCK' : 'CONFIRMED', evidenceId: 'mock-evidence-' + m.id }))]
-      return { event: object, owner: section(object.ownerUserId ? [{ id: object.ownerUserId, siteId: q.siteId, name: identities.find(i => 'mock-' + i.id === object.ownerUserId)?.name || '未知身份', attribution: 'CONFIRMED', evidenceId: 'mock-owner-' + object.eventId, snapshotKind: 'CURRENT', sourceTime: dataset.meta.baseTime }] : []), equipment: missing('HISTORICAL_ATTRIBUTION_UNKNOWN'), works: workSection(dataset, section(scoped('works').filter(w => w.id === object.workId).map(w => ({ ...proof(w), ...workSummary(dataset, w) })))), location: missing('HISTORICAL_ATTRIBUTION_UNKNOWN'), video: scoped('videos').some(v => v.deviceId === object.deviceId) ? section([proof(find('devices', object.deviceId, 'deviceId'), object.deviceId)]) : missing('VIDEO_NOT_SUPPORTED'), materials: section(materials), summaryDelivery: section(object.summaryDelivery || { state: 'NOT_CONFIGURED', sourceTime: null, message: '本地环境，未发送外部系统' }), verificationDelivery: section(object.verificationDelivery || { state: object.phase === 'UNKNOWN' ? 'FAILED' : 'NOT_CONFIGURED', sourceTime: null, message: '本地回执状态，未发送外部系统' }), originalSystem: section({ status: '本地原系统状态未知', sourceTime: null }) }
+      if (mode !== 'normal') return { state: 'NOT_INTEGRATED', event: null, reasonCode: 'SOURCE_NOT_INTEGRATED' }
+      const frozen = (r.materialReferences || []).filter(m => m.siteId === q.siteId && m.eventId === object.eventId).map(m => ({ ...m, id: m.materialId, attribution: 'MANUAL_MOCK', associationSource: 'MANUAL_MOCK', evidenceId: 'mock-frozen-' + m.materialId }))
+      const materials = [...frozen, ...scoped('materials').filter(m => m.eventId === object.eventId && !frozen.some(f => f.id === m.id)).map(m => ({ ...m, attribution: m.associationSource === 'MANUAL_MOCK' ? 'MANUAL_MOCK' : 'CONFIRMED', evidenceId: 'mock-evidence-' + m.id }))]
+      return { event: object, materials: section(materials), location: missing('HISTORICAL_ATTRIBUTION_UNKNOWN'), video: scoped('videos').some(v => v.deviceId === object.deviceId) ? section([proof(find('devices', object.deviceId, 'deviceId'), object.deviceId)]) : missing('VIDEO_NOT_SUPPORTED') }
     }
   }
   throw failure(404, '该接口尚未接入')

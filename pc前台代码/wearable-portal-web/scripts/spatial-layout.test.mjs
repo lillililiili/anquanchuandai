@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { createSeed } from '../src/mock/seed.js'
 import { validRing } from '../src/utils/spatial-contract.js'
 
@@ -19,4 +20,9 @@ test('sample positions and closed work-area fences are distributed without overl
   assert.ok(Math.max(...points.map(p => p.longitude)) - Math.min(...points.map(p => p.longitude)) > .05)
   assert.ok(Math.max(...points.map(p => p.latitude)) - Math.min(...points.map(p => p.latitude)) > .035)
   assert.equal(points[2].coordinateSystem, 'UNKNOWN')
+})
+
+test('fence workspace selects the first list item when none is chosen', () => {
+  const source = readFileSync(new URL('../src/views/location/FenceView.vue', import.meta.url), 'utf8')
+  assert.match(source, /!selectedId\.value && data\.items\?\.length\) select\(data\.items\[0\]\.id\)/)
 })

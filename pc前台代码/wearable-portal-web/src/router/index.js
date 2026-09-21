@@ -25,7 +25,8 @@ const router = createRouter({
         { path: '/equipment/:deviceId', name: 'equipment-detail', component: () => import('@/views/equipment/EquipmentDetailView.vue'), meta: { title: '装备详情' } },
         { path: '/personnel/:personId', name: 'person-detail', component: () => import('@/views/personnel/PersonDetailView.vue'), meta: { title: '人员详情' } },
         { path: '/video/:deviceId', name: 'video-detail', component: () => import('@/views/video/VideoDetailView.vue'), meta: { title: '单路监看' } },
-        { path: '/alarms/:eventId/verification', name: 'event-verification', component: () => import('@/views/alarms/VerificationView.vue'), meta: { title: '事件核验详情' } }]
+        { path: '/alarms/:eventId', name: 'alarm-detail', component: () => import('@/views/alarms/AlarmDetailView.vue'), meta: { title: '告警详情' } },
+        { path: '/alarms/:eventId/verification', redirect: to => ({ path: '/alarms/' + to.params.eventId, query: to.query }) }]
     },
     { path: '/401', name: 'unauthorized', component: () => import('@/views/error/ErrorView.vue'), meta: { public: true, title: '访问受限', status: 401 } },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/error/ErrorView.vue'), meta: { title: '页面未找到', status: 404 } }
@@ -41,7 +42,7 @@ export function safeRedirect(value) {
     if (target.path === '/dispatch' || target.name === 'sos-detail') return safeDispatchReturn(value)
     if (target.path === '/supervision' || target.name === 'work-detail') return safeWorkReturn(value, true)
     if (target.path === '/equipment' || target.name === 'equipment-detail') return safeEquipmentReturn(value, true)
-    if (target.path === '/alarms' || target.name === 'event-verification') return safeEventReturn(value, true)
+    if (target.path === '/alarms' || target.name === 'alarm-detail') return safeEventReturn(value, true)
     if (target.path === '/video' || target.name === 'video-detail') return safeVideoReturn(value, true)
     if (target.path === '/personnel') return safePersonnelReturn(value)
     if (['/location', '/materials'].includes(target.path)) return safeWorkspaceReturn(value)

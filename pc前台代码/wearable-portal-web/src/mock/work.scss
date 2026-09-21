@@ -16,3 +16,7 @@
 .work-editor { max-height: 65vh; overflow-y: auto; padding: 4px; }.work-choices { max-height: 220px; overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }.work-choices label { display: flex; gap: 8px; }.work-choices input { width: auto; }.work-editor fieldset { border: 1px solid var(--border); }.work-monitor [role=alert] { color: var(--error); padding: 10px; }.work-monitor .el-pagination { flex-wrap: wrap; margin-top: 14px; }
 @media(max-width:1200px) { .work-columns { grid-template-columns: 1fr; }.work-devices { grid-template-columns: 1fr; } }
 @media(max-width:720px) { .work-related-grid { grid-template-columns: 1fr; }.work-choices { grid-template-columns: 1fr; }.work-filters input { width: 100%; max-width: none; }.work-heading h1 { font-size: 23px; } }
+
+.work-table tbody tr { cursor: pointer; }
+.work-table tbody tr:not(.selected):hover { background: var(--selected-bg); }
+.work-select { cursor: pointer; }
