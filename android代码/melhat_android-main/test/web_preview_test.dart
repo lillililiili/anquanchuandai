@@ -72,14 +72,19 @@ void main() {
     expect(session.me, isNotNull);
     await tester.tap(find.text('演示厂站A'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('sites-enter')));
+    await tester.tap(find.byKey(const ValueKey('sites-enter')));
+    await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('东区巡检'), findsWidgets);
     await tester.tap(find.text('消息').last);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('围栏'));
-    await tester.tap(find.text('围栏'));
+    // Preview events omit the core alarm name; retain the explicit fallback.
+    final eventTitle = find.text('告警名称未提供').first;
+    await tester.ensureVisible(eventTitle);
+    await tester.tap(eventTitle);
     await tester.pumpAndSettle();
-    expect(find.text('异常核验'), findsOneWidget);
+    expect(find.text('事件详情'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

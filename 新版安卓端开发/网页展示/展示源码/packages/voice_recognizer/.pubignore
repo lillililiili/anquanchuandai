@@ -1,0 +1,7 @@
+# 排除 example 目录
+example/
+
+# 排除其他不需要的文件
+test/
+CHANGELOG.md
+README.md

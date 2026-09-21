@@ -28,7 +28,12 @@ public interface WearSafetyEventMapper extends BaseMapper<WearSafetyEvent>
             + "update_by = #{actor}, update_time = NOW() "
             + "WHERE id = #{id} AND version = #{version} AND status IN ('claimed', 'handling')")
     int transferIfActive(@Param("id") Long id, @Param("claimantUserId") Long claimantUserId,
-            @Param("version") Integer version, @Param("actor") String actor);
+              @Param("version") Integer version, @Param("actor") String actor);
+
+    @Update("UPDATE wear_safety_event SET claimant_user_id=#{toUserId}, version=version+1, update_by=#{actor}, update_time=NOW() "
+            + "WHERE id=#{id} AND site_id=#{siteId} AND claimant_user_id=#{fromUserId} AND version=#{version} AND status<>'closed'")
+    int transferDuty(@Param("id") Long id, @Param("siteId") Long siteId, @Param("fromUserId") Long fromUserId,
+                     @Param("toUserId") Long toUserId, @Param("version") Integer version, @Param("actor") String actor);
 
     @Update("UPDATE wear_safety_event SET status = 'closed', version = version + 1, "
             + "update_by = #{actor}, update_time = NOW() "

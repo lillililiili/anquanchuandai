@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.core.domain.R;
 import com.ruoyi.wear.work.DutyService;
@@ -19,6 +20,25 @@ public class WearDutyController
 {
     @Autowired
     private DutyService dutyService;
+    @Autowired private com.ruoyi.wear.work.DutyLedgerService ledger;
+
+    @GetMapping("/shifts")
+    public R<Map<String,Object>> shifts(@RequestParam(defaultValue="1") int current, @RequestParam(defaultValue="20") int size)
+    {
+        return R.ok(ledger.page(current, size));
+    }
+
+    @PostMapping("/takeover")
+    public R<HandoverDto> takeover(@RequestBody Map<String,Object> body)
+    {
+        return R.ok(dutyService.takeover(body));
+    }
+
+    @PostMapping("/handovers/{id:\\d+}/cancel")
+    public R<HandoverDto> cancel(@PathVariable Long id, @RequestBody Map<String,Object> body)
+    {
+        return R.ok(dutyService.cancel(id, body));
+    }
 
     @GetMapping("/summary")
     public R<Map<String, Object>> summary()

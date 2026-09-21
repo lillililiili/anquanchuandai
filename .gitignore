@@ -15,3 +15,7 @@
 *.zip
 *.py[cod]
 **/__pycache__/
+**/.dart_tool/
+**/build/
+**/.flutter-plugins-dependencies
+/新版安卓端开发/网页展示/历史备份/

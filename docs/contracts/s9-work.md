@@ -48,3 +48,18 @@
 | 状态/版本冲突、已结束改成员 | 409 | 当前状态冲突，请刷新后重试 |
 | 高风险未关闭且未确认结束 | 409 | 存在未关闭的高风险事件，确认后才能结束任务 |
 | 人员不可选 | 400 | 该人员当前不可加入任务 |
+
+## 5 值班接管与明细（2026-09-21）
+
+按每厂站一名当前值班负责人记录。旧权限表中的交接部分由本节替代，其他作业权限不变。
+
+- `GET /api/v1/duty/operators` 包含有效的内置 admin（用户 1），无需额外值班角色或厂站成员配置；停用/删除账号不参与。其他接班人仍校验厂站授权及值班、班组长或平台管理员资格。安卓排除发起人自己。
+- 发起交接仅允许当前值班负责人；尚无值班记录时允许有交接资格的用户发起初始交接。同厂站当前值班人已有 pending 时返回 409，需完成或取消；发起本身不改变负责人或时长。
+- `POST /api/v1/duty/handovers/{id}/cancel`：`{reason}`，管理员或原发起人可取消 pending；其他人 403，已处理记录 409。取消不改变值班人与事件/任务责任，记录保留为 cancelled。原因 1–200 字。
+- `POST /api/v1/duty/takeover`：`{expectedShiftId,reason}`，仅管理员（内置 admin 或平台管理员）可将所选厂站当前值班转为自己。必须提交页面读取的当前班次 ID；尚无班次时为 null；过期快照/已经当班为 409。无须原值班人确认。
+- 正常确认及接管在同一事务中结束旧班次、创建新班次，并转移仍属于原负责人和该厂站的未关闭事件、未结束任务；事件状态不变（包括待复核）。管理员接管取消该厂站遗留待接班交接并记录原因。旧责任已经转给他人的，不覆盖。
+- `GET /api/v1/duty/shifts?current=1&size=20`：返回 `records,total,currentDuty,serverTime,canTakeover`。记录包含 `id,userId,userName,startedAt,endedAt,durationSeconds,changeType,reason,handoverId,endUnknown`。`endedAt=null` 通常表示至今；`endUnknown=true` 表示历史结束时间缺失，时长为 null，不表示仍当班。
+- 交接 DTO 新增 `canCancel` 和 `audit`（`action,actorName,actedAt,reason`）。管理员操作、取消原因持续可查询。值班明细分页，不限于原交接列表最近 20 条。
+- `wear_duty_station` 行锁串行化同厂站确认、取消、接管；条件更新防止重复确认或取消。前端再次确认接管并填写原因，不提前展示成功。
+
+数据库按序执行 V013、V014。V013 从历史确认记录建立标为 `legacy_confirmation` 的班次；V014 将交接链不连续的旧记录标为 `legacy_incomplete`，结束时间/完整时长未知。迁移不补造旧交班人的开始时间，也不修改原交接记录。

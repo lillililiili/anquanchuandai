@@ -43,6 +43,25 @@ public class EventQueryService
             String severity, String updatedAfter, String claimantUserId, String escalated,
             String personKeyword, String sn, String taskId, String occurredFrom, String occurredTo)
     {
+        return page(current, size, type, status, personId, severity, updatedAfter, claimantUserId,
+                escalated, personKeyword, sn, taskId, occurredFrom, occurredTo, null, null);
+    }
+
+    public WearPage<EventDto> page(int current, int size, String type, String status, String personId,
+            String severity, String updatedAfter, String claimantUserId, String escalated,
+            String personKeyword, String sn, String taskId, String occurredFrom, String occurredTo,
+            String alarmCode, String deviceTypes)
+    {
+        return page(current, size, type, status, personId, severity, updatedAfter, claimantUserId,
+                escalated, personKeyword, sn, taskId, occurredFrom, occurredTo, alarmCode, deviceTypes,
+                null, null, null);
+    }
+
+    public WearPage<EventDto> page(int current, int size, String type, String status, String personId,
+            String severity, String updatedAfter, String claimantUserId, String escalated,
+            String personKeyword, String sn, String taskId, String occurredFrom, String occurredTo,
+            String alarmCode, String deviceTypes, String statuses, String types, String alarmCodes)
+    {
         siteAccessService.requireLogin();
         commandService.escalateDue();
         List<Long> scope = siteAccessService.listScopeSiteIds();
@@ -60,11 +79,35 @@ public class EventQueryService
         }
         LambdaQueryWrapper<WearSafetyEvent> query = new LambdaQueryWrapper<WearSafetyEvent>()
                 .in(WearSafetyEvent::getSiteId, scope);
-        if (StringUtils.isNotEmpty(type))
+        List<String> selectedStatuses = splitChoices(statuses, java.util.Arrays.asList("open", "claimed", "handling", "pending_review", "closed"));
+        List<String> selectedTypes = splitChoices(types, java.util.Arrays.asList("sos", "fall", "impact", "geofence", "realtime"));
+        List<String> selectedCodes = splitChoices(alarmCodes, null);
+        if (!selectedTypes.isEmpty() || !selectedCodes.isEmpty())
+        {
+            // Coarse workflow types and specific alarm codes belong to one OR group.
+            query.and(group -> {
+                if (!selectedTypes.isEmpty()) group.in(WearSafetyEvent::getEventType, selectedTypes);
+                if (!selectedCodes.isEmpty())
+                {
+                    if (!selectedTypes.isEmpty()) group.or();
+                    group.in(WearSafetyEvent::getAlarmCode, selectedCodes);
+                }
+            });
+        }
+        else if (StringUtils.isNotEmpty(alarmCode))
+        {
+            query.eq(WearSafetyEvent::getAlarmCode, alarmCode.trim());
+        }
+        applyDeviceTypes(query, deviceTypes);
+        if (selectedTypes.isEmpty() && selectedCodes.isEmpty() && StringUtils.isNotEmpty(type))
         {
             query.eq(WearSafetyEvent::getEventType, type);
         }
-        if (StringUtils.isNotEmpty(status) && !"all".equals(status))
+        if (!selectedStatuses.isEmpty())
+        {
+            query.in(WearSafetyEvent::getStatus, selectedStatuses);
+        }
+        else if (StringUtils.isNotEmpty(status) && !"all".equals(status))
         {
             query.eq(WearSafetyEvent::getStatus, status);
         }
@@ -121,6 +164,69 @@ public class EventQueryService
             records.add(EventViews.toDto(row));
         }
         return WearPage.of(records, page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    /** Choices come from event snapshots in the caller's authorized site scope. */
+    public List<Map<String, String>> filterOptions()
+    {
+        siteAccessService.requireLogin();
+        List<Long> scope = siteAccessService.listScopeSiteIds();
+        if (scope.isEmpty()) return Collections.emptyList();
+        List<WearSafetyEvent> rows = eventMapper.selectList(new LambdaQueryWrapper<WearSafetyEvent>()
+                .select(WearSafetyEvent::getAlarmCode, WearSafetyEvent::getAlarmName)
+                .in(WearSafetyEvent::getSiteId, scope)
+                .isNotNull(WearSafetyEvent::getAlarmCode).ne(WearSafetyEvent::getAlarmCode, "")
+                .groupBy(WearSafetyEvent::getAlarmCode, WearSafetyEvent::getAlarmName)
+                .orderByAsc(WearSafetyEvent::getAlarmCode, WearSafetyEvent::getAlarmName));
+        Map<String, String> labels = new java.util.LinkedHashMap<>();
+        for (WearSafetyEvent row : rows)
+        {
+            String name = row.getAlarmName();
+            if (!labels.containsKey(row.getAlarmCode()) || StringUtils.isNotEmpty(name))
+                labels.put(row.getAlarmCode(), StringUtils.isEmpty(name) ? row.getAlarmCode() : name);
+        }
+        List<Map<String, String>> result = new ArrayList<>();
+        labels.forEach((code, label) -> {
+            Map<String, String> option = new HashMap<>();
+            option.put("code", code);
+            option.put("label", label);
+            result.add(option);
+        });
+        return result;
+    }
+
+    static void applyDeviceTypes(LambdaQueryWrapper<WearSafetyEvent> query, String raw)
+    {
+        if (StringUtils.isEmpty(raw)) return;
+        java.util.Set<String> types = new java.util.LinkedHashSet<>();
+        for (String item : raw.split(",", -1))
+        {
+            String type = item.trim();
+            if (!java.util.Arrays.asList("helmet", "belt", "watch").contains(type))
+                throw new ServiceException("触发设备类型无效", HttpStatus.BAD_REQUEST);
+            types.add(type);
+        }
+        // Fixed query shape and bound values; no client text is interpolated into SQL.
+        query.and(group -> {
+            for (String type : types)
+                group.or().apply("device_id IN (SELECT d.id FROM wear_device d "
+                        + "JOIN wear_product_model m ON m.id = d.model_id WHERE m.type_code = {0})", type);
+        });
+    }
+
+    private static List<String> splitChoices(String raw, List<String> allowed)
+    {
+        if (StringUtils.isEmpty(raw)) return Collections.emptyList();
+        java.util.Set<String> result = new java.util.LinkedHashSet<>();
+        for (String item : raw.split(",", -1))
+        {
+            String value = item.trim();
+            if (value.isEmpty() || value.length() > 100 || (allowed != null && !allowed.contains(value)))
+                throw new ServiceException("筛选条件无效", HttpStatus.BAD_REQUEST);
+            result.add(value);
+        }
+        if (result.size() > 100) throw new ServiceException("筛选项过多", HttpStatus.BAD_REQUEST);
+        return new ArrayList<>(result);
     }
 
     public EventDto detail(Long id)

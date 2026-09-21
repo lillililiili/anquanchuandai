@@ -59,6 +59,8 @@ public class DutyService
     private ISysUserService userService;
     @Autowired
     private ISysRoleService roleService;
+    @Autowired
+    private DutyLedgerService ledger;
 
     public Map<String, Object> summary()
     {
@@ -103,15 +105,18 @@ public class DutyService
         List<WearSiteAccount> grants = siteAccountMapper.selectList(new LambdaQueryWrapper<WearSiteAccount>()
                 .eq(WearSiteAccount::getSiteId, siteId).eq(WearSiteAccount::getStatus, "0"));
         List<Map<String, String>> list = new ArrayList<Map<String, String>>();
-        for (WearSiteAccount grant : grants)
+        Set<Long> candidates = new HashSet<Long>();
+        candidates.add(1L); // Built-in admin is eligible even without a station duty grant.
+        for (WearSiteAccount grant : grants) candidates.add(grant.getUserId());
+        for (Long candidate : candidates)
         {
-            SysUser user = userService.selectUserById(grant.getUserId());
+            SysUser user = userService.selectUserById(candidate);
             if (user == null || "2".equals(user.getDelFlag()) || !"0".equals(user.getStatus()))
             {
                 continue;
             }
             Set<String> roles = roleService.selectRolePermissionByUserId(user.getUserId());
-            if (!WearRoleKeys.canClaimEvent(roles, false))
+            if (!user.isAdmin() && !WearRoleKeys.seesAllSites(roles, false) && !WearRoleKeys.canClaimEvent(roles, false))
             {
                 continue;
             }
@@ -143,6 +148,12 @@ public class DutyService
         siteAccessService.assertCanEditTask();
         Long siteId = siteAccessService.requireCurrentSiteForWrite();
         LoginUser from = siteAccessService.requireLogin();
+        ledger.lock(siteId);
+        Map<String,Object> current = ledger.currentLocked(siteId);
+        if (current != null && !String.valueOf(from.getUserId()).equals(current.get("userId")))
+            throw new ServiceException("仅当前值班人可发起交接；管理员可先接管值班", HttpStatus.CONFLICT);
+        if (pendingHandovers(siteId).stream().anyMatch(p -> from.getUserId().equals(p.getFromUserId())))
+            throw new ServiceException("已有待接班交接，请先完成或取消", HttpStatus.CONFLICT);
         Long toUserId = parseLong(body == null ? null : body.get("toUserId"));
         if (toUserId == null)
         {
@@ -194,6 +205,8 @@ public class DutyService
             throw new ServiceException("访问资源不存在", HttpStatus.NOT_FOUND);
         }
         siteAccessService.assertAuthorized(row.getSiteId());
+        Long shift = ledger.lock(row.getSiteId());
+        row = handoverMapper.selectOne(new LambdaQueryWrapper<WearDutyHandover>().eq(WearDutyHandover::getId, id).last("FOR UPDATE"));
         if (!"pending".equals(row.getStatus()))
         {
             throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
@@ -202,10 +215,21 @@ public class DutyService
         {
             throw new ServiceException("没有权限执行该操作", HttpStatus.FORBIDDEN);
         }
+        assertDutyTarget(row.getToUserId(), row.getSiteId());
+        Map<String,Object> current = ledger.currentLocked(row.getSiteId());
+        if (current != null && !String.valueOf(row.getFromUserId()).equals(current.get("userId")))
+            throw new ServiceException("值班负责人已变更，请取消此交接后重新发起", HttpStatus.CONFLICT);
         if (handoverMapper.confirmIfPending(id, user.getUserId(), SecurityUtils.getUsername()) == 0)
         {
             throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
         }
+        transferResponsibilities(row);
+        ledger.change(row.getSiteId(), shift, row.getToUserId(), id, "handover", user.getUserId(), row.getComment());
+        return toDto(handoverMapper.selectById(id));
+    }
+
+    private void transferResponsibilities(WearDutyHandover row)
+    {
         Map<?, ?> payload = JSON.parseObject(row.getPayloadJson());
         List<String> eventIds = payload == null ? new ArrayList<String>() : stringListFromJson(payload.get("eventIds"));
         List<String> taskIds = payload == null ? new ArrayList<String>() : stringListFromJson(payload.get("taskIds"));
@@ -213,26 +237,92 @@ public class DutyService
         for (String eventId : eventIds)
         {
             Long eid = parseLong(eventId);
-            WearSafetyEvent event = eid == null ? null : eventMapper.selectById(eid);
-            if (event == null || !row.getFromUserId().equals(event.getClaimantUserId()))
+            WearSafetyEvent event = eid == null ? null : eventMapper.selectOne(new LambdaQueryWrapper<WearSafetyEvent>()
+                    .eq(WearSafetyEvent::getId, eid).last("FOR UPDATE"));
+            if (event == null || !row.getSiteId().equals(event.getSiteId()) || !row.getFromUserId().equals(event.getClaimantUserId()))
             {
                 continue;
             }
-            if (!EventStateMachine.canTransfer(event.getStatus()))
+            if (EventStateMachine.CLOSED.equals(event.getStatus()))
             {
                 continue;
             }
-            eventMapper.transferIfActive(eid, row.getToUserId(), event.getVersion(), actor);
+            if (eventMapper.transferDuty(eid, row.getSiteId(), row.getFromUserId(), row.getToUserId(), event.getVersion(), actor) != 1)
+                throw new ServiceException("事件已变更，请刷新重试", HttpStatus.CONFLICT);
         }
         for (String taskId : taskIds)
         {
             Long tid = parseLong(taskId);
             if (tid != null)
             {
-                workTaskService.transferOwner(tid, row.getToUserId(), actor);
+                workTaskService.transferDutyOwner(tid, row.getSiteId(), row.getFromUserId(), row.getToUserId(), actor);
             }
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public HandoverDto cancel(Long id, Map<String,Object> body)
+    {
+        LoginUser actor = siteAccessService.requireLogin();
+        WearDutyHandover row = handoverMapper.selectById(id);
+        if (row == null) throw new ServiceException("交接不存在", HttpStatus.NOT_FOUND);
+        siteAccessService.assertAuthorized(row.getSiteId());
+        if (!actor.getUserId().equals(row.getFromUserId()) && !siteAccessService.isPlatformAdmin(actor))
+            throw new ServiceException("仅管理员或交接发起人可以取消", HttpStatus.FORBIDDEN);
+        ledger.lock(row.getSiteId());
+        String reason = reason(body);
+        if (handoverMapper.cancelIfPending(id, SecurityUtils.getUsername()) != 1)
+            throw new ServiceException("交接已处理，不能取消", HttpStatus.CONFLICT);
+        ledger.audit(id, "cancel", actor.getUserId(), reason);
         return toDto(handoverMapper.selectById(id));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public HandoverDto takeover(Map<String,Object> body)
+    {
+        LoginUser actor = siteAccessService.requireLogin();
+        if (!siteAccessService.isPlatformAdmin(actor)) throw new ServiceException("仅管理员可以接管值班", HttpStatus.FORBIDDEN);
+        Long siteId = siteAccessService.requireCurrentSiteForWrite();
+        Long shift = ledger.lock(siteId);
+        Long expected = parseLong(body == null ? null : body.get("expectedShiftId"));
+        if (!java.util.Objects.equals(shift, expected)) throw new ServiceException("当前值班已变更，请刷新后接管", HttpStatus.CONFLICT);
+        Map<String,Object> current = ledger.currentLocked(siteId);
+        if (current != null && String.valueOf(actor.getUserId()).equals(current.get("userId")))
+            throw new ServiceException("您已是当前值班人", HttpStatus.CONFLICT);
+        String reason = reason(body);
+        Long from = current == null ? actor.getUserId() : parseLong(current.get("userId"));
+        Map<String,Object> payload = new HashMap<>();
+        payload.put("eventIds", current == null ? new ArrayList<>() : defaultEventIds(siteId, from));
+        payload.put("taskIds", current == null ? new ArrayList<>() : defaultTaskIds(siteId, from));
+        WearDutyHandover row = new WearDutyHandover();
+        row.setSiteId(siteId); row.setFromUserId(from); row.setToUserId(actor.getUserId());
+        row.setStatus("confirmed"); row.setConfirmedAt(new Date()); row.setPayloadJson(JSON.toJSONString(payload));
+        row.setComment(reason); row.setVersion(1); row.setCreateBy(SecurityUtils.getUsername()); row.setCreateTime(new Date());
+        row.setUpdateBy(SecurityUtils.getUsername()); row.setUpdateTime(new Date());
+        handoverMapper.insert(row);
+        transferResponsibilities(row);
+        ledger.change(siteId, shift, actor.getUserId(), row.getId(), "takeover", actor.getUserId(), reason);
+        ledger.audit(row.getId(), "takeover", actor.getUserId(), reason);
+        for (WearDutyHandover pending : pendingHandovers(siteId))
+        {
+            if (handoverMapper.cancelIfPending(pending.getId(), SecurityUtils.getUsername()) == 1)
+                ledger.audit(pending.getId(), "cancel", actor.getUserId(), "管理员接管后取消原待接班交接：" + reason);
+        }
+        return toDto(row);
+    }
+
+    private String reason(Map<String,Object> body)
+    {
+        String reason = body == null || body.get("reason") == null ? "" : body.get("reason").toString().trim();
+        if (reason.isEmpty() || reason.length() > 200) throw new ServiceException("请填写 1–200 字操作原因", HttpStatus.BAD_REQUEST);
+        return reason;
+    }
+
+    private List<WearDutyHandover> pendingHandovers(Long siteId)
+    {
+        return handoverMapper.selectList(new LambdaQueryWrapper<WearDutyHandover>()
+                .eq(WearDutyHandover::getSiteId, siteId).eq(WearDutyHandover::getStatus, "pending")
+                .orderByAsc(WearDutyHandover::getId).last("FOR UPDATE"));
     }
 
     private int countEvents(Long siteId, String status, Long claimant)
@@ -300,7 +390,7 @@ public class DutyService
         List<WearSafetyEvent> rows = eventMapper.selectList(new LambdaQueryWrapper<WearSafetyEvent>()
                 .eq(WearSafetyEvent::getSiteId, siteId)
                 .eq(WearSafetyEvent::getClaimantUserId, userId)
-                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED));
+                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED).orderByAsc(WearSafetyEvent::getId).last("FOR UPDATE"));
         for (WearSafetyEvent row : rows)
         {
             ids.add(String.valueOf(row.getId()));
@@ -314,7 +404,7 @@ public class DutyService
         List<WearWorkTask> rows = taskMapper.selectList(new LambdaQueryWrapper<WearWorkTask>()
                 .eq(WearWorkTask::getSiteId, siteId)
                 .eq(WearWorkTask::getOwnerUserId, userId)
-                .ne(WearWorkTask::getStatus, WorkTaskStateMachine.ENDED));
+                .ne(WearWorkTask::getStatus, WorkTaskStateMachine.ENDED).orderByAsc(WearWorkTask::getId).last("FOR UPDATE"));
         for (WearWorkTask row : rows)
         {
             ids.add(String.valueOf(row.getId()));
@@ -329,6 +419,7 @@ public class DutyService
         {
             throw new ServiceException("接班人无效", HttpStatus.BAD_REQUEST);
         }
+        if (target.isAdmin()) return;
         if (siteAccountMapper.selectCount(new LambdaQueryWrapper<WearSiteAccount>()
                 .eq(WearSiteAccount::getUserId, userId)
                 .eq(WearSiteAccount::getSiteId, siteId)
@@ -337,7 +428,7 @@ public class DutyService
             throw new ServiceException("接班人不在该厂站", HttpStatus.FORBIDDEN);
         }
         Set<String> roles = roleService.selectRolePermissionByUserId(userId);
-        if (!WearRoleKeys.canClaimEvent(roles, false))
+        if (!WearRoleKeys.seesAllSites(roles, false) && !WearRoleKeys.canClaimEvent(roles, false))
         {
             throw new ServiceException("接班人不能值班", HttpStatus.FORBIDDEN);
         }
@@ -357,6 +448,9 @@ public class DutyService
         dto.setComment(row.getComment());
         dto.setCreateTime(row.getCreateTime());
         dto.setConfirmedAt(row.getConfirmedAt());
+        LoginUser actor = siteAccessService.requireLogin();
+        dto.setCanCancel("pending".equals(row.getStatus()) && (actor.getUserId().equals(row.getFromUserId()) || siteAccessService.isPlatformAdmin(actor)));
+        dto.setAudit(ledger.auditOf(row.getId()));
         return dto;
     }
 

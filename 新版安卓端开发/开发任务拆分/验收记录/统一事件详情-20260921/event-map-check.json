@@ -1,0 +1,16 @@
+{
+  "eventId": 138,
+  "location": {
+    "lat": 36.12,
+    "lng": 117.12
+  },
+  "tile": {
+    "code": 200,
+    "bytes": 3614,
+    "firstMs": 25
+  },
+  "cachedCode": 200,
+  "cachedSame": true,
+  "crossSiteCode": 403,
+  "anonymousCode": 401
+}

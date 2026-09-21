@@ -1,0 +1,16 @@
+[
+  {
+    "serial": "6HUGIJZLDM8PRWG6",
+    "address": "http://10.137.74.38:18084",
+    "ok": true,
+    "apiReverseMapping": false,
+    "health": "UP"
+  },
+  {
+    "serial": "emulator-5554",
+    "address": "http://10.137.74.38:18084",
+    "ok": true,
+    "apiReverseMapping": false,
+    "health": "UP"
+  }
+]

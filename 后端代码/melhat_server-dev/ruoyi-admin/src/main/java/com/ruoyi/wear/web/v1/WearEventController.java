@@ -14,6 +14,7 @@ import com.ruoyi.common.core.domain.R;
 import com.ruoyi.wear.common.WearPage;
 import com.ruoyi.wear.event.EventCommandService;
 import com.ruoyi.wear.event.EventQueryService;
+import com.ruoyi.wear.event.EventMapService;
 import com.ruoyi.wear.event.dto.EventActionDto;
 import com.ruoyi.wear.event.dto.EventDto;
 
@@ -25,6 +26,15 @@ public class WearEventController
     private EventQueryService queryService;
     @Autowired
     private EventCommandService commandService;
+    @Autowired
+    private EventMapService mapService;
+
+    @GetMapping("/{id:\\d+}/map-tiles/{z}/{x}/{y}")
+    public R<String> mapTile(@PathVariable Long id, @PathVariable int z,
+            @PathVariable int x, @PathVariable int y)
+    {
+        return R.ok(mapService.tile(id, z, x, y));
+    }
 
     @GetMapping
     public R<WearPage<EventDto>> page(
@@ -41,10 +51,22 @@ public class WearEventController
             @RequestParam(required = false) String sn,
             @RequestParam(required = false) String taskId,
             @RequestParam(required = false) String occurredFrom,
-            @RequestParam(required = false) String occurredTo)
+            @RequestParam(required = false) String occurredTo,
+            @RequestParam(required = false) String alarmCode,
+            @RequestParam(required = false) String deviceTypes,
+            @RequestParam(required = false) String statuses,
+            @RequestParam(required = false) String types,
+            @RequestParam(required = false) String alarmCodes)
     {
         return R.ok(queryService.page(current, size, type, status, personId, severity, updatedAfter, claimantUserId,
-                escalated, personKeyword, sn, taskId, occurredFrom, occurredTo));
+                escalated, personKeyword, sn, taskId, occurredFrom, occurredTo, alarmCode, deviceTypes,
+                statuses, types, alarmCodes));
+    }
+
+    @GetMapping("/filter-options")
+    public R<List<Map<String, String>>> filterOptions()
+    {
+        return R.ok(queryService.filterOptions());
     }
 
     @GetMapping("/inbox/count")

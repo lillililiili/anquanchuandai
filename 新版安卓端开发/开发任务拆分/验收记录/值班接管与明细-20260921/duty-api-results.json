@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "admin candidate without duty grant",
+    "cross-site read blocked",
+    "admin accepts without duty role",
+    "cancel permissions and sender cancellation",
+    "continuous shift boundaries",
+    "takeover transfers active/review events and tasks; cancels old handover",
+    "cancellation audit retained",
+    "non-admin initiator can cancel",
+    "concurrent cancel/confirm one winner and one active shift",
+    "paginated ledger"
+  ],
+  "passed": 10,
+  "temporarySite": 6
+}

@@ -1,51 +1,47 @@
 ﻿param([string]$Flutter = 'flutter')
 $ErrorActionPreference = 'Stop'
-$project = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$android = Join-Path $project 'android代码/melhat_android-main'
-if ($Flutter -eq 'flutter' -and -not (Get-Command flutter -ErrorAction SilentlyContinue)) {
-  if (Test-Path -LiteralPath 'C:/melhat-runtime/flutter/bin/flutter.bat') {
-    $Flutter = 'C:/melhat-runtime/flutter/bin/flutter.bat'
-  }
-}
-if (-not $env:PUB_CACHE -and (Test-Path -LiteralPath 'C:/melhat-runtime/pub-cache')) {
-  $env:PUB_CACHE = 'C:/melhat-runtime/pub-cache'
-}
-Push-Location $android
+# Build only the isolated copy inside this display directory.
+$source = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '展示源码'))
+if (-not $source.StartsWith([IO.Path]::GetFullPath($PSScriptRoot) + [IO.Path]::DirectorySeparatorChar)) { throw 'Invalid display source path.' }
+if (-not (Test-Path -LiteralPath (Join-Path $source 'pubspec.yaml'))) { throw 'Rebuild from the full display project containing the isolated source.' }
+if ($Flutter -eq 'flutter' -and -not (Get-Command flutter -ErrorAction SilentlyContinue)) { $Flutter = 'C:/melhat-runtime/flutter/bin/flutter.bat' }
+if (-not $env:PUB_CACHE -and (Test-Path -LiteralPath 'C:/melhat-runtime/pub-cache')) { $env:PUB_CACHE = 'C:/melhat-runtime/pub-cache' }
+if (-not $env:PUB_HOSTED_URL) { $env:PUB_HOSTED_URL = 'https://pub.flutter-io.cn' }
+Push-Location $source
 try {
-  & $Flutter build web --release --no-pub --target lib/web_preview/main.dart --no-web-resources-cdn --no-wasm-dry-run
+  & $Flutter pub get --offline
+  if ($LASTEXITCODE -ne 0) { throw 'Dependencies are missing from the local Flutter cache.' }
+  & $Flutter build web --release --no-pub --target lib/web_preview/main.dart --dart-define=CALL_LAB_ENABLED=true --no-web-resources-cdn --no-wasm-dry-run
   if ($LASTEXITCODE -ne 0) { throw 'Flutter web build failed.' }
-  # Register the bundled CJK font before CanvasKit initializes its default
-  # Roboto fallback. Loading it only in main() is too late to avoid CDN fetches.
-  $fontManifestPath = Join-Path $android 'build/web/assets/FontManifest.json'
-  $fontManifest = @(Get-Content -LiteralPath $fontManifestPath -Raw | ConvertFrom-Json | Where-Object { $_.family -ne 'Roboto' })
-  $fontManifest += @{ family = 'Roboto'; fonts = @(@{ asset = '../fonts/NotoSansCJKsc-Regular.otf' }) }
-  [IO.File]::WriteAllText($fontManifestPath, (ConvertTo-Json -InputObject $fontManifest -Depth 6 -Compress), (New-Object Text.UTF8Encoding($false)))
   $output = Join-Path $PSScriptRoot 'site'
   New-Item -ItemType Directory -Force $output | Out-Null
-  Get-ChildItem -LiteralPath (Join-Path $android 'build/web') -Force | ForEach-Object {
-    Copy-Item -LiteralPath $_.FullName -Destination $output -Recurse -Force
+  $buildRoot = Join-Path $source 'build/web'
+  foreach ($file in (Get-ChildItem -LiteralPath $buildRoot -Recurse -File -Force)) {
+    $destination = Join-Path $output $file.FullName.Substring($buildRoot.Length+1)
+    New-Item -ItemType Directory -Force (Split-Path $destination -Parent) | Out-Null
+    if ((Test-Path -LiteralPath $destination) -and (Get-FileHash -LiteralPath $destination).Hash -eq (Get-FileHash -LiteralPath $file.FullName).Hash) { continue }
+    for ($attempt=0; $attempt -lt 4; $attempt++) {
+      try { Copy-Item -LiteralPath $file.FullName -Destination $destination -Force; break }
+      catch { if ($attempt -eq 3) { throw }; Start-Sleep -Milliseconds 300 }
+    }
   }
-  $sourceFiles = @(
-    Get-ChildItem -LiteralPath (Join-Path $android 'lib'), (Join-Path $android 'assets'), (Join-Path $android 'web') -Recurse -File
-    Get-Item -LiteralPath (Join-Path $android 'pubspec.yaml'), (Join-Path $android 'pubspec.lock')
-  )
-  $sourceHashes = @($sourceFiles | Sort-Object FullName | ForEach-Object {
-    @{ path = $_.FullName.Substring($android.Length + 1).Replace('\','/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
-  })
-  $buildInfo = @{
-    builtAt = (Get-Date).ToString('o')
-    sourceCommit = (& git rev-parse --short HEAD)
-    source = 'Current Android working tree, including local changes'
-    entrypoint = 'lib/web_preview/main.dart'
-    dataMode = 'Local preview data; no production server or real devices'
-    sourceFiles = $sourceHashes
-    mainJsSha256 = (Get-FileHash -LiteralPath (Join-Path $output 'main.dart.js') -Algorithm SHA256).Hash.ToLowerInvariant()
+  $fontPath = Join-Path $output 'assets/FontManifest.json'
+  $parsedFonts = ConvertFrom-Json ([IO.File]::ReadAllText($fontPath, [Text.Encoding]::UTF8))
+  $fonts = @()
+  foreach ($font in $parsedFonts) {
+    if ($font.family -ne 'Roboto') {
+      $entries = @()
+      foreach ($entry in $font.fonts) { $entries += @{asset=[string]$entry.asset} }
+      $fonts += @{family=[string]$font.family;fonts=$entries}
+    }
   }
-  [IO.File]::WriteAllText((Join-Path $output 'build-info.json'), ($buildInfo | ConvertTo-Json -Depth 5), (New-Object Text.UTF8Encoding($false)))
-  $outputHashes = @(Get-ChildItem -LiteralPath $output -Recurse -File -Force | Sort-Object FullName | ForEach-Object {
-    @{ path = $_.FullName.Substring($PSScriptRoot.Length + 1).Replace('\','/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
-  })
-  [IO.File]::WriteAllText((Join-Path $PSScriptRoot '文件校验清单.json'), ($outputHashes | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))
-  Write-Output "Updated current Android web preview: $output"
+  $fonts += @{family='Roboto';fonts=@(@{asset='../fonts/NotoSansCJKsc-Regular.otf'})}
+  $utf8 = New-Object Text.UTF8Encoding($false)
+  [IO.File]::WriteAllText($fontPath, (ConvertTo-Json -InputObject $fonts -Depth 6), $utf8)
+  $baseline = Get-Content -LiteralPath (Join-Path $PSScriptRoot '同步验收/20260921/主项目只读快照.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  $info = @{builtAt=(Get-Date).ToString('o');source=$baseline.source;sourceCapturedAt=$baseline.capturedAt;sourceFiles=$baseline.files;isolatedBuild=$true;callLabEnabled=$true;dataMode='Local snapshot; all actions in memory';mainJsSha256=(Get-FileHash -LiteralPath (Join-Path $output 'main.dart.js') -Algorithm SHA256).Hash.ToLowerInvariant()}
+  [IO.File]::WriteAllText((Join-Path $output 'build-info.json'),($info | ConvertTo-Json -Depth 6),$utf8)
+  $hashes = @(Get-ChildItem -LiteralPath $output -Recurse -File | ForEach-Object { @{path=$_.FullName.Substring($PSScriptRoot.Length+1).Replace('\','/');sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()} })
+  [IO.File]::WriteAllText((Join-Path $PSScriptRoot '文件校验清单.json'),(ConvertTo-Json -InputObject $hashes -Depth 5),$utf8)
+  Write-Output "Display updated: $output"
 } finally { Pop-Location }
-

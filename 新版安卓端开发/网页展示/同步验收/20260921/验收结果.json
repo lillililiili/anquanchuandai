@@ -1,0 +1,69 @@
+{
+  "verifiedAt": "2026-09-21T14:37:16.897368+08:00",
+  "originalFilesChecked": 435,
+  "originalChangedFiles": [],
+  "sharedUiAndAssetFilesChecked": 233,
+  "sharedUiChangedFiles": [],
+  "releaseBuild": "passed",
+  "displayTests": {
+    "count": 4,
+    "status": "passed",
+    "coverage": [
+      "contact device ownership",
+      "pagination and local action reset",
+      "track assignment windows and 500-point thinning",
+      "four primary pages with continuous scrolling"
+    ]
+  },
+  "snapshot": {
+    "capturedAt": "2026-09-21T14:30:01.333406+08:00",
+    "mode": "只读数据库快照；网页操作仅在浏览器内存中演示",
+    "counts": {
+      "sites": 2,
+      "people": 50,
+      "peopleSites": 54,
+      "devices": 68,
+      "models": 7,
+      "assignments": 109,
+      "teams": 6,
+      "spaces": 12,
+      "tasks": 30,
+      "members": 105,
+      "requirements": 40,
+      "events": 172,
+      "eventActions": 390,
+      "fences": 6,
+      "handovers": 5,
+      "calls": 40,
+      "samples": 24048,
+      "operators": 5
+    },
+    "exportedCredentials": false
+  },
+  "limitations": [
+    "Display-only in-memory operations; no real calls or commands",
+    "Historical data retains original timestamps",
+    "Only previously cached event map tiles are bundled"
+  ],
+  "screenshots": [
+    "01-现场-下部.png",
+    "01-现场-顶部.png",
+    "02-通讯-下部.png",
+    "02-通讯-顶部.png",
+    "03-消息-下部.png",
+    "03-消息-顶部.png",
+    "04-我的-下部.png",
+    "04-我的-顶部.png",
+    "05-我的装备-浏览器.png",
+    "06-绑定历史-浏览器.png",
+    "07-事件详情-1顶部.png",
+    "07-事件详情-2b研判.png",
+    "07-事件详情-2中部.png",
+    "07-事件详情-3底部.png",
+    "08-作业详情-装备检查.png",
+    "08-作业详情-顶部.png",
+    "09-设置-浏览器.png",
+    "10-交接记录-浏览器.png",
+    "11-登录-浏览器.png"
+  ]
+}

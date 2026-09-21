@@ -16,7 +16,14 @@ class _WearDutyPageState extends State<WearDutyPage> {
   WearSession? _session;
   String? _scope, _error, _confirming;
   List<JsonMap> _handovers = [];
-  bool _loading = true, _handoverBusy = false, _confirmedTab = false;
+  List<JsonMap> _shifts = [];
+  JsonMap? _currentDuty;
+  String _tab = 'pending';
+  int _shiftPage = 1, _shiftTotal = 0;
+  bool _moreShifts = false;
+  bool _loading = true, _handoverBusy = false;
+  DateTime _ledgerLoadedAt = DateTime.now();
+  Timer? _clock;
   int _request = 0;
 
   @override
@@ -28,7 +35,12 @@ class _WearDutyPageState extends State<WearDutyPage> {
       _session = session;
       _scope = session.scopeKey;
       _handovers = [];
+      _shifts = [];
+      _currentDuty = null;
       session.refreshTick.addListener(_refresh);
+      _clock ??= Timer.periodic(const Duration(seconds: 30), (_) {
+        if (mounted && _currentDuty != null) setState(() {});
+      });
       _load();
     }
   }
@@ -44,16 +56,26 @@ class _WearDutyPageState extends State<WearDutyPage> {
     });
     try {
       final rows = jsonList(await session.api.get('/api/v1/duty/handovers'));
+      final ledger = widget.settings
+          ? <String, dynamic>{}
+          : jsonMap(await session.api.get('/api/v1/duty/shifts'));
       if (!mounted || request != _request || scope != session.scopeKey) return;
-      setState(
-        () => _handovers = rows
+      setState(() {
+        _shiftPage = 1;
+        _shifts = jsonList(ledger['records']);
+        _shiftTotal = int.tryParse('${ledger['total']}') ?? 0;
+        _currentDuty = ledger['currentDuty'] is Map
+            ? jsonMap(ledger['currentDuty'])
+            : null;
+        _ledgerLoadedAt = DateTime.now();
+        _handovers = rows
             .where(
               (row) =>
                   idOf(row['siteId']).isEmpty ||
                   idOf(row['siteId']) == session.siteId,
             )
-            .toList(),
-      );
+            .toList();
+      });
     } catch (e) {
       if (!mounted || request != _request || scope != session.scopeKey) return;
       setState(() => _error = e.toString());
@@ -67,6 +89,7 @@ class _WearDutyPageState extends State<WearDutyPage> {
   @override
   void dispose() {
     _request++;
+    _clock?.cancel();
     _session?.refreshTick.removeListener(_refresh);
     super.dispose();
   }
@@ -318,10 +341,10 @@ class _WearDutyPageState extends State<WearDutyPage> {
   }
 
   List<Widget> _handoverContent() {
-    final rows = _handovers
-        .where((r) => r['status'] == (_confirmedTab ? 'confirmed' : 'pending'))
-        .toList();
+    final rows = _handovers.where((r) => r['status'] == _tab).toList();
     return [
+      _currentDutyCard(),
+      const SizedBox(height: 12),
       Container(
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
@@ -330,31 +353,37 @@ class _WearDutyPageState extends State<WearDutyPage> {
         ),
         child: Row(
           children: [
-            for (final confirmed in [false, true])
+            for (final tab in const {
+              'pending': '待接班',
+              'confirmed': '已接班',
+              'cancelled': '已取消',
+              'shifts': '值班明细',
+            }.entries)
               Expanded(
                 child: TextButton(
-                  key: ValueKey(
-                    confirmed ? 'handover-confirmed' : 'handover-pending',
-                  ),
-                  onPressed: () => setState(() => _confirmedTab = confirmed),
+                  key: ValueKey('handover-${tab.key}'),
+                  onPressed: () => setState(() => _tab = tab.key),
                   style: TextButton.styleFrom(
-                    backgroundColor: _confirmedTab == confirmed
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    backgroundColor: _tab == tab.key
                         ? Colors.white
                         : Colors.transparent,
-                    foregroundColor: _confirmedTab == confirmed
-                        ? _blue
-                        : WearColors.muted,
+                    foregroundColor: _tab == tab.key ? _blue : WearColors.muted,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(confirmed ? '已接班' : '待接班'),
+                  child: Text(tab.value, style: const TextStyle(fontSize: 12)),
                 ),
               ),
           ],
         ),
       ),
-      if (_session!.isDuty)
+      if (!_loading &&
+          _error == null &&
+          _session!.canHandover &&
+          (_currentDuty == null ||
+              idOf(_currentDuty!['userId']) == _session!.userId))
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
@@ -367,31 +396,278 @@ class _WearDutyPageState extends State<WearDutyPage> {
       if (_loading) const LinearProgressIndicator(),
       if (_error != null)
         WearEmpty(title: '交接加载失败', detail: _error, onRetry: _load)
-      else if (!_loading && rows.isEmpty)
+      else if (!_loading && (_tab == 'shifts' ? _shifts.isEmpty : rows.isEmpty))
         WearCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              _confirmedTab ? '暂无已接班记录' : '暂无待接班记录',
+              _tab == 'shifts'
+                  ? '暂无值班明细，完成接班后开始记录'
+                  : '暂无${const {'pending': '待接班', 'confirmed': '已接班', 'cancelled': '已取消'}[_tab]}记录',
               textAlign: TextAlign.center,
               style: const TextStyle(color: WearColors.muted),
             ),
           ),
         ),
-      if (_error == null)
+      if (_error == null && _tab != 'shifts')
         for (final row in rows) ...[
           _handoverCard(row),
           const SizedBox(height: 12),
         ],
+      if (_error == null && _tab == 'shifts') ...[
+        for (final shift in _shifts) ...[
+          _shiftCard(shift),
+          const SizedBox(height: 12),
+        ],
+        if (_shifts.length < _shiftTotal)
+          TextButton(
+            onPressed: _moreShifts ? null : _loadMoreShifts,
+            child: Text(_moreShifts ? '加载中…' : '加载更多值班明细'),
+          ),
+      ],
       const SizedBox(height: 8),
-      _notice('确认接班前，请阅读交接事项；仅当班接收人可确认。'),
+      _notice(
+        _tab == 'shifts'
+            ? '接班确认或管理员接管时记录起止时间；历史推算记录已单独标明。'
+            : '取消仅对待接班生效；已完成的交接保留记录。',
+      ),
       const SizedBox(height: 10),
-      const Text(
-        '显示当前厂站最近 20 条交接记录',
+      Text(
+        _tab == 'shifts' ? '当前厂站值班明细 · 共 $_shiftTotal 条' : '显示当前厂站最近 20 条交接记录',
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 11, color: WearColors.muted),
+        style: const TextStyle(fontSize: 11, color: WearColors.muted),
       ),
     ];
+  }
+
+  String _duration(JsonMap row) {
+    if (row['endUnknown'] == true) return '无法计算';
+    var seconds = int.tryParse('${row['durationSeconds']}') ?? 0;
+    if (row['endedAt'] == null) {
+      seconds += DateTime.now().difference(_ledgerLoadedAt).inSeconds;
+    }
+    final minutes = seconds < 0 ? 0 : seconds ~/ 60;
+    if (minutes == 0) return '不足 1 分钟';
+    if (minutes < 60) return '$minutes 分钟';
+    return '${minutes ~/ 60} 小时 ${minutes % 60} 分钟';
+  }
+
+  Widget _currentDutyCard() => WearCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.schedule, size: 20, color: _blue),
+            SizedBox(width: 8),
+            Text(
+              '当前值班',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (_loading && _currentDuty == null)
+          const Text('正在读取值班信息…')
+        else if (_error != null)
+          const Text('值班信息暂不可用，请重试', style: TextStyle(color: WearColors.muted))
+        else if (_currentDuty == null)
+          const Text('尚无已确认的值班记录', style: TextStyle(color: WearColors.muted))
+        else ...[
+          Text(
+            textOf(_currentDuty!['userName']),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          _meta('开始时间', formatTime(_currentDuty!['startedAt'])),
+          _meta('已值班', _duration(_currentDuty!)),
+          if (_currentDuty!['changeType'] == 'legacy_confirmation')
+            const Text(
+              '开始时间依据历史接班确认记录',
+              style: TextStyle(fontSize: 11, color: WearColors.muted),
+            ),
+        ],
+        if (_session!.isDutyAdmin &&
+            !_loading &&
+            _error == null &&
+            idOf(_currentDuty?['userId']) != _session!.userId) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            key: const ValueKey('duty-takeover'),
+            onPressed: _handoverBusy ? null : _takeover,
+            icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
+            label: const Text('管理员接管为自己'),
+          ),
+        ],
+      ],
+    ),
+  );
+
+  Widget _shiftCard(JsonMap row) => WearCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                textOf(row['userName']),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              row['endUnknown'] == true
+                  ? '历史记录'
+                  : row['endedAt'] == null
+                  ? '值班中'
+                  : '已结束',
+              style: const TextStyle(fontSize: 12, color: _blue),
+            ),
+          ],
+        ),
+        _meta('开始时间', formatTime(row['startedAt'])),
+        _meta(
+          '结束时间',
+          row['endUnknown'] == true
+              ? '未记录'
+              : row['endedAt'] == null
+              ? '至今'
+              : formatTime(row['endedAt']),
+        ),
+        _meta('值班时长', _duration(row)),
+        _meta(
+          '接班方式',
+          row['changeType'] == 'takeover'
+              ? '管理员接管'
+              : '${row['changeType']}'.startsWith('legacy_')
+              ? '历史确认记录推算'
+              : '确认接班',
+        ),
+        if (textOf(row['reason']).isNotEmpty) _notice(textOf(row['reason'])),
+      ],
+    ),
+  );
+
+  Future<void> _loadMoreShifts() async {
+    final session = _session!, scope = session.scopeKey, request = _request;
+    setState(() => _moreShifts = true);
+    try {
+      final data = jsonMap(
+        await session.api.get(
+          '/api/v1/duty/shifts',
+          query: {'current': _shiftPage + 1, 'size': 20},
+        ),
+      );
+      if (!mounted || scope != session.scopeKey || request != _request) return;
+      setState(() {
+        _shiftPage++;
+        _shifts.addAll(jsonList(data['records']));
+      });
+    } catch (e) {
+      if (mounted && scope == session.scopeKey && e is! StaleSessionException) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _moreShifts = false);
+    }
+  }
+
+  Future<String?> _operationReason(String title, String explanation) async {
+    String reason = '';
+    final form = GlobalKey<FormState>();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Form(
+            key: form,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(explanation),
+                const SizedBox(height: 14),
+                TextFormField(
+                  key: const ValueKey('duty-operation-reason'),
+                  maxLength: 200,
+                  minLines: 2,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: '操作原因'),
+                  onChanged: (v) => reason = v.trim(),
+                  validator: (_) => reason.isEmpty ? '请填写操作原因' : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('返回'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (form.currentState!.validate()) Navigator.pop(ctx, reason);
+            },
+            child: Text(title),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _cancelHandover(JsonMap row) async {
+    await _runOperation(
+      '取消交接',
+      '取消后当前值班人和责任保持不变，记录仍会保留。',
+      '/api/v1/duty/handovers/${idOf(row['id'])}/cancel',
+      {},
+    );
+  }
+
+  Future<void> _takeover() async {
+    await _runOperation(
+      '确认接管',
+      '将当前值班负责人转为您，同时接收其未完成的事件与作业。原待接班交接会自动取消，此操作会留痕。',
+      '/api/v1/duty/takeover',
+      {'expectedShiftId': _currentDuty?['id']},
+    );
+  }
+
+  Future<void> _runOperation(
+    String title,
+    String explanation,
+    String path,
+    JsonMap data,
+  ) async {
+    if (_handoverBusy) return;
+    final session = _session!, scope = session.scopeKey;
+    setState(() => _handoverBusy = true);
+    try {
+      final reason = await _operationReason(title, explanation);
+      if (reason == null || !mounted || scope != session.scopeKey) return;
+      await session.api.post(path, data: {...data, 'reason': reason});
+      if (!mounted || scope != session.scopeKey) return;
+      session.requestRefresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(path.endsWith('/cancel') ? '交接已取消，记录已保留' : '已接管值班'),
+        ),
+      );
+    } catch (e) {
+      if (mounted && scope == session.scopeKey && e is! StaleSessionException) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        if (e is WearApiException && e.code == 409) session.requestRefresh();
+      }
+    } finally {
+      if (mounted) setState(() => _handoverBusy = false);
+    }
   }
 
   Widget _meta(String name, String value) => Padding(
@@ -430,6 +706,8 @@ class _WearDutyPageState extends State<WearDutyPage> {
               ? '已接班'
               : row['status'] == 'pending'
               ? '待接班'
+              : row['status'] == 'cancelled'
+              ? '已取消'
               : '状态未知',
           style: TextStyle(
             fontSize: 11,
@@ -483,9 +761,18 @@ class _WearDutyPageState extends State<WearDutyPage> {
                 ? '未填写交接备注，请结合相关事件与作业核查。'
                 : textOf(row['comment']),
           ),
-          if (!confirmed) ...[
+          if (row['audit'] is Map) ...[
+            _meta('操作人', textOf(row['audit']['actorName'])),
+            _meta(
+              row['status'] == 'cancelled' ? '取消时间' : '接管时间',
+              formatTime(row['audit']['actedAt']),
+            ),
+            _notice(textOf(row['audit']['reason'])),
+          ],
+          if (row['status'] == 'pending') ...[
             const SizedBox(height: 12),
-            if (idOf(row['toUserId']) == _session!.userId && _session!.isDuty)
+            if (idOf(row['toUserId']) == _session!.userId &&
+                _session!.canHandover)
               FilledButton(
                 key: ValueKey('handover-confirm-${idOf(row['id'])}'),
                 onPressed: _confirming != null ? null : () => _confirm(row),
@@ -502,6 +789,13 @@ class _WearDutyPageState extends State<WearDutyPage> {
                 '等待指定接班人确认',
                 style: TextStyle(fontSize: 12, color: WearColors.muted),
               ),
+            if (row['canCancel'] == true)
+              OutlinedButton.icon(
+                key: ValueKey('handover-cancel-${idOf(row['id'])}'),
+                onPressed: _handoverBusy ? null : () => _cancelHandover(row),
+                icon: const Icon(Icons.close, size: 18),
+                label: const Text('取消交接'),
+              ),
           ],
         ],
       ),
@@ -512,7 +806,7 @@ class _WearDutyPageState extends State<WearDutyPage> {
     final session = _session!;
     final scope = session.scopeKey;
     if (_confirming != null ||
-        !session.isDuty ||
+        !session.canHandover ||
         handover['status'] != 'pending' ||
         idOf(handover['toUserId']) != session.userId) {
       return;
@@ -565,7 +859,7 @@ class _WearDutyPageState extends State<WearDutyPage> {
 
   Future<void> _startHandover() async {
     final session = _session;
-    if (session == null || !session.isDuty || _handoverBusy) return;
+    if (session == null || !session.canHandover || _handoverBusy) return;
     final scope = session.scopeKey;
     FocusScope.of(context).unfocus();
     setState(() => _handoverBusy = true);
@@ -586,7 +880,7 @@ class _WearDutyPageState extends State<WearDutyPage> {
     }
     if (!mounted || session != _session || scope != session.scopeKey) return;
     setState(() => _handoverBusy = true);
-    TextEditingController? comment;
+    String note = '';
     try {
       if (operators.isEmpty) {
         ScaffoldMessenger.of(
@@ -596,7 +890,6 @@ class _WearDutyPageState extends State<WearDutyPage> {
       }
 
       final formKey = GlobalKey<FormState>();
-      comment = TextEditingController();
       String? toUserId;
       final confirmed = await showModalBottomSheet<bool>(
         context: context,
@@ -638,7 +931,9 @@ class _WearDutyPageState extends State<WearDutyPage> {
                           (item) => DropdownMenuItem(
                             value: idOf(item['userId']),
                             child: Text(
-                              textOf(item['nickName']).isNotEmpty
+                              item['userName'] == 'admin'
+                                  ? '${textOf(item['nickName'], '管理员')}（admin）'
+                                  : textOf(item['nickName']).isNotEmpty
                                   ? textOf(item['nickName'])
                                   : textOf(item['userName'], '未命名值班员'),
                             ),
@@ -650,7 +945,7 @@ class _WearDutyPageState extends State<WearDutyPage> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    controller: comment,
+                    onChanged: (value) => note = value.trim(),
                     minLines: 2,
                     maxLines: 4,
                     maxLength: 200,
@@ -673,7 +968,6 @@ class _WearDutyPageState extends State<WearDutyPage> {
           ),
         ),
       );
-      final note = comment.text.trim();
       if (confirmed != true ||
           toUserId == null ||
           !mounted ||
@@ -699,10 +993,6 @@ class _WearDutyPageState extends State<WearDutyPage> {
         session.requestRefresh();
       }
     } finally {
-      final toDispose = comment;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        toDispose?.dispose();
-      });
       if (mounted && _handoverBusy) {
         setState(() => _handoverBusy = false);
       }

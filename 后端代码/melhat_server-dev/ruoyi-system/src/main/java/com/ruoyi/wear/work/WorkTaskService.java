@@ -482,6 +482,17 @@ public class WorkTaskService
         }
     }
 
+    public void transferDutyOwner(Long taskId, Long siteId, Long fromUserId, Long toUserId, String actor)
+    {
+        WearWorkTask row = taskMapper.selectOne(new LambdaQueryWrapper<WearWorkTask>()
+                .eq(WearWorkTask::getId, taskId).last("FOR UPDATE"));
+        if (row == null || !siteId.equals(row.getSiteId()) || !fromUserId.equals(row.getOwnerUserId())
+                || WorkTaskStateMachine.isEnded(row.getStatus())) return;
+        if (taskMapper.transferOwner(taskId, toUserId, row.getVersion(), actor) != 1)
+            throw new ServiceException("作业负责人已变更，请刷新重试", HttpStatus.CONFLICT);
+        insertAction(taskId, "handover", actor, String.valueOf(toUserId), row.getStatus(), row.getStatus());
+    }
+
     private void addMemberInternal(WearWorkTask task, Long personId, boolean log)
     {
         WearPerson person = personMapper.selectById(personId);

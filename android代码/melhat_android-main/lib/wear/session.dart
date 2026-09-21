@@ -60,6 +60,11 @@ class WearSession extends ChangeNotifier {
   bool can(String permission) =>
       permissions.contains(permission) || permissions.contains('*:*:*');
   bool get isDuty => hasRole('wear_duty') || hasRole('wear_team_lead');
+  bool get isDutyAdmin =>
+      me?['admin'] == true ||
+      hasRole('admin') ||
+      hasRole('wear_platform_admin');
+  bool get canHandover => isDuty || isDutyAdmin;
   bool get isReviewer =>
       hasRole('wear_reviewer') ||
       hasRole('wear_platform_admin') ||

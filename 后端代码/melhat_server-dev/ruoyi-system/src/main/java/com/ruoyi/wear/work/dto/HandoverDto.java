@@ -5,6 +5,12 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class HandoverDto
 {
+    private boolean canCancel;
+    private java.util.Map<String,Object> audit;
+    public boolean isCanCancel() { return canCancel; }
+    public void setCanCancel(boolean value) { canCancel = value; }
+    public java.util.Map<String,Object> getAudit() { return audit; }
+    public void setAudit(java.util.Map<String,Object> value) { audit = value; }
     private String id;
     private String siteId;
     private String fromUserId;

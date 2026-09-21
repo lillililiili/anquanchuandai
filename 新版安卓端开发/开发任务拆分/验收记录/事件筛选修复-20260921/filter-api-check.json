@@ -1,0 +1,51 @@
+{
+  "options": [
+    {
+      "code": "belt.unhooked",
+      "label": "安全钩未挂接"
+    },
+    {
+      "code": "helmet.battery",
+      "label": "低电量"
+    },
+    {
+      "code": "helmet.fall",
+      "label": "跌落"
+    },
+    {
+      "code": "helmet.fence_exit",
+      "label": "离开指定区域"
+    },
+    {
+      "code": "helmet.impact",
+      "label": "撞击"
+    },
+    {
+      "code": "helmet.proximity",
+      "label": "近电"
+    },
+    {
+      "code": "helmet.removal",
+      "label": "脱帽"
+    },
+    {
+      "code": "helmet.silent",
+      "label": "静默 / 长时间静止"
+    },
+    {
+      "code": "helmet.sos",
+      "label": "SOS 求救"
+    },
+    {
+      "code": "watch.heart_high",
+      "label": "心率偏高"
+    }
+  ],
+  "helmet": 119,
+  "belt": 2,
+  "both": 121,
+  "alarm": 1,
+  "excluded": 0,
+  "invalid": 400,
+  "anonymous": 401
+}

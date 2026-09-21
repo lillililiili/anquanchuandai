@@ -1,5 +1,5 @@
-# Optional helper for LDPlayer / any emulator that needs adb reverse.
-# Default `flutter run` is unchanged: official AVD still uses http://10.0.2.2:18084.
+# Run against a directly reachable backend without adb reverse.
+param([string]$ApiBaseUrl = "http://10.137.74.38:18084")
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 
@@ -10,8 +10,8 @@ function Find-Bin($name, $fallback) {
     return $null
 }
 
-$adb = Find-Bin "adb.exe" (Join-Path ($env:ANDROID_HOME, $env:ANDROID_SDK_ROOT | Where-Object { $_ } | Select-Object -First 1) "platform-tools\adb.exe")
-$flutter = Find-Bin "flutter.bat" $null
+$adb = Find-Bin "adb.exe" "C:\leidian\LDPlayer14\adb.exe"
+$flutter = Find-Bin "flutter.bat" "C:\melhat-runtime\flutter\bin\flutter.bat"
 if (-not $flutter) { $flutter = Find-Bin "flutter" $null }
 if (-not $adb) { throw "adb not found. Add Android SDK platform-tools to PATH." }
 if (-not $flutter) { throw "flutter not found. Add Flutter to PATH." }
@@ -21,6 +21,15 @@ $device = & $adb devices | ForEach-Object {
 } | Select-Object -First 1
 if (-not $device) { throw "No emulator found. Start the emulator first." }
 
-& $adb -s $device reverse tcp:18084 tcp:18084
-Set-Location $root
-& $flutter run -d $device --dart-define=API_BASE_URL=http://127.0.0.1:18084
+& (Join-Path $PSScriptRoot "connect-ldplayer.ps1") -ApiBaseUrl $ApiBaseUrl
+# The existing junction avoids native plugin build failures with non-ASCII paths.
+$buildRoot = "C:\melhat-runtime\wearable-android"
+if (-not (Test-Path $buildRoot)) { $buildRoot = $root }
+if (-not $env:GRADLE_USER_HOME -and (Test-Path "C:\melhat-runtime\gradle-home")) {
+    $env:GRADLE_USER_HOME = "C:\melhat-runtime\gradle-home"
+}
+Push-Location $buildRoot
+try {
+    & $flutter run -d $device "--dart-define=API_BASE_URL=$ApiBaseUrl" --dart-define=CALL_LAB_ENABLED=true
+    if ($LASTEXITCODE -ne 0) { throw "Flutter run failed." }
+} finally { Pop-Location }
