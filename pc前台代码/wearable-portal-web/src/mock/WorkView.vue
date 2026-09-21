@@ -14,7 +14,6 @@ import { eventTime } from '@/utils/event-contract'
 import { eventLocalToUtc, eventLocalTime } from '@/utils/event-route'
 import DataState from '@/components/personnel/DataState.vue'
 import WorkDetail from './WorkDetail.vue'
-import WorkTimeWindow from './WorkTimeWindow.vue'
 import './spatial-editor.scss'
 const route = useRoute(), router = useRouter(), context = useContextStore(), workspace = useWorkspaceStore()
 const form = reactive({ keyword: '', areaId: '', state: '', sourceStatus: '', from: '', to: '' }), filterError = ref('')
@@ -26,12 +25,24 @@ const authorized = computed(() => !!user.token && context.state === 'READY' && c
 const params = computed(() => { const p = { ...query.value, siteId: siteId.value }; delete p.selectedId; return p })
 const list = reactive(usePortalQuery()), detail = reactive(usePortalQuery()), writable = computed(() => user.roles.includes('owner'))
 function loadDetail() { if (authorized.value && workId.value) detail.run(signal => getWorks({ siteId: siteId.value, workId: workId.value }, signal)); else detail.clear() }
-function reload() { if (!authorized.value) { list.clear(); detail.clear(); return } context.select(siteId.value); if (!standalone.value) list.run(signal => getWorks(params.value, signal)); loadDetail() }
-watch(() => [JSON.stringify(params.value), workId.value, authorized.value, user.token], reload, { immediate: true })
+function loadList() {
+  if (!authorized.value) { list.clear(); return }
+  context.select(siteId.value)
+  if (!standalone.value) list.run(signal => getWorks(params.value, signal))
+  else list.clear()
+}
+function reload() { loadList(); loadDetail() }
+watch([() => JSON.stringify(params.value), standalone, authorized, () => user.token], loadList, { immediate: true })
+watch([workId, siteId, authorized, () => user.token], loadDetail, { immediate: true })
 watch(workId, clear)
 watch(() => route.fullPath, () => { Object.assign(form, { keyword: '', areaId: '', state: '', sourceStatus: '', from: '', to: '' }, query.value, { from: eventLocalTime(query.value.from, 'UTC'), to: eventLocalTime(query.value.to, 'UTC') }); filterError.value = '' }, { immediate: true })
 useBusinessRevision(['works', 'people', 'equipment', 'events', 'materials'], reload)
-watch(() => list.data, d => { if (d?.state === 'AVAILABLE' && Number(params.value.pageNum || 1) > Math.max(1, Math.ceil(d.total / Number(params.value.pageSize || 20)))) page(Math.max(1, Math.ceil(d.total / Number(params.value.pageSize || 20)))) })
+watch(() => list.data, d => {
+  if (standalone.value || d?.state !== 'AVAILABLE') return
+  const lastPage = Math.max(1, Math.ceil(d.total / Number(params.value.pageSize || 20)))
+  if (Number(params.value.pageNum || 1) > lastPage) { page(lastPage); return }
+  if (!workId.value && d.items.length) select(d.items[0].workId)
+})
 function search(reset = false) {
   try { const q = reset ? { siteId: siteId.value } : { ...form, siteId: siteId.value, from: eventLocalToUtc(form.from, 'UTC'), to: eventLocalToUtc(form.to, 'UTC') }; if (!!q.from !== !!q.to || q.from && Date.parse(q.from) >= Date.parse(q.to)) throw Error('请填写完整且开始早于结束的 UTC 时间范围'); router.push({ path: '/supervision', query: workQuery(q) }); filterError.value = '' } catch (e) { filterError.value = e.message }
 }
@@ -50,7 +61,7 @@ async function submit(action) {
   const token = user.token
   if (action === 'finish') {
     input.expectedOpenCount = detail.data.work.openEventCount
-    try { await ElMessageBox.confirm(`当前仍有 ${input.expectedOpenCount} 件未完成事件，结束监护不会关闭这些事件，也不代表作业许可或原系统结案。结束后不能重开，确认继续？`, '确认结束本地监护', { confirmButtonText: '确认结束', cancelButtonText: '继续监护', closeOnHashChange: false }) } catch { return }
+    try { await ElMessageBox.confirm(`当前仍有 ${input.expectedOpenCount} 件未处理告警，结束监护不会关闭这些事件，也不代表作业许可或原系统结案。结束后不能重开，确认继续？`, '确认结束本地监护', { confirmButtonText: '确认结束', cancelButtonText: '继续监护', closeOnHashChange: false }) } catch { return }
     if (token !== user.token || input.siteId !== siteId.value || input.workId !== workId.value) return
     input.confirmFinish = true
   }
@@ -70,14 +81,14 @@ async function submit(action) {
       <div class="work-columns" :class="{ standalone, 'has-selection': !!workId }">
         <section v-if="!standalone" class="work-panel">
           <DataState v-if="list.state !== 'READY' || list.data?.state !== 'AVAILABLE'" :state="list.error ? list.state : list.data?.state || list.state" :message="list.error?.message" :retry="!!list.error" @retry="reload" />
-          <template v-else><div class="work-table-scroll"><table class="work-table"><thead><tr><th>来源作业 / 区域</th><th>来源时段（UTC）</th><th>人数 / 未完成事件</th><th>本地监护</th></tr></thead><tbody><tr v-for="w in list.data.items" :key="w.workId" :class="{ selected: workId === w.workId }"><td><button class="work-select" :aria-pressed="workId === w.workId" @click="select(w.workId)">{{ w.name }}</button><small>{{ w.sourceWorkNo }} · {{ w.area.name }}</small><small>{{ sourceLabels[w.sourceStatus] }}</small></td><td><small>{{ eventTime(w.startsAt) }}</small><small>至 {{ eventTime(w.endsAt) }}</small></td><td>{{ w.participantCount }} 人 / {{ w.openEventCount ?? '未知' }} 件</td><td><span class="work-status" :data-state="w.monitorState">{{ monitorLabels[w.monitorState] }}</span></td></tr></tbody></table></div><DataState v-if="!list.data.items.length" state="EMPTY" message="当前厂站或筛选条件下没有作业" /><WorkTimeWindow :items="list.data.items" @select="select" /><AppPagination :current-page="Number(params.pageNum || 1)" :page-size="Number(params.pageSize || 20)" :total="list.data.total" @current-change="page" /></template>
+          <template v-else><div class="work-table-scroll"><table class="work-table"><thead><tr><th>来源作业 / 区域</th><th>来源时段（UTC）</th><th>人数 / 未处理告警</th><th>本地监护</th></tr></thead><tbody><tr v-for="w in list.data.items" :key="w.workId" :class="{ selected: workId === w.workId }" @click="select(w.workId)"><td><button class="work-select" :aria-pressed="workId === w.workId" @click.stop="select(w.workId)">{{ w.name }}</button><small>{{ w.sourceWorkNo }} · {{ w.area.name }}</small><small>{{ sourceLabels[w.sourceStatus] }}</small></td><td><small>{{ eventTime(w.startsAt) }}</small><small>至 {{ eventTime(w.endsAt) }}</small></td><td>{{ w.participantCount }} 人 / {{ w.openEventCount ?? '未知' }} 件</td><td><span class="work-status" :data-state="w.monitorState">{{ monitorLabels[w.monitorState] }}</span></td></tr></tbody></table></div><DataState v-if="!list.data.items.length" state="EMPTY" message="当前厂站或筛选条件下没有作业" /><AppPagination :current-page="Number(params.pageNum || 1)" :page-size="Number(params.pageSize || 20)" :total="list.data.total" @current-change="page" /></template>
         </section>
         <section v-if="standalone || workId" class="work-panel">
           <DataState v-if="!workId" state="EMPTY" message="选择一项作业查看监护摘要" />
           <DataState v-else-if="detail.state !== 'READY' || detail.data?.state !== 'AVAILABLE'" :state="detail.error ? detail.state : detail.data?.state || detail.state" :message="detail.error?.message" :retry="!!detail.error" @retry="loadDetail" />
           <template v-else>
             <header class="work-heading"><h2>{{ detail.data.work.name }}</h2><span class="work-status" :data-state="detail.data.monitoring.state">{{ monitorLabels[detail.data.monitoring.state] }}</span></header>
-            <dl class="work-facts"><dt>来源状态</dt><dd>{{ sourceLabels[detail.data.work.sourceStatus] }}</dd><dt>来源许可</dt><dd>{{ detail.data.work.sourcePermit }}</dd><dt>计划时段</dt><dd>{{ eventTime(detail.data.work.startsAt) }} ～ {{ eventTime(detail.data.work.endsAt) }}</dd><dt>本地监护人</dt><dd>{{ (detail.data.people.state === 'AVAILABLE' ? detail.data.work.localSupervisorName : null) || (detail.data.monitoring.supervisorId ? '已安排；姓名需人员权限' : '尚未安排') }}</dd><dt>参与人数</dt><dd>{{ detail.data.work.participantCount }}（关联名册，不是在线数）</dd><dt>未完成事件</dt><dd>{{ detail.data.events.state === 'AVAILABLE' ? detail.data.work.openEventCount : '无权或暂不可读取' }}</dd></dl>
+            <dl class="work-facts"><dt>来源状态</dt><dd>{{ sourceLabels[detail.data.work.sourceStatus] }}</dd><dt>来源许可</dt><dd>{{ detail.data.work.sourcePermit }}</dd><dt>计划时段</dt><dd>{{ eventTime(detail.data.work.startsAt) }} ～ {{ eventTime(detail.data.work.endsAt) }}</dd><dt>本地监护人</dt><dd>{{ (detail.data.people.state === 'AVAILABLE' ? detail.data.work.localSupervisorName : null) || (detail.data.monitoring.supervisorId ? '已安排；姓名需人员权限' : '尚未安排') }}</dd><dt>参与人数</dt><dd>{{ detail.data.work.participantCount }}（关联名册，不是在线数）</dd><dt>未处理告警</dt><dd>{{ detail.data.events.state === 'AVAILABLE' ? detail.data.work.openEventCount : '无权或暂不可读取' }}</dd></dl>
             <ContactEntry :site-id="siteId" :work-id="workId" /><div class="work-actions"><button class="event-button" :disabled="!writable || busy || detail.data.monitoring.state !== 'PENDING'" @click="begin('arrange')">安排监护人员</button><button class="event-button" :disabled="!writable || busy || !['PENDING', 'PAUSED'].includes(detail.data.monitoring.state)" @click="begin('check')">记录人工检查</button><button class="event-button primary" :disabled="!writable || busy || detail.data.monitoring.state !== 'PENDING'" @click="submit('start')">开始监护</button><button class="event-button" :disabled="!writable || busy || detail.data.monitoring.state !== 'ACTIVE'" @click="submit('pause')">暂停监护</button><button class="event-button" :disabled="!writable || busy || detail.data.monitoring.state !== 'PAUSED'" @click="submit('resume')">恢复监护</button><button class="event-button" :disabled="!writable || busy || !['ACTIVE', 'PAUSED'].includes(detail.data.monitoring.state)" @click="submit('finish')">结束监护</button></div>
             <p class="work-note">{{ !writable ? '当前身份只读，监护操作仅负责人可用。' : detail.data.monitoring.state === 'ENDED' ? '监护已结束，不支持重开；关联事件仍独立处置。' : '开始前须有有效监护人及参与人员；未知、过期报告需核实，人工记录不是许可。人员调整仅待开始可用；检查仅待开始或暂停可记录。' }}</p><p v-if="error && !open" role="alert">{{ error }}</p>
             <router-link v-if="!standalone" class="work-detail-link" :to="detailTarget">进入作业监护详情 →</router-link>

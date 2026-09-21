@@ -14,5 +14,5 @@ const activeTab = computed({
 </script>
 
 <template>
-  <div class="s2-page"><header class="s2-heading"><div><h1>{{ tabs.find(t => t.name === activeTab)?.label }}</h1><p>按授权范围查询 · 位置快照及历史证据</p></div><span class="s2-badge">{{ localMode && activeTab === 'fences' ? '本地围栏编辑' : '只读查询' }}</span></header><component :is="views[activeTab]" :key="activeTab" /></div>
+  <div class="s2-page"><header class="s2-heading"><div><h1>{{ tabs.find(t => t.name === activeTab)?.label }}</h1><p>按授权范围查询 · 位置快照及历史证据</p></div><span class="s2-badge">{{ localMode && activeTab === 'fences' ? '围栏管理' : '只读查询' }}</span></header><component :is="views[activeTab]" :key="activeTab" /></div>
 </template>

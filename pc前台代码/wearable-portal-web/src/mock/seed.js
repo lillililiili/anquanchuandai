@@ -9,7 +9,6 @@ export const SCHEMA_VERSION = 1
 export const SEED_VERSION = 2
 export const available = data => ({ state: 'AVAILABLE', data })
 export const missing = (reasonCode = 'SOURCE_NOT_INTEGRATED') => ({ state: 'NOT_INTEGRATED', data: null, reasonCode })
-export const phases = ['UNCLAIMED', 'PROCESSING', 'AWAITING_VERIFICATION', 'LOCAL_COMPLETED', 'UNKNOWN']
 export const defaultScenario = () => ({ module: 'people', mode: 'normal', slowNext: false })
 export const identities = [
   { id: 'owner', name: '负责人', sites: ['mock-site-1', 'mock-site-2', 'mock-site-empty'] },
@@ -18,7 +17,7 @@ export const identities = [
 ]
 export function permissionsFor(role) {
   const result = ['person:read', 'person:history', 'location:read', 'track:read', 'fence:read', 'material:read', 'video:read', 'event:read']
-  if (role !== 'reader') result.push('event:verification:read')
+  if (role !== 'reader') result.push('event:handle')
   return result.map(p => 'portal:' + p)
 }
 export function createSeed(baseTime = new Date().toISOString()) {
@@ -71,21 +70,13 @@ export function createSeed(baseTime = new Date().toISOString()) {
       const proof = { id: personId, siteId, name: person.name, attribution: 'CONFIRMED', evidenceId: `proof-${s}-${i}`, snapshotKind: 'HISTORICAL', sourceTime: at(-90) }
       entities.materials.push({ id: `material-${s}-${i}`, siteId, name: `资料${i}`, type: ['PHOTO', 'VIDEO', 'AUDIO'][(i - 1) % 3], deviceId: helmet.deviceId, deviceCode: helmet.deviceCode, capturedAt: i % 3 === 0 ? null : at(-90), receivedAt: at(-80), personId: confirmed ? personId : null, personName: confirmed ? person.name : null, attribution: confirmed ? 'CONFIRMED' : 'UNKNOWN', workId: work.workId, workName: work.name, workAttribution: 'CONFIRMED', eventId, eventAttribution: 'CONFIRMED', version: 1, digest: `LOCAL-DIGEST-${s}-${i}` })
       entities.videos.push({ deviceId: helmet.deviceId, siteId, name: helmet.name, deviceCode: helmet.deviceCode, type: 'HELMET', areaId: area.areaId, workId: work.workId, communication: helmet.communication, video: { state: 'SUPPORTED', verification: 'UNVERIFIED' }, streamState: i % 4 === 0 ? 'INTERRUPTED' : 'NOT_STARTED', freshness: 'UNKNOWN', sourceTime: null, unavailableReason: '前端本地视频元数据；本地合成播放需显式启动，真实媒体未接入', personId: confirmed ? personId : null })
-      entities.events.push({ eventId, siteId, title: `事件${i}`, sourceSystem: 'FRONTEND_MOCK', sourceEventId: `EVT-${s}-${i}`, eventType: i % 2 ? 'MOCK_INSPECTION' : 'UNKNOWN', eventTypeName: i % 2 ? '本地人工巡检发现' : '本地未知类型', phase: phases[(i - 1) % 5], deviceId: helmet.deviceId, deviceCode: helmet.deviceCode, occurredAt: i % 7 === 0 ? null : at(-90), receivedAt: at(-80), sourceUpdatedAt: at(-60), freshness: i % 5 === 0 ? 'STALE' : 'FRESH', person: confirmed ? available([proof]) : missing('HISTORICAL_ATTRIBUTION_UNKNOWN'), legacyHandled: i % 2, workId: work.workId })
+      entities.events.push({ eventId, siteId, title: `事件${i}`, sourceSystem: 'FRONTEND_MOCK', sourceEventId: `EVT-${s}-${i}`, eventType: i % 2 ? 'MOCK_INSPECTION' : 'UNKNOWN', eventTypeName: i % 2 ? '本地人工巡检发现' : '本地未知类型', deviceId: helmet.deviceId, deviceCode: helmet.deviceCode, occurredAt: i % 7 === 0 ? null : at(-90), receivedAt: at(-80), sourceUpdatedAt: at(-60), freshness: i % 5 === 0 ? 'STALE' : 'FRESH', person: confirmed ? available([proof]) : missing('HISTORICAL_ATTRIBUTION_UNKNOWN'), workId: work.workId })
       for (let n = 0; n < (i === 1 ? 25 : 2); n++) {
         relations.history.push({ recordId: `history-${s}-${i}-${n}`, siteId, personId, deviceId: helmet.deviceId, deviceCode: helmet.deviceCode, action: n % 2 ? 'RETURN' : 'ISSUE', evidenceQuality: 'CONFIRMED', operator: { displayName: '经办人' }, occurredAt: at(-3000 - n * 60), startedAt: at(-3060 - n * 60), endedAt: at(-3000 - n * 60), state: 'CLOSED' })
         relations.timeline.push({ id: `timeline-${s}-${i}-${n}`, siteId, eventId, title: `预置来源记录 ${n + 1}`, kind: 'MOCK_FACT', sequence: n, sourceTime: n === 2 ? null : at(-90 + n), description: '本地事实记录，不代表真实处置或外部回传。' })
-        relations.verifications.push({ id: `verification-${s}-${i}-${n}`, siteId, eventId, version: n + 1, state: n === 0 ? 'DRAFT' : 'SUBMITTED', sourceTime: at(-50 + n), submittedAt: n === 0 ? null : at(-50 + n), conclusion: n % 2 ? 'UNCONFIRMED' : 'ACTION_REQUIRED', scene: '预置现场情况', measures: '预置措施；本阶段只读', evidence: available(confirmed ? [{ ...entities.materials.at(-1), attribution: 'CONFIRMED', evidenceId: `material-proof-${s}-${i}` }] : []) })
       }
     }
   }
-  // Identity is not a roster person. Unclaimed events intentionally have no owner.
-  entities.events.forEach((event, index) => {
-    event.ownerUserId = event.phase === 'UNCLAIMED' ? null : event.siteId === 'mock-site-1' && index % 2 ? 'mock-verifier' : 'mock-owner'
-  })
   entities.sites.push({ siteId: 'mock-site-empty', name: '空厂站', timeZone: 'Asia/Shanghai' })
-  // Existing verification evidence is a frozen snapshot, including drafts.
-  const evidenceIds = new Set(relations.verifications.flatMap(v => v.evidence.data || []).map(e => e.id))
-  entities.materials.forEach(m => { if (evidenceIds.has(m.id)) m.frozen = true })
   return seedMonitoring(enrichEventReports(seedVitals(enrichDeviceProfiles(normalizeAssignments({ meta: { schemaVersion: SCHEMA_VERSION, seedVersion: SEED_VERSION, baseTime }, entities, relations, config: defaultScenario() })))))
 }

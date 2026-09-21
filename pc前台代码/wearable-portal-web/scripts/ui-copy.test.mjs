@@ -3,12 +3,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createSeed, identities } from '../src/mock/seed.js'
 
-test('visible Chinese copy no longer uses demonstration terminology', () => {
+test('simulation terminology is confined to explicit alarm scope', () => {
   function inspect(dir) {
     for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
       const path = `${dir}/${item.name}`
       if (item.isDirectory()) inspect(path)
-      else if (/\.(vue|js)$/.test(path)) assert.doesNotMatch(fs.readFileSync(path, 'utf8'), /演示|模拟/, path)
+      else if (/\.(vue|js)$/.test(path) && !['src/mock/DispatchBanner.vue', 'src/mock/event-reports.js', 'src/views/alarms/AlarmsView.vue', 'src/views/alarms/AlarmDetailView.vue'].includes(path)) assert.doesNotMatch(fs.readFileSync(path, 'utf8'), /演示|模拟/, path)
     }
   }
   inspect('src')

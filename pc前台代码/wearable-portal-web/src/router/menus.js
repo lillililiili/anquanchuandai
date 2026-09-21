@@ -7,7 +7,7 @@ export const portalPages = [
   { path: '/video', title: '视频监看', icon: 'VideoCamera', component: () => import('@/views/video/VideoView.vue') },
   { path: '/dispatch', title: '调度通信', icon: 'Microphone', component: () => import('@/views/dispatch/DispatchView.vue') },
   { path: '/location', title: '定位与轨迹', icon: 'Location', component: () => import('@/views/location/LocationView.vue') },
-  { path: '/alarms', title: '告警与核验', icon: 'Warning', component: () => import('@/views/alarms/AlarmsView.vue') },
+  { path: '/alarms', title: '告警事件', icon: 'Warning', component: () => import('@/views/alarms/AlarmsView.vue') },
   { path: '/materials', title: '现场资料', icon: 'Document', component: () => import('@/views/materials/MaterialsView.vue') },
   { path: '/statistics', title: '统计追溯', icon: 'DataAnalysis', component: () => import('@/views/statistics/StatisticsView.vue') }
 ]
@@ -17,7 +17,7 @@ export const portalMenus = [
   { path: '/location', title: '现场监看', icon: 'VideoCamera', query: { tab: 'live' } },
   { path: '/personnel', title: '人员装备', icon: 'User' },
   { path: '/supervision', title: '作业监护', icon: 'Checked' },
-  { path: '/alarms', title: '事件处置', icon: 'Warning' },
+  { path: '/alarms', title: '告警事件', icon: 'Warning' },
   { path: '/dispatch', title: '调度协同', icon: 'Microphone' },
   { path: '/materials', title: '查询分析', icon: 'DataAnalysis' }
 ]

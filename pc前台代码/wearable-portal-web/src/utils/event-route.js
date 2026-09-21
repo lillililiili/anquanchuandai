@@ -7,9 +7,9 @@ export function eventQuery(raw = {}, detail = false) {
   const q = {}
   for (const k of detail ? ['siteId'] : ['siteId', 'selectedId', 'eventType']) if (typeof raw[k] === 'string' && personIdPattern.test(raw[k])) q[k] = raw[k]
   if (!detail) {
-    if (raw.mine === 'true') q.mine = 'true'
     if (typeof raw.keyword === 'string' && raw.keyword.trim()) q.keyword = raw.keyword.trim().slice(0, 100)
-    if (phases.includes(raw.phase)) q.phase = raw.phase
+    if (['UNHANDLED', 'HANDLED'].includes(raw.handlingStatus)) q.handlingStatus = raw.handlingStatus
+    if (['HELMET', 'BELT', 'WATCH'].includes(raw.deviceType)) q.deviceType = raw.deviceType
     if (eventUtc(raw.from) && eventUtc(raw.to) && Date.parse(raw.from) < Date.parse(raw.to)) { q.from = raw.from; q.to = raw.to }
     for (const [k, max] of [['pageNum', 2147483647], ['pageSize', 100]]) { const n = Number(raw[k]); if (Number.isInteger(n) && n > 0 && n <= max) q[k] = String(n) }
   }
@@ -18,13 +18,22 @@ export function eventQuery(raw = {}, detail = false) {
 export function safeEventReturn(value, allowDetail = false) {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.includes('\\') || [...value].some(c => c.charCodeAt(0) < 32)) return '/alarms'
   try {
-    const u = new URL(value, 'https://portal.invalid'), detail = /^\/alarms\/[A-Za-z0-9_-]{1,64}\/verification$/.test(u.pathname)
+    const u = new URL(value, 'https://portal.invalid'), detail = /^\/alarms\/[A-Za-z0-9_-]{1,64}(?:\/verification)?$/.test(u.pathname)
+    if (!u.hash && ['/overview', '/statistics', '/personnel', '/equipment'].includes(u.pathname)) {
+      const search = new URLSearchParams()
+      for (const key of ['siteId', 'tab', 'from', 'to']) { const v = u.searchParams.get(key); if (v && (key === 'siteId' ? personIdPattern.test(v) : key === 'tab' ? ['events', 'comprehensive', 'people', 'equipment', 'tasks'].includes(v) : eventUtc(v))) search.set(key, v) }
+      return u.pathname + (search.size ? '?' + search.toString() : '')
+    }
+    if (!u.hash && /^\/(personnel|equipment)\/[A-Za-z0-9_-]{1,64}$/.test(u.pathname)) {
+      const siteId = u.searchParams.get('siteId')
+      return u.pathname + (siteId && personIdPattern.test(siteId) ? '?' + new URLSearchParams({ siteId }) : '')
+    }
     if (!u.hash && /^\/dispatch(?:\/sos\/[\w-]+)?$/.test(u.pathname)) return safeDispatchReturn(value)
     if (!u.hash && /^\/supervision(?:\/[A-Za-z0-9_-]{1,64})?$/.test(u.pathname)) return safeWorkReturn(value, true)
     if (u.hash || u.pathname !== '/alarms' && !(allowDetail && detail)) return '/alarms'
     const raw = Object.fromEntries(u.searchParams), q = eventQuery(raw, detail)
     if (detail && raw.returnTo) q.returnTo = safeEventReturn(raw.returnTo)
-    const search = new URLSearchParams(q).toString(); return u.pathname + (search ? '?' + search : '')
+    const search = new URLSearchParams(q).toString(); return u.pathname.replace(/\/verification$/, '') + (search ? '?' + search : '')
   } catch { return '/alarms' }
 }
 export function eventTimeZone(zone) { try { new Intl.DateTimeFormat('en', { timeZone: zone || 'UTC' }).format(); return zone || 'UTC' } catch { return 'UTC' } }

@@ -6,7 +6,7 @@ import { createMemoryRepository } from '../src/mock/storage.js'
 import { spatialCommand, spatialRead } from '../src/mock/spatial-service.js'
 import { inspectFile, MAX_FILE_BYTES } from '../src/mock/local-file.js'
 import { queryDataset } from '../src/mock/engine.js'
-import { validateEventDetail } from '../src/utils/event-contract.js'
+import { validateAlarmDetail } from '../src/utils/alarm-contract.js'
 import { createTransport, MOCK_TOKEN_KEY } from '../src/mock/transport.js'
 const siteId = 'mock-site-1'
 const base = { siteId, operationId: 'first', name: '预置编辑围栏', ruleType: 'DENY_ENTRY', appliesTo: 'ALL', ring: [[0, 0], [1, 0], [1, 1], [0, 1]] }
@@ -49,7 +49,7 @@ test('material import association freeze blocks mutation; blob scope and reset',
   assert.throws(() => repo.transact(d => spatialCommand(d, 'owner', 'material-delete', { siteId, id: result.id, expectedVersion: 2, operationId: 'remove' })), e => e.code === 409)
   assert.equal(repo.readDataset().relations.materialReferences[0].digest, 'test-hash')
   const detail = queryDataset(repo.readDataset(), 'owner', '/api/portal/v1/events/event-1-1', { siteId })
-  validateEventDetail(detail, siteId, 'event-1-1')
+  validateAlarmDetail(detail, siteId, 'event-1-1')
   assert.equal(detail.materials.data.find(i => i.id === result.id).attribution, 'MANUAL_MOCK')
   assert.throws(() => spatialRead(repo.readDataset(), 'reader', 'blob', { siteId: 'mock-site-2', id: result.id }), e => e.code === 403)
   repo.resetDataset(); assert.ok(!repo.readDataset().entities.materials.some(i => i.id === result.id))
@@ -60,7 +60,7 @@ test('200MB budget rejects additional file without evicting frozen evidence', ()
   assert.throws(() => repo.transact(d => spatialCommand(d, 'owner', 'material-import', { siteId, operationId: 'overflow', file: new Blob(['x']) }, { name: 'x.png' })), e => e.code === 413)
   assert.equal(Object.keys(repo.readDataset().entities.materialBlobs).length, 4)
 })
-test('existing verification evidence is frozen and source failure cannot become success', () => {
+test('historical referenced evidence remains frozen and source failure cannot become success', () => {
   const repo = createMemoryRepository()
   assert.throws(() => repo.transact(d => spatialCommand(d, 'owner', 'material-delete', { siteId, id: 'material-1-1', operationId: 'old-evidence', expectedVersion: 1 })), e => e.code === 409)
   repo.saveScenario({ module: 'fences', mode: 'failure' })
@@ -78,4 +78,24 @@ test('cancelled or changed session before commit creates no fence', async () => 
   await new Promise(resolve => setTimeout(resolve, 0)); session.set(MOCK_TOKEN_KEY, 'other'); release()
   await assert.rejects(switched, e => e.code === 'ERR_CANCELED')
   assert.equal(repo.readDataset().entities.fences.length, 50)
+})
+
+test('fence team scope persists and filters before pagination; cross-site teams rejected', () => {
+  const d = createSeed()
+  const save = teamId => spatialCommand(d, 'owner', 'fence-save', { ...base, ruleType: undefined, operationId: 'team-' + teamId, teamId })
+  const one = save('team-1-1'), all = save('ALL'), two = save('team-1-2')
+  const rows = queryDataset(d, 'owner', '/api/portal/v1/fences', { siteId, teamId: 'team-1-1' })
+  assert.equal(rows.total, 2)
+  assert.deepEqual(new Set(rows.items.map(f => f.id)), new Set([one.id, all.id]))
+  assert.ok(!rows.items.some(f => f.id === two.id))
+  const history = spatialRead(d, 'reader', 'versions', { siteId, id: one.id })
+  assert.equal(history[0].teamId, 'team-1-1')
+  assert.equal(history[0].ruleType, null)
+  assert.equal(history[0].rule, null)
+  assert.ok(history[0].teamName)
+  assert.throws(() => save('team-2-1'), e => e.code === 400)
+  assert.throws(() => queryDataset(d, 'owner', '/api/portal/v1/fences', { siteId, teamId: 'team-2-1' }), e => e.code === 400)
+  const unknown = queryDataset(d, 'owner', '/api/portal/v1/fences', { siteId, teamId: 'UNKNOWN' })
+  assert.ok(unknown.total > 0)
+  assert.ok(unknown.items.every(f => !f.teamId))
 })

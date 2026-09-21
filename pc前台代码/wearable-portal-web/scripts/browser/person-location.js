@@ -9,10 +9,16 @@ async page => {
   const first = page.locator('.s2-list-row').first();
   if (await first.locator('.issued-device').count() !== 3) throw new Error('Missing issued equipment');
   await first.click();
-  await page.waitForFunction(() => document.querySelector('.amap-scene')?.__vueParentComponent.setupState.pointOverlays.length === 1);
+  await page.waitForFunction(() => {
+    const s = document.querySelector('.amap-scene')?.__vueParentComponent.setupState;
+    return s?.pointOverlays.length === 1 && s.markerSource?.getFeatures().length === 1;
+  });
   await page.screenshot({ path: 'output/playwright/person-location-issued.png' });
   await page.locator('.s2-list-row').nth(1).click();
-  await page.waitForFunction(() => document.querySelector('.amap-scene')?.__vueParentComponent.setupState.pointOverlays.length === 0);
+  await page.waitForFunction(() => {
+    const s = document.querySelector('.amap-scene')?.__vueParentComponent.setupState;
+    return s?.pointOverlays.length === 0 && s.markerSource?.getFeatures().length === 0;
+  });
   if (!(await page.locator('.s2-position-card').innerText()).includes('暂无可确认位置')) throw new Error('Missing no-location state');
   if (!(await page.getByRole('button', {name:'历史轨迹',exact:true}).isDisabled())) throw new Error('Track should be unavailable');
   await page.getByRole('button', {name:'下一页',exact:true}).click();

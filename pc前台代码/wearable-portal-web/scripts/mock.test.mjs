@@ -7,7 +7,7 @@ import { createMemoryRepository } from '../src/mock/storage.js'
 import { validateContext, validatePage, validateDetail } from '../src/utils/portal-contract.js'
 import { validateS2Page, validateS2Item, validateTrack } from '../src/utils/spatial-contract.js'
 import { validateVideoPage, validateVideoDetail } from '../src/utils/video-contract.js'
-import { validateEventPage, validateEventSummary, validateEventDetail, validateEventRecords } from '../src/utils/event-contract.js'
+import { validateAlarmPage, validateAlarmSummary, validateAlarmDetail } from '../src/utils/alarm-contract.js'
 const seed = () => createSeed('2026-09-17T08:00:00.000Z')
 const root = '/api/portal/v1', q = { siteId: 'mock-site-1' }
 const query = (p, params = q, d = seed(), role = 'owner') => queryDataset(d, role, root + p, params)
@@ -27,7 +27,7 @@ test('context identities and string long IDs', () => {
   for (const i of identities) assert.equal(validateContext(query('/context', {}, seed(), i.id)).sites.length, i.sites.length)
   assert.ok(BigInt(seed().entities.people[0].personId) > BigInt(Number.MAX_SAFE_INTEGER))
 })
-test('all 18 read endpoints pass existing validators', () => {
+test('read endpoints use their current model validators', () => {
   validateContext(query('/context', {}))
   const people = validatePage(query('/people')), id = people.items[0].personId
   validateDetail(query('/people/' + id)); validatePage(query(`/people/${id}/equipment-history`), true)
@@ -38,17 +38,14 @@ test('all 18 read endpoints pass existing validators', () => {
   const tq = { ...q, deviceId: 'device-1-1-helmet', from: '2026-09-17T00:00:00Z', to: '2026-09-18T00:00:00Z' }
   validateTrack(query('/tracks', tq), tq)
   validateVideoPage(query('/video-sources'), q); validateVideoDetail(query('/video-sources/device-1-1-helmet'), q.siteId, 'device-1-1-helmet')
-  validateEventPage(query('/events'), q); validateEventSummary(query('/events/summary')); validateEventDetail(query('/events/event-1-1'), q.siteId, 'event-1-1')
-  for (const kind of ['timeline', 'verifications']) validateEventRecords(query('/events/event-1-1/' + kind), q, 'event-1-1', kind)
+  validateAlarmPage(query('/events'), q); validateAlarmSummary(query('/events/summary')); validateAlarmDetail(query('/events/event-1-1'), q.siteId, 'event-1-1')
 })
 test('all seeded details and nested evidence pass contracts', () => {
   const d = seed()
   for (const p of d.entities.people) validateDetail(query('/people/' + p.personId, { siteId: p.siteId }, d))
   for (const v of d.entities.videos) validateVideoDetail(query('/video-sources/' + v.deviceId, { siteId: v.siteId }, d), v.siteId, v.deviceId)
   for (const e of d.entities.events) {
-    const eq = { siteId: e.siteId, pageSize: 100 }
-    validateEventDetail(query('/events/' + e.eventId, { siteId: e.siteId }, d), e.siteId, e.eventId)
-    validateEventRecords(query('/events/' + e.eventId + '/verifications', eq, d), eq, e.eventId, 'verifications')
+    validateAlarmDetail(query('/events/' + e.eventId, { siteId: e.siteId }, d), e.siteId, e.eventId)
   }
 })
 test('pagination and shared scopes, independent histories', () => {
@@ -56,11 +53,11 @@ test('pagination and shared scopes, independent histories', () => {
   for (const path of ['/people', '/fences', '/materials', '/video-sources', '/events']) assert.equal(query(path, { siteId: 'mock-site-empty' }).total, 0)
   const id = seed().entities.people[0].personId
   assert.equal(query(`/people/${id}/equipment-history`, { ...q, pageSize: 10, pageNum: 2 }).items.length, 10)
-  assert.equal(query('/events/event-1-1/timeline').total, 25)
-  assert.equal(query('/events/event-1-1/verifications').total, 25)
+  assert.throws(() => query('/events/event-1-1/timeline'), { code: 404 })
+  assert.throws(() => query('/events/event-1-1/verifications'), { code: 404 })
 })
 test('filters and summaries derive from same facts', () => {
-  const filter = { ...q, phase: 'UNKNOWN' }
+  const filter = { ...q, handlingStatus: 'UNHANDLED' }
   assert.equal(query('/events', filter).total, query('/events/summary', filter).data.total)
   assert.equal(query('/people', { ...q, keyword: 'no-match' }).total, 0)
   assert.equal(query('/materials', { ...q, type: 'PHOTO' }).total, 9)
@@ -75,13 +72,13 @@ test('authorization and object visibility', () => {
   assert.throws(() => query('/people', q, seed(), 'bad'), e => e.code === 401)
   assert.throws(() => query('/people', { siteId: 'mock-site-2' }, seed(), 'reader'), e => e.code === 403)
   assert.throws(() => query('/events/event-2-1'), e => e.code === 404)
-  assert.throws(() => query('/events/event-1-1/verifications', q, seed(), 'reader'), e => e.code === 403)
+  assert.throws(() => query('/events/event-1-1/verifications', q, seed(), 'reader'), e => e.code === 404)
   assert.throws(() => query('/tracks', { ...q, deviceId: 'device-2-1-helmet' }), e => e.code === 404)
 })
 test('unknown historic attribution remains unknown and no addresses', () => {
   const t = query('/tracks', { ...q, deviceId: 'device-1-3-helmet', from: '2026-09-17T00:00:00Z', to: '2026-09-18T00:00:00Z' }).data
   assert.equal(t.personId, null); assert.equal(t.attribution, 'UNKNOWN'); assert.equal(t.gaps.length, 1)
-  assert.equal(query('/events/event-1-3').equipment.state, 'NOT_INTEGRATED')
+  assert.equal(query('/events/event-1-3').event.person.state, 'NOT_INTEGRATED')
   assert.equal(/https?:|rtc|token|url|path/i.test(JSON.stringify(query('/video-sources/device-1-1-helmet'))), false)
 })
 test('unintegrated, failure and forbidden differ from empty', () => {

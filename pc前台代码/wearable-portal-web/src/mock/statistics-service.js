@@ -4,7 +4,7 @@ import { workSummary } from './work-model.js'
 import { failure } from './errors.js'
 import { inInterval } from '../utils/statistics.js'
 import { validUtc } from '../utils/work-route.js'
-import { phaseLabels } from '../utils/event-contract.js'
+import { alarmLabel, alarmStatuses } from '../utils/alarm-contract.js'
 const unique = (rows, key) => [...new Map(rows.map(r => [r[key], r])).values()]
 export function distinctEvents(rows) {
   const ids = new Set(), sources = new Set()
@@ -33,7 +33,7 @@ export function buildStatistics(input, role, q, now = new Date().toISOString()) 
   const materials = unique(scoped('materials'), 'id'), metrics = []
   const personRow = p => ({ id: p.personId, name: p.name, state: { ON_DUTY: '名册当班', OFF_DUTY: '非当班' }[p.duty.data?.state] || '未知', path: '/personnel/' + p.personId })
   const deviceRow = v => ({ id: v.deviceId, name: v.name, state: `${{ HELMET:'安全帽', BELT:'安全带', WATCH:'手表' }[v.type]} · ${v.model} · ${{ ASSIGNED:'已领用', UNASSIGNED:'未领用', UNKNOWN:'未知', CONFLICT:'冲突' }[v.assignmentState]}`, path: '/equipment/' + v.deviceId, time: v.communication?.sourceTime || null })
-  const eventRow = e => ({ id: e.eventId, name: e.title, state: phaseLabels[e.phase] || '未知', time: e.occurredAt, path: '/alarms/' + e.eventId + '/verification' })
+  const eventRow = e => ({ id: e.eventId, name: e.title, state: alarmLabel(e), time: e.occurredAt, path: '/alarms/' + e.eventId })
   const add = (id, label, module, tab, kind, rows, note) => {
     const mode = d.config.module === module ? d.config.mode : 'normal'
     const state = ({ failure: 'ERROR', forbidden: 'FORBIDDEN', 'not-integrated': 'NOT_INTEGRATED' })[mode] || 'AVAILABLE'
@@ -49,11 +49,12 @@ export function buildStatistics(input, role, q, now = new Date().toISOString()) 
   for (const state of ['FRESH', 'STALE', 'UNKNOWN']) add('freshness-' + state, { FRESH:'通信数据新鲜', STALE:'通信数据过期', UNKNOWN:'通信新鲜度未知' }[state], 'equipment', 'equipment', 'snapshot', devices.filter(v => (v.communication?.freshness || 'UNKNOWN') === state).map(deviceRow), '采用来源新鲜度；不自行设置阈值，过期不转换为离线。')
   for (const state of ['PENDING', 'ACTIVE', 'PAUSED', 'ENDED']) add('work-' + state, { PENDING: '监护待开始', ACTIVE: '监护中', PAUSED: '监护暂停', ENDED: '监护已结束' }[state], 'works', 'tasks', 'snapshot', works.filter(w => w.monitorState === state).map(w => ({ id: w.workId, name: w.name, state, path: '/supervision/' + w.workId })), '当前本地监护状态，不是工作票许可或历史工时。')
   const intervalEvents = events.filter(e => inInterval(e.occurredAt, from, to))
-  add('occurred', '区间发生事件', 'events', 'events', 'history', intervalEvents.map(eventRow), '发生时间在 [from,to) 内；按平台 ID 与来源系统/事件 ID 去重，未知时间另列。')
+  add('occurred', '区间发生告警', 'events', 'events', 'history', intervalEvents.map(eventRow), '发生时间在 [from,to) 内；按平台 ID 与来源系统/事件 ID 去重，未知时间另列。')
   add('unknownTime', '发生时间未知', 'events', 'events', 'snapshot', events.filter(e => !validUtc(e.occurredAt)).map(eventRow), '全厂站未知时间，无法放入任一历史日期。')
-  for (const phase of ['UNCLAIMED', 'PROCESSING', 'AWAITING_VERIFICATION', 'LOCAL_COMPLETED', 'UNKNOWN']) add('phase-' + phase, { UNCLAIMED: '待认领', PROCESSING: '处理中', AWAITING_VERIFICATION: '待现场核验', LOCAL_COMPLETED: '来源标记本地完成', UNKNOWN: '阶段未知' }[phase], 'events', 'events', 'snapshot', events.filter(e => e.phase === phase).map(eventRow), '当前跟进阶段；来源标记完成不代表本次预置有显式完成记录，也不是外部结案。')
-  const completed = unique(d.relations.timeline.filter(t => t.siteId === q.siteId && t.action === 'complete' && inInterval(t.sourceTime, from, to)), 'eventId')
-  add('completed', '区间显式完成跟进', 'events', 'events', 'history', completed.flatMap(t => { const e = events.find(e => e.eventId === t.eventId); return e ? [{ ...eventRow(e), time: t.sourceTime }] : [] }), '只计独立 complete 操作时间；草稿、提交、回执成功及种子完成快照不计入。')
+  for (const status of ['UNHANDLED', 'HANDLED']) add('status-' + status, alarmStatuses[status], 'events', 'events', 'snapshot', events.filter(e => e.handlingStatus === status).map(eventRow), '当前告警处理状态；已处理不表示设备异常恢复。')
+  add('status-UNKNOWN', '处理状态未知', 'events', 'events', 'snapshot', events.filter(e => !['UNHANDLED', 'HANDLED'].includes(e.handlingStatus)).map(eventRow), '未知不计为未处理或已处理。')
+  const completed = events.filter(e => e.handlingStatus === 'HANDLED' && inInterval(e.handledAt, from, to))
+  add('completed', '区间处理告警', 'events', 'events', 'history', completed.map(e => ({ ...eventRow(e), time: e.handledAt })), '按处理时间在 [from,to) 内统计；与告警发生时间独立。')
   for (const [key, label] of [['capturedAt', '区间采集资料'], ['receivedAt', '区间接收资料']]) add(key, label, 'materials', 'comprehensive', 'history', materials.filter(m => inInterval(m[key], from, to)).map(m => ({ id: m.id, name: m.name, state: m.type, time: m[key], path: '/materials', selectedId: m.id })), `${key === 'capturedAt' ? '采集' : '接收'}时间独立统计；未知不补齐，不以当前绑定推断归属。`)
   add('captureUnknown', '采集时间未知资料', 'materials', 'comprehensive', 'snapshot', materials.filter(m => !validUtc(m.capturedAt)).map(m => ({ id: m.id, name: m.name, state: m.type, path: '/materials', selectedId: m.id })), '未知采集时间不等同接收时间。')
   const date = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })

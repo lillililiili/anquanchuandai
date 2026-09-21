@@ -1,0 +1,351 @@
+[
+  {
+    "name": "01-login",
+    "route": "login",
+    "actions": [
+      "password-toggle",
+      "captcha-refresh"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "02-overview",
+    "route": "overview",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "map-person",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out",
+      "open-event"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "03-personnel",
+    "route": "personnel",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "reset-filters",
+      "select-person",
+      "close-person-detail",
+      "person-tab",
+      "call-person"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "04-person",
+    "route": "person/P1",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "map-person",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out",
+      "call-person"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "05-works",
+    "route": "works",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "reset-filters",
+      "associate-work",
+      "sync-works",
+      "select-work",
+      "map-person",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "06-work",
+    "route": "work/GL-20260915-018",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "video-play",
+      "video-mute",
+      "capture",
+      "record",
+      "call-person",
+      "fullscreen",
+      "work-camera",
+      "map-person",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out",
+      "risk-info",
+      "work-records"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "07-video",
+    "route": "video",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "video-layout",
+      "rotation",
+      "video-mute",
+      "fullscreen",
+      "select-camera"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "08-single",
+    "route": "single/P1",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "fullscreen",
+      "video-play",
+      "video-mute",
+      "capture",
+      "record",
+      "call-person",
+      "go-dispatch",
+      "open-media"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "09-materials",
+    "route": "materials",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "reset-filters",
+      "media-tab",
+      "select-media",
+      "preview-media",
+      "download-media"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "10-location",
+    "route": "location",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "reset-filters",
+      "locate-person",
+      "map-person",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "11-tracks",
+    "route": "tracks/P1",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "export-tracks",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out",
+      "track-play",
+      "track-stop"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "12-fences",
+    "route": "fences",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "new-fence",
+      "fence-records",
+      "select-fence",
+      "fence-mode",
+      "toggle-fence",
+      "delete-fence",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out",
+      "fence-undo",
+      "fence-members",
+      "cancel-fence"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "13-alarms",
+    "route": "alarms",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "reset-filters",
+      "select-event",
+      "claim",
+      "page-prev",
+      "page-current",
+      "page-next",
+      "map-person",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "14-event",
+    "route": "event/RL-E-0915-001",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "preview-media",
+      "event-materials",
+      "save-draft"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "15-dispatch",
+    "route": "dispatch",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "call-records",
+      "dispatch-tab",
+      "reset-filters",
+      "new-group",
+      "select-group",
+      "start-call",
+      "end-call",
+      "mute-call",
+      "invite-member",
+      "connect-call",
+      "broadcast-preview",
+      "broadcast-records"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "16-sos",
+    "route": "sos",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "sos-join",
+      "sos-end",
+      "call-records",
+      "map-person",
+      "map-reset",
+      "map-zoom-in",
+      "map-zoom-out"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  },
+  {
+    "name": "17-statistics",
+    "route": "statistics",
+    "actions": [
+      "preview-info",
+      "notifications",
+      "user-menu",
+      "export-statistics",
+      "stats-tab"
+    ],
+    "height": 941,
+    "scrollHeight": 941,
+    "scrollWidth": 1672,
+    "unloadedImages": 0,
+    "width": 1672
+  }
+]

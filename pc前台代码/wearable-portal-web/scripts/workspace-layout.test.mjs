@@ -36,17 +36,32 @@ test('workspace has bounded desktop lists and accessible zoom fallback', () => {
 })
 
 test('unselected detail panes do not reserve empty columns', () => {
-  for (const file of ['personnel/PersonnelView.vue', 'alarms/AlarmsView.vue', 'materials/MaterialsView.vue', 'location/FenceView.vue']) {
+  for (const file of ['personnel/PersonnelView.vue', 'materials/MaterialsView.vue', 'location/FenceView.vue']) {
     const source = read('src/views/' + file)
     assert.match(source, /'has-selection': !!selectedId/)
     assert.match(source, /<aside v-if="selectedId"/)
   }
+  assert.doesNotMatch(read('src/views/alarms/AlarmsView.vue'), /<aside/);
+  assert.match(read('src/views/alarms/AlarmsView.vue'), /class="event-table-panel"/)
+  assert.match(read('src/views/alarms/AlarmsView.vue'), /class="event-pagination"/)
+  assert.match(read('src/styles/workspace-layout.scss'), /\.event-workspace > \.event-table-panel/)
+  assert.match(read('src/styles/workspace-layout.scss'), /event-pagination/)
   assert.match(read('src/mock/WorkView.vue'), /v-if="standalone \|\| workId"/)
 })
 
-test('dispatch panels stack independently rather than sharing tall rows', () => {
+test('dispatch panels flow full-width without reserving a short right column', () => {
   const source = read('src/mock/DispatchView.vue')
   assert.equal((source.match(/class="dispatch-columns"/g) || []).length, 1)
   assert.equal((source.match(/class="dispatch-stack"/g) || []).length, 2)
   assert.ok(source.indexOf('最近会话记录') < source.indexOf('当前本地会话'))
+  assert.match(read('src/mock/dispatch.scss'), /\.dispatch-columns \{ display:flex; flex-direction:column/)
+  assert.match(read('src/mock/dispatch.scss'), /\.dispatch-stack \{ display:contents/)
+})
+
+test('single monitor reserves no empty sidebar next to a tall player', () => {
+  const source = read('src/views/video/VideoDetailView.vue')
+  assert.doesNotMatch(source, /class="monitor-sidebar"/)
+  assert.match(source, /\.monitor-layout \{ display:flex; flex-direction:column/)
+  assert.ok(source.indexOf('monitor-card monitor-toolbar') < source.indexOf('class="monitor-stage"'))
+  assert.ok(source.indexOf('class="monitor-stage"') < source.indexOf('monitor-card monitor-resources'))
 })

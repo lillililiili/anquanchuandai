@@ -1,10 +1,11 @@
 <script setup>
+import { alarmLabel } from '@/utils/alarm-contract'
 import { computed, ref, watch } from 'vue'
 import DataState from '@/components/personnel/DataState.vue'
 import EquipmentTriplet from '@/components/personnel/EquipmentTriplet.vue'
 import DeviceProfile from '@/components/equipment/DeviceProfile.vue'
 import VitalSignsPanel from '@/components/personnel/VitalSignsPanel.vue'
-import { phaseLabels, eventTime } from '@/utils/event-contract'
+import { eventTime } from '@/utils/event-contract'
 import { positionReason } from '@/utils/spatial-contract'
 const props = defineProps({ data: { type: Object, required: true }, siteId: String, returnTo: String })
 const personPage = ref(1)
@@ -26,7 +27,7 @@ watch(() => people.value.length, n => { personPage.value = Math.min(personPage.v
     </article><AppPagination v-if="people.length" :current-page="personPage" :page-size="5" :total="people.length" @current-change="personPage = $event" />
   </section>
   <div class="work-related-grid">
-    <section class="work-detail-section"><h3>关联事件 · 独立处置</h3><DataState v-if="data.events.state !== 'AVAILABLE'" :state="data.events.state" :message="data.events.message" compact /><p v-else-if="!data.events.data.length">暂无明确关联的事件。</p><router-link v-for="e in data.events.data || []" :key="e.eventId" class="work-related" :to="{ path: '/alarms/' + e.eventId + '/verification', query: { siteId, returnTo } }"><strong>{{ e.title }}</strong><small>{{ phaseLabels[e.phase] }} · {{ e.eventId }}</small></router-link><p class="work-note">结束监护不会关闭事件，也不解释为风险消除。</p></section>
+    <section class="work-detail-section"><h3>关联告警</h3><DataState v-if="data.events.state !== 'AVAILABLE'" :state="data.events.state" :message="data.events.message" compact /><p v-else-if="!data.events.data.length">暂无明确关联的事件。</p><router-link v-for="e in data.events.data || []" :key="e.eventId" class="work-related" :to="{ path: '/alarms/' + e.eventId, query: { siteId, returnTo } }"><strong>{{ e.title }}</strong><small>{{ alarmLabel(e) }} · {{ e.eventId }}</small></router-link><p class="work-note">结束监护不会关闭事件，也不解释为风险消除。</p></section>
     <section class="work-detail-section"><h3>关联视频 · 点击进入</h3><DataState v-if="data.videos.state !== 'AVAILABLE'" :state="data.videos.state" :message="data.videos.message" compact /><p v-else-if="!data.videos.data.length">没有明确关联的视频设备。</p><router-link v-for="v in data.videos.data || []" :key="v.deviceId" class="work-related" :to="{ path: '/video/' + v.deviceId, query: { siteId, returnTo } }">{{ v.name }}<small>进入后手动播放；本地媒体不是现场直播</small></router-link></section>
     <section class="work-detail-section"><h3>参与人员最近位置</h3><DataState v-if="data.locations.state !== 'AVAILABLE'" :state="data.locations.state" :message="data.locations.message" compact /><p v-else-if="!data.locations.data.length">无可靠人员关联的位置快照，不推定设备佩戴人。</p><router-link v-for="p in data.locations.data || []" :key="p.id" class="work-related" :to="{ path: '/location', query: { siteId, tab: 'live', selectedId: p.id } }">{{ p.name || p.deviceId }}<small>{{ positionReason(p.position) }} · {{ eventTime(p.position?.sourceTime) }}</small></router-link></section>
     <section class="work-detail-section"><h3>作业关联资料</h3><DataState v-if="data.materials.state !== 'AVAILABLE'" :state="data.materials.state" :message="data.materials.message" compact /><p v-else-if="!data.materials.data.length">暂无有证据关联的资料。</p><router-link v-for="m in data.materials.data || []" :key="m.id" class="work-related" :to="{ path: '/materials', query: { siteId, selectedId: m.id } }">{{ m.name }}<small>采集：{{ eventTime(m.capturedAt) }} · 接收：{{ eventTime(m.receivedAt) }}</small></router-link></section>

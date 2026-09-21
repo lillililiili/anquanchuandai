@@ -1,0 +1,286 @@
+/* V5: brighter navy chrome, higher chroma, static glow. Scroll stays in workspace-layout. */
+:root, html.dark {
+  --page-bg: #0c3563;
+  --v3-navy: #0c3563;
+  --panel-bg: #1a4f7c;
+  --input-bg: #16456a;
+  --border: #4d93bc;
+  --border-soft: #3a7398;
+  --text-primary: #f7fbff;
+  --text-secondary: #d2e8f8;
+  --text-muted: #b7d4ea;
+  --cyan: #2eefff;
+  --v3-cyan: #2eefff;
+  --v3-accent: #2eefff;
+  --v3-accent-soft: #2eefff28;
+  --blue: #14c8ff;
+  --selected-bg: #1c638c;
+  --v3-mint: #3ef5c8;
+  --v3-gold: #ffc14d;
+  --v3-violet: #c4a0ff;
+  --v3-panel: linear-gradient(135deg, #1e5a86, #164870);
+  --v3-toolbar: linear-gradient(105deg, #1f5c88, #174b72);
+  --v3-shadow: 0 8px 28px #03284a33, 0 0 24px #14c8ff18, inset 0 1px 0 #9fefff30;
+  --ink: #062a45;
+  --el-color-primary: #14c8ff;
+  --el-color-primary-light-3: #5fd8ff;
+  --el-color-primary-light-5: #8ae4ff;
+  --el-color-primary-light-7: #b3efff;
+  --el-color-primary-light-8: #d0f6ff;
+  --el-color-primary-light-9: #0e4d78;
+  --el-color-primary-dark-2: #0aaee6;
+  --el-bg-color: #1a4f7c;
+  --el-bg-color-overlay: #1d5a8a;
+  --el-bg-color-page: #0c3563;
+  --el-fill-color-blank: #16456a;
+  --el-fill-color-light: #1b5a84;
+  --el-border-color: #4d93bc;
+  --el-border-color-light: #4d93bc;
+  --el-border-color-lighter: #3a7398;
+  --el-text-color-primary: #f7fbff;
+  --el-text-color-regular: #d2e8f8;
+  --el-text-color-secondary: #b7d4ea;
+  --el-text-color-placeholder: #b7d4ea;
+}
+
+.personnel-page, .person-detail-page { --status-online: #3ef5c8; --status-warning: #ffc14d; }
+
+.portal-shell .brand-mark, .login-brand .brand-mark {
+  color: #f7fbff;
+  text-shadow: 0 0 18px #2eefff88, 0 0 4px #9ff7ffaa;
+}
+.portal-shell .platform-title { text-shadow: 0 0 16px #2eefff44; }
+.portal-shell .topbar {
+  background: linear-gradient(100deg, #156394, #0e3d68 58%, #15709e);
+  border-bottom: 1px solid #7eefff88;
+  box-shadow: 0 1px 0 #b8f7ff55, 0 10px 32px #0ad4ff33;
+}
+.portal-shell .sidebar {
+  background: linear-gradient(180deg, #114a78, #0c3560);
+  border-right-color: #4ea3c8;
+}
+.portal-shell .main-content {
+  background:
+    radial-gradient(ellipse at 88% 0, #2eefff3d, transparent 52%),
+    radial-gradient(ellipse at 8% 100%, #14c8ff18, transparent 40%),
+    #0c3563;
+}
+.portal-shell .sidebar-controls { color: #c5e6f8; }
+.portal-shell .nav-link:hover { background-color: #1a5d88; color: #f7fbff; }
+.portal-shell .nav-link.router-link-active {
+  color: var(--ink);
+  background: linear-gradient(95deg, #5af0ff, #14c8ff 55%, #1aa8e6);
+  border-color: #b8f7ff;
+  box-shadow: 0 0 22px #14c8ff66, inset 0 1px 0 #ffffff55;
+}
+.portal-shell .nav-link.router-link-active .el-icon { color: var(--ink); }
+.portal-shell .nav-link.router-link-active::before {
+  background: #fff;
+  box-shadow: 0 0 12px #fff8;
+}
+.portal-shell .topbar-actions > .sidebar-note {
+  border-color: #7eefff88;
+  color: #e7f8ff;
+  background: #1c638c;
+  box-shadow: 0 0 12px #14c8ff22;
+}
+.portal-shell .station-select.portal-select {
+  background: #164870;
+  border-color: #6ec8ee;
+  color: #eef8ff;
+}
+.portal-shell[data-workspace='/personnel'] { --v3-accent: #3ef5c8; --v3-accent-soft: #3ef5c828; }
+.portal-shell[data-workspace='/supervision'] { --v3-accent: #c4a0ff; --v3-accent-soft: #c4a0ff28; }
+.portal-shell[data-workspace='/alarms'] { --v3-accent: #ffc14d; --v3-accent-soft: #ffc14d28; }
+.portal-shell[data-workspace='/dispatch'] { --v3-accent: #8eb6ff; --v3-accent-soft: #8eb6ff28; }
+.portal-shell[data-workspace='/materials'] { --v3-accent: #5de4ff; --v3-accent-soft: #5de4ff28; }
+
+.portal-shell .workspace-navigation > a {
+  background: #17547e;
+  border-color: #5aa8cc;
+  color: #d8eefc;
+}
+.portal-shell .workspace-navigation > a[aria-current] {
+  background: var(--v3-accent-soft);
+  border-color: var(--v3-accent);
+  color: #f7fbff;
+  box-shadow: inset 0 -2px 0 var(--v3-accent), 0 0 14px #14c8ff33;
+}
+
+.el-button--primary {
+  --el-button-bg-color: #14c8ff;
+  --el-button-border-color: #8ef3ff;
+  --el-button-text-color: #062a45;
+  --el-button-hover-bg-color: #5af0ff;
+  --el-button-hover-border-color: #c4fbff;
+  --el-button-hover-text-color: #062a45;
+  --el-button-active-bg-color: #0bb8ef;
+  --el-button-active-text-color: #062a45;
+  --el-button-disabled-text-color: #062a45aa;
+}
+.portal-shell :is(.event-button.primary, .dispatch-button.primary, .el-button--primary),
+.el-dialog :is(.event-button.primary, .el-button--primary),
+.el-message-box .el-button--primary {
+  background: linear-gradient(115deg, #5af0ff, #14c8ff 58%, #12b0ea);
+  border-color: #b8f7ff;
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 0 18px #14c8ff55, inset 0 1px 0 #ffffff66;
+  &:hover:not(:disabled) {
+    background: linear-gradient(115deg, #7af5ff, #3ed8ff);
+    color: var(--ink);
+    box-shadow: 0 0 24px #2eefff77;
+  }
+}
+.portal-shell :is(.event-button, .video-button, .dispatch-button, .el-button):hover:not(:disabled),
+.el-dialog :is(.event-button, .video-button, .dispatch-button):hover:not(:disabled) {
+  border-color: #8eeeff;
+  background-color: #1c638c;
+}
+.skip-link, .primary-link {
+  background: linear-gradient(115deg, #5af0ff, #14c8ff);
+  color: var(--ink);
+  box-shadow: 0 0 16px #14c8ff55;
+}
+
+.route-surface :is(.personnel-page-heading, .equipment-heading, .s2-heading, .video-heading, .event-heading, .work-heading, .dispatch-heading, .statistics > header) {
+  background: linear-gradient(100deg, #2eefff33, transparent 80%);
+  box-shadow: inset 3px 0 12px #2eefff22;
+}
+.route-surface :is(.personnel-filters, .equipment-filters, .event-filters, .s2-filterbar, .work-filters, .video-toolbar, .stats-filter) {
+  background: var(--v3-toolbar);
+  border-color: #5aa8cc;
+  box-shadow: inset 0 1px 0 #9fefff33;
+}
+.route-surface :is(.personnel-table-panel, .equipment-table-wrap, .event-table-panel, .s2-panel, .work-panel, .dispatch-panel, .stats-panel, .video-device-panel) {
+  box-shadow: var(--v3-shadow);
+  border-color: #5aa8cc;
+}
+.route-surface :is(.people-table, .equipment-table, .event-table, .work-table) {
+  th { background: #1d5f90; color: #e7f6ff; }
+  td { border-bottom-color: #3d7aa0; }
+  tbody tr:nth-child(even) { background: #2eefff12; }
+  tbody tr:hover { background: #2eefff24; }
+  tbody tr.selected { background: #1c7aa8; box-shadow: inset 3px 0 #2eefff; }
+}
+.route-surface .portal-pagination {
+  background: #164870;
+  border-top-color: #4d93bc;
+}
+.portal-pagination .el-pager li.is-active,
+.el-pagination.is-background .el-pager li.is-active {
+  background: #14c8ff;
+  color: var(--ink);
+  border-color: #b8f7ff;
+  box-shadow: 0 0 14px #14c8ff66;
+  font-weight: 700;
+}
+
+.workbench > .workbench-note {
+  background: #1a5c88;
+  border-left-color: #5af0ff;
+  color: #e7f6ff;
+}
+.workbench .command-hero {
+  background: #1a5f8c;
+  border-color: #6ec8ee;
+  box-shadow: 0 14px 40px #04162b44, 0 0 36px #14c8ff22;
+}
+.workbench .command-hero figure { background: #1a5f8c; }
+.workbench .command-hero figure::before {
+  background: linear-gradient(90deg, #0a3d72e8 0%, #0e4a7ab8 28%, #1568a044 58%, transparent 100%);
+}
+.workbench .command-hero-copy h2 span {
+  color: #3ef5c8;
+  text-shadow: 0 0 18px #3ef5c866;
+}
+.workbench .command-hero-copy > a {
+  background: linear-gradient(115deg, #5af0ff, #14c8ff);
+  color: var(--ink);
+  border-color: #c4fbff;
+  box-shadow: 0 0 22px #14c8ff66;
+}
+.workbench .workbench-metrics button {
+  background: linear-gradient(120deg, #1c628f, #164870);
+  border-color: #5aa8cc;
+  box-shadow: inset 0 3px 0 var(--metric-accent), 0 0 20px color-mix(in srgb, var(--metric-accent) 28%, transparent);
+}
+.workbench .workbench-metrics button[data-tone='equipment'] { background: linear-gradient(120deg, #157a72, #14556a); }
+.workbench .workbench-metrics button[data-tone='open'] { background: linear-gradient(120deg, #7a5a28, #2a4a68); }
+.workbench .workbench-metrics button[data-tone='mine'] { background: linear-gradient(120deg, #4a4a88, #243e6a); }
+.workbench .workbench-metrics strong { text-shadow: 0 0 18px color-mix(in srgb, var(--metric-accent) 55%, transparent); }
+.workbench .workbench-panel { background: var(--v3-panel); border-color: #5aa8cc; }
+.workbench .workbench-event > span { background: #1c7aa8; color: #d9f8ff; }
+.workbench .workbench-shortcuts a { background: #1c638c; border-color: #6ec8ee; color: #d9f8ff; }
+
+.scene-card {
+  border-color: #6ec8ee;
+  background: #1a5f8c;
+  box-shadow: 0 0 18px #14c8ff18;
+}
+.login-page {
+  background-image:
+    linear-gradient(90deg, #083a6a33, #0a3d6640 45%, #0c3d72d0 100%),
+    url('/images/showcase/hero.webp');
+}
+.login-card {
+  border-color: #7eefff99;
+  background: linear-gradient(140deg, #1c5d8af5, #143e68f5);
+  box-shadow: 0 24px 70px #00152e66, 0 0 40px #14c8ff28, inset 0 1px 0 #9ff7ff66;
+}
+.login-card::before { background: linear-gradient(90deg, #5af0ff, #c4a0ff, transparent); }
+.login-card .login-submit {
+  background: linear-gradient(105deg, #5af0ff, #14c8ff 55%, #12b0ea);
+  border-color: #c4fbff;
+  color: var(--ink);
+  box-shadow: 0 0 22px #14c8ff66;
+}
+.login-card .el-input__wrapper { background: #143e68; box-shadow: 0 0 0 1px #5aa8cc inset; }
+.login-kicker, .login-card-caption { text-shadow: 0 0 12px #2eefff66; }
+
+.route-surface .person-avatar {
+  background: linear-gradient(135deg, #3ef5c8, #14c8ff);
+  border-color: #b8f7ff;
+  color: var(--ink);
+  box-shadow: 0 0 16px #14c8ff44;
+}
+.route-surface :is(.s2-map-caption, .s2-map-layers, .s2-map-tools, .s2-map-legend) {
+  background: #0e3d66ed;
+  border-color: #6ec8ee;
+}
+.route-surface .s2-map { border-color: #5aa8cc; background-color: #0e3a62; }
+.route-surface .s2-list-row.selected { background: linear-gradient(90deg, #2eefff33, #164870); }
+.route-surface .s2-tabs { background: #0e3a62; border-color: #4d93bc; }
+.route-surface .s2-tabs button.active {
+  background: #1c7aa8;
+  color: #e7fbff;
+  box-shadow: inset 0 -2px 0 #5af0ff, 0 0 12px #14c8ff33;
+}
+.route-surface .s2-position-card { border-color: #5af0ff; background: #143e68f5; box-shadow: 0 0 22px #14c8ff33; }
+.route-surface .video-slot.is-selected { border-color: #5af0ff; box-shadow: 0 0 0 1px #5af0ff88, 0 0 18px #14c8ff44; }
+.route-surface .video-device-tab[aria-pressed='true'] {
+  background: #1c7aa8;
+  box-shadow: inset 0 2px 0 #5af0ff, 0 0 12px #14c8ff33;
+}
+.route-surface .stats-metric strong { color: #d9f8ff; text-shadow: 0 0 16px #14c8ff55; }
+.route-surface .stat-chart .bar-track i { background: linear-gradient(90deg, #14c8ff, #3ef5c8); }
+.route-surface .event-statistics dd { color: #ffc14d; text-shadow: 0 0 14px #ffc14d55; }
+
+.el-overlay-dialog .el-dialog, .el-message-box {
+  border-color: #6ec8ee;
+  background: linear-gradient(145deg, #1a5482, #123c64);
+  box-shadow: 0 28px 90px #0008, 0 0 40px #14c8ff22;
+}
+.el-overlay-dialog .el-dialog__header {
+  background: linear-gradient(100deg, #1f6796, #164870);
+  border-bottom-color: #4d93bc;
+}
+.error-page { background: radial-gradient(ellipse at 50% 35%, #1b5a88, #0c3563 70%); }
+.error-page .error-code { color: #5af0ff; text-shadow: 0 0 40px #14c8ff66; }
+
+@media (max-width: 600px) {
+  .workbench .command-hero figure::before { background: linear-gradient(90deg, #0a3d72ec, #1568a099); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-shell .nav-link, .workbench .workbench-metrics button, .scene-card img { transition: none; }
+}

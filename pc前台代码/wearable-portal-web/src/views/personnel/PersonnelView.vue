@@ -35,6 +35,9 @@ async function reload() {
 }
 watch(() => route.query, () => { for (const key of Object.keys(filters)) filters[key] = query.value[key] || '' }, { immediate: true })
 watch([listKey, () => context.state], () => { if (context.state === 'READY') reload(); else { list.clear(); detail.clear() } }, { immediate: true })
+watch(() => list.data, data => {
+  if (data?.state === 'AVAILABLE' && !selectedId.value && data.items.length) selectPerson(data.items[0].personId)
+})
 watch([selectedId, () => list.data], () => {
   detail.clear()
   if (selectedId.value && list.data?.items.some(p => p.personId === selectedId.value)) detail.run(signal => getPerson(selectedId.value, siteId.value, signal))

@@ -1,0 +1,215 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - banner [ref=f5e3]:
+      - link [ref=f5e4] [cursor=pointer]:
+        - /url: "#/overview"
+        - img "ROLLING" [ref=f5e5]
+      - strong [ref=f5e7]: 融瓴智能穿戴安全监护平台
+      - generic [ref=f5e8]:
+        - generic [aria-hidden] [ref=f5e9]: 
+        - combobox "选择厂站" [ref=f5e10] [cursor=pointer]:
+          - option "临江示范电厂" [selected]
+          - option "北江示范电厂"
+        - button "设计预览" [ref=f5e12] [cursor=pointer]
+        - button "3" [ref=f5e13] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e14]: 
+        - button "值守员" [ref=f5e16] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e17]: 
+          - text: 值守员
+          - generic [aria-hidden] [ref=f5e18]: 
+        - time [ref=f5e19]: 2026-09-15 10:42
+    - complementary [ref=f5e20]:
+      - navigation [ref=f5e21]:
+        - link "综合总览" [ref=f5e22] [cursor=pointer]:
+          - /url: "#/overview"
+          - generic [aria-hidden] [ref=f5e23]: 
+        - link "人员与装备" [ref=f5e25] [cursor=pointer]:
+          - /url: "#/personnel"
+          - generic [aria-hidden] [ref=f5e26]: 
+        - link "作业监护" [ref=f5e28] [cursor=pointer]:
+          - /url: "#/works"
+          - generic [aria-hidden] [ref=f5e29]: 
+        - link "视频监看" [ref=f5e31] [cursor=pointer]:
+          - /url: "#/video"
+          - generic [aria-hidden] [ref=f5e32]: 
+        - link "调度通信" [ref=f5e34] [cursor=pointer]:
+          - /url: "#/dispatch"
+          - generic [aria-hidden] [ref=f5e35]: 
+        - link "定位与轨迹" [ref=f5e37] [cursor=pointer]:
+          - /url: "#/location"
+          - generic [aria-hidden] [ref=f5e38]: 
+        - link "告警与核验" [ref=f5e40] [cursor=pointer]:
+          - /url: "#/alarms"
+          - generic [aria-hidden] [ref=f5e41]: 
+        - link "现场资料" [ref=f5e43] [cursor=pointer]:
+          - /url: "#/materials"
+          - generic [aria-hidden] [ref=f5e44]: 
+        - link "统计追溯" [ref=f5e46] [cursor=pointer]:
+          - /url: "#/statistics"
+          - generic [aria-hidden] [ref=f5e47]: 
+      - generic [ref=f5e49]:
+        - link "管理中心" [ref=f5e50] [cursor=pointer]:
+          - /url: "#/admin"
+          - generic [aria-hidden] [ref=f5e51]: 
+          - text: 管理中心
+        - generic [ref=f5e52]: 设计预览 · 示例数据
+    - main [ref=f5e53]:
+      - generic [ref=f5e54]:
+        - generic [ref=f5e55]:
+          - heading "现场视频墙" [level=1] [ref=f5e56]
+          - paragraph [ref=f5e57]: 来自安全帽的第一视角，支持多路视频同步查看
+        - generic [ref=f5e59]:
+          - generic [ref=f5e60]:
+            - generic [aria-hidden] [ref=f5e61]: 
+            - generic [ref=f5e62]:
+              - generic [ref=f5e63]: 帽机设备总数
+              - strong [ref=f5e64]: "8"
+          - generic [ref=f5e65]:
+            - generic [aria-hidden] [ref=f5e66]: 
+            - generic [ref=f5e67]:
+              - generic [ref=f5e68]: 视频可用
+              - strong [ref=f5e69]: "6"
+          - generic [ref=f5e70]:
+            - generic [aria-hidden] [ref=f5e71]: 
+            - generic [ref=f5e72]:
+              - generic [ref=f5e73]: 回传中断
+              - strong [ref=f5e74]: "1"
+          - generic [ref=f5e75]:
+            - generic [aria-hidden] [ref=f5e76]: 
+            - generic [ref=f5e77]:
+              - generic [ref=f5e78]: 未开启
+              - strong [ref=f5e79]: "1"
+      - generic [ref=f5e80]:
+        - generic [ref=f5e81]:
+          - text: 布局切换：
+          - button "1+7" [ref=f5e82] [cursor=pointer]
+          - button "2×4" [ref=f5e83] [cursor=pointer]
+          - button "3×3" [ref=f5e84] [cursor=pointer]
+        - generic [ref=f5e85]:
+          - generic [ref=f5e86]:
+            - generic [ref=f5e87]: 厂区区域
+            - combobox "厂区区域" [ref=f5e88] [cursor=pointer]:
+              - option "全部区域" [selected]
+              - option "锅炉区"
+              - option "汽机厂房"
+              - option "配电区"
+              - option "循环水区"
+          - generic [ref=f5e89]:
+            - generic [ref=f5e90]: 作业筛选
+            - combobox "作业筛选" [ref=f5e91] [cursor=pointer]:
+              - option "全部作业" [selected]
+              - option "锅炉平台检修"
+              - option "汽机设备巡检"
+              - option "配电区检查"
+          - button "筛选" [ref=f5e92] [cursor=pointer]
+        - text: 轮播控制：
+        - button "rotation" [ref=f5e93] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e94]: 
+        - generic [ref=f5e95]: 30秒 / 已暂停
+      - generic [ref=f5e96]:
+        - generic [ref=f5e97]:
+          - img "锅炉区第一人称现场画面" [ref=f5e98]
+          - generic [ref=f5e99]: 示例画面 · 非实时
+          - generic [ref=f5e100]:
+            - text: 陈建国 RL-H001
+            - generic [ref=f5e101]: 锅炉区 · 锅炉平台检修
+          - generic [ref=f5e102]: 2026-09-15 10:42:18
+        - generic [ref=f5e103]:
+          - heading "当前选中设备" [level=2] [ref=f5e105]
+          - generic [ref=f5e106]:
+            - generic [ref=f5e107]:
+              - generic [ref=f5e108]: 陈
+              - heading "陈建国 RL-H001" [level=3] [ref=f5e109]
+              - generic [ref=f5e110]: 在岗
+            - generic [ref=f5e112]:
+              - term [ref=f5e113]: 所属区域
+              - definition [ref=f5e114]: 锅炉区
+              - term [ref=f5e115]: 关联作业
+              - definition [ref=f5e116]: 锅炉平台检修
+              - term [ref=f5e117]: 监护人
+              - definition [ref=f5e118]: 周明
+              - term [ref=f5e119]: 工作负责人
+              - definition [ref=f5e120]: 李志远
+            - generic [ref=f5e121]:
+              - heading "穿戴设备状态" [level=3] [ref=f5e122]
+              - generic [ref=f5e123]:
+                - generic [ref=f5e124]:
+                  - img "智能安全帽" [ref=f5e125]
+                  - generic [ref=f5e126]:
+                    - generic [ref=f5e127]: RL-H001
+                    - generic [ref=f5e128]: 在线
+                - generic [ref=f5e130]:
+                  - img "智能安全带" [ref=f5e131]
+                  - generic [ref=f5e132]:
+                    - generic [ref=f5e133]: RL-B001
+                    - generic [ref=f5e134]: 连接中断
+                - generic [ref=f5e136]:
+                  - img "智能手表" [ref=f5e137]
+                  - generic [ref=f5e138]:
+                    - generic [ref=f5e139]: RL-W001
+                    - generic [ref=f5e140]: 在线
+            - generic [ref=f5e142]:
+              - button "声音" [ref=f5e143] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e144]: 
+                - text: 声音
+              - button "全屏" [ref=f5e145] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f5e146]: 
+                - text: 全屏
+              - link "查看轨迹" [ref=f5e147] [cursor=pointer]:
+                - /url: "#/tracks/P1"
+              - link "单路查看" [ref=f5e148] [cursor=pointer]:
+                - /url: "#/single/P1"
+      - heading "全部视频（8）" [level=3] [ref=f5e149]
+      - generic [ref=f5e150]:
+        - button "锅炉区第一人称现场画面 示例画面 · 非实时 陈建国 RL-H001 锅炉区" [ref=f5e151] [cursor=pointer]:
+          - generic [ref=f5e152]:
+            - img "锅炉区第一人称现场画面" [ref=f5e153]
+            - generic [ref=f5e154]: 示例画面 · 非实时
+          - strong [ref=f5e155]: 陈建国 RL-H001
+          - text: 锅炉区
+        - button "锅炉区第一人称现场画面 示例画面 · 非实时 李志远 RL-H002 锅炉区" [ref=f5e156] [cursor=pointer]:
+          - generic [ref=f5e157]:
+            - img "锅炉区第一人称现场画面" [ref=f5e158]
+            - generic [ref=f5e159]: 示例画面 · 非实时
+          - strong [ref=f5e160]: 李志远 RL-H002
+          - text: 锅炉区
+        - button "锅炉区第一人称现场画面 示例画面 · 非实时 周明 RL-H003 锅炉区" [ref=f5e161] [cursor=pointer]:
+          - generic [ref=f5e162]:
+            - img "锅炉区第一人称现场画面" [ref=f5e163]
+            - generic [ref=f5e164]: 示例画面 · 非实时
+          - strong [ref=f5e165]: 周明 RL-H003
+          - text: 锅炉区
+        - button "汽机厂房第一人称现场画面 回传中断 示例画面 · 非实时 王海峰 RL-H004 汽机厂房" [ref=f5e166] [cursor=pointer]:
+          - generic [ref=f5e167]:
+            - img "汽机厂房第一人称现场画面" [ref=f5e168]
+            - strong [ref=f5e170]: 回传中断
+            - generic [ref=f5e171]: 示例画面 · 非实时
+          - strong [ref=f5e172]: 王海峰 RL-H004
+          - text: 汽机厂房
+        - button "汽机厂房第一人称现场画面 示例画面 · 非实时 赵晓东 RL-H005 汽机厂房" [ref=f5e173] [cursor=pointer]:
+          - generic [ref=f5e174]:
+            - img "汽机厂房第一人称现场画面" [ref=f5e175]
+            - generic [ref=f5e176]: 示例画面 · 非实时
+          - strong [ref=f5e177]: 赵晓东 RL-H005
+          - text: 汽机厂房
+        - button "配电区第一人称现场画面 示例画面 · 非实时 刘洋 RL-H006 配电区" [ref=f5e178] [cursor=pointer]:
+          - generic [ref=f5e179]:
+            - img "配电区第一人称现场画面" [ref=f5e180]
+            - generic [ref=f5e181]: 示例画面 · 非实时
+          - strong [ref=f5e182]: 刘洋 RL-H006
+          - text: 配电区
+        - button "配电区第一人称现场画面 视频未开启 示例画面 · 非实时 孙伟 RL-H007 配电区" [ref=f5e183] [cursor=pointer]:
+          - generic [ref=f5e184]:
+            - img "配电区第一人称现场画面" [ref=f5e185]
+            - strong [ref=f5e187]: 视频未开启
+            - generic [ref=f5e188]: 示例画面 · 非实时
+          - strong [ref=f5e189]: 孙伟 RL-H007
+          - text: 配电区
+        - button "循环水区第一人称现场画面 示例画面 · 非实时 何平 RL-H008 循环水区" [ref=f5e190] [cursor=pointer]:
+          - generic [ref=f5e191]:
+            - img "循环水区第一人称现场画面" [ref=f5e192]
+            - generic [ref=f5e193]: 示例画面 · 非实时
+          - strong [ref=f5e194]: 何平 RL-H008
+          - text: 循环水区
+    - generic: 设计预览 · 示例数据
+  - status

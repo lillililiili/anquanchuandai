@@ -3,6 +3,8 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandMark from '@/components/BrandMark.vue'
 import AppIcon from '@/components/AppIcon.vue'
+import LoginAurora from '@/components/LoginAurora.vue'
+import HudFrame from '@/components/HudFrame.vue'
 import { getCaptcha } from '@/api/auth'
 import { useUserStore } from '@/store/user'
 import { safeRedirect } from '@/router'
@@ -76,6 +78,7 @@ onMounted(refreshCaptcha)
 
 <template>
   <main class="login-page">
+    <LoginAurora />
     <header class="login-brand"><BrandMark /></header>
     <section class="login-intro" aria-label="平台介绍">
       <span class="login-kicker">智能穿戴 · 现场安全协同</span>
@@ -83,7 +86,7 @@ onMounted(refreshCaptcha)
       <p>让每一份守护，<br />看得见，连得起。</p>
       <div class="login-domains"><span>人员感知</span><span>装备协同</span><span>作业监护</span></div>
     </section>
-    <section class="login-card" aria-labelledby="login-heading">
+    <HudFrame tag="section" class="login-card" aria-labelledby="login-heading">
       <div class="login-card-caption"><AppIcon name="Lock" :size="20" /><span>账号登录 / SIGN IN</span></div>
       <h2 id="login-heading">工作账号登录</h2>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large" :disabled="submitting" @submit.prevent="submit">
@@ -98,7 +101,7 @@ onMounted(refreshCaptcha)
         <el-button class="login-submit" type="primary" native-type="submit" :loading="submitting" :disabled="!captchaReady || captchaLoading">{{ submitting ? '正在登录…' : '登录' }}</el-button>
       </el-form>
       <p class="login-note">请使用工作账号登录</p>
-    </section>
+    </HudFrame>
     <footer class="login-footer"><p>为电力行业现场作业安全保驾护航</p><span>更安全 · 更高效 · 更可持续</span><small>背景为概念视觉，不代表真实现场</small></footer>
   </main>
 </template>

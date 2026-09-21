@@ -17,6 +17,8 @@ import './styles/v3-samples.scss'
 import './styles/v3-workspaces.scss'
 import './styles/workspace-layout.scss'
 import './styles/v4-vivid.scss'
+import './styles/v5-luminous.scss'
+import './styles/v6-chromatic.scss'
 
 const app = createApp(App)
 app.component('AppPagination', AppPagination)
