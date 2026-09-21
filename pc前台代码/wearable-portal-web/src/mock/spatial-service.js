@@ -56,9 +56,16 @@ export function spatialCommand(dataset, role, action, input, validatedFile) {
     if (old && !dataset.relations.fenceVersions.some(v => v.id === old.id)) dataset.relations.fenceVersions.push({ ...clone(old), action: 'SEED', recordedAt: null })
     let next = { ...clone(old), id: old?.id || 'mock-fence-' + input.operationId, siteId: input.siteId, version: (old?.version || 0) + 1, sourceTime: now, effectiveAt: null, source: 'MOCK_MANUAL' }
     if (action === 'fence-save') {
-      if (!input.name?.trim() || input.name.length > 100 || !['DENY_ENTRY', 'DENY_EXIT'].includes(input.ruleType) || !['ALL', 'HELMET', 'BELT', 'WATCH'].includes(input.appliesTo)) throw failure(400, '请填写名称、禁入/禁出规则及适用对象')
+      if (!input.name?.trim() || input.name.length > 100 || !['ALL', 'HELMET', 'BELT', 'WATCH'].includes(input.appliesTo)) throw failure(400, '请填写名称及设备类型')
+      const ruleType = input.ruleType ?? old?.ruleType ?? null
+      if (ruleType !== null && !['DENY_ENTRY', 'DENY_EXIT'].includes(ruleType)) throw failure(400, '无效的告警条件')
+      const teamId = input.teamId ?? old?.teamId ?? null
+      const team = e.teams.find(t => t.teamId === teamId && t.siteId === input.siteId)
+      if (teamId !== null && teamId !== 'ALL' && !team) throw failure(400, '班组不存在或不属于当前厂站')
+      next.teamId = teamId
+      next.teamName = team?.name || null
       try { next.ring = normalizeRing(input.ring) } catch (err) { throw failure(400, err.message) }
-      next = { ...next, name: input.name.trim(), coordinateSystem: 'WGS84', ruleType: input.ruleType, appliesTo: input.appliesTo, rule: (input.ruleType === 'DENY_ENTRY' ? '禁入' : '禁出') + ' · ' + input.appliesTo + '（人工本地规则，非真实违规判断）', status: old?.status || 'DISABLED' }
+      next = { ...next, name: input.name.trim(), coordinateSystem: 'WGS84', ruleType, appliesTo: input.appliesTo, rule: ruleType ? (ruleType === 'DENY_ENTRY' ? '禁入' : '禁出') + ' · ' + input.appliesTo + '（人工本地规则，非真实违规判断）' : null, status: old?.status || 'DISABLED' }
     } else if (action === 'fence-toggle') next.status = old.status === 'ENABLED' ? 'DISABLED' : 'ENABLED'
     else if (action !== 'fence-delete') throw failure(400, '未知围栏操作')
     e.fences = e.fences.filter(i => i.id !== next.id)

@@ -105,10 +105,14 @@ export function queryDataset(dataset, role, path, q = {}) {
   }
   if (parts[0] === 'fences' || parts[0] === 'materials') {
     const kind = parts[0]
-    validateQuery(q, parts.length === 2 ? ['siteId'] : kind === 'fences' ? ['siteId', 'keyword', 'status', 'pageNum', 'pageSize'] : ['siteId', 'keyword', 'type', 'deviceId', 'personId', 'from', 'to', 'pageNum', 'pageSize'])
+    validateQuery(q, parts.length === 2 ? ['siteId'] : kind === 'fences' ? ['siteId', 'keyword', 'status', 'teamId', 'pageNum', 'pageSize'] : ['siteId', 'keyword', 'type', 'deviceId', 'personId', 'from', 'to', 'pageNum', 'pageSize'])
     if (q.status && !['ENABLED', 'DISABLED', 'UNKNOWN'].includes(q.status) || q.type && !['PHOTO', 'VIDEO', 'AUDIO'].includes(q.type)) throw failure(400, '筛选值无效')
     for (const [field, key, id] of [['deviceId', 'devices', 'deviceId'], ['personId', 'people', 'personId']]) if (q[field]) find(key, q[field], id)
-    if (parts.length === 1) return page(filter(scoped(kind), q, 'capturedAt'))
+    if (kind === 'fences' && q.teamId && !['ALL', 'UNKNOWN'].includes(q.teamId) && !e.teams.some(t => t.siteId === q.siteId && t.teamId === q.teamId)) throw failure(400, '班组筛选不可用')
+    if (parts.length === 1) {
+      const rows = kind === 'fences' && q.teamId ? scoped(kind).filter(f => q.teamId === 'UNKNOWN' ? !f.teamId : f.teamId === q.teamId || q.teamId !== 'ALL' && f.teamId === 'ALL') : scoped(kind)
+      return page(filter(rows, kind === 'fences' ? { ...q, teamId: undefined } : q, 'capturedAt'))
+    }
     if (parts.length === 2) { if (mode === 'not-integrated') throw failure(503, '该模块本地场景为未接入', 'SOURCE_NOT_INTEGRATED'); if (mode === 'forbidden') throw failure(403, '本地详情无权限'); return object }
   }
   if (parts[0] === 'video-sources') {

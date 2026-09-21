@@ -19,7 +19,7 @@ export function positionReason(p) {
 }
 export function s2Query(kind, query = {}) {
   const q = {}
-  const keys = ['siteId', ...(kind === 'live' ? ['selectedId'] : kind === 'tracks' ? ['deviceId', 'personId'] : kind === 'fences' ? ['selectedId'] : ['deviceId', 'personId', 'selectedId'])]
+  const keys = ['siteId', ...(kind === 'live' ? ['selectedId'] : kind === 'tracks' ? ['deviceId', 'personId'] : kind === 'fences' ? ['selectedId', 'teamId'] : ['deviceId', 'personId', 'selectedId'])]
   for (const k of keys) if (typeof query[k] === 'string' && personIdPattern.test(query[k])) q[k] = query[k]
   if (kind !== 'tracks') {
     if (typeof query.keyword === 'string' && query.keyword.trim()) q.keyword = query.keyword.trim().slice(0, 100)

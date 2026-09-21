@@ -1,0 +1,212 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - banner [ref=f7e217]:
+      - link [ref=f7e218] [cursor=pointer]:
+        - /url: "#/overview"
+        - img "ROLLING" [ref=f7e219]
+      - strong [ref=f7e221]: 融瓴智能穿戴安全监护平台
+      - generic [ref=f7e222]:
+        - generic [aria-hidden] [ref=f7e223]: 
+        - combobox "选择厂站" [ref=f7e224] [cursor=pointer]:
+          - option "临江示范电厂" [selected]
+          - option "北江示范电厂"
+        - button "设计预览" [ref=f7e226] [cursor=pointer]
+        - button "3" [ref=f7e227] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f7e228]: 
+        - button "值守员" [ref=f7e230] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f7e231]: 
+          - text: 值守员
+          - generic [aria-hidden] [ref=f7e232]: 
+        - time [ref=f7e233]: 2026-09-15 10:42
+    - complementary [ref=f7e234]:
+      - navigation [ref=f7e235]:
+        - link "综合总览" [ref=f7e236] [cursor=pointer]:
+          - /url: "#/overview"
+          - generic [aria-hidden] [ref=f7e237]: 
+        - link "人员与装备" [ref=f7e239] [cursor=pointer]:
+          - /url: "#/personnel"
+          - generic [aria-hidden] [ref=f7e240]: 
+        - link "作业监护" [ref=f7e242] [cursor=pointer]:
+          - /url: "#/works"
+          - generic [aria-hidden] [ref=f7e243]: 
+        - link "视频监看" [ref=f7e245] [cursor=pointer]:
+          - /url: "#/video"
+          - generic [aria-hidden] [ref=f7e246]: 
+        - link "调度通信" [ref=f7e248] [cursor=pointer]:
+          - /url: "#/dispatch"
+          - generic [aria-hidden] [ref=f7e249]: 
+        - link "定位与轨迹" [ref=f7e251] [cursor=pointer]:
+          - /url: "#/location"
+          - generic [aria-hidden] [ref=f7e252]: 
+        - link "告警与核验" [ref=f7e254] [cursor=pointer]:
+          - /url: "#/alarms"
+          - generic [aria-hidden] [ref=f7e255]: 
+        - link "现场资料" [ref=f7e257] [cursor=pointer]:
+          - /url: "#/materials"
+          - generic [aria-hidden] [ref=f7e258]: 
+        - link "统计追溯" [ref=f7e260] [cursor=pointer]:
+          - /url: "#/statistics"
+          - generic [aria-hidden] [ref=f7e261]: 
+      - generic [ref=f7e263]:
+        - link "管理中心" [ref=f7e264] [cursor=pointer]:
+          - /url: "#/admin"
+          - generic [aria-hidden] [ref=f7e265]: 
+          - text: 管理中心
+        - generic [ref=f7e266]: 设计预览 · 示例数据
+    - main [ref=f7e267]:
+      - generic [ref=f7e268]:
+        - generic [ref=f7e269]:
+          - heading "人员联络、协助分组与广播" [level=1] [ref=f7e270]
+          - paragraph [ref=f7e271]: 调度通信 / 调度台
+        - generic [ref=f7e272]:
+          - button "通信记录" [ref=f7e273] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f7e274]: 
+            - text: 通信记录
+          - link "SOS协同" [ref=f7e275] [cursor=pointer]:
+            - /url: "#/sos"
+            - generic [aria-hidden] [ref=f7e276]: 
+            - text: SOS协同
+      - generic [ref=f7e277]:
+        - generic [ref=f7e278]:
+          - heading "人员与分组" [level=2] [ref=f7e280]
+          - generic [ref=f7e281]:
+            - generic [ref=f7e282]:
+              - button "人员" [ref=f7e283] [cursor=pointer]
+              - button "协助分组" [ref=f7e284] [cursor=pointer]
+            - generic [ref=f7e285]:
+              - generic [ref=f7e286]:
+                - generic [aria-hidden] [ref=f7e287]: 
+                - textbox "姓名 / 安全帽编号" [ref=f7e288]
+              - text:  
+            - generic [ref=f7e289]:
+              - generic [ref=f7e290]: 协助分组
+              - button "新建分组" [ref=f7e291] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f7e292]: 
+                - text: 新建分组
+            - generic [ref=f7e293] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e294]: 
+              - text: 锅炉检修协助组
+              - generic [ref=f7e295]: 3 人
+            - generic [ref=f7e296] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e297]: 
+              - text: 汽机巡检协助组
+              - generic [ref=f7e298]: 2 人
+            - generic [ref=f7e299] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e300]: 
+              - text: 配电检查协助组
+              - generic [ref=f7e301]: 2 人
+            - button "编辑分组成员" [ref=f7e303] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f7e304]: 
+              - text: 编辑分组成员
+            - generic [ref=f7e305]:
+              - generic [ref=f7e306]: 人员（8人）
+              - generic [ref=f7e307]:
+                - checkbox "全选" [ref=f7e308] [cursor=pointer]
+                - text: 全选
+            - generic [ref=f7e309]:
+              - generic [ref=f7e310]:
+                - checkbox "陈 陈建国 RL-H001 在线" [checked] [ref=f7e311] [cursor=pointer]
+                - generic [ref=f7e312]: 陈
+                - generic [ref=f7e313]:
+                  - text: 陈建国
+                  - generic [ref=f7e314]: RL-H001
+                - generic [ref=f7e315]: 在线
+              - generic [ref=f7e317]:
+                - checkbox "李 李志远 RL-H002 在线" [checked] [ref=f7e318] [cursor=pointer]
+                - generic [ref=f7e319]: 李
+                - generic [ref=f7e320]:
+                  - text: 李志远
+                  - generic [ref=f7e321]: RL-H002
+                - generic [ref=f7e322]: 在线
+              - generic [ref=f7e324]:
+                - checkbox "周 周明 RL-H003 在线" [checked] [ref=f7e325] [cursor=pointer]
+                - generic [ref=f7e326]: 周
+                - generic [ref=f7e327]:
+                  - text: 周明
+                  - generic [ref=f7e328]: RL-H003
+                - generic [ref=f7e329]: 在线
+              - generic [ref=f7e331]:
+                - checkbox "王 王海峰 RL-H004 在线" [ref=f7e332] [cursor=pointer]
+                - generic [ref=f7e333]: 王
+                - generic [ref=f7e334]:
+                  - text: 王海峰
+                  - generic [ref=f7e335]: RL-H004
+                - generic [ref=f7e336]: 在线
+              - generic [ref=f7e338]:
+                - checkbox "赵 赵晓东 RL-H005 在线" [ref=f7e339] [cursor=pointer]
+                - generic [ref=f7e340]: 赵
+                - generic [ref=f7e341]:
+                  - text: 赵晓东
+                  - generic [ref=f7e342]: RL-H005
+                - generic [ref=f7e343]: 在线
+              - generic [ref=f7e345]:
+                - checkbox "刘 刘洋 RL-H006 在线" [ref=f7e346] [cursor=pointer]
+                - generic [ref=f7e347]: 刘
+                - generic [ref=f7e348]:
+                  - text: 刘洋
+                  - generic [ref=f7e349]: RL-H006
+                - generic [ref=f7e350]: 在线
+              - generic [ref=f7e352]:
+                - checkbox "孙 孙伟 RL-H007 在线" [ref=f7e353] [cursor=pointer]
+                - generic [ref=f7e354]: 孙
+                - generic [ref=f7e355]:
+                  - text: 孙伟
+                  - generic [ref=f7e356]: RL-H007
+                - generic [ref=f7e357]: 在线
+              - generic [ref=f7e359]:
+                - checkbox "何 何平 RL-H008 在线" [ref=f7e360] [cursor=pointer]
+                - generic [ref=f7e361]: 何
+                - generic [ref=f7e362]:
+                  - text: 何平
+                  - generic [ref=f7e363]: RL-H008
+                - generic [ref=f7e364]: 在线
+            - generic [ref=f7e366]:
+              - generic [ref=f7e367]: 已选 3 人
+              - button "单呼" [ref=f7e368] [cursor=pointer]
+              - button "发起群呼" [ref=f7e369] [cursor=pointer]
+        - generic [ref=f7e370]:
+          - generic [ref=f7e371]:
+            - heading "当前通话：未发起" [level=2] [ref=f7e373]
+            - generic [ref=f7e374]:
+              - generic [ref=f7e375]:
+                - generic [aria-hidden] [ref=f7e376]: 
+                - generic [ref=f7e377]: 选择人员后发起单呼或群呼
+              - paragraph [ref=f7e378]: 会话状态为交互示例，通信通道兼容性待联调。
+          - generic [ref=f7e379]:
+            - heading "文字广播" [level=2] [ref=f7e381]
+            - generic [ref=f7e383]:
+              - generic [ref=f7e384]:
+                - generic [ref=f7e385]: 广播对象
+                - combobox "广播对象" [ref=f7e386] [cursor=pointer]:
+                  - option "锅炉检修协助组" [selected]
+                  - option "汽机巡检协助组"
+                  - option "配电检查协助组"
+              - textbox "请输入广播内容" [ref=f7e387]: 请锅炉平台作业人员检查随身装备，保持通信畅通。
+              - generic [ref=f7e388]: 最多 200 字
+              - generic [ref=f7e389]:
+                - button "试听" [ref=f7e390] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f7e391]: 
+                  - text: 试听
+                - button "发送广播" [ref=f7e392] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f7e393]: 
+                  - text: 发送广播
+        - generic [ref=f7e394]:
+          - generic [ref=f7e395]:
+            - generic [ref=f7e396]:
+              - heading "最近会话" [level=2] [ref=f7e397]
+              - button "更多 ›" [ref=f7e399] [cursor=pointer]
+            - generic [ref=f7e401]:
+              - generic [aria-hidden] [ref=f7e402]: 
+              - generic [ref=f7e403]: 暂无通信记录
+          - generic [ref=f7e404]:
+            - generic [ref=f7e405]:
+              - heading "广播记录" [level=2] [ref=f7e406]
+              - button "更多 ›" [ref=f7e408] [cursor=pointer]
+            - generic [ref=f7e410]:
+              - generic [aria-hidden] [ref=f7e411]: 
+              - generic [ref=f7e412]: 暂无广播记录
+          - paragraph [ref=f7e413]:
+            - generic [aria-hidden] [ref=f7e414]: 
+            - text: 通话记录与广播回执分别留存。
+    - generic: 设计预览 · 示例数据
+  - status

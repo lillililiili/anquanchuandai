@@ -1,0 +1,241 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e2]:
+    - banner [ref=f6e198]:
+      - link [ref=f6e199] [cursor=pointer]:
+        - /url: "#/overview"
+        - img "ROLLING" [ref=f6e200]
+      - strong [ref=f6e202]: 融瓴智能穿戴安全监护平台
+      - generic [ref=f6e203]:
+        - generic [aria-hidden] [ref=f6e204]: 
+        - combobox "选择厂站" [ref=f6e205] [cursor=pointer]:
+          - option "临江示范电厂" [selected]
+          - option "北江示范电厂"
+        - button "设计预览" [ref=f6e207] [cursor=pointer]
+        - button "3" [ref=f6e208] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f6e209]: 
+        - button "值守员" [ref=f6e211] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f6e212]: 
+          - text: 值守员
+          - generic [aria-hidden] [ref=f6e213]: 
+        - time [ref=f6e214]: 2026-09-15 10:42
+    - complementary [ref=f6e215]:
+      - navigation [ref=f6e216]:
+        - link "综合总览" [ref=f6e217] [cursor=pointer]:
+          - /url: "#/overview"
+          - generic [aria-hidden] [ref=f6e218]: 
+        - link "人员与装备" [ref=f6e220] [cursor=pointer]:
+          - /url: "#/personnel"
+          - generic [aria-hidden] [ref=f6e221]: 
+        - link "作业监护" [ref=f6e223] [cursor=pointer]:
+          - /url: "#/works"
+          - generic [aria-hidden] [ref=f6e224]: 
+        - link "视频监看" [ref=f6e226] [cursor=pointer]:
+          - /url: "#/video"
+          - generic [aria-hidden] [ref=f6e227]: 
+        - link "调度通信" [ref=f6e229] [cursor=pointer]:
+          - /url: "#/dispatch"
+          - generic [aria-hidden] [ref=f6e230]: 
+        - link "定位与轨迹" [ref=f6e232] [cursor=pointer]:
+          - /url: "#/location"
+          - generic [aria-hidden] [ref=f6e233]: 
+        - link "告警与核验" [ref=f6e235] [cursor=pointer]:
+          - /url: "#/alarms"
+          - generic [aria-hidden] [ref=f6e236]: 
+        - link "现场资料" [ref=f6e238] [cursor=pointer]:
+          - /url: "#/materials"
+          - generic [aria-hidden] [ref=f6e239]: 
+        - link "统计追溯" [ref=f6e241] [cursor=pointer]:
+          - /url: "#/statistics"
+          - generic [aria-hidden] [ref=f6e242]: 
+      - generic [ref=f6e244]:
+        - link "管理中心" [ref=f6e245] [cursor=pointer]:
+          - /url: "#/admin"
+          - generic [aria-hidden] [ref=f6e246]: 
+          - text: 管理中心
+        - generic [ref=f6e247]: 设计预览 · 示例数据
+    - main [ref=f6e248]:
+      - generic [ref=f6e249]:
+        - generic [ref=f6e250]:
+          - heading "实时定位" [level=1] [ref=f6e251]
+          - paragraph [ref=f6e252]: 按人员查看关联安全帽位置
+        - generic [ref=f6e254]:
+          - generic [ref=f6e255]:
+            - generic [aria-hidden] [ref=f6e256]: 
+            - generic [ref=f6e257]:
+              - generic [ref=f6e258]: 当班人员
+              - strong [ref=f6e259]: "8"
+          - generic [ref=f6e260]:
+            - generic [aria-hidden] [ref=f6e261]: 
+            - generic [ref=f6e262]:
+              - generic [ref=f6e263]: 位置可查看
+              - strong [ref=f6e264]: "7"
+          - generic [ref=f6e265]:
+            - generic [aria-hidden] [ref=f6e266]: 
+            - generic [ref=f6e267]:
+              - generic [ref=f6e268]: 位置待核验
+              - strong [ref=f6e269]: "1"
+      - generic [ref=f6e270]:
+        - link "实时定位" [ref=f6e271] [cursor=pointer]:
+          - /url: "#/location"
+        - link "历史轨迹" [ref=f6e272] [cursor=pointer]:
+          - /url: "#/tracks"
+        - link "电子围栏" [ref=f6e273] [cursor=pointer]:
+          - /url: "#/fences"
+      - generic [ref=f6e274]:
+        - generic [ref=f6e275]:
+          - heading "当班人员" [level=2] [ref=f6e277]
+          - generic [ref=f6e278]:
+            - generic [ref=f6e279]:
+              - generic [ref=f6e280]:
+                - generic [aria-hidden] [ref=f6e281]: 
+                - textbox "姓名 / 安全帽编号" [ref=f6e282]
+              - generic [ref=f6e283]:
+                - generic [ref=f6e284]: 作业分组
+                - combobox "作业分组" [ref=f6e285] [cursor=pointer]:
+                  - option "全部作业" [selected]
+                  - option "锅炉平台检修"
+                  - option "汽机设备巡检"
+                  - option "配电区检查"
+              - button "查询" [ref=f6e286] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f6e287]: 
+                - text: 查询
+              - button "重置" [ref=f6e288] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f6e289]: 
+                - text: 重置
+            - table [ref=f6e291]:
+              - rowgroup [ref=f6e292]:
+                - row [ref=f6e293]:
+                  - columnheader "姓名" [ref=f6e294]
+                  - columnheader "安全帽编号" [ref=f6e295]
+                  - columnheader "作业区域" [ref=f6e296]
+                  - columnheader "状态" [ref=f6e297]
+              - rowgroup [ref=f6e298]:
+                - row [ref=f6e299] [cursor=pointer]:
+                  - cell "陈建国" [ref=f6e300]:
+                    - generic [aria-hidden] [ref=f6e301]: 
+                    - text: 陈建国
+                  - cell "RL-H001" [ref=f6e302]
+                  - cell "锅炉区" [ref=f6e303]
+                  - cell "在线" [ref=f6e304]
+                - row [ref=f6e307] [cursor=pointer]:
+                  - cell "李志远" [ref=f6e308]:
+                    - generic [aria-hidden] [ref=f6e309]: 
+                    - text: 李志远
+                  - cell "RL-H002" [ref=f6e310]
+                  - cell "锅炉区" [ref=f6e311]
+                  - cell "在线" [ref=f6e312]
+                - row [ref=f6e315] [cursor=pointer]:
+                  - cell "周明" [ref=f6e316]:
+                    - generic [aria-hidden] [ref=f6e317]: 
+                    - text: 周明
+                  - cell "RL-H003" [ref=f6e318]
+                  - cell "锅炉区" [ref=f6e319]
+                  - cell "在线" [ref=f6e320]
+                - row [ref=f6e323] [cursor=pointer]:
+                  - cell "王海峰" [ref=f6e324]:
+                    - generic [aria-hidden] [ref=f6e325]: 
+                    - text: 王海峰
+                  - cell "RL-H004" [ref=f6e326]
+                  - cell "汽机厂房" [ref=f6e327]
+                  - cell "在线" [ref=f6e328]
+                - row [ref=f6e331] [cursor=pointer]:
+                  - cell "赵晓东" [ref=f6e332]:
+                    - generic [aria-hidden] [ref=f6e333]: 
+                    - text: 赵晓东
+                  - cell "RL-H005" [ref=f6e334]
+                  - cell "汽机厂房" [ref=f6e335]
+                  - cell "在线" [ref=f6e336]
+                - row [ref=f6e339] [cursor=pointer]:
+                  - cell "刘洋" [ref=f6e340]:
+                    - generic [aria-hidden] [ref=f6e341]: 
+                    - text: 刘洋
+                  - cell "RL-H006" [ref=f6e342]
+                  - cell "位置待核验" [ref=f6e343]
+                  - cell "待核验" [ref=f6e344]
+                - row [ref=f6e347] [cursor=pointer]:
+                  - cell "孙伟" [ref=f6e348]:
+                    - generic [aria-hidden] [ref=f6e349]: 
+                    - text: 孙伟
+                  - cell "RL-H007" [ref=f6e350]
+                  - cell "配电区" [ref=f6e351]
+                  - cell "在线" [ref=f6e352]
+                - row [ref=f6e355] [cursor=pointer]:
+                  - cell "何平" [ref=f6e356]:
+                    - generic [aria-hidden] [ref=f6e357]: 
+                    - text: 何平
+                  - cell "RL-H008" [ref=f6e358]
+                  - cell "循环水区" [ref=f6e359]
+                  - cell "在线" [ref=f6e360]
+        - generic [ref=f6e363]:
+          - generic [ref=f6e364]:
+            - img "厂区示意底图" [ref=f6e365]
+            - generic "作业区域与轨迹图层" [ref=f6e366]
+            - generic:
+              - generic: 锅炉区
+              - generic: 配电区
+              - generic: 汽机厂房
+              - generic: 循环水区
+            - button "定位 陈建国" [ref=f6e367] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e368]: 
+            - button "定位 李志远" [ref=f6e369] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e370]: 
+            - button "定位 周明" [ref=f6e371] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e372]: 
+            - button "定位 王海峰" [ref=f6e373] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e374]: 
+            - button "定位 赵晓东" [ref=f6e375] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e376]: 
+            - button "定位 刘洋" [ref=f6e377] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e378]: 
+            - button "定位 孙伟" [ref=f6e379] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e380]: 
+            - button "定位 何平" [ref=f6e381] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e382]: 
+            - generic [ref=f6e383]:
+              - text: 陈建国 RL-H001
+              - paragraph [ref=f6e384]: 作业：锅炉平台检修
+              - paragraph [ref=f6e385]:
+                - text: 位置：锅炉区
+                - generic [ref=f6e386]: 位置有效
+              - generic [ref=f6e388]:
+                - link "历史轨迹 →" [ref=f6e389] [cursor=pointer]:
+                  - /url: "#/tracks/P1"
+                - link "查看人员" [ref=f6e390] [cursor=pointer]:
+                  - /url: "#/person/P1"
+          - generic [ref=f6e391]: 厂区示意 · 非实测
+          - generic [ref=f6e392]:
+            - text: "N"
+            - generic [aria-hidden] [ref=f6e393]: 
+          - generic [ref=f6e394]:
+            - button "重置地图" [ref=f6e395] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e396]: 
+            - button "放大地图" [ref=f6e397] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e398]: 
+            - button "缩小地图" [ref=f6e399] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f6e400]: 
+          - generic:
+            - text: 图例
+            - generic [aria-hidden]: 
+            - text: 人员位置
+            - generic [aria-hidden]: 
+            - text: 作业区域
+            - generic [aria-hidden]: 
+            - text: 待核验位置
+          - generic [ref=f6e401]:
+            - text: 0 250 500 m
+            - separator [ref=f6e402]
+      - generic [ref=f6e403]:
+        - generic [ref=f6e404]:
+          - checkbox "人员" [checked] [ref=f6e405] [cursor=pointer]
+          - text: 人员
+        - generic [ref=f6e406]:
+          - checkbox "作业区域" [checked] [ref=f6e407] [cursor=pointer]
+          - text: 作业区域
+        - generic [ref=f6e408]:
+          - checkbox "电子围栏" [ref=f6e409] [cursor=pointer]
+          - text: 电子围栏
+      - paragraph [ref=f6e410]:
+        - generic [aria-hidden] [ref=f6e411]: 
+        - text: 人员位置由关联安全帽提供；位置滞后或缺失需现场核验，不表示室内精度。
+    - generic: 设计预览 · 示例数据
+  - status

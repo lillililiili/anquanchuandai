@@ -1,0 +1,122 @@
+
+> rolling-wearable-native@1.0.0 test
+> node --test tests/*.test.cjs
+
+TAP version 13
+# Subtest: 初始数据人数、作业、装备通信与视频数量口径正确
+ok 1 - 初始数据人数、作业、装备通信与视频数量口径正确
+  ---
+  duration_ms: 5.7513
+  type: 'test'
+  ...
+# Subtest: 厂站、日期与作业筛选同时影响列表和汇总
+ok 2 - 厂站、日期与作业筛选同时影响列表和汇总
+  ---
+  duration_ms: 0.7981
+  type: 'test'
+  ...
+# Subtest: 核验草稿不改变统计，提交后数量、列表、时间线一致且不重复提交
+ok 3 - 核验草稿不改变统计，提交后数量、列表、时间线一致且不重复提交
+  ---
+  duration_ms: 4.8802
+  type: 'test'
+  ...
+# Subtest: 保存失败回滚内存状态，不能假报成功
+ok 4 - 保存失败回滚内存状态，不能假报成功
+  ---
+  duration_ms: 1.1289
+  type: 'test'
+  ...
+# Subtest: 核验必填校验失败时不产生写入
+ok 5 - 核验必填校验失败时不产生写入
+  ---
+  duration_ms: 0.7273
+  type: 'test'
+  ...
+# Subtest: 设备归还、重绑影响当前归属和数量但保留历史记录
+ok 6 - 设备归还、重绑影响当前归属和数量但保留历史记录
+  ---
+  duration_ms: 3.5297
+  type: 'test'
+  ...
+# Subtest: 更新人员名字时历史资料快照不变，当前关联读取新名字
+ok 7 - 更新人员名字时历史资料快照不变，当前关联读取新名字
+  ---
+  duration_ms: 1.8687
+  type: 'test'
+  ...
+# Subtest: 设备状态更新统一统计，低电量仍为在线
+ok 8 - 设备状态更新统一统计，低电量仍为在线
+  ---
+  duration_ms: 1.2389
+  type: 'test'
+  ...
+# Subtest: 作业成员去重、不允许同时分配两项作业、变更影响统计
+ok 9 - 作业成员去重、不允许同时分配两项作业、变更影响统计
+  ---
+  duration_ms: 2.2999
+  type: 'test'
+  ...
+# Subtest: 抓拍、录像记录生成相同日期的关联资料
+ok 10 - 抓拍、录像记录生成相同日期的关联资料
+  ---
+  duration_ms: 2.3453
+  type: 'test'
+  ...
+# Subtest: 重载存储保留核验、媒体和绑定修改
+ok 11 - 重载存储保留核验、媒体和绑定修改
+  ---
+  duration_ms: 1.8867
+  type: 'test'
+  ...
+# Subtest: 围栏几何校验、位置变化判定、停用和归档保留记录
+ok 12 - 围栏几何校验、位置变化判定、停用和归档保留记录
+  ---
+  duration_ms: 3.4057
+  type: 'test'
+  ...
+# Subtest: 通信流程、成员去重、回执和 SOS 独立于告警
+ok 13 - 通信流程、成员去重、回执和 SOS 独立于告警
+  ---
+  duration_ms: 6.6187
+  type: 'test'
+  ...
+# Subtest: 轨迹查询不补齐缺口并校验时间范围
+ok 14 - 轨迹查询不补齐缺口并校验时间范围
+  ---
+  duration_ms: 1.1563
+  type: 'test'
+  ...
+# Subtest: 停用人员自动结束当前领用并移除作业及分组，历史保留
+ok 15 - 停用人员自动结束当前领用并移除作业及分组，历史保留
+  ---
+  duration_ms: 1.0898
+  type: 'test'
+  ...
+# Subtest: 换绑不改写历史轨迹，当前地图位置依赖有效安全帽
+ok 16 - 换绑不改写历史轨迹，当前地图位置依赖有效安全帽
+  ---
+  duration_ms: 1.9649
+  type: 'test'
+  ...
+# Subtest: SOS重复加入被拒绝，记录包含值守员，演示时钟在既有时间线之后
+ok 17 - SOS重复加入被拒绝，记录包含值守员，演示时钟在既有时间线之后
+  ---
+  duration_ms: 2.7497
+  type: 'test'
+  ...
+# Subtest: 核验上传资料区分拍摄来源和告警设备
+ok 18 - 核验上传资料区分拍摄来源和告警设备
+  ---
+  duration_ms: 0.9029
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 214.1485

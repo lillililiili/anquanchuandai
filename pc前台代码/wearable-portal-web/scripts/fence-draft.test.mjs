@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { validateFenceDraft } from '../src/utils/fence-draft.js'
 const triangle = [[117.142,36.665],[117.147,36.664],[117.143,36.661]]
-const base = { name:'区域', ruleType:'DENY_ENTRY', appliesTo:'HELMET', nodes:triangle }
+const base = { teamId:'ALL', name:'区域', appliesTo:'HELMET', nodes:triangle }
 test('valid triangle saves without a separate drawing-complete flag', () => {
   const result = validateFenceDraft(base)
   assert.equal(result.valid,true)
@@ -11,7 +11,7 @@ test('valid triangle saves without a separate drawing-complete flag', () => {
 })
 test('empty fields report all missing values without discarding the geometry', () => {
   const result = validateFenceDraft({ nodes:triangle })
-  assert.deepEqual(Object.keys(result.fields),['name','ruleType','appliesTo'])
+  assert.deepEqual(Object.keys(result.fields),['name','appliesTo','teamId'])
   assert.equal(result.geometryError,'')
   assert.equal(result.valid,false)
 })
