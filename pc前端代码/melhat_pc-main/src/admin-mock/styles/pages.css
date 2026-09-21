@@ -54,7 +54,7 @@
 .entry-list a:last-child { border-bottom: 0; } .entry-list a:hover strong { color: var(--blue); }
 .entry-list strong { font-size: 14px; } .entry-list small { display: block; color: var(--muted); margin-top: 4px; line-height: 1.5; font-size: 11px; }
 .entry-list a > span:last-child { margin-left: auto; }
-.entry-stage { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 72px; color: var(--blue); background: var(--soft-blue); border-radius: 8px; font-size: 10px; min-height: 40px; }
+.entry-stage { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 40px; color: var(--blue); background: var(--soft-blue); border-radius: 8px; font-size: 10px; min-height: 40px; }
 .entry-stage svg { width: 20px; height: 20px; }
 .entry-list a:nth-child(2) .entry-stage { background: var(--soft-cyan); color: var(--cyan-dark); }
 .entry-list a:nth-child(3) .entry-stage { background: var(--soft-purple); color: var(--purple); }

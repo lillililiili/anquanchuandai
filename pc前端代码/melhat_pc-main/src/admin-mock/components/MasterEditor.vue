@@ -1,6 +1,6 @@
 <template>
   <form class="master-form" novalidate @submit.prevent="submit">
-    <p class="notice">仅保存到本页内存，刷新恢复初始预置数据。{{ entity === 'accounts' ? '不设置真实密码；账号创建后再分配授权。' : '' }}</p>
+    <p class="notice">仅保存到当前页面，刷新恢复初始演示数据。{{ entity === 'accounts' ? '不设置真实密码；账号创建后再分配授权。' : '' }}</p>
     <div v-if="error || Object.keys(localErrors).length" ref="errorBox" class="notice error" role="alert" tabindex="-1">
       <strong>未保存，请检查以下内容</strong><p v-if="error">{{ error.message }} <small>{{ error.errorCode }} · {{ error.requestId }}</small></p>
       <ul><li v-for="(message, key) in errors" :key="key"><a :href="'#field-' + key" @click.prevent="focusField(key)">{{ message }}</a></li></ul>
@@ -38,7 +38,7 @@
       <label class="inline-check"><input v-model="form.allAreas" type="checkbox" />所选厂站全部区域</label>
       <label v-if="!form.allAreas" id="field-areaIds">限定区域<select v-model="form.areaIds" multiple><option v-for="a in options.scopeAreas?.filter(a => form.siteIds.includes(a.siteId))" :key="a.id" :value="a.id">{{ a.name }} · {{ a.siteId }}</option></select><small class="error">{{ errors.areaIds }}</small></label>
     </template>
-    <div class="form-footer"><span class="muted">{{ record ? '版本 ' + record.version : '新记录' }} · 预置数据</span><button class="button" type="button" :disabled="busy" @click="$emit('close')">取消</button><button class="button primary" type="submit" :disabled="busy">{{ busy ? '正在保存…' : '保存本地记录' }}</button></div>
+    <div class="form-footer"><span class="muted">{{ record ? '版本 ' + record.version : '新记录' }} · 演示数据</span><button class="button" type="button" :disabled="busy" @click="$emit('close')">取消</button><button class="button primary" type="submit" :disabled="busy">{{ busy ? '正在保存…' : '保存本地记录' }}</button></div>
   </form>
 </template>
 <script setup>
@@ -56,7 +56,7 @@ const form = ref({ code: r.code || '', name: r.name || '', loginName: r.loginNam
 const initial = JSON.stringify(form.value), memberKeyword = ref(''), localErrors = ref({}), errorBox = ref(null)
 const errors = computed(() => ({ ...props.error?.fields, ...localErrors.value }))
 const assignableRoles = computed(() => props.options.roles?.filter(r => r.id !== 'system' && (props.isSystem || DELEGATE_ROLES.includes(r.id))) || [])
-const operationNames = { 'overview:read': '工作台查看', 'people:read': '人员查看', 'people:write': '人员维护', 'organization:read': '组织区域查看', 'organization:write': '组织区域维护', 'sites:read': '厂站查看', 'sites:write': '厂站维护（仅系统身份执行）', 'duty:read': '名册查看', 'duty:write': '名册维护', 'access:read': '账号角色查看', 'accounts:write': '账号维护与有限委派', 'roles:write': '角色维护（仅系统身份执行）', 'assets:read': '资产查看', 'assets:write': '资产办理（A2起）', 'audit:read': '审计查看', 'integrations:read': '接入配置查看', 'groups:write': '常设协助组维护' }
+const operationNames = { 'overview:read': '工作台查看', 'people:read': '人员查看', 'people:write': '人员维护', 'organization:read': '组织区域查看', 'organization:write': '组织区域维护', 'sites:read': '厂站查看', 'sites:write': '厂站维护（仅系统身份执行）', 'duty:read': '名册查看', 'duty:write': '名册维护', 'access:read': '账号角色查看', 'accounts:write': '账号维护与有限委派', 'roles:write': '角色维护（仅系统身份执行）', 'assets:read': '资产查看', 'assets:write': '资产办理', 'audit:read': '审计查看', 'integrations:read': '接入配置查看', 'groups:write': '常设协助组维护' }
 watch(form, () => emit('dirty', JSON.stringify(form.value) !== initial), { deep: true })
 watch(() => props.error, async e => { if (e) { await nextTick(); errorBox.value?.focus() } })
 function focusField(key) { const el = document.getElementById('field-' + key); (el?.matches('input, select, textarea') ? el : el?.querySelector('input, select, textarea') || el)?.focus() }

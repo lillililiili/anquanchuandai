@@ -1,8 +1,8 @@
 <template>
   <section>
     <AssetTabs v-if="route.path.startsWith('/admin/assets/')" />
-    <div class="page-heading"><div><span class="eyebrow">管理中心 / {{ route.meta.title }}</span><h1>{{ allowed ? route.meta.title : '无权限访问' }}</h1></div><span class="badge">{{ route.meta.stage }}</span></div>
-    <div class="panel placeholder"><img :src="stateArt" alt="" width="180" height="150" class="state-art" /><h2>{{ allowed ? '工作区准备中' : '当前身份没有此工作区权限' }}</h2><p>{{ allowed ? route.meta.description : '可以返回工作台，或退出后选择其他预置身份。' }}</p><p class="muted">{{ allowed ? `本阶段只交付管理骨架。${route.meta.stage}阶段接入对应业务，不执行真实请求。` : '路由入口和数据服务分别检查权限，不因看到菜单而获得授权。' }}</p><router-link class="button primary" to="/admin/overview">返回管理工作台</router-link></div>
+    <div class="page-heading"><div><span class="eyebrow">管理中心 / {{ route.meta.title }}</span><h1>{{ allowed ? route.meta.title : '无权限访问' }}</h1></div></div>
+    <div class="panel placeholder"><img :src="stateArt" alt="" width="180" height="150" class="state-art" /><h2>{{ allowed ? '功能暂未开放' : '当前账号无权使用此功能' }}</h2><p>{{ allowed ? route.meta.description : '可以返回工作台，或退出后选择其他演示账号。' }}</p><p class="muted">{{ allowed ? '此功能尚未开放，请返回工作台选择其他功能。' : '如需使用此功能，请联系管理员开通权限。' }}</p><router-link class="button primary" to="/admin/overview">返回管理工作台</router-link></div>
   </section>
 </template>
 <script setup>

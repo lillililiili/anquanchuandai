@@ -1,0 +1,22 @@
+async (page) => {
+  page.removeAllListeners('dialog')
+  const base = page.url().split('/').slice(0, 3).join('/'), sockets = [], errors = []
+  page.on('websocket', socket => sockets.push(socket.url())); page.on('pageerror', e => errors.push(e.message))
+  const check = (ok, reason) => { if (!ok) throw new Error(reason) }, button = name => page.getByRole('button', { name, exact: true })
+  async function ready() { await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]') && !Array.from(document.querySelectorAll('[role="status"], [aria-live]')).some(e => /正在读取|正在加载|正在查询/.test(e.textContent))) }
+  async function route(path) { await page.evaluate(path => { location.hash = '#' + path }, path); await ready() }
+  async function login(name) { await page.getByRole('textbox', { name: '账号', exact: true }).fill(name); await page.getByRole('textbox', { name: '密码', exact: true }).fill('Admin@2026'); await button('登录').click(); await page.getByLabel('当前厂站').waitFor(); await ready() }
+  await page.reload(); await ready()
+  await route('/admin/integrations/integration-site-1-DEVICE?siteId=site-1'); await button('模拟测试').waitFor(); await ready()
+  await page.getByRole('combobox', { name: '确定性演示场景' }).selectOption('TIMEOUT')
+  page.once('dialog', dialog => dialog.dismiss()); await page.getByRole('link', { name: '六类连接器', exact: true }).click(); await ready(); check(await button('保存本地配置').isEnabled(), 'dirty navigation lost input')
+  page.once('dialog', dialog => dialog.accept()); await page.getByRole('link', { name: '六类连接器', exact: true }).click(); await page.getByRole('heading', { name: '模拟接入工作区', exact: true }).waitFor()
+  await route('/admin/integrations/integration-site-1-DEVICE?siteId=site-1'); await button('模拟测试').waitFor(); await ready(); check(await page.getByRole('combobox', { name: '确定性演示场景' }).inputValue() === '', 'discard saved unexpectedly')
+  await page.getByRole('combobox', { name: '映射厂站', exact: true }).selectOption('site-1'); await page.getByRole('combobox', { name: '映射区域', exact: true }).selectOption('area-1'); await button('保存本地配置').click(); await ready(); await button('预览模拟样本').click(); await page.getByRole('heading', { name: '模拟同步任务', exact: true }).waitFor(); await ready(); const oldJob = page.url().split('#')[1]
+  await page.getByRole('link', { name: '返回配置并重新预览', exact: true }).click(); await button('模拟测试').waitFor(); await ready(); await page.getByRole('combobox', { name: '受控示例地址' }).selectOption('SAMPLE_B'); await button('保存本地配置').click(); await ready(); await route(oldJob); await button('确认导入模拟样本').waitFor(); await ready(); await button('确认导入模拟样本').click(); await page.locator('dialog[open]').getByRole('button', { name: '确认导入模拟样本', exact: true }).click(); await page.getByRole('alert').waitFor(); await ready(); check((await page.getByRole('alert').innerText()).includes('409') || (await page.getByRole('alert').innerText()).includes('版本'), 'stale preview not rejected'); check(await page.evaluate(() => document.activeElement?.getAttribute('role') === 'alert'), 'conflict focus missing')
+  await page.getByLabel('当前厂站').selectOption('site-2'); await page.getByRole('heading', { name: '模拟接入工作区', exact: true }).waitFor(); await ready(); check(!(await page.locator('main').innerText()).includes('integration-job-'), 'site switch leaked job')
+  await button('退出登录').click(); await login('auditor'); await route('/admin/integrations/integration-site-1-DEVICE?siteId=site-1'); await button('模拟测试').waitFor(); await ready(); check(await button('模拟测试').isDisabled(), 'auditor test enabled'); check(await button('预览模拟样本').isDisabled(), 'auditor import enabled')
+  await route('/admin/audit?siteId=site-1'); await button('查看详情').first().waitFor(); await ready(); await page.getByRole('textbox', { name: '关键词', exact: true }).fill('NO-MATCH-A6'); await button('查询').click(); await ready(); await page.getByText('当前筛选下暂无审计记录。', { exact: true }).waitFor(); await button('清除筛选').click(); await ready(); check(await button('查看详情').count() > 0, 'audit reset failed')
+  check(errors.length === 0, 'page errors'); if (base.endsWith(':5182')) check(sockets.length === 0, 'preview websocket')
+  return { passed: true, base, errors, sockets, workflow: 'dirty-cancel/discard/stale-preview-409/error-focus/site-clear/auditor-readonly/audit-empty-reset' }
+}

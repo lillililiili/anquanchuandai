@@ -6,7 +6,7 @@ export const DEVICE_TYPES = { HELMET: '安全帽', BELT: '安全带', WATCH: '�
 export const DEVICE_FILTERS = {
   type: DEVICE_TYPES,
   lifecycle: { STOCK: '库存', IN_USE: '使用中', MAINTENANCE: '维修中', DISABLED: '停用', SCRAPPED: '报废' },
-  relation: { UNASSIGNED: '未领用', ASSIGNED: '已领用', UNKNOWN: '关系未知', CONFLICT: '关系冲突' },
+  relation: { UNASSIGNED: '未领用', ASSIGNED: '已领用', UNKNOWN: '领用情况不明', CONFLICT: '领用记录有矛盾' },
   communication: { NOT_CONNECTED: '未接入', ONLINE: '在线（本地）', OFFLINE: '离线（本地）', UNKNOWN: '通信未知' }
 }
 export const ASSEMBLY = { INSTALLED: '已装配（本地配置）', ABSENT: '未装配', UNKNOWN: '待确认' }
@@ -25,8 +25,8 @@ export function extendDevices(state) {
 }
 export function keyEditReason(state, device, relationship) {
   if (device.lifecycle !== 'STOCK') return '仅库存设备可修改关键身份和选配'
-  if (relationship(state, device).state !== 'UNASSIGNED' || state.assignments.some(a => a.active && a.deviceId === device.id)) return '领用关系未知、冲突或存在有效关系，请先核实'
-  if (state.maintenanceOrders.some(o => o.deviceId === device.id && activeMaintenance(o))) return '存在活动维修单，请先处理'
+  if (relationship(state, device).state !== 'UNASSIGNED' || state.assignments.some(a => a.active && a.deviceId === device.id)) return '领用领用情况不明、冲突或存在有效关系，请先核实'
+  if (state.maintenanceOrders.some(o => o.deviceId === device.id && activeMaintenance(o))) return '存在未完成维修单，请先处理'
   return ''
 }
 function projection(state, actor, d, relationship) {

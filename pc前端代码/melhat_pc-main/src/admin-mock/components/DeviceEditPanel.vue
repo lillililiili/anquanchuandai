@@ -27,7 +27,7 @@ async function save(data) {
   busy.value = true; error.value = null; controller = new AbortController()
   try {
     await provider.execute(`devices.${snapshot.value ? 'update' : 'create'}`, { siteId: store.siteId, id: snapshot.value?.id, expectedVersion: snapshot.value?.version, operationId, relatedVersions: Object.fromEntries(options.value.areas.map(a => [a.id, a.version])), data }, { signal: controller.signal })
-    busy.value = false; dirty.value = false; open.value = false; notice.value = '设备资料已保存到本页内存。通信与真实验证状态未改变。'
+    busy.value = false; dirty.value = false; open.value = false; notice.value = '设备资料已保存到当前页面。通信与真实验证状态未改变。'
   } catch (e) { if (e.name !== 'AbortError') { error.value = e; if (e.code === 401) provider.invalidate() } } finally { busy.value = false }
 }
 const unsubscribe = provider.subscribe(e => { if (['identity', 'expired', 'reset', 'context', 'authorization'].includes(e.kind)) { run++; controller?.abort(); dirty.value = false; busy.value = false; loading.value = false; open.value = false; notice.value = '' } })

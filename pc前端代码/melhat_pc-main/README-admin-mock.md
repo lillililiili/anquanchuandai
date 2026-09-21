@@ -1,4 +1,16 @@
-# 管理中心 A0–A4 · 纯前端 Mock
+# 管理中心 A0–A6 · 纯前端 Mock
+
+## 2026-09-20：A6模拟接入与审计
+
+接入配置开放六类本地连接器、确定性测试、设备/人员预览确认、重复导入跳过和四类独立映射回执。导入保护现有领用、生命周期、授权与人工字段；旧预览版本冲突阻止整批提交。所有操作均为本页内存样本，真实状态始终“未接入”。
+
+审计支持授权范围筛选、脱敏差异侧栏、全部筛选结果CSV导出和公式前缀处理；同步任务及对象变更共同留痕。系统配置仅提供实际消费的默认演示场景。
+
+入口：5181的`/#/admin/integrations`和`/#/admin/audit`；构建预览5182。管理员`admin`、只读审计员`auditor`，内置模拟密码`Admin@2026`。刷新恢复种子；仅模拟身份使用独立sessionStorage。
+
+验证：293项后台测试、专用lint、prod/stage/mock构建通过。主流程脚本`scripts/admin-a6-browser.js`、边界脚本`scripts/admin-a6-edge-browser.js`在5181/5182均通过。截图/CSV位于`output/playwright/admin-a6/`。普通test仍缺`src/__tests__/setup.ts`，全项目lint仍有既有`ts-api-utils Intrinsic`加载错误，未改依赖或锁文件。
+
+可用现有Playwright CLI打开Edge后执行`run-code --filename scripts/admin-a6-browser.js`，再运行边界脚本。旧A0～A5浏览器脚本的身份单选登录需要适配当前账号密码页，本轮未声称全部重跑。A7整体回归与评审包待实施。完整证据见`../../docs/智能穿戴设备平台/后台-A6-实施与验证记录.md`。
 
 ## 2026-09-20：标准账号登录与业务化文案
 

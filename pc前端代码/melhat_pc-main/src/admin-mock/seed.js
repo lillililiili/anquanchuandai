@@ -1,5 +1,6 @@
 import { extendSeed } from './a1seed'
 import { extendDevices } from './deviceData'
+import { extendIntegrations } from './integrationData'
 export const TOKEN_KEY = 'Wearable-Admin-Mock-Token'
 export const SESSION_VERSION_KEY = 'Wearable-Admin-Mock-Session-Version'
 export const BASE_TIME = '2026-09-19T08:00:00Z'
@@ -48,5 +49,5 @@ export function createSeed() {
     state.integrations.push({ id: `connector-${station}`, siteId, status: 'NOT_CONNECTED', name: '安全帽连接器' })
   }
   // No fabricated successful management operations or issuance timestamps.
-  return extendDevices(extendSeed(state))
+  return extendIntegrations(extendDevices(extendSeed(state)))
 }

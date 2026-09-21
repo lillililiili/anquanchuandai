@@ -30,7 +30,7 @@ export default defineConfig(({ mode, command }) => {
       port: 5175,
       proxy: {
         '/dev-api': {
-          target: 'http://127.0.0.1:18084',
+          target: env.VITE_APP_PROXY_TARGET || 'http://127.0.0.1:18084',
           changeOrigin: true,
           rewrite: (requestPath) => requestPath.replace(/^\/dev-api/, '')
         }

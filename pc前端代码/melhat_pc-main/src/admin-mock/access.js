@@ -1,4 +1,4 @@
-export const OPERATIONS = ['overview:read', 'assets:read', 'people:read', 'people:write', 'organization:read', 'organization:write', 'sites:read', 'sites:write', 'duty:read', 'duty:write', 'access:read', 'accounts:write', 'roles:write', 'audit:read', 'integrations:read', 'assets:write', 'groups:write']
+export const OPERATIONS = ['overview:read', 'assets:read', 'people:read', 'people:write', 'organization:read', 'organization:write', 'sites:read', 'sites:write', 'duty:read', 'duty:write', 'access:read', 'accounts:write', 'roles:write', 'audit:read', 'integrations:read', 'integrations:write', 'assets:write', 'groups:write']
 export const DELEGATE_ROLES = ['viewer', 'people-editor', 'asset-operator']
 export function effectiveGrants(state, actor) {
   if (!actor?.enabled) return []

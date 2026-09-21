@@ -1,6 +1,6 @@
 <template>
   <ModalPanel :open="!!intent" side heading-id="maintenance-heading" title="设备运维本地办理" @close="close">
-    <p class="notice">只修改本页内存。本地验收不代表正式审批或设备安全认证；不改变通信、上报时间或真实能力。</p>
+    <p class="notice">只修改当前页面。本地验收不代表正式审批或设备安全认证；不改变通信、上报时间或真实能力。</p>
     <p v-if="loading" role="status">正在读取设备、工单与处理人…</p>
     <div v-if="error" ref="errorBox" tabindex="-1" role="alert" class="notice error"><strong>办理未完成</strong><p>{{ error.message }} · {{ error.errorCode }} · {{ error.requestId }}</p><ul><li v-for="(message, key) in error.fields" :key="key"><a href="#" @click.prevent="focus(key)">{{ message }}</a></li></ul><button class="button" :disabled="busy" @click="reload">重新读取（清除本次输入）</button></div>
     <form v-if="device" class="master-form assignment-form maintenance-form" novalidate @submit.prevent="submit" @input="changed" @change="changed">
@@ -18,7 +18,7 @@
         <label v-if="scrapping">复输设备编号（区分大小写）<input id="maint-codeConfirmation" v-model="form.codeConfirmation" aria-label="复输设备编号" autocomplete="off" /><small>{{ device.code }}</small><small v-if="error?.fields?.codeConfirmation" class="error">{{ error.fields.codeConfirmation }}</small></label>
         <p class="muted">{{ warnings.join('；') }}。这些提醒不自动产生检测结果。</p>
       </fieldset>
-      <section v-if="reviewing" ref="reviewBox" tabindex="-1" class="reset-confirm" role="alert"><h3>再次确认报废 {{ device.code }}？</h3><p>{{ form.reason }}</p><p>报废后档案只读、不能领用或普通恢复。{{ order ? '此活动维修单将同时关闭为“无法修复并报废”。' : '历史保留，资产总数不减少。' }}</p><button type="button" class="button" :disabled="busy" @click="reviewing = false">返回核对</button></section>
+      <section v-if="reviewing" ref="reviewBox" tabindex="-1" class="reset-confirm" role="alert"><h3>再次确认报废 {{ device.code }}？</h3><p>{{ form.reason }}</p><p>报废后档案只读、不能领用或普通恢复。{{ order ? '此未完成维修单将同时关闭为“无法修复并报废”。' : '历史保留，资产总数不减少。' }}</p><button type="button" class="button" :disabled="busy" @click="reviewing = false">返回核对</button></section>
       <div class="form-footer"><span>操作时间由服务生成 · UTC</span><div class="actions"><button type="button" class="button" :disabled="busy" @click="close">取消</button><button class="button" :class="scrapping ? 'danger' : 'primary'" :disabled="busy || loading || !!reason || versionConflict">{{ busy ? '正在办理…' : reviewing ? '确认报废（不可恢复）' : scrapping ? '核对报废信息' : '确认本地办理' }}</button></div></div>
     </form>
   </ModalPanel>

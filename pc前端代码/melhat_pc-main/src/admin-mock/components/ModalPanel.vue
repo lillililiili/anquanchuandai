@@ -1,6 +1,6 @@
 <template>
   <dialog ref="dialog" :aria-labelledby="headingId" class="modal-panel" :class="{ 'side-panel': side }" @cancel.prevent="close" @click="backdrop">
-    <header><div><span class="eyebrow">管理中心 / 只在本页预置</span><h2 :id="headingId">{{ title }}</h2></div><button aria-label="关闭面板" class="button" @click="close">关闭</button></header>
+    <header><div><span class="eyebrow">管理中心 / 演示数据</span><h2 :id="headingId">{{ title }}</h2></div><button aria-label="关闭面板" class="button" @click="close">关闭</button></header>
     <div class="modal-content"><slot /></div>
   </dialog>
 </template>

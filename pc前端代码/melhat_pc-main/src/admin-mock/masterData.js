@@ -28,7 +28,7 @@ export function impacts(state, entity, row, now, all = false) {
   const add = (label, rows) => rows.forEach(r => results.push({ id: r.id, name: r.name || r.code || r.id, label }))
   const enabled = r => all || r.enabled !== false
   if (entity === 'people') {
-    add('有效领用关系（请在A3归还/核实）', state.assignments.filter(a => a.active && a.personId === row.id))
+    add('有效领用关系（请到发放回收页面归还或核实）', state.assignments.filter(a => a.active && a.personId === row.id))
     add('当前或未来名册', state.dutyShifts.filter(s => s.personIds.includes(row.id) && (all || activeShift(s, now))))
     add('协助组成员（A5维护）', state.groups.filter(g => g.personIds.includes(row.id) && enabled(g)))
   }

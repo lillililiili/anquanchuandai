@@ -27,7 +27,7 @@ export function maintenanceActionReason(state, actor, d, type, order) {
     if (type === 'maintenance.start' && maintenancePhase(order) !== 'WAITING') return '仅待处理工单可接单'
     if (type === 'maintenance.inspect' && maintenancePhase(order) !== 'PROCESSING') return '请先接单开始维修，再记录检测结果'
   } else {
-    if (active.length) return '存在活动维修单，不能直接办理此操作'
+    if (active.length) return '存在未完成维修单，不能直接办理此操作'
     const allowed = type === 'devices.restore' ? ['DISABLED'] : type === 'devices.scrap' ? ['STOCK', 'DISABLED'] : ['STOCK']
     if (!allowed.includes(d.lifecycle)) return '当前生命周期不允许此操作'
   }

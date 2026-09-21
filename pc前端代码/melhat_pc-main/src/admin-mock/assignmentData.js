@@ -2,7 +2,7 @@ import { can } from './access'
 import { relationship, personSlots, TYPES } from './relations'
 import { activeMaintenance, recordRepairCreation } from './maintenanceData'
 export const ASSIGNMENT_QUERIES = ['assignments', 'assignmentHistory', 'assignmentCandidates', 'repairAssignees', 'maintenanceSummary']
-export const SLOT_NAMES = { UNASSIGNED: '未领用', ASSIGNED: '已领用', UNKNOWN: '关系未知', CONFLICT: '关系冲突', UNAVAILABLE: '范围不可见' }
+export const SLOT_NAMES = { UNASSIGNED: '未领用', ASSIGNED: '已领用', UNKNOWN: '领用情况不明', CONFLICT: '领用记录有矛盾', UNAVAILABLE: '范围不可见' }
 const readPerson = (state, actor, p) => p && can(state, actor, 'people:read', p)
 const readDevice = (state, actor, d) => d && can(state, actor, 'assets:read', d)
 const writeBoth = (state, actor, p, d) => can(state, actor, 'assets:write', p) && can(state, actor, 'assets:write', d)
@@ -104,7 +104,7 @@ export function applyAssignment(state, actor, type, input, { fail, now }) {
     if (!a || r.state !== 'ASSIGNED' || slots[d.type] !== 'ASSIGNED' || r.person.id !== p.id) invalid(field, '有效领用关系不存在、未知或冲突，不能强制归还')
     if (a.version !== item.assignmentVersion) throw fail(409, 'VERSION_CONFLICT', '关系已变化，请重新读取')
     if (!['GOOD', 'REPAIR'].includes(item.condition)) invalid(field, '请选择完好或需检修', 400)
-    if (state.maintenanceOrders.some(o => o.deviceId === d.id && activeMaintenance(o))) invalid(field, '存在活动维修单，不能重复建单')
+    if (state.maintenanceOrders.some(o => o.deviceId === d.id && activeMaintenance(o))) invalid(field, '存在未完成维修单，不能重复建单')
     let handler = null
     if (item.condition === 'REPAIR') {
       if (typeof item.reason !== 'string' || !item.reason.trim() || item.reason.trim().length > 500) invalid(field, '需检修必须填写故障说明（最多500字）', 400)

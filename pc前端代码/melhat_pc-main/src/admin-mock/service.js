@@ -7,6 +7,8 @@ import { ASSIGNMENT_QUERIES, queryAssignments, authorizeAssignment, applyAssignm
 import { MAINTENANCE_QUERIES, MAINTENANCE_COMMANDS, queryMaintenance, authorizeMaintenance, applyMaintenance, activeMaintenance } from './maintenanceData'
 import { GROUP_QUERIES, GROUP_COMMANDS, queryCollaboration, authorizeCollaboration, applyCollaboration } from './collaborationData'
 import { authorizationDiff, needsAuthorizationPreview } from './authorizationPreview'
+import { INTEGRATION_QUERIES, INTEGRATION_COMMANDS, queryIntegrations, authorizeIntegration, applyIntegration } from './integrationData'
+import { queryAudit } from './auditData'
 export { relationship } from './relations'
 export { can } from './access'
 
@@ -87,13 +89,15 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     if (kind === 'context') return response({ sites: state.sites.filter(s => hasSite(state, current, s.id)), identity: current })
     checkSite(current, input.siteId)
     const master = ['master', 'record', 'person', 'options', 'impacts'].includes(kind)
-    const permission = GROUP_QUERIES.includes(kind) || kind === 'authorizationPreview' ? 'access:read' : kind === 'audit' ? 'audit:read' : kind === 'overview' ? 'overview:read' : 'assets:read'
+    const permission = INTEGRATION_QUERIES.includes(kind) ? 'integrations:read' : GROUP_QUERIES.includes(kind) || kind === 'authorizationPreview' ? 'access:read' : ['audit', 'auditDetail', 'auditExport'].includes(kind) ? 'audit:read' : kind === 'overview' ? 'overview:read' : 'assets:read'
     if (!master && !hasSite(state, current, input.siteId, permission)) throw fail(403, 'PERMISSION_DENIED', '当前身份无此查询权限')
     if ((captured.target === kind || (master && captured.target === input.entity)) && captured.mode !== 'normal') {
       if (captured.mode === 'unavailable') return response({ availability: 'NOT_CONNECTED', reason: '当前查询来源未接入（预置场景）' })
-      throw fail(captured.mode === 'forbidden' ? 403 : 503, captured.mode === 'forbidden' ? 'SECTION_DENIED' : 'SOURCE_FAILURE', captured.mode === 'forbidden' ? '当前分区无权限（预置场景）' : '预置数据请求失败，请恢复场景后重试')
+      throw fail(captured.mode === 'forbidden' ? 403 : 503, captured.mode === 'forbidden' ? 'SECTION_DENIED' : 'SOURCE_FAILURE', captured.mode === 'forbidden' ? '当前分区无权限（预置场景）' : '演示数据请求失败，请恢复场景后重试')
     }
     if (master) return response(queryMaster(state, current, kind, input, { fail, page, now: now(), relationship }))
+    if (INTEGRATION_QUERIES.includes(kind)) return response(queryIntegrations(state, current, kind, input, { fail, page, now: now() }))
+    if (['audit', 'auditDetail', 'auditExport'].includes(kind)) return response(queryAudit(state, current, kind, input, { fail, page, now: now(), redact }))
     if (kind === 'authorizationPreview') {
       const { type, command } = input
       if (!['accounts.update', 'roles.update', 'roles.status'].includes(type) || !command || command.siteId !== input.siteId) throw fail(400, 'INVALID_PREVIEW', '不支持此授权预览')
@@ -116,7 +120,6 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       return response({ availability: 'AVAILABLE', counts: Object.fromEntries(['assets', 'available', 'assigned', 'maintenance', 'unknown', 'conflict'].map(m => [m, rowsFor(current, input.siteId, m).length])) })
     }
     if (kind === 'details') return response({ availability: 'AVAILABLE', ...page(rowsFor(current, input.siteId, input.metric ?? 'assets'), input) })
-    if (kind === 'audit') return response({ availability: 'AVAILABLE', ...page(state.audit.filter(r => r.siteId === input.siteId && can(state, current, 'audit:read', r)).slice().reverse(), input) })
     throw fail(400, 'UNKNOWN_QUERY', '未实现此查询')
   }
   function response(data) { return copy({ code: 200, requestId: `admin-mock-${++sequence}`, data }) }
@@ -125,6 +128,34 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     await wait(signal)
     if (epoch !== startEpoch || actor().id !== user.id) throw fail(401, 'SESSION_CHANGED', '身份已变化，操作未提交')
     if (generation !== contextGeneration) throw new DOMException('上下文已变化', 'AbortError')
+    if (INTEGRATION_COMMANDS.includes(type)) {
+      checkSite(actor(), input.siteId)
+      const row = authorizeIntegration(state, actor(), type, input, fail)
+      if (typeof input.operationId !== 'string' || !input.operationId || input.operationId.length > 100) throw fail(400, 'OPERATION_REQUIRED', '操作标识无效')
+      const key = JSON.stringify([user.id, type, input.operationId]), fingerprint = JSON.stringify(stable(input)), previous = state.idempotency[key]
+      if (previous) { if (previous.fingerprint !== fingerprint) throw fail(409, 'IDEMPOTENCY_CONFLICT', '相同操作标识不能用于不同内容'); return copy(previous.result) }
+      const draft = copy(state), occurredAt = now()
+      const output = applyIntegration(draft, actor(), type, copy(input), { fail, now: occurredAt })
+      if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
+      const result = response(output)
+      draft.revision++
+      const attempt = type === 'integrations.test' ? output.lastTest : type === 'integrations.receipt' ? output.lastReceipt : null
+      const auditResult = output.status === 'FAILED' || (attempt && attempt.result !== 'SUCCESS') ? 'SOURCE_FAILURE' : output.status === 'CONFLICT' ? 'BUSINESS_REJECTED' : 'SUCCESS'
+      draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: null, actorName: user.name, actorId: user.id, action: type, objectId: output.id, objectName: output.name || row?.name || '模拟接入任务', occurredAt, result: auditResult, requestId: result.requestId, operationId: input.operationId, before: row ? redact(copy(row)) : null, after: redact(copy(output)), source: '本后台合成样本；未访问外部系统，未改变真实接入状态' })
+      if (type === 'integrations.confirm') {
+        const connector = draft.integrations.find(c => c.id === output.connectorId)
+        const collection = connector.kind === 'DEVICE' ? 'devices' : 'people'
+        for (const item of output.rows.filter(r => ['CREATE', 'UPDATE'].includes(r.action))) {
+          const before = state[collection].find(r => r.id === item.targetId)
+          const after = draft[collection].find(r => r.id === item.targetId)
+          draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: after.areaId, actorName: user.name, actorId: user.id, action: `integrations.${item.action.toLowerCase()}`, objectId: after.id, objectName: after.name, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, jobId: output.id, before: before ? redact(copy(before)) : null, after: redact(copy(after)), source: '本后台合成样本；仅来源白名单字段，未改变领用关系' })
+        }
+      }
+      draft.idempotency[key] = { fingerprint, result }
+      state = draft
+      emit('revision')
+      return copy(result)
+    }
     if (GROUP_COMMANDS.includes(type)) {
       checkSite(actor(), input.siteId)
       const row = authorizeCollaboration(state, actor(), type, input, fail)
@@ -231,7 +262,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     changeContext() { contextGeneration++; emit('context') },
     scenario: () => copy(scenario),
     setScenario(next) {
-      if (!['overview', 'details', 'audit', 'authorizationPreview', ...GROUP_QUERIES, ...DEVICE_QUERIES, ...ASSIGNMENT_QUERIES, ...MAINTENANCE_QUERIES, ...Object.keys(ENTITIES)].includes(next.target) || !['normal', 'unavailable', 'failure', 'forbidden'].includes(next.mode)) throw fail(400, 'INVALID_SCENARIO', '场景参数无效')
+      if (!['overview', 'details', 'audit', 'auditDetail', 'auditExport', 'authorizationPreview', ...INTEGRATION_QUERIES, ...GROUP_QUERIES, ...DEVICE_QUERIES, ...ASSIGNMENT_QUERIES, ...MAINTENANCE_QUERIES, ...Object.keys(ENTITIES)].includes(next.target) || !['normal', 'unavailable', 'failure', 'forbidden'].includes(next.mode)) throw fail(400, 'INVALID_SCENARIO', '场景参数无效')
       scenario = { ...next, delayNext: next.delayNext === true }; contextGeneration++; emit('scenario')
     },
     restoreScenario() { scenario = { target: 'overview', mode: 'normal', delayNext: false }; contextGeneration++; emit('scenario') },

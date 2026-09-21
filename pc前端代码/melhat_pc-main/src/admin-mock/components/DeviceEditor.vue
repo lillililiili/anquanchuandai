@@ -1,6 +1,6 @@
 <template>
   <form class="master-form" novalidate @submit.prevent="submit" @input="emit('dirty')" @change="emit('dirty')">
-    <p class="notice">仅保存到本页内存，刷新重置。厂商、SN和型号可以稍后补充，不代表设备已接入。</p>
+    <p class="notice">仅保存到当前页面，刷新重置。厂商、SN和型号可以稍后补充，不代表设备已接入。</p>
     <div v-if="error || Object.keys(localErrors).length" ref="summary" class="notice error" role="alert" tabindex="-1"><strong>未能保存，请检查资料</strong><p v-if="error">{{ error.message }} · {{ error.errorCode }} · {{ error.requestId }}</p><ul><li v-for="(message, field) in errors" :key="field"><a :href="'#device-' + field" @click.prevent="focus(field)">{{ message }}</a></li></ul></div>
     <fieldset :disabled="busy"><div class="form-grid">
       <label v-for="f in fields" :key="f.key" :class="{ wide: f.key === 'remark' }">{{ f.label }}{{ f.required ? ' *' : '' }}

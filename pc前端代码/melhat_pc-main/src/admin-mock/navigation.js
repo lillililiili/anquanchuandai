@@ -1,18 +1,18 @@
 export const MENU = [
-  { path: '/admin/overview', title: '管理工作台', permission: 'overview:read', stage: 'A0', description: '概况、待关注关系和最近管理变更' },
-  { path: '/admin/assets/devices', title: '装备资产', permission: 'assets:read', stage: 'A2—A4', description: '设备台账 → 发放回收 → 维修与退役' },
-  { path: '/admin/people', title: '人员组织', permission: 'people:read', stage: 'A1', description: '人员档案、组织班组、厂站区域与当班名册' },
-  { path: '/admin/access/accounts', title: '权限协作', permission: 'access:read', stage: 'A1 / A5', description: '登录账号、角色范围、协助组与通知范围' },
-  { path: '/admin/integrations', title: '接入配置', permission: 'integrations:read', stage: 'A6', description: '本地配置、映射预览和尝试记录，不访问外部系统' },
-  { path: '/admin/audit', title: '审计记录', permission: 'audit:read', stage: 'A6', description: '操作者、业务对象、脱敏差异与处理结果' }
+  { path: '/admin/overview', title: '管理工作台', permission: 'overview:read', description: '设备概况、待核实的领用记录和最近操作' },
+  { path: '/admin/assets/devices', title: '装备资产', permission: 'assets:read', description: '设备台账 → 发放回收 → 维修与退役' },
+  { path: '/admin/people', title: '人员组织', permission: 'people:read', description: '人员档案、组织班组、厂站区域与当班名册' },
+  { path: '/admin/access/accounts', title: '权限协作', permission: 'access:read', description: '登录账号、角色范围、协助组与通知范围' },
+  { path: '/admin/integrations', title: '接入配置', permission: 'integrations:read', description: '连接设置、数据对应关系和测试记录（演示）' },
+  { path: '/admin/audit', title: '审计记录', permission: 'audit:read', description: '查看谁在何时修改了什么，以及处理结果' }
 ]
 export const METRICS = [
-  { key: 'assets', label: '资产总数', note: '当前厂站 · 授权设备' },
-  { key: 'available', label: '可领设备', note: '库存且明确未领用 · 离线不剔除' },
-  { key: 'assigned', label: '有效领用设备', note: '一台设备只计一次 · 排除冲突' },
-  { key: 'maintenance', label: '活动维修单', note: '未关闭工单 · 非设备在线数' },
-  { key: 'unknown', label: '关系未知', note: '需要核实，不解释为未领用' },
-  { key: 'conflict', label: '关系冲突', note: '多条绑定或状态矛盾，不自动修复' }
+  { key: 'assets', label: '资产总数', note: '当前厂站内您有权查看的设备' },
+  { key: 'available', label: '可领设备', note: '库存中尚未领用的设备，含离线设备' },
+  { key: 'assigned', label: '已领用设备', note: '每台设备计一次，不含领用记录有矛盾的设备' },
+  { key: 'maintenance', label: '未完成维修单', note: '尚未完成的维修单数量' },
+  { key: 'unknown', label: '领用情况不明', note: '领用信息不完整，请核实领用人' },
+  { key: 'conflict', label: '领用记录有矛盾', note: '领用人或设备状态不一致，请人工核实' }
 ]
 export const WORKSPACES = [
   { path: '/admin/people', title: '人员档案', entity: 'people', group: 'people' },
@@ -23,8 +23,20 @@ export const WORKSPACES = [
   { path: '/admin/access/roles', title: '基础角色', entity: 'roles', group: 'access' },
   { path: '/admin/access/groups', title: '常设协助组', entity: 'groups', group: 'access' }
 ]
-export const menuPath = path => path.startsWith('/admin/assets/') ? '/admin/assets/devices' : path.startsWith('/admin/access/') ? '/admin/access/accounts' : /^\/admin\/(people|organization|sites|duty)(\/|$)/.test(path) ? '/admin/people' : path
-const allowed = new Set([...MENU.map(m => m.path), ...WORKSPACES.map(m => m.path), '/admin/legacy', '/admin/assets/assignments', '/admin/assets/maintenance'])
+export const menuPath = path => path.startsWith('/admin/integrations/') ? '/admin/integrations' : path.startsWith('/admin/assets/') ? '/admin/assets/devices' : path.startsWith('/admin/access/') ? '/admin/access/accounts' : /^\/admin\/(people|organization|sites|duty)(\/|$)/.test(path) ? '/admin/people' : path
+const allowed = new Set([...MENU.map(m => m.path), ...WORKSPACES.map(m => m.path), '/admin/legacy', '/admin/assets/assignments', '/admin/assets/maintenance', '/admin/integrations/settings'])
+export function cleanIntegrationQuery(query = {}) {
+  const base = cleanQuery(query)
+  const result = Object.fromEntries(['siteId', 'keyword', 'pageNum', 'pageSize'].filter(k => base[k] !== undefined).map(k => [k, base[k]]))
+  if (['connectors', 'jobs'].includes(query.tab)) result.tab = query.tab
+  if (['PREVIEW', 'CONFLICT', 'FAILED', 'COMPLETED'].includes(query.status)) result.status = query.status
+  if (typeof query.connectorId === 'string' && /^[\w-]{1,100}$/.test(query.connectorId)) result.connectorId = query.connectorId
+  return result
+}
+export function integrationReturn(value) {
+  const target = safeTarget(value)
+  return target.split('?')[0] === '/admin/integrations' ? target : '/admin/integrations'
+}
 export function cleanAssignmentQuery(query = {}) {
   const base = cleanQuery(query), result = Object.fromEntries(['siteId', 'selectedId', 'keyword', 'pageNum', 'pageSize'].filter(k => base[k] !== undefined).map(k => [k, base[k]]))
   if (['current', 'returns', 'history'].includes(query.tab)) result.tab = query.tab
@@ -68,9 +80,10 @@ export function safeTarget(value) {
   if (typeof value !== 'string' || !value.startsWith('/admin/') || /[\\\s#]/.test(value)) return '/admin/overview'
   try {
     const url = new URL(value, 'http://admin.local')
-    if (url.origin !== 'http://admin.local' || (!allowed.has(url.pathname) && !/^\/admin\/access\/groups\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/assets\/(devices|maintenance)\/[\w-]{1,100}$/.test(url.pathname))) return '/admin/overview'
+    if (url.origin !== 'http://admin.local' || (!allowed.has(url.pathname) && !/^\/admin\/integrations\/(?:jobs\/)?[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/access\/groups\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/assets\/(devices|maintenance)\/[\w-]{1,100}$/.test(url.pathname))) return '/admin/overview'
     const raw = Object.fromEntries(url.searchParams)
-    const cleaned = url.pathname === '/admin/assets/assignments' ? cleanAssignmentQuery(raw) : url.pathname.startsWith('/admin/assets/maintenance') ? cleanMaintenanceQuery(raw) : url.pathname.startsWith('/admin/assets/') ? cleanDeviceQuery(raw) : cleanQuery(raw)
+    const cleaned = url.pathname.startsWith('/admin/integrations') ? cleanIntegrationQuery(raw) : url.pathname === '/admin/assets/assignments' ? cleanAssignmentQuery(raw) : url.pathname.startsWith('/admin/assets/maintenance') ? cleanMaintenanceQuery(raw) : url.pathname.startsWith('/admin/assets/') ? cleanDeviceQuery(raw) : cleanQuery(raw)
+    if (url.pathname.startsWith('/admin/integrations/') && raw.returnTo) cleaned.returnTo = integrationReturn(raw.returnTo)
     if (/^\/admin\/assets\/maintenance\/[\w-]{1,100}$/.test(url.pathname) && raw.returnTo) cleaned.returnTo = maintenanceReturn(raw.returnTo)
     if (/^\/admin\/assets\/devices\/[\w-]{1,100}$/.test(url.pathname) && raw.returnTo) cleaned.returnTo = recordReturn(raw.returnTo, '/admin/assets/devices')
     if (/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && raw.returnTo) cleaned.returnTo = recordReturn(raw.returnTo, '/admin/people')

@@ -34,14 +34,18 @@ describe('account login and business wording', () => {
     expect(styles).toContain('login-showroom-v2.webp')
     expect(styles).toContain('center bottom / cover no-repeat')
   })
-  it('does not ship old Chinese display wording', () => {
+  it('uses plain operator wording and keeps simulation notices', () => {
     function walk(dir) {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const url = new URL(entry.name + (entry.isDirectory() ? '/' : ''), dir)
         if (entry.isDirectory()) walk(url)
-        else if (/\.(vue|js)$/.test(entry.name) && !entry.name.endsWith('.test.js')) expect(readFileSync(url, 'utf8')).not.toMatch(/演示|模拟/)
+        else if (entry.name.endsWith('.vue')) expect(readFileSync(url, 'utf8')).not.toMatch(/同口径|新鲜度|实例装配|\bA[0-6]\b|item\.stage|route\.meta\.stage/)
       }
     }
-    walk(new URL('./', import.meta.url))
+    walk(new URL('./views/', import.meta.url))
+    walk(new URL('./components/', import.meta.url))
+    expect(readFileSync(new URL('./views/Integrations.vue', import.meta.url), 'utf8')).toContain('确认导入模拟样本')
+    expect(readFileSync(new URL('./auditData.js', import.meta.url), 'utf8')).toContain('模拟数据')
+    expect(readFileSync(new URL('./views/Overview.vue', import.meta.url), 'utf8')).toContain('查看明细')
   })
 })
