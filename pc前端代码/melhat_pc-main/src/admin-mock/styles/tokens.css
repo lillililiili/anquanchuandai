@@ -1,10 +1,17 @@
 :root {
-  font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
   font-synthesis: none;
-  --ink: #142b55; --blue: #2563eb; --blue-dark: #174db9; --cyan: #06b6d4; --cyan-dark: #08778c; --purple: #7c3aed; --orange: #f59e0b;
-  --muted: #586b83; --line: #dbe6f4; --card: #fff; --canvas: #f3f7ff;
-  --soft-blue: #eaf2ff; --soft-cyan: #e5f9fc; --soft-purple: #f2ecff; --soft-orange: #fff5e2;
-  --danger: #b42337; --success: #147a53; --radius: 14px; --shadow: 0 6px 24px #204c8910;
-  --font-number: 'Bahnschrift', 'Segoe UI', sans-serif;
+  color-scheme: light;
+  --ink: #102652; --blue: #006bff; --blue-dark: #0062df;
+  --cyan: #006bff; --cyan-dark: #008caa; --purple: #63559d; --orange: #b77708;
+  --muted: #637695; --line: #e1e7f0; --card: #ffffff; --canvas: #f3f7fc;
+  --soft-blue: #e8f2ff; --soft-cyan: #e4f8f8; --soft-purple: #f1eef9; --soft-orange: #fff6df;
+  --danger: #d93e51; --success: #009d70; --radius: 4px; --shadow: none;
+  --menu-bg: #ffffff; --menu-active: #e8f2ff; --table-head: #f1f5fb;
+  --disabled-bg: #f1f4f9; --disabled-text: #8190a8;
+  --el-bg-color: var(--card); --el-bg-color-overlay: var(--card);
+  --el-text-color-primary: var(--ink); --el-text-color-regular: var(--muted);
+  --el-border-color-light: var(--line); --el-border-color-lighter: var(--line);
+  --font-number: Arial, 'Microsoft YaHei', sans-serif;
   color: var(--ink); background: var(--canvas);
 }

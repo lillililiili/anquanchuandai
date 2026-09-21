@@ -48,9 +48,9 @@ async function enter() {
 .login-field input { width: 100%; min-width: 0; min-height: 46px; box-sizing: border-box; }
 .password-field { position: relative; display: block; }
 .password-field input { padding-right: 48px; }
-.password-toggle { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 44px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: #586b83; padding: 0; cursor: pointer; }
+.password-toggle { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 44px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--muted); padding: 0; cursor: pointer; }
 .password-toggle svg { width: 20px; height: 20px; }
-.password-toggle:hover:not(:disabled) { color: #1765d1; background: #edf5ff; }
-.password-toggle:focus-visible { outline: 2px solid #1765d1; outline-offset: -3px; }
+.password-toggle:hover:not(:disabled) { color: var(--blue-dark); background: var(--soft-blue); }
+.password-toggle:focus-visible { outline: 2px solid var(--blue-dark); outline-offset: -3px; }
 .password-toggle:disabled { background: transparent; cursor: not-allowed; }
 </style>

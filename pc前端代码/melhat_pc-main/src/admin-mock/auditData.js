@@ -59,13 +59,13 @@ export function auditCsvCell(value) {
 }
 
 export function queryAudit(state, actor, kind, input, { fail, page, now, redact = redactAudit }) {
-  if (!AUDIT_QUERIES.includes(kind)) throw fail(400, 'INVALID_QUERY', '不支持的审计查询')
-  if (!hasSite(state, actor, input.siteId, 'audit:read')) throw fail(403, 'PERMISSION_DENIED', '无权查看此厂站审计')
+  if (!AUDIT_QUERIES.includes(kind)) throw fail(400, 'INVALID_QUERY', '不支持的日志查询')
+  if (!hasSite(state, actor, input.siteId, 'audit:read')) throw fail(403, 'PERMISSION_DENIED', '无权查看此厂站操作日志')
   const safe = value => redactAudit(redact(redactAudit(value)))
   const authorized = state.audit.filter(row => row.siteId === input.siteId && can(state, actor, 'audit:read', row))
   if (kind === 'auditDetail') {
     const row = authorized.find(r => r.id === input.id)
-    if (!row) throw fail(404, 'AUDIT_NOT_FOUND', '审计记录不存在或不可见')
+    if (!row) throw fail(404, 'AUDIT_NOT_FOUND', '操作日志不存在或不可见')
     return { availability: 'AVAILABLE', ...safe(row) }
   }
   const { filters, dates } = filtersFor(input, fail)
@@ -80,7 +80,7 @@ export function queryAudit(state, actor, kind, input, { fail, page, now, redact 
   const exportedAt = typeof now === 'function' ? now() : now || new Date().toISOString()
   const columns = ['id', 'siteId', 'areaId', 'actorName', 'action', 'objectId', 'occurredAt', 'result', 'requestId', 'operationId', 'before', 'after', 'source']
   const csvRows = [
-    ['模拟数据', '前端内存本地审计；非生产审计'], ['厂站', safe(input.siteId)],
+    ['模拟数据', '前端内存本地操作日志；非生产日志'], ['厂站', safe(input.siteId)],
     ['筛选条件', safe(filters)], ['导出时间（UTC）', safe(exportedAt)], ['记录数', rows.length], columns,
     ...rows.map(row => columns.map(key => row[key]))
   ]

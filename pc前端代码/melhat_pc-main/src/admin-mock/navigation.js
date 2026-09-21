@@ -3,8 +3,7 @@ export const MENU = [
   { path: '/admin/assets/devices', title: '装备资产', permission: 'assets:read', description: '设备台账 → 发放回收 → 维修与退役' },
   { path: '/admin/people', title: '人员组织', permission: 'people:read', description: '人员档案、组织班组、厂站区域与当班名册' },
   { path: '/admin/access/accounts', title: '权限协作', permission: 'access:read', description: '登录账号、角色范围、协助组与通知范围' },
-  { path: '/admin/integrations', title: '接入配置', permission: 'integrations:read', description: '连接设置、数据对应关系和测试记录（演示）' },
-  { path: '/admin/audit', title: '审计记录', permission: 'audit:read', description: '查看谁在何时修改了什么，以及处理结果' }
+  { path: '/admin/audit', title: '操作日志', permission: 'audit:read', description: '查看谁在何时修改了什么，以及处理结果' }
 ]
 export const METRICS = [
   { key: 'assets', label: '资产总数', note: '当前厂站内您有权查看的设备' },
@@ -80,6 +79,7 @@ export function safeTarget(value) {
   if (typeof value !== 'string' || !value.startsWith('/admin/') || /[\\\s#]/.test(value)) return '/admin/overview'
   try {
     const url = new URL(value, 'http://admin.local')
+    if (/^\/admin\/integrations(?:\/|$)/.test(url.pathname)) return '/admin/overview'
     if (url.origin !== 'http://admin.local' || (!allowed.has(url.pathname) && !/^\/admin\/integrations\/(?:jobs\/)?[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/access\/groups\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/assets\/(devices|maintenance)\/[\w-]{1,100}$/.test(url.pathname))) return '/admin/overview'
     const raw = Object.fromEntries(url.searchParams)
     const cleaned = url.pathname.startsWith('/admin/integrations') ? cleanIntegrationQuery(raw) : url.pathname === '/admin/assets/assignments' ? cleanAssignmentQuery(raw) : url.pathname.startsWith('/admin/assets/maintenance') ? cleanMaintenanceQuery(raw) : url.pathname.startsWith('/admin/assets/') ? cleanDeviceQuery(raw) : cleanQuery(raw)
@@ -95,7 +95,8 @@ export function safeTarget(value) {
 export function peopleReturn(value) { const target = safeTarget(value); return target.split('?')[0] === '/admin/people' ? target : '/admin/people' }
 export function deviceReturn(value) {
   if (typeof value !== 'string' || /[\\\s#]/.test(value) || !value.startsWith('/admin/assets/devices')) return '/admin/assets/devices'
-  try { const url = new URL(value, 'http://admin.local'); if (url.origin !== 'http://admin.local' || url.pathname !== '/admin/assets/devices') return '/admin/assets/devices'; const q = new URLSearchParams(cleanDeviceQuery(Object.fromEntries(url.searchParams))).toString(); return url.pathname + (q ? '?' + q : '') } catch { return '/admin/assets/devices' }
+  try { const url = new URL(value, 'http://admin.local')
+    if (/^\/admin\/integrations(?:\/|$)/.test(url.pathname)) return '/admin/overview'; if (url.origin !== 'http://admin.local' || url.pathname !== '/admin/assets/devices') return '/admin/assets/devices'; const q = new URLSearchParams(cleanDeviceQuery(Object.fromEntries(url.searchParams))).toString(); return url.pathname + (q ? '?' + q : '') } catch { return '/admin/assets/devices' }
 }
 export function trustedPortal(value) {
   try {

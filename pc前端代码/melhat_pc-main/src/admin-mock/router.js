@@ -13,11 +13,7 @@ export const router = createRouter({ history: createWebHashHistory(), routes: [
   { path: '/', redirect: '/admin/overview' },
   { path: '/admin/login', component: Login },
   { path: '/admin', component: Layout, children: [
-    ...MENU.filter(m => !['/admin/assets/devices', '/admin/integrations', '/admin/audit'].includes(m.path) && !WORKSPACES.some(w => w.path === m.path)).map(m => ({ path: m.path, component: m.path === '/admin/overview' ? Overview : Placeholder, meta: m })),
-    { path: '/admin/integrations', component: () => import('./views/Integrations.vue') },
-    { path: '/admin/integrations/settings', component: () => import('./views/IntegrationSettings.vue') },
-    { path: '/admin/integrations/jobs/:jobId', component: () => import('./views/Integrations.vue') },
-    { path: '/admin/integrations/:connectorId', component: () => import('./views/Integrations.vue') },
+    ...MENU.filter(m => !['/admin/assets/devices', '/admin/audit'].includes(m.path) && !WORKSPACES.some(w => w.path === m.path)).map(m => ({ path: m.path, component: m.path === '/admin/overview' ? Overview : Placeholder, meta: m })),
     { path: '/admin/audit', component: () => import('./views/Audit.vue') },
     { path: '/admin/assets/devices', component: () => import('./views/Devices.vue') },
     { path: '/admin/assets/devices/:deviceId', component: () => import('./views/DeviceDetail.vue') },

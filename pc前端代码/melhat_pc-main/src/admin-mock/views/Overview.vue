@@ -13,7 +13,7 @@
       </section>
       <section class="panel"><div class="section-heading"><h2>最近管理变更</h2><span class="badge">本次演示记录</span></div>
         <QueryState :data="audit.data.value" :error="audit.error.value" :loading="audit.loading.value" @retry="loadAudit">
-          <ul v-if="audit.data.value?.rows?.length" class="audit-list"><li v-for="record in audit.data.value.rows" :key="record.id"><strong>{{ record.action }}</strong><p>{{ record.actorName }} · {{ record.occurredAt }}</p></li></ul>
+          <ul v-if="audit.data.value?.rows?.length" class="audit-list"><li v-for="record in audit.data.value.rows" :key="record.id"><strong>{{ record.action }}</strong><p>{{ record.actorName }} · {{ utcTime(record.occurredAt) }}</p></li></ul>
           <div v-else class="empty-records"><img :src="stateArt" class="state-art" alt="" width="115" height="90" loading="lazy" /><h3>暂无管理变更记录</h3><p>新增设备或修改资料后，可在这里查看操作记录。</p><small>当前页面保存，刷新恢复初始数据。</small></div>
         </QueryState>
         <div class="boundary-note"><strong>演示说明</strong><p>本后台与监护前台各自临时保存演示数据。这里的修改不会自动同步到另一端。</p></div>
@@ -21,16 +21,10 @@
     </div>
     <ModalPanel side :open="!!selected" :title="selected ? selected.label + ' · 只读明细' : ''" @close="closeDetails">
       <p class="notice">{{ selected?.note }}。演示数据，不代表设备已接入。</p>
-      <form class="detail-filter" @submit.prevent="search"><label>编号 / 人员关键词<input v-model="keyword" maxlength="100" placeholder="请输入设备编号或人员" /></label><button class="button primary" type="submit">查询</button><button class="button" type="button" @click="clearSearch">重置筛选</button></form>
+      <form class="detail-filter" @submit.prevent="search"><label>编号 / 人员关键词<input v-model="keyword" maxlength="100" placeholder="请输入设备编号或人员" /></label><div class="filter-actions"><button class="button primary" type="submit">查询</button><button class="button" type="button" @click="clearSearch">重置</button></div></form>
       <QueryState :data="details.data.value" :error="details.error.value" :loading="details.loading.value" @retry="loadDetails">
-        <div v-if="details.data.value?.rows?.length" class="table-scroll"><table>
-          <thead><tr><th>设备 / 标识</th><th>领用关系</th><th>连接状态与更新时间</th><th>数据上报时间</th></tr></thead>
-          <tbody><tr v-for="row in details.data.value.rows" :key="row.id">
-            <td><strong>{{ row.code }}</strong><small>{{ row.name }} · {{ row.id }}</small><small v-if="row.type !== 'HELMET'">演示设备档案 · 连接方式待厂家确认</small></td>
-            <td>{{ relationNames[row.relation] }}<small>{{ row.personName || '人员归属未知 / 无当前领用人' }}</small></td>
-            <td>{{ communicationNames[row.communication] }}<small>{{ row.freshness === 'STALE' ? '已过期（演示）' : '更新时间不明' }}</small></td>
-            <td>{{ sourceTime(row.sourceTime) }}</td>
-          </tr></tbody>
+        <div v-if="details.data.value?.rows?.length" class="table-scroll"><table v-table class="admin-table ">
+          <thead><tr><th data-width="160">设备编号</th><th data-width="180">设备名称</th><th data-width="230">设备标识</th><th data-width="260">连接说明</th><th data-width="140" class="status-cell">领用关系</th><th data-width="220">领用人员</th><th data-width="160">连接状态</th><th data-width="160">更新情况</th><th data-width="210">上报时间（UTC）</th></tr></thead><tbody><tr v-for="row in details.data.value.rows" :key="row.id"><td>{{ row.code }}</td><td>{{ row.name }}</td><td>{{ row.id }}</td><td>{{ row.type !== 'HELMET' ? '演示设备档案 · 连接方式待厂家确认' : '—' }}</td><td>{{ relationNames[row.relation] }}</td><td>{{ row.personName || '人员归属未知 / 无当前领用人' }}</td><td>{{ communicationNames[row.communication] || row.communication || '—' }}</td><td>{{ row.freshness === 'STALE' ? '已过期（演示）' : '更新时间不明' }}</td><td>{{ utcTime(row.sourceTime) }}</td></tr></tbody>
         </table></div>
         <div v-else class="query-state"><strong>无匹配记录</strong><p>已读取演示数据，该厂站或筛选范围没有记录。</p></div>
         <div v-if="details.data.value?.total !== undefined" class="pagination"><span>共 {{ details.data.value.total }} 条 · 每页20条 · 第 {{ pageNum }} 页</span><button class="button" :disabled="pageNum <= 1" @click="changePage(-1)">上一页</button><button class="button" :disabled="pageNum * 20 >= details.data.value.total" @click="changePage(1)">下一页</button></div>
@@ -39,6 +33,7 @@
   </section>
 </template>
 <script setup>
+import { utcTime } from '../tablePresentation'
 import { ref, watch } from 'vue'
 import { Box, Tickets, User, Tools, Location, WarningFilled, Key, Connection, Document } from '@element-plus/icons-vue'
 import stateArt from '../assets/visual/state-empty.webp'
@@ -53,7 +48,6 @@ const entryIcons = [Box, User, Key, Connection, Document]
 const selected = ref(null), pageNum = ref(1), keyword = ref(''), submittedKeyword = ref('')
 const relationNames = { ASSIGNED: '已领用', UNASSIGNED: '未领用', UNKNOWN: '领用情况不明', CONFLICT: '领用记录有矛盾' }
 const communicationNames = { ONLINE: '在线（演示）', OFFLINE: '离线（演示）', UNKNOWN: '连接状态不明' }
-function sourceTime(value) { return value && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString().replace('T', ' ').replace('.000Z', ' UTC') : '未知' }
 function loadOverview() { overview.run('overview', { siteId: store.siteId }) }
 function loadAudit() { audit.run('audit', { siteId: store.siteId, pageSize: 5 }) }
 function loadDetails() { if (selected.value) details.run('details', { siteId: store.siteId, metric: selected.value.key, pageNum: pageNum.value, keyword: submittedKeyword.value }) }

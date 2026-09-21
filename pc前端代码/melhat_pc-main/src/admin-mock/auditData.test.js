@@ -82,13 +82,12 @@ describe('A6 audit snapshots and local CSV', () => {
 })
 
 describe('A6 navigation sanitization', () => {
-  it('preserves integration workspace filters and known detail/settings paths', () => {
+  it('rejects removed integration routes while retaining query sanitization', () => {
     const query = { siteId: 'site-1', tab: 'jobs', status: 'CONFLICT', connectorId: 'integration-site-1-DEVICE', keyword: 'source', pageNum: '2', pageSize: '50' }
     expect(cleanIntegrationQuery(query)).toEqual(query)
     for (const path of ['/admin/integrations', '/admin/integrations/settings', '/admin/integrations/integration-site-1-DEVICE', '/admin/integrations/jobs/integration-job-1']) {
       const target = safeTarget(path + '?' + new URLSearchParams(query))
-      expect(target.split('?')[0]).toBe(path)
-      expect(Object.fromEntries(new URLSearchParams(target.split('?')[1]))).toEqual(query)
+      expect(target).toBe('/admin/overview')
       expect(menuPath(path)).toBe('/admin/integrations')
     }
   })
@@ -101,10 +100,10 @@ describe('A6 navigation sanitization', () => {
     expect(safeTarget(value)).toBe('/admin/overview')
     expect(integrationReturn(value)).toBe('/admin/integrations')
   })
-  it('limits return paths to the filtered integration list and strips nested secrets', () => {
+  it('rejects removed integration return targets and nested secrets', () => {
     const back = '/admin/integrations?siteId=site-1&tab=jobs&status=FAILED&token=secret'
     const result = safeTarget('/admin/integrations/jobs/job-1?' + new URLSearchParams({ siteId: 'site-1', returnTo: back, token: 'secret' }))
-    expect(new URLSearchParams(result.split('?')[1]).get('returnTo')).toBe('/admin/integrations?siteId=site-1&tab=jobs&status=FAILED')
+    expect(result).toBe('/admin/overview')
     expect(result).not.toContain('secret')
     for (const value of ['/admin/access/accounts', '/admin/integrations/settings', '/admin/integrations/jobs/job-2']) expect(integrationReturn(value)).toBe('/admin/integrations')
   })

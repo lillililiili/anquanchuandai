@@ -30,9 +30,6 @@ describe('account login and business wording', () => {
     expect(source).toContain('class="password-toggle"')
     expect(source).toContain('visible ? View : Hide')
     expect(source).toContain('padding-right: 48px')
-    const styles = readFileSync(new URL('./styles/pages.css', import.meta.url), 'utf8')
-    expect(styles).toContain('login-showroom-v2.webp')
-    expect(styles).toContain('center bottom / cover no-repeat')
   })
   it('uses plain operator wording and keeps simulation notices', () => {
     function walk(dir) {

@@ -13,7 +13,7 @@
     <aside class="sidebar">
       <div class="nav-heading"><span v-if="!compact">管理菜单</span><button :aria-expanded="!compact" aria-label="折叠菜单" class="button text-button" @click="compact = !compact">{{ compact ? '展开' : '收起' }}</button></div>
       <nav aria-label="主导航"><router-link v-for="(item, index) in MENU" :key="item.path" :aria-current="menuPath(route.path) === item.path ? 'page' : undefined" :class="{ active: menuPath(route.path) === item.path }" :title="item.title" :to="{ path: item.path, query: store.siteId ? { siteId: store.siteId } : {} }"><component :is="icons[index]" aria-hidden="true" /><span v-if="!compact">{{ item.title }}</span></router-link></nav>
-      <div class="sidebar-bottom"><img v-if="!compact" class="sidebar-art" :src="showroom" alt="" width="180" height="100" loading="lazy" /><p v-if="!compact" class="small muted">前台负责现场监护<br>后台负责资产与管理</p><a v-if="portal" class="button" :href="portal" rel="noopener noreferrer" target="_blank">打开监护前台</a><button v-else class="button" disabled>前台地址未配置</button><small v-if="!compact">独立登录 · 数据独立</small></div>
+      <div class="sidebar-bottom"><p v-if="!compact" class="small muted">前台负责现场监护<br>后台负责资产与管理</p><a v-if="portal" class="button" :href="portal" rel="noopener noreferrer" target="_blank">打开监护前台</a><button v-else class="button" disabled>前台地址未配置</button><small v-if="!compact">独立登录 · 数据独立</small></div>
     </aside>
     <main id="main-content" class="main-content" tabindex="-1">
       <p v-if="contextError" class="notice error" role="alert">{{ contextError }} <button class="button" @click="initialize">重新加载</button></p>
@@ -40,7 +40,6 @@
 </template>
 <script setup>
 import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
-import showroom from '../assets/visual/showroom-banner.webp'
 import { useRoute, useRouter } from 'vue-router'
 import { House, Box, User, Key, Connection, Document } from '@element-plus/icons-vue'
 import { getAdminProvider } from '@admin-provider'
@@ -81,7 +80,7 @@ async function initialize(reconcile = false) {
 async function selectSite(id) {
   if (!store.confirmLeave()) { await nextTick(); document.querySelector('.site-picker select').value = store.siteId; return }
   contextError.value = ''; store.selectSite(id)
-  router.replace({ path: /^\/admin\/integrations\/(?!settings$)/.test(route.path) ? '/admin/integrations' : /^\/admin\/people\//.test(route.path) ? '/admin/people' : /^\/admin\/assets\/devices\//.test(route.path) ? '/admin/assets/devices' : /^\/admin\/assets\/maintenance\//.test(route.path) ? '/admin/assets/maintenance' : /^\/admin\/access\/groups\//.test(route.path) ? '/admin/access/groups' : route.path, query: { siteId: id } })
+  router.replace({ path: /^\/admin\/people\//.test(route.path) ? '/admin/people' : /^\/admin\/assets\/devices\//.test(route.path) ? '/admin/assets/devices' : /^\/admin\/assets\/maintenance\//.test(route.path) ? '/admin/assets/maintenance' : /^\/admin\/access\/groups\//.test(route.path) ? '/admin/access/groups' : route.path, query: { siteId: id } })
 }
 function logout() { provider.logout() }
 function applyScenario() { provider.setScenario({ target: target.value, mode: mode.value, delayNext: slow.value }); panel.value = false; slow.value = false }
