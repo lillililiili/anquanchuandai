@@ -1,0 +1,10 @@
+/* app.css 2864-2872 */
+
+.event-page .evidence .media-preview-wrap {
+  height: 240px;
+}
+.event-page .evidence .media-preview-wrap > img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}

@@ -1,0 +1,52 @@
+/* app.css 2940-2990 */
+
+.overview-layout {
+  height: 522px;
+  grid-template-columns: 1.85fr 1fr;
+}
+.overview-layout > .stack {
+  min-height: 0;
+}
+.overview-layout > .stack > .panel {
+  min-height: 0;
+}
+.overview-layout .progress-row {
+  height: 43px;
+  margin: 8px 0;
+  grid-template-columns: 64px 112px 1fr 60px;
+}
+.overview-layout .progress-row img {
+  height: 43px;
+}
+.overview-layout .note {
+  padding: 5px 0;
+}
+.overview-layout .panel-heading {
+  height: 47px;
+  min-height: 47px;
+}
+.overview-layout .compact td {
+  height: 57px;
+  padding: 8px;
+}
+.overview-layout .compact th {
+  padding: 9px 8px;
+}
+.overview-bottom table {
+  font-size: 13px;
+}
+.overview-bottom td,
+.overview-bottom th {
+  white-space: nowrap;
+  padding: 8px;
+}
+.overview-bottom .panel-heading {
+  height: 40px;
+  min-height: 40px;
+}
+.overview-bottom .video-frame {
+  height: 155px;
+}
+.overview-bottom .stack .video-frame {
+  height: 74px;
+}

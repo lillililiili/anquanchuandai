@@ -1,0 +1,17 @@
+/* app.css 881-896 */
+
+.empty {
+  padding: 50px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  align-items: center;
+  color: #82a5bf;
+}
+.empty i {
+  font-size: 42px;
+  color: #2e6b94;
+}
+.empty span {
+  font-size: 15px;
+}

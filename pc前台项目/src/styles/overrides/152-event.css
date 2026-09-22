@@ -1,0 +1,5 @@
+/* app.css 4392-4395 */
+
+.event-page .cols-2 > .stack:nth-child(2) > .panel:last-child .info {
+  grid-template-columns: 160px 1fr;
+}

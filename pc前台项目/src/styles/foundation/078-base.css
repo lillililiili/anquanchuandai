@@ -1,0 +1,19 @@
+/* app.css 2104-2121 */
+
+.record-entry {
+  border-bottom: 1px solid var(--border);
+  padding: 18px 10px;
+}
+.record-entry h3 {
+  font-size: 17px;
+}
+.record-entry p {
+  font-size: 14px;
+  color: #a1bcd3;
+  margin-top: 9px;
+}
+.record-entry time {
+  font-size: 12px;
+  color: #719ab8;
+  float: right;
+}

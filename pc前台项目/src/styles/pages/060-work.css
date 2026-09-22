@@ -1,0 +1,25 @@
+/* app.css 1616-1639 */
+
+.work-page .work-media {
+  height: 470px;
+  aspect-ratio: auto;
+}
+.work-page .video-controls {
+  height: 57px;
+}
+.work-page .video-controls .plain {
+  flex-direction: row;
+  padding: 0 7px;
+}
+.work-page .video-controls input {
+  display: none;
+}
+.work-page .video-frame:has(.video-controls) .video-time {
+  bottom: 70px;
+}
+.work-page .device-strip {
+  gap: 12px;
+}
+.work-page .map {
+  height: 230px;
+}

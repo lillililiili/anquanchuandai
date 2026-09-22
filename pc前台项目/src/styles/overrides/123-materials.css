@@ -1,0 +1,50 @@
+/* app.css 3476-3524 */
+
+.materials-page .filters {
+  gap: 10px;
+  flex-wrap: nowrap;
+  margin-top: 0;
+}
+.materials-page .filters .field {
+  gap: 7px;
+  font-size: 13px;
+}
+.materials-page .filters .field > span {
+  font-size: 13px;
+}
+.materials-page .filters select {
+  min-width: 90px;
+  max-width: 120px;
+  font-size: 13px;
+  padding: 9px;
+}
+.materials-page .filters input {
+  width: 140px;
+  font-size: 13px;
+}
+.materials-page .filters .btn {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.materials-page .media-grid .preview {
+  height: 200px;
+}
+.materials-page .media-card h3 {
+  font-size: 17px;
+  padding: 8px;
+}
+.materials-page .media-card p {
+  flex-wrap: wrap;
+  line-height: 1.5;
+}
+.materials-page .info dt,
+.materials-page .info dd {
+  padding: 7px 0;
+}
+.materials-page .page-heading {
+  min-height: 66px;
+  margin-bottom: 12px;
+}
+.materials-page .media-detail .info {
+  line-height: 1.5;
+}

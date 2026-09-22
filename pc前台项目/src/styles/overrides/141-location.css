@@ -1,0 +1,14 @@
+/* app.css 4202-4214 */
+
+.location-page .location-layout > .panel {
+  height: 707px;
+}
+.location-page .location-layout > .map {
+  height: 665px;
+}
+.location-page .location-layout {
+  min-height: 707px;
+}
+.location-page > .note {
+  bottom: 48px;
+}

@@ -1,0 +1,9 @@
+/* app.css 1720-1727 */
+
+.single-page .cols-2 {
+  grid-template-columns: 2.35fr 1fr;
+}
+.single-page .video-frame {
+  height: 650px;
+  aspect-ratio: auto;
+}

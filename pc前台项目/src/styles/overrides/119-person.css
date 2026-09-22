@@ -1,0 +1,7 @@
+/* app.css 3381-3386 */
+
+.work-page .person-cell .avatar {
+  height: 37px;
+  width: 37px;
+  min-width: 37px;
+}

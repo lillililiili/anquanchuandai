@@ -1,0 +1,6 @@
+/* app.css 1-5 */
+@font-face {
+  font-family: PingFang;
+  src: url("/assets/PingFang-Medium.ttf") format("truetype");
+  font-display: swap;
+}

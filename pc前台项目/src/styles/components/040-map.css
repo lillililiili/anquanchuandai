@@ -1,0 +1,175 @@
+/* app.css 922-1095 */
+
+.map {
+  position: relative;
+  overflow: hidden;
+  min-height: 230px;
+  height: 100%;
+  border: 1px solid #20506c;
+  border-radius: 5px;
+  background: #0c293a;
+  touch-action: none;
+}
+.map-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+  cursor: grab;
+}
+.map-world > img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: brightness(0.73) saturate(0.88);
+}
+.map-world > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.map-caption {
+  position: absolute;
+  left: 14px;
+  top: 13px;
+  padding: 3px 9px;
+  background: #00253fea;
+  letter-spacing: 1px;
+}
+.map-zone {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 7px 13px;
+  border: 1px solid #49c8f2;
+  border-radius: 4px;
+  background: #00243eee;
+  box-shadow: 0 1px 5px #0007;
+  white-space: nowrap;
+  font-size: 16px;
+  pointer-events: none;
+}
+.map-person {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  height: 33px;
+  width: 33px;
+  border: 2px solid #caefff;
+  border-radius: 50%;
+  color: white;
+  background: #008cfa;
+  box-shadow:
+    0 0 0 5px #00aaff26,
+    0 0 15px #008eff;
+  padding: 2px;
+  z-index: 3;
+}
+.map-person i {
+  font-size: 24px;
+}
+.map-person.warning {
+  background: #b07b05;
+  border-color: #ffdc50;
+  box-shadow: 0 0 14px #ffca3577;
+}
+.map-person.selected {
+  height: 39px;
+  width: 39px;
+  box-shadow:
+    0 0 0 7px #008cff38,
+    0 0 20px #00bfff;
+}
+.map-popup {
+  position: absolute;
+  z-index: 7;
+  min-width: 245px;
+  background: #00243cf5;
+  border: 1px solid #48d3fd;
+  border-radius: 5px;
+  padding: 14px;
+  font-size: 14px;
+  box-shadow: 0 5px 20px #00101d88;
+  cursor: default;
+}
+.map-popup p {
+  font-size: 13px;
+  line-height: 1.9;
+}
+.map-popup .row {
+  margin-top: 8px;
+}
+.map-legend {
+  position: absolute;
+  left: 13px;
+  bottom: 12px;
+  padding: 7px 12px;
+  background: #01233aeb;
+  border: 1px solid #24546e;
+  border-radius: 4px;
+  line-height: 1.9;
+  font-size: 12px;
+  pointer-events: none;
+}
+.map-legend i {
+  margin-right: 8px;
+  font-size: 17px;
+}
+.map-scale {
+  position: absolute;
+  right: 24px;
+  bottom: 13px;
+  font-size: 10px;
+  color: #ddedf6;
+  text-shadow: 1px 1px #000;
+}
+.map-scale hr {
+  border-color: #d6e9f9;
+  margin: 3px 0;
+  border-width: 2px;
+}
+.map-compass {
+  position: absolute;
+  right: 21px;
+  top: 17px;
+  text-align: center;
+  font-size: 12px;
+  color: #c1dcee;
+}
+.map-compass i {
+  font-size: 29px;
+  color: #77caff;
+}
+.map-tools {
+  position: absolute;
+  right: 12px;
+  top: 83px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.map-tools .btn {
+  background: #022a45e8;
+}
+.map-editbar {
+  position: absolute;
+  top: 12px;
+  right: 60px;
+  display: flex;
+  gap: 2px;
+  background: #012038e8;
+  border: 1px solid #1c597d;
+  padding: 5px;
+  border-radius: 4px;
+}
+.map-editbar .btn {
+  font-size: 13px;
+  padding: 5px 9px;
+}
+.map-instruction {
+  position: absolute;
+  bottom: 14px;
+  left: 180px;
+  color: #d6eaff;
+  background: #00243bdd;
+  padding: 6px;
+  font-size: 12px;
+}

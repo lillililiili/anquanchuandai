@@ -1,0 +1,17 @@
+/* app.css 600-615 */
+
+.searchbox {
+  position: relative;
+  flex: 1;
+}
+.searchbox > i {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  font-size: 21px;
+  color: #9cbdd7;
+}
+.searchbox input {
+  width: 100%;
+  padding-left: 39px;
+}

@@ -1,0 +1,15 @@
+/* app.css 4458-4471 */
+
+.vitals-body { flex: 1; grid-template-columns: minmax(0,1fr) 210px minmax(0,1fr); }
+.vitals-human img { height: 300px; width: 200px; mask-image: radial-gradient(ellipse, #000 46%, transparent 76%); }
+.vital-card { display: flex; flex-direction: column; justify-content: center; padding: 16px 18px; }
+.vital-card strong { font-size: 36px; }
+.vital-pressure strong { font-size: 30px; }
+.vital-card p { margin: 8px 0; }
+@media (max-width: 1400px) {
+  .vitals-body { grid-template-columns: minmax(0,1fr) 155px minmax(0,1fr); }
+  .vitals-human img { width: 155px; height: 270px; }
+  .vital-card { padding: 12px; }
+  .vital-card strong { font-size: 30px; }
+  .vital-pressure strong { font-size: 24px; }
+}

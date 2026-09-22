@@ -1,0 +1,9 @@
+/* app.css 2436-2443 */
+
+.session-badge {
+  border-radius: 25px;
+  padding: 6px 20px;
+  background: #8b102c;
+  color: #ffe9ed;
+  font-size: 15px;
+}

@@ -1,0 +1,33 @@
+/* app.css 1324-1355 */
+
+.bars-chart {
+  padding: 12px 14px 5px;
+}
+.chart-line {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 16px;
+  align-items: center;
+  margin: 20px 0;
+}
+.chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.chart-bars div {
+  height: 19px;
+  background: #168cfc;
+  position: relative;
+  min-width: 1px;
+}
+.chart-bars div:nth-child(2) {
+  background: #19c9d8;
+}
+.chart-bars span {
+  position: absolute;
+  right: -21px;
+  top: -3px;
+  color: #dbeaff;
+  font-size: 14px;
+}

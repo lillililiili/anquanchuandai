@@ -1,0 +1,7 @@
+/* app.css 2431-2436 */
+
+.avatar-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

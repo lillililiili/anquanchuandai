@@ -1,0 +1,43 @@
+/* app.css 422-463 */
+
+.tag {
+  display: inline-block;
+  padding: 2px 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  border: 1px solid #187aaf;
+  background: #08518650;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.tag.yellow {
+  border-color: #aa873c;
+  background: #ae81251c;
+}
+.tag.green {
+  border-color: #107d72;
+  background: #126d6622;
+}
+.tag.red {
+  border-color: #bd4552;
+  background: #a82c3822;
+}
+.tag.muted {
+  border-color: #426581;
+  background: #22486355;
+}
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.status b {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  flex-shrink: 0;
+}

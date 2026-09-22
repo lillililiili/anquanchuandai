@@ -1,0 +1,67 @@
+/* app.css 3931-3996 */
+
+.statistics-page .page-heading {
+  min-height: 63px;
+  margin-bottom: 13px;
+}
+.statistics-page .row.space-between:has(> .tabs) {
+  height: 54px;
+}
+.statistics-page .tabs.box {
+  margin-bottom: 10px;
+}
+.statistics-page .stats {
+  margin-bottom: 14px;
+}
+.statistics-page .stat {
+  padding: 14px 26px;
+  height: 105px;
+}
+.statistics-page .equal > .panel {
+  min-height: 0;
+  height: 299px;
+}
+.statistics-page .equal .panel-heading {
+  height: 47px;
+}
+.statistics-page .equal .panel-heading .legend {
+  gap: 12px;
+  font-size: 12px;
+}
+.statistics-page .equal .panel-heading small {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.statistics-page .chart-line {
+  margin: 16px 0;
+}
+.statistics-page .bars-chart {
+  padding: 3px 14px;
+}
+.statistics-page .equal > .panel:nth-child(2) .panel-body > div {
+  padding: 4px 16px !important;
+}
+.statistics-page .segmented-bar {
+  margin: 14px 0;
+}
+.statistics-page .equal > .panel:nth-child(2) .note {
+  padding: 5px 0;
+}
+.statistics-page .equal > .panel:nth-child(2) .status {
+  font-size: 12px;
+}
+.statistics-page .equal > .panel:nth-child(2) h3 {
+  margin: 4px 0 !important;
+}
+.statistics-page .compact th {
+  padding: 9px;
+}
+.statistics-page .compact td {
+  padding: 10px 9px;
+}
+.statistics-page > .note {
+  padding: 8px 0;
+}
+.statistics-page .stats-notice {
+  font-size: 11px;
+}

@@ -1,0 +1,15 @@
+/* app.css 526-539 */
+
+textarea {
+  resize: vertical;
+  width: 100%;
+  line-height: 1.6;
+  min-height: 100px;
+}
+form.filters {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 12px 0 16px;
+  flex-wrap: wrap;
+}

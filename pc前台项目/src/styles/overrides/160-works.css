@@ -1,0 +1,20 @@
+/* app.css 4494-4512 */
+
+/* Work filters and operations share one baseline and wrap as complete groups. */
+.works-page .works-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; margin: 10px 0 16px; }
+.works-page .works-toolbar .filters { flex: 1 1 880px; display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 12px; margin: 0; padding: 0; min-width: 0; }
+.works-page .works-toolbar .field { flex: 0 0 auto; gap: 7px; min-width: 0; }
+.works-page .works-toolbar .field:first-child { flex: 1 1 220px; min-width: 180px; }
+.works-page .works-toolbar .field > span { font-size: 13px; line-height: 20px; }
+.works-page .works-toolbar input, .works-page .works-toolbar select, .works-page .works-toolbar .btn { height: 42px; min-height: 42px; }
+.works-page .works-toolbar .field input[type="text"] { width: 100%; }
+.works-page .works-toolbar .field input[type="date"] { width: 156px; }
+.works-page .works-toolbar .field select { width: 110px; min-width: 110px; max-width: none; }
+.works-page .works-toolbar .filters > .btn { flex-shrink: 0; padding: 8px 15px; }
+.works-page .works-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; padding-left: 18px; border-left: 1px solid #24506c; }
+.works-page .works-actions .btn { white-space: nowrap; padding: 8px 16px; }
+@media (max-width: 1300px) {
+  .works-page .works-toolbar .filters { flex-wrap: wrap; flex-basis: 100%; }
+  .works-page .works-actions { padding-left: 0; border-left: 0; }
+}
+.works-page .works-toolbar .field select { width: 120px; min-width: 120px; padding: 8px 10px; font-size: 14px; }

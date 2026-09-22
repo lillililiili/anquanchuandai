@@ -1,0 +1,33 @@
+/* app.css 318-349 */
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #03253d99;
+  min-width: 0;
+  overflow: hidden;
+}
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  gap: 10px;
+}
+.panel-heading h2 {
+  border-left: 4px solid var(--blue);
+  padding-left: 13px;
+  line-height: 24px;
+}
+.panel-heading > div {
+  font-size: 14px;
+  color: #c2d5e8;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.panel-body {
+  padding: 12px;
+}

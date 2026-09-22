@@ -1,0 +1,24 @@
+/* app.css 2918-2940 */
+
+.stats.flat {
+  height: 62px;
+  min-height: 62px;
+  padding: 0;
+  margin: 0 0 17px;
+}
+.stats.flat .stat {
+  height: 62px;
+}
+.stats.flat .stat span {
+  line-height: 22px;
+}
+.stats.flat .stat strong {
+  line-height: 40px;
+  display: inline;
+}
+.stats.flat .stat em {
+  display: inline;
+  white-space: nowrap;
+  margin-left: 8px;
+  font-size: 12px;
+}

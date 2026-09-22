@@ -1,0 +1,14 @@
+/* app.css 1772-1784 */
+
+.materials-page .media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.materials-page .split-detail {
+  grid-template-columns: 2.2fr 1fr;
+}
+.materials-page .media-detail .media-preview {
+  height: 230px;
+  object-fit: cover;
+}

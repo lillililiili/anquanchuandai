@@ -1,0 +1,14 @@
+/* app.css 301-313 */
+
+.page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  min-height: 58px;
+}
+.page-heading p {
+  color: #b6ccdf;
+  font-size: 17px;
+}

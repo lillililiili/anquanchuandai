@@ -1,0 +1,53 @@
+/* app.css 3524-3575 */
+
+.location-page .page-heading {
+  min-height: 49px;
+  height: 49px;
+  margin-bottom: 10px;
+}
+.location-page .tabs {
+  margin-bottom: 13px;
+}
+.location-page .tabs a {
+  padding: 9px 25px;
+}
+.location-layout {
+  min-height: 0;
+}
+.location-layout > .panel {
+  height: 720px;
+}
+.location-layout > .map {
+  height: 678px;
+}
+.location-page > .note {
+  position: absolute;
+  bottom: 48px;
+  left: 415px;
+  right: 23px;
+  background: #03243d;
+  border: 1px solid var(--border);
+  margin: 0;
+  height: 42px;
+}
+.location-page .layer-controls {
+  top: 204px;
+  right: 37px;
+}
+.location-page .filters {
+  gap: 9px;
+}
+.location-page .filters .btn {
+  font-size: 12px;
+  min-height: 28px;
+  padding: 4px 12px;
+}
+.location-page .filters .field {
+  width: 100%;
+}
+.location-page .filters .field select {
+  flex: 1;
+}
+.location-layout td {
+  padding: 13px 8px;
+}

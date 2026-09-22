@@ -1,0 +1,10 @@
+/* app.css 4369-4377 */
+
+.person-page {
+  padding-top: 12px;
+}
+.person-page .cols-2 > .stack:first-child > .panel > .panel-heading {
+  height: 36px;
+  min-height: 36px;
+  padding: 5px 14px;
+}

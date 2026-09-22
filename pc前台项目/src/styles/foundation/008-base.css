@@ -1,0 +1,55 @@
+/* app.css 73-126 */
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+h2 {
+  font-size: 20px;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+}
+p {
+  line-height: 1.8;
+}
+small {
+  font-size: 13px;
+  color: var(--muted);
+}
+b,
+strong {
+  font-weight: 600;
+}
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.blue {
+  color: #36b1ff !important;
+}
+.cyan {
+  color: var(--cyan) !important;
+}
+.green {
+  color: var(--green) !important;
+}
+.yellow {
+  color: var(--yellow) !important;
+}
+.red {
+  color: var(--red) !important;
+}
+.muted {
+  color: var(--muted) !important;
+}

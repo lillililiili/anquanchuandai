@@ -1,0 +1,24 @@
+/* app.css 3454-3476 */
+
+.single-page .video-frame {
+  height: 645px;
+}
+.single-page .cols-2 > .panel > .panel-body {
+  padding: 10px;
+}
+.single-page .cols-2 > .panel.flush > .panel-body {
+  padding: 0;
+}
+.single-page .remote-box {
+  padding: 18px 12px;
+  margin-bottom: 13px;
+}
+.single-page .participant {
+  padding: 10px 3px;
+}
+.single-page .recent-media {
+  padding: 8px 0;
+}
+.single-page > .note {
+  padding-top: 12px;
+}

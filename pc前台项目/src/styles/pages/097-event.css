@@ -1,0 +1,7 @@
+/* app.css 2859-2864 */
+
+.event-page .panel-body .grid img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+}

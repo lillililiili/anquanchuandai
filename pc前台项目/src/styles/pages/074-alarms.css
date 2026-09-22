@@ -1,0 +1,24 @@
+/* app.css 1950-1972 */
+
+.alarm-detail .map {
+  height: 184px;
+}
+.alarm-detail .video-frame {
+  height: 168px;
+  aspect-ratio: auto;
+}
+.alarm-detail .map-zone {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.alarm-detail .map-person {
+  height: 25px;
+  width: 25px;
+}
+.alarm-detail .map-person i {
+  font-size: 17px;
+}
+.alarm-detail .map-tools,
+.alarm-detail .map-scale {
+  display: none;
+}

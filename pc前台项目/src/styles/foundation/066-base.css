@@ -1,0 +1,15 @@
+/* app.css 1759-1772 */
+
+.recent-media {
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+.recent-media img {
+  width: 110px;
+  height: 65px;
+  object-fit: cover;
+}

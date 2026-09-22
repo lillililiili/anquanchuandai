@@ -1,0 +1,5 @@
+/* app.css 3996-3999 */
+
+.stats.mini {
+  grid-template-columns: repeat(3, 1fr);
+}

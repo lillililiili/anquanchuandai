@@ -1,0 +1,83 @@
+/* app.css 3300-3381 */
+
+.work-page .page-heading {
+  height: 55px;
+  min-height: 55px;
+  margin-bottom: 10px;
+}
+.work-page .work-media {
+  height: 430px;
+}
+.work-page > .row {
+  font-size: 13px;
+}
+.work-page .cols-2 {
+  grid-template-columns: 1.7fr 1fr;
+}
+.work-page .cols-2 > .stack > .row {
+  margin-top: -69px;
+  height: 57px;
+  z-index: 3;
+  justify-content: center;
+  pointer-events: none;
+  padding: 0 200px;
+}
+.work-page .cols-2 > .stack > .row > .btn {
+  font-size: 10px;
+  min-height: 29px;
+  padding: 3px 5px;
+  pointer-events: auto;
+}
+.work-page .video-controls .plain {
+  font-size: 11px;
+  padding: 0 6px;
+}
+.work-page .video-controls > span {
+  display: none;
+}
+.work-page .cols-2 > .stack > .panel .info dt,
+.work-page .cols-2 > .stack > .panel .info dd {
+  padding: 3px 0;
+}
+.work-page .cols-2 > .stack > .panel .form-actions {
+  margin-top: 8px;
+}
+.work-page .cols-2 > .stack > .panel .map {
+  height: 205px;
+  min-height: 205px;
+}
+.work-page .cols-2 > .stack > .panel .panel-body > div:has(> .map) {
+  height: 205px !important;
+}
+.work-page .timeline-item {
+  padding: 6px 0 6px 20px;
+  font-size: 12px;
+}
+.work-page .timeline-item:before {
+  top: 10px;
+}
+.work-page .cols-2 > .stack > .panel .detail-section {
+  padding-top: 6px;
+  margin-top: 6px;
+}
+.work-page .cols-2 > .stack > .panel .detail-section h3 {
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+.work-page .cols-2 > .stack > .panel .detail-section .note {
+  padding: 3px;
+  font-size: 12px;
+}
+.work-page .cols-2 > .stack > .panel .detail-section > .btn {
+  min-height: 24px;
+  padding: 2px 3px;
+  font-size: 12px;
+}
+.work-page td {
+  padding: 9px 6px;
+  font-size: 13px;
+}
+.work-page th {
+  padding: 9px 6px;
+  font-size: 13px;
+}

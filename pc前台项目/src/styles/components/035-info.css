@@ -1,0 +1,26 @@
+/* app.css 767-791 */
+
+.info {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.info dt {
+  color: #b4cce1;
+  padding: 7px 0;
+}
+.info dd {
+  margin: 0;
+  padding: 7px 0;
+  word-break: break-word;
+}
+.info.compact {
+  grid-template-columns: 98px 1fr;
+  font-size: 14px;
+}
+.info.compact dt,
+.info.compact dd {
+  padding: 4px 0;
+}

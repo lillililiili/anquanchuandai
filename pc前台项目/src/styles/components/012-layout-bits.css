@@ -1,0 +1,13 @@
+/* app.css 281-292 */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.grid {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}

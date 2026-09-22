@@ -1,0 +1,95 @@
+/* app.css 3089-3182 */
+
+@media (max-width: 1500px) {
+  .overview-layout {
+    height: 460px;
+  }
+  .overview-layout .progress-row {
+    grid-template-columns: 40px 99px 1fr 44px;
+    font-size: 12px;
+    height: 35px;
+    margin: 6px 0;
+  }
+  .overview-layout .progress-row img {
+    height: 34px;
+  }
+  .overview-layout .compact td {
+    height: 48px;
+    padding: 7px 5px;
+    font-size: 12px;
+  }
+  .stats.flat .stat em {
+    font-size: 10px;
+    display: block;
+    margin: 0;
+    position: absolute;
+    bottom: -11px;
+    left: 0;
+  }
+  .stats.flat .stat strong {
+    font-size: 30px;
+  }
+  .personnel-page .page-heading > div:first-child {
+    gap: 9px;
+  }
+  .personnel-page .page-heading p {
+    font-size: 12px;
+  }
+  .personnel-page aside .tabs .btn {
+    padding: 8px;
+    font-size: 13px;
+  }
+  .personnel-list td {
+    height: 71px;
+    padding: 8px 6px;
+  }
+  .personnel-page aside .detail-section h3 {
+    font-size: 15px;
+  }
+  .personnel-page aside .detail-section .device-item > div {
+    gap: 6px;
+  }
+  .personnel-page aside .detail-section .device-item small {
+    font-size: 12px;
+  }
+}
+
+/* Keep reference screens within one desktop viewport; smaller screens retain scrolling. */
+.personnel-page aside {
+  align-self: start;
+}
+.personnel-page aside .detail-section {
+  position: relative;
+  margin-top: 7px;
+  padding-top: 7px;
+}
+.personnel-page aside .detail-section > a.text-link {
+  position: absolute;
+  right: 0;
+  top: 8px;
+  font-size: 12px;
+}
+.personnel-page aside .detail-section p {
+  line-height: 1.45;
+}
+.personnel-page aside .detail-section .video-frame {
+  height: 110px;
+  min-height: 110px;
+}
+.personnel-page aside .detail-section:has(> h3 + a) > p {
+  position: absolute;
+  right: 0;
+  top: 33px;
+}
+.personnel-page aside .detail-section:has(> .device-strip) h3 small {
+  display: none;
+}
+.personnel-page aside .detail-section:has(> .device-strip) .device-strip {
+  gap: 0;
+}
+.personnel-page aside .detail-section:has(> .device-strip) .device-item {
+  height: 34px;
+}
+.personnel-page aside .detail-section > .grid h3 {
+  margin: 0 0 9px;
+}

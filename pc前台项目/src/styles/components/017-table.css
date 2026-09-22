@@ -1,0 +1,6 @@
+/* app.css 349-353 */
+
+.panel-body:has(> table),
+.panel-body:has(> .table-scroll) {
+  padding: 0 12px 10px;
+}

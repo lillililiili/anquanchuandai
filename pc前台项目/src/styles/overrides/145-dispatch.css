@@ -1,0 +1,39 @@
+/* app.css 4305-4342 */
+
+.dispatch-page .member-list {
+  flex: 1 1 278px;
+  min-height: 278px;
+  contain: size;
+  overflow: auto;
+}
+.dispatch-page .dispatch-layout > .panel,
+.dispatch-page .dispatch-layout > .stack > .panel {
+  display: flex;
+  flex-direction: column;
+}
+.dispatch-page .dispatch-layout > .stack > .panel {
+  flex: 1;
+}
+.dispatch-page .dispatch-layout .panel-heading {
+  flex-shrink: 0;
+}
+.dispatch-page .dispatch-layout .panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.dispatch-page .dispatch-layout .panel-body > .empty {
+  flex: 1;
+  justify-content: center;
+}
+.dispatch-page .broadcast-box {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.dispatch-page .broadcast-box textarea {
+  flex: 1;
+}
+.dispatch-page .dispatch-layout > .stack > .note {
+  margin: 0;
+}

@@ -1,0 +1,17 @@
+/* app.css 4405-4420 */
+
+.person-page .compact td {
+  padding: 4px 6px;
+  line-height: 1.4;
+}
+.person-page .compact td .status {
+  font-size: 12px;
+  line-height: 1.4;
+}
+/* Person detail: watch observations and body illustration. */
+.person-page .person-main { align-items: start; }
+.person-page .person-summary { height: 138px; }
+.person-page .person-summary .avatar { width: 76px; height: 76px; }
+.person-page .device-strip.large { height: 136px; }
+.person-vitals { background: radial-gradient(ellipse at 50% 60%, #08405b88, transparent 52%), #032438; }
+.person-vitals .panel-heading small { font-size: 13px; font-weight: 400; }

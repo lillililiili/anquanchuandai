@@ -1,0 +1,142 @@
+/* app.css 2161-2301 */
+
+.login-page {
+  height: 100vh;
+  min-height: 700px;
+  background:
+    linear-gradient(#00182b40, #00172c55),
+    url("/assets/login-plant.png") center/cover;
+  position: relative;
+  overflow: auto;
+}
+.login-logo {
+  position: absolute;
+  top: 26px;
+  left: 30px;
+  width: 174px;
+}
+.login-copy {
+  position: absolute;
+  left: 7.7%;
+  top: 35.5%;
+}
+.login-copy h1 {
+  font-size: 48px;
+  letter-spacing: 1px;
+}
+.login-copy p {
+  font-size: 29px;
+  color: #b7d3e7;
+  border-left: 5px solid #00bce9;
+  padding-left: 18px;
+  line-height: 1.2;
+  margin-top: 27px;
+  letter-spacing: 3px;
+}
+.login-card {
+  position: absolute;
+  right: 7.8%;
+  top: 17.3%;
+  width: 530px;
+  background: #052236ef;
+  border: 1px solid #31566a;
+  border-radius: 8px;
+  padding: 42px 45px 50px;
+  box-shadow: 0 10px 40px #00132022;
+}
+.login-card h2 {
+  font-size: 32px;
+  margin: 0 0 31px;
+}
+.login-card .field {
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 10px;
+  margin: 25px 0 0;
+}
+.login-card .field > span {
+  font-size: 19px;
+  color: #e4f3ff;
+}
+.login-card input {
+  width: 100%;
+  font-size: 18px;
+  min-height: 51px;
+  background: #102e42;
+  border-color: #2a536b;
+  padding-left: 53px;
+}
+.login-card .input-icon {
+  position: relative;
+}
+.login-card .input-icon > i {
+  position: absolute;
+  left: 15px;
+  top: 13px;
+  font-size: 26px;
+  color: #c4d9e7;
+}
+.login-card .input-icon .btn {
+  position: absolute;
+  right: 4px;
+  top: 6px;
+  color: #84a8c2;
+}
+.captcha-row {
+  display: grid;
+  grid-template-columns: 1fr 113px 47px;
+  gap: 13px;
+}
+.captcha-code {
+  color: #15336e;
+  background: #f8fafb;
+  border-radius: 4px;
+  font-size: 30px;
+  letter-spacing: 2px;
+  font-weight: bold;
+  display: grid;
+  place-items: center;
+  height: 48px;
+}
+.captcha-row .btn {
+  border-radius: 50%;
+  height: 47px;
+  width: 47px;
+  padding: 0;
+}
+.login-card button[type="submit"] {
+  margin-top: 43px;
+  height: 52px;
+  font-size: 23px;
+  width: 100%;
+  font-weight: 600;
+}
+.login-card > small {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  font-size: 15px;
+  color: #7da2bf;
+}
+.login-footer {
+  position: absolute;
+  bottom: 31px;
+  left: 32px;
+  border-left: 4px solid #467da5;
+  padding-left: 19px;
+  font-size: 19px;
+}
+.login-footer small {
+  display: block;
+  margin-top: 8px;
+  letter-spacing: 3px;
+  font-size: 15px;
+}
+.login-help {
+  position: absolute;
+  bottom: 28px;
+  right: 30px;
+  color: #9dbad0;
+  font-size: 13px;
+}

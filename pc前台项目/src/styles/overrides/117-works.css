@@ -1,0 +1,96 @@
+/* app.css 3206-3300 */
+
+.works-page .page-heading {
+  height: 48px;
+  min-height: 48px;
+  margin-bottom: 10px;
+}
+.works-page .filters {
+  margin: 10px 0 14px;
+  gap: 13px;
+}
+.works-page .filters .field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.works-page .filters .field input[type="text"] {
+  width: 235px;
+}
+.works-page > .row {
+  position: absolute;
+  right: 23px;
+  top: 78px;
+}
+.works-page .filters > .btn {
+  align-self: flex-end;
+}
+.works-page .filters .field select {
+  min-width: 105px;
+  max-width: 145px;
+}
+.works-page .filters {
+  padding-right: 285px;
+  flex-wrap: nowrap;
+}
+.works-page .filters > .field:first-child {
+  flex: 1;
+  min-width: 170px;
+}
+.works-page .filters > .field:first-child input {
+  width: 100%;
+}
+.works-page > .grid {
+  margin-top: 12px;
+}
+.works-page .work-list {
+  height: 381px;
+  min-height: 381px;
+}
+.works-page .work-list td {
+  padding: 14px 8px;
+  font-size: 13px;
+}
+.works-page .work-list th {
+  font-size: 13px;
+  padding: 12px 8px;
+}
+.works-page .work-timeline {
+  min-height: 0;
+  height: 215px;
+  padding: 5px 12px;
+}
+.works-page .work-time-row {
+  margin: 20px 0;
+}
+.works-page .info {
+  font-size: 14px;
+  line-height: 1.5;
+  grid-template-columns: 105px 1fr;
+}
+.works-page .info dt,
+.works-page .info dd {
+  padding: 4px 0;
+}
+.works-page .cols-2 > .panel .panel-body {
+  padding: 12px 16px;
+}
+.works-page .cols-2 > .panel .panel-body > h3 {
+  margin: 4px 0 10px;
+}
+.works-page .cols-2 > .panel .detail-section {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.works-page .cols-2 > .panel .detail-section h3 {
+  margin: 0 0 7px;
+}
+.works-page .cols-2 > .panel .detail-section > div {
+  height: 190px !important;
+}
+.works-page .cols-2 > .panel .map {
+  min-height: 190px;
+}
+.works-page .cols-2 > .panel .note {
+  padding: 6px 0;
+}

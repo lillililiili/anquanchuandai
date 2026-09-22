@@ -1,0 +1,15 @@
+/* app.css 1488-1501 */
+
+.detail-heading {
+  display: flex;
+  gap: 17px;
+  padding: 15px 5px;
+  align-items: center;
+}
+.detail-heading .avatar {
+  width: 58px;
+  height: 58px;
+}
+.detail-heading h3 {
+  margin: 0 0 6px;
+}

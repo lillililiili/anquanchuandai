@@ -1,0 +1,7 @@
+/* app.css 1466-1471 */
+
+.split-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(365px, 1fr);
+  gap: 16px;
+}

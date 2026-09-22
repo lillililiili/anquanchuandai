@@ -1,0 +1,37 @@
+/* app.css 1847-1882 */
+
+.tracks-layout {
+  display: grid;
+  grid-template-columns: 265px 1fr;
+  gap: 12px;
+}
+.track-map {
+  height: 520px;
+}
+.track-segment {
+  padding: 21px 7px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 2;
+}
+.track-segment b {
+  display: block;
+  color: #d9e9f5;
+}
+.track-segment small {
+  display: block;
+  margin-left: 20px;
+}
+.track-progress {
+  width: 100%;
+}
+.track-controls {
+  padding: 12px 15px;
+}
+.track-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #aec5db;
+  margin-bottom: 12px;
+}

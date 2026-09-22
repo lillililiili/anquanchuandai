@@ -1,0 +1,85 @@
+/* app.css 2990-3073 */
+
+.personnel-page .page-heading > div:first-child,
+.works-page .page-heading > div:first-child,
+.video-page .page-heading > div:first-child,
+.location-page .page-heading > div:first-child {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+}
+.personnel-page .page-heading {
+  min-height: 44px;
+  margin-bottom: 12px;
+}
+.personnel-page .page-heading p {
+  font-size: 16px;
+}
+.personnel-page .filters {
+  margin: 12px 0 18px;
+}
+.personnel-list td {
+  height: 77px;
+  padding: 9px 10px;
+}
+.personnel-list th {
+  padding: 12px 10px;
+}
+.personnel-list .device-item img {
+  height: 30px;
+}
+.personnel-page .split-detail {
+  grid-template-columns: 2fr 1fr;
+}
+.personnel-page aside .detail-heading {
+  padding: 2px 5px 10px;
+  height: 75px;
+}
+.personnel-page aside .tabs {
+  gap: 0;
+  margin-bottom: 10px;
+}
+.personnel-page aside .tabs .btn {
+  padding: 9px 12px;
+  font-size: 15px;
+  flex: 1;
+}
+.personnel-page aside .info dt,
+.personnel-page aside .info dd {
+  padding: 4px 0;
+}
+.personnel-page aside .detail-section {
+  margin-top: 10px;
+  padding-top: 9px;
+}
+.personnel-page aside .detail-section h3 {
+  font-size: 16px;
+  line-height: 22px;
+  margin-bottom: 8px;
+}
+.personnel-page aside .detail-section p {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.personnel-page aside .device-strip {
+  gap: 0;
+}
+.personnel-page aside .device-item {
+  height: 39px;
+}
+.personnel-page aside .device-item img {
+  height: 31px;
+  width: 34px;
+}
+.personnel-page aside .detail-section .video-frame {
+  height: 114px;
+}
+.personnel-page aside .detail-section .video-time {
+  display: none;
+}
+.personnel-page aside .detail-section .video-label {
+  font-size: 10px;
+}
+.personnel-page aside .panel-body {
+  padding-top: 8px;
+}

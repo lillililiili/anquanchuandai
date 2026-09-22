@@ -1,0 +1,12 @@
+/* app.css 3073-3083 */
+
+.login-card {
+  padding-bottom: 38px;
+}
+.login-card .form-error {
+  position: absolute;
+  left: 45px;
+  bottom: 10px;
+  margin: 0;
+  font-size: 12px;
+}

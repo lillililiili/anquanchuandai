@@ -1,0 +1,33 @@
+/* app.css 2121-2152 */
+
+.sos-banner {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  padding: 22px;
+  margin-bottom: 14px;
+}
+.sos-banner > i {
+  font-size: 49px;
+  color: #ff3754;
+}
+.sos-banner p {
+  color: #bbd0e4;
+}
+.sos-banner .heading-actions {
+  margin-left: auto;
+}
+.sos-layout {
+  grid-template-columns: 1.2fr 1.1fr 0.8fr;
+}
+.sos-layout .map,
+.sos-layout .video-frame {
+  height: 360px;
+  aspect-ratio: auto;
+}
+.sos-layout .map-zone {
+  font-size: 13px;
+}
+.sos-layout .map-tools {
+  display: none;
+}

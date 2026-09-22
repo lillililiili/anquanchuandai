@@ -1,0 +1,32 @@
+/* app.css 2009-2039 */
+
+.upload-area {
+  border: 1px dashed #4e7492;
+  position: relative;
+  padding: 16px;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.upload-area input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.upload-area i {
+  font-size: 25px;
+  margin-right: 9px;
+}
+.upload-area small {
+  display: block;
+  margin-top: 8px;
+}
+.char-count {
+  text-align: right;
+  color: #7d9eb8;
+  font-size: 12px;
+  margin-top: 3px;
+}

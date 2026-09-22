@@ -1,0 +1,11 @@
+/* app.css 292-301 */
+
+.cols-2 {
+  grid-template-columns: 1.65fr 1fr;
+}
+.cols-3 {
+  grid-template-columns: 1fr 1.65fr 1fr;
+}
+.equal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

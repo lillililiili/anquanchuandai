@@ -1,0 +1,28 @@
+/* app.css 896-922 */
+
+.note {
+  color: #9ebbd2;
+  font-size: 13px;
+  line-height: 1.8;
+  padding: 10px 12px;
+}
+.note i {
+  color: #33b9ff;
+  font-size: 19px;
+  margin-right: 9px;
+}
+.warning-box {
+  border: 1px solid #9f7f31;
+  background: #5b482021;
+  border-radius: 4px;
+  padding: 14px;
+  color: #edcc71;
+}
+.warning-box h3 {
+  color: #ffcd43;
+  margin: 0 0 10px;
+}
+.warning-box p {
+  font-size: 14px;
+  line-height: 1.7;
+}

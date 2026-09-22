@@ -1,0 +1,20 @@
+/* app.css 3592-3610 */
+
+.track-map {
+  height: 532px;
+}
+.tracks-page .track-segment {
+  padding: 17px 7px;
+}
+.tracks-page .track-controls {
+  padding: 7px 12px;
+}
+.tracks-page .panel-body:has(> .track-controls) {
+  padding: 8px;
+}
+.tracks-page .track-labels {
+  margin-bottom: 10px;
+}
+.tracks-page .track-segment + .detail-section h3 {
+  margin: 0 0 12px;
+}

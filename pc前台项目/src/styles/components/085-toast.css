@@ -1,0 +1,36 @@
+/* app.css 2367-2401 */
+
+.toast {
+  background: #083a52f5;
+  border: 1px solid #178b92;
+  border-radius: 6px;
+  padding: 13px 22px;
+  color: #e7ffff;
+  box-shadow: 0 6px 22px #0007;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 15px;
+}
+.toast i {
+  color: #20e1be;
+  font-size: 23px;
+}
+.toast.error {
+  border-color: #b54651;
+  background: #4b2130;
+}
+.toast.error i {
+  color: #ff8893;
+}
+#toasts {
+  position: fixed;
+  top: 83px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 120;
+  pointer-events: none;
+}

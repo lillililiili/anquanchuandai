@@ -1,0 +1,76 @@
+/* app.css 4002-4076 */
+
+@media (max-width: 1500px) {
+  .overview-layout {
+    height: 460px;
+  }
+  .overview-page .overview-bottom {
+    height: auto;
+  }
+  .works-page .filters {
+    padding-right: 0;
+    flex-wrap: wrap;
+  }
+  .works-page > .row {
+    position: static;
+  }
+  .work-page .cols-2 > .stack > .row {
+    margin-top: 0;
+    padding: 0;
+    height: auto;
+    flex-wrap: wrap;
+  }
+  .work-page .work-media {
+    height: 370px;
+  }
+  .materials-page .filters {
+    flex-wrap: wrap;
+  }
+  .alarms-page .filters {
+    flex-wrap: wrap;
+  }
+  .location-page > .note {
+    position: static;
+    height: auto;
+  }
+  .location-layout > .panel,
+  .location-layout > .map {
+    height: 640px;
+  }
+  .location-page .layer-controls {
+    top: 188px;
+  }
+  .tracks-page > .tabs {
+    left: 170px;
+  }
+  .track-map {
+    height: 470px;
+  }
+  .statistics-page .equal > .panel {
+    height: 310px;
+  }
+  .statistics-page .stats-notice {
+    max-width: 360px;
+  }
+  .fences-page .fence-layout .map {
+    height: 650px;
+  }
+  .personnel-page aside .detail-section > a.text-link {
+    font-size: 10px;
+  }
+  .single-page .video-frame {
+    height: 570px;
+  }
+  .sos-banner .heading-actions {
+    flex-wrap: wrap;
+    max-width: 400px;
+  }
+  .event-page .evidence .device-item > div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .dispatch-page .dispatch-layout {
+    grid-template-columns: 1fr 1.4fr 0.85fr;
+  }
+}

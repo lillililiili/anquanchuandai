@@ -1,0 +1,53 @@
+/* app.css 4217-4268 */
+
+.alarm-detail .panel-body {
+  padding: 10px 12px;
+}
+.alarm-detail .panel-body > h3 {
+  font-size: 17px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.alarm-detail .info.compact {
+  font-size: 13px;
+  line-height: 1.4;
+  grid-template-columns: 105px 1fr;
+}
+.alarm-detail .info.compact dt,
+.alarm-detail .info.compact dd {
+  padding: 3px 0;
+}
+.alarm-detail .warning-box {
+  margin-top: 8px !important;
+  padding: 9px;
+}
+.alarm-detail .warning-box small {
+  font-size: 12px;
+  line-height: 1.5;
+  display: block;
+}
+.alarm-detail .detail-section {
+  margin-top: 6px;
+  padding-top: 6px;
+}
+.alarm-detail .detail-section h3 {
+  font-size: 16px;
+  line-height: 23px;
+  margin-bottom: 6px;
+}
+.alarm-detail .map {
+  height: 135px;
+  min-height: 135px;
+}
+.alarm-detail .video-frame {
+  height: 146px;
+  min-height: 146px;
+}
+.alarm-detail .note {
+  padding: 5px 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.alarm-detail .form-actions {
+  margin-top: 9px;
+}

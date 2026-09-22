@@ -1,0 +1,55 @@
+/* app.css 3401-3454 */
+
+.video-wall {
+  /* Let the selected device's details determine the shared row height. */
+  align-items: stretch;
+}
+.video-wall > .video-frame {
+  height: auto;
+  min-height: 0;
+  contain: size;
+}
+.video-wall > .video-frame > img {
+  position: absolute;
+  inset: 0;
+}
+.video-wall .detail-heading {
+  height: 60px;
+  padding: 0 0 8px;
+}
+.video-wall .info dt,
+.video-wall .info dd {
+  padding: 4px 0;
+}
+.video-wall .detail-section {
+  padding-top: 9px;
+  margin-top: 10px;
+}
+.video-wall .detail-section h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+.video-wall .form-actions {
+  margin-top: 20px !important;
+  flex-wrap: wrap;
+}
+.video-wall .form-actions .btn {
+  flex: 1 0 auto;
+}
+.video-wall .panel-body {
+  padding: 12px 20px;
+}
+.video-page .page-heading {
+  height: 48px;
+  min-height: 48px;
+  margin-bottom: 15px;
+}
+.video-page .video-toolbar {
+  margin-bottom: 14px;
+}
+.video-page .device-strip {
+  gap: 15px;
+}
+.video-page .device-item small {
+  font-size: 12px;
+}

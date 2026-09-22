@@ -1,0 +1,143 @@
+/* app.css 126-267 */
+
+.topbar {
+  height: 64px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--border);
+  background: #001c32;
+  z-index: 30;
+  gap: 20px;
+  white-space: nowrap;
+}
+.brand {
+  width: 176px;
+  display: flex;
+  align-items: center;
+}
+.brand img {
+  width: 176px;
+}
+.brand-divider,
+.top-divider {
+  height: 30px;
+  width: 1px;
+  background: #175072;
+}
+.topbar > strong {
+  font-size: 24px;
+  letter-spacing: 1px;
+}
+.top-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.top-actions select {
+  background: transparent;
+  border: 0;
+  padding: 5px 15px 5px 0;
+  width: 160px;
+  font-size: 17px;
+}
+.top-actions > i {
+  font-size: 26px;
+}
+.top-actions .plain {
+  padding: 5px 8px;
+}
+.top-actions time {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #c3d3e7;
+  margin-left: 5px;
+}
+.notification {
+  position: relative;
+}
+.notification-count {
+  position: absolute;
+  right: -1px;
+  top: -8px;
+  background: #f25661;
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  min-width: 17px;
+  height: 17px;
+  line-height: 17px;
+}
+.sidebar {
+  position: fixed;
+  top: 64px;
+  bottom: 0;
+  left: 0;
+  width: 202px;
+  border-right: 1px solid #104464;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  background: #001e35;
+}
+.sidebar nav {
+  padding-top: 18px;
+}
+.sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 17px 20px;
+  font-size: 20px;
+  border-left: 4px solid transparent;
+  white-space: nowrap;
+}
+.sidebar a i {
+  font-size: 27px;
+}
+.sidebar a:hover {
+  background: #063650;
+}
+.sidebar a.active {
+  background: #063a70;
+  border-left-color: #00cfff;
+  color: white;
+}
+.sidebar a.active i {
+  color: #23c6ff;
+}
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 0 10px 15px;
+}
+.sidebar-bottom a {
+  padding-left: 10px;
+  border-top: 1px solid #1b4b69;
+}
+.sidebar-bottom small {
+  display: block;
+  padding-left: 18px;
+  margin-top: 15px;
+}
+.main {
+  margin: 64px 0 0 202px;
+  padding: 20px 22px 28px;
+  min-height: calc(100vh - 64px);
+  position: relative;
+}
+.page-foot {
+  position: fixed;
+  bottom: 4px;
+  right: 20px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #7898b4;
+  pointer-events: none;
+  z-index: 22;
+}

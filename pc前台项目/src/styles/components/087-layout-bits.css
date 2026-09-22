@@ -1,0 +1,17 @@
+/* app.css 2416-2431 */
+
+.check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.check-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
+  background: #0b334c;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 14px;
+}

@@ -1,0 +1,8 @@
+/* app.css 2886-2892 */
+
+.stat:has(> i.ri-) {
+  gap: 0;
+}
+.stat > i.ri- {
+  display: none;
+}

@@ -1,0 +1,13 @@
+/* app.css 1585-1596 */
+
+.time-axis {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  font-size: 13px;
+  color: #a3bdd5;
+  margin: 5px 0 16px;
+}
+.time-axis > div {
+  display: flex;
+  justify-content: space-between;
+}

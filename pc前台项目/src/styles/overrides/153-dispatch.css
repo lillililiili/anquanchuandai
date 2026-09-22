@@ -1,0 +1,12 @@
+/* app.css 4395-4405 */
+
+.dispatch-page {
+  padding-bottom: 20px;
+}
+.dispatch-page .call-member {
+  padding: 10px 8px;
+}
+.dispatch-page .broadcast-box textarea {
+  height: 95px;
+  min-height: 95px;
+}

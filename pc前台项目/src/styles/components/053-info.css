@@ -1,0 +1,13 @@
+/* app.css 1505-1516 */
+
+.detail-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 13px;
+}
+.detail-section h3 {
+  font-size: 17px;
+  border-left: 4px solid #009bff;
+  padding-left: 10px;
+  margin-bottom: 10px;
+}

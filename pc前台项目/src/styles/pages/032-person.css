@@ -1,0 +1,7 @@
+/* app.css 663-668 */
+
+.person-cell {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}

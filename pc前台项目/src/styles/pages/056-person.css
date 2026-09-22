@@ -1,0 +1,40 @@
+/* app.css 1540-1578 */
+
+.person-summary {
+  padding: 18px 20px;
+}
+.person-summary > .row {
+  margin-top: 16px;
+}
+.person-summary .avatar {
+  height: 102px;
+  width: 102px;
+  margin-right: 8px;
+}
+.person-summary h1 {
+  font-size: 29px;
+}
+.person-summary p {
+  color: #c0d5e6;
+}
+.person-summary .status {
+  font-size: 17px;
+}
+.person-map {
+  height: 240px;
+}
+.person-page .cols-2 {
+  grid-template-columns: 1.62fr 1fr;
+}
+.person-page .video-frame {
+  aspect-ratio: auto;
+  height: 185px;
+}
+.person-page .video-controls {
+  display: none;
+}
+.person-page .side-video {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 13px;
+}

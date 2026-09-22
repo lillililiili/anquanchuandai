@@ -1,0 +1,22 @@
+/* app.css 1596-1616 */
+
+.work-time-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  margin: 22px 0;
+}
+.work-time-track {
+  height: 25px;
+  position: relative;
+  background: #264a6660;
+}
+.work-time-track a {
+  position: absolute;
+  height: 25px;
+  background: #038bfa;
+  border-radius: 3px;
+  font-size: 13px;
+  text-align: center;
+  line-height: 25px;
+}

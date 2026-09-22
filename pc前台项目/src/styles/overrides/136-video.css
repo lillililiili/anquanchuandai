@@ -1,0 +1,5 @@
+/* app.css 3999-4002 */
+
+.video-page .stats.mini {
+  grid-template-columns: repeat(4, 1fr);
+}

@@ -1,0 +1,62 @@
+/* app.css 2307-2367 */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #000f1dc9;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 35px;
+}
+.modal {
+  width: 650px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: #04283f;
+  border: 1px solid #28739e;
+  border-radius: 8px;
+  box-shadow: 0 25px 90px #000a;
+  display: flex;
+  flex-direction: column;
+}
+.modal.wide {
+  width: 1000px;
+}
+.modal header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal header h2 {
+  font-size: 21px;
+}
+.modal-body {
+  padding: 23px;
+  overflow: auto;
+}
+.modal footer {
+  padding: 15px 23px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.modal .video-frame {
+  max-height: 550px;
+}
+.modal .table-scroll {
+  max-height: 500px;
+}
+.modal p {
+  margin-bottom: 12px;
+}
+.modal .empty {
+  padding: 20px;
+}
+.modal-body .info {
+  font-size: 14px;
+}

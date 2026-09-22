@@ -1,0 +1,36 @@
+/* app.css 4161-4195 */
+
+.work-page .page-heading {
+  height: 46px;
+  min-height: 46px;
+  margin-bottom: 3px;
+}
+.work-page > .row {
+  margin-bottom: 11px !important;
+  font-size: 12px;
+}
+.work-page .cols-2 > .stack:nth-child(2) > .panel .info {
+  line-height: 1.4;
+  font-size: 13px;
+}
+.work-page .cols-2 > .stack:nth-child(2) > .panel .form-actions > .btn {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+.work-page .cols-2 > .stack:nth-child(2) > .panel .panel-body {
+  padding: 9px 12px;
+}
+.work-page .cols-2 > .stack:nth-child(2) > .panel .detail-section .note {
+  line-height: 1.5;
+}
+.work-page .cols-2 > .stack:nth-child(2) > .panel .timeline-item {
+  padding: 4px 0 4px 20px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.work-page .cols-2 > .stack:nth-child(2) > .panel .timeline-item:before {
+  top: 6px;
+}
+.work-page .cols-2 > .stack:nth-child(2) > .panel .detail-section > h3 {
+  font-size: 14px;
+}

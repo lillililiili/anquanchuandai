@@ -1,5 +1,0 @@
-<script setup>
-import DataState from '@/components/personnel/DataState.vue'
-defineProps({ title: { type: String, required: true }, section: { type: Object, default: null }, siteId: { type: String, default: '' }, returnTo: { type: String, default: '/alarms' }, personLinks: Boolean })
-</script>
-<template><section class="event-section"><h3>{{ title }}</h3><DataState v-if="section?.state !== 'AVAILABLE'" :state="section?.state" :reason="section?.reasonCode" compact /><DataState v-else-if="!section.data.length" state="EMPTY" compact /><ul v-else class="event-ref-list"><li v-for="r in section.data" :key="r.id"><router-link v-if="personLinks" :to="{ path: '/personnel/' + r.id, query: { siteId, returnTo } }">{{ r.name }} ↗</router-link><router-link v-else-if="r.monitorState" :to="{ path: '/supervision/' + r.id, query: { siteId: r.siteId } }">{{ r.name }} → 作业监护</router-link><span v-else>{{ r.name }}</span><small v-if="r.monitorState">参与 {{ r.participantCount }} 人 · 未完成事件 {{ r.openEventCount ?? '未知' }} 件</small><small>{{ r.id }} · 关联有证据</small></li></ul></section></template>

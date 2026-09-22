@@ -1,0 +1,39 @@
+/* app.css 1972-2009 */
+
+.event-banner {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 18px;
+}
+.event-banner > i {
+  font-size: 40px;
+}
+.event-banner h1 {
+  font-size: 25px;
+}
+.event-banner small {
+  margin-left: auto;
+}
+.event-page .cols-2 {
+  grid-template-columns: 1.57fr 1fr;
+}
+.event-page .evidence .video-frame {
+  height: 240px;
+  aspect-ratio: auto;
+}
+.event-page .evidence .device-strip {
+  flex-direction: column;
+}
+.event-page .evidence .device-item {
+  border-bottom: 1px solid var(--border);
+  padding: 7px;
+}
+.event-page .evidence .device-item > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.event-page .evidence .device-item small {
+  font-size: 14px;
+}

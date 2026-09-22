@@ -1,0 +1,9 @@
+/* app.css 1578-1585 */
+
+.work-list {
+  min-height: 363px;
+}
+.work-timeline {
+  min-height: 260px;
+  padding: 12px;
+}

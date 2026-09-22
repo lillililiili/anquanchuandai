@@ -1,0 +1,17 @@
+/* app.css 2401-2416 */
+
+.count-label {
+  color: #8babc6;
+  font-size: 13px;
+  margin-top: 13px;
+}
+.inline-buttons {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.chip-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

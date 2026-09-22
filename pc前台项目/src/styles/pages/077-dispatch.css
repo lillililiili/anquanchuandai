@@ -1,0 +1,67 @@
+/* app.css 2039-2104 */
+
+.dispatch-layout {
+  grid-template-columns: 1fr 1.6fr 0.9fr;
+}
+.group-row {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.group-row.selected {
+  background: #054579;
+  border-left: 3px solid #00baf8;
+}
+.group-row > i {
+  font-size: 24px;
+  color: #1bb0e6;
+}
+.group-row small {
+  margin-left: auto;
+}
+.member-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.member-row .avatar {
+  width: 35px;
+  height: 35px;
+  min-width: 35px;
+  font-size: 18px;
+}
+.member-row .status {
+  margin-left: auto;
+  font-size: 12px;
+}
+.call-status {
+  color: #ffcd40;
+  font-size: 25px;
+  padding: 10px 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.call-member {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 24px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.call-member .status {
+  margin-left: auto;
+}
+.call-member > i {
+  margin-left: 15px;
+  color: #16badd;
+  font-size: 29px;
+}
+.broadcast-box textarea {
+  height: 122px;
+  margin-top: 15px;
+}

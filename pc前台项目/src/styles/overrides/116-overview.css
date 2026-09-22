@@ -1,0 +1,26 @@
+/* app.css 3182-3206 */
+
+.overview-bottom .compact td {
+  height: 39px;
+  padding: 7px;
+}
+.overview-bottom .compact th {
+  height: 32px;
+  padding: 6px;
+}
+.overview-bottom .panel-body {
+  padding: 8px;
+}
+.overview-bottom {
+  height: 207px;
+}
+.overview-bottom .panel {
+  height: 207px;
+}
+.overview-bottom .video-unavailable strong,
+.overview-bottom .video-unavailable small {
+  display: none;
+}
+.overview-bottom .video-unavailable i {
+  font-size: 22px;
+}

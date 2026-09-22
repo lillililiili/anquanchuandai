@@ -1,0 +1,9 @@
+/* app.css 4195-4202 */
+
+.materials-page .media-detail .panel-body > img {
+  height: 218px;
+}
+.materials-page .media-detail .info dt,
+.materials-page .media-detail .info dd {
+  padding: 6px 0;
+}

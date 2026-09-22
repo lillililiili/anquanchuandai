@@ -1,0 +1,22 @@
+/* app.css 3911-3931 */
+
+.sos-page .page-heading {
+  min-height: 61px;
+  margin-bottom: 14px;
+}
+.sos-page .sos-banner {
+  padding: 17px 20px;
+}
+.sos-page .sos-layout .panel-body {
+  padding: 9px;
+}
+.sos-page .sos-layout .map,
+.sos-page .sos-layout .video-frame {
+  height: 330px;
+}
+.sos-page .timeline.horizontal {
+  padding: 19px 15px 5px;
+}
+.sos-page .sos-layout .info {
+  line-height: 1.5;
+}

@@ -1,0 +1,20 @@
+{
+  "name": "wearable-portal",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5191",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 5191",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.10"
+  }
+}

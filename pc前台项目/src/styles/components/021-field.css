@@ -1,0 +1,38 @@
+/* app.css 463-499 */
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #bed2e6;
+  white-space: nowrap;
+}
+.field > span {
+  font-size: 15px;
+}
+.field.vertical {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+input,
+select,
+textarea {
+  color: #e5f0ff;
+  background: #06263d;
+  border: 1px solid #24506c;
+  border-radius: 4px;
+  padding: 10px 13px;
+  min-height: 39px;
+  min-width: 0;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #6e96b3;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 1px solid #0eafff;
+  border-color: #0eafff;
+}

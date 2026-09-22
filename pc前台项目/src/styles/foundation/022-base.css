@@ -1,0 +1,29 @@
+/* app.css 499-526 */
+
+select {
+  cursor: pointer;
+  padding-right: 24px;
+}
+select option {
+  background: #082c46;
+}
+input[type="checkbox"] {
+  accent-color: #008bff;
+  width: 19px;
+  height: 19px;
+  min-height: 19px;
+  padding: 0;
+  cursor: pointer;
+}
+input[type="range"] {
+  accent-color: #0799ff;
+  padding: 0;
+  border: 0;
+  min-height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}

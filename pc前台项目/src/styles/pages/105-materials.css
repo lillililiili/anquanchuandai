@@ -1,0 +1,9 @@
+/* app.css 2896-2903 */
+
+.media-preview-wrap {
+  overflow: hidden;
+}
+.modal .media-preview-wrap > img {
+  max-height: 570px;
+  object-fit: contain;
+}

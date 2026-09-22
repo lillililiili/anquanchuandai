@@ -1,0 +1,47 @@
+/* app.css 1260-1305 */
+
+.timeline {
+  position: relative;
+  padding-left: 26px;
+}
+.timeline-item {
+  position: relative;
+  padding: 12px 0;
+  font-size: 14px;
+  border-left: 2px solid #175879;
+  padding-left: 22px;
+}
+.timeline-item:before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 18px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #5dbfff;
+  background: #008fff;
+  border-radius: 50%;
+}
+.timeline-item time {
+  color: #b1cce2;
+  margin-right: 17px;
+}
+.timeline.horizontal {
+  display: flex;
+  padding: 24px 20px 8px;
+}
+.timeline.horizontal .timeline-item {
+  flex: 1;
+  border-left: 0;
+  border-top: 2px solid #336078;
+  padding: 20px 8px;
+}
+.timeline.horizontal .timeline-item:before {
+  top: -8px;
+  left: 8px;
+  width: 14px;
+  height: 14px;
+}
+.timeline.horizontal time {
+  display: block;
+}

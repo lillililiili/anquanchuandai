@@ -1,0 +1,39 @@
+/* app.css 4268-4305 */
+
+.event-page .evidence .device-strip {
+  gap: 0;
+}
+.event-page .evidence .device-item {
+  height: 51px;
+  padding: 5px 0;
+}
+.event-page .evidence .device-item > div {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+.event-page .evidence .detail-section {
+  margin-top: 7px;
+  padding-top: 7px;
+}
+.event-page .evidence .detail-section .note {
+  padding: 5px 0;
+  line-height: 1.5;
+  font-size: 12px;
+}
+.event-page .timeline-item {
+  padding: 6px 0 6px 20px;
+  line-height: 1.5;
+  font-size: 13px;
+}
+.event-page .timeline-item:before {
+  top: 10px;
+}
+.event-page .panel-body > .grid.equal > div > img {
+  height: 97px;
+}
+.event-page .cols-2 > .stack > .grid.equal:last-child .panel {
+  min-height: 231px;
+}
+.event-page .cols-2 > .stack > .grid.equal:last-child .panel-body {
+  padding: 10px;
+}

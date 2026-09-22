@@ -1,0 +1,28 @@
+/* app.css 1383-1409 */
+
+.segmented-bar {
+  display: flex;
+  height: 39px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 23px 0;
+}
+.segmented-bar > span {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  color: white;
+}
+.segmented-bar > span:first-child {
+  background: #ffcb46;
+  color: #172430;
+}
+.segmented-bar > span:nth-child(2) {
+  background: #359ef8;
+}
+.segmented-bar > span:nth-child(3) {
+  background: #0564d1;
+}
+.segmented-bar > span:nth-child(4) {
+  background: #16bba6;
+}

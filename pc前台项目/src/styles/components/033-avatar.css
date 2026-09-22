@@ -1,0 +1,19 @@
+/* app.css 668-685 */
+
+.avatar {
+  height: 47px;
+  width: 47px;
+  min-width: 47px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #137bcd;
+  font-size: 24px;
+  color: white;
+}
+.avatar.photo {
+  object-fit: cover;
+  background: #254c64;
+  border: 2px solid #4fb9ed;
+}

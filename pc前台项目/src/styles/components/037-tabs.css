@@ -1,0 +1,40 @@
+/* app.css 843-881 */
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #145079;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.tabs .btn,
+.tabs a {
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 12px 25px;
+  font-size: 17px;
+  display: block;
+  text-align: center;
+}
+.tabs .active {
+  border-bottom-color: #04c4ff;
+  background: #073e6b;
+}
+.tabs.box {
+  border: 1px solid #123f5c;
+  border-radius: 5px;
+  width: max-content;
+  max-width: 100%;
+  gap: 0;
+  overflow: hidden;
+}
+.tabs.box .btn {
+  min-width: 135px;
+  border: 0;
+  padding: 9px 20px;
+}
+.tabs.box .btn.active {
+  background: #087ef7;
+  color: white;
+}

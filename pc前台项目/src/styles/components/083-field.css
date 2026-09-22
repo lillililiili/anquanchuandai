@@ -1,0 +1,8 @@
+/* app.css 2301-2307 */
+
+.form-error {
+  color: #ff7880;
+  min-height: 21px;
+  margin-top: 12px;
+  font-size: 13px;
+}

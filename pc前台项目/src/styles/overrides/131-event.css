@@ -1,0 +1,39 @@
+/* app.css 3727-3764 */
+
+.event-page .cols-2 > .stack > .panel .panel-body {
+  padding: 10px 12px;
+}
+.event-page .info dt,
+.event-page .info dd {
+  padding: 3px 0;
+}
+.event-page .timeline-item {
+  padding: 9px 0 9px 20px;
+}
+.event-page .form-stack {
+  gap: 15px;
+}
+.event-page .form-stack .field textarea {
+  min-height: 87px;
+}
+.event-page .form-stack .form-actions {
+  margin-top: 0;
+}
+.event-page .upload-area {
+  padding: 12px;
+}
+.event-page .form-stack .form-error:empty {
+  display: none;
+}
+.event-page .form-stack .char-count {
+  margin-top: 0;
+}
+.event-page .evidence .device-item {
+  padding: 7px 0;
+}
+.event-page .evidence .device-item > div {
+  flex-wrap: wrap;
+}
+.event-page .panel-body > .grid.equal > div > img {
+  height: 108px;
+}

@@ -1,0 +1,19 @@
+/* app.css 3610-3627 */
+
+.fences-page .page-heading {
+  height: 48px;
+  min-height: 48px;
+  margin-bottom: 6px;
+}
+.fences-page > .tabs a {
+  padding: 9px 25px;
+}
+.fences-page > .tabs {
+  margin-bottom: 13px;
+}
+.fences-page .form-stack {
+  gap: 17px;
+}
+.fences-page > .note {
+  padding: 10px 0;
+}

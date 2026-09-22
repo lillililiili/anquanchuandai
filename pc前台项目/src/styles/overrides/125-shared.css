@@ -1,0 +1,19 @@
+/* app.css 3575-3592 */
+
+.tracks-page .page-heading {
+  height: 48px;
+  min-height: 48px;
+  margin-bottom: 6px;
+}
+.tracks-page > .tabs {
+  position: absolute;
+  top: 20px;
+  left: 172px;
+  border: 0;
+}
+.tracks-page > .tabs a {
+  padding: 8px 22px;
+}
+.tracks-page > .filters {
+  margin: 8px 0 16px;
+}

@@ -1,0 +1,54 @@
+/* app.css 791-843 */
+
+.device-strip {
+  display: flex;
+  gap: 18px;
+}
+.device-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.device-item img {
+  width: 31px;
+  height: 43px;
+  object-fit: contain;
+}
+.device-item small {
+  display: block;
+  font-size: 12px;
+}
+.device-item .status {
+  font-size: 12px;
+  gap: 5px;
+}
+.device-item .status b {
+  width: 9px;
+  height: 9px;
+}
+.device-strip.large {
+  gap: 12px;
+}
+.device-strip.large .device-item {
+  flex: 1;
+  border: 1px solid var(--border);
+  padding: 13px 10px;
+  align-items: flex-start;
+  border-radius: 4px;
+}
+.device-strip.large img {
+  width: 85px;
+  height: 120px;
+  object-fit: contain;
+}
+.device-strip.large small {
+  font-size: 14px;
+  margin: 4px 0;
+}
+.device-strip.large b {
+  font-size: 17px;
+}
+.device-strip.large .status {
+  font-size: 17px;
+}

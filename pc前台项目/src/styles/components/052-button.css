@@ -1,0 +1,6 @@
+/* app.css 1501-1505 */
+
+.detail-heading > .btn {
+  margin-left: auto;
+  align-self: flex-start;
+}

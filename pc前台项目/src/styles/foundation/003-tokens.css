@@ -1,0 +1,16 @@
+/* app.css 8-22 */
+
+:root {
+  --bg: #001b30;
+  --panel: #03243d;
+  --panel2: #062b47;
+  --border: #104360;
+  --line: #0b3650;
+  --blue: #008dff;
+  --cyan: #09dce3;
+  --green: #1ce3b1;
+  --yellow: #ffca45;
+  --red: #ff6268;
+  --muted: #9fb8cf;
+  --text: #eef5ff;
+}

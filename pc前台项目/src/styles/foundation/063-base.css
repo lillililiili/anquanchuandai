@@ -1,0 +1,27 @@
+/* app.css 1727-1752 */
+
+.remote-box {
+  background: #092d47;
+  padding: 24px 15px;
+  border: 1px solid #174665;
+  border-radius: 4px;
+  margin-bottom: 17px;
+}
+.remote-box > i {
+  font-size: 58px;
+  color: #62839f;
+  float: left;
+  margin-right: 13px;
+}
+.remote-box p {
+  font-size: 14px;
+  color: #aec4d8;
+  margin: 6px 0 19px;
+}
+.participant {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 17px 3px;
+  border-bottom: 1px solid var(--border);
+}

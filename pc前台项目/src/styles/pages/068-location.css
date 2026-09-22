@@ -1,0 +1,48 @@
+/* app.css 1784-1830 */
+
+.location-layout {
+  display: grid;
+  grid-template-columns: 365px 1fr;
+  gap: 12px;
+  min-height: 680px;
+}
+.location-layout > .panel {
+  height: 720px;
+  display: flex;
+  flex-direction: column;
+}
+.location-layout > .panel > .panel-heading {
+  flex-shrink: 0;
+}
+.location-layout > .panel > .panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.location-layout .filters {
+  flex-shrink: 0;
+}
+.location-layout > .map {
+  height: 720px;
+}
+.location-layout .table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+.location-layout .table-scroll::-webkit-scrollbar-thumb {
+  background: #397fa5;
+}
+.location-layout .table-scroll th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel);
+}
+.location-layout td {
+  padding: 15px 9px;
+  font-size: 14px;
+}

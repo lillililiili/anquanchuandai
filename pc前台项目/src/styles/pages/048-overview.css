@@ -1,0 +1,59 @@
+/* app.css 1409-1466 */
+
+.overview-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(330px, 1fr);
+  gap: 10px;
+}
+.overview-map {
+  height: 522px;
+}
+.overview-bottom {
+  display: grid;
+  grid-template-columns: 1.28fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.overview-bottom .video-frame {
+  height: 156px;
+  aspect-ratio: auto;
+}
+.overview-videos {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 7px;
+}
+.overview-videos .stack {
+  gap: 6px;
+}
+.overview-videos .stack .video-frame {
+  height: 75px;
+  min-height: 0;
+}
+.overview-videos .video-label {
+  font-size: 9px;
+  padding: 2px;
+}
+.overview-videos .video-time {
+  font-size: 10px;
+}
+.overview-bottom .panel-heading {
+  min-height: 38px;
+}
+.overview-bottom .panel-body {
+  padding: 8px;
+}
+.overview-layout > .stack .panel:first-child {
+  flex: 1;
+}
+.overview-layout > .stack .panel:last-child {
+  flex: 1;
+}
+.overview-layout .progress-row {
+  grid-template-columns: 70px 115px 1fr 60px;
+}
+.overview-layout .progress-row img {
+  height: 49px;
+  width: 53px;
+  object-fit: contain;
+}

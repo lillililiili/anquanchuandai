@@ -1,0 +1,25 @@
+/* app.css 4342-4365 */
+
+.statistics-page .stat {
+  height: 97px;
+  padding: 10px 25px;
+}
+.statistics-page .equal > .panel {
+  height: 288px;
+}
+.statistics-page .equal > .panel:nth-child(2) .row.space-between h1 {
+  font-size: 27px;
+  line-height: 1.3;
+}
+.statistics-page .compact td {
+  padding: 8px 9px;
+}
+.statistics-page .page-heading {
+  margin-bottom: 10px;
+}
+.statistics-page .panel-heading h2 {
+  font-size: 19px;
+}
+.statistics-page .panel-heading .legend {
+  white-space: nowrap;
+}

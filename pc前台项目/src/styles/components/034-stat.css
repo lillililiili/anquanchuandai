@@ -1,0 +1,84 @@
+/* app.css 685-767 */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  padding: 20px 28px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #03284055;
+  min-width: 0;
+}
+.stat > i {
+  font-size: 50px;
+  flex-shrink: 0;
+}
+.stat > div {
+  position: relative;
+}
+.stat span {
+  font-size: 18px;
+  display: block;
+  white-space: nowrap;
+}
+.stat strong {
+  font-size: 36px;
+  font-weight: 600;
+  display: block;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.stat strong small {
+  font-size: 20px;
+  color: #e0edf8;
+  font-weight: 400;
+}
+.stat em {
+  font-size: 13px;
+  color: #b1c9df;
+  font-style: normal;
+}
+.stats.flat .stat {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: 0 25px;
+  border-right: 1px solid var(--border);
+}
+.stats.flat .stat:last-child {
+  border-right: 0;
+}
+.stats.flat {
+  padding: 4px 0;
+  margin: 2px 0 17px;
+  min-height: 76px;
+}
+.stats.mini {
+  gap: 8px;
+  margin: 0;
+}
+.stats.mini .stat {
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  gap: 10px;
+}
+.stats.mini .stat > i {
+  font-size: 25px;
+}
+.stats.mini .stat strong {
+  font-size: 26px;
+}
+.stats.mini .stat span {
+  font-size: 13px;
+}
+.stats.mini .stat small {
+  font-size: 13px;
+}

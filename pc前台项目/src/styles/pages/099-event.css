@@ -1,0 +1,7 @@
+/* app.css 2872-2877 */
+
+.event-page .evidence .device-item img {
+  width: 31px;
+  height: 43px;
+  object-fit: contain;
+}

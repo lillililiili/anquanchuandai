@@ -1,0 +1,91 @@
+/* app.css 3627-3716 */
+
+.alarm-detail .info dt,
+.alarm-detail .info dd {
+  padding: 3px 0;
+}
+.alarm-detail .warning-box {
+  padding: 10px;
+  margin-top: 10px !important;
+}
+.alarm-detail .warning-box h3 {
+  margin: 0 0 6px;
+}
+.alarm-detail .detail-section {
+  margin-top: 10px;
+  padding-top: 9px;
+}
+.alarm-detail .detail-section h3 {
+  font-size: 17px;
+  margin: 0 0 9px;
+}
+.alarm-detail .map {
+  height: 150px;
+  min-height: 150px;
+}
+.alarm-detail .video-frame {
+  height: 165px;
+  min-height: 165px;
+}
+.alarm-detail .form-actions {
+  margin-top: 12px;
+}
+.alarm-detail .note {
+  padding: 8px 0;
+}
+.alarm-detail .map-caption {
+  font-size: 11px;
+  left: 7px;
+  top: 5px;
+}
+.alarms-page .page-heading {
+  margin-bottom: 14px;
+}
+.alarms-page .page-heading h1 {
+  font-size: 29px;
+}
+.alarms-page .stats.mini .stat {
+  padding: 0 8px;
+  gap: 8px;
+}
+.alarms-page .stats.mini .stat > i {
+  font-size: 28px;
+}
+.alarms-page .stats.mini {
+  grid-template-columns: repeat(3, 1fr);
+}
+.alarms-page .filters {
+  flex-wrap: nowrap;
+  gap: 11px;
+  font-size: 13px;
+}
+.alarms-page .filters .field {
+  gap: 6px;
+}
+.alarms-page .filters .field > span {
+  font-size: 13px;
+}
+.alarms-page .filters .field select {
+  min-width: 75px;
+  max-width: 104px;
+  font-size: 13px;
+  padding: 8px;
+}
+.alarms-page .filters .field input {
+  max-width: 139px;
+  font-size: 13px;
+  padding: 8px;
+}
+.alarms-page .filters .btn {
+  font-size: 13px;
+  padding: 7px 12px;
+}
+.alarms-table {
+  min-height: 580px;
+}
+.alarms-page td {
+  padding: 16px 10px;
+}
+.alarm-detail .panel-body > h3 {
+  margin: 0 0 9px;
+}

@@ -1,0 +1,19 @@
+/* app.css 1471-1488 */
+
+.personnel-list td {
+  padding: 14px 10px;
+}
+.personnel-list .device-strip {
+  gap: 17px;
+}
+.personnel-list .device-item {
+  flex-direction: column;
+  gap: 0;
+  align-items: flex-start;
+}
+.personnel-list .device-item img {
+  height: 31px;
+}
+.personnel-list .device-item small {
+  display: none;
+}

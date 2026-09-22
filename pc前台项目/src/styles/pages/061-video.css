@@ -1,0 +1,83 @@
+/* app.css 1639-1720 */
+
+.video-toolbar {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+.video-toolbar .layout-control {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.video-wall {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 14px;
+}
+.video-wall > .video-frame {
+  height: 437px;
+  aspect-ratio: auto;
+}
+.video-thumbs {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.video-thumb {
+  min-width: 0;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  color: white;
+  padding: 0;
+  text-align: left;
+}
+.video-thumb > .video-frame {
+  height: 120px;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+.video-thumb.selected > .video-frame {
+  border: 2px solid #0ea9ff;
+}
+.video-thumb strong {
+  display: block;
+  font-size: 15px;
+  margin-top: 8px;
+}
+.video-thumb .video-label {
+  font-size: 10px;
+  padding: 3px;
+  top: 3px;
+  right: 3px;
+}
+.video-thumb .video-time {
+  display: none;
+}
+.video-thumb .video-unavailable i {
+  font-size: 28px;
+}
+.video-thumb .video-unavailable strong {
+  font-size: 13px;
+}
+.video-thumb .video-unavailable small {
+  display: none;
+}
+.video-grid-wall {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.video-grid-wall.nine {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.video-grid-wall .video-thumb > .video-frame {
+  height: 210px;
+}
+.video-grid-wall.nine .video-thumb > .video-frame {
+  height: 200px;
+}

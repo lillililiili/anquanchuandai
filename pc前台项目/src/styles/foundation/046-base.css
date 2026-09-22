@@ -1,0 +1,30 @@
+/* app.css 1355-1383 */
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  color: #a6bed2;
+  font-size: 12px;
+  margin: 10px 0 0 80px;
+  border-top: 1px solid #4e718b;
+  padding-top: 8px;
+}
+.legend {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+}
+.legend > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.legend b {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #008dff;
+}
+.legend .cyan b {
+  background: #0ad1d8;
+}

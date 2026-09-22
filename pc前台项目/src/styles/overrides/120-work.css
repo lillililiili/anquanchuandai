@@ -1,0 +1,17 @@
+/* app.css 3386-3401 */
+
+.work-page .device-strip {
+  gap: 8px;
+}
+.work-page .device-item img {
+  width: 28px;
+  height: 38px;
+}
+.work-page .table-actions,
+.work-page .inline-buttons {
+  flex-wrap: nowrap;
+}
+.work-page .inline-buttons .btn {
+  padding: 3px 7px;
+  font-size: 12px;
+}

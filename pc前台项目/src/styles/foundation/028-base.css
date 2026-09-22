@@ -1,0 +1,12 @@
+/* app.css 590-600 */
+
+.check-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.check-row label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

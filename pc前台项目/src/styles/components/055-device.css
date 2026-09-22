@@ -1,0 +1,22 @@
+/* app.css 1520-1540 */
+
+.detail-section .device-strip {
+  flex-direction: column;
+}
+.detail-section .device-item {
+  gap: 15px;
+}
+.detail-section .device-item > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+}
+.detail-section .device-item small {
+  font-size: 14px;
+  min-width: 65px;
+}
+.detail-section .device-item img {
+  width: 40px;
+  height: 36px;
+}
