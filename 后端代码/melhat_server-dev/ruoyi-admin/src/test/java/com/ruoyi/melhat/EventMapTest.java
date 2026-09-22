@@ -17,6 +17,13 @@ import static org.mockito.ArgumentMatchers.*;
 
 class EventMapTest
 {
+    @Test void fenceTilesRequireCurrentSiteEvenOnCacheHit() {
+        com.ruoyi.wear.auth.SiteAccessService access = mock(com.ruoyi.wear.auth.SiteAccessService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(maps,"siteAccess",access);
+        when(access.requireCurrentSiteForWrite()).thenThrow(new ServiceException("请选择厂站",403));
+        assertThrows(ServiceException.class, () -> maps.siteTile(16,1,2));
+        verifyNoInteractions(cache,http);
+    }
     private final EventCommandService events = mock(EventCommandService.class);
     private final RedisCache cache = mock(RedisCache.class);
     private final RestTemplate http = mock(RestTemplate.class);

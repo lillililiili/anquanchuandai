@@ -21,6 +21,7 @@ public class EventMapService
     private final EventCommandService events;
     private final RedisCache cache;
     private final RestTemplate http;
+    @Autowired private com.ruoyi.wear.auth.SiteAccessService siteAccess;
 
     @Autowired
     public EventMapService(EventCommandService events, RedisCache cache)
@@ -47,6 +48,17 @@ public class EventMapService
     {
         // This check must precede every cache read, including cross-site hits.
         events.requireReadable(eventId);
+        return loadTile(z, x, y);
+    }
+
+    public String siteTile(int z, int x, int y)
+    {
+        siteAccess.requireCurrentSiteForWrite();
+        return loadTile(z, x, y);
+    }
+
+    private String loadTile(int z, int x, int y)
+    {
         if (z < 3 || z > 19 || x < 0 || y < 0 || x >= (1 << z) || y >= (1 << z))
         {
             throw new ServiceException("地图范围无效", 400);

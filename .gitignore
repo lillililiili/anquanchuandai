@@ -19,3 +19,9 @@
 **/build/
 **/.flutter-plugins-dependencies
 /新版安卓端开发/网页展示/历史备份/
+
+# One-off browser inspection artifacts
+**/scratch_test.js
+/新版安卓端开发/华能巡检工人端页面设计-20260921/华能巡检工人端页面设计/after_click_login.png
+/新版安卓端开发/华能巡检工人端页面设计-20260921/华能巡检工人端页面设计/after_full_login.png
+/新版安卓端开发/华能巡检工人端页面设计-20260921/华能巡检工人端页面设计/current_view.png

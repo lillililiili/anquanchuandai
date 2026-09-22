@@ -1,12 +1,272 @@
 <!doctype html>
-<html lang="zh-CN"><head><base href="/"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>ROLLING · 巡检工人端页面设计</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#eaf2fa;color:#152449;font-family:Arial,"Microsoft YaHei",sans-serif}body{display:flex;align-items:center;justify-content:center}.phone{width:408px;height:900px;position:relative;flex:none;overflow:hidden;box-shadow:0 18px 65px #345a7a30;background:#eff6fd}.status{height:48px;padding:3px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#59666c;background:#edf4f9}#app{width:408px;height:852px;position:relative}#loading{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:12px;background:#edf6fe}#loading b{color:#307cff;font-size:24px}.guide{position:fixed;left:30px;top:30px;width:230px;font-size:14px;line-height:1.8}.guide strong{font-size:20px}.guide p{color:#607290}.guide button{padding:9px 16px;background:white;border:1px solid #d2dfea;border-radius:8px;color:#24529a;cursor:pointer}@media(max-width:950px){.guide{display:none}}
-.preview-back{display:inline-flex;align-items:center;gap:4px;min-width:72px;min-height:40px;padding:6px 10px;border:1px solid #cadcf1;border-radius:10px;background:#fff;color:#24529a;font:600 14px Arial,"Microsoft YaHei",sans-serif;cursor:pointer}.preview-back:focus-visible{outline:3px solid #307cff;outline-offset:2px}.preview-back:hover{background:#e2efff}.preview-back:active{background:#d1e5ff}</style><link rel="stylesheet" href="events.css"></head><body>
-<aside class="guide"><button onclick="location.hash='/login';location.reload()">重新体验登录</button></aside>
-<main class="phone" id="phone"><div class="status"><button class="preview-back" type="button" aria-label="返回上一页" title="返回上一页或关闭当前弹层" onclick="window.dispatchEvent(new Event('rolling-preview-back'))"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 5-7 7 7 7"/></svg>返回</button><span>10:42</span><svg aria-label="信号及电量示意" width="43" height="16" viewBox="0 0 43 16" fill="currentColor"><path d="M1 12h3v3H1zm5-4h3v7H6zm5-4h3v11h-3zm5-4h3v15h-3z"/><rect x="27" y="3" width="13" height="11" rx="2" fill="none" stroke="currentColor"/><path d="M40 6h2v5h-2zM29 5h9v7h-9z"/></svg></div><div id="app"><div id="loading"><b>ROLLING</b><span>正在打开安卓展示页面…</span></div></div></main>
-<script>
-function fit(){const s=Math.min(innerWidth/408,(innerHeight-(innerWidth>600?40:0))/900);document.querySelector('#phone').style.transform=`scale(${s})`;}
-addEventListener('resize',fit);fit();
-if(location.protocol==='file:'){document.querySelector('#loading').innerHTML='<b>ROLLING</b><span>请双击同目录的「打开安卓演示.cmd」<br>即可自动启动并打开网页。</span>';}else{const s=document.createElement('script');s.src='flutter_bootstrap.js';document.body.appendChild(s);}
-</script><script src="events.js"></script></body></html>
+<html lang="zh-CN">
+<head>
+  <base href="/">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>ROLLING · 巡检端现场预览</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #eaf2fa;
+      color: #152449;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .phone {
+      width: 408px;
+      height: 900px;
+      position: relative;
+      flex: none;
+      overflow: hidden;
+      box-shadow: 0 18px 65px #345a7a30;
+      background: #eff6fd;
+    }
+    .status {
+      height: 48px;
+      padding: 3px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #59666c;
+      background: #edf4f9;
+    }
+    #app {
+      width: 408px;
+      height: 852px;
+      position: relative;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      gap: 12px;
+      background: #edf6fe;
+    }
+    #loading b {
+      color: #307cff;
+      font-size: 24px;
+    }
+    .guide {
+      position: fixed;
+      left: 30px;
+      top: 30px;
+      width: 240px;
+      font-size: 14px;
+      line-height: 1.8;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(21, 36, 73, 0.08);
+      border: 1px solid #d2dfea;
+    }
+    .guide strong { font-size: 17px; color: #101f43; }
+    .guide p { color: #607290; margin: 6px 0 12px 0; font-size: 12px; line-height: 1.5; }
+    .guide button {
+      display: block;
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 9px 12px;
+      background: #ffffff;
+      border: 1.5px solid #d2dfea;
+      border-radius: 8px;
+      color: #24529a;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+    .guide button:hover {
+      background: #e8f1ff;
+      border-color: #307cff;
+      color: #307cff;
+    }
+    @media(max-width: 950px) { .guide { display: none; } }
+    .preview-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 72px;
+      min-height: 40px;
+      padding: 6px 10px;
+      border: 1px solid #cadcf1;
+      border-radius: 10px;
+      background: #fff;
+      color: #24529a;
+      font: 600 14px Arial, "Microsoft YaHei", sans-serif;
+      cursor: pointer;
+    }
+    .preview-back:focus-visible { outline: 3px solid #307cff; outline-offset: 2px; }
+    .preview-back:hover { background: #e2efff; }
+    .preview-back:active { background: #d1e5ff; }
+  </style>
+  <link rel="stylesheet" href="events.css">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="sos.css">
+</head>
+<body>
+
+  <aside class="guide">
+    <strong>现场指挥与巡检全览</strong>
+    <p>原版安卓架构 · 现场全览 · 问题位置精准标定 · 一键电话沟通工友</p>
+
+    <!-- 系统身份徽标 -->
+    <div id="role-tag"></div>
+
+    <!-- 快速身份切换器 -->
+    <div style="background:#f4f8fc;padding:8px 10px;border-radius:8px;border:1px solid #d2dfea;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:bold;color:#24529a;margin-bottom:6px;">双系统身份模拟切换：</div>
+      <div style="display:flex;gap:6px;">
+        <button id="btn-switch-admin" type="button" onclick="switchRole('admin')" style="margin-bottom:0;padding:6px 8px;font-size:12px;text-align:center;">🛡️ 管理员 (admin)</button>
+        <button id="btn-switch-user" type="button" onclick="switchRole('user')" style="margin-bottom:0;padding:6px 8px;font-size:12px;text-align:center;">👷 巡检员 (user)</button>
+      </div>
+    </div>
+
+    <button class="guide-sos-btn" type="button" onclick="window.triggerEmergencySOS && window.triggerEmergencySOS()">
+      <span style="font-size:16px;">🆘</span>
+      <span>紧急求助 (SOS) 响应通道</span>
+    </button>
+    <button id="guide-field-lead-btn" style="background:#307cff;color:#fff;border-color:#307cff;" onclick="window.openFieldLead && window.openFieldLead()">全局态势 · 管理员</button>
+    <button id="guide-events-btn" onclick="window.openRollingEvents && window.openRollingEvents()">作业研判 · 管理员</button>
+    <button onclick="logoutToLogin()">🔄 重新体验登录</button>
+  </aside>
+
+  <main class="phone" id="phone">
+    <div class="status">
+      <button class="preview-back" type="button" aria-label="返回上一页" title="返回上一页或关闭当前弹层" onclick="window.dispatchEvent(new Event('rolling-preview-back'))">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m14 5-7 7 7 7"/>
+        </svg>返回
+      </button>
+      <span>10:42</span>
+      <svg aria-label="信号及电量示意" width="43" height="16" viewBox="0 0 43 16" fill="currentColor">
+        <path d="M1 12h3v3H1zm5-4h3v7H6zm5-4h3v11h-3zm5-4h3v15h-3z"/>
+        <rect x="27" y="3" width="13" height="11" rx="2" fill="none" stroke="currentColor"/>
+        <path d="M40 6h2v5h-2zM29 5h9v7h-9z"/>
+      </svg>
+    </div>
+
+    <div id="app">
+      <div id="loading">
+        <b>ROLLING</b>
+        <span>正在打开安卓展示页面…</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function fit() {
+      const s = Math.min(innerWidth / 408, (innerHeight - (innerWidth > 600 ? 40 : 0)) / 900);
+      document.querySelector('#phone').style.transform = `scale(${s})`;
+    }
+    addEventListener('resize', fit);
+    fit();
+
+    if (location.protocol === 'file:') {
+      document.querySelector('#loading').innerHTML = '<b>ROLLING</b><span>请双击同目录的「打开安卓演示.cmd」<br>即可自动启动并打开网页。</span>';
+    } else {
+      const s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
+      document.body.appendChild(s);
+    }
+  </script>
+  <script>
+    // 双系统角色权限管理
+    window.currentUserRole = sessionStorage.getItem('rolling_role') || 'admin';
+    window.currentUsername = sessionStorage.getItem('rolling_user') || 'admin';
+
+    window.setRollingRole = function(role, username) {
+      window.currentUserRole = role;
+      window.currentUsername = username || role;
+      try {
+        sessionStorage.setItem('rolling_role', role);
+        sessionStorage.setItem('rolling_user', window.currentUsername);
+      } catch(e) {}
+      window.dispatchEvent(new CustomEvent('rolling-role-changed', { detail: { role: role, username: window.currentUsername } }));
+      syncRoleGuideUI();
+    };
+
+    function switchRole(role) {
+      if (window.startRollingRolePreview) window.startRollingRolePreview(role);
+    }
+
+    function logoutToLogin() {
+      sessionStorage.removeItem('rolling_role');
+      sessionStorage.removeItem('rolling_user');
+      window.currentUserRole = 'user';
+      window.currentUsername = '';
+      window.rollingPreviewReady = false;
+      location.hash = '/login';
+      location.reload();
+    }
+
+    function syncRoleGuideUI() {
+      const isLogin = !window.rollingPreviewReady || ['#/login','#/sites'].includes(location.hash);
+      const role = window.currentUserRole || (sessionStorage.getItem('rolling_role') || 'admin');
+      const isAdmin = (role === 'admin') && !isLogin;
+
+      const tag = document.getElementById('role-tag');
+      if (tag) {
+        if (isLogin) {
+          tag.innerHTML = '<div style="padding:6px 10px;background:#e6f4ff;border-radius:6px;font-size:12px;color:#0958d9;border:1px solid #91caff;margin-bottom:8px;line-height:1.5;">🔑 <b>登录提示</b><br>输入 <code>admin</code> 登录管理员系统<br>输入 <code>user</code> 登录巡检工人系统</div>';
+        } else if (role === 'admin') {
+          tag.innerHTML = '<div style="padding:4px 8px;background:#e6f4ff;border-radius:6px;font-size:12px;color:#0958d9;border:1px solid #91caff;margin-bottom:8px;font-weight:bold;">🛡️ 当前系统：管理员指挥端 (admin)</div>';
+        } else {
+          tag.innerHTML = '<div style="padding:4px 8px;background:#f6ffed;border-radius:6px;font-size:12px;color:#389e0d;border:1px solid #b7eb8f;margin-bottom:8px;font-weight:bold;">👷 当前系统：普通巡检人员端 (user)</div>';
+        }
+      }
+
+      const leadBtn = document.getElementById('guide-field-lead-btn');
+      if (leadBtn) leadBtn.style.display = isAdmin ? 'block' : 'none';
+
+      const sosEventsBtn = document.getElementById('sos-btn-events');
+      if (sosEventsBtn) sosEventsBtn.style.display = isAdmin ? 'flex' : 'none';
+
+      const eventsBtn = document.getElementById('guide-events-btn');
+      if (eventsBtn) eventsBtn.style.display = isAdmin ? 'block' : 'none';
+
+      const btnAdmin = document.getElementById('btn-switch-admin');
+      const btnUser = document.getElementById('btn-switch-user');
+      if (btnAdmin && btnUser) {
+        if (role === 'admin') {
+          btnAdmin.style.background = '#307cff';
+          btnAdmin.style.color = '#ffffff';
+          btnAdmin.style.borderColor = '#307cff';
+          btnUser.style.background = '#ffffff';
+          btnUser.style.color = '#24529a';
+          btnUser.style.borderColor = '#d2dfea';
+        } else {
+          btnUser.style.background = '#00b578';
+          btnUser.style.color = '#ffffff';
+          btnUser.style.borderColor = '#00b578';
+          btnAdmin.style.background = '#ffffff';
+          btnAdmin.style.color = '#24529a';
+          btnAdmin.style.borderColor = '#d2dfea';
+        }
+      }
+
+      if (window.updateLeadVisibility) window.updateLeadVisibility();
+      if (window.updateEventsVisibility) window.updateEventsVisibility();
+    }
+
+    window.addEventListener('rolling-preview-ready', syncRoleGuideUI);
+    window.addEventListener('hashchange', syncRoleGuideUI);
+    window.addEventListener('DOMContentLoaded', syncRoleGuideUI);
+    setTimeout(syncRoleGuideUI, 100);
+  </script>
+  <script src="admin.js"></script>
+  <script src="sos.js"></script>
+</body>
+</html>

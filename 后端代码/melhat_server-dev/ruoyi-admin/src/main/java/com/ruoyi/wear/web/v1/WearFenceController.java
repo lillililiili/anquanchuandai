@@ -21,6 +21,13 @@ public class WearFenceController
 {
     @Autowired
     private FenceService fenceService;
+    @Autowired private com.ruoyi.wear.event.EventMapService maps;
+
+    @GetMapping("/map-tiles/{z}/{x}/{y}")
+    public R<String> tile(@PathVariable int z, @PathVariable int x, @PathVariable int y)
+    {
+        return R.ok(maps.siteTile(z, x, y));
+    }
 
     @GetMapping
     public R<WearPage<GeoFenceDto>> page(

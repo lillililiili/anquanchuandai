@@ -47,6 +47,7 @@ public class FenceService
     private WearDeviceMapper deviceMapper;
     @Autowired
     private WearPersonMapper personMapper;
+    @Autowired private com.ruoyi.wear.person.mapper.WearPersonSiteMapper personSiteMapper;
     @Value("${melhat.demo-mode:false}")
     private boolean demoMode;
     @Value("${spring.profiles.active:}")
@@ -90,6 +91,7 @@ public class FenceService
     {
         siteAccessService.assertCanWriteDevice();
         Long siteId = siteAccessService.requireCurrentSiteForWrite();
+        validateWrite(body, null, siteId);
         String name = str(body, "name");
         List<Map<String, Object>> polygon = polygonOf(body.get("polygon"));
         if (StringUtils.isEmpty(name) || polygon.size() < 3)
@@ -127,12 +129,14 @@ public class FenceService
     {
         siteAccessService.assertCanWriteDevice();
         WearGeoFence row = requireReadable(id);
+        validateWrite(body, row, row.getSiteId());
         Integer version = intVal(body, "version");
         if (version == null || !version.equals(row.getVersion()))
         {
             throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
         }
         boolean geometryChanged = false;
+        if (body.containsKey("enabled")) row.setEnabled(bool(body, "enabled", true) ? 1 : 0);
         if (body.containsKey("name") && StringUtils.isNotEmpty(str(body, "name")))
         {
             row.setName(str(body, "name").trim());
@@ -300,6 +304,56 @@ public class FenceService
             row.setFenceId(fenceId);
             row.setPersonId(personId);
             fencePersonMapper.insert(row);
+        }
+    }
+
+    private void validateWrite(Map<String,Object> body, WearGeoFence previous, Long siteId)
+    {
+        String name = body.containsKey("name") ? str(body,"name") : previous == null ? null : previous.getName();
+        if (name == null || name.trim().isEmpty() || name.length() > 100)
+            throw new ServiceException("请填写不超过 100 字的围栏名称", 400);
+        if (body.containsKey("polygon")) {
+            List<Map<String,Object>> points = polygonOf(body.get("polygon"));
+            if (points.size() < 3 || points.size() > 100)
+                throw new ServiceException("围栏需要 3–100 个顶点", 400);
+            java.util.Set<String> distinct = new java.util.HashSet<>();
+            double area = 0;
+            for (int i=0; i<points.size(); i++) {
+                BigDecimal lat = (BigDecimal) points.get(i).get("lat"), lng = (BigDecimal) points.get(i).get("lng");
+                if (lat == null || lng == null || lat.abs().doubleValue() > 85 || lng.abs().doubleValue() > 180)
+                    throw new ServiceException("围栏坐标无效", 400);
+                distinct.add(lat.stripTrailingZeros()+":"+lng.stripTrailingZeros());
+            }
+            for (int i=0; i<points.size(); i++) {
+                Map<String,Object> a=points.get(i), b=points.get((i+1)%points.size());
+                area += ((BigDecimal)a.get("lng")).doubleValue()*((BigDecimal)b.get("lat")).doubleValue()
+                    - ((BigDecimal)b.get("lng")).doubleValue()*((BigDecimal)a.get("lat")).doubleValue();
+            }
+            if (distinct.size()<3 || Math.abs(area)<1e-12) throw new ServiceException("围栏顶点不能重合或围成直线",400);
+        }
+        boolean enter = bool(body,"enterEnabled",previous == null || previous.getEnterEnabled()==1);
+        boolean leave = bool(body,"leaveEnabled",previous == null || previous.getLeaveEnabled()==1);
+        if (!enter && !leave) throw new ServiceException("请至少选择一种触发方向",400);
+        Integer delay = body.containsKey("debounceSeconds") ? intVal(body,"debounceSeconds") : previous == null ? 60 : previous.getDebounceSeconds();
+        if (delay == null || delay < 0 || delay > 86400) throw new ServiceException("防抖时间应为 0–86400 秒",400);
+        String start=body.containsKey("timeStart") ? str(body,"timeStart") : previous == null ? null : previous.getTimeStart();
+        String end=body.containsKey("timeEnd") ? str(body,"timeEnd") : previous == null ? null : previous.getTimeEnd();
+        if (StringUtils.isEmpty(start) != StringUtils.isEmpty(end)) throw new ServiceException("请完整选择生效时段",400);
+        for (String time : new String[]{start,end}) if (StringUtils.isNotEmpty(time) && !time.matches("([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?"))
+            throw new ServiceException("生效时段格式无效",400);
+        String mode=body.containsKey("applyMode") ? str(body,"applyMode") : previous == null ? "all_site" : previous.getApplyMode();
+        if ("persons".equals(mode) && (body.containsKey("personIds") || previous == null)) {
+            List<String> ids=stringList(body,"personIds");
+            if (ids.isEmpty()) throw new ServiceException("请选择适用人员",400);
+            for (String id : ids) {
+                Long personId=parseLong(id);
+                if (personId == null || personMapper.selectById(personId)==null || personSiteMapper.selectCount(
+                    new LambdaQueryWrapper<com.ruoyi.wear.person.domain.WearPersonSite>()
+                    .eq(com.ruoyi.wear.person.domain.WearPersonSite::getPersonId,personId)
+                    .eq(com.ruoyi.wear.person.domain.WearPersonSite::getSiteId,siteId)
+                    .eq(com.ruoyi.wear.person.domain.WearPersonSite::getStatus,"0"))==0)
+                    throw new ServiceException("所选人员不属于此围栏厂站",403);
+            }
         }
     }
 

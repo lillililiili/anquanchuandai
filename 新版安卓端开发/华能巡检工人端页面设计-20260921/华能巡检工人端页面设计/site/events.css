@@ -71,36 +71,9 @@
   gap: 2px;
 }
 
-/* 右下角悬浮快捷按钮 */
+/* 悬浮快捷处置入口按钮（按需求已收归页面主工作台内部，不再悬浮） */
 .events-fab {
-  position: absolute;
-  right: 14px;
-  bottom: 74px;
-  z-index: 40;
-  background: #307cff;
-  color: #fff;
-  border-radius: 24px;
-  padding: 9px 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgba(48, 124, 255, 0.35);
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
-}
-.events-fab:hover {
-  background: #24529a;
-  transform: translateY(-2px);
-}
-.events-fab .badge {
-  background: #f53f3f;
-  color: #fff;
-  border-radius: 10px;
-  padding: 1px 6px;
-  font-size: 11px;
+  display: none !important;
 }
 
 /* 主容器（完整覆盖 phone 的 408×852 业务区域） */

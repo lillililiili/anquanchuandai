@@ -121581,6 +121581,7 @@ r=s}return r},
 au(){var s,r,q,p,o,n,m=this,l=null,k="/workbench"
 m.be()
 s=m.gAa()
+window.startRollingRolePreview=function(role){if(role!=="admin"&&role!=="user")return;window.setRollingRole(role,role);if(s.c==null)s.xI(role,"local-demo",null,null);else $.ej().a3();}
 r=A.dy(l,t.H)
 q=t.N
 p=$.ai()
@@ -127286,18 +127287,9 @@ if(B.c.cz(a2,"/api/v1/lab/")){q=p.aMh(a5,a3)
 s=1
 break}if(a2==="/captchaImage"){q=p.abU(0,A.a5(["code",200,"captchaEnabled",!0,"uuid","local-preview"],t.N,t.K),!0)
 s=1
-break}if(a2==="/login"){p.c=A.bK(a3.h(0,"username"),"\u2014")
-p.d=null
-q=p.abU(0,A.a5(["code",200,"token","local-preview-only"],t.N,t.K),!0)
+break}if(a2==="/login"){var _rawUser=A.bK(a3.h(0,"username"),"\u2014");p.c=_rawUser;p.d=null;var _cleanUser=(_rawUser||"").toString().trim().toLowerCase();var _assignedRole=(_cleanUser==="admin")?"admin":"user";if(typeof window!=="undefined"&&window.setRollingRole){window.setRollingRole(_assignedRole,_rawUser);}else if(typeof window!=="undefined"){window.currentUserRole=_assignedRole;window.currentUsername=_rawUser;try{sessionStorage.setItem("rolling_role",_assignedRole);sessionStorage.setItem("rolling_user",_rawUser);}catch(e){}}q=p.abU(0,A.a5(["code",200,"token","local-preview-only"],t.N,t.K),!0);s=1;break}if(a2==="/logout"){q=p.e7(0,null)
 s=1
-break}if(a2==="/logout"){q=p.e7(0,null)
-s=1
-break}if(a2==="/api/v1/me"){o=p.c
-n=t.s
-m=t.N
-q=p.e7(0,A.a5(["userId","12","userName",o,"username",o,"nickName","\u9648\u5efa\u56fd","name","\u9648\u5efa\u56fd","personId","101","sipId","10001","status","0","roles",A.b(["wear_duty","wear_team_lead","wear_reviewer"],n),"permissions",A.b(["*:*:*","wear:call:start","wear:command:tts"],n),"authorizedSites",A.b([A.a5(["id","1","status","0","name","\u6f14\u793a\u5382\u7ad9A"],m,m),A.a5(["id","2","status","0","name","\u6f14\u793a\u5382\u7ad9B"],m,m)],t.m0),"currentSiteId",p.d],m,t.z))
-s=1
-break}if(a2==="/api/v1/me/current-site"){o=a3.h(0,"siteId")
+break}if(a2==="/api/v1/me"){o=p.c;n=t.s;m=t.N;var _isAdmin=(o&&o.toString().trim().toLowerCase()==="admin");var _nick=_isAdmin?"\u7cfb\u7edf\u7ba1\u7406\u5458":"\u9648\u5efa\u56fd";var _role=_isAdmin?"\u5b89全\u7ba1\u7406\u5458":"\u5de1\u68c0\u5de5\u4eba";var _dept=_isAdmin?"\u5b89\u76d1\u90e8 \xb7 \u73b0\u573a\u6307\u6325\u4e2d\u5fc3":"\u53d1\u7535\u90e8 \xb7 \u5de1\u68c0\u4e00\u73ed";var _code=_isAdmin?"ADM-001":"P-001";q=p.e7(0,A.a5(["userId",_isAdmin?"1":"12","userName",o,"username",o,"nickName",_nick,"name",_nick,"personId",_isAdmin?"1":"101","sipId",_isAdmin?"10000":"10001","status","0","roles",_isAdmin?A.b(["admin","wear_admin","wear_duty","wear_team_lead","wear_reviewer"],n):A.b(["wear_duty","wear_worker"],n),"permissions",A.b(["*:*:*","wear:call:start","wear:command:tts"],n),"authorizedSites",A.b([A.a5(["id","1","status","0","name","\u6f14\u793a\u5382\u7ad9A"],m,m),A.a5(["id","2","status","0","name","\u6f14\u793a\u5382\u7ad9B"],m,m)],t.m0),"currentSiteId",p.d,"deptName",_dept,"phonenumber",_isAdmin?"13900139000":"13800138000","roleName",_role,"personCode",_code],m,t.z));s=1;break}if(a2==="/api/v1/me/current-site"){o=a3.h(0,"siteId")
 o=o==null?"":J.T(o)
 p.d=o
 q=p.e7(0,A.a5(["currentSiteId",o],t.N,t.T))
@@ -127588,7 +127580,7 @@ return new A.Q(B.vm,A.bn(A.b([new A.b1(90,s,r,s),A.bp(A.W(b,s,s,s,s,A.bZ(s,s,B.O
 lA(a,b,c,d,e){var s=null
 return new A.Q(B.er,e?A.a_6(A.fO(c,s,s,20),A.W(b,s,s,s,s,s,s,s,s),d,s):A.yJ(A.fO(c,s,s,20),A.W(b,s,s,s,s,s,s,s,s),d,s),s)},
 j4(a,b,c,d){return this.lA(0,b,c,d,!1)},
-fP(a,b,c,d){var s=null,r=A.fO(c,B.aB,s,s),q=A.W(a,s,s,s,s,B.eQ,s,s,s)
+fP(a,b,c,d){var s=null,isSos=a.indexOf("SOS")!==-1,r=A.fO(c,isSos?B.SD:B.aB,s,isSos?26:s),q=A.W(a,s,s,s,s,isSos?B.am6:B.eQ,s,s,s)
 return A.lw(!1,B.Q,s,s,!0,s,s,s,!0,s,s,r,s,s,s,s,d,!1,s,s,s,s,b.length===0?s:A.W(b,s,s,s,s,B.jQ,s,s,s),s,s,q,s,s,B.ld,s)},
 S5(a){var s=A.V(a).i("a1<1,tC>")
 s=A.a0(new A.a1(a,new A.b0e(this),s),s.i("aI.E"))
@@ -127604,13 +127596,28 @@ q=A.bp(A.as(A.b([q,A.W(b,s,s,s,s,A.bZ(s,s,B.P,s,s,s,s,s,s,s,s,s,s,s,s,s,1.5,!0,s
 return new A.Q(B.a6,new A.bP(A.as(A.b([A.bn(A.b([r,B.dJ,q,new A.ew(c,c==="\u5728\u7ebf"?B.en:B.dr,s)],p),B.p,B.h,B.i,0,s),this.dl("\u7535\u91cf",d),this.fP("\u8bbe\u5907\u4fe1\u606f\u4e0e\u72b6\u6001","\u8fde\u63a5\u3001\u4f69\u6234\u3001\u5b9a\u4f4d\u4e0e\u81ea\u68c0",B.X7,new A.b0b(this,a))],p),B.H,B.h,B.i,0,B.m),s,s),s)},
 aGO(){var s,r,q,p,o,n,m,l,k,j,i,h,g,f=this,e=null,d="\u503c\u73ed\u5ba4",c="1\u53f7\u673a\u7ec4\u65e5\u5e38\u5de1\u68c0",b="\u534f\u4f5c\u4eba\u5458",a="1\u53f7\u673a\u7ec4 \xb7 \u6c7d\u673a\u623f",a0="\u9648\u5efa\u56fd",a1="\u5468\u660e",a2="\u5728\u7ebf",a3="\u5de1\u68c0\u4e00\u73ed",a4="\u4eca\u65e5 09:12",a5="\u667a\u80fd\u5b89\u5168\u5e3d",a6="assets/field-brand/preview/helmet.jpg",a7="assets/field-brand/preview/watch.jpg",a8="assets/field-brand/preview/belt.jpg",a9=f.a
 switch(a9.c){case"home":a9=t.p
-s=A.as(A.b([new A.Q(B.aC,new A.e5("\u5feb\u901f\u8054\u7cfb",e,e),e),f.qA(d),f.fP("SOS \u7d27\u6025\u6c42\u52a9","\u9047\u9669\u65f6\u5411\u503c\u73ed\u5ba4\u53d1\u9001\u6c42\u52a9",B.lb,new A.b_a(f))],a9),B.H,B.h,B.i,0,B.m)
+window.rollingPreviewReady=true;
+window.refreshRollingHome=function(){$.ej().a3()};
+queueMicrotask(function(){window.dispatchEvent(new Event("rolling-preview-ready"))});
+var _wbCards=[new A.Q(B.aC,new A.e5("快速联系与现场处置",e,e),e),f.qA(d),f.fP("紧急求助 SOS","遇险时一键求助，联系值班室",B.lb,new A.b_a(f))];
+s=A.as(A.b(_wbCards,a9),B.H,B.h,B.i,0,B.m);
+var _adminCards=[];
+if(window.currentUserRole==="admin"){
+var _counts=window.RollingAdmin?window.RollingAdmin.counts():{fence:2,pending:3,handling:1};
+var _leadAction=new A.b_U(f);_leadAction.adminModule="lead";
+var _eventAction=new A.b_U(f);_eventAction.adminModule="events";
+_adminCards.push(new A.Q(B.a6,new A.bP(A.as(A.b([
+new A.Q(B.aC,new A.e5("现场管理",new A.ew("管理员 · 模拟",e,e),e),e),
+f.fP("全局态势","4 人在岗 · "+_counts.fence+" 起围栏告警",B.l9,_leadAction),
+f.fP("作业研判",_counts.pending+" 起待认领 · "+_counts.handling+" 起处置中",B.pA,_eventAction)
+],a9),B.H,B.h,B.i,0,B.m),e,e),e));
+}
 r=$.ej()
 r=f.JQ(c,r.a,"\u4eca\u65e5 09:00\u201411:00 \xb7 \u6c7d\u673a\u623f\n\u5de1\u68c0\u70b9 "+r.b.a+"/3 \xb7 \u534f\u4f5c\u4eba\u5458 2 \u4eba")
 q=A.et(B.aqF,e,new A.b_b(f),e)
 p=A.lw(!1,B.Q,e,e,!0,e,e,e,!0,e,e,B.atV,e,e,e,e,new A.b_c(f),!1,e,e,e,e,B.aqe,e,e,B.aq6,e,e,B.au4,e)
 o=A.lw(!1,B.Q,e,e,!0,e,e,e,!0,e,e,B.atU,e,e,e,e,new A.b_n(f),!1,e,e,e,e,B.apv,e,e,B.apK,e,e,B.au8,e)
-return A.b([new A.Q(B.a6,new A.bP(s,e,e),e),r,new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u6211\u7684\u8bbe\u5907",q,e),e),p,o,A.W("\u8bbe\u5907\u72b6\u6001\u4e3a\u6f14\u793a\u6570\u636e",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)],a9),B.H,B.h,B.i,0,B.m),e,e),e),new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u5de1\u68c0\u5de5\u5177",e,e),e),f.fP("\u6211\u7684\u4efb\u52a1","\u67e5\u770b\u4efb\u52a1\u4e0e\u586b\u5199\u5de1\u68c0\u7ed3\u679c",B.pA,new A.b_y(f)),f.fP(b,"\u67e5\u770b\u4f4d\u7f6e\u3001\u8f68\u8ff9\u5e76\u8054\u7cfb\u540c\u4f34",B.wi,new A.b_J(f)),f.fP("\u5f02\u5e38\u4e0a\u62a5","\u8bb0\u5f55\u95ee\u9898\uff0c\u8ddf\u8fdb\u5904\u7406\u53cd\u9988",B.wg,new A.b_U(f))],a9),B.H,B.h,B.i,0,B.m),e,e),e)],a9)
+return A.b([..._adminCards,new A.Q(B.a6,new A.bP(s,e,e),e),r,new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u6211\u7684\u8bbe\u5907",q,e),e),p,o,A.W("\u8bbe\u5907\u72b6\u6001\u4e3a\u6f14\u793a\u6570\u636e",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)],a9),B.H,B.h,B.i,0,B.m),e,e),e),new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u5de1\u68c0\u5de5\u5177",e,e),e),f.fP("\u6211\u7684\u4efb\u52a1","\u67e5\u770b\u4efb\u52a1\u4e0e\u586b\u5199\u5de1\u68c0\u7ed3\u679c",B.pA,new A.b_y(f)),f.fP(b,"\u67e5\u770b\u4f4d\u7f6e\u3001\u8f68\u8ff9\u5e76\u8054\u7cfb\u540c\u4f34",B.wi,new A.b_J(f)),f.fP("\u5f02\u5e38\u4e0a\u62a5","\u8bb0\u5f55\u95ee\u9898\uff0c\u8ddf\u8fdb\u5904\u7406\u53cd\u9988",B.wg,new A.b_U(f))],a9),B.H,B.h,B.i,0,B.m),e,e),e)],a9)
 case"tasks":a9=A.b([f.S5(A.b(["\u5168\u90e8","\u5f85\u6267\u884c","\u8fdb\u884c\u4e2d","\u5df2\u5b8c\u6210"],t.s))],t.p)
 if(f.gjj(0)==="\u5168\u90e8"||f.gjj(0)===$.ej().a)a9.push(f.JQ(c,$.ej().a,"\u6c7d\u673a\u623f \xb7 \u4eca\u65e5 09:00\u201411:00"))
 if(f.gjj(0)==="\u5168\u90e8"||f.gjj(0)==="\u5f85\u6267\u884c")a9.push(f.JQ("\u5faa\u73af\u6c34\u6cf5\u623f\u5de1\u68c0","\u5f85\u6267\u884c","\u6c34\u6cf5\u623f \xb7 \u4eca\u65e5 14:00\u201415:00"))
@@ -127887,7 +127894,7 @@ A.b0b.prototype={
 $0(){return this.a.hu(0,"device",this.b)},
 $S:0}
 A.b_a.prototype={
-$0(){return this.a.i2(0,"sos")},
+$0(){if(typeof window!=="undefined"&&window.triggerEmergencySOS)window.triggerEmergencySOS();return this.a.i2(0,"sos");},
 $S:0}
 A.b_b.prototype={
 $0(){return this.a.i2(0,"devices")},
@@ -127905,7 +127912,7 @@ A.b_J.prototype={
 $0(){return this.a.i2(0,"partners")},
 $S:0}
 A.b_U.prototype={
-$0(){return this.a.i2(0,"report")},
+$0(){if(this.adminModule==="lead"){window.openFieldLead();return null;}if(this.adminModule==="events"){window.openRollingEvents();return null;}return this.a.i2(0,"report");},
 $S:0}
 A.b04.prototype={
 $0(){return this.a.i2(0,"partners")},

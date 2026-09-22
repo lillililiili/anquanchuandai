@@ -1,0 +1,14 @@
+{
+  "passed": 9,
+  "checks": [
+    "person create edit validity and stale edit protection",
+    "person disable and restore",
+    "team and contractor maintenance",
+    "equipment assign idempotent retry and return",
+    "fence point save edit enabled state and geometry validation",
+    "map tile site authorization",
+    "xlsx template export and import roundtrip",
+    "public recovery admin-only approval password changed old token revoked duplicate blocked",
+    "rejection retained in audit"
+  ]
+}

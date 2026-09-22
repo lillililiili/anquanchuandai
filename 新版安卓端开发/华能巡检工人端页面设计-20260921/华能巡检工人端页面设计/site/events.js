@@ -9,18 +9,23 @@
   const INITIAL_EVENTS = [
     {
       id: 'EVT-20260921-001',
-      title: '1号机组高压配电区未授权进入越界告警',
+      title: '【电子围栏 · 越界进入】1号发电机高压红线禁入管控围栏',
       type: 'fence',
-      typeName: '电子围栏告警',
+      typeName: '电子围栏 · 越界进入',
+      fenceType: 'in',
+      fenceName: '1号发电机高压红线禁入管控围栏 (EF-01)',
+      fenceAction: '【越界进入】闯入高压红线带电区',
+      fenceRule: '严禁未持特种高压作业票擅自跨越红线进入',
+      phone: '138-0010-8801',
       severity: 'critical',
-      severityLabel: '🔴 紧急告警',
+      severityLabel: '🔴 越界进入告警',
       status: 'pending',
       statusLabel: '待认领',
       time: '今日 10:35:12',
       person: '陈建国 (工号 P-001)',
       dept: '巡检一班 · 汽机房',
-      device: '智能安全帽 RL-H001 (电量 86% · 在线)',
-      area: '1号机组 · 汽机房高压配电柜东侧',
+      device: '智能安全帽 RL-H001 (电量 86% · UWB在线)',
+      area: '1号发电机 · 汽机房高压配电区A门进线柜',
       latLng: '118.239120°E, 39.921340°N',
       claimant: '未认领',
       handleNote: '',
@@ -28,15 +33,48 @@
       actions: [
         {
           time: '10:35:12',
-          user: '核心安全系统',
-          action: '告警触发',
-          desc: '电子围栏系统检测到人员越界进入1号机组高压管控红线区域，触发一级越界告警。',
+          user: '电子围栏管控系统',
+          action: '越界进入告警',
+          desc: 'UWB基站检测到人员陈建国穿过高压红线围栏(EF-01)东侧A进线柜边界，判定为【未授权越界进入】，高压现场声光报警已联锁启动！',
           type: 'alert'
         }
       ]
     },
     {
       id: 'EVT-20260921-002',
+      title: '【电子围栏 · 违规离开】汽机房2号机组巡检安全作业围栏',
+      type: 'fence',
+      typeName: '电子围栏 · 违规离开',
+      fenceType: 'out',
+      fenceName: '汽机房2号机组巡检安全作业围栏 (EF-02)',
+      fenceAction: '【违规离开】擅自脱离指定安全区',
+      fenceRule: '巡检期间严禁擅自脱离指定安全监护范围',
+      phone: '138-0010-8802',
+      severity: 'major',
+      severityLabel: '🟠 违规脱出告警',
+      status: 'pending',
+      statusLabel: '待认领',
+      time: '今日 10:40:18',
+      person: '李志远 (工号 P-002)',
+      dept: '巡检一班 · 汽机房',
+      device: '智能安全帽 RL-H002 (电量 78% · UWB在线)',
+      area: '汽机房 · 南侧通道安全作业线边界',
+      latLng: '118.238910°E, 39.921120°N',
+      claimant: '未认领',
+      handleNote: '',
+      photo: 'assets/assets/field-brand/preview/helmet.jpg',
+      actions: [
+        {
+          time: '10:40:18',
+          user: '电子围栏管控系统',
+          action: '违规脱离告警',
+          desc: '人员李志远脱离2号机组指定安全作业围栏(EF-02)外围超出3米，判定为【违规脱出/擅离安全区】，已向作业安全帽下发回撤提示。',
+          type: 'alert'
+        }
+      ]
+    },
+    {
+      id: 'EVT-20260921-003',
       title: '汽机房2号巡检点作业人员安全帽脱卸告警',
       type: 'off_hat',
       typeName: '脱帽告警',
@@ -45,9 +83,9 @@
       status: 'pending',
       statusLabel: '待认领',
       time: '今日 10:25:40',
-      person: '李志远 (工号 P-002)',
+      person: '张伟 (工号 P-004)',
       dept: '巡检一班',
-      device: '智能安全帽 RL-H002 (电量 78% · 在线)',
+      device: '智能安全帽 RL-H004 (电量 82% · 在线)',
       area: '汽机房 · 凝汽器B侧管道检修平台',
       latLng: '118.238910°E, 39.921120°N',
       claimant: '未认领',
@@ -64,7 +102,7 @@
       ]
     },
     {
-      id: 'EVT-20260921-003',
+      id: 'EVT-20260921-004',
       title: '循环水泵房主管道轻微震动撞击告警',
       type: 'impact',
       typeName: '撞击告警',
@@ -106,7 +144,7 @@
       ]
     },
     {
-      id: 'EVT-20260921-004',
+      id: 'EVT-20260921-005',
       title: '3号输煤廊道中间段紧急求助（防灾演练）',
       type: 'sos',
       typeName: 'SOS 求助',
@@ -188,13 +226,6 @@
       if (countEl) countEl.textContent = `${count}条待认领`;
       topBanner.style.display = count > 0 ? 'flex' : 'none';
     }
-    if (fabBtn) {
-      const badge = fabBtn.querySelector('.badge');
-      if (badge) {
-        badge.textContent = count;
-        badge.style.display = count > 0 ? 'inline-block' : 'none';
-      }
-    }
   }
 
   // 初始化 DOM 结构
@@ -202,7 +233,8 @@
     const phone = document.getElementById('phone');
     if (!phone) return;
 
-    // 1. 顶部告警提示胶囊
+    // 1. 顶部告警提示胶囊（注释掉顶部悬浮条，避免遮挡手机屏幕内容）
+    /*
     topBanner = document.createElement('div');
     topBanner.className = 'events-top-banner';
     topBanner.innerHTML = `
@@ -214,20 +246,9 @@
     `;
     topBanner.onclick = () => openEventsView();
     phone.appendChild(topBanner);
+    */
 
-    // 2. 悬浮快捷处置入口按钮
-    fabBtn = document.createElement('button');
-    fabBtn.className = 'events-fab';
-    fabBtn.type = 'button';
-    fabBtn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      <span>事件处置</span>
-      <span class="badge">${getPendingCount()}</span>
-    `;
-    fabBtn.onclick = () => openEventsView();
-    phone.appendChild(fabBtn);
-
-    // 3. 全局 Toast
+    // 2. 全局 Toast
     toastEl = document.createElement('div');
     toastEl.className = 'events-toast';
     phone.appendChild(toastEl);
@@ -238,22 +259,7 @@
     viewLayer.className = 'events-view-layer';
     phone.appendChild(viewLayer);
 
-    // 5. 在左侧导览栏注入一键打开按钮
-    const guide = document.querySelector('.guide');
-    if (guide) {
-      const btn = document.createElement('button');
-      btn.style.marginTop = '10px';
-      btn.style.width = '100%';
-      btn.style.background = '#edf6fe';
-      btn.style.border = '1px solid #adc6ff';
-      btn.style.color = '#307cff';
-      btn.style.fontWeight = 'bold';
-      btn.textContent = '核心系统事件处置';
-      btn.onclick = () => openEventsView();
-      guide.appendChild(btn);
-    }
-
-    // 6. 拦截外壳原生返回按钮
+    // 5. 拦截外壳原生返回按钮
     window.addEventListener('rolling-preview-back', function (e) {
       if (viewLayer && viewLayer.classList.contains('active')) {
         e.stopImmediatePropagation();
@@ -267,14 +273,37 @@
     }, true);
 
     updateBadges();
+    updateEventsVisibility();
+  }
+
+  function updateEventsVisibility() {
+    const isLogin = location.hash === '#/login' || location.hash === '/login';
+    const role = window.currentUserRole || (sessionStorage.getItem('rolling_role') || 'admin');
+    const isAdmin = (role === 'admin') && !isLogin;
+    const guideEventsBtn = document.getElementById('guide-events-btn');
+    if (guideEventsBtn) {
+      guideEventsBtn.style.display = isAdmin ? 'block' : 'none';
+    }
+    if (topBanner) {
+      topBanner.style.display = 'none';
+    }
+    if (!isAdmin && viewLayer && viewLayer.classList.contains('active')) {
+      closeEventsView();
+    }
   }
 
   // 打开事件视图
   function openEventsView(eventId = null) {
+    const role = window.currentUserRole || (sessionStorage.getItem('rolling_role') || 'admin');
+    if (role !== 'admin') {
+      showToast('当前为普通巡检人员端，无权访问作业研判');
+      return;
+    }
     if (!viewLayer) return;
     viewLayer.classList.add('active');
     if (topBanner) topBanner.style.opacity = '0';
-    if (fabBtn) fabBtn.style.opacity = '0';
+    const hud = document.querySelector('.lead-hud-banner');
+    if (hud) hud.style.opacity = '0';
     if (eventId) {
       renderDetailView(eventId);
     } else {
@@ -287,10 +316,18 @@
     if (!viewLayer) return;
     viewLayer.classList.remove('active');
     currentDetailId = null;
-    if (topBanner) topBanner.style.opacity = '1';
-    if (fabBtn) fabBtn.style.opacity = '1';
+    const hud = document.querySelector('.lead-hud-banner');
+    const role = window.currentUserRole || (sessionStorage.getItem('rolling_role') || 'admin');
+    const isLogin = location.hash === '#/login' || location.hash === '/login';
+    if (hud && role === 'admin' && !isLogin) {
+      hud.style.opacity = '1';
+    }
     updateBadges();
   }
+
+  window.updateEventsVisibility = updateEventsVisibility;
+  window.addEventListener('hashchange', updateEventsVisibility);
+  window.addEventListener('rolling-role-changed', updateEventsVisibility);
 
   // 渲染事件列表页面
   function renderListView() {
@@ -357,8 +394,24 @@
               <span class="status-pill ${statusClass}">${ev.statusLabel}</span>
             </div>
             <div class="events-card-title">${ev.title}</div>
+            ${ev.fenceType ? `
+              <div style="display:flex;align-items:center;gap:6px;margin:2px 0 6px 0;">
+                <span class="lead-fence-badge-${ev.fenceType === 'in' ? 'in' : 'out'}">
+                  ${ev.fenceType === 'in' ? '🔴 越界进入' : '🟠 擅离脱出'}
+                </span>
+                <span style="font-size:12px;font-weight:700;color:${ev.fenceType === 'in' ? '#cf1322' : '#d46b08'};">
+                  ${ev.fenceName}
+                </span>
+              </div>
+            ` : ''}
             
             <div class="events-kv-grid">
+              ${ev.fenceAction ? `
+                <div class="events-kv-item" style="grid-column: 1 / -1;background:#fff8eb;padding:5px 8px;border-radius:6px;border:1px dashed #ffd591;">
+                  <span class="events-kv-label" style="color:#d46b08;font-weight:700;">出入动作</span>
+                  <span class="events-kv-val" style="color:#f53f3f;font-weight:700;">${ev.fenceAction}</span>
+                </div>
+              ` : ''}
               <div class="events-kv-item">
                 <span class="events-kv-label">涉事人员</span>
                 <span class="events-kv-val">${ev.person}</span>
@@ -490,6 +543,31 @@
           <div>${guideText}</div>
         </div>
 
+        <!-- 电子围栏出入专项要素卡片 -->
+        ${ev.fenceType ? `
+          <div class="events-card" style="border:1.5px solid ${ev.fenceType === 'in' ? '#ffa39e' : '#ffd591'};background:${ev.fenceType === 'in' ? '#fff1f0' : '#fffaf0'};">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:14px;font-weight:800;color:${ev.fenceType === 'in' ? '#cf1322' : '#d46b08'};">
+                ${ev.fenceType === 'in' ? '🚨 电子围栏【越界进入】告警要素' : '⚠️ 电子围栏【违规脱出】告警要素'}
+              </span>
+              <span class="lead-fence-badge-${ev.fenceType === 'in' ? 'in' : 'out'}">
+                ${ev.fenceType === 'in' ? '🔴 越界进入' : '🟠 违规离开'}
+              </span>
+            </div>
+            <div class="lead-fence-info-row" style="margin-top:6px;">
+              <div><strong>电子围栏：</strong>${ev.fenceName}</div>
+              <div><strong>出入动作：</strong><span style="font-weight:bold;color:${ev.fenceType === 'in' ? '#f53f3f' : '#fa8c16'};">${ev.fenceAction}</span></div>
+              <div><strong>管控规则：</strong>${ev.fenceRule || '高精度空间边界防护'}</div>
+              <div><strong>空间判定：</strong>高精度 UWB 实时电子围栏 (厘米级边界触发)</div>
+            </div>
+            <div style="margin-top:6px;">
+              <button class="lead-btn-call" type="button" style="width:100%;height:36px;" onclick="alert('📞 正在一键直拨现场对讲：${ev.person}\\n已呼通！已向现场作业人员下发立即撤离/回撤指令！')">
+                📞 一键呼叫现场涉事人员 (${ev.person.split(' ')[0]})
+              </button>
+            </div>
+          </div>
+        ` : ''}
+
         <!-- 事件要素卡片 -->
         <div class="events-card">
           <div style="font-size:14px;font-weight:700;color:var(--evt-ink);display:flex;justify-content:space-between;">
@@ -551,8 +629,9 @@
         
         <!-- 快捷短语 -->
         <div class="events-quick-phrases">
+          <span class="events-phrase-chip" data-phrase="【越界进入处置】已责令作业人员立即退出高压红线管控区，现场无带电触碰，环境安全。">+ 退出红线区</span>
+          <span class="events-phrase-chip" data-phrase="【擅离脱出处置】已责令作业人员迅速返回指定安全作业围栏，重新佩戴好监护装备。">+ 返回安全区</span>
           <span class="events-phrase-chip" data-phrase="安全帽已重新佩戴紧固，人员已恢复规范作业。">+ 安全帽已佩戴</span>
-          <span class="events-phrase-chip" data-phrase="已引导作业人员立即撤出高压管控越界区域，无设备异常。">+ 已撤离越界区域</span>
           <span class="events-phrase-chip" data-phrase="现场复查管路无渗漏无变形，运行参数正常。">+ 管道无异常</span>
           <span class="events-phrase-chip" data-phrase="现场环境安全，人员身体无大碍。">+ 现场环境安全</span>
         </div>

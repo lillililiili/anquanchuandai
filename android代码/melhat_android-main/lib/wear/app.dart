@@ -8,6 +8,9 @@ import 'notifications.dart';
 import 'mine_page.dart';
 import 'duty_pages.dart';
 import 'queries/queries.dart';
+import 'queries/person_management.dart';
+import 'queries/account_recovery.dart';
+import 'queries/fence_editor.dart';
 import 'events/events_page.dart';
 import 'events/sos_events_page.dart';
 import 'communications/communications.dart';
@@ -90,6 +93,41 @@ class _WearAppState extends State<WearApp> {
                 GoRoute(
                   path: '/supervision',
                   builder: (_, _) => const SupervisionPage(),
+                ),
+                GoRoute(
+                  path: '/people-admin/new',
+                  builder: (_, _) => const PersonEditorPage(),
+                ),
+                GoRoute(
+                  path: '/people-admin/edit/:id',
+                  builder: (_, s) =>
+                      PersonEditorPage(id: s.pathParameters['id']!),
+                ),
+                GoRoute(
+                  path: '/people-admin/equipment/:id',
+                  builder: (_, s) =>
+                      PersonEquipmentPage(id: s.pathParameters['id']!),
+                ),
+                GoRoute(
+                  path: '/people-admin/organizations',
+                  builder: (_, _) => const OrganizationsPage(),
+                ),
+                GoRoute(
+                  path: '/people-admin/transfer',
+                  builder: (_, _) => const PersonTransferPage(),
+                ),
+                GoRoute(
+                  path: '/people-admin/recovery',
+                  builder: (_, _) => const AccountRecoveryPage(),
+                ),
+                GoRoute(
+                  path: '/fences/new',
+                  builder: (_, _) => const FenceEditorPage(),
+                ),
+                GoRoute(
+                  path: '/fences/:id/edit',
+                  builder: (_, s) =>
+                      FenceEditorPage(id: s.pathParameters['id']!),
                 ),
                 GoRoute(
                   path: '/people/:id',

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core.dart';
 import 'query_utils.dart';
+import 'management_widgets.dart';
 import 'query_widgets.dart';
 
 class PeoplePage extends StatefulWidget {
@@ -100,10 +101,37 @@ class _PeoplePageState extends State<PeoplePage> {
   @override
   Widget build(BuildContext context) {
     return QueryPage(
-      title: '人员',
+      title: '人员档案',
       subtitle: '人员档案独立于登录账号，姓名重复时请核对人员编号。',
       body: Column(
         children: [
+          if (_session?.can('wear:person:edit') == true)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final action in const {
+                    '新增人员': '/people-admin/new',
+                    '班组 / 承包商': '/people-admin/organizations',
+                    '导入 / 导出': '/people-admin/transfer',
+                  }.entries)
+                    ActionChip(
+                      label: Text(action.key),
+                      onPressed: () async {
+                        await context.push(action.value);
+                        if (mounted) _load(page: _current);
+                      },
+                    ),
+                  if (_session!.isDutyAdmin)
+                    ActionChip(
+                      label: const Text('重置审批'),
+                      onPressed: () => context.push('/people-admin/recovery'),
+                    ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
@@ -179,8 +207,10 @@ class _PeoplePageState extends State<PeoplePage> {
                             ? WearColors.primary
                             : WearColors.muted,
                       ),
-                      onTap: () =>
-                          context.push('/people/${idOf(person['id'])}'),
+                      onTap: () async {
+                        await context.push('/people/${idOf(person['id'])}');
+                        if (mounted) _load(page: _current);
+                      },
                     );
                   },
                 ),
@@ -380,6 +410,68 @@ class _PersonPageState extends State<PersonPage> {
                         ],
                       ),
                     ),
+                    if (_session!.can('wear:person:edit') ||
+                        _session!.can('wear:assignment:issue')) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          if (_session!.can('wear:person:edit')) ...[
+                            ActionChip(
+                              label: const Text('编辑档案'),
+                              onPressed: () async {
+                                await context.push(
+                                  '/people-admin/edit/${widget.id}',
+                                );
+                                if (mounted) _load();
+                              },
+                            ),
+                            ActionChip(
+                              label: Text(
+                                person['status'] == '0' ? '停用人员' : '启用人员',
+                              ),
+                              onPressed: () async {
+                                final active = person['status'] == '0';
+                                if (!await confirmManagement(
+                                  context,
+                                  active ? '停用此人员？' : '启用此人员？',
+                                  active
+                                      ? '停用后不可再分配新装备。已有领用记录保留。'
+                                      : '恢复人员档案为在职状态。',
+                                )) {
+                                  return;
+                                }
+                                if (!context.mounted) return;
+                                try {
+                                  await _session!.api.put(
+                                    '/api/v1/people/${widget.id}/status',
+                                    data: {
+                                      'status': active ? '1' : '0',
+                                      'version': person['version'],
+                                    },
+                                  );
+                                  if (mounted) _load();
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    managementMessage(context, e);
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                          if (_session!.can('wear:assignment:issue'))
+                            ActionChip(
+                              label: const Text('装备分配 / 归还'),
+                              onPressed: () async {
+                                await context.push(
+                                  '/people-admin/equipment/${widget.id}',
+                                );
+                                if (mounted) _load();
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 18),
                     FilledButton.icon(
                       onPressed: () => context.push(
@@ -399,7 +491,10 @@ class _PersonPageState extends State<PersonPage> {
                       failed: _locationFailed,
                     ),
                     const SizedBox(height: 18),
-                    EquipmentPanel(personId: widget.id),
+                    EquipmentPanel(
+                      key: ValueKey('equipment-$_request'),
+                      personId: widget.id,
+                    ),
                     const SizedBox(height: 22),
                     QuerySection(
                       title: '历史领用记录（${_history.length}）',

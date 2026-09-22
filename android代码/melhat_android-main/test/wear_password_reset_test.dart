@@ -1,108 +1,68 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:rolling_intelligence_headband/wear/app.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/password_reset_page.dart';
-import 'wear_session_test.dart' show MemoryCredentials, transport, reply;
+import 'wear_session_test.dart' show transport, reply;
 
 void main() {
   for (final scale in [1.0, 1.5]) {
     testWidgets(
-      'reset request validates and returns without sending or changing password at $scale',
+      'recovery submits to backend and retains input on failure at $scale',
       (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        tester.view.physicalSize = const Size(360, 640);
+        tester.view.physicalSize = const Size(390, 900);
         tester.view.devicePixelRatio = 1;
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(() {
           tester.view.resetPhysicalSize();
           tester.view.resetDevicePixelRatio();
-          tester.view.resetViewInsets();
           tester.platformDispatcher.clearTextScaleFactorTestValue();
         });
-        final requests = <RequestOptions>[];
-        final session = WearSession(
-          credentials: MemoryCredentials(),
+        var submitted = 0;
+        final api = WearApi(
+          token: () => null,
+          siteId: () => null,
+          epoch: () => 0,
           dio: transport((r) {
-            requests.add(r);
-            return reply({'captchaEnabled': false}, raw: true);
+            if (r.path == '/captchaImage')
+              return reply({'code': 200, 'captchaEnabled': false}, raw: true);
+            expect(r.path, '/api/v1/account-recovery/requests');
+            expect(r.data['identifier'], 'P-001');
+            expect(r.data['realName'], '测试人员');
+            expect(r.headers.containsKey('Authorization'), isFalse);
+            submitted++;
+            return submitted == 1
+                ? reply(null, code: 503, msg: '暂不可用')
+                : reply({'id': 'receipt', 'status': 'pending'});
           }),
-        )..initialized = true;
-        addTearDown(session.dispose);
+        );
         await tester.pumpWidget(
-          WearApp(session: session, enableNotifications: false),
+          MaterialApp(
+            home: WearPasswordResetPage(api: api, initialAccount: 'P-001'),
+          ),
         );
         await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextFormField).at(0), 'operator');
-        await tester.enterText(
-          find.byType(TextFormField).at(1),
-          'retained-input',
-        );
-        Future<void> click(Finder finder) async {
-          await tester.ensureVisible(finder);
-          await tester.pumpAndSettle();
-          await tester.tap(finder);
-          await tester.pumpAndSettle();
-        }
-
-        await click(find.text('忘记密码 / 申请重置  >'));
-        expect(find.byType(WearPasswordResetPage), findsOneWidget);
-        expect(find.byType(NavigationBar), findsNothing);
-        expect(find.text('找回登录权限'), findsOneWidget);
-        final account = find.byKey(const ValueKey('password-reset-account'));
-        final code = find.byKey(const ValueKey('password-reset-code'));
-        final submit = find.byKey(const ValueKey('password-reset-submit'));
-        String challenge() => tester
-            .widget<Text>(
-              find.byKey(const ValueKey('password-reset-challenge')),
-            )
-            .data!;
-        expect(
-          tester.widget<TextFormField>(account).controller!.text,
-          'operator',
-        );
-        await tester.enterText(account, '');
-        await click(submit);
-        expect(find.text('请输入工作账号'), findsOneWidget);
-        await tester.enterText(account, 'operator');
-        await tester.enterText(code, 'wrong');
-        await click(submit);
-        expect(find.text('验证码不正确，请重新输入'), findsOneWidget);
-        final previous = challenge();
-        await click(find.byKey(const ValueKey('password-reset-refresh')));
-        expect(challenge(), isNot(previous));
-        expect(tester.widget<TextFormField>(code).controller!.text, isEmpty);
-        tester.view.viewInsets = const FakeViewPadding(bottom: 250);
-        await tester.enterText(code, challenge().toLowerCase());
-        await click(submit);
-        expect(find.text('申请服务待接入'), findsOneWidget);
-        expect(find.textContaining('申请尚未发送，密码未变更'), findsOneWidget);
-        expect(requests.where((r) => r.method != 'GET'), isEmpty);
-        await tester.tap(find.text('我知道了'));
+        await tester.enterText(find.byType(TextFormField).at(1), '测试人员');
+        await tester.enterText(find.byType(TextFormField).at(2), '13800000000');
+        await tester.enterText(find.byType(TextFormField).at(3), '忘记账号');
+        final button = find.widgetWithText(FilledButton, '提交申请');
+        await tester.ensureVisible(button);
+        await tester.tap(button);
         await tester.pumpAndSettle();
-        tester.view.resetViewInsets();
-        await tester.pumpAndSettle();
-        await click(find.byTooltip('返回登录'));
-        expect(find.byType(WearPasswordResetPage), findsNothing);
-        expect(
-          tester
-              .widget<TextFormField>(find.byType(TextFormField).at(0))
-              .controller!
-              .text,
-          'operator',
-        );
+        expect(submitted, 1);
+        expect(find.text('申请已提交'), findsNothing);
         expect(
           tester
               .widget<TextFormField>(find.byType(TextFormField).at(1))
               .controller!
               .text,
-          'retained-input',
+          '测试人员',
         );
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.ensureVisible(button);
+        await tester.tap(button);
         await tester.pumpAndSettle();
+        expect(find.text('申请已提交'), findsOneWidget);
+        expect(find.textContaining('receipt'), findsOneWidget);
+        expect(tester.takeException(), isNull);
       },
     );
   }
