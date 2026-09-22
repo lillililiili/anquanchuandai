@@ -45,6 +45,13 @@ function changeStation(value) {
   if (["person", "work", "single", "event", "sos"].includes(route.name)) location.hash = "#/overview";
 }
 
+function openScreen(event) {
+  event.preventDefault();
+  const enter = document.documentElement.requestFullscreen?.();
+  if (enter?.then) enter.then(() => { location.hash = "#/screen"; }).catch(() => { location.hash = "#/screen"; });
+  else location.hash = "#/screen";
+}
+
 function openNotices() {
   openModal({ title: openSos.value ? "有人正在求助" : "待处理通知", tone: openSos.value ? "is-sos" : "", view: NoticeList });
 }
@@ -67,6 +74,7 @@ onUnmounted(() => clearInterval(timer));
     <span class="brand-divider"></span>
     <strong>融瓴智能穿戴安全监护平台</strong>
     <div class="top-actions">
+      <a class="screen-entry" href="#/screen" @click="openScreen"><AppIcon name="dashboard-3-line" />数据大屏</a>
       <AppIcon name="building-2-line" color="blue" />
       <AppSelect :model-value="session.station" :options="stations" aria-label="选择厂站" @update:model-value="changeStation" />
       <span class="top-divider"></span>

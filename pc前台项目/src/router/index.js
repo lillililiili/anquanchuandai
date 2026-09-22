@@ -24,6 +24,7 @@ export const router = createRouter({
     { path: "/dispatch", name: "dispatch", meta: auth, component: () => import("@/views/dispatch/DispatchView.vue") },
     { path: "/sos", name: "sos", meta: auth, component: () => import("@/views/sos/SosView.vue") },
     { path: "/statistics", name: "statistics", meta: auth, component: () => import("@/views/statistics/StatisticsView.vue") },
+    { path: "/screen", name: "screen", meta: auth, component: () => import("@/views/screen/ScreenView.vue") },
   ],
 });
 

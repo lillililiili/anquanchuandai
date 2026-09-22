@@ -8,7 +8,7 @@ import { modal, modalFooter, modalProps, modalView } from "@/stores/modal";
 import { toasts } from "@/stores/notify";
 
 const route = useRoute();
-const bare = computed(() => route.name === "login");
+const bare = computed(() => route.name === "login" || route.name === "screen");
 </script>
 
 <template>
