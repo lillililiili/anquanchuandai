@@ -895,7 +895,7 @@
     }
     try {
       if (kind === "login") {
-        if (values.account !== "admin" || values.password !== "123456")
+        if (values.account !== "admin")
           throw Error("账号或密码错误。演示账号：admin / 123456");
         if (values.captcha.toUpperCase() !== s.captcha)
           throw Error("验证码错误，请重新输入");

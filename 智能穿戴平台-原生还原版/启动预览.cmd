@@ -8,5 +8,5 @@ if errorlevel 1 (
   exit /b 1
 )
 start "" http://127.0.0.1:5188
-node server.js
+node "%~dp0server.js"
 pause

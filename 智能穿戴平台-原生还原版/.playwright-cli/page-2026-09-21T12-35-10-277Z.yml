@@ -1,0 +1,232 @@
+- generic [active] [ref=e1]:
+  - main "数据大屏" [ref=e282]:
+    - generic [ref=e283]:
+      - link "返回系统" [ref=e284] [cursor=pointer]:
+        - /url: "#/overview"
+        - generic [ref=e288]: ROLLING
+      - generic [ref=e289]:
+        - link "返回系统" [ref=e290] [cursor=pointer]:
+          - /url: "#/overview"
+        - button "全屏" [ref=e291] [cursor=pointer]
+      - heading "融瓴智能穿戴安全监护中心" [level=1] [ref=e292]
+      - generic [ref=e299]:
+        - generic [aria-hidden] [ref=e300]: 
+        - generic [ref=e301]: 临江示范电厂
+      - generic [ref=e302]:
+        - time [ref=e303]: 2026-09-21 20:35
+        - generic [ref=e304]: 白班 08:00 — 16:00
+    - region "当班概况" [ref=e305]:
+      - generic [ref=e310]:
+        - heading "当班人员" [level=2] [ref=e311]
+        - paragraph [ref=e312]:
+          - strong [ref=e313]: 8人作业关联 7 · 待分配 1
+      - generic [ref=e314]:
+        - generic [aria-hidden] [ref=e316]: 
+        - generic [ref=e317]:
+          - heading "监护作业" [level=2] [ref=e318]
+          - paragraph [ref=e319]:
+            - strong [ref=e320]: 3项
+      - generic [ref=e321]:
+        - generic [aria-hidden] [ref=e323]: 
+        - generic [ref=e324]:
+          - heading "装备在线" [level=2] [ref=e325]
+          - paragraph [ref=e326]:
+            - strong [ref=e327]: 23 / 24台
+      - generic [ref=e328]:
+        - generic [aria-hidden] [ref=e330]: 
+        - generic [ref=e331]:
+          - heading "待核验事件" [level=2] [ref=e332]
+          - paragraph [ref=e333]:
+            - strong [ref=e334]: 3项
+    - generic [ref=e335]:
+      - heading "装备在线率" [level=2] [ref=e337]
+      - generic:
+        - generic [ref=e343]:
+          - strong [ref=e344]: 95.8%
+          - generic [ref=e345]: 装备在线率
+        - generic [ref=e346]:
+          - generic [ref=e347]:
+            - text: 在线
+            - strong [ref=e349]: "23"
+          - generic [ref=e350]:
+            - text: 离线
+            - strong [ref=e352]: "1"
+        - generic [ref=e353]:
+          - generic [ref=e355]:
+            - generic [ref=e356]: 安全帽8 / 8
+            - generic [ref=e357]: 100%
+          - generic [ref=e362]:
+            - generic [ref=e363]: 安全带7 / 8
+            - generic [ref=e364]: 87.5%
+          - generic [ref=e369]:
+            - generic [ref=e370]: 智能手表8 / 8
+            - generic [ref=e371]: 100%
+    - region "人员生命体征轮播" [ref=e375]:
+      - generic [ref=e376]:
+        - heading "人员生命体征" [level=2] [ref=e377]
+        - generic [ref=e378]: 自动轮播 · 8秒
+      - generic [ref=e379]:
+        - combobox "选择生命体征人员" [ref=e380] [cursor=pointer]:
+          - option "陈建国 · 锅炉区" [selected]
+          - option "李志远 · 锅炉区"
+          - option "周明 · 锅炉区"
+          - option "王海峰 · 汽机厂房"
+          - option "赵晓东 · 汽机厂房"
+          - option "刘洋 · 配电区"
+          - option "孙伟 · 配电区"
+          - option "何平 · 循环水区"
+        - generic [ref=e381]: 1 / 8
+      - generic:
+        - generic [ref=e382]:
+          - generic [ref=e383]: RL-W001
+          - generic [ref=e384]: 样例观测
+        - img "佩戴安全帽、安全带及智能手表的工作人员示意" [ref=e386]
+        - generic [ref=e387]:
+          - generic [ref=e392]:
+            - heading "心率" [level=3] [ref=e393]
+            - paragraph [ref=e394]:
+              - strong [ref=e395]: "72"
+              - text: 次/分
+          - generic [ref=e400]:
+            - heading "血氧" [level=3] [ref=e401]
+            - paragraph [ref=e402]:
+              - strong [ref=e403]: "98"
+              - text: "%"
+          - generic [ref=e408]:
+            - heading "皮肤温度" [level=3] [ref=e409]
+            - paragraph [ref=e410]:
+              - strong [ref=e411]: "34.2"
+              - text: ℃
+      - generic [ref=e412]:
+        - generic [ref=e413]: 采集 10:39:00
+        - button "上一人" [ref=e414] [cursor=pointer]
+        - button "暂停" [ref=e415] [cursor=pointer]
+        - button "下一人" [ref=e416] [cursor=pointer]
+    - region "厂区态势" [ref=e417]:
+      - img "电厂夜景三维示意图" [ref=e418]
+      - heading "厂区态势" [level=2] [ref=e419]
+      - generic:
+        - button "锅炉区 3 人" [ref=e420] [cursor=pointer]:
+          - generic [ref=e421]:
+            - text: 锅炉区
+            - strong [ref=e422]: "3"
+            - text: 人
+        - button "配电区 2 人" [ref=e425] [cursor=pointer]:
+          - generic [ref=e426]:
+            - text: 配电区
+            - strong [ref=e427]: "2"
+            - text: 人
+        - button "汽机厂房 2 人" [ref=e430] [cursor=pointer]:
+          - generic [ref=e431]:
+            - text: 汽机厂房
+            - strong [ref=e432]: "2"
+            - text: 人
+        - button "循环水区 1 人" [ref=e435] [cursor=pointer]:
+          - generic [ref=e436]:
+            - text: 循环水区
+            - strong [ref=e437]: "1"
+            - text: 人待分配
+    - region "重点事件轮播" [ref=e440]:
+      - generic [ref=e441]:
+        - heading "重点事件" [level=2] [ref=e442]
+        - generic [ref=e443]:
+          - button "上一条事件" [ref=e444] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e445]: 
+          - button "暂停事件轮播" [ref=e446] [cursor=pointer]: 暂停
+          - button "下一条事件" [ref=e447] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e448]: 
+      - generic [ref=e449]:
+        - link "查看安全带连接中断" [ref=e450] [cursor=pointer]:
+          - /url: "#/event/RL-E-0915-001"
+          - generic [aria-hidden] [ref=e451]: 
+          - generic [ref=e452]:
+            - strong [ref=e453]: 安全带连接中断
+            - text: 陈*国 · RL-B001
+          - generic [ref=e454]:
+            - text: 10:39
+            - strong [ref=e455]: 待现场核验
+        - link "查看安全帽低电量 18%" [ref=e456] [cursor=pointer]:
+          - /url: "#/event/RL-E-0915-002"
+          - generic [aria-hidden] [ref=e457]: 
+          - generic [ref=e458]:
+            - strong [ref=e459]: 安全帽低电量 18%
+            - text: 王*峰 · RL-H004
+          - generic [ref=e460]:
+            - text: 10:41
+            - strong [ref=e461]: 待认领
+        - link "查看人员位置待核验" [ref=e462] [cursor=pointer]:
+          - /url: "#/event/RL-E-0915-003"
+          - generic [aria-hidden] [ref=e463]: 
+          - generic [ref=e464]:
+            - strong [ref=e465]: 人员位置待核验
+            - text: 刘* · RL-H006
+          - generic [ref=e466]:
+            - text: 10:26
+            - strong [ref=e467]: 处理中
+      - generic [ref=e468]:
+        - generic [ref=e469]:
+          - text: 待认领
+          - strong [ref=e470]: "1"
+        - emphasis [ref=e471]: ·
+        - generic [ref=e472]:
+          - text: 待现场核验
+          - strong [ref=e473]: "1"
+        - emphasis [ref=e474]: ·
+        - generic [ref=e475]:
+          - text: 处理中
+          - strong [ref=e476]: "1"
+    - generic [ref=e477]:
+      - heading "心率趋势 · 陈建国" [level=2] [ref=e479]
+      - img "陈建国心率趋势，示例曲线" [ref=e480]:
+        - generic [ref=e481]: 次/分
+        - generic [ref=e482]: "60"
+        - generic [ref=e483]: "70"
+        - generic [ref=e484]: "80"
+        - generic [ref=e485]: "90"
+        - generic [ref=e486]: "100"
+        - generic [ref=e490]: "70"
+        - generic [ref=e491]: 10:19
+        - generic [ref=e493]: "73"
+        - generic [ref=e494]: 10:24
+        - generic [ref=e496]: "71"
+        - generic [ref=e497]: 10:29
+        - generic [ref=e499]: "74"
+        - generic [ref=e500]: 10:34
+        - generic [ref=e502]: "72"
+        - generic [ref=e503]: 10:39
+    - region "现场视频轮播" [ref=e504]:
+      - generic [ref=e505]:
+        - heading "现场视频" [level=2] [ref=e506]
+        - generic [ref=e507]:
+          - generic [ref=e508]: 演示画面
+          - generic [ref=e509]: 1 / 2
+          - button "上一组视频" [ref=e510] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e511]: 
+          - button "暂停视频轮播" [ref=e512] [cursor=pointer]: 暂停
+          - button "下一组视频" [ref=e513] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e514]: 
+      - generic [ref=e515]:
+        - button "预览锅炉区 RL-H001演示画面" [ref=e516] [cursor=pointer]:
+          - img "锅炉区现场场景" [ref=e517]
+          - generic [ref=e518]:
+            - text: 锅炉平台 · RL-H001
+            - generic [ref=e519]: 演示画面
+        - button "预览汽机厂房 RL-H005演示画面" [ref=e520] [cursor=pointer]:
+          - img "汽机厂房现场场景" [ref=e521]
+          - generic [ref=e522]:
+            - text: 汽机厂房 · RL-H005
+            - generic [ref=e523]: 演示画面
+        - button "预览配电区 RL-H006演示画面" [ref=e524] [cursor=pointer]:
+          - img "配电区现场场景" [ref=e525]
+          - generic [ref=e526]:
+            - text: 配电区 · RL-H006
+            - generic [ref=e527]: 演示画面
+    - generic [ref=e528]:
+      - generic [ref=e529]:
+        - link "返回系统" [ref=e530] [cursor=pointer]:
+          - /url: "#/overview"
+        - text: · 本地演示数据 / 场景示意
+      - generic [ref=e531]:
+        - text: 数据刷新时间
+        - time [ref=e532]: 20:35:09
+  - status

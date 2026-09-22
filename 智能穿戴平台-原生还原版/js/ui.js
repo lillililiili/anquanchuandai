@@ -264,6 +264,8 @@
     clock.textContent = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   }
   function render() {
+    R.screen?.destroy();
+    document.documentElement.classList.remove("screen-mode");
     const callPlayback = new Map();
     document.querySelectorAll("video[data-call-video]").forEach((player) => {
       callPlayback.set(player.dataset.callVideo, {time: player.currentTime, paused: player.paused});
@@ -315,8 +317,14 @@
       ["statistics", "统计追溯", "bar-chart-box-line"],
     ];
     const page = R.views[path]();
+    if (path === "screen") {
+      document.documentElement.classList.add("screen-mode");
+      document.getElementById("app").innerHTML = page;
+      R.screen.mount();
+      return;
+    }
     document.getElementById("app").innerHTML =
-      `<header class="topbar"><a class="brand" href="#/overview"><img src="assets/logo.png" alt="ROLLING"></a><span class="brand-divider"></span><strong>融瓴智能穿戴安全监护平台</strong><div class="top-actions">${icon("building-2-line", "blue")}${select(
+      `<header class="topbar"><a class="brand" href="#/overview"><img src="assets/logo.png" alt="ROLLING"></a><span class="brand-divider"></span><strong>融瓴智能穿戴安全监护平台</strong><div class="top-actions">${link(icon("dashboard-3-line") + "数据大屏", "screen", "screen-entry")}${icon("building-2-line", "blue")}${select(
         "station",
         db.state.stations.map((s) => [s.id, s.name]),
         R.s.station,

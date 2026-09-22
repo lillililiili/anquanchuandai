@@ -1,0 +1,40 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - img "ROLLING" [ref=e4]
+    - generic [ref=e5]:
+      - heading "融瓴智能穿戴安全监护平台" [level=1] [ref=e6]
+      - paragraph [ref=e7]: 现场人员 · 智能装备 · 作业监护
+    - generic [ref=e8]:
+      - heading "工作账号登录" [level=2] [ref=e9]
+      - generic [ref=e10]:
+        - generic [ref=e11]: 账号
+        - generic [ref=e12]:
+          - generic [aria-hidden] [ref=e13]: 
+          - textbox "账号" [ref=e14]:
+            - /placeholder: 请输入工作账号
+      - generic [ref=e15]:
+        - generic [ref=e16]: 密码
+        - generic [ref=e17]:
+          - generic [aria-hidden] [ref=e18]: 
+          - textbox "密码 显示或隐藏密码" [ref=e19]:
+            - /placeholder: ""
+          - button "显示或隐藏密码" [ref=e20] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e21]: 
+      - generic [ref=e22]:
+        - generic [ref=e23]: 图形验证码
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic [aria-hidden] [ref=e26]: 
+            - textbox "图形验证码 验证码 刷新验证码" [ref=e27]:
+              - /placeholder: 请输入验证码
+          - generic "验证码" [ref=e28]: K7M2
+          - button "刷新验证码" [ref=e29] [cursor=pointer]:
+            - generic [aria-hidden] [ref=e30]: 
+      - button "登录" [ref=e31] [cursor=pointer]
+      - generic [ref=e32]: 账号由管理员授权
+      - alert
+    - generic [ref=e33]:
+      - text: 为电力行业现场作业安全保驾护航
+      - generic [ref=e34]: 更安全 · 更高效 · 更可持续
+    - generic [ref=e35]: 演示账号：admin 密码：123456 ｜ 演示环境 · 非真实登录页
+  - status

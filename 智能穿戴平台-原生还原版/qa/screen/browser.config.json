@@ -1,0 +1,16 @@
+{
+  "browser": {
+    "launchOptions": {
+      "executablePath": "C:\\Users\\Admin（无密码）\\AppData\\Local\\ms-playwright\\chromium-1237\\chrome-win64\\chrome.exe",
+      "headless": true
+    },
+    "browserName": "chromium",
+    "contextOptions": {
+      "viewport": {
+        "height": 941,
+        "width": 1672
+      },
+      "deviceScaleFactor": 1
+    }
+  }
+}

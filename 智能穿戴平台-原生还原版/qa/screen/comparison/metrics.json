@@ -1,0 +1,15 @@
+{
+  "reference": "C:\\Users\\Admin（无密码）\\Documents\\xwechat_files\\wxid_49iahf4o9n7l22_37dd\\temp\\RWTemp\\2026-09\\972024ced585484581c5eaeaf910935d\\64cbb3059b62eb93ee69a84a71e37bc8.png",
+  "implementation": "D:\\分体式安全帽代码\\分体式安全帽代码\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\screen\\dashboard.png",
+  "width": 1672,
+  "height": 941,
+  "mean_absolute_channel_difference_0_255": {
+    "r": 32.16571625421393,
+    "g": 34.7114428303393,
+    "b": 40.10435236361602
+  },
+  "mean_absolute_difference_0_255": 35.66050381605642,
+  "pixel_max_channel_threshold_0_255": 16,
+  "fraction_pixels_over_threshold": 0.6093518805709085,
+  "interpretation": "Supporting evidence only. Inspect layout, text, content and interaction separately. No automatic pass/fail."
+}
