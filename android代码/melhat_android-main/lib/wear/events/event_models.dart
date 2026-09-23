@@ -8,7 +8,16 @@ int _integer(Object? value, [int fallback = 0]) =>
 bool _boolean(Object? value) =>
     value == true || value == 1 || _text(value).toLowerCase() == 'true';
 
-enum EventCommand { ack, claim, handle, transfer, close, reopen, assignTask }
+enum EventCommand {
+  ack,
+  claim,
+  confirm,
+  handle,
+  transfer,
+  close,
+  reopen,
+  assignTask,
+}
 
 class WearEvent {
   const WearEvent({
@@ -39,6 +48,9 @@ class WearEvent {
     required this.fenceId,
     required this.fenceAction,
     required this.version,
+    this.reminderOnly = false,
+    this.reporterUserId = '',
+    this.deviceType = '',
     this.alarmCode = '',
     this.alarmName = '',
     this.alarmDescription = '',
@@ -50,6 +62,8 @@ class WearEvent {
     return WearEvent(
       id: id,
       type: _text(json['type']),
+      reminderOnly: _boolean(json['reminderOnly']),
+      deviceType: _text(json['deviceType']),
       alarmCode: _text(json['alarmCode']),
       alarmName: _text(json['alarmName']),
       alarmDescription: _text(json['alarmDescription']),
@@ -58,6 +72,7 @@ class WearEvent {
       occurredAt: _text(json['occurredAt']),
       receivedAt: _text(json['receivedAt']),
       personId: _text(json['personId']),
+      reporterUserId: _text(json['reporterUserId']),
       personCode: _text(json['personCode']),
       personName: _text(json['personName']),
       deviceId: _text(json['deviceId']),
@@ -83,6 +98,8 @@ class WearEvent {
 
   final String id;
   final String type;
+  final bool reminderOnly;
+  final String deviceType;
   final String alarmCode;
   final String alarmName;
   final String alarmDescription;
@@ -91,6 +108,7 @@ class WearEvent {
   final String occurredAt;
   final String receivedAt;
   final String personId;
+  final String reporterUserId;
   final String personCode;
   final String personName;
   final String deviceId;
@@ -112,7 +130,17 @@ class WearEvent {
   final String fenceAction;
   final int version;
 
-  bool get isHighRisk => const {'sos', 'fall', 'impact'}.contains(type);
+  bool get isWarning => severity == 'warning';
+  bool get isEmergency => severity == 'emergency';
+  bool get isHighRisk => isEmergency;
+  String get severityLabel => isEmergency
+      ? '紧急'
+      : isWarning
+      ? '警告'
+      : '异常';
+  String get deviceTypeLabel =>
+      const {'helmet': '智能安全帽', 'belt': '智能安全带', 'watch': '智能手表'}[deviceType] ??
+      '设备';
   bool get isClosed => status == 'closed';
 
   // Names describe the event-time alarm, never the device's current state.
@@ -131,19 +159,21 @@ class WearEvent {
   String get typeLabel =>
       const {
         'sos': 'SOS 求助',
-        'fall': '跌倒',
+        'fall': '跌落（设备告警）',
         'impact': '撞击',
         'geofence': '围栏',
         'realtime': '实时告警',
       }[type] ??
       (type.isEmpty ? '未知类型' : type);
 
+  String statusFor({required bool admin}) => statusLabel;
+
   String get statusLabel =>
       const {
-        'open': '待认领',
-        'claimed': '已认领',
+        'open': '待处理',
+        'claimed': '待处理',
         'handling': '处置中',
-        'pending_review': '待复核',
+        'pending_review': '待管理员审批',
         'closed': '已关闭',
       }[status] ??
       (status.isEmpty ? '未知状态' : status);
@@ -254,6 +284,8 @@ class EventFilters {
   const EventFilters({
     this.status = 'active',
     this.type = '',
+    this.severity = '',
+    this.reminderOnly = false,
     this.alarmCode = '',
     this.alarmLabel = '',
     this.deviceTypes = const [],
@@ -273,6 +305,7 @@ class EventFilters {
     return EventFilters(
       status: status.isEmpty ? 'active' : status,
       type: _text(value['type']),
+      severity: _text(value['severity']),
       alarmCode: _text(value['alarmCode']),
       alarmLabel: _text(value['alarmLabel']),
       statuses: _strings(value['statuses']),
@@ -299,6 +332,8 @@ class EventFilters {
 
   final String status;
   final String type;
+  final String severity;
+  final bool reminderOnly;
   final String alarmCode;
   final String alarmLabel;
   final List<String> deviceTypes;
@@ -334,6 +369,7 @@ class EventFilters {
   EventJson toJson() => {
     'status': status,
     'type': type,
+    'severity': severity,
     'alarmCode': alarmCode,
     'alarmLabel': alarmLabel,
     'deviceTypes': deviceTypes,
@@ -350,6 +386,7 @@ class EventFilters {
   EventFilters copyWith({
     String? status,
     String? type,
+    String? severity,
     String? alarmCode,
     String? alarmLabel,
     List<String>? deviceTypes,
@@ -364,6 +401,7 @@ class EventFilters {
   }) => EventFilters(
     status: status ?? this.status,
     type: type ?? this.type,
+    severity: severity ?? this.severity,
     alarmCode: alarmCode ?? this.alarmCode,
     alarmLabel: alarmLabel ?? this.alarmLabel,
     deviceTypes: deviceTypes ?? this.deviceTypes,
@@ -381,6 +419,7 @@ class EventFilters {
 class EventDraft {
   const EventDraft({
     this.handleComment = '',
+    this.photoPaths = const [],
     this.transferUserId = '',
     this.transferReason = '',
     this.closeReason = '',
@@ -392,6 +431,12 @@ class EventDraft {
     if (value is! Map) return const EventDraft();
     return EventDraft(
       handleComment: _text(value['handleComment']),
+      photoPaths: value['photoPaths'] is List
+          ? (value['photoPaths'] as List)
+                .map(_text)
+                .where((p) => p.isNotEmpty)
+                .toList()
+          : const [],
       transferUserId: _text(value['transferUserId']),
       transferReason: _text(value['transferReason']),
       closeReason: _text(value['closeReason']),
@@ -401,6 +446,7 @@ class EventDraft {
   }
 
   final String handleComment;
+  final List<String> photoPaths;
   final String transferUserId;
   final String transferReason;
   final String closeReason;
@@ -408,6 +454,7 @@ class EventDraft {
   final String taskId;
 
   bool get isEmpty =>
+      photoPaths.isEmpty &&
       handleComment.isEmpty &&
       transferUserId.isEmpty &&
       transferReason.isEmpty &&
@@ -417,6 +464,7 @@ class EventDraft {
 
   EventJson toJson() => {
     'handleComment': handleComment,
+    'photoPaths': photoPaths,
     'transferUserId': transferUserId,
     'transferReason': transferReason,
     'closeReason': closeReason,
@@ -426,6 +474,7 @@ class EventDraft {
 
   EventDraft copyWith({
     String? handleComment,
+    List<String>? photoPaths,
     String? transferUserId,
     String? transferReason,
     String? closeReason,
@@ -433,6 +482,7 @@ class EventDraft {
     String? taskId,
   }) => EventDraft(
     handleComment: handleComment ?? this.handleComment,
+    photoPaths: photoPaths ?? this.photoPaths,
     transferUserId: transferUserId ?? this.transferUserId,
     transferReason: transferReason ?? this.transferReason,
     closeReason: closeReason ?? this.closeReason,

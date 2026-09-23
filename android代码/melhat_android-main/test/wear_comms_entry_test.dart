@@ -17,7 +17,7 @@ void main() {
 
   for (final entry in {'TTS': 'tts', '对讲': 'intercom', '视频': 'video'}.entries) {
     testWidgets(
-      'device ${entry.key} opens its operation before long contacts without sending',
+      'device ${entry.key} opens reachable operation without sending',
       (tester) async {
         final requests = <RequestOptions>[];
         await openDevice(tester, requests);
@@ -34,14 +34,11 @@ void main() {
           ).uri.queryParameters['action'],
           entry.value,
         );
-        final operation = find.text(entry.value == 'tts' ? '提交播报指令' : '发起呼叫');
+        final operation = find.text(entry.value == 'tts' ? '提交播报指令' : '语音群聊');
         expect(operation.hitTestable(), findsOneWidget);
         expect(find.text('安全帽呼叫'), findsNothing);
         expect(find.text('视频呼叫'), findsNothing);
-        expect(
-          tester.getTopLeft(operation).dy,
-          lessThan(tester.getTopLeft(find.text('联系人00')).dy),
-        );
+        expect(find.byType(NavigationBar), findsOneWidget);
         expect(requests.where((r) => r.method != 'GET'), isEmpty);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
@@ -49,36 +46,40 @@ void main() {
     );
   }
 
-  testWidgets(
-    'empty selection opens contacts first and selecting a person reveals reachable actions',
-    (tester) async {
-      final requests = <RequestOptions>[];
-      final router = await openDevice(tester, requests);
-      router.go('/communications');
-      await tester.pumpAndSettle();
-      expect(find.text('联系人00').hitTestable(), findsOneWidget);
-      expect(find.text('发起呼叫'), findsNothing);
-      expect(find.byType(ChoiceChip), findsNothing);
-      await tester.scrollUntilVisible(
-        find.text('联系人07'),
-        250,
-        scrollable: find
-            .descendant(
-              of: find.byType(ListView),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('联系人07'));
-      await tester.pumpAndSettle();
-      expect(find.text('发起呼叫').hitTestable(), findsOneWidget);
-      expect(find.byType(ChoiceChip), findsNWidgets(2));
-      expect(requests.where((r) => r.method != 'GET'), isEmpty);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+  testWidgets('selection enables fixed actions without moving the list', (
+    tester,
+  ) async {
+    final requests = <RequestOptions>[];
+    final router = await openDevice(tester, requests);
+    router.go('/communications');
+    await tester.pumpAndSettle();
+    expect(find.text('联系人00').hitTestable(), findsOneWidget);
+    expect(
+      tester
+          .widget<TextButton>(find.widgetWithText(TextButton, '语音群聊'))
+          .onPressed,
+      isNull,
+    );
+    expect(find.byType(ChoiceChip), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('联系人07'),
+      250,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('联系人07'));
+    await tester.pumpAndSettle();
+    expect(find.text('语音群聊').hitTestable(), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(requests.where((r) => r.method != 'GET'), isEmpty);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets(
     'changing an existing route hides the old target until the new equipment loads',
@@ -147,8 +148,8 @@ void main() {
       router.go('/communications?deviceId=42&action=video');
       await tester.pumpAndSettle();
       expect(find.text('视频呼叫'), findsNothing);
-      expect(find.widgetWithText(ChoiceChip, '呼叫'), findsOneWidget);
-      await tester.tap(find.text('发起呼叫'));
+      expect(find.text('语音群聊').hitTestable(), findsOneWidget);
+      await tester.tap(find.text('语音群聊'));
       await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(640, 360);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
@@ -189,8 +190,8 @@ void main() {
       final router = await openDevice(tester, requests);
       router.go('/communications?deviceId=42&personId=7&action=intercom');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('发起呼叫'));
-      await tester.tap(find.text('发起呼叫'));
+      await tester.ensureVisible(find.text('语音群聊'));
+      await tester.tap(find.text('语音群聊'));
       await tester.pumpAndSettle();
       final create = requests
           .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
@@ -219,6 +220,7 @@ Future<GoRouter> openDevice(
   WidgetTester tester,
   List<RequestOptions> requests, {
   List<String> actions = const ['tts', 'intercom', 'video'],
+  String? fontFamily,
   Future<void> Function(String)? beforeDeviceRead,
 }) async {
   tester.view.physicalSize = const Size(360, 800);
@@ -263,8 +265,9 @@ Future<GoRouter> openDevice(
                 'size': 100,
               });
             }
-            if (request.path == '/api/v1/work-tasks')
+            if (request.path == '/api/v1/work-tasks') {
               return reply({'records': [], 'total': 0});
+            }
             if (request.path == '/api/v1/devices') {
               return reply({
                 'records': [device('41'), device('42')],
@@ -306,12 +309,13 @@ Future<GoRouter> openDevice(
         ..token = 'test-only'
         ..siteId = '1'
         ..me = {
-          ...identity(),
+          // Communications and device administration are administrator-only.
+          ...identity(roles: const ['wear_platform_admin']),
           'permissions': ['wear:call:start', 'wear:command:tts'],
         };
   addTearDown(session.dispose);
   await tester.pumpWidget(
-    WearApp(session: session, enableNotifications: false),
+    WearApp(session: session, enableNotifications: false, fontFamily: fontFamily),
   );
   await tester.pumpAndSettle();
   final router = GoRouter.of(tester.element(find.byType(NavigationBar)));

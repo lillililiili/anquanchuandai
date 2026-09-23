@@ -114,7 +114,7 @@
   </style>
   <link rel="stylesheet" href="events.css">
   <link rel="stylesheet" href="admin.css">
-  <link rel="stylesheet" href="sos.css">
+
 </head>
 <body>
 
@@ -122,24 +122,15 @@
     <strong>现场指挥与巡检全览</strong>
     <p>原版安卓架构 · 现场全览 · 问题位置精准标定 · 一键电话沟通工友</p>
 
-    <!-- 系统身份徽标 -->
-    <div id="role-tag"></div>
-
     <!-- 快速身份切换器 -->
     <div style="background:#f4f8fc;padding:8px 10px;border-radius:8px;border:1px solid #d2dfea;margin-bottom:12px;">
-      <div style="font-size:12px;font-weight:bold;color:#24529a;margin-bottom:6px;">双系统身份模拟切换：</div>
+      <div style="font-size:12px;font-weight:bold;color:#24529a;margin-bottom:6px;">切换身份：</div>
       <div style="display:flex;gap:6px;">
         <button id="btn-switch-admin" type="button" onclick="switchRole('admin')" style="margin-bottom:0;padding:6px 8px;font-size:12px;text-align:center;">🛡️ 管理员 (admin)</button>
         <button id="btn-switch-user" type="button" onclick="switchRole('user')" style="margin-bottom:0;padding:6px 8px;font-size:12px;text-align:center;">👷 巡检员 (user)</button>
       </div>
     </div>
 
-    <button class="guide-sos-btn" type="button" onclick="window.triggerEmergencySOS && window.triggerEmergencySOS()">
-      <span style="font-size:16px;">🆘</span>
-      <span>紧急求助 (SOS) 响应通道</span>
-    </button>
-    <button id="guide-field-lead-btn" style="background:#307cff;color:#fff;border-color:#307cff;" onclick="window.openFieldLead && window.openFieldLead()">全局态势 · 管理员</button>
-    <button id="guide-events-btn" onclick="window.openRollingEvents && window.openRollingEvents()">作业研判 · 管理员</button>
     <button onclick="logoutToLogin()">🔄 重新体验登录</button>
   </aside>
 
@@ -217,23 +208,6 @@
       const role = window.currentUserRole || (sessionStorage.getItem('rolling_role') || 'admin');
       const isAdmin = (role === 'admin') && !isLogin;
 
-      const tag = document.getElementById('role-tag');
-      if (tag) {
-        if (isLogin) {
-          tag.innerHTML = '<div style="padding:6px 10px;background:#e6f4ff;border-radius:6px;font-size:12px;color:#0958d9;border:1px solid #91caff;margin-bottom:8px;line-height:1.5;">🔑 <b>登录提示</b><br>输入 <code>admin</code> 登录管理员系统<br>输入 <code>user</code> 登录巡检工人系统</div>';
-        } else if (role === 'admin') {
-          tag.innerHTML = '<div style="padding:4px 8px;background:#e6f4ff;border-radius:6px;font-size:12px;color:#0958d9;border:1px solid #91caff;margin-bottom:8px;font-weight:bold;">🛡️ 当前系统：管理员指挥端 (admin)</div>';
-        } else {
-          tag.innerHTML = '<div style="padding:4px 8px;background:#f6ffed;border-radius:6px;font-size:12px;color:#389e0d;border:1px solid #b7eb8f;margin-bottom:8px;font-weight:bold;">👷 当前系统：普通巡检人员端 (user)</div>';
-        }
-      }
-
-      const leadBtn = document.getElementById('guide-field-lead-btn');
-      if (leadBtn) leadBtn.style.display = isAdmin ? 'block' : 'none';
-
-      const sosEventsBtn = document.getElementById('sos-btn-events');
-      if (sosEventsBtn) sosEventsBtn.style.display = isAdmin ? 'flex' : 'none';
-
       const eventsBtn = document.getElementById('guide-events-btn');
       if (eventsBtn) eventsBtn.style.display = isAdmin ? 'block' : 'none';
 
@@ -267,6 +241,6 @@
     setTimeout(syncRoleGuideUI, 100);
   </script>
   <script src="admin.js"></script>
-  <script src="sos.js"></script>
+
 </body>
 </html>

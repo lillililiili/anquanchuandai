@@ -22,6 +22,9 @@ public class WorkTaskDto
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "GMT+8")
     private Date actualEnd;
     private String status;
+    private String inspectionStatus;
+    public String getInspectionStatus() { return inspectionStatus; }
+    public void setInspectionStatus(String value) { inspectionStatus = value; }
     private String ownerUserId;
     private String guardianPersonId;
     private Boolean ticketRequired;

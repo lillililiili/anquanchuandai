@@ -5,6 +5,8 @@ import '../core.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
 import 'work_reference.dart';
+import 'inspection.dart';
+import 'inspection_pages.dart';
 
 String _workTypeLabel(Object? value) => switch (value?.toString()) {
   'patrol' => '巡检',
@@ -14,7 +16,9 @@ String _workTypeLabel(Object? value) => switch (value?.toString()) {
 };
 
 class TasksPage extends StatefulWidget {
-  const TasksPage({super.key});
+  const TasksPage({super.key, this.groupId, this.allSite = false});
+  final String? groupId;
+  final bool allSite;
 
   @override
   State<TasksPage> createState() => _TasksPageState();
@@ -39,7 +43,8 @@ class _TasksPageState extends State<TasksPage> {
     final session = WearScope.of(context);
     if (!identical(session, _session)) {
       _session = session;
-      _load(page: 1);
+      _mine = !widget.allSite || !session.isDutyAdmin;
+      if (widget.groupId == null) _load(page: 1);
     }
   }
 
@@ -86,80 +91,110 @@ class _TasksPageState extends State<TasksPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.groupId != null) {
+      return InspectionGroupTasksPage(taskId: widget.groupId!);
+    }
     final groups = <String, List<JsonMap>>{};
     for (final task in _records) {
-      groups.putIfAbsent(taskGroup(task['status']), () => []).add(task);
+      groups
+          .putIfAbsent(
+            _session!.isDutyAdmin
+                ? taskGroup(task['status'])
+                : inspectionStatus(
+                    task['inspectionStatus'] ??
+                        (task['status'] == 'ended'
+                            ? 'completed'
+                            : 'in_progress'),
+                  ),
+            () => [],
+          )
+          .add(task);
     }
-    const order = ['进行中', '待开始', '已结束', '状态未知'];
+    const order = ['进行中', '有异常', '已完成', '待开始', '已结束', '状态未知'];
     return QueryPage(
-      title: '作业任务',
-      subtitle: _mine ? '我负责或参与的作业 · 按服务端结果分页' : '当前厂站的授权作业 · 可按状态和类型筛选',
+      title: _session!.isDutyAdmin ? '作业任务' : '我的任务',
+      onBack: _session!.isDutyAdmin
+          ? () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/workbench');
+              }
+            }
+          : null,
+      subtitle: _mine ? '仅显示我所属的作业组，进入后查看组内巡检任务' : '当前厂站的授权作业 · 可按状态和类型筛选',
       body: Column(
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-            child: Row(
-              children: [
-                ChoiceChip(
-                  label: const Text('我的任务'),
-                  selected: _mine,
-                  onSelected: _loading
-                      ? null
-                      : (_) {
-                          setState(() => _mine = true);
-                          _load(page: 1);
-                        },
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('全站作业'),
-                  selected: !_mine,
-                  onSelected: _loading
-                      ? null
-                      : (_) {
-                          setState(() => _mine = false);
-                          _load(page: 1);
-                        },
-                ),
-                if (!_mine) ...[
-                  const SizedBox(width: 8),
-                  _menu(
-                    label: _status == null ? '全部状态' : taskStatusLabel(_status),
-                    value: _status ?? '',
-                    values: const [
-                      '',
-                      'draft',
-                      'ready',
-                      'in_progress',
-                      'paused',
-                      'ended',
-                    ],
-                    labelOf: (value) =>
-                        value.isEmpty ? '全部状态' : taskStatusLabel(value),
-                    onSelected: (value) {
-                      setState(() => _status = value.isEmpty ? null : value);
-                      _load(page: 1);
-                    },
+          if (_session!.isDutyAdmin)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: const Text('我的任务'),
+                    selected: _mine,
+                    onSelected: _loading
+                        ? null
+                        : (_) {
+                            setState(() => _mine = true);
+                            _load(page: 1);
+                          },
                   ),
-                  const SizedBox(width: 8),
-                  _menu(
-                    label: _workType == null
-                        ? '全部类型'
-                        : _workTypeLabel(_workType),
-                    value: _workType ?? '',
-                    values: const ['', 'patrol', 'height', 'other'],
-                    labelOf: (value) =>
-                        value.isEmpty ? '全部类型' : _workTypeLabel(value),
-                    onSelected: (value) {
-                      setState(() => _workType = value.isEmpty ? null : value);
-                      _load(page: 1);
-                    },
-                  ),
+                  if (_session!.isDutyAdmin) const SizedBox(width: 8),
+                  if (_session!.isDutyAdmin)
+                    ChoiceChip(
+                      label: const Text('全站作业'),
+                      selected: !_mine,
+                      onSelected: _loading
+                          ? null
+                          : (_) {
+                              setState(() => _mine = false);
+                              _load(page: 1);
+                            },
+                    ),
+                  if (!_mine) ...[
+                    const SizedBox(width: 8),
+                    _menu(
+                      label: _status == null
+                          ? '全部状态'
+                          : taskStatusLabel(_status),
+                      value: _status ?? '',
+                      values: const [
+                        '',
+                        'draft',
+                        'ready',
+                        'in_progress',
+                        'paused',
+                        'ended',
+                      ],
+                      labelOf: (value) =>
+                          value.isEmpty ? '全部状态' : taskStatusLabel(value),
+                      onSelected: (value) {
+                        setState(() => _status = value.isEmpty ? null : value);
+                        _load(page: 1);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _menu(
+                      label: _workType == null
+                          ? '全部类型'
+                          : _workTypeLabel(_workType),
+                      value: _workType ?? '',
+                      values: const ['', 'patrol', 'height', 'other'],
+                      labelOf: (value) =>
+                          value.isEmpty ? '全部类型' : _workTypeLabel(value),
+                      onSelected: (value) {
+                        setState(
+                          () => _workType = value.isEmpty ? null : value,
+                        );
+                        _load(page: 1);
+                      },
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
           Expanded(
             child: QueryStateView(
               loading: _loading,
@@ -191,10 +226,19 @@ class _TasksPageState extends State<TasksPage> {
                             subtitle:
                                 '${_workTypeLabel(task['workType'])} · ${textOf(task['spaceName'])}\n${formatTime(task['plannedStart'])} 至 ${formatTime(task['plannedEnd'])}',
                             trailing: WearBadge(
-                              text: taskStatusLabel(task['status']),
+                              text: _session!.isDutyAdmin
+                                  ? taskStatusLabel(task['status'])
+                                  : inspectionStatus(
+                                      task['inspectionStatus'] ??
+                                          (task['status'] == 'ended'
+                                              ? 'completed'
+                                              : 'in_progress'),
+                                    ),
                             ),
-                            onTap: () =>
-                                context.push('/tasks/${idOf(task['id'])}'),
+                            onTap: () async {
+                              await context.push('/tasks/${idOf(task['id'])}');
+                              if (mounted) await _load(page: _current);
+                            },
                           ),
                       ],
                   ],
@@ -202,14 +246,26 @@ class _TasksPageState extends State<TasksPage> {
               ),
             ),
           ),
-          PagingFooter(
-            current: _current,
-            total: _total,
-            hasMore: _hasMore,
-            busy: _loading,
-            onPrevious: () => _load(page: _current - 1),
-            onNext: () => _load(page: _current + 1),
-          ),
+          if (!_loading && _error == null && _current == 1 && !_hasMore)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _total == 0 ? '共 0 条' : '共 $_total 条 · 已全部显示',
+                  style: const TextStyle(color: WearColors.muted),
+                ),
+              ),
+            )
+          else
+            PagingFooter(
+              current: _current,
+              total: _total,
+              hasMore: _hasMore,
+              busy: _loading,
+              onPrevious: () => _load(page: _current - 1),
+              onNext: () => _load(page: _current + 1),
+            ),
         ],
       ),
     );
@@ -256,6 +312,13 @@ class _TaskPageState extends State<TaskPage> {
   int _request = 0;
   bool _preview = false;
   bool _editingMembers = false;
+  InspectionController? _inspection;
+
+  @override
+  void dispose() {
+    _inspection?.dispose();
+    super.dispose();
+  }
 
   Future<void> _manageMembers() async {
     final session = _session!;
@@ -411,7 +474,6 @@ class _TaskPageState extends State<TaskPage> {
       final results = await Future.wait([
         session.api.get('/api/v1/work-tasks/${widget.id}'),
         session.api.get('/api/v1/work-tasks/${widget.id}/equipment-check'),
-        session.api.get('/api/v1/work-tasks/${widget.id}/events'),
       ]);
       final task = jsonMap(results[0]);
       final memberEquipment = <String, List<JsonMap>?>{};
@@ -422,7 +484,11 @@ class _TaskPageState extends State<TaskPage> {
           .toList();
       // Read ownership and telemetry from the business API, independently of
       // the work readiness check. A failed read must not imply no equipment.
-      for (var start = 0; start < people.length; start += 6) {
+      for (
+        var start = 0;
+        session.isAdmin && start < people.length;
+        start += 6
+      ) {
         await Future.wait(
           people.skip(start).take(6).map((id) async {
             try {
@@ -448,7 +514,23 @@ class _TaskPageState extends State<TaskPage> {
         _task = task;
         _equipment = jsonList(results[1]);
         _memberEquipment = memberEquipment;
-        _events = jsonList(results[2]);
+        _events = const [];
+        if (_inspection == null) {
+          _inspection = InspectionController(session, widget.id);
+          _inspection!.addListener(() {
+            if (!mounted || _task == null || _inspection?.data == null) return;
+            setState(() {
+              _task!['inspectionStatus'] =
+                  _inspection!.items.any((i) => i['status'] == 'abnormal')
+                  ? 'abnormal'
+                  : _task!['status'] == 'ended' ||
+                        (_inspection!.total > 0 &&
+                            _inspection!.completed == _inspection!.total)
+                  ? 'completed'
+                  : 'in_progress';
+            });
+          });
+        }
         _loading = false;
       });
     } catch (error) {
@@ -568,6 +650,13 @@ class _TaskPageState extends State<TaskPage> {
             }
           },
           onGuardian: _contactGuardian,
+          inspectionActions: _inspection == null
+              ? null
+              : InspectionActions(
+                  controller: _inspection!,
+                  task: task,
+                  onGuardian: _contactGuardian,
+                ),
           onManageMembers:
               !_preview &&
                   !_editingMembers &&
@@ -579,7 +668,17 @@ class _TaskPageState extends State<TaskPage> {
               : null,
           details: Column(
             children: [
-              DetailField(label: '状态', value: taskStatusLabel(task['status'])),
+              DetailField(
+                label: '状态',
+                value: _session!.isDutyAdmin
+                    ? taskStatusLabel(task['status'])
+                    : inspectionStatus(
+                        task['inspectionStatus'] ??
+                            (task['status'] == 'ended'
+                                ? 'completed'
+                                : 'in_progress'),
+                      ),
+              ),
               DetailField(
                 label: '作业类型',
                 value: _workTypeLabel(task['workType']),

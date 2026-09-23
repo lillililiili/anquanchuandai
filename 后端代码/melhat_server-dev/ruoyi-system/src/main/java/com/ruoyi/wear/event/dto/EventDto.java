@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class EventDto
 {
+    private Boolean reminderOnly;
+    public Boolean getReminderOnly() { return reminderOnly; }
+    public void setReminderOnly(Boolean value) { reminderOnly = value; }
     private String id;
     private String type;
     private String severity;
@@ -15,6 +18,9 @@ public class EventDto
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "GMT+8")
     private Date receivedAt;
     private String personId;
+    private String reporterUserId;
+    public String getReporterUserId() { return reporterUserId; }
+    public void setReporterUserId(String reporterUserId) { this.reporterUserId = reporterUserId; }
     private String personCode;
     private String personName;
     private String deviceId;
@@ -28,6 +34,9 @@ public class EventDto
     private Boolean escalated;
     private Boolean demo;
     private String source;
+    private String deviceType;
+    public String getDeviceType() { return deviceType; }
+    public void setDeviceType(String deviceType) { this.deviceType = deviceType; }
     private String alarmCode;
     private String alarmName;
     private String alarmDescription;

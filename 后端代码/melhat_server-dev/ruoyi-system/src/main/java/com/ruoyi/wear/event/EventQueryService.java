@@ -38,6 +38,7 @@ public class EventQueryService
     private SiteAccessService siteAccessService;
     @Autowired
     private EventCommandService commandService;
+    @Autowired private EventAccessService eventAccess;
 
     public WearPage<EventDto> page(int current, int size, String type, String status, String personId,
             String severity, String updatedAfter, String claimantUserId, String escalated,
@@ -79,6 +80,7 @@ public class EventQueryService
         }
         LambdaQueryWrapper<WearSafetyEvent> query = new LambdaQueryWrapper<WearSafetyEvent>()
                 .in(WearSafetyEvent::getSiteId, scope);
+        eventAccess.scope(query);
         List<String> selectedStatuses = splitChoices(statuses, java.util.Arrays.asList("open", "claimed", "handling", "pending_review", "closed"));
         List<String> selectedTypes = splitChoices(types, java.util.Arrays.asList("sos", "fall", "impact", "geofence", "realtime"));
         List<String> selectedCodes = splitChoices(alarmCodes, null);
@@ -113,7 +115,7 @@ public class EventQueryService
         }
         else if (!"all".equals(status))
         {
-            query.ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED);
+            eventAccess.actionable(query);
         }
         if (StringUtils.isNotEmpty(personId))
         {
@@ -134,6 +136,8 @@ public class EventQueryService
         }
         if (StringUtils.isNotEmpty(severity))
         {
+            if(!java.util.Arrays.asList("warning","abnormal","emergency").contains(severity))
+                throw new ServiceException("告警等级无效",400);
             query.eq(WearSafetyEvent::getSeverity, severity);
         }
         if (StringUtils.isNotEmpty(claimantUserId))
@@ -172,7 +176,7 @@ public class EventQueryService
         siteAccessService.requireLogin();
         List<Long> scope = siteAccessService.listScopeSiteIds();
         if (scope.isEmpty()) return Collections.emptyList();
-        List<WearSafetyEvent> rows = eventMapper.selectList(new LambdaQueryWrapper<WearSafetyEvent>()
+        List<WearSafetyEvent> rows = eventMapper.selectList(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>())
                 .select(WearSafetyEvent::getAlarmCode, WearSafetyEvent::getAlarmName)
                 .in(WearSafetyEvent::getSiteId, scope)
                 .isNotNull(WearSafetyEvent::getAlarmCode).ne(WearSafetyEvent::getAlarmCode, "")
@@ -261,9 +265,8 @@ public class EventQueryService
             data.put("count", 0);
             return data;
         }
-        Integer count = eventMapper.selectCount(new LambdaQueryWrapper<WearSafetyEvent>()
-                .in(WearSafetyEvent::getSiteId, scope)
-                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED));
+        Integer count = eventMapper.selectCount(eventAccess.actionable(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>())
+                .in(WearSafetyEvent::getSiteId, scope)));
         data.put("count", count == null ? 0 : count.intValue());
         return data;
     }

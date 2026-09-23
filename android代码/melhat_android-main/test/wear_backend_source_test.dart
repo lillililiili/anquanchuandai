@@ -49,7 +49,7 @@ void main() {
         siteId: () => '1',
         epoch: () => 0,
         dio: transport((r) {
-          if (r.path == '/api/v1/work-tasks') {
+          if (r.path == '/api/v1/work-tasks/mine') {
             return reply({
               'records': r.queryParameters['status'] == 'paused'
                   ? []

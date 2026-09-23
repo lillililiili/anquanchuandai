@@ -4,6 +4,7 @@ import '../core.dart';
 import 'event_controller.dart';
 import 'event_models.dart';
 import 'event_location_card.dart';
+import 'event_photos.dart';
 
 const _ink = Color(0xFF101F43),
     _muted = Color(0xFF6B88AF),
@@ -21,11 +22,13 @@ class EventReferenceView extends StatefulWidget {
     required this.onCommunication,
     required this.legacyDetail,
     this.onClaim,
+    this.onConfirm,
+    this.onReview,
   });
   final EventController controller;
   final VoidCallback onBack, onSubmit, onCommunication;
   final Widget legacyDetail;
-  final VoidCallback? onClaim;
+  final VoidCallback? onClaim, onConfirm, onReview;
   @override
   State<EventReferenceView> createState() => _EventReferenceViewState();
 }
@@ -36,7 +39,6 @@ class _EventReferenceViewState extends State<EventReferenceView> {
         .draftFor(widget.controller.selected!.id)
         .handleComment,
   );
-  final _photos = <String>[];
   bool _demoJoined = false;
   final _legacyAnchor = GlobalKey();
   final _formAnchor = GlobalKey();
@@ -44,6 +46,11 @@ class _EventReferenceViewState extends State<EventReferenceView> {
   EventController get c => widget.controller;
   WearEvent get e => c.selected!;
   bool get sos => e.type == 'sos';
+  Color get levelColor => e.isEmergency
+      ? _red
+      : e.isWarning
+      ? WearColors.online
+      : _amber;
   @override
   void dispose() {
     _note.dispose();
@@ -172,14 +179,67 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                         if (c.successMessage != null)
                           _notice(c.successMessage!),
                         _summary(),
+                        if (e.source == 'manual_sos') ...[
+                          gap(),
+                          card(
+                            Text(
+                              e.isClosed
+                                  ? '手动 SOS 已结束，可查看审批记录。'
+                                  : '手动 SOS 已提交 → 管理员审批 → 结束\n无需一级审查，等待管理员审批。',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: _muted,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (c.can(EventCommand.confirm) ||
+                            c.can(EventCommand.close))
+                          gap(),
+                        if (c.can(EventCommand.confirm))
+                          FilledButton.icon(
+                            key: const ValueKey('event-confirm-reminder'),
+                            onPressed: c.writing ? null : widget.onConfirm,
+                            icon: const Icon(Icons.check_circle_outline),
+                            label: const Text('收到'),
+                          ),
+                        if (c.can(EventCommand.close))
+                          FilledButton.icon(
+                            onPressed: c.writing ? null : widget.onReview,
+                            icon: const Icon(Icons.fact_check_outlined),
+                            label: const Text('审批通过并结束'),
+                          ),
+                        if (!e.isWarning && !c.can(EventCommand.handle)) ...[
+                          gap(),
+                          card(
+                            EventSubmittedPhotos(
+                              key: ValueKey('event-media-${e.id}'),
+                              eventId: e.id,
+                              version: e.version,
+                            ),
+                          ),
+                        ],
+                        if (!c.can(EventCommand.handle) &&
+                            _handleFeedback != null) ...[
+                          gap(),
+                          card(
+                            Text(
+                              _handleFeedback!,
+                              key: ValueKey('event-handle-feedback-${e.id}'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: _muted,
+                              ),
+                            ),
+                          ),
+                        ],
                         gap(),
-                        _nextStep(),
+                        if (!e.isWarning) EventLocationCard(event: e),
                         gap(),
-                        EventLocationCard(event: e),
+                        if (!e.isWarning && c.can(EventCommand.handle))
+                          ..._assessment(),
                         gap(),
-                        ..._assessment(),
-                        gap(),
-                        _communication(),
+                        if (!e.isWarning && c.actor.isAdmin) _communication(),
                         gap(),
                         card(
                           Theme(
@@ -192,12 +252,12 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                                   AnimationStyle.noAnimation,
                               key: const ValueKey('event-original-actions'),
                               tilePadding: EdgeInsets.zero,
-                              title: const Text(
-                                '更多处置与事件记录',
+                              title: Text(
+                                '事件记录',
                                 style: TextStyle(fontSize: 13, color: _muted),
                               ),
-                              subtitle: const Text(
-                                '认领、转交、复核、关联与时间线',
+                              subtitle: Text(
+                                e.isWarning ? '查看本人确认记录' : '处理说明、关联与时间线',
                                 style: TextStyle(fontSize: 10, color: _muted),
                               ),
                               children: [
@@ -227,107 +287,6 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       Text(text, style: const TextStyle(color: _muted, fontSize: 12)),
     ),
   );
-
-  void _showOriginalActions() {
-    _legacyController.expand();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final anchor = _legacyAnchor.currentContext;
-      if (anchor != null) {
-        Scrollable.ensureVisible(
-          anchor,
-          duration: const Duration(milliseconds: 250),
-          alignment: .1,
-        );
-      }
-    });
-  }
-
-  Widget _nextStep() {
-    final canClaim = c.can(EventCommand.claim) && widget.onClaim != null;
-    final canHandle = c.can(EventCommand.handle);
-    final submitted = c.isHandleCommentSubmitted(e.id);
-    final instruction = canClaim
-        ? '先认领，再记录现场核验与处置情况'
-        : canHandle && submitted
-        ? '核验已提交；可补充说明，处置完成后在更多处置中关闭事件'
-        : canHandle
-        ? '核验完成后提交处置说明'
-        : e.status == 'closed'
-        ? '事件已关闭，可查看处置记录'
-        : e.status == 'pending_review'
-        ? '等待复核，可在更多处置中查看可用操作'
-        : '按当前权限查看资料或执行处置';
-    return card(
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                sos ? Icons.sos : Icons.fact_check_outlined,
-                color: sos ? _red : _amber,
-                size: 22,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '当前状态 · ${e.statusLabel}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: _ink,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          Text(
-            instruction,
-            style: const TextStyle(fontSize: 12, color: _muted),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              if (canClaim)
-                FilledButton.icon(
-                  key: const ValueKey('event-next-claim'),
-                  onPressed: c.writing ? null : widget.onClaim,
-                  icon: const Icon(Icons.pan_tool_alt_outlined, size: 18),
-                  label: const Text('认领事件'),
-                )
-              else if (canHandle)
-                FilledButton.icon(
-                  onPressed: c.writing
-                      ? null
-                      : () {
-                          final anchor = _formAnchor.currentContext;
-                          if (anchor != null) {
-                            Scrollable.ensureVisible(
-                              anchor,
-                              duration: const Duration(milliseconds: 250),
-                              alignment: .1,
-                            );
-                          } else {
-                            _showOriginalActions();
-                          }
-                        },
-                  icon: const Icon(Icons.edit_note, size: 18),
-                  label: Text(submitted ? '补充核验说明' : '填写处置说明'),
-                ),
-              OutlinedButton(
-                onPressed: c.writing ? null : _showOriginalActions,
-                child: const Text('更多处置与记录'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _hero(BuildContext context) => SizedBox(
     key: const ValueKey('wear-page-hero-event-detail'),
@@ -379,12 +338,23 @@ class _EventReferenceViewState extends State<EventReferenceView> {
               ),
               const SizedBox(height: 10),
               WearBadge(
-                text: sos ? 'SOS 紧急求助' : '现场异常核验',
-                color: sos ? _red : _amber,
+                text:
+                    '${e.severityLabel} · ${e.isWarning
+                        ? '本人确认'
+                        : e.source == 'manual_sos'
+                        ? '管理员审批'
+                        : e.isEmergency
+                        ? '两级处置'
+                        : '现场处理'}',
+                color: e.isEmergency
+                    ? _red
+                    : e.isWarning
+                    ? WearColors.online
+                    : _amber,
               ),
               const SizedBox(height: 6),
-              const Text(
-                '定位现场 · 协同处置',
+              Text(
+                e.isWarning ? '查看提醒 · 收到结束' : '定位现场 · 协同处置',
                 style: TextStyle(fontSize: 12, color: _muted),
               ),
             ],
@@ -403,7 +373,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           children: [
             iconCircle(
               sos ? Icons.sos : Icons.warning_amber_rounded,
-              color: sos ? _red : _amber,
+              color: levelColor,
               size: 42,
             ),
             const SizedBox(width: 10),
@@ -429,8 +399,8 @@ class _EventReferenceViewState extends State<EventReferenceView> {
             ),
             const SizedBox(width: 6),
             WearBadge(
-              text: e.statusLabel,
-              color: e.isClosed ? WearColors.online : (sos ? _red : _amber),
+              text: e.statusFor(admin: c.actor.isAdmin),
+              color: e.isClosed ? WearColors.online : levelColor,
             ),
           ],
         ),
@@ -438,7 +408,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
         infoRow(
           Icons.person_outline,
           known(e.personName, '人员未知'),
-          '设备 ${known(e.sn, '未知')} · ${e.taskId.isEmpty ? '未关联作业' : '关联作业 ${e.taskId}'}',
+          '${e.deviceTypeLabel} ${known(e.sn, '未知')} · ${e.taskId.isEmpty ? '未关联作业' : '关联作业 ${e.taskId}'}',
         ),
         infoRow(Icons.schedule, '事件发生时间', formatTime(e.occurredAt)),
         line(),
@@ -456,10 +426,11 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           style: const TextStyle(fontSize: 12, color: _muted, height: 1.5),
         ),
         const SizedBox(height: 5),
-        const Text(
-          '告警需现场核验，不直接判定违规',
-          style: TextStyle(fontSize: 10, color: _muted),
-        ),
+        if (!e.isWarning)
+          const Text(
+            '告警需现场核验，不直接判定违规',
+            style: TextStyle(fontSize: 10, color: _muted),
+          ),
       ],
     ),
   );
@@ -469,9 +440,12 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(key: _formAnchor, child: heading('现场研判')),
+          Container(key: _formAnchor, child: heading('上报异常原因')),
           const SizedBox(height: 4),
-          const Text('现场核验说明', style: TextStyle(fontSize: 12, color: _muted)),
+          const Text(
+            '异常原因说明（选填）',
+            style: TextStyle(fontSize: 12, color: _muted),
+          ),
           const SizedBox(height: 9),
           TextField(
             key: ValueKey('event-handle-input-${e.id}'),
@@ -482,7 +456,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
             maxLength: 500,
             style: const TextStyle(fontSize: 14, color: _ink),
             decoration: InputDecoration(
-              hintText: '记录现场核实情况和已采取的措施',
+              hintText: '请说明为什么发生本次异常，以及现场实际情况',
               filled: true,
               fillColor: const Color(0xFFF9FCFF),
               contentPadding: const EdgeInsets.all(10),
@@ -514,7 +488,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                 ? null
                 : () async {
                     await c.updateDraft(e.id, c.draftFor(e.id));
-                    if (mounted) message('草稿已保存在本机；示例附件未上传');
+                    if (mounted) message('说明与附件草稿已保存在本机');
                   },
             child: const Text('保存草稿'),
           ),
@@ -534,8 +508,10 @@ class _EventReferenceViewState extends State<EventReferenceView> {
               c.writing
                   ? '提交中…'
                   : c.isHandleCommentSubmitted(e.id)
-                  ? '已提交核验'
-                  : '提交核验',
+                  ? '已上报'
+                  : e.isEmergency
+                  ? '提交待审批'
+                  : '提交并结束',
             ),
           ),
         ),
@@ -556,14 +532,12 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       Padding(
         padding: const EdgeInsets.only(top: 6),
         child: Text(
-          e.status == 'open' && c.can(EventCommand.claim)
-              ? '请先使用上方“认领事件”；草稿可先保存。'
-              : '当前角色或事件状态不可提交核验，可查看“更多处置与记录”。',
+          '本次处理已完成，可查看上报记录。',
           style: const TextStyle(fontSize: 10, color: _muted),
         ),
       ),
-    const Padding(
-      padding: EdgeInsets.only(top: 10),
+    Padding(
+      padding: const EdgeInsets.only(top: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -571,7 +545,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           SizedBox(width: 8),
           Flexible(
             child: Text(
-              '正式结案按原系统权限与流程办理',
+              e.isEmergency ? '现场上报 → 管理员审批 → 结束' : '说明和附件均可不填，提交成功后事件自动结束',
               style: TextStyle(fontSize: 10, color: _muted),
             ),
           ),
@@ -591,162 +565,25 @@ class _EventReferenceViewState extends State<EventReferenceView> {
     }
     if (!submitted) return null;
     if (e.status == 'pending_review') {
-      return '核验已提交，内容已保存。当前待复核，请等待复核人员确认。';
+      return '现场记录已保存，等待管理员审批，当前事件尚未结束。';
     }
     if (e.status == 'closed') return '核验内容已保存，事件已关闭。';
     if (c.can(EventCommand.close)) {
       return '核验已提交，内容已保存。确认处置完成后，可在“更多处置与记录”中关闭事件；修改说明后可补充提交。';
     }
-    return '核验已提交，内容已保存。当前状态：${e.statusLabel}。';
+    return '核验已提交，内容已保存。当前状态：${e.statusFor(admin: c.actor.isAdmin)}。';
   }
 
   Widget _attachmentCard() => card(
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            heading('现场附件'),
-            const Spacer(),
-            const Flexible(
-              child: Text(
-                '最多4张 · 本地UI示例',
-                style: TextStyle(fontSize: 10, color: _muted),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 9),
-        Wrap(
-          spacing: 10,
-          runSpacing: 8,
-          children: [
-            if (_photos.length < 4)
-              SizedBox(
-                width: 96,
-                height: 92,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    side: const BorderSide(color: Color(0xFFB9D0E9)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                  ),
-                  onPressed: c.writing ? null : _addPhoto,
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, size: 37, color: _blue),
-                      Text(
-                        '添加照片',
-                        style: TextStyle(fontSize: 11, color: _muted),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            for (var i = 0; i < _photos.length; i++)
-              SizedBox(
-                width: 96,
-
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 90,
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: InkWell(
-                              onTap: () => showDialog<void>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  content: Image.asset(_photos[i]),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('关闭'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(7),
-                                child: Image.asset(
-                                  _photos[i],
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: IconButton(
-                              tooltip: '删除示例照片',
-                              constraints: const BoxConstraints.tightFor(
-                                width: 30,
-                                height: 30,
-                              ),
-                              padding: EdgeInsets.zero,
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.black54,
-                              ),
-                              onPressed: c.writing
-                                  ? null
-                                  : () => setState(() => _photos.removeAt(i)),
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 19,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Text(
-                      '现场照片（示例）',
-                      style: TextStyle(fontSize: 10, color: _muted),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '示例图片仅用于本页预览，尚未接入相册与上传',
-          style: TextStyle(fontSize: 9, color: _muted),
-        ),
-      ],
+    EventPhotoCapture(
+      key: ValueKey('event-evidence-${e.id}'),
+      paths: c.draftFor(e.id).photoPaths,
+      enabled: !c.writing,
+      onChanged: (paths) => unawaited(
+        c.updateDraft(e.id, c.draftFor(e.id).copyWith(photoPaths: paths)),
+      ),
     ),
   );
-  Future<void> _addPhoto() async {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('添加照片示例'),
-        content: const Text('当前先体验附件布局，可添加、预览、删除示例照片；不会上传到事件。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('添加示例照片'),
-          ),
-        ],
-      ),
-    );
-    if (accepted == true && mounted && _photos.length < 4) {
-      setState(
-        () =>
-            _photos.add('assets/field-brand/preview/work_reference_scene.png'),
-      );
-    }
-  }
 
   Widget _communication() => card(
     Column(

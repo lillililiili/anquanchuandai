@@ -121581,7 +121581,7 @@ r=s}return r},
 au(){var s,r,q,p,o,n,m=this,l=null,k="/workbench"
 m.be()
 s=m.gAa()
-window.startRollingRolePreview=function(role){if(role!=="admin"&&role!=="user")return;window.setRollingRole(role,role);if(s.c==null)s.xI(role,"local-demo",null,null);else $.ej().a3();}
+window.startRollingRolePreview=function(role){if(role!=="admin"&&role!=="user"||s.r)return;return s.xI(role,"local-demo",null,null);}
 r=A.dy(l,t.H)
 q=t.N
 p=$.ai()
@@ -123068,11 +123068,11 @@ g.push(B.eN)
 f=a0.e
 e=f?B.Xi:B.WR
 d=n?new A.aP8(a0):a1
-f=A.bp(a0.E5(e,"\u9ea6\u514b\u98ce",B.aB,d,f,f?"\u6a21\u62df\u9ea6\u514b\u98ce\u5df2\u5173\u95ed\uff0c\u70b9\u51fb\u5f00\u542f\uff1b\u4e0d\u91c7\u96c6\u97f3\u9891":"\u6a21\u62df\u9ea6\u514b\u98ce\u5df2\u5f00\u542f\uff0c\u70b9\u51fb\u5173\u95ed\uff1b\u4e0d\u91c7\u96c6\u97f3\u9891"),1)
+f=A.bp(a0.E5(e,"\u9ea6\u514b\u98ce",B.aB,d,f,f?"麦克风已关闭，点击开启；不采集音频":"麦克风已开启，点击关闭；不采集音频"),1)
 e=a0.f
 d=e?B.wf:B.X3
 c=n?new A.aP9(a0):a1
-e=A.bp(a0.E5(d,"\u626c\u58f0\u5668",B.SN,c,e,e?"\u6a21\u62df\u626c\u58f0\u5668\u5df2\u5f00\u542f\uff0c\u70b9\u51fb\u5173\u95ed\uff1b\u4e0d\u64ad\u653e\u771f\u5b9e\u97f3\u9891":"\u6a21\u62df\u626c\u58f0\u5668\u5df2\u5173\u95ed\uff0c\u70b9\u51fb\u5f00\u542f\uff1b\u4e0d\u64ad\u653e\u771f\u5b9e\u97f3\u9891"),1)
+e=A.bp(a0.E5(d,"\u626c\u58f0\u5668",B.SN,c,e,e?"扬声器已开启，点击关闭；不播放真实音频":"扬声器已关闭，点击开启；不播放真实音频"),1)
 d=A.bp(a0.an3(B.WV,"\u53c2\u4e0e\u4eba\u5458",B.Tg,new A.aPa(a0,a5)),1)
 c=r?B.Xo:B.pC
 a=r?"\u5173\u95ed\u89c6\u9891":"\u5f00\u542f\u89c6\u9891"
@@ -127235,7 +127235,7 @@ n=A.a0(new A.cC(new A.a7(q,new A.axB(J.iR(s,new A.axC(),r).fQ(0)),p.i("a7<1>")),
 if(c==="/api/v1/lab/tts"){s=f.b
 q=s.length
 p=A.b([],t.Mq)
-for(o=n.length,m=t.K,l=0;l<n.length;n.length===o||(0,A.J)(n),++l)p.push(A.a5(["deviceId",n[l],"state","received","demo",!0,"message","\u6a21\u62df\u63a5\u6536\uff0c\u672a\u771f\u5b9e\u64ad\u62a5"],r,m))
+for(o=n.length,m=t.K,l=0;l<n.length;n.length===o||(0,A.J)(n),++l)p.push(A.a5(["deviceId",n[l],"state","received","demo",!0,"message","已接收"],r,m))
 k=A.a5(["id","preview-tts-"+(q+1),"demo",!0,"receipts",p],r,t.z)
 s.push(k)
 return f.e7(0,k)}if(c==="/api/v1/lab/calls"){if(n.length===0)return f.JK(0,null,400,"\u8bf7\u9009\u62e9\u6f14\u793a\u5b89\u5168\u5e3d")
@@ -127287,9 +127287,9 @@ if(B.c.cz(a2,"/api/v1/lab/")){q=p.aMh(a5,a3)
 s=1
 break}if(a2==="/captchaImage"){q=p.abU(0,A.a5(["code",200,"captchaEnabled",!0,"uuid","local-preview"],t.N,t.K),!0)
 s=1
-break}if(a2==="/login"){var _rawUser=A.bK(a3.h(0,"username"),"\u2014");p.c=_rawUser;p.d=null;var _cleanUser=(_rawUser||"").toString().trim().toLowerCase();var _assignedRole=(_cleanUser==="admin")?"admin":"user";if(typeof window!=="undefined"&&window.setRollingRole){window.setRollingRole(_assignedRole,_rawUser);}else if(typeof window!=="undefined"){window.currentUserRole=_assignedRole;window.currentUsername=_rawUser;try{sessionStorage.setItem("rolling_role",_assignedRole);sessionStorage.setItem("rolling_user",_rawUser);}catch(e){}}q=p.abU(0,A.a5(["code",200,"token","local-preview-only"],t.N,t.K),!0);s=1;break}if(a2==="/logout"){q=p.e7(0,null)
+break}if(a2==="/login"){var _rawUser=A.bK(a3.h(0,"username"),"\u2014");p.c=_rawUser;p.d=null;var _cleanUser=(_rawUser||"").toString().trim().toLowerCase();var _assignedRole=_cleanUser==="admin"?"admin":_cleanUser==="user"?"user":window.currentUserRole==="user"?"user":"admin";p._previewRole=_assignedRole;if(typeof window!=="undefined"&&window.setRollingRole){window.setRollingRole(_assignedRole,_rawUser);}else if(typeof window!=="undefined"){window.currentUserRole=_assignedRole;window.currentUsername=_rawUser;try{sessionStorage.setItem("rolling_role",_assignedRole);sessionStorage.setItem("rolling_user",_rawUser);}catch(e){}}q=p.abU(0,A.a5(["code",200,"token","local-preview-only"],t.N,t.K),!0);s=1;break}if(a2==="/logout"){q=p.e7(0,null)
 s=1
-break}if(a2==="/api/v1/me"){o=p.c;n=t.s;m=t.N;var _isAdmin=(o&&o.toString().trim().toLowerCase()==="admin");var _nick=_isAdmin?"\u7cfb\u7edf\u7ba1\u7406\u5458":"\u9648\u5efa\u56fd";var _role=_isAdmin?"\u5b89全\u7ba1\u7406\u5458":"\u5de1\u68c0\u5de5\u4eba";var _dept=_isAdmin?"\u5b89\u76d1\u90e8 \xb7 \u73b0\u573a\u6307\u6325\u4e2d\u5fc3":"\u53d1\u7535\u90e8 \xb7 \u5de1\u68c0\u4e00\u73ed";var _code=_isAdmin?"ADM-001":"P-001";q=p.e7(0,A.a5(["userId",_isAdmin?"1":"12","userName",o,"username",o,"nickName",_nick,"name",_nick,"personId",_isAdmin?"1":"101","sipId",_isAdmin?"10000":"10001","status","0","roles",_isAdmin?A.b(["admin","wear_admin","wear_duty","wear_team_lead","wear_reviewer"],n):A.b(["wear_duty","wear_worker"],n),"permissions",A.b(["*:*:*","wear:call:start","wear:command:tts"],n),"authorizedSites",A.b([A.a5(["id","1","status","0","name","\u6f14\u793a\u5382\u7ad9A"],m,m),A.a5(["id","2","status","0","name","\u6f14\u793a\u5382\u7ad9B"],m,m)],t.m0),"currentSiteId",p.d,"deptName",_dept,"phonenumber",_isAdmin?"13900139000":"13800138000","roleName",_role,"personCode",_code],m,t.z));s=1;break}if(a2==="/api/v1/me/current-site"){o=a3.h(0,"siteId")
+break}if(a2==="/api/v1/me"){o=p.c;n=t.s;m=t.N;var _isAdmin=p._previewRole?p._previewRole==="admin":(o&&o.toString().trim().toLowerCase()==="admin");var _nick=_isAdmin?"\u7cfb\u7edf\u7ba1\u7406\u5458":"\u9648\u5efa\u56fd";var _role=_isAdmin?"\u5b89全\u7ba1\u7406\u5458":"\u5de1\u68c0\u5de5\u4eba";var _dept=_isAdmin?"\u5b89\u76d1\u90e8 \xb7 \u73b0\u573a\u6307\u6325\u4e2d\u5fc3":"\u53d1\u7535\u90e8 \xb7 \u5de1\u68c0\u4e00\u73ed";var _code=_isAdmin?"ADM-001":"P-001";q=p.e7(0,A.a5(["userId",_isAdmin?"1":"12","userName",o,"username",o,"nickName",_nick,"name",_nick,"personId",_isAdmin?"1":"101","sipId",_isAdmin?"10000":"10001","status","0","roles",_isAdmin?A.b(["admin","wear_admin","wear_duty","wear_team_lead","wear_reviewer"],n):A.b(["wear_duty","wear_worker"],n),"permissions",A.b(["*:*:*","wear:call:start","wear:command:tts"],n),"authorizedSites",A.b([A.a5(["id","1","status","0","name","\u6f14\u793a\u5382\u7ad9A"],m,m),A.a5(["id","2","status","0","name","\u6f14\u793a\u5382\u7ad9B"],m,m)],t.m0),"currentSiteId",p.d,"deptName",_dept,"phonenumber",_isAdmin?"13900139000":"13800138000","roleName",_role,"personCode",_code],m,t.z));s=1;break}if(a2==="/api/v1/me/current-site"){o=a3.h(0,"siteId")
 o=o==null?"":J.T(o)
 p.d=o
 q=p.e7(0,A.a5(["currentSiteId",o],t.N,t.T))
@@ -127580,7 +127580,14 @@ return new A.Q(B.vm,A.bn(A.b([new A.b1(90,s,r,s),A.bp(A.W(b,s,s,s,s,A.bZ(s,s,B.O
 lA(a,b,c,d,e){var s=null
 return new A.Q(B.er,e?A.a_6(A.fO(c,s,s,20),A.W(b,s,s,s,s,s,s,s,s),d,s):A.yJ(A.fO(c,s,s,20),A.W(b,s,s,s,s,s,s,s,s),d,s),s)},
 j4(a,b,c,d){return this.lA(0,b,c,d,!1)},
-fP(a,b,c,d){var s=null,isSos=a.indexOf("SOS")!==-1,r=A.fO(c,isSos?B.SD:B.aB,s,isSos?26:s),q=A.W(a,s,s,s,s,isSos?B.am6:B.eQ,s,s,s)
+fP(a,b,c,d){if(a==="紧急求助 SOS"){
+var z=null;
+function sosText(value,size,color,bold){return A.W(value,z,z,z,z,A.bZ(z,z,color,z,z,z,z,z,z,z,z,size,z,z,bold?B.ci:z,z,1.4,!0,z,z,z,z,z,z,z,z),z,z,z)}
+var badge=A.dJ(z,sosText("SOS",15,new A.t(1,1,1,1,B.f),!0),B.w,z,z,new A.cP(B.SD,z,z,A.bI(12),z,z,B.ar),z,44,z,z,z,z,44);
+var copy=A.as(A.b([sosText("紧急求助",16,B.O,!0),sosText("遇到危险，联系值班室",12,B.P,!1)],t.p),B.H,B.h,B.i,0,B.m);
+var row=A.bn(A.b([badge,new A.Q(new A.a6(12,0,0,0),z,z),A.bp(copy,1),sosText("求助",13,B.SD,!0),A.fO(B.iZ,B.SD,z,18)],t.p),B.p,B.h,B.i,0,z);
+return A.et(A.dJ(z,row,B.w,z,z,new A.cP(new A.t(1,1,0.955,0.95,B.f),z,z,A.bI(14),z,z,B.ar),z,z,z,new A.a6(12,14,12,14),z,z,z),z,d,z);
+}var s=null,isSos=a.indexOf("SOS")!==-1||(d&&d.fenceAlert===true),r=A.fO(c,isSos?B.SD:B.aB,s,isSos?26:s),q=A.W(a,s,s,s,s,(d&&d.fenceAlert===true)?A.bZ(s,s,B.SD,s,s,s,s,s,s,s,s,16,s,s,B.ci,s,s,!0,s,s,s,s,s,s,s,s):isSos?B.am6:B.eQ,s,s,s)
 return A.lw(!1,B.Q,s,s,!0,s,s,s,!0,s,s,r,s,s,s,s,d,!1,s,s,s,s,b.length===0?s:A.W(b,s,s,s,s,B.jQ,s,s,s),s,s,q,s,s,B.ld,s)},
 S5(a){var s=A.V(a).i("a1<1,tC>")
 s=A.a0(new A.a1(a,new A.b0e(this),s),s.i("aI.E"))
@@ -127595,29 +127602,27 @@ Ro(a,b,c,d,e){var s=null,r=A.a31(e,B.G,s,B.aV,58,58),q=A.W(a,s,s,s,s,B.eQ,s,s,s)
 q=A.bp(A.as(A.b([q,A.W(b,s,s,s,s,A.bZ(s,s,B.P,s,s,s,s,s,s,s,s,s,s,s,s,s,1.5,!0,s,s,s,s,s,s,s,s),s,s,s)],p),B.a1,B.h,B.i,0,B.m),1)
 return new A.Q(B.a6,new A.bP(A.as(A.b([A.bn(A.b([r,B.dJ,q,new A.ew(c,c==="\u5728\u7ebf"?B.en:B.dr,s)],p),B.p,B.h,B.i,0,s),this.dl("\u7535\u91cf",d),this.fP("\u8bbe\u5907\u4fe1\u606f\u4e0e\u72b6\u6001","\u8fde\u63a5\u3001\u4f69\u6234\u3001\u5b9a\u4f4d\u4e0e\u81ea\u68c0",B.X7,new A.b0b(this,a))],p),B.H,B.h,B.i,0,B.m),s,s),s)},
 aGO(){var s,r,q,p,o,n,m,l,k,j,i,h,g,f=this,e=null,d="\u503c\u73ed\u5ba4",c="1\u53f7\u673a\u7ec4\u65e5\u5e38\u5de1\u68c0",b="\u534f\u4f5c\u4eba\u5458",a="1\u53f7\u673a\u7ec4 \xb7 \u6c7d\u673a\u623f",a0="\u9648\u5efa\u56fd",a1="\u5468\u660e",a2="\u5728\u7ebf",a3="\u5de1\u68c0\u4e00\u73ed",a4="\u4eca\u65e5 09:12",a5="\u667a\u80fd\u5b89\u5168\u5e3d",a6="assets/field-brand/preview/helmet.jpg",a7="assets/field-brand/preview/watch.jpg",a8="assets/field-brand/preview/belt.jpg",a9=f.a
+var _profileAdmin=window.currentUserRole==="admin",_profileName=_profileAdmin?"系统管理员":"陈建国",_profileTeam=_profileAdmin?"安监部 · 现场指挥中心":"巡检一班",_profileCode=_profileAdmin?"ADM-001":"P-001",_profileRole=_profileAdmin?"安全管理员":"巡检工人";
 switch(a9.c){case"home":a9=t.p
 window.rollingPreviewReady=true;
 window.refreshRollingHome=function(){$.ej().a3()};
 queueMicrotask(function(){window.dispatchEvent(new Event("rolling-preview-ready"))});
 var _wbCards=[new A.Q(B.aC,new A.e5("快速联系与现场处置",e,e),e),f.qA(d),f.fP("紧急求助 SOS","遇险时一键求助，联系值班室",B.lb,new A.b_a(f))];
-s=A.as(A.b(_wbCards,a9),B.H,B.h,B.i,0,B.m);
-var _adminCards=[];
 if(window.currentUserRole==="admin"){
 var _counts=window.RollingAdmin?window.RollingAdmin.counts():{fence:2,pending:3,handling:1};
 var _leadAction=new A.b_U(f);_leadAction.adminModule="lead";
-var _eventAction=new A.b_U(f);_eventAction.adminModule="events";
-_adminCards.push(new A.Q(B.a6,new A.bP(A.as(A.b([
-new A.Q(B.aC,new A.e5("现场管理",new A.ew("管理员 · 模拟",e,e),e),e),
-f.fP("全局态势","4 人在岗 · "+_counts.fence+" 起围栏告警",B.l9,_leadAction),
-f.fP("作业研判",_counts.pending+" 起待认领 · "+_counts.handling+" 起处置中",B.pA,_eventAction)
-],a9),B.H,B.h,B.i,0,B.m),e,e),e));
+var _eventsAction=new A.b_U(f);_eventsAction.adminModule="eventsList";
+_wbCards.push(f.fP("现场全局态势与指挥调度","4 人在岗 · "+_counts.fence+" 起电子围栏告警待处置",B.l9,_leadAction));
+_wbCards.push(f.fP("核心系统作业研判与处置",_counts.pending+" 起事件待认领 · 现场研判与复核闭环",B.wg,_eventsAction));
 }
+s=A.as(A.b(_wbCards,a9),B.H,B.h,B.i,0,B.m);
+var _adminCards=[];
 r=$.ej()
 r=f.JQ(c,r.a,"\u4eca\u65e5 09:00\u201411:00 \xb7 \u6c7d\u673a\u623f\n\u5de1\u68c0\u70b9 "+r.b.a+"/3 \xb7 \u534f\u4f5c\u4eba\u5458 2 \u4eba")
 q=A.et(B.aqF,e,new A.b_b(f),e)
 p=A.lw(!1,B.Q,e,e,!0,e,e,e,!0,e,e,B.atV,e,e,e,e,new A.b_c(f),!1,e,e,e,e,B.aqe,e,e,B.aq6,e,e,B.au4,e)
 o=A.lw(!1,B.Q,e,e,!0,e,e,e,!0,e,e,B.atU,e,e,e,e,new A.b_n(f),!1,e,e,e,e,B.apv,e,e,B.apK,e,e,B.au8,e)
-return A.b([..._adminCards,new A.Q(B.a6,new A.bP(s,e,e),e),r,new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u6211\u7684\u8bbe\u5907",q,e),e),p,o,A.W("\u8bbe\u5907\u72b6\u6001\u4e3a\u6f14\u793a\u6570\u636e",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)],a9),B.H,B.h,B.i,0,B.m),e,e),e),new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u5de1\u68c0\u5de5\u5177",e,e),e),f.fP("\u6211\u7684\u4efb\u52a1","\u67e5\u770b\u4efb\u52a1\u4e0e\u586b\u5199\u5de1\u68c0\u7ed3\u679c",B.pA,new A.b_y(f)),f.fP(b,"\u67e5\u770b\u4f4d\u7f6e\u3001\u8f68\u8ff9\u5e76\u8054\u7cfb\u540c\u4f34",B.wi,new A.b_J(f)),f.fP("\u5f02\u5e38\u4e0a\u62a5","\u8bb0\u5f55\u95ee\u9898\uff0c\u8ddf\u8fdb\u5904\u7406\u53cd\u9988",B.wg,new A.b_U(f))],a9),B.H,B.h,B.i,0,B.m),e,e),e)],a9)
+return A.b([new A.Q(B.a6,new A.bP(s,e,e),e),r,new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u6211\u7684\u8bbe\u5907",q,e),e),p,o,A.W("设备状态",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)],a9),B.H,B.h,B.i,0,B.m),e,e),e),..._adminCards,new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5("\u5de1\u68c0\u5de5\u5177",e,e),e),f.fP("\u6211\u7684\u4efb\u52a1","\u67e5\u770b\u4efb\u52a1\u4e0e\u586b\u5199\u5de1\u68c0\u7ed3\u679c",B.pA,new A.b_y(f)),f.fP(b,"\u67e5\u770b\u4f4d\u7f6e\u3001\u8f68\u8ff9\u5e76\u8054\u7cfb\u540c\u4f34",B.wi,new A.b_J(f)),f.fP("\u5f02\u5e38\u4e0a\u62a5","\u8bb0\u5f55\u95ee\u9898\uff0c\u8ddf\u8fdb\u5904\u7406\u53cd\u9988",B.wg,new A.b_U(f))],a9),B.H,B.h,B.i,0,B.m),e,e),e)],a9)
 case"tasks":a9=A.b([f.S5(A.b(["\u5168\u90e8","\u5f85\u6267\u884c","\u8fdb\u884c\u4e2d","\u5df2\u5b8c\u6210"],t.s))],t.p)
 if(f.gjj(0)==="\u5168\u90e8"||f.gjj(0)===$.ej().a)a9.push(f.JQ(c,$.ej().a,"\u6c7d\u673a\u623f \xb7 \u4eca\u65e5 09:00\u201411:00"))
 if(f.gjj(0)==="\u5168\u90e8"||f.gjj(0)==="\u5f85\u6267\u884c")a9.push(f.JQ("\u5faa\u73af\u6c34\u6cf5\u623f\u5de1\u68c0","\u5f85\u6267\u884c","\u6c34\u6cf5\u623f \xb7 \u4eca\u65e5 14:00\u201415:00"))
@@ -127646,7 +127651,7 @@ s=A.b([new A.Q(B.aC,new A.e5(c,e,e),e),A.W("\u9010\u9879\u786e\u8ba4\u73b0\u573a
 r=new A.zg(A.b(["\u8bbe\u5907\u8fd0\u884c\u72b6\u6001\u6b63\u5e38","\u7ba1\u9053\u8fde\u63a5\u65e0\u6cc4\u6f0f","\u73b0\u573a\u65e0\u5f02\u5e38\u632f\u52a8\u6216\u5f02\u54cd"],t.s),t.ly)
 B.b.R(s,r.gjI(r).jo(0,new A.b_e(),t.l7))
 r=$.ej()
-s.push(f.dl("\u8bb0\u5f55\u72b6\u6001",r.a==="\u5df2\u5b8c\u6210"?"\u5df2\u63d0\u4ea4\uff08\u672c\u5730\u6f14\u793a\uff09":"\u672c\u5730\u8349\u7a3f"))
+s.push(f.dl("\u8bb0\u5f55\u72b6\u6001",r.a==="\u5df2\u5b8c\u6210"?"已提交":"\u672c\u5730\u8349\u7a3f"))
 a9=A.b([new A.Q(B.a6,new A.bP(A.as(s,B.H,B.h,B.i,0,B.m),e,e),e)],a9)
 if(r.a!=="\u5df2\u5b8c\u6210")a9.push(f.j4(0,"\u63d0\u4ea4\u5de1\u68c0\u7ed3\u679c",B.WI,new A.b_f(f)))
 a9.push(f.lA(0,"\u53d1\u73b0\u5f02\u5e38\uff0c\u7acb\u5373\u4e0a\u62a5",B.la,new A.b_g(f),!0))
@@ -127664,7 +127669,7 @@ s.push(f.lA(0,a9,B.wg,new A.b_k(f),!0))
 s.push(new A.Q(B.cv,A.W("\u9875\u9762\u8bbe\u8ba1\u6f14\u793a\u4f7f\u7528\u5185\u7f6e\u7167\u7247\uff1b\u672a\u8c03\u7528\u76f8\u673a\u6216\u4e0a\u4f20\u6587\u4ef6\u3002",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e))
 return A.b([new A.Q(B.a6,new A.bP(A.as(s,B.H,B.h,B.i,0,B.m),e,e),e),f.j4(0,"\u63d0\u4ea4\u4e0a\u62a5",B.wj,new A.b_l(f))],r)
 case"report-result":a9=t.p
-return A.b([new A.Q(B.a6,new A.bP(A.as(A.b([B.Ya,B.da,new A.Q(B.aC,new A.e5("\u4e0a\u62a5\u5df2\u4fdd\u5b58",e,e),e),A.W("\u5df2\u751f\u6210\u672c\u5730\u6f14\u793a\u8bb0\u5f55\uff0c\u5c1a\u672a\u63d0\u4ea4\u81f3\u534e\u80fd\u7cfb\u7edf\u3002",e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),f.dl("\u5904\u7406\u72b6\u6001","\u5f85\u53d7\u7406"),f.dl("\u4e0a\u62a5\u4eba",a0),f.j4(0,"\u67e5\u770b\u4e0a\u62a5\u8be6\u60c5",B.l8,new A.b_m(f))],a9),B.H,B.h,B.i,0,B.m),e,e),e)],a9)
+return A.b([new A.Q(B.a6,new A.bP(A.as(A.b([B.Ya,B.da,new A.Q(B.aC,new A.e5("\u4e0a\u62a5\u5df2\u4fdd\u5b58",e,e),e),A.W("已生成通话记录，尚未提交至华能系统。",e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),f.dl("\u5904\u7406\u72b6\u6001","\u5f85\u53d7\u7406"),f.dl("\u4e0a\u62a5\u4eba",a0),f.j4(0,"\u67e5\u770b\u4e0a\u62a5\u8be6\u60c5",B.l8,new A.b_m(f))],a9),B.H,B.h,B.i,0,B.m),e,e),e)],a9)
 case"reports":a9=t.p
 s=A.b([new A.Q(B.cv,A.W("\u4ec5\u663e\u793a\u6211\u63d0\u4ea4\u7684\u95ee\u9898\u4e0e\u5904\u7406\u8fdb\u5ea6\u3002",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e)],a9)
 r=$.ej().c
@@ -127680,7 +127685,7 @@ q=t.p
 r=A.as(A.b([new A.Q(B.aC,new A.e5(a9,e,e),e),s,r,f.dl("\u5904\u7406\u72b6\u6001",f.a.d==="\u6c7d\u673a\u623f\u7167\u660e\u635f\u574f"?"\u5df2\u53cd\u9988":"\u5f85\u53d7\u7406")],q),B.H,B.h,B.i,0,B.m)
 a9=A.b([new A.Q(B.aC,new A.e5("\u5904\u7406\u8fdb\u5ea6",e,e),e),A.W("1. \u95ee\u9898\u8bb0\u5f55\u5df2\u4fdd\u5b58",e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)],q)
 if(f.a.d==="\u6c7d\u673a\u623f\u7167\u660e\u635f\u574f"){s=A.W("2. \u503c\u73ed\u5ba4\u5df2\u53d7\u7406",e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)
-B.b.R(a9,A.b([s,A.W("3. \u5df2\u5b89\u6392\u68c0\u4fee\u4eba\u5458\u5904\u7406\uff08\u793a\u4f8b\u53cd\u9988\uff09",e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)],q))}else a9.push(A.W("2. \u7b49\u5f85\u503c\u73ed\u5ba4\u53d7\u7406\uff08\u672c\u5730\u6f14\u793a\uff09",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e))
+B.b.R(a9,A.b([s,A.W("3. \u5df2\u5b89\u6392\u68c0\u4fee\u4eba\u5458\u5904\u7406\uff08\u793a\u4f8b\u53cd\u9988\uff09",e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e)],q))}else a9.push(A.W("2. 等待值班室受理",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e))
 return A.b([new A.Q(B.a6,new A.bP(r,e,e),e),new A.Q(B.a6,new A.bP(A.as(a9,B.H,B.h,B.i,0,B.m),e,e),e),f.j4(0,"\u8054\u7cfb\u503c\u73ed\u5ba4",B.j1,new A.b_r(f))],q)
 case"partners":a9=f.Vn(0,"\u641c\u7d22\u534f\u4f5c\u4eba\u5458")
 a9=A.b([a9,new A.Q(B.cv,A.W("\u5f53\u524d\u4efb\u52a1 / \u5de1\u68c0\u4e00\u73ed \xb7 \u4ec5\u5c55\u793a\u6709\u534f\u4f5c\u5173\u7cfb\u7684\u4eba\u5458",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e)],t.p)
@@ -127728,7 +127733,7 @@ q=f.gjj(0)
 p=f.dl("\u67e5\u8be2\u65f6\u6bb5",f.gjj(0)==="\u6628\u65e5"?"\u6628\u65e5 09:00\u201411:00":"\u4eca\u65e5 09:00\u201411:00")
 o=t.p
 p=A.as(A.b([new A.Q(B.aC,new A.e5(a9+" \xb7 \u8f68\u8ff9\u56de\u653e",e,e),e),s,new A.Bm(!0,!1,q==="\u6628\u65e5",new A.bs(r,t.O)),p,f.dl("\u8f68\u8ff9\u72b6\u6001",f.gjj(0)==="\u6628\u65e5"?"\u8be5\u65f6\u6bb5\u6682\u65e0\u8bb0\u5f55":"9 \u4e2a\u793a\u4f8b\u8f68\u8ff9\u70b9")],o),B.H,B.h,B.i,0,B.m)
-return A.b([new A.Q(B.a6,new A.bP(p,e,e),e),new A.Q(B.cv,A.W("\u4ec5\u67e5\u8be2\u534f\u4f5c\u8303\u56f4\u5185\u7684\u8f68\u8ff9\u3002\u56fe\u4e0a\u7ebf\u8def\u4e0e\u65f6\u95f4\u4e3a\u6f14\u793a\u6570\u636e\u3002",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e)],o)
+return A.b([new A.Q(B.a6,new A.bP(p,e,e),e),new A.Q(B.cv,A.W("仅查询协作范围内的轨迹。图上线路与时间为。",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e)],o)
 case"devices":return A.b([new A.Q(B.cv,A.W("\u9648\u5efa\u56fd \xb7 \u4ec5\u5c55\u793a\u672c\u4eba\u7ed1\u5b9a\u7684\u8bbe\u5907",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e),f.Ro(a5,"RL-H001",a2,"86%",a6),f.Ro("\u667a\u80fd\u624b\u8868","RL-W001",a2,"72%",a7),f.Ro("\u667a\u80fd\u5b89\u5168\u5e26","RL-B001","\u5f85\u8fde\u63a5","48%\uff08\u6700\u540e\u4e0a\u62a5\uff09",a8),f.lA(0,"\u7ed1\u5b9a\u8bbe\u5907",B.WB,new A.b_A(f),!0)],t.p)
 case"device":i=a9.d
 if(i==null)i=a5
@@ -127758,7 +127763,7 @@ if(a9==null)a9=a5
 s=t.p
 a9=A.b([new A.Q(B.aC,new A.e5(a9+" \xb7 \u68c0\u67e5",e,e),e)],s)
 B.b.R(a9,new A.a1(A.b(["\u7535\u6e90\u4e0e\u7535\u91cf","\u8fde\u63a5\u72b6\u6001","\u9ea6\u514b\u98ce\u4e0e\u626c\u58f0\u5668","\u6444\u50cf\u5934\u753b\u9762"],t.s),new A.b_D(f),t.bg))
-a9.push(f.j4(0,"\u5f00\u59cb\u6a21\u62df\u68c0\u67e5",B.WX,new A.b_E(f)))
+a9.push(f.j4(0,"开始检查",B.WX,new A.b_E(f)))
 a9=A.as(a9,B.H,B.h,B.i,0,B.m)
 return A.b([new A.Q(B.a6,new A.bP(a9,e,e),e),new A.Q(B.cv,A.W("\u68c0\u67e5\u9875\u9762\u4e0e\u7ed3\u679c\u4e3a\u8bbe\u8ba1\u6f14\u793a\uff0c\u672a\u5b9e\u9645\u68c0\u6d4b\u786c\u4ef6\u3002",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e)],s)
 case"binding":a9=t.p
@@ -127798,6 +127803,21 @@ a9.push(f.j4(0,"\u8054\u7cfb\u503c\u73ed\u5ba4",B.j1,new A.b_R(f)))
 return a9
 case"messages":a9=t.s
 s=A.b([f.S5(A.b(["\u5168\u90e8","\u4efb\u52a1","\u53cd\u9988","\u5b89\u5168"],a9))],t.p)
+// 围栏告警与研判共用事件数据，置于普通通知前；已关闭记录保持可查。
+if(window.currentUserRole==="admin" && window.RollingAdmin && ["全部","安全"].includes(f.gjj(0))){
+var _fenceMessages=window.RollingAdmin.alarmMessages().sort(function(a,b){return (a.status==="closed")-(b.status==="closed")||(a.severity==="critical"?-1:0)-(b.severity==="critical"?-1:0)||b.time.localeCompare(a.time)});
+_fenceMessages.forEach(function(ev){
+var action=new A.b_U(f);action.adminModule="events";action.eventId=ev.id;action.fenceAlert=ev.status!=="closed";
+var level=ev.status==="closed"?"已关闭":ev.severity==="critical"?"紧急告警":"重要告警";
+var tone=ev.status==="closed"?B.P:ev.severity==="critical"?B.SD:new A.t(1,0.72,0.37,0.06,B.f);
+function alertText(value,size,color,bold){return A.W(value,e,e,e,e,A.bZ(e,e,color,e,e,e,e,e,e,e,e,size,e,e,bold?B.ci:e,e,1.35,!0,e,e,e,e,e,e,e,e),e,e,e)}
+function alertRow(children){return A.bn(A.b(children,t.p),B.p,B.h,B.i,0,e)}
+var heading=alertRow([new A.ew(ev.status==="closed"?"已关闭":ev.severity==="critical"?"紧急":"重要",tone,e),new A.Q(new A.a6(8,0,0,0),alertText(ev.type==="fence"?"围栏告警":ev.category,12,B.P,!1),e),A.bp(alertText("",12,B.P,!1),1),alertText(ev.time,12,B.P,!1)]);
+var footer=alertRow([A.bp(alertText(ev.person+" · "+ev.statusLabel,12,ev.status==="handling"?B.aB:B.P,!1),1),alertText("查看详情",12,B.P,!1),B.ld]);
+var items=[new A.Q(B.aC,heading,e),new A.Q(B.vh,alertText(ev.title,16,B.O,!0),e),new A.Q(B.a6,alertText(ev.area,13,B.P,!1),e),footer];
+s.push(new A.Q(new A.a6(0,0,0,10),new A.bP(A.et(A.as(A.b(items,t.p),B.H,B.h,B.i,0,B.m),e,action,e),new A.a6(16,14,16,14),e),e));
+});
+}
 a9=new A.zg(A.b(["\u4efb\u52a1\u63d0\u9192\uff1a\u8bf7\u5b8c\u6210\u673a\u7ec4\u5de1\u68c0","\u5904\u7406\u53cd\u9988\uff1a\u6c7d\u673a\u623f\u7167\u660e\u635f\u574f","\u5b89\u5168\u63d0\u9192\uff1a\u68c0\u67e5\u5b89\u5168\u5e26\u8fde\u63a5"],a9),t.ly)
 B.b.R(s,a9.gjI(a9).mf(0,new A.b_S(f)).jo(0,new A.b_T(f),t.l7))
 return s
@@ -127811,12 +127831,19 @@ q=["\u8bf7\u6309\u8981\u6c42\u5b8c\u62101\u53f7\u673a\u7ec4\u65e5\u5e38\u5de1\u6
 p=t.p
 return A.b([new A.Q(B.a6,new A.bP(A.as(A.b([new A.Q(B.aC,new A.e5(a9,e,e),e),s,r,A.W(q,e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),f.j4(0,["\u67e5\u770b\u4efb\u52a1","\u67e5\u770b\u4e0a\u62a5","\u68c0\u67e5\u6211\u7684\u8bbe\u5907"][g],B.WC,new A.b_V(f,g))],p),B.H,B.h,B.i,0,B.m),e,e),e)],p)
 case"mine":a9=t.p
-s=A.as(A.b([new A.Q(B.aC,new A.e5(a0,B.au7,e),e),f.dl("\u73ed\u7ec4",a3),f.dl("\u5de5\u53f7","P-001"),f.fP("\u4e2a\u4eba\u4fe1\u606f","\u6240\u5c5e\u5382\u7ad9\u4e0e\u4eba\u5458\u8d44\u6599",B.X5,new A.b_W(f))],a9),B.H,B.h,B.i,0,B.m)
-r=A.as(A.b([f.fP("\u6211\u7684\u8bbe\u5907","\u5b89\u5168\u5e3d\u3001\u624b\u8868\u3001\u5b89\u5168\u5e26",B.X8,new A.b_X(f)),f.fP("\u6211\u7684\u4efb\u52a1","\u67e5\u770b\u4e2a\u4eba\u4efb\u52a1\u4e0e\u8bb0\u5f55",B.pA,new A.b_Y(f)),f.fP("\u6211\u7684\u4e0a\u62a5","\u67e5\u770b\u5904\u7406\u8fdb\u5ea6\u4e0e\u53cd\u9988",B.la,new A.b_Z(f))],a9),B.H,B.h,B.i,0,B.m)
+s=A.as(A.b([new A.Q(B.aC,new A.e5(_profileName,new A.ew(_profileRole,e,e),e),e),f.dl("\u73ed\u7ec4",_profileTeam),f.dl("\u5de5\u53f7",_profileCode),f.fP("\u4e2a\u4eba\u4fe1\u606f","\u6240\u5c5e\u5382\u7ad9\u4e0e\u4eba\u5458\u8d44\u6599",B.X5,new A.b_W(f))],a9),B.H,B.h,B.i,0,B.m)
+var _mineCards=[f.fP("\u6211\u7684\u8bbe\u5907","\u5b89\u5168\u5e3d\u3001\u624b\u8868\u3001\u5b89\u5168\u5e26",B.X8,new A.b_X(f)),f.fP("\u6211\u7684\u4efb\u52a1","\u67e5\u770b\u4e2a\u4eba\u4efb\u52a1\u4e0e\u8bb0\u5f55",B.pA,new A.b_Y(f)),f.fP("\u6211\u7684\u4e0a\u62a5","\u67e5\u770b\u5904\u7406\u8fdb\u5ea6\u4e0e\u53cd\u9988",B.la,new A.b_Z(f))];
+if(window.currentUserRole==="admin"){
+var _mLead=new A.b_U(f);_mLead.adminModule="lead";
+var _mEvents=new A.b_U(f);_mEvents.adminModule="eventsList";
+_mineCards.unshift(f.fP("核心系统作业研判","2起告警待认领 · 现场研判与复核",B.wg,_mEvents));
+_mineCards.unshift(f.fP("现场全局态势与指挥","人员分布、围栏告警与人员直拨",B.l9,_mLead));
+}
+r=A.as(A.b(_mineCards,a9),B.H,B.h,B.i,0,B.m)
 q=A.as(A.b([f.fP("\u8bbe\u7f6e","\u901a\u77e5\u3001\u632f\u52a8\u4e0e\u8d26\u53f7",B.Xn,new A.b0_(f)),f.fP("\u5e2e\u52a9\u4e0e\u53cd\u9988","\u4f7f\u7528\u8bf4\u660e\u4e0e\u95ee\u9898\u53cd\u9988",B.WL,new A.b00(f))],a9),B.H,B.h,B.i,0,B.m)
 return A.b([new A.Q(B.a6,new A.bP(s,e,e),e),new A.Q(B.a6,new A.bP(r,e,e),e),new A.Q(B.a6,new A.bP(q,e,e),e),new A.Q(B.cv,A.W("\u5de1\u68c0\u5de5\u4eba\u7aef \xb7 \u9875\u9762\u8bbe\u8ba1\u6f14\u793a",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e)],a9)
 case"profile":a9=t.p
-s=A.as(A.b([new A.Q(B.aC,new A.e5(a0,e,e),e),f.dl("\u5de5\u53f7","P-001"),f.dl("\u89d2\u8272","\u5de1\u68c0\u5de5\u4eba"),f.dl("\u73ed\u7ec4",a3),f.dl("\u5382\u7ad9","\u6f14\u793a\u5382\u7ad9 A"),f.dl("\u8d1f\u8d23\u4eba","\u738b\u73ed\u957f")],a9),B.H,B.h,B.i,0,B.m)
+s=A.as(A.b([new A.Q(B.aC,new A.e5(_profileName,e,e),e),f.dl("\u5de5\u53f7",_profileCode),f.dl("\u89d2\u8272",_profileRole),f.dl("\u73ed\u7ec4",_profileTeam),f.dl("\u5382\u7ad9","\u6f14\u793a\u5382\u7ad9 A"),f.dl("\u8d1f\u8d23\u4eba","\u738b\u73ed\u957f")],a9),B.H,B.h,B.i,0,B.m)
 return A.b([new A.Q(B.a6,new A.bP(s,e,e),e),new A.Q(B.cv,A.W("\u4eba\u5458\u8d44\u6599\u7531\u7cfb\u7edf\u7ef4\u62a4\uff0c\u5982\u6709\u9519\u8bef\u8bf7\u8054\u7cfb\u73ed\u7ec4\u957f\u3002",e,e,e,e,A.bZ(e,e,B.P,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),e)],a9)
 case"settings":a9=t.p
 return A.b([new A.Q(B.a6,new A.bP(A.as(A.b([A.bcG(B.Q,new A.b01(f),B.ap2,B.aph,f.y),A.bcG(B.Q,new A.b02(f),B.ar2,B.ar0,f.z)],a9),B.H,B.h,B.i,0,B.m),e,e),e),f.lA(0,"\u9000\u51fa\u767b\u5f55",B.WP,new A.b03(f),!0)],a9)
@@ -127829,7 +127856,7 @@ s=s?"\u6f14\u793a\u6c42\u52a9\u5df2\u751f\u6210\u3002\u771f\u5b9e\u73af\u5883\u4
 q=t.p
 s=A.b([B.Yd,new A.Q(B.aC,new A.e5(r,e,e),e),A.W(s,e,e,e,e,A.bZ(e,e,B.O,e,e,e,e,e,e,e,e,e,e,e,e,e,1.5,!0,e,e,e,e,e,e,e,e),e,e,e),f.dl("\u6c42\u52a9\u4eba",a0),f.dl("\u4f4d\u7f6e","1\u53f7\u673a\u7ec4\u6c7d\u673a\u623f\uff08\u793a\u4f8b\uff09"),f.dl("\u63a5\u6536\u65b9",d)],q)
 if(!a9.f)s.push(f.j4(0,"\u786e\u8ba4\u53d1\u9001\u6c42\u52a9\uff08\u6f14\u793a\uff09",B.lb,new A.b07()))
-if(a9.f)s.push(f.dl("\u72b6\u6001","\u7b49\u5f85\u54cd\u5e94\uff08\u672c\u5730\u6f14\u793a\uff09"))
+if(a9.f)s.push(f.dl("\u72b6\u6001","等待响应"))
 return A.b([new A.Q(B.a6,new A.bP(A.as(s,B.H,B.h,B.i,0,B.m),e,e),e),f.qA(d)],q)
 default:return A.b([B.aug],t.p)}}}
 A.aZL.prototype={
@@ -127838,10 +127865,10 @@ if(B.b.m(B.AW,l.a.c))s=m
 else{s=B.HG.h(0,l.a.c)
 s=A.DI(m,new A.DN(B.rs,m,m,m,B.tv,m,new A.aZK(a),m,m,m,m,B.im,m),A.W(s==null?"\u9875\u9762":s,m,m,m,m,m,m,m,m))}r=A.b([],t.p)
 if(B.b.m(B.AW,l.a.c)){q=l.a.c
-if(q==="home")q="\u9648\u5efa\u56fd\uff0c\u4f60\u597d"
+if(q==="home")q=window.currentUserRole==="admin"?"管理员，你好":"\u9648\u5efa\u56fd\uff0c\u4f60\u597d"
 else{q=B.HG.h(0,q)
 q.toString}p=l.a.c
-A:{if("home"===p){o="\u5de1\u68c0\u4e00\u73ed \xb7 \u5b89\u5168\u5b8c\u6210\u6bcf\u4e00\u6b21\u4f5c\u4e1a"
+A:{if("home"===p){o=window.currentUserRole==="admin"?"安监部 · 现场指挥中心":"\u5de1\u68c0\u4e00\u73ed \xb7 \u5b89\u5168\u5b8c\u6210\u6bcf\u4e00\u6b21\u4f5c\u4e1a"
 break A}if("comms"===p){o="\u8bed\u97f3\u8054\u7cfb \xb7 \u89c6\u9891\u534f\u52a9"
 break A}if("messages"===p){o="\u4efb\u52a1\u901a\u77e5 \xb7 \u534f\u4f5c\u6d88\u606f \xb7 \u5904\u7406\u53cd\u9988"
 break A}o="\u6211\u7684\u88c5\u5907 \xb7 \u5b89\u5fc3\u4f5c\u4e1a"
@@ -127894,7 +127921,7 @@ A.b0b.prototype={
 $0(){return this.a.hu(0,"device",this.b)},
 $S:0}
 A.b_a.prototype={
-$0(){if(typeof window!=="undefined"&&window.triggerEmergencySOS)window.triggerEmergencySOS();return this.a.i2(0,"sos");},
+$0(){return this.a.i2(0,"sos");},
 $S:0}
 A.b_b.prototype={
 $0(){return this.a.i2(0,"devices")},
@@ -127912,7 +127939,7 @@ A.b_J.prototype={
 $0(){return this.a.i2(0,"partners")},
 $S:0}
 A.b_U.prototype={
-$0(){if(this.adminModule==="lead"){window.openFieldLead();return null;}if(this.adminModule==="events"){window.openRollingEvents();return null;}return this.a.i2(0,"report");},
+$0(){if(this.adminModule==="devices"||this.adminModule==="people"){window.openRollingCatalog(this.adminModule);return null;}if(this.adminModule==="tasks"){window.openRollingCatalog("tasks",$.ej().a);return null;}if(this.adminModule==="lead"){window.openFieldLead();return null;}if(this.adminModule==="eventsList"||(this.adminModule==="events"&&!this.eventId)){window.openRollingEvents();return null;}if(this.adminModule==="events"){window.openRollingEvents(this.eventId);return null;}return this.a.i2(0,"report");},
 $S:0}
 A.b04.prototype={
 $0(){return this.a.i2(0,"partners")},
@@ -128009,7 +128036,7 @@ $0(){return this.a.hu(0,"report-detail",B.b.gaf($.ej().c))},
 $S:0}
 A.b_o.prototype={
 $1(a){var s=this.a
-return new A.Q(B.a6,new A.bP(A.as(A.b([s.fP(a,"\u5f85\u53d7\u7406 \xb7 \u672c\u5730\u6f14\u793a",B.la,new A.aZW(s,a))],t.p),B.H,B.h,B.i,0,B.m),null,null),null)},
+return new A.Q(B.a6,new A.bP(A.as(A.b([s.fP(a,"待受理 \xb7 ",B.la,new A.aZW(s,a))],t.p),B.H,B.h,B.i,0,B.m),null,null),null)},
 $S:73}
 A.aZW.prototype={
 $0(){return this.a.hu(0,"report-detail",this.b)},
@@ -128071,7 +128098,7 @@ return this.a.c.a1(t.J).f.fB(A.iv(s,s,s,s,s,B.t,s,A.W("\u6f14\u793a\u72b6\u6001\
 $S:0}
 A.b_D.prototype={
 $1(a){var s=this.a
-return s.dl(a,s.x?"\u68c0\u67e5\u901a\u8fc7\uff08\u6a21\u62df\uff09":"\u7b49\u5f85\u68c0\u67e5")},
+return s.dl(a,s.x?"检查通过":"\u7b49\u5f85\u68c0\u67e5")},
 $S:73}
 A.b_E.prototype={
 $0(){var s=this.a
@@ -128121,7 +128148,7 @@ return s.hu(0,"track",r==null?"\u5468\u660e":r)},
 $S:0}
 A.b_Q.prototype={
 $1(a){var s=null,r=A.W(a,s,s,s,s,A.bZ(s,s,B.O,s,s,s,s,s,s,s,s,s,s,s,s,s,1.5,!0,s,s,s,s,s,s,s,s),s,s,s)
-return new A.Q(B.a6,new A.bP(A.as(A.b([r,A.W("\u672c\u5730\u6f14\u793a\u8bb0\u5f55",s,s,s,s,A.bZ(s,s,B.P,s,s,s,s,s,s,s,s,s,s,s,s,s,1.5,!0,s,s,s,s,s,s,s,s),s,s,s)],t.p),B.H,B.h,B.i,0,B.m),s,s),s)},
+return new A.Q(B.a6,new A.bP(A.as(A.b([r,A.W("通话记录",s,s,s,s,A.bZ(s,s,B.P,s,s,s,s,s,s,s,s,s,s,s,s,s,1.5,!0,s,s,s,s,s,s,s,s),s,s,s)],t.p),B.H,B.h,B.i,0,B.m),s,s),s)},
 $S:73}
 A.b_R.prototype={
 $0(){return this.a.$1$name("\u503c\u73ed\u5ba4")},
@@ -128218,7 +128245,7 @@ A.b05.prototype={
 $1(a){return this.a.f=a},
 $S:12}
 A.b06.prototype={
-$0(){var s=null,r=this.a,q=B.c.cQ(r.f).length===0?"\u8bf7\u586b\u5199\u53cd\u9988\u5185\u5bb9":"\u53cd\u9988\u5df2\u5728\u672c\u5730\u6f14\u793a\u53d7\u7406\uff0c\u672a\u53d1\u9001\u81f3\u670d\u52a1\u5668"
+$0(){var s=null,r=this.a,q=B.c.cQ(r.f).length===0?"\u8bf7\u586b\u5199\u53cd\u9988\u5185\u5bb9":"反馈已在受理，未发送至服务器"
 return r.c.a1(t.J).f.fB(A.iv(s,s,s,s,s,B.t,s,A.W(q,s,s,s,s,s,s,s,s),s,B.bc,s,s,s,s,s,s,s,s,s,s))},
 $S:0}
 A.b07.prototype={
@@ -128334,11 +128361,11 @@ QX(a,b,c,d){return this.QY(0,b,c,d,null)},
 aOI(){var s=null
 return A.du(B.ay,A.b([B.atW,B.afz,A.j6(8,A.ban(B.XX,new A.aZz(this),s),s,s,s,8,s,s)],t.p),B.t,B.b9,s)},
 G(a){var s,r,q,p,o=this,n=null,m=A.DI(n,n,A.W(o.gvk()?"\u89c6\u9891\u901a\u8bdd":"\u8bed\u97f3\u901a\u8bdd",n,n,n,n,n,n,n,n)),l=o.gaO(0)==="connected"||o.gaO(0)==="ringing"?A.eq(!0,new A.Q(B.VM,A.yJ(B.wp,B.apl,o.gct(o),A.ub(B.cF,n,n,n,n,n,n)),n),!1,B.Q,!0):n,k=A.W(o.a.c,n,n,n,n,B.N9,n,n,n),j=o.gaO(0)
-A:{if("incoming"===j){s=(o.gvk()?"\u89c6\u9891":"\u8bed\u97f3")+"\u6765\u7535\uff08\u6a21\u62df\uff09"
+A:{if("incoming"===j){s=(o.gvk()?"\u89c6\u9891":"\u8bed\u97f3")+"来电"
 break A}if("connected"===j){s=o.w
-s="\u6a21\u62df\u63a5\u901a \xb7 "+B.e.eD(s,60)+":"+B.c.ef(B.e.k(B.e.ai(s,60)),2,"0")
+s="接通 \xb7 "+B.e.eD(s,60)+":"+B.c.ef(B.e.k(B.e.ai(s,60)),2,"0")
 break A}if("failed"===j){s="\u5bf9\u65b9\u79bb\u7ebf\uff0c\u6682\u672a\u63a5\u901a"
-break A}s="\u6b63\u5728\u547c\u53eb\uff08\u6a21\u62df\uff09"
+break A}s="正在呼叫"
 break A}r=t.p
 s=A.b([B.RF,B.aH,k,B.bS,A.W(s,n,n,n,n,B.cr,n,n,n)],r)
 if(o.gvk()&&o.gaO(0)==="connected")B.b.R(s,A.b([B.da,o.aOI(),B.bS,B.aqk],r))
@@ -133849,7 +133876,7 @@ B.oy=new A.tU(!1)
 B.iT=new A.tU(!0)
 B.Uf=new A.df("\u6570\u636e\u6807\u8bc6","\u6f14\u793a\u4f5c\u4e1a\uff0c\u4e0d\u4f5c\u4e3a\u751f\u4ea7\u4f9d\u636e",null)
 B.Ug=new A.df("\u6570\u636e\u6807\u8bc6","\u6f14\u793a\u56f4\u680f",null)
-B.Uh=new A.df("\u6570\u636e\u6807\u8bc6","\u6f14\u793a\u6570\u636e",null)
+B.Uh=new A.df("\u6570\u636e\u6807\u8bc6","",null)
 B.Ui=new A.yt(0)
 B.Uj=new A.yt(1)
 B.Uk=new A.tW(null)
@@ -134877,9 +134904,9 @@ B.yB=s(["\u0a9c\u0abe","\u0aab\u0ac7","\u0aae\u0abe","\u0a8f","\u0aae\u0ac7","\u
 B.a2d=s(["1e kwartaal","2e kwartaal","3e kwartaal","4e kwartaal"],t.s)
 B.a2e=s(["de.","du."],t.s)
 B.a2f=s(["i. e.","i. sz."],t.s)
-B.apV=new A.ae("\u6a21\u62df\u8bed\u97f3\u6765\u7535",null,null,null,null,null,null,null,null,null)
+B.apV=new A.ae("语音来电",null,null,null,null,null,null,null,null,null)
 B.afp=new A.fh("voice",B.apV,null,t.wI)
-B.ar_=new A.ae("\u6a21\u62df\u89c6\u9891\u6765\u7535",null,null,null,null,null,null,null,null,null)
+B.ar_=new A.ae("视频来电",null,null,null,null,null,null,null,null,null)
 B.afq=new A.fh("video",B.ar_,null,t.wI)
 B.a2h=s([B.afp,B.afq],t.Do)
 B.yC=s(["Ahad","Isnin","Selasa","Rabu","Khamis","Jumaat","Sabtu"],t.s)
@@ -137902,7 +137929,7 @@ B.ap4=new A.ae("\u53ef\u67e5\u770b\u793a\u4f8b\u9884\u89c8\uff0c\u793a\u4f8b\u4e
 B.ap5=new A.ae("\u9000\u51fa",null,null,null,null,null,null,null,null,null)
 B.ap7=new A.ae("\u9080\u8bf7\u4eba\u5458",null,null,null,null,null,null,null,null,null)
 B.ap8=new A.ae("\u5b89\u5168\u4f5c\u4e1a\uff0c\u5e73\u5b89\u6bcf\u4e00\u5929\uff01",null,B.Nl,null,null,null,null,null,null,null)
-B.ap9=new A.ae("\u9875\u9762\u4e0e\u72b6\u6001\u4e3a\u672c\u5730\u6f14\u793a\uff0c\u672a\u5efa\u7acb\u771f\u5b9e\u97f3\u89c6\u9891\u8fde\u63a5\u3002",null,B.aI,B.b1,null,null,null,null,null,null)
+B.ap9=new A.ae("页面与状态为，未建立真实音视频连接。",null,B.aI,B.b1,null,null,null,null,null,null)
 B.apb=new A.ae("\u754c\u9762\u9884\u89c8",null,B.dd,null,null,null,null,null,null,null)
 B.apd=new A.ae("\u9009\u62e9\u5728\u7ebf\u4eba\u5458\uff0c\u63a5\u542c\u540e\u52a0\u5165\u5f53\u524d\u901a\u8bdd",null,B.aI,null,null,null,null,null,null,null)
 B.an3=new A.o(!0,B.O,null,null,null,null,20,B.cj,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)

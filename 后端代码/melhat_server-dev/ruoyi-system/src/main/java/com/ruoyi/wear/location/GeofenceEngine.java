@@ -142,6 +142,8 @@ public class GeofenceEngine
         ingest.setSource("geofence");
         ingest.setSourceEventId(fence.getId() + "|" + personId + "|" + action + "|" + fence.getRuleVersion() + "|" + bucket);
         ingest.setType("geofence");
+        ingest.setAlarmCode("geofence." + action);
+        ingest.setAlarmName("enter".equals(action) ? "进入限制区域" : "离开指定区域");
         ingest.setSiteId(String.valueOf(fence.getSiteId()));
         ingest.setPersonId(String.valueOf(personId));
         if (device != null)

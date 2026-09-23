@@ -96,12 +96,8 @@
             <span>呼叫周边 50 米内工友就近增援</span>
           </button>
 
-          <!-- 4. 研判闭环与撤销 -->
-          <button class="sos-btn-giant sos-btn-gray" id="sos-btn-events" type="button" style="margin-top:4px;">
-            <span>📋 进入核心事件全流程研判处置 &rsaquo;</span>
-          </button>
-          
-          <button class="sos-btn-giant sos-btn-gray" id="sos-btn-cancel" type="button" style="border-color:#ffa39e;color:#cf1322;">
+          <!-- 4. 撤销 -->
+<button class="sos-btn-giant sos-btn-gray" id="sos-btn-cancel" type="button" style="border-color:#ffa39e;color:#cf1322;">
             <span>✕ 误触撤销 / 现场演练测试完成</span>
           </button>
         </div>
@@ -132,12 +128,6 @@
       alert('📢 已触发周边协作人员蜂鸣联动！\n已向周边 50 米内李志远、周明智能安全帽下发强震动与就近救援广播！');
     };
 
-    document.getElementById('sos-btn-events').onclick = () => {
-      closeSosModal();
-      if (window.openRollingEvents) {
-        window.openRollingEvents('EVT-20260921-005');
-      }
-    };
 
     // 4. 外壳原生返回键监听
     window.addEventListener('rolling-preview-back', function (e) {

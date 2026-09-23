@@ -85,6 +85,12 @@ void main() {
           await tester.pumpAndSettle();
         }
 
+        await click(key('event-level-emergency'));
+        expect(reads.last['severity'], 'emergency');
+        await click(key('event-level-warning'));
+        expect(reads.last['severity'], 'warning');
+        await click(key('event-level-warning'));
+        expect(reads.last.containsKey('severity'), isFalse);
         await click(key('filter-status-open'));
         expect(reads.last['statuses'], 'open', reason: '一次点击替换默认未关闭预设');
         await click(key('filter-status-pending_review'));

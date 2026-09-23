@@ -95,6 +95,7 @@ class WearApi {
         options: Options(
           method: method,
           headers: headers,
+          contentType: data is FormData ? 'multipart/form-data' : null,
           responseType: binary ? ResponseType.bytes : null,
           validateStatus: (_) => true,
         ),

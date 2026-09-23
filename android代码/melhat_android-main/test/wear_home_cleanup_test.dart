@@ -131,7 +131,7 @@ void main() {
               ..initialized = true
               ..token = 'test'
               ..siteId = '1'
-              ..me = identity();
+              ..me = identity(roles: ['wear_platform_admin']);
         addTearDown(session.dispose);
         await tester.pumpWidget(
           WearApp(session: session, enableNotifications: false),

@@ -342,6 +342,17 @@ public class SiteAccessService
     public Set<String> permissions()
     {
         Set<String> perms = new LinkedHashSet<String>();
+        perms.add("wear:event:report");
+        perms.add("wear:event:confirm");
+        if (!isPlatformAdmin(requireLogin())) {
+            Collections.addAll(perms, WearRoleKeys.PERM_SITE_LIST, WearRoleKeys.PERM_SITE_SELECT,
+                    WearRoleKeys.PERM_PERSON_LIST, WearRoleKeys.PERM_PERSON_QUERY,
+                    WearRoleKeys.PERM_DEVICE_LIST, WearRoleKeys.PERM_DEVICE_QUERY,
+                    WearRoleKeys.PERM_EVENT_LIST, WearRoleKeys.PERM_EVENT_QUERY,
+                    WearRoleKeys.PERM_TASK_LIST, WearRoleKeys.PERM_TASK_QUERY,
+                    "wear:inspection:check", "wear:inspection:report");
+            return perms;
+        }
         perms.add(WearRoleKeys.PERM_OVERVIEW_LIST);
         perms.add(WearRoleKeys.PERM_SITE_LIST);
         perms.add(WearRoleKeys.PERM_SITE_SELECT);
@@ -375,7 +386,6 @@ public class SiteAccessService
         perms.add(WearRoleKeys.PERM_FENCE_EXPORT);
         if (canClaimEvent())
         {
-            perms.add(WearRoleKeys.PERM_EVENT_CLAIM);
             perms.add(WearRoleKeys.PERM_CALL_START);
             perms.add(WearRoleKeys.PERM_DUTY_HANDOVER);
         }

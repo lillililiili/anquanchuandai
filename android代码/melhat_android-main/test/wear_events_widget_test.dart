@@ -1,3 +1,4 @@
+import 'event_photo_fixture.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -14,7 +15,7 @@ import 'wear_session_test.dart'
 Map<String, dynamic> _event({String status = 'claimed', int version = 1}) => {
   'id': 'event-1',
   'type': 'sos',
-  'severity': 'high',
+  'severity': 'emergency',
   'status': status,
   'occurredAt': '2026-09-10T08:00:00Z',
   'receivedAt': '2026-09-10T08:00:01Z',
@@ -105,12 +106,13 @@ void main() {
       if (request.path == '/api/v1/events/event-1/actions') {
         return reply([]);
       }
-      if (request.path == '/api/v1/events/event-1/handle') {
+      if (request.path == '/api/v1/events/event-1/report') {
         handleWrites++;
         submittedBody = request.data;
         if (!handleStarted.isCompleted) handleStarted.complete();
         return heldHandle.future;
       }
+      if (request.path.endsWith('/media')) return reply([]);
       throw StateError('Unexpected request: ${request.method} ${request.path}');
     }
 
@@ -138,6 +140,7 @@ void main() {
     await tester.enterText(firstInput, '已联系现场，人员安全');
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await attachTestCameraPhoto(tester);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
@@ -190,24 +193,28 @@ void main() {
     ) {
       await tester.pump(const Duration(milliseconds: 50));
     }
+    await tester.pump();
     expect(handleStarted.isCompleted, isTrue);
     expect(handleWrites, 1);
-    expect(submittedBody, {'comment': '已联系现场，人员安全', 'version': 1});
+    expect(Map.fromEntries((submittedBody as FormData).fields), {
+      'comment': '已联系现场，人员安全',
+      'version': '1',
+    });
 
-    serverEvent = _event(status: 'handling', version: 2);
+    serverEvent = _event(status: 'pending_review', version: 2);
     heldHandle.complete(reply(serverEvent));
     for (
       var attempt = 0;
-      attempt < 20 && find.text('处置记录已提交').evaluate().isEmpty;
+      attempt < 20 && find.text('待管理员审批').evaluate().isEmpty;
       attempt++
     ) {
       await tester.pump(const Duration(milliseconds: 50));
     }
-    expect(find.text('处置记录已提交'), findsOneWidget);
-    final submittedEditor = tester.widget<EditableText>(
-      find.descendant(of: restoredInput, matching: find.byType(EditableText)),
-    );
-    expect(submittedEditor.controller.text, '已联系现场，人员安全');
+    expect(find.text('待管理员审批'), findsWidgets);
+    expect(restoredInput, findsNothing);
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
   });
 }

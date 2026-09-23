@@ -28,6 +28,29 @@ public class WearEventController
     private EventCommandService commandService;
     @Autowired
     private EventMapService mapService;
+    @Autowired private com.ruoyi.wear.event.EventEvidenceService evidence;
+    @Autowired private com.ruoyi.wear.event.ManualSosService manualSos;
+
+    @PostMapping("/manual-sos")
+    public R<EventDto> manualSos(@RequestBody Map<String, Object> body) {
+        return R.ok(manualSos.submit(strVal(body, "requestId"), strVal(body, "location"), strVal(body, "description")));
+    }
+
+    @PostMapping(value="/{id:\\d+}/report",consumes=org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public R<EventDto> report(@PathVariable Long id,@RequestParam(defaultValue="") String comment,@RequestParam Integer version,
+            @RequestParam(required=false) List<org.springframework.web.multipart.MultipartFile> files) throws java.io.IOException {
+        return R.ok(commandService.report(id,comment,version,files));
+    }
+    @GetMapping("/{id:\\d+}/media")
+    public R<List<Map<String,Object>>> evidence(@PathVariable Long id) { return R.ok(evidence.list(id)); }
+    @GetMapping("/{id:\\d+}/media/{mediaId}")
+    public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> photo(@PathVariable Long id,@PathVariable String mediaId) {
+        Map<String,Object> data=evidence.media(id,mediaId);
+        return org.springframework.http.ResponseEntity.ok()
+            .contentType(org.springframework.http.MediaType.parseMediaType(String.valueOf(data.get("media_type"))))
+            .cacheControl(org.springframework.http.CacheControl.noStore()).header("X-Content-Type-Options","nosniff")
+            .body((org.springframework.core.io.Resource)data.get("resource"));
+    }
 
     @GetMapping("/{id:\\d+}/map-tiles/{z}/{x}/{y}")
     public R<String> mapTile(@PathVariable Long id, @PathVariable int z,
@@ -91,6 +114,11 @@ public class WearEventController
     public R<EventDto> ack(@PathVariable Long id)
     {
         return R.ok(commandService.ack(id));
+    }
+
+    @PostMapping("/{id:\\d+}/confirm")
+    public R<EventDto> confirm(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        return R.ok(commandService.confirm(id, intVal(body, "version")));
     }
 
     @PostMapping("/{id:\\d+}/claim")

@@ -20,7 +20,7 @@ public interface WearSafetyEventMapper extends BaseMapper<WearSafetyEvent>
 
     @Update("UPDATE wear_safety_event SET status = #{toStatus}, version = version + 1, "
             + "update_by = #{actor}, update_time = NOW() "
-            + "WHERE id = #{id} AND version = #{version} AND status IN ('claimed', 'handling')")
+            + "WHERE id = #{id} AND version = #{version} AND status IN ('open', 'claimed', 'handling')")
     int handleIfActive(@Param("id") Long id, @Param("toStatus") String toStatus,
             @Param("version") Integer version, @Param("actor") String actor);
 
@@ -45,6 +45,10 @@ public interface WearSafetyEventMapper extends BaseMapper<WearSafetyEvent>
             + "update_by = #{actor}, update_time = NOW() "
             + "WHERE id = #{id} AND version = #{version} AND status = 'closed'")
     int reopenIfClosed(@Param("id") Long id, @Param("version") Integer version, @Param("actor") String actor);
+
+    @Update("UPDATE wear_safety_event SET status='pending_review', version=version+1, update_by=#{actor}, update_time=NOW() "
+            + "WHERE id=#{id} AND version=#{version} AND status='closed' AND source='manual_sos' AND event_type='sos'")
+    int reopenManualSos(@Param("id") Long id, @Param("version") Integer version, @Param("actor") String actor);
 
     @Update("UPDATE wear_safety_event SET repeat_count = repeat_count + 1, update_time = NOW() WHERE id = #{id}")
     int bumpRepeat(@Param("id") Long id);

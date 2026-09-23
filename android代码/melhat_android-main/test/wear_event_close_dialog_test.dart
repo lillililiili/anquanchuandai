@@ -29,9 +29,10 @@ void main() {
       });
       var event = <String, dynamic>{
         'id': '169',
-        'type': 'realtime',
-        'status': reopen ? 'closed' : 'handling',
-        'alarmName': '静默 / 长时间静止',
+        'type': 'sos',
+        'severity': 'emergency',
+        'status': reopen ? 'closed' : 'pending_review',
+        'alarmName': 'SOS 求救',
         'claimantUserId': 'close-$mode',
         'version': 3,
         'siteId': '1',
@@ -85,7 +86,7 @@ void main() {
             ..siteId = '1'
             ..me = {
               ...identity(user: 'close-$mode'),
-              'roles': ['wear_duty', 'wear_reviewer'],
+              'roles': ['wear_platform_admin'],
               'permissions': [
                 'wear:event:list',
                 'wear:event:claim',
@@ -100,11 +101,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(OutlinedButton, '更多处置与记录'));
+      await tester.tap(find.widgetWithText(OutlinedButton, '复核与记录'));
       await tester.pumpAndSettle();
       final close = reopen
           ? find.widgetWithText(OutlinedButton, '重开')
-          : find.widgetWithText(FilledButton, '关闭');
+          : find.widgetWithText(FilledButton, '审批通过并结束').first;
       await tester.ensureVisible(close);
       await tester.pumpAndSettle();
       await tester.tap(close);
@@ -132,7 +133,7 @@ void main() {
       expect(writes, confirm ? 1 : 0);
       expect(
         event['status'],
-        reopen ? 'open' : (confirm && !fails ? 'closed' : 'handling'),
+        reopen ? 'open' : (confirm && !fails ? 'closed' : 'pending_review'),
       );
       if (!confirm || fails) {
         await tester.ensureVisible(close);

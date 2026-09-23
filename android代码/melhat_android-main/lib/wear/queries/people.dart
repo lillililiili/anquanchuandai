@@ -319,7 +319,11 @@ class _PersonPageState extends State<PersonPage> {
     String scopeKey,
   ) async {
     try {
-      final tasks = await loadPersonActiveTasks(session.api, widget.id);
+      final tasks = await loadPersonActiveTasks(
+        session.api,
+        widget.id,
+        allSite: session.isDutyAdmin,
+      );
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
         return;
       }

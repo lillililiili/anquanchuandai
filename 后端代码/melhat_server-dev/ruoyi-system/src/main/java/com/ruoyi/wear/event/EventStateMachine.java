@@ -20,8 +20,6 @@ public final class EventStateMachine
 
     private static final Set<String> TYPES = new HashSet<String>(
             Arrays.asList(SOS, FALL, IMPACT, GEOFENCE, REALTIME));
-    private static final Set<String> HIGH = new HashSet<String>(
-            Arrays.asList(SOS, FALL, IMPACT));
 
     private EventStateMachine()
     {
@@ -32,44 +30,34 @@ public final class EventStateMachine
         return type != null && TYPES.contains(type);
     }
 
-    public static boolean isHighRisk(String type)
-    {
-        return type != null && HIGH.contains(type);
-    }
-
-    public static String severityOf(String type)
-    {
-        return isHighRisk(type) ? "high" : "low";
-    }
-
     public static boolean canClaim(String status)
     {
-        return OPEN.equals(status);
+        return false;
     }
 
     public static boolean canHandle(String status)
     {
-        return CLAIMED.equals(status) || HANDLING.equals(status);
+        return OPEN.equals(status) || CLAIMED.equals(status) || HANDLING.equals(status);
     }
 
-    public static String handleTarget(String type)
+    public static String handleTarget(String severity)
     {
-        return isHighRisk(type) ? PENDING_REVIEW : HANDLING;
+        return EventSeverityPolicy.EMERGENCY.equals(severity) ? PENDING_REVIEW : CLOSED;
     }
 
     public static boolean canTransfer(String status)
     {
-        return CLAIMED.equals(status) || HANDLING.equals(status);
+        return false;
     }
 
     public static boolean canDutyClose(String type, String status)
     {
-        return !isHighRisk(type) && HANDLING.equals(status);
+        return false;
     }
 
-    public static boolean canReviewerClose(String type, String status)
+    public static boolean canReviewerClose(String severity, String status)
     {
-        return isHighRisk(type) && PENDING_REVIEW.equals(status);
+        return EventSeverityPolicy.EMERGENCY.equals(severity) && PENDING_REVIEW.equals(status);
     }
 
     public static boolean canReopen(String status)

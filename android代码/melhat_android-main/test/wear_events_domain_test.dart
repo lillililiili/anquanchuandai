@@ -8,7 +8,7 @@ void main() {
       final event = WearEvent.fromJson({
         'id': '41',
         'type': 'sos',
-        'severity': 'high',
+        'severity': 'emergency',
         'status': 'claimed',
         'personId': '7',
         'personCode': 'P-007',
@@ -37,114 +37,125 @@ void main() {
     });
   });
 
-  group('EventPolicy', () {
-    const duty = EventActor(
+  group('inspection event permissions', () {
+    const inspector = EventActor(
       userId: '12',
       roles: {'wear_duty'},
       permissions: {
         'wear:event:list',
-        'wear:event:query',
         'wear:event:claim',
         'wear:task:edit',
+        'wear:event:review',
       },
     );
-    const reader = EventActor(
-      userId: '88',
-      roles: {'wear_readonly'},
-      permissions: {'wear:event:list', 'wear:event:query'},
-    );
-    const reviewer = EventActor(
+    const formerReviewer = EventActor(
       userId: '21',
       roles: {'wear_reviewer'},
-      permissions: {'wear:event:list', 'wear:event:query', 'wear:event:review'},
+      permissions: {'*:*:*'},
     );
-
-    WearEvent event(String type, String status, {String? claimant}) =>
+    const admin = EventActor(
+      userId: '1',
+      roles: {'admin'},
+      permissions: {'*:*:*'},
+    );
+    WearEvent event(String status, {bool reminder = false}) =>
         WearEvent.fromJson({
           'id': '1',
-          'type': type,
-          'severity': {'sos', 'fall', 'impact'}.contains(type) ? 'high' : 'low',
+          'type': 'realtime',
           'status': status,
-          'claimantUserId': claimant,
-          'version': 1,
+          'claimantUserId': '99',
+          'taskMatch': 'pending',
+          'reminderOnly': reminder,
+          'severity': reminder ? 'warning' : 'emergency',
         });
-
-    test('readers can acknowledge visible events but cannot mutate state', () {
-      final open = event('sos', 'open');
-      expect(EventPolicy.can(EventCommand.ack, open, reader), isTrue);
-      expect(EventPolicy.can(EventCommand.claim, open, reader), isFalse);
-    });
-
-    test('claim, handle and transfer enforce role, status and ownership', () {
+    test('any returned group member can report without claim or ownership', () {
+      for (final status in ['open', 'claimed', 'handling']) {
+        expect(
+          EventPolicy.can(EventCommand.handle, event(status), inspector),
+          isTrue,
+        );
+        expect(
+          EventPolicy.can(EventCommand.claim, event(status), inspector),
+          isFalse,
+        );
+        expect(
+          EventPolicy.can(EventCommand.transfer, event(status), inspector),
+          isFalse,
+        );
+      }
       expect(
-        EventPolicy.can(EventCommand.claim, event('sos', 'open'), duty),
+        EventPolicy.can(
+          EventCommand.handle,
+          event('pending_review'),
+          inspector,
+        ),
+        isFalse,
+      );
+      expect(event('pending_review').statusFor(admin: false), '待管理员审批');
+    });
+    test('only administrators review, reopen and associate tasks', () {
+      for (final actor in [inspector, formerReviewer]) {
+        expect(
+          EventPolicy.can(EventCommand.close, event('pending_review'), actor),
+          isFalse,
+        );
+        expect(
+          EventPolicy.can(EventCommand.reopen, event('closed'), actor),
+          isFalse,
+        );
+        expect(
+          EventPolicy.can(EventCommand.assignTask, event('open'), actor),
+          isFalse,
+        );
+      }
+      expect(
+        EventPolicy.can(EventCommand.close, event('pending_review'), admin),
+        isTrue,
+      );
+      expect(
+        EventPolicy.can(EventCommand.reopen, event('closed'), admin),
+        isTrue,
+      );
+      expect(
+        EventPolicy.can(EventCommand.assignTask, event('open'), admin),
+        isTrue,
+      );
+    });
+    test('only server-classified reminders can confirm without a report', () {
+      expect(
+        EventPolicy.can(EventCommand.confirm, event('open'), inspector),
+        isFalse,
+      );
+      expect(
+        EventPolicy.can(
+          EventCommand.confirm,
+          event('open', reminder: true),
+          inspector,
+        ),
         isTrue,
       );
       expect(
         EventPolicy.can(
           EventCommand.handle,
-          event('sos', 'claimed', claimant: '12'),
-          duty,
-        ),
-        isTrue,
-      );
-      expect(
-        EventPolicy.can(
-          EventCommand.transfer,
-          event('sos', 'handling', claimant: '77'),
-          duty,
+          event('open', reminder: true),
+          inspector,
         ),
         isFalse,
       );
-    });
-
-    test('close and reopen follow backend risk-specific gates', () {
       expect(
         EventPolicy.can(
-          EventCommand.close,
-          event('geofence', 'handling'),
-          duty,
-        ),
-        isTrue,
-      );
-      expect(
-        EventPolicy.can(
-          EventCommand.close,
-          event('sos', 'pending_review'),
-          duty,
+          EventCommand.confirm,
+          event('closed', reminder: true),
+          inspector,
         ),
         isFalse,
       );
       expect(
         EventPolicy.can(
           EventCommand.close,
-          event('sos', 'pending_review'),
-          reviewer,
+          event('pending_review', reminder: true),
+          admin,
         ),
-        isTrue,
-      );
-      expect(
-        EventPolicy.can(EventCommand.reopen, event('sos', 'closed'), reviewer),
-        isTrue,
-      );
-    });
-
-    test('only duty operators can manually resolve a pending task match', () {
-      final pending = WearEvent.fromJson({
-        'id': '1',
-        'type': 'sos',
-        'severity': 'high',
-        'status': 'open',
-        'taskMatch': 'pending',
-        'version': 2,
-      });
-      expect(EventPolicy.can(EventCommand.assignTask, pending, duty), isTrue);
-      expect(
-        EventPolicy.can(EventCommand.assignTask, pending, reviewer),
-        isFalse,
-      );
-      expect(
-        EventPolicy.can(EventCommand.assignTask, pending, reader),
         isFalse,
       );
     });

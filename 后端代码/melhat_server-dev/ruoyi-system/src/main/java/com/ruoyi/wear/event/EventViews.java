@@ -19,7 +19,9 @@ public final class EventViews
         }
         EventDto dto = new EventDto();
         dto.setId(str(row.getId()));
+        dto.setReminderOnly(EventReminderPolicy.isReminder(row));
         dto.setType(row.getEventType());
+        dto.setDeviceType(row.getDeviceType());
         dto.setAlarmCode(row.getAlarmCode());
         dto.setAlarmName(row.getAlarmName());
         dto.setAlarmDescription(row.getAlarmDescription());
@@ -28,6 +30,7 @@ public final class EventViews
         dto.setOccurredAt(row.getOccurredAt());
         dto.setReceivedAt(row.getReceivedAt());
         dto.setPersonId(str(row.getPersonId()));
+        dto.setReporterUserId(str(row.getReporterUserId()));
         dto.setPersonCode(row.getPersonCode());
         dto.setPersonName(row.getPersonName());
         dto.setDeviceId(str(row.getDeviceId()));

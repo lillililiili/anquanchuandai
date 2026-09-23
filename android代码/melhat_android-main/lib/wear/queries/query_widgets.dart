@@ -8,11 +8,13 @@ class QueryPage extends StatelessWidget {
     required this.title,
     required this.body,
     this.subtitle,
+    this.onBack,
     this.actions = const [],
   });
 
   final String title;
   final String? subtitle;
+  final VoidCallback? onBack;
   final Widget body;
   final List<Widget> actions;
 
@@ -21,6 +23,7 @@ class QueryPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: WearColors.background,
       appBar: AppBar(
+        leading: onBack == null ? null : BackButton(onPressed: onBack),
         title: Row(
           children: [
             const WearRollingWordmark(height: 22),

@@ -114,7 +114,7 @@ void main() {
         );
         await tester.tap(find.byKey(const ValueKey('equipment-card-42')));
         await tester.pumpAndSettle();
-        expect(reads, contains('/api/v1/devices/42/assignments'));
+        expect(reads, isNot(contains('/api/v1/devices/42/assignments')));
         if (!telemetryFailure) expect(find.text('产品型号'), findsOneWidget);
         expect(writes, isEmpty);
         expect(tester.takeException(), isNull);

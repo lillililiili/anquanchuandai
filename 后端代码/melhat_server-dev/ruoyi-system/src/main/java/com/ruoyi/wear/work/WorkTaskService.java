@@ -57,6 +57,8 @@ import com.ruoyi.wear.work.mapper.WearWorkTaskRequirementMapper;
 @Service
 public class WorkTaskService
 {
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate inspectionDb;
+    @Autowired private com.ruoyi.wear.event.EventAccessService eventAccess;
     @Autowired
     private WearWorkTaskMapper taskMapper;
     @Autowired
@@ -86,7 +88,8 @@ public class WorkTaskService
 
     public WearPage<WorkTaskDto> page(int current, int size, String status, String workType)
     {
-        siteAccessService.requireLogin();
+        if (!siteAccessService.isPlatformAdmin(siteAccessService.requireLogin()))
+            throw new ServiceException("仅管理员可以查看全站作业", HttpStatus.FORBIDDEN);
         List<Long> scope = siteAccessService.listScopeSiteIds();
         if (scope.isEmpty())
         {
@@ -128,7 +131,24 @@ public class WorkTaskService
         {
             return WearPage.of(Collections.<WorkTaskDto>emptyList(), 0, current, size);
         }
+        Set<Long> taskIds = memberTaskIds();
+        if (taskIds.isEmpty()) return WearPage.of(Collections.<WorkTaskDto>emptyList(), 0, current, size);
+        current = Math.max(1, current);
+        size = Math.max(1, Math.min(100, size));
+        IPage<WearWorkTask> page = taskMapper.selectPage(new Page<WearWorkTask>(current, size),
+                new LambdaQueryWrapper<WearWorkTask>().in(WearWorkTask::getId, taskIds)
+                        .in(WearWorkTask::getSiteId, scope).orderByDesc(WearWorkTask::getId));
+        List<WorkTaskDto> records = new ArrayList<WorkTaskDto>();
+        for (WearWorkTask row : page.getRecords()) records.add(toDto(row, false));
+        return WearPage.of(records, page.getTotal(), current, size);
+    }
+
+    public Set<Long> memberTaskIds()
+    {
+        LoginUser user = siteAccessService.requireLogin();
+        List<Long> scope = siteAccessService.listScopeSiteIds();
         Set<Long> taskIds = new HashSet<Long>();
+        if (scope.isEmpty()) return taskIds;
         List<WearWorkTask> owned = taskMapper.selectList(new LambdaQueryWrapper<WearWorkTask>()
                 .eq(WearWorkTask::getOwnerUserId, user.getUserId())
                 .in(WearWorkTask::getSiteId, scope));
@@ -140,6 +160,10 @@ public class WorkTaskService
                 .eq(WearPerson::getAccountUserId, user.getUserId()).last("LIMIT 1"));
         if (me != null)
         {
+            if (!PersonEligibility.selectableForNewWork(me, true, new Date())) return taskIds;
+            for (WearWorkTask row : taskMapper.selectList(new LambdaQueryWrapper<WearWorkTask>()
+                    .eq(WearWorkTask::getGuardianPersonId, me.getId()).in(WearWorkTask::getSiteId, scope)))
+                taskIds.add(row.getId());
             List<WearWorkTaskMember> memberships = memberMapper.selectList(new LambdaQueryWrapper<WearWorkTaskMember>()
                     .eq(WearWorkTaskMember::getPersonId, me.getId()));
             for (WearWorkTaskMember item : memberships)
@@ -147,23 +171,7 @@ public class WorkTaskService
                 taskIds.add(item.getTaskId());
             }
         }
-        if (taskIds.isEmpty())
-        {
-            return WearPage.of(Collections.<WorkTaskDto>emptyList(), 0, current, size);
-        }
-        if (size > 100)
-        {
-            size = 100;
-        }
-        IPage<WearWorkTask> page = taskMapper.selectPage(new Page<WearWorkTask>(current, size),
-                new LambdaQueryWrapper<WearWorkTask>().in(WearWorkTask::getId, taskIds)
-                        .in(WearWorkTask::getSiteId, scope).orderByDesc(WearWorkTask::getId));
-        List<WorkTaskDto> records = new ArrayList<WorkTaskDto>();
-        for (WearWorkTask row : page.getRecords())
-        {
-            records.add(toDto(row, false));
-        }
-        return WearPage.of(records, page.getTotal(), current, size);
+        return taskIds;
     }
 
     public WorkTaskDto detail(Long id)
@@ -393,6 +401,7 @@ public class WorkTaskService
                     .or(w -> w.eq(WearSafetyEvent::getTaskMatch, WorkTaskStateMachine.PENDING)
                             .in(WearSafetyEvent::getPersonId, members)));
         }
+        eventAccess.scope(query);
         query.orderByDesc(WearSafetyEvent::getId).last("LIMIT 50");
         List<WearSafetyEvent> rows = eventMapper.selectList(query);
         List<EventDto> list = new ArrayList<EventDto>();
@@ -416,6 +425,9 @@ public class WorkTaskService
             throw new ServiceException("访问资源不存在", HttpStatus.NOT_FOUND);
         }
         siteAccessService.assertAuthorized(row.getSiteId());
+        if (!siteAccessService.listScopeSiteIds().contains(row.getSiteId()) ||
+                (!siteAccessService.isPlatformAdmin(siteAccessService.requireLogin()) && !memberTaskIds().contains(id)))
+            throw new ServiceException("只能查看当前组的巡检任务", HttpStatus.FORBIDDEN);
         return row;
     }
 
@@ -604,6 +616,10 @@ public class WorkTaskService
         dto.setActualStart(row.getActualStart());
         dto.setActualEnd(row.getActualEnd());
         dto.setStatus(row.getStatus());
+        int reports = inspectionDb.queryForObject("SELECT COUNT(*) FROM wear_inspection_report WHERE task_id=?", Integer.class, row.getId());
+        int remaining = inspectionDb.queryForObject("SELECT COUNT(*) FROM wear_inspection_item i WHERE task_id=? AND NOT EXISTS(SELECT 1 FROM wear_inspection_record r WHERE r.task_id=i.task_id AND r.item_id=i.id)", Integer.class, row.getId());
+        int items = inspectionDb.queryForObject("SELECT COUNT(*) FROM wear_inspection_item WHERE task_id=?", Integer.class, row.getId());
+        dto.setInspectionStatus(reports > 0 ? "abnormal" : "ended".equals(row.getStatus()) || (items > 0 && remaining == 0) ? "completed" : "in_progress");
         dto.setOwnerUserId(strId(row.getOwnerUserId()));
         dto.setGuardianPersonId(strId(row.getGuardianPersonId()));
         dto.setTicketRequired(row.getTicketRequired() != null && row.getTicketRequired().intValue() == 1);

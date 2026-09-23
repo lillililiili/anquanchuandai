@@ -54,6 +54,18 @@ class _WearAppState extends State<WearApp> {
           return '/communications';
         }
         if (path == '/login') return '/workbench';
+        if (!_session.isAdmin &&
+            !(path == '/workbench' ||
+                path == '/communications' ||
+                path == '/events' ||
+                path == '/sos-events' ||
+                path == '/tasks' ||
+                RegExp(r'^/devices/[0-9]+$').hasMatch(path) ||
+                RegExp(r'^/tasks/[^/]+$').hasMatch(path) ||
+                path == '/me' ||
+                path == '/sites')) {
+          return '/workbench';
+        }
         return null;
       },
       errorBuilder: (context, state) => Scaffold(
@@ -151,7 +163,13 @@ class _WearAppState extends State<WearApp> {
                   path: '/fences/:id',
                   builder: (_, s) => FencePage(id: s.pathParameters['id']!),
                 ),
-                GoRoute(path: '/tasks', builder: (_, _) => const TasksPage()),
+                GoRoute(
+                  path: '/tasks',
+                  builder: (_, s) => TasksPage(
+                    groupId: s.uri.queryParameters['groupId'],
+                    allSite: s.uri.queryParameters['scope'] == 'all',
+                  ),
+                ),
                 GoRoute(
                   path: '/tasks/:id',
                   builder: (_, s) => TaskPage(id: s.pathParameters['id']!),
@@ -506,9 +524,9 @@ class _WearShellState extends State<WearShell> {
                   selectedIcon: Icon(Icons.home),
                   label: '现场',
                 ),
-                const NavigationDestination(
-                  icon: Icon(Icons.call_outlined),
-                  selectedIcon: Icon(Icons.call),
+                NavigationDestination(
+                  icon: const Icon(Icons.call_outlined),
+                  selectedIcon: const Icon(Icons.call),
                   label: '通讯',
                 ),
                 NavigationDestination(

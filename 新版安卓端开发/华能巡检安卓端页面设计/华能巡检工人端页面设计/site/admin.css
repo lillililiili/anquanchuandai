@@ -88,3 +88,17 @@
 .admin-toast:empty { display:none; }
 .admin-panel svg,.admin-dialog svg { width:20px; height:20px; vertical-align:middle; }
 .admin-dialog-icon svg { width:28px; height:28px; }
+
+/* 围栏告警详情与研判列表：强调未关闭事件。 */
+.admin-alert-card { border-color:#f2b7b7; border-left:5px solid #d92d20; background:#fff5f4; }
+.admin-alert-card h3,.admin-alert-card .admin-detail-title { color:#b42318; font-weight:700; }
+.admin-alert-card .admin-badge.critical { background:#b42318; color:#fff; font-weight:700; }
+.admin-alert-card .admin-muted { color:#66515a; }
+
+/* 彻底移除所有悬浮胶囊和悬浮按钮，完全内置于页面内容中 */
+.lead-hud-banner,
+.events-top-banner,
+.events-fab {
+  display: none !important;
+}
+

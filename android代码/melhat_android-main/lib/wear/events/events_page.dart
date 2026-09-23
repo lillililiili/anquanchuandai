@@ -288,7 +288,8 @@ class _EventsPageState extends State<EventsPage> {
           controller: controller,
           onBack: _backToEvents,
           onSubmit: () => _execute(controller, EventCommand.handle),
-          onClaim: () => _execute(controller, EventCommand.claim),
+          onConfirm: () => _execute(controller, EventCommand.confirm),
+          onReview: () => _editReason(controller, EventCommand.close),
           onCommunication: () => context.push(
             Uri(
               path: '/communications',
@@ -343,13 +344,58 @@ class _EventsPageState extends State<EventsPage> {
                   WearBrandHero(
                     key: const ValueKey('wear-page-hero-events'),
                     title: '消息',
-                    subtitle: '统一接警、认领、处置与复核',
+                    subtitle: controller.actor.isAdmin
+                        ? '异常上报与管理员复核'
+                        : '进行中组内告警 · 本人设备提醒',
                     background: WearArt.eventsHero,
                   ),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _filters(controller),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            for (final level in const [
+                              ('emergency', '紧急', WearColors.danger),
+                              ('abnormal', '异常', WearColors.warning),
+                              ('warning', '警告', WearColors.online),
+                            ])
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 3,
+                                  ),
+                                  child: ChoiceChip(
+                                    key: ValueKey('event-level-${level.$1}'),
+                                    label: Center(child: Text(level.$2)),
+                                    selected:
+                                        controller.filters.severity == level.$1,
+                                    selectedColor: level.$3.withValues(
+                                      alpha: .14,
+                                    ),
+                                    labelStyle: TextStyle(
+                                      color: level.$3,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    onSelected: controller.writing
+                                        ? null
+                                        : (selected) => controller.setFilters(
+                                            controller.filters.copyWith(
+                                              severity: selected
+                                                  ? level.$1
+                                                  : '',
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        _filters(controller),
+                      ],
+                    ),
                   ),
                   if (controller.loading) ...[
                     const SizedBox(height: 8),
@@ -456,8 +502,11 @@ class _EventsPageState extends State<EventsPage> {
             '状态',
             {
               for (final e in _statuses.entries)
-                if (e.key != 'active') e.key: e.value,
-              'active': '未关闭 ${controller.inboxCount}',
+                if (e.key != 'active')
+                  e.key: !controller.actor.isAdmin && e.key == 'pending_review'
+                      ? '已上报'
+                      : e.value,
+              'active': '待处理 ${controller.inboxCount}',
             },
             presets: const {'active'},
           ),
@@ -476,7 +525,8 @@ class _EventsPageState extends State<EventsPage> {
           }),
           const InlineFilterGroup('device', '设备', _deviceTypes),
           InlineFilterGroup('flags', '其他', {
-            'mine': _quickFilterLabel('我负责', 'mine'),
+            if (controller.actor.isAdmin)
+              'mine': _quickFilterLabel('我负责', 'mine'),
             'escalated': _quickFilterLabel('已升级', 'overdue'),
           }),
         ],
@@ -494,11 +544,7 @@ class _EventsPageState extends State<EventsPage> {
               'mine',
           },
         },
-        fields: const {
-          'person': '人员 ID（可选）',
-          'task': '任务 ID（可选）',
-          'claimant': '认领人用户 ID（可选）',
-        },
+        fields: const {'person': '人员 ID（可选）', 'task': '任务 ID（可选）'},
         fieldValues: {
           'person': filters.personId,
           'task': filters.taskId,
@@ -570,7 +616,7 @@ class _EventsPageState extends State<EventsPage> {
       ),
       const SizedBox(height: 4),
       Text(
-        '共 ${controller.total} 条 · 全站未关闭 ${controller.inboxCount}',
+        '共 ${controller.total} 条 · ${controller.actor.isAdmin ? '全站未关闭' : '我的待办'} ${controller.inboxCount}',
         style: const TextStyle(color: WearColors.muted),
       ),
     ],
@@ -578,15 +624,33 @@ class _EventsPageState extends State<EventsPage> {
 
   Widget _eventRow(EventController controller, WearEvent event) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
-    child: WearCard(
-      padding: EdgeInsets.zero,
+    child: Material(
+      color: event.isEmergency ? const Color(0xFFFFF1F2) : Colors.white,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: event.isEmergency
+              ? WearColors.danger.withValues(alpha: .65)
+              : WearColors.line,
+          width: event.isEmergency ? 1.5 : 1,
+        ),
+      ),
       child: InkWell(
         key: ValueKey('wear-event-${event.id}'),
         borderRadius: BorderRadius.circular(22),
         onTap: controller.writing
             ? null
             : () => _openEvent(controller, event.id),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: _eventColor(event),
+                width: event.isEmergency ? 6 : 0,
+              ),
+            ),
+          ),
           padding: const EdgeInsets.all(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,12 +659,16 @@ class _EventsPageState extends State<EventsPage> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: _eventColor(event).withValues(alpha: .10),
+                  color: event.isEmergency
+                      ? WearColors.danger.withValues(alpha: .10)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(
-                  event.type == 'sos'
-                      ? Icons.error_rounded
+                  event.isEmergency
+                      ? Icons.sos_rounded
+                      : event.isWarning
+                      ? Icons.info_outline_rounded
                       : Icons.warning_amber_rounded,
                   color: _eventColor(event),
                 ),
@@ -610,16 +678,63 @@ class _EventsPageState extends State<EventsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      event.alarmLabel,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: WearColors.ink,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            event.alarmLabel,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: event.isEmergency
+                                  ? WearColors.danger
+                                  : WearColors.ink,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          key: ValueKey('event-grade-${event.id}'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: event.isEmergency
+                                ? WearColors.danger
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Text(
+                            event.severityLabel,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              color: event.isEmergency
+                                  ? Colors.white
+                                  : _eventColor(event),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    if (event.isEmergency && !event.isClosed)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          event.status == 'pending_review'
+                              ? '现场已上报 · 等待管理员审批'
+                              : '请优先处理 · 需管理员审批',
+                          style: const TextStyle(
+                            color: WearColors.danger,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 5),
                     Text(
-                      '${event.personName.isEmpty ? '人员未知' : event.personName} · ${event.sn.isEmpty ? '设备未知' : event.sn}',
+                      '${event.personName.isEmpty ? '人员未知' : event.personName} · ${event.deviceTypeLabel} ${event.sn.isEmpty ? '未知' : event.sn}',
                       style: const TextStyle(color: WearColors.muted),
                     ),
                     const SizedBox(height: 8),
@@ -628,21 +743,18 @@ class _EventsPageState extends State<EventsPage> {
                       runSpacing: 5,
                       children: [
                         WearBadge(
-                          text: event.statusLabel,
-                          color: _statusColor(event.status),
+                          text: event.statusFor(
+                            admin: controller.actor.isAdmin,
+                          ),
+                          color: _eventColor(event),
                         ),
                         if (event.escalated)
-                          const WearBadge(
-                            text: '已升级',
-                            color: WearColors.danger,
-                          ),
-                        if (event.demo)
-                          const WearBadge(
-                            text: '演示',
-                            color: WearColors.warning,
-                          ),
+                          WearBadge(text: '已升级', color: _eventColor(event)),
                         if (event.repeatCount > 0)
-                          WearBadge(text: '重复 ${event.repeatCount} 次'),
+                          WearBadge(
+                            text: '重复 ${event.repeatCount} 次',
+                            color: _eventColor(event),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 7),
@@ -696,7 +808,7 @@ class _EventsPageState extends State<EventsPage> {
           runSpacing: 7,
           children: [
             WearBadge(
-              text: event.statusLabel,
+              text: event.statusFor(admin: controller.actor.isAdmin),
               color: _statusColor(event.status),
             ),
             WearBadge(
@@ -766,7 +878,7 @@ class _EventsPageState extends State<EventsPage> {
             '${event.taskId} · ${_known(event.taskMatch)}',
           ),
         if (event.claimantUserId.isNotEmpty)
-          _line(Icons.badge_outlined, '当前认领人', '用户 ${event.claimantUserId}'),
+          _line(Icons.badge_outlined, '历史处置人', '用户 ${event.claimantUserId}'),
         if (event.deviceId.isNotEmpty) ...[
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -809,14 +921,14 @@ class _EventsPageState extends State<EventsPage> {
           icon: const Icon(Icons.visibility_outlined),
           label: const Text('确认看见'),
         ),
-      if (controller.can(EventCommand.claim))
+      if (controller.can(EventCommand.confirm))
         FilledButton.icon(
-          key: const ValueKey('event-claim'),
+          key: const ValueKey('event-confirm'),
           onPressed: controller.writing
               ? null
-              : () => _execute(controller, EventCommand.claim),
+              : () => _execute(controller, EventCommand.confirm),
           icon: const Icon(Icons.pan_tool_alt_outlined),
-          label: const Text('认领'),
+          label: const Text('收到'),
         ),
       if (controller.can(EventCommand.transfer))
         OutlinedButton.icon(
@@ -830,7 +942,7 @@ class _EventsPageState extends State<EventsPage> {
               ? null
               : () => _editReason(controller, EventCommand.close),
           icon: const Icon(Icons.task_alt),
-          label: const Text('关闭'),
+          label: const Text('审批通过并结束'),
         ),
       if (controller.can(EventCommand.reopen))
         OutlinedButton.icon(
@@ -920,7 +1032,7 @@ class _EventsPageState extends State<EventsPage> {
           maxLines: 5,
           textInputAction: TextInputAction.newline,
           decoration: const InputDecoration(
-            labelText: '处置说明（可选）',
+            labelText: '异常原因（选填）',
             hintText: '记录现场核实情况和已采取的措施',
             alignLabelWithHint: true,
           ),
@@ -954,7 +1066,7 @@ class _EventsPageState extends State<EventsPage> {
                     ? null
                     : () => _execute(controller, EventCommand.handle),
                 icon: const Icon(Icons.build_outlined),
-                label: const Text('提交处置'),
+                label: const Text('上报原因'),
               ),
             ),
           ],
@@ -1095,7 +1207,7 @@ class _EventsPageState extends State<EventsPage> {
       return;
     }
     final message = success
-        ? '核验已提交，内容已保存。当前状态：${controller.selected!.statusLabel}'
+        ? (controller.successMessage ?? '现场记录已提交')
         : controller.conflictMessage ??
               controller.errorMessage ??
               '当前状态不可提交，请刷新后核对';
@@ -1425,16 +1537,16 @@ class _EventsPageState extends State<EventsPage> {
 
 const _statuses = {
   'active': '未关闭',
-  'open': '待认领',
-  'claimed': '已认领',
+  'open': '待处理',
+  'claimed': '待处理',
   'handling': '处置中',
-  'pending_review': '待复核',
+  'pending_review': '待管理员审批',
   'closed': '已关闭',
 };
 
 const _types = {
   '': '全部类型',
-  'fall': '跌倒',
+  'fall': '跌落（设备告警）',
   'impact': '撞击',
   'geofence': '围栏',
   'realtime': '实时告警',
@@ -1450,6 +1562,7 @@ String _actionLabel(String value) =>
       'ack': '确认看见',
       'claim': '认领',
       'handle': '处置',
+      'manual_sos': '手动 SOS 报警',
       'transfer': '转交',
       'review': '复核',
       'close': '关闭',
@@ -1470,8 +1583,11 @@ String _taskStatusLabel(String value) =>
     }[value] ??
     (value.isEmpty ? '状态未知' : value);
 
-Color _eventColor(WearEvent event) =>
-    event.type == 'sos' ? WearColors.danger : WearColors.warning;
+Color _eventColor(WearEvent event) => event.isEmergency
+    ? WearColors.danger
+    : event.isWarning
+    ? WearColors.online
+    : WearColors.warning;
 Color _statusColor(String status) => switch (status) {
   'closed' => WearColors.muted,
   'pending_review' => WearColors.warning,

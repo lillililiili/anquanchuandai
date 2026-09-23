@@ -39,6 +39,7 @@ class EventSimulationTest
     void setup()
     {
         service = new EventIngestService();
+        ReflectionTestUtils.setField(service, "eventAccess", mock(EventAccessService.class));
         events = mock(WearSafetyEventMapper.class);
         actions = mock(WearEventActionMapper.class);
         devices = mock(WearDeviceMapper.class);

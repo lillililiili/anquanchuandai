@@ -103,28 +103,12 @@ public final class WearRoleKeys
 
     public static boolean canWriteHat(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        if (ruoyiAdminUser)
-        {
-            return true;
-        }
-        if (roleKeys == null)
-        {
-            return false;
-        }
-        for (String key : roleKeys)
-        {
-            if (HAT_WRITE.contains(key))
-            {
-                return true;
-            }
-        }
-        return false;
+        return seesAllSites(roleKeys, ruoyiAdminUser);
     }
 
     public static boolean canWritePerson(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        if (ruoyiAdminUser) return true;
-        return roleKeys != null && roleKeys.contains(PLATFORM_ADMIN);
+        return seesAllSites(roleKeys, ruoyiAdminUser);
     }
 
     public static boolean canWriteDevice(Set<String> roleKeys, boolean ruoyiAdminUser)
@@ -134,37 +118,17 @@ public final class WearRoleKeys
 
     public static boolean canClaimEvent(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        if (roleKeys == null)
-        {
-            return false;
-        }
-        return roleKeys.contains(DUTY) || roleKeys.contains(TEAM_LEAD);
+        return seesAllSites(roleKeys, ruoyiAdminUser);
     }
 
     public static boolean canReviewEvent(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        if (ruoyiAdminUser)
-        {
-            return true;
-        }
-        if (roleKeys == null)
-        {
-            return false;
-        }
-        return roleKeys.contains(REVIEWER) || roleKeys.contains(PLATFORM_ADMIN);
+        return seesAllSites(roleKeys, ruoyiAdminUser);
     }
 
     public static boolean canSimulateEvent(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        if (ruoyiAdminUser)
-        {
-            return true;
-        }
-        if (roleKeys == null)
-        {
-            return false;
-        }
-        return roleKeys.contains(DUTY) || roleKeys.contains(TEAM_LEAD) || roleKeys.contains(PLATFORM_ADMIN);
+        return seesAllSites(roleKeys, ruoyiAdminUser);
     }
 
     public static boolean canStartCall(Set<String> roleKeys, boolean ruoyiAdminUser)
@@ -174,12 +138,11 @@ public final class WearRoleKeys
 
     public static boolean canEditTask(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        if (ruoyiAdminUser) return true;
-        return canClaimEvent(roleKeys, false) || (roleKeys != null && roleKeys.contains(PLATFORM_ADMIN));
+        return seesAllSites(roleKeys, ruoyiAdminUser);
     }
 
     public static boolean canSendTts(Set<String> roleKeys, boolean ruoyiAdminUser)
     {
-        return canClaimEvent(roleKeys, ruoyiAdminUser) || canWriteDevice(roleKeys, ruoyiAdminUser);
+        return seesAllSites(roleKeys, ruoyiAdminUser);
     }
 }

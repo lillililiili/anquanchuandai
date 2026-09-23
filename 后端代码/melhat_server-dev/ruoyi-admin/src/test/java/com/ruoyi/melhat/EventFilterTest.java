@@ -27,6 +27,13 @@ class EventFilterTest
     @BeforeEach void setup()
     {
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), WearSafetyEvent.class);
+        EventAccessService eventAccess = new EventAccessService();
+        com.ruoyi.common.core.domain.model.LoginUser login = new com.ruoyi.common.core.domain.model.LoginUser();
+        login.setUserId(100L);
+        when(access.requireLogin()).thenReturn(login);
+        when(access.isPlatformAdmin(any())).thenReturn(true);
+        ReflectionTestUtils.setField(eventAccess, "sites", access);
+        ReflectionTestUtils.setField(service, "eventAccess", eventAccess);
         ReflectionTestUtils.setField(service, "eventMapper", events);
         ReflectionTestUtils.setField(service, "siteAccessService", access);
         ReflectionTestUtils.setField(service, "commandService", mock(EventCommandService.class));
@@ -47,7 +54,7 @@ class EventFilterTest
         assertEquals(2, options.size());
         assertEquals("平台新增名称", options.get(0).get("label"));
         assertEquals("belt.new_code", options.get(1).get("label"));
-        verify(access).requireLogin();
+        verify(access, atLeastOnce()).requireLogin();
     }
 
     @Test void noAuthorizedSitesReturnsNoOptionsOrEvents()

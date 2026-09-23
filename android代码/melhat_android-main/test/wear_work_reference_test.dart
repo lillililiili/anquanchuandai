@@ -38,7 +38,7 @@ void main() {
               ..initialized = true
               ..token = 'test-only'
               ..siteId = '1'
-              ..me = identity();
+              ..me = {...identity(), 'admin': true};
         addTearDown(session.dispose);
         await tester.pumpWidget(
           WearApp(session: session, enableNotifications: false),
@@ -156,18 +156,18 @@ void main() {
               ..initialized = true
               ..token = 'test-only'
               ..siteId = '1'
-              ..me = identity();
+              ..me = {...identity(), 'admin': true};
         addTearDown(session.dispose);
         await tester.pumpWidget(
           WearApp(session: session, enableNotifications: false),
         );
         await tester.pumpAndSettle();
         expect(find.text('查看待认领事件'), findsNothing);
-        expect(find.text('发起值班交接'), findsOneWidget);
         await tester.tap(find.byKey(const ValueKey('view-current-work')));
         await tester.pumpAndSettle();
         expect(find.text('作业详情'), findsOneWidget);
-        expect(find.text('只读关联'), findsOneWidget);
+        expect(find.text('进行中'), findsOneWidget);
+        expect(find.text('待核验事件'), findsNothing);
         expect(find.byType(NavigationBar), findsNothing);
         expect(find.text('REAL-041'), findsOneWidget);
         expect(find.text('参与人员 · 1 人'), findsOneWidget);
@@ -182,13 +182,11 @@ void main() {
         expect(find.text('计划时间'), findsOneWidget);
         expect(find.text('东区真实平台'), findsOneWidget);
         await open('更多作业信息');
+        await open('参与人员 · 1 人');
         await open('装备检查（1）');
         expect(find.text('设备 REAL-H77'), findsOneWidget);
         await open('装备检查（1）');
-        for (final entry in {
-          'task-person-77': '/people/77',
-          'task-event-e41': '/events?eventId=e41',
-        }.entries) {
+        for (final entry in {'task-person-77': '/people/77'}.entries) {
           final link = find.byKey(ValueKey(entry.key));
           await tester.ensureVisible(link);
           await tester.pumpAndSettle();
@@ -213,7 +211,7 @@ void main() {
               .personId,
           '77',
         );
-        expect(find.text('1 项'), findsOneWidget);
+
         expect(calls.where((r) => r.method != 'GET'), isEmpty);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();

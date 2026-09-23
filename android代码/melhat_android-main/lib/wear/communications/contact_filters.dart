@@ -63,10 +63,16 @@ class ContactFilters {
 }
 
 class ContactRoster {
-  const ContactRoster(this.people, this.devices, this.tasks);
+  const ContactRoster(
+    this.people,
+    this.devices,
+    this.tasks, {
+    this.tasksUnavailable = false,
+  });
   final List<PersonOption> people;
   final List<CommunicationDevice> devices;
   final List<JsonMap> tasks;
+  final bool tasksUnavailable;
 
   static Future<List<JsonMap>> allPages(WearApi api, String path) async {
     final records = <String, JsonMap>{};
@@ -85,27 +91,45 @@ class ContactRoster {
     }
   }
 
-  static Future<ContactRoster> load(WearApi api, {required bool lab}) async {
+  static Future<ContactRoster> load(
+    WearApi api, {
+    required bool lab,
+    bool allTasks = false,
+  }) async {
     // The call transport may be simulated; business records always belong to
     // the main backend. The lab must write its changes there before reading.
     final people = await allPages(api, '/api/v1/people');
     final devices = await loadDevices(api);
-    final tasks = await allPages(api, '/api/v1/work-tasks');
     // Listing DTOs omit membership; hydrate bounded batches, never infer a group.
     final detailed = <JsonMap>[];
-    for (var i = 0; i < tasks.length; i += 6) {
-      detailed.addAll(
-        await Future.wait(
-          tasks
-              .skip(i)
-              .take(6)
-              .map(
-                (task) async => jsonMap(
-                  await api.get('/api/v1/work-tasks/${idOf(task['id'])}'),
-                ),
-              ),
-        ),
+    var tasksUnavailable = false;
+    try {
+      final tasks = await allPages(
+        api,
+        allTasks ? '/api/v1/work-tasks' : '/api/v1/work-tasks/mine',
       );
+      for (var i = 0; i < tasks.length; i += 6) {
+        detailed.addAll(
+          await Future.wait(
+            tasks
+                .skip(i)
+                .take(6)
+                .map(
+                  (task) async => jsonMap(
+                    await api.get('/api/v1/work-tasks/${idOf(task['id'])}'),
+                  ),
+                ),
+          ),
+        );
+      }
+    } on WearApiException catch (error) {
+      if (error.code != 403 &&
+          error.code != 404 &&
+          error.code != 0 &&
+          error.code < 500) {
+        rethrow;
+      }
+      tasksUnavailable = true;
     }
     return ContactRoster(
       people
@@ -116,26 +140,71 @@ class ContactRoster {
           .toList(),
       devices,
       detailed,
+      tasksUnavailable: tasksUnavailable,
     );
   }
 
-  static Future<List<CommunicationDevice>> loadDevices(WearApi api) async {
+  /// Keep the last known association for display without treating stale
+  /// telemetry or cached capabilities as permission to contact the device.
+  static List<CommunicationDevice> unavailableDevices(
+    Iterable<CommunicationDevice> devices,
+  ) => [
+    for (final d in devices)
+      CommunicationDevice(
+        id: d.id,
+        sn: d.sn,
+        actions: const {},
+        personId: d.personId,
+        personName: d.personName,
+        typeCode: d.typeCode,
+        modelName: d.modelName,
+        online: 'unknown',
+        connectionQuality: 'unknown',
+        simulatedPresence: d.simulatedPresence,
+        demo: d.demo,
+      ),
+  ];
+
+  static Future<List<CommunicationDevice>> loadDevices(
+    WearApi api, {
+    List<CommunicationDevice> previous = const [],
+  }) async {
     final deviceRows = await allPages(api, '/api/v1/devices');
-    final devices = <JsonMap>[];
+    final previousById = {for (final device in previous) device.id: device};
+    final devices = <CommunicationDevice>[];
     for (var i = 0; i < deviceRows.length; i += 6) {
       devices.addAll(
         await Future.wait(
-          deviceRows
-              .skip(i)
-              .take(6)
-              .map(
-                (d) async =>
-                    jsonMap(await api.get('/api/v1/devices/${idOf(d['id'])}')),
-              ),
+          deviceRows.skip(i).take(6).map((d) async {
+            try {
+              return CommunicationDevice.fromJson(
+                jsonMap(await api.get('/api/v1/devices/${idOf(d['id'])}')),
+              );
+            } on WearApiException catch (error) {
+              // Authentication/scope failures must still invalidate the request.
+              if (error.code != 0 && error.code < 500 && error.code != 404) {
+                rethrow;
+              }
+              final old = previousById[idOf(d['id'])];
+              // Keep the last known association only for display. A failed
+              // detail cannot authorize calls or pretend the wearer is offline.
+              return CommunicationDevice.fromJson({
+                ...d,
+                'online': 'unknown',
+                'connectionQuality': 'unknown',
+                'capabilities': <String, dynamic>{},
+                if (old != null)
+                  'currentAssignment': {
+                    'personId': old.personId,
+                    'personName': old.personName,
+                  },
+              });
+            }
+          }),
         ),
       );
     }
-    return devices.map(CommunicationDevice.fromJson).toList();
+    return devices;
   }
 }
 

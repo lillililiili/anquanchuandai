@@ -12,6 +12,9 @@ public class WearSafetyEvent
     @TableId(type = IdType.AUTO)
     private Long id;
     private String source;
+    private String deviceType;
+    public String getDeviceType() { return deviceType; }
+    public void setDeviceType(String deviceType) { this.deviceType = deviceType; }
     private String alarmCode;
     private String alarmName;
     private String alarmDescription;
@@ -22,6 +25,9 @@ public class WearSafetyEvent
     private Date occurredAt;
     private Date receivedAt;
     private Long personId;
+    private Long reporterUserId;
+    public Long getReporterUserId() { return reporterUserId; }
+    public void setReporterUserId(Long reporterUserId) { this.reporterUserId = reporterUserId; }
     private String personCode;
     private String personName;
     private Long deviceId;

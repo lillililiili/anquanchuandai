@@ -14,19 +14,20 @@ void main() {
         final router = await openDevice(tester, requests);
         router.go('/communications');
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('多选'));
-        await tester.tap(find.text('多选'));
+        expect(find.text('多选'), findsNothing);
+        expect(find.text('清空'), findsOneWidget);
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.widgetWithText(ChoiceChip, action));
-        await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(ChoiceChip, action));
-        await tester.pumpAndSettle();
-        expect(
-          tester
-              .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, action))
-              .selected,
-          isTrue,
-        );
+        if (action == '文字播报') {
+          await tester.ensureVisible(find.text('联系人00'));
+          await tester.tap(find.text('联系人00'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('文字播报'));
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(find.text('清空'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('清空'));
+          await tester.pumpAndSettle();
+        }
         final list = find.byKey(const ValueKey('wear-communications-list'));
         final scroll = tester.widget<ListView>(list).controller!;
         await tester.scrollUntilVisible(
@@ -40,10 +41,12 @@ void main() {
         final anchor = find.text('联系人07');
         final position = tester.getTopLeft(anchor);
         final offset = scroll.offset;
+        var tapIndex = 0;
         for (final name in ['联系人07', '联系人08', '联系人07', '联系人08']) {
           expect(find.text(name).hitTestable(), findsOneWidget);
           await tester.tap(find.text(name));
           await tester.pumpAndSettle();
+          expect(find.text('${[1, 2, 1, 0][tapIndex++]} 项'), findsOneWidget);
           expect(scroll.offset, closeTo(offset, .01));
           expect(tester.getTopLeft(anchor), position);
         }

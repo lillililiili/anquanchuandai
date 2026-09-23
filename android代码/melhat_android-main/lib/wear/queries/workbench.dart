@@ -7,6 +7,9 @@ import 'query_widgets.dart';
 import 'work_reference.dart';
 import 'my_equipment_page.dart';
 import 'home_sos_banner.dart';
+import 'inspection_pages.dart';
+import 'current_work.dart';
+import '../events/manual_sos_page.dart';
 
 class WorkbenchPage extends StatefulWidget {
   const WorkbenchPage({super.key});
@@ -16,9 +19,10 @@ class WorkbenchPage extends StatefulWidget {
 }
 
 class _WorkbenchPageState extends State<WorkbenchPage> {
-  final _peopleSearch = TextEditingController();
   WearSession? _session;
   JsonMap? _summary;
+  JsonMap? _currentTask;
+  bool _taskUnavailable = false;
   List<JsonMap> _equipment = const [];
   bool _equipmentUnavailable = false;
   bool _loading = true;
@@ -40,7 +44,6 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
   @override
   void dispose() {
     _session?.refreshTick.removeListener(_refresh);
-    _peopleSearch.dispose();
     super.dispose();
   }
 
@@ -59,6 +62,15 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     }
     try {
       final result = jsonMap(await session.api.get('/api/v1/duty/summary'));
+      JsonMap? currentTask;
+      var taskUnavailable = false;
+      try {
+        currentTask = await loadCurrentWork(session);
+      } on StaleSessionException {
+        rethrow;
+      } catch (_) {
+        taskUnavailable = true;
+      }
       List<JsonMap> equipment = const [];
       var equipmentUnavailable = false;
       try {
@@ -74,6 +86,8 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
       }
       setState(() {
         _summary = result;
+        _currentTask = currentTask;
+        _taskUnavailable = taskUnavailable;
         _equipment = equipment;
         _equipmentUnavailable = equipmentUnavailable;
         _loading = false;
@@ -139,11 +153,16 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                       child: Column(
                         children: [
                           HomeSosBanner(refreshVersion: _request),
-                          _currentWorkCard(summary),
+                          _currentWorkCard(),
+                          const SizedBox(height: 12),
+                          _manualSosEntry(),
                           const SizedBox(height: 12),
                           _equipmentCard(),
                           const SizedBox(height: 12),
-                          _toolsCard(summary),
+                          if (_session!.isAdmin)
+                            _toolsCard(summary)
+                          else
+                            _inspectionTools(),
                         ],
                       ),
                     ),
@@ -226,10 +245,10 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     );
   }
 
-  Widget _currentWorkCard(JsonMap summary) {
-    final tasks = jsonList(summary['activeTasks']);
-    final task = tasks.isEmpty ? null : tasks.first;
-    final title = textOf(task?['title'], '暂无当前作业');
+  Widget _currentWorkCard() {
+    final task = _currentTask;
+    if (_taskUnavailable || task == null) return _currentWorkPlaceholder();
+    final title = textOf(task['title']);
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final height = 228.0 + (textScale - 1).clamp(0, 2) * 130;
     return Material(
@@ -278,7 +297,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                     ),
                     const Spacer(),
                     TextButton(
-                      onPressed: () => context.push('/tasks'),
+                      onPressed: () => _openGroupTasks(task),
                       child: const Text('全部作业', style: TextStyle(fontSize: 11)),
                     ),
                   ],
@@ -310,19 +329,19 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                     _metaLine(
                       Icons.person_outline,
                       '负责人',
-                      task == null ? '未关联' : workOwnerLabel(task, _session!),
+                      workOwnerLabel(task, _session!),
                     ),
                     const SizedBox(height: 5),
                     _metaLine(
                       Icons.person_outline,
                       '监护人',
-                      task == null ? '未关联' : workGuardianLabel(task),
+                      workGuardianLabel(task),
                     ),
                     const SizedBox(height: 5),
                     _metaLine(
                       Icons.description_outlined,
                       '',
-                      task == null ? '暂无来源工作票' : _ticketLine(task),
+                      _ticketLine(task),
                     ),
                   ],
                 ),
@@ -340,9 +359,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                       borderRadius: BorderRadius.circular(9),
                     ),
                   ),
-                  onPressed: () => context.push(
-                    task == null ? '/tasks' : '/tasks/${idOf(task['id'])}',
-                  ),
+                  onPressed: () => _openCurrentWork(task),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -366,6 +383,68 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
       ),
     );
   }
+
+  Future<void> _openCurrentWork(JsonMap task) async {
+    await context.push('/tasks/${idOf(task['id'])}');
+    if (mounted) await _load(silent: true);
+  }
+
+  Widget _currentWorkPlaceholder() => WearCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const WearSectionTitle('当前作业'),
+        const SizedBox(height: 18),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F1FF),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _taskUnavailable
+                  ? Icons.cloud_off_outlined
+                  : Icons.task_alt_rounded,
+              size: 30,
+              color: WearColors.brand,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          _taskUnavailable ? '当前任务加载失败' : '当前无任务',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: WearColors.ink,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _taskUnavailable ? '暂时无法确认任务状态，请重试' : '暂无待完成作业，可查看任务列表与完成记录',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: WearColors.muted,
+          ),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: _taskUnavailable
+              ? () => _load(silent: true)
+              : () => context.push('/tasks'),
+          icon: Icon(
+            _taskUnavailable ? Icons.refresh : Icons.assignment_outlined,
+            size: 18,
+          ),
+          label: Text(_taskUnavailable ? '重新加载' : '查看任务列表'),
+        ),
+      ],
+    ),
+  );
 
   Widget _metaLine(IconData icon, String label, String value) {
     return Padding(
@@ -462,167 +541,158 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
               ),
             )
           else
-            for (final item in _equipment.take(3))
-              _equipmentRow({...item, 'displayStatus': connectionLabel(item)}),
+            for (final item in _equipment.take(3)) _equipmentRow(item),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: const ValueKey('home-equipment-status'),
+              onPressed: _openMyEquipment,
+              style: TextButton.styleFrom(
+                foregroundColor: WearColors.brand,
+                backgroundColor: const Color(0xFFF0F7FF),
+                minimumSize: const Size(48, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: const Icon(Icons.battery_charging_full_rounded, size: 18),
+              label: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('设备状态'),
+                  SizedBox(width: 6),
+                  Icon(Icons.chevron_right, size: 18),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _toolsCard(JsonMap summary) => WearCard(
-    padding: const EdgeInsets.all(14),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const WearSectionTitle('现场工具'),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _peopleSearch,
-          textInputAction: TextInputAction.search,
-          onSubmitted: _openPeopleSearch,
-          decoration: InputDecoration(
-            hintText: '按姓名查找现场人员',
-            prefixIcon: const Icon(Icons.person_search_outlined),
-            suffixIcon: IconButton(
-              tooltip: '查找人员',
-              onPressed: () => _openPeopleSearch(_peopleSearch.text),
-              icon: const Icon(Icons.arrow_forward),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final twoColumns =
-                constraints.maxWidth >= 270 &&
-                MediaQuery.textScalerOf(context).scale(14) <= 20;
-            final width = twoColumns
-                ? (constraints.maxWidth - 10) / 2
-                : constraints.maxWidth;
-            return Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _tool(width, 'people', '人员档案', Icons.badge_outlined, '/people'),
-                _tool(
-                  width,
-                  'devices',
-                  '全厂设备',
-                  Icons.devices_other_outlined,
-                  '/devices',
-                ),
-                _tool(width, 'tracks', '轨迹回放', Icons.route_outlined, '/tracks'),
-                _tool(width, 'fences', '电子围栏', Icons.fence_outlined, '/fences'),
-                _tool(
-                  width,
-                  'tasks',
-                  '全部作业',
-                  Icons.assignment_outlined,
-                  '/tasks',
-                ),
-                _tool(
-                  width,
-                  'supervision',
-                  '失去监护',
-                  Icons.health_and_safety_outlined,
-                  '/supervision',
-                  count: intOf(summary['lostSupervision']),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    ),
-  );
-
-  Widget _tool(
-    double width,
-    String key,
-    String label,
-    IconData icon,
-    String route, {
-    int count = 0,
-  }) => SizedBox(
-    width: width,
-    child: Material(
-      color: const Color(0xFFF0F7FF),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        key: ValueKey('home-tool-$key'),
-        onTap: () => context.push(route),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-          child: Row(
-            children: [
-              Icon(icon, size: 22, color: WearColors.brand),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: WearColors.ink,
-                  ),
-                ),
-              ),
-              if (count > 0)
-                Text(
-                  '$count',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: WearColors.warning,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-
-  Widget _equipmentRow(JsonMap item) {
-    final status = textOf(item['displayStatus'], '状态未知');
-    final online = status == '在线';
-    return InkWell(
-      onTap: () {
-        final id = idOf(item['deviceId']);
-        if (id.isEmpty) {
-          _openMyEquipment();
-          return;
-        }
-        context.push('/devices/$id');
+  Widget _manualSosEntry() => Material(
+    color: const Color(0xFFFFF1F0),
+    borderRadius: BorderRadius.circular(14),
+    child: InkWell(
+      key: const ValueKey('home-manual-sos'),
+      borderRadius: BorderRadius.circular(14),
+      onTap: () async {
+        final id = await Navigator.of(context).push<String>(
+          MaterialPageRoute(builder: (_) => const ManualSosPage()),
+        );
+        if (!mounted || id == null) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('SOS 报警已提交，等待管理员审批')));
+        context.push('/events?eventId=${Uri.encodeComponent(id)}');
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      child: const Padding(
+        padding: EdgeInsets.all(16),
         child: Row(
           children: [
-            WearAssetImage(
-              WearArt.equipment(item['typeCode']),
-              width: 48,
-              height: 48,
-              fit: BoxFit.cover,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            const SizedBox(width: 10),
+            Icon(Icons.sos, color: Color(0xFFD92D20), size: 30),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    textOf(
-                      item['displayName'],
-                      deviceTypeLabel(item['typeCode']),
+                    '手动 SOS 报警',
+                    style: TextStyle(
+                      color: Color(0xFFB42318),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
                     ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '填写现场情况，提交管理员处理',
+                    style: TextStyle(color: WearColors.muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Color(0xFFB42318)),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _inspectionTools() => WearCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const WearSectionTitle('巡检工具'),
+        const SizedBox(height: 10),
+        _inspectionToolRow(
+          icon: Icons.assignment_outlined,
+          title: '我的任务',
+          subtitle: '查看任务与填写巡检结果',
+          highlighted: true,
+          onTap: () => context.push('/tasks'),
+        ),
+        _inspectionToolRow(
+          icon: Icons.fact_check_outlined,
+          title: '巡检记录',
+          subtitle: _recordTask == null ? '当前暂无作业' : '查看当前作业巡检进度与异常记录',
+          onTap: _recordTask == null ? null : _openInspectionRecords,
+        ),
+      ],
+    ),
+  );
+
+  void _openInspectionRecords() {
+    final task = _recordTask;
+    if (task == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            InspectionGroupTasksPage(taskId: idOf(task['id']), allTasks: false),
+      ),
+    );
+  }
+
+  JsonMap? get _recordTask =>
+      _currentTask ?? jsonList(_summary?['activeTasks']).firstOrNull;
+
+  Widget _inspectionToolRow({
+    Key? key,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback? onTap,
+    bool highlighted = false,
+    int count = 0,
+  }) => Material(
+    color: highlighted ? const Color(0xFFF5F5F5) : Colors.white,
+    child: InkWell(
+      key: key,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: WearColors.brand),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                       color: WearColors.ink,
                     ),
                   ),
+                  const SizedBox(height: 3),
                   Text(
-                    textOf(item['sn']),
+                    subtitle,
                     style: const TextStyle(
                       fontSize: 12,
                       color: WearColors.muted,
@@ -631,42 +701,232 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                 ],
               ),
             ),
-            WearStatusDot(
-              label: status,
-              color: online
-                  ? WearColors.online
-                  : status.contains('断')
-                  ? WearColors.warning
-                  : WearColors.muted,
-            ),
-            const Icon(Icons.chevron_right, color: WearColors.muted),
+            const SizedBox(width: 8),
+            if (count > 0) ...[
+              Text(
+                '$count',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: WearColors.warning,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            const Icon(Icons.chevron_right, size: 20, color: WearColors.muted),
           ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _toolsCard(JsonMap summary) => WearCard(
+    padding: const EdgeInsets.all(14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const WearSectionTitle('现场管理'),
+        const SizedBox(height: 10),
+        _tool('people', '人员档案', '查看现场人员与档案信息', Icons.badge_outlined, '/people'),
+        _tool(
+          'devices',
+          '全厂设备',
+          '查看设备状态与绑定信息',
+          Icons.devices_other_outlined,
+          '/devices',
+        ),
+        _tool(
+          'tracks',
+          '轨迹回放',
+          '查看人员与设备的历史轨迹',
+          Icons.route_outlined,
+          '/tracks',
+        ),
+        _tool('fences', '电子围栏', '查看电子围栏与区域范围', Icons.fence_outlined, '/fences'),
+        _tool(
+          'tasks',
+          '全部作业',
+          '查看作业安排与执行进度',
+          Icons.assignment_outlined,
+          '/tasks',
+        ),
+        _tool(
+          'supervision',
+          '失去监护',
+          '查看失去监护人员与异常情况',
+          Icons.health_and_safety_outlined,
+          '/supervision',
+          count: intOf(summary['lostSupervision']),
+        ),
+      ],
+    ),
+  );
+
+  Widget _tool(
+    String key,
+    String label,
+    String subtitle,
+    IconData icon,
+    String route, {
+    int count = 0,
+  }) => _inspectionToolRow(
+    key: ValueKey('home-tool-$key'),
+    icon: icon,
+    title: label,
+    subtitle: subtitle,
+    count: count,
+    onTap: () =>
+        route == '/tasks' ? _openGroupTasks(_currentTask) : context.push(route),
+  );
+
+  Widget _equipmentRow(JsonMap item) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () {
+        final id = idOf(item['deviceId']);
+        if (id.isEmpty) {
+          _openMyEquipment();
+          return;
+        }
+        if (_session!.isAdmin) {
+          context.push('/devices/$id');
+        } else {
+          _openMyEquipment();
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked =
+                constraints.maxWidth < 290 ||
+                MediaQuery.textScalerOf(context).scale(12) > 16;
+            return Row(
+              children: [
+                WearAssetImage(
+                  WearArt.equipment(item['typeCode']),
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        textOf(
+                          item['displayName'],
+                          deviceTypeLabel(item['typeCode']),
+                        ),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: WearColors.ink,
+                        ),
+                      ),
+                      Text(
+                        textOf(item['sn']),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: WearColors.muted,
+                        ),
+                      ),
+                      if (stacked) ...[
+                        const SizedBox(height: 6),
+                        _equipmentBatteryBadge(item),
+                      ],
+                    ],
+                  ),
+                ),
+                if (!stacked) ...[
+                  const SizedBox(width: 8),
+                  _equipmentBatteryBadge(item),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _dutyActions(JsonMap summary) => Align(
-    alignment: Alignment.centerRight,
-    child: TextButton(
-      key: const ValueKey('home-start-handover'),
-      style: TextButton.styleFrom(
-        foregroundColor: const Color(0xFF008BFF),
-        visualDensity: VisualDensity.compact,
-        minimumSize: const Size(48, 32),
-        padding: const EdgeInsets.symmetric(horizontal: 5),
-      ),
-      onPressed: () => context.push('/handovers'),
-      child: const Text('发起值班交接', style: TextStyle(fontSize: 11)),
-    ),
-  );
-  void _openPeopleSearch(String raw) {
-    final name = raw.trim();
+  void _openGroupTasks(JsonMap? task) {
+    final groupId = idOf(task?['id']);
     context.push(
-      Uri(
-        path: '/people',
-        queryParameters: {if (name.isNotEmpty) 'name': name},
-      ).toString(),
+      task?['workType'] == 'patrol' && groupId.isNotEmpty
+          ? '/tasks?groupId=${Uri.encodeComponent(groupId)}'
+          : '/tasks',
     );
   }
+
+  Widget _equipmentBatteryBadge(JsonMap item) {
+    final status = connectionLabel(item);
+    final raw = num.tryParse(item['battery']?.toString() ?? '');
+    // Device telemetry is a percentage; 1 means 1%, never a full battery.
+    final percent =
+        item['telemetryUnavailable'] != true &&
+            raw != null &&
+            raw.isFinite &&
+            raw >= 0 &&
+            raw <= 100
+        ? raw.round()
+        : null;
+    final current = status == '在线' && percent != null;
+    final color = !current
+        ? WearColors.muted
+        : percent <= 20
+        ? const Color(0xFFBF3434)
+        : percent <= 50
+        ? const Color(0xFFA65B00)
+        : const Color(0xFF168447);
+    final background = !current
+        ? const Color(0xFFF0F3F7)
+        : percent <= 20
+        ? const Color(0xFFFFEEEE)
+        : percent <= 50
+        ? const Color(0xFFFFF5E5)
+        : const Color(0xFFEAF8EF);
+    final battery = percent == null ? '电量未知' : '$percent%';
+    final label = status == '在线'
+        ? '$status $battery'
+        : '$status\n${percent == null ? battery : '上次 $battery'}';
+    return Semantics(
+      label:
+          '$status，${percent == null ? '电量未知' : '${current ? '电量' : '上次电量'}百分之$percent'}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            height: 1.35,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dutyActions(JsonMap summary) => !_session!.isAdmin
+      ? const SizedBox(height: 32)
+      : Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            key: const ValueKey('home-start-handover'),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF008BFF),
+              visualDensity: VisualDensity.compact,
+              minimumSize: const Size(48, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+            ),
+            onPressed: () => context.push('/handovers'),
+            child: const Text('发起值班交接', style: TextStyle(fontSize: 11)),
+          ),
+        );
 }

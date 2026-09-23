@@ -258,9 +258,9 @@ void main() {
     await controller.select('1');
     await controller.updateDraft(
       '1',
-      const EventDraft(handleComment: '现场已电话确认'),
+      const EventDraft(handleComment: '现场已电话确认', photoPaths: ['camera.jpg']),
     );
-    gateway.writeError = const EventConflict('已被认领，请刷新');
+    gateway.writeError = const EventConflict('其他组员已上报，请刷新');
     gateway.detail = _event(
       id: '1',
       status: 'claimed',
@@ -268,7 +268,7 @@ void main() {
       claimant: '77',
     );
 
-    final write = controller.execute(EventCommand.claim);
+    final write = controller.execute(EventCommand.handle);
     await Future<void>.delayed(Duration.zero);
     gateway.pageRequests.last.complete(
       EventPageData(records: [gateway.detail], total: 1, current: 1, size: 20),
@@ -277,8 +277,8 @@ void main() {
 
     expect(controller.selected?.claimantUserId, '77');
     expect(controller.draftFor('1').handleComment, '现场已电话确认');
-    expect(controller.conflictMessage, '已被认领，请刷新');
-    expect(gateway.writes, [EventCommand.claim]);
+    expect(controller.conflictMessage, '其他组员已上报，请刷新');
+    expect(gateway.writes, [EventCommand.handle]);
     controller.dispose();
   });
 
@@ -296,12 +296,13 @@ void main() {
     );
     await load;
     await controller.select('1');
+    await controller.updateDraft('1', const EventDraft(handleComment: '传感器松动', photoPaths: ['camera.jpg']));
     gateway.heldWrite = Completer<WearEvent>();
 
-    final first = controller.execute(EventCommand.claim);
-    final duplicate = await controller.execute(EventCommand.claim);
+    final first = controller.execute(EventCommand.handle);
+    final duplicate = await controller.execute(EventCommand.handle);
     expect(duplicate, isFalse);
-    expect(gateway.writes, [EventCommand.claim]);
+    expect(gateway.writes, [EventCommand.handle]);
     gateway.heldWrite!.complete(
       _event(id: '1', status: 'claimed', version: 2, claimant: '12'),
     );
@@ -317,7 +318,7 @@ void main() {
       ),
     );
     expect(await first, isTrue);
-    expect(gateway.writes, [EventCommand.claim]);
+    expect(gateway.writes, [EventCommand.handle]);
     controller.dispose();
   });
 

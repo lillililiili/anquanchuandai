@@ -41,6 +41,7 @@ import com.ruoyi.wear.work.mapper.WearWorkTaskMapper;
 @Service
 public class DutyService
 {
+    @Autowired private com.ruoyi.wear.event.EventAccessService eventAccess;
     @Autowired
     private SiteAccessService siteAccessService;
     @Autowired
@@ -71,24 +72,30 @@ public class DutyService
         data.put("unclaimed", countEvents(siteId, EventStateMachine.OPEN, null));
         data.put("mine", countMine(siteId, user.getUserId()));
         data.put("overdue", countOverdue(siteId));
-        data.put("lostSupervision", countLostSupervision(siteId));
-        int[] counts = peopleDeviceCounts(siteId);
+        data.put("lostSupervision", siteAccessService.isPlatformAdmin(user) ? countLostSupervision(siteId) : 0);
+        int[] counts = siteAccessService.isPlatformAdmin(user) ? peopleDeviceCounts(siteId) : new int[] {0, 0};
         data.put("peopleCount", Integer.valueOf(counts[0]));
         data.put("deviceCount", Integer.valueOf(counts[1]));
         List<WorkTaskDto> active = new ArrayList<WorkTaskDto>();
-        List<WearWorkTask> tasks = taskMapper.selectList(new LambdaQueryWrapper<WearWorkTask>()
+        LambdaQueryWrapper<WearWorkTask> taskQuery = new LambdaQueryWrapper<WearWorkTask>()
                 .eq(WearWorkTask::getSiteId, siteId)
                 .in(WearWorkTask::getStatus, WorkTaskStateMachine.IN_PROGRESS, WorkTaskStateMachine.PAUSED, WorkTaskStateMachine.READY)
-                .orderByDesc(WearWorkTask::getId).last("LIMIT 10"));
+                .orderByDesc(WearWorkTask::getId).last("LIMIT 10");
+        if (!siteAccessService.isPlatformAdmin(user))
+        {
+            Set<Long> memberIds = workTaskService.memberTaskIds();
+            if (memberIds.isEmpty()) taskQuery.eq(WearWorkTask::getId, -1L);
+            else taskQuery.in(WearWorkTask::getId, memberIds);
+        }
+        List<WearWorkTask> tasks = taskMapper.selectList(taskQuery);
         for (WearWorkTask task : tasks)
         {
             active.add(workTaskService.requireDto(task.getId()));
         }
         data.put("activeTasks", active);
         List<Object> recent = new ArrayList<Object>();
-        List<WearSafetyEvent> events = eventMapper.selectList(new LambdaQueryWrapper<WearSafetyEvent>()
-                .eq(WearSafetyEvent::getSiteId, siteId)
-                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED)
+        List<WearSafetyEvent> events = eventMapper.selectList(eventAccess.actionable(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>())
+                .eq(WearSafetyEvent::getSiteId, siteId))
                 .orderByDesc(WearSafetyEvent::getId).last("LIMIT 8"));
         for (WearSafetyEvent event : events)
         {
@@ -333,23 +340,19 @@ public class DutyService
         {
             query.eq(WearSafetyEvent::getClaimantUserId, claimant);
         }
-        return toInt(eventMapper.selectCount(query));
+        return toInt(eventMapper.selectCount(eventAccess.scope(query)));
     }
 
     private int countMine(Long siteId, Long userId)
     {
-        return toInt(eventMapper.selectCount(new LambdaQueryWrapper<WearSafetyEvent>()
-                .eq(WearSafetyEvent::getSiteId, siteId)
-                .eq(WearSafetyEvent::getClaimantUserId, userId)
-                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED)));
+        return toInt(eventMapper.selectCount(eventAccess.actionable(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>())
+                .eq(WearSafetyEvent::getSiteId, siteId))));
     }
 
     private int countOverdue(Long siteId)
     {
-        return toInt(eventMapper.selectCount(new LambdaQueryWrapper<WearSafetyEvent>()
-                .eq(WearSafetyEvent::getSiteId, siteId)
-                .eq(WearSafetyEvent::getEscalated, 1)
-                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED)));
+        return toInt(eventMapper.selectCount(eventAccess.actionable(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>())
+                .eq(WearSafetyEvent::getSiteId, siteId).eq(WearSafetyEvent::getEscalated, 1))));
     }
 
     private int countLostSupervision(Long siteId)
@@ -387,9 +390,9 @@ public class DutyService
     private List<String> defaultEventIds(Long siteId, Long userId)
     {
         List<String> ids = new ArrayList<String>();
-        List<WearSafetyEvent> rows = eventMapper.selectList(new LambdaQueryWrapper<WearSafetyEvent>()
+        List<WearSafetyEvent> rows = eventMapper.selectList(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>())
                 .eq(WearSafetyEvent::getSiteId, siteId)
-                .eq(WearSafetyEvent::getClaimantUserId, userId)
+                .ne(WearSafetyEvent::getStatus, EventStateMachine.PENDING_REVIEW)
                 .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED).orderByAsc(WearSafetyEvent::getId).last("FOR UPDATE"));
         for (WearSafetyEvent row : rows)
         {

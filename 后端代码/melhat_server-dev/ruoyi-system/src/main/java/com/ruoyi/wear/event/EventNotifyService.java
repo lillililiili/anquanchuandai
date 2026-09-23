@@ -17,6 +17,7 @@ import com.ruoyi.wear.site.mapper.WearSiteAccountMapper;
 @Service
 public class EventNotifyService
 {
+    @Autowired private EventAccessService eventAccess;
     @Autowired
     private WearSiteAccountMapper siteAccountMapper;
 
@@ -53,9 +54,6 @@ public class EventNotifyService
 
     private void sendNow(WearSafetyEvent event)
     {
-        List<WearSiteAccount> grants = siteAccountMapper.selectList(new LambdaQueryWrapper<WearSiteAccount>()
-                .eq(WearSiteAccount::getSiteId, event.getSiteId())
-                .eq(WearSiteAccount::getStatus, "0"));
         Map<String, Object> payload = new LinkedHashMap<String, Object>();
         payload.put("type", "wear.event");
         payload.put("eventId", String.valueOf(event.getId()));
@@ -63,13 +61,9 @@ public class EventNotifyService
         payload.put("severity", event.getSeverity());
         payload.put("demo", event.getDemo() != null && event.getDemo().intValue() == 1);
         String json = JSON.toJSONString(payload);
-        for (WearSiteAccount grant : grants)
+        for (Long userId : eventAccess.recipients(event))
         {
-            if (grant.getUserId() == null)
-            {
-                continue;
-            }
-            String uid = String.valueOf(grant.getUserId());
+            String uid = String.valueOf(userId);
             WebSocketSever.sendMessageByUser(uid + "_1", json);
             WebSocketSever.sendMessageByUser(uid + "_2", json);
         }

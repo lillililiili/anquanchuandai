@@ -58,7 +58,8 @@ class LabCallsModel extends ChangeNotifier {
   bool _ownsLock = false;
   bool _pendingStart = false;
 
-  bool get eligible => session.me != null && session.siteId != null;
+  bool get eligible =>
+      session.me != null && session.siteId != null && session.isAdmin;
   bool get canViewHelmetVideo =>
       (session.me?['admin'] == true || session.can('wear:call:start')) &&
       (session.me?['admin'] == true ||

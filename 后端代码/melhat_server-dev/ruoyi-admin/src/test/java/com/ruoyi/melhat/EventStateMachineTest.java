@@ -9,31 +9,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EventStateMachineTest {
 
-    @Test
-    void sosFallImpactAreHighRisk() {
-        assertTrue(EventStateMachine.isHighRisk("sos"));
-        assertTrue(EventStateMachine.isHighRisk("fall"));
-        assertTrue(EventStateMachine.isHighRisk("impact"));
-        assertEquals("high", EventStateMachine.severityOf("sos"));
-        assertFalse(EventStateMachine.isHighRisk("geofence"));
-        assertEquals("low", EventStateMachine.severityOf("geofence"));
-        assertEquals("low", EventStateMachine.severityOf("realtime"));
+    @Test void onlyKnownProtocolTypesAreAccepted() {
+        assertTrue(EventStateMachine.isKnownType("fall"));
+        assertTrue(EventStateMachine.isKnownType("sos"));
+        assertFalse(EventStateMachine.isKnownType("invented_detection"));
     }
 
     @Test
     void claimOnlyFromOpen() {
-        assertTrue(EventStateMachine.canClaim("open"));
+        assertFalse(EventStateMachine.canClaim("open"));
         assertFalse(EventStateMachine.canClaim("claimed"));
         assertFalse(EventStateMachine.canClaim("closed"));
     }
 
     @Test
     void handleMovesHighRiskToReview() {
-        assertEquals("pending_review", EventStateMachine.handleTarget("sos"));
-        assertEquals("handling", EventStateMachine.handleTarget("geofence"));
+        assertEquals("pending_review", EventStateMachine.handleTarget("emergency"));
+        assertEquals("closed", EventStateMachine.handleTarget("abnormal"));
         assertTrue(EventStateMachine.canHandle("claimed"));
         assertTrue(EventStateMachine.canHandle("handling"));
-        assertFalse(EventStateMachine.canHandle("open"));
+        assertTrue(EventStateMachine.canHandle("open"));
         assertFalse(EventStateMachine.canHandle("pending_review"));
     }
 
@@ -41,9 +36,9 @@ class EventStateMachineTest {
     void dutyCannotCloseHighRisk() {
         assertFalse(EventStateMachine.canDutyClose("sos", "handling"));
         assertFalse(EventStateMachine.canDutyClose("sos", "pending_review"));
-        assertTrue(EventStateMachine.canReviewerClose("sos", "pending_review"));
-        assertFalse(EventStateMachine.canReviewerClose("sos", "handling"));
-        assertTrue(EventStateMachine.canDutyClose("geofence", "handling"));
+        assertTrue(EventStateMachine.canReviewerClose("emergency", "pending_review"));
+        assertFalse(EventStateMachine.canReviewerClose("emergency", "handling"));
+        assertFalse(EventStateMachine.canDutyClose("geofence", "handling"));
         assertFalse(EventStateMachine.canDutyClose("geofence", "claimed"));
     }
 
@@ -51,7 +46,7 @@ class EventStateMachineTest {
     void reopenOnlyFromClosed() {
         assertTrue(EventStateMachine.canReopen("closed"));
         assertFalse(EventStateMachine.canReopen("open"));
-        assertTrue(EventStateMachine.canTransfer("claimed"));
+        assertFalse(EventStateMachine.canTransfer("claimed"));
         assertFalse(EventStateMachine.canTransfer("open"));
     }
 }

@@ -35,6 +35,7 @@ import com.ruoyi.wear.work.WorkTaskStateMachine;
 @Service
 public class EventIngestService
 {
+    @Autowired private EventAccessService eventAccess;
     @Autowired
     private com.ruoyi.wear.device.mapper.WearProductModelMapper modelMapper;
     @Autowired
@@ -134,6 +135,9 @@ public class EventIngestService
     @Transactional(rollbackFor = Exception.class)
     public EventDto ingest(IngestRequest request)
     {
+        if (request != null && request.getSource() != null
+                && ManualSosService.SOURCE.equalsIgnoreCase(request.getSource().trim()))
+            throw new ServiceException("手动 SOS 必须由登录账号提交", HttpStatus.BAD_REQUEST);
         if (request == null || StringUtils.isEmpty(request.getSource()) || StringUtils.isEmpty(request.getSourceEventId())
                 || StringUtils.isEmpty(request.getType()) || StringUtils.isEmpty(request.getSiteId()))
         {
@@ -143,6 +147,11 @@ public class EventIngestService
         {
             throw new ServiceException("不支持的事件类型", HttpStatus.BAD_REQUEST);
         }
+        if ((StringUtils.isEmpty(request.getAlarmName()) || request.getAlarmName().trim().isEmpty())
+                && (StringUtils.isEmpty(request.getAlarmCode()) || request.getAlarmCode().trim().isEmpty()))
+            throw new ServiceException("告警必须提供名称或有效编码",HttpStatus.BAD_REQUEST);
+        if ("告警名称未提供".equals(StringUtils.trim(request.getAlarmName())))
+            throw new ServiceException("告警名称无效",HttpStatus.BAD_REQUEST);
         validateAlarmText(request.getAlarmCode(), 128);
         validateAlarmText(request.getAlarmName(), 255);
         validateAlarmText(request.getAlarmDescription(), 1000);
@@ -165,12 +174,18 @@ public class EventIngestService
         row.setAlarmCode(request.getAlarmCode());
         row.setAlarmName(request.getAlarmName());
         row.setAlarmDescription(request.getAlarmDescription());
-        row.setSeverity(EventStateMachine.severityOf(request.getType()));
+
         row.setStatus(EventStateMachine.OPEN);
         row.setOccurredAt(occurred);
         row.setReceivedAt(now);
         row.setSiteId(siteId);
         applySnapshot(row, request, occurred);
+        if (row.getDeviceId() != null) {
+            WearDevice sourceDevice = deviceMapper.selectById(row.getDeviceId());
+            com.ruoyi.wear.device.domain.WearProductModel sourceModel = sourceDevice == null ? null : modelMapper.selectById(sourceDevice.getModelId());
+            row.setDeviceType(sourceModel == null ? "" : sourceModel.getTypeCode());
+        }
+        row.setSeverity(EventSeverityPolicy.classify(row));
         applyLocation(row, request);
         row.setRepeatCount(0);
         row.setEscalated(0);
@@ -213,8 +228,8 @@ public class EventIngestService
             action.setCreateTime(now);
             actionMapper.insert(action);
         }
-        fillInbox(row);
         eventTaskMatchService.applyOnInsert(row);
+        fillInbox(row);
         notifyService.notifyAfterCommit(row);
         return EventViews.toDto(eventMapper.selectById(row.getId()));
     }
@@ -299,16 +314,7 @@ public class EventIngestService
 
     private void fillInbox(WearSafetyEvent row)
     {
-        List<WearSiteAccount> grants = siteAccountMapper.selectList(new LambdaQueryWrapper<WearSiteAccount>()
-                .eq(WearSiteAccount::getSiteId, row.getSiteId())
-                .eq(WearSiteAccount::getStatus, "0"));
-        for (WearSiteAccount grant : grants)
-        {
-            if (grant.getUserId() != null)
-            {
-                inboxMapper.insertIgnore(grant.getUserId(), row.getId());
-            }
-        }
+        for (Long userId : eventAccess.recipients(row)) inboxMapper.insertIgnore(userId, row.getId());
     }
 
     private Date parseTime(String raw)
