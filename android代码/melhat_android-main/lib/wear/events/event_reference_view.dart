@@ -39,10 +39,11 @@ class _EventReferenceViewState extends State<EventReferenceView> {
         .draftFor(widget.controller.selected!.id)
         .handleComment,
   );
-  bool _demoJoined = false;
-  final _legacyAnchor = GlobalKey();
+  // 随协助组与事件记录 UI 一并停用，保留以便后续恢复。
+  // bool _demoJoined = false;
+  // final _legacyAnchor = GlobalKey();
   final _formAnchor = GlobalKey();
-  final _legacyController = ExpansibleController();
+  // final _legacyController = ExpansibleController();
   EventController get c => widget.controller;
   WearEvent get e => c.selected!;
   bool get sos => e.type == 'sos';
@@ -54,7 +55,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
   @override
   void dispose() {
     _note.dispose();
-    _legacyController.dispose();
+    // _legacyController.dispose();
     super.dispose();
   }
 
@@ -240,6 +241,8 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                           ..._assessment(),
                         gap(),
                         if (!e.isWarning && c.actor.isAdmin) _communication(),
+                        // 按要求隐藏事件记录卡片，保留原实现。
+                        /*
                         gap(),
                         card(
                           Theme(
@@ -269,6 +272,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                             ),
                           ),
                         ),
+                        */
                       ],
                     ),
                   ),
@@ -603,6 +607,8 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           icon: const Icon(Icons.call_outlined, size: 20),
           label: const Text('联系现场'),
         ),
+        // 按要求隐藏协助组、加入/结束协助及硬件提示，保留联系现场。
+        /*
         if (sos) ...[
           line(),
           infoRow(
@@ -643,9 +649,12 @@ class _EventReferenceViewState extends State<EventReferenceView> {
             style: TextStyle(fontSize: 10, color: _muted),
           ),
         ],
+        */
       ],
     ),
   );
+  // 协助组入口停用时，不启用本地演示交互。
+  /*
   Future<void> _assist() async {
     await showDialog<void>(
       context: context,
@@ -678,4 +687,5 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       ),
     );
   }
+  */
 }

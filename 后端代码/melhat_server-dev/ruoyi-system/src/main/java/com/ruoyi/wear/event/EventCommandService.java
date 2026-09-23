@@ -164,10 +164,12 @@ public class EventCommandService
             if (siteAccessService.requireLogin().getUserId().equals(event.getReporterUserId()))
                 throw new ServiceException("报警人与审批人不能是同一账号", 403);
         } else {
-        List<WearEventAction> reports = actionMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WearEventAction>()
-                .eq(WearEventAction::getEventId,id).eq(WearEventAction::getAction,"handle").orderByDesc(WearEventAction::getId).last("LIMIT 1"));
-        if(reports.isEmpty()) throw new ServiceException("请先完成现场上报",409);
-        if(actor.equals(reports.get(0).getActor())) throw new ServiceException("现场上报人与审批人不能是同一账号",403);
+            List<WearEventAction> reports = actionMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WearEventAction>()
+                    .eq(WearEventAction::getEventId,id).eq(WearEventAction::getAction,"handle").orderByDesc(WearEventAction::getId).last("LIMIT 1"));
+            if(reports.isEmpty()) throw new ServiceException("请先完成现场上报",409);
+            // Device SOS keeps both workflow steps, but an administrator may perform both.
+            if(!"sos".equals(event.getEventType()) && actor.equals(reports.get(0).getActor()))
+                throw new ServiceException("现场上报人与审批人不能是同一账号",403);
         }
         String from = EventStateMachine.PENDING_REVIEW;
         int rows = eventMapper.closeIfStatus(id, from, version, actor);

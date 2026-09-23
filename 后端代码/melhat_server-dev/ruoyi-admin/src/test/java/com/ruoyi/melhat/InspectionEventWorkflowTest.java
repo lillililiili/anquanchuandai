@@ -121,6 +121,31 @@ class InspectionEventWorkflowTest {
         service.close(1L,"已核实，通过",1);
         verify(events).closeIfStatus(1L,"pending_review",1,"inspector");
     }
+    @Test void administratorCanApproveOwnDeviceSosReportWithNormalGuardsAndAudit() {
+        ((LoginUser)SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser().setUserName("admin");
+        row.setEventType("sos");row.setSource("simulator");row.setDeviceType("helmet");
+        row.setSeverity("emergency");row.setStatus("pending_review");
+        // A pending status alone cannot replace an actual field report.
+        assertThrows(ServiceException.class,()->service.close(1L,"已核实",1));
+        com.ruoyi.wear.event.domain.WearEventAction report=new com.ruoyi.wear.event.domain.WearEventAction();
+        report.setActor("admin");
+        when(actions.selectList(any())).thenReturn(Collections.singletonList(report));
+        doThrow(new ServiceException("仅管理员可审批",403)).when(sites).assertCanReviewEvent();
+        assertThrows(ServiceException.class,()->service.close(1L,"已核实",1));
+        verify(events,never()).closeIfStatus(anyLong(),anyString(),anyInt(),anyString());
+        doNothing().when(sites).assertCanReviewEvent();
+        // An outdated version still fails without adding a close record.
+        when(events.closeIfStatus(1L,"pending_review",1,"admin")).thenReturn(0);
+        assertThrows(ServiceException.class,()->service.close(1L,"已核实",1));
+        verify(actions,never()).insert(any());
+        when(events.closeIfStatus(1L,"pending_review",1,"admin")).thenAnswer(call->{
+            row.setStatus("closed");row.setVersion(2);return 1;
+        });
+        assertEquals("closed",service.close(1L,"现场已确认安全",1).getStatus());
+        verify(actions).insert(argThat(action -> "close".equals(action.getAction())
+                && "admin".equals(action.getActor()) && "closed".equals(action.getToStatus())));
+        assertThrows(ServiceException.class,()->service.close(1L,"重复审批",1));
+    }
     @Test void emptyOptionalReportClosesAbnormalButEmergencyStillNeedsReview() throws Exception {
         when(events.handleIfActive(1L,"closed",1,"inspector")).thenReturn(1);
         service.report(1L,null,1,null);

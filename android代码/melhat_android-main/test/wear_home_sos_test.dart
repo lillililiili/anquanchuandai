@@ -121,7 +121,9 @@ void main() {
           'id': '19',
           'type': 'sos',
           'siteId': '1',
-          'status': closed ? 'closed' : 'handling',
+          'status': closed ? 'closed' : 'pending_review',
+          'severity': 'emergency',
+          'version': closed ? 4 : 3,
           'personName': '测试人员',
           'demo': true,
         };
@@ -129,7 +131,13 @@ void main() {
             WearSession(
                 credentials: MemoryCredentials(),
                 dio: transport((r) {
-                  if (r.method != 'GET') writes++;
+                  if (r.method != 'GET') {
+                    expect(r.path, '/api/v1/events/19/close');
+                    expect(r.data, {'reason': '现场已确认安全', 'version': 3});
+                    writes++;
+                    closed = true;
+                    return reply(event());
+                  }
                   if (r.path == '/api/v1/duty/summary') {
                     return reply({
                       'activeTasks': [
@@ -164,7 +172,13 @@ void main() {
                 }),
               )
               ..initialized = true
-              ..me = identity(user: 'home-sos-$scale')
+              ..me = {
+                ...identity(
+                  user: 'home-sos-$scale',
+                  roles: ['wear_platform_admin'],
+                ),
+                'permissions': ['wear:event:list', 'wear:event:review'],
+              }
               ..siteId = '1'
               ..token = 'test';
         addTearDown(session.dispose);
@@ -188,11 +202,26 @@ void main() {
         );
         expect(detail.controller.selected!.id, '19');
         expect(detail.controller.selected!.type, 'sos');
-        closed = true;
+        final approve = find.widgetWithText(FilledButton, '审批通过并结束');
+        await tester.ensureVisible(approve);
+        await tester.tap(approve);
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(TextField),
+          ),
+          '现场已确认安全',
+        );
+        await tester.tap(find.text('确认提交'));
+        await tester.pumpAndSettle();
+        expect(closed, isTrue);
+        expect(detail.controller.selected!.isClosed, isTrue);
+        expect(approve, findsNothing);
         GoRouter.of(tester.element(find.byType(EventReferenceView))).pop();
         await tester.pumpAndSettle();
         expect(banner, findsNothing);
-        expect(writes, 0);
+        expect(writes, 1);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
       },
