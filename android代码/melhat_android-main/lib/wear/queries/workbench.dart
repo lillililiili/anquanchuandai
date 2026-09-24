@@ -160,7 +160,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                           _equipmentCard(),
                           const SizedBox(height: 12),
                           if (_session!.isAdmin)
-                            _toolsCard(summary)
+                            _toolsCard()
                           else
                             _inspectionTools(),
                         ],
@@ -719,7 +719,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     ),
   );
 
-  Widget _toolsCard(JsonMap summary) => WearCard(
+  Widget _toolsCard() => WearCard(
     padding: const EdgeInsets.all(14),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -735,27 +735,11 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
           '/devices',
         ),
         _tool(
-          'tracks',
-          '轨迹回放',
-          '查看人员与设备的历史轨迹',
-          Icons.route_outlined,
-          '/tracks',
-        ),
-        _tool('fences', '电子围栏', '查看电子围栏与区域范围', Icons.fence_outlined, '/fences'),
-        _tool(
           'tasks',
           '全部作业',
           '查看作业安排与执行进度',
           Icons.assignment_outlined,
           '/tasks',
-        ),
-        _tool(
-          'supervision',
-          '失去监护',
-          '查看失去监护人员与异常情况',
-          Icons.health_and_safety_outlined,
-          '/supervision',
-          count: intOf(summary['lostSupervision']),
         ),
       ],
     ),

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../core.dart';
 import 'event_controller.dart';
 import 'event_models.dart';
@@ -22,6 +23,7 @@ class ApiEventGateway implements EventGateway {
   ) async {
     return _fresh(() async {
       if (filters.taskId.isNotEmpty &&
+          filters.severity.isEmpty &&
           filters.alarmCode.isEmpty &&
           filters.statuses.isEmpty &&
           filters.types.isEmpty &&
@@ -68,6 +70,7 @@ class ApiEventGateway implements EventGateway {
               filters.status.isNotEmpty &&
               filters.status != 'active')
             'status': filters.status,
+          if (filters.severity.isNotEmpty) 'severity': filters.severity,
           if (filters.type.isNotEmpty) 'type': filters.type,
           if (filters.alarmCode.isNotEmpty) 'alarmCode': filters.alarmCode,
           if (filters.deviceTypes.isNotEmpty)
@@ -140,11 +143,20 @@ class ApiEventGateway implements EventGateway {
     return _fresh(() async {
       final data = switch (command) {
         EventCommand.ack => null,
-        EventCommand.claim => <String, dynamic>{'version': event.version},
-        EventCommand.handle => <String, dynamic>{
+        EventCommand.claim ||
+        EventCommand.confirm => <String, dynamic>{'version': event.version},
+        EventCommand.handle => FormData.fromMap({
           'comment': draft.handleComment.trim(),
           'version': event.version,
-        },
+          'files': await Future.wait(
+            draft.photoPaths.map(
+              (path) async => MultipartFile.fromFile(
+                path,
+                filename: path.replaceAll('\\', '/').split('/').last,
+              ),
+            ),
+          ),
+        }),
         EventCommand.transfer => <String, dynamic>{
           'toUserId': draft.transferUserId,
           'reason': draft.transferReason.trim(),
@@ -166,6 +178,8 @@ class ApiEventGateway implements EventGateway {
       try {
         final actionPath = command == EventCommand.assignTask
             ? 'task'
+            : command == EventCommand.handle
+            ? 'report'
             : command.name;
         return WearEvent.fromJson(
           jsonMap(

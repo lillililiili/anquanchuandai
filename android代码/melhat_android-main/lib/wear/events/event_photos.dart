@@ -132,12 +132,12 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       const Text(
-        '现场照片 / 视频（选填）',
+        '现场照片 / 视频（必填）',
         style: TextStyle(fontWeight: FontWeight.w700, color: WearColors.ink),
       ),
       const SizedBox(height: 6),
       const Text(
-        '最多6个；照片10MB、视频50MB，合计100MB，提交时上传',
+        '至少1个，最多6个；照片10MB、视频50MB，合计100MB，提交时上传',
         style: TextStyle(color: WearColors.muted, fontSize: 12),
       ),
       const SizedBox(height: 10),

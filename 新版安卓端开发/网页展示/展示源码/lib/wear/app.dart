@@ -8,6 +8,9 @@ import 'notifications.dart';
 import 'mine_page.dart';
 import 'duty_pages.dart';
 import 'queries/queries.dart';
+import 'queries/person_management.dart';
+import 'queries/account_recovery.dart';
+import 'queries/fence_editor.dart';
 import 'events/events_page.dart';
 import 'events/sos_events_page.dart';
 import 'communications/communications.dart';
@@ -51,6 +54,18 @@ class _WearAppState extends State<WearApp> {
           return '/communications';
         }
         if (path == '/login') return '/workbench';
+        if (!_session.isAdmin &&
+            !(path == '/workbench' ||
+                path == '/communications' ||
+                path == '/events' ||
+                path == '/sos-events' ||
+                path == '/tasks' ||
+                RegExp(r'^/devices/[0-9]+$').hasMatch(path) ||
+                RegExp(r'^/tasks/[^/]+$').hasMatch(path) ||
+                path == '/me' ||
+                path == '/sites')) {
+          return '/workbench';
+        }
         return null;
       },
       errorBuilder: (context, state) => Scaffold(
@@ -92,6 +107,41 @@ class _WearAppState extends State<WearApp> {
                   builder: (_, _) => const SupervisionPage(),
                 ),
                 GoRoute(
+                  path: '/people-admin/new',
+                  builder: (_, _) => const PersonEditorPage(),
+                ),
+                GoRoute(
+                  path: '/people-admin/edit/:id',
+                  builder: (_, s) =>
+                      PersonEditorPage(id: s.pathParameters['id']!),
+                ),
+                GoRoute(
+                  path: '/people-admin/equipment/:id',
+                  builder: (_, s) =>
+                      PersonEquipmentPage(id: s.pathParameters['id']!),
+                ),
+                GoRoute(
+                  path: '/people-admin/organizations',
+                  builder: (_, _) => const OrganizationsPage(),
+                ),
+                GoRoute(
+                  path: '/people-admin/transfer',
+                  builder: (_, _) => const PersonTransferPage(),
+                ),
+                GoRoute(
+                  path: '/people-admin/recovery',
+                  builder: (_, _) => const AccountRecoveryPage(),
+                ),
+                GoRoute(
+                  path: '/fences/new',
+                  builder: (_, _) => const FenceEditorPage(),
+                ),
+                GoRoute(
+                  path: '/fences/:id/edit',
+                  builder: (_, s) =>
+                      FenceEditorPage(id: s.pathParameters['id']!),
+                ),
+                GoRoute(
                   path: '/people/:id',
                   builder: (_, s) => PersonPage(id: s.pathParameters['id']!),
                 ),
@@ -113,7 +163,13 @@ class _WearAppState extends State<WearApp> {
                   path: '/fences/:id',
                   builder: (_, s) => FencePage(id: s.pathParameters['id']!),
                 ),
-                GoRoute(path: '/tasks', builder: (_, _) => const TasksPage()),
+                GoRoute(
+                  path: '/tasks',
+                  builder: (_, s) => TasksPage(
+                    groupId: s.uri.queryParameters['groupId'],
+                    allSite: s.uri.queryParameters['scope'] == 'all',
+                  ),
+                ),
                 GoRoute(
                   path: '/tasks/:id',
                   builder: (_, s) => TaskPage(id: s.pathParameters['id']!),
@@ -125,6 +181,7 @@ class _WearAppState extends State<WearApp> {
                 GoRoute(
                   path: '/communications',
                   builder: (_, s) => CommunicationsPage(
+                    filterRequest: s.uri.queryParameters['filterRequest'],
                     action: s.uri.queryParameters['action'],
                     deviceId: s.uri.queryParameters['deviceId'],
                     personId: s.uri.queryParameters['personId'],
@@ -468,9 +525,9 @@ class _WearShellState extends State<WearShell> {
                   selectedIcon: Icon(Icons.home),
                   label: '现场',
                 ),
-                const NavigationDestination(
-                  icon: Icon(Icons.call_outlined),
-                  selectedIcon: Icon(Icons.call),
+                NavigationDestination(
+                  icon: const Icon(Icons.call_outlined),
+                  selectedIcon: const Icon(Icons.call),
                   label: '通讯',
                 ),
                 NavigationDestination(

@@ -70,6 +70,13 @@ public class EventEvidenceService {
                     id,event.getId(),version,sites.requireLogin().getUserId(),types.get(index),data.length);
         }
     }
+    public boolean hasSubmission(Long eventId, int version) {
+        Integer count = db.queryForObject(
+                "SELECT COUNT(*) FROM wear_event_media WHERE event_id=? AND submission_version=? AND byte_size>0",
+                Integer.class, eventId, version);
+        return count != null && count > 0;
+    }
+
     private void readable(Long id) {
         WearSafetyEvent event=events.selectById(id);
         if(event==null) throw new ServiceException("事件不存在",404);

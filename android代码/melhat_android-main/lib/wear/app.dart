@@ -10,9 +10,7 @@ import 'duty_pages.dart';
 import 'queries/queries.dart';
 import 'queries/person_management.dart';
 import 'queries/account_recovery.dart';
-import 'queries/fence_editor.dart';
 import 'events/events_page.dart';
-import 'events/sos_events_page.dart';
 import 'communications/communications.dart';
 import 'communications/lab_calls.dart';
 import '../theme/app_theme.dart';
@@ -95,7 +93,8 @@ class _WearAppState extends State<WearApp> {
                 ),
                 GoRoute(
                   path: '/sos-events',
-                  builder: (_, _) => const SosEventsPage(),
+                  redirect: (_, _) =>
+                      '/events?severity=emergency&status=active',
                 ),
                 GoRoute(
                   path: '/people',
@@ -103,43 +102,13 @@ class _WearAppState extends State<WearApp> {
                       PeoplePage(initialName: s.uri.queryParameters['name']),
                 ),
                 GoRoute(
-                  path: '/supervision',
-                  builder: (_, _) => const SupervisionPage(),
-                ),
-                GoRoute(
-                  path: '/people-admin/new',
-                  builder: (_, _) => const PersonEditorPage(),
-                ),
-                GoRoute(
-                  path: '/people-admin/edit/:id',
-                  builder: (_, s) =>
-                      PersonEditorPage(id: s.pathParameters['id']!),
-                ),
-                GoRoute(
                   path: '/people-admin/equipment/:id',
                   builder: (_, s) =>
                       PersonEquipmentPage(id: s.pathParameters['id']!),
                 ),
                 GoRoute(
-                  path: '/people-admin/organizations',
-                  builder: (_, _) => const OrganizationsPage(),
-                ),
-                GoRoute(
-                  path: '/people-admin/transfer',
-                  builder: (_, _) => const PersonTransferPage(),
-                ),
-                GoRoute(
                   path: '/people-admin/recovery',
                   builder: (_, _) => const AccountRecoveryPage(),
-                ),
-                GoRoute(
-                  path: '/fences/new',
-                  builder: (_, _) => const FenceEditorPage(),
-                ),
-                GoRoute(
-                  path: '/fences/:id/edit',
-                  builder: (_, s) =>
-                      FenceEditorPage(id: s.pathParameters['id']!),
                 ),
                 GoRoute(
                   path: '/people/:id',
@@ -152,16 +121,6 @@ class _WearAppState extends State<WearApp> {
                 GoRoute(
                   path: '/devices/:id',
                   builder: (_, s) => DevicePage(id: s.pathParameters['id']!),
-                ),
-                GoRoute(
-                  path: '/tracks',
-                  builder: (_, s) =>
-                      TracksPage(personId: s.uri.queryParameters['personId']),
-                ),
-                GoRoute(path: '/fences', builder: (_, _) => const FencesPage()),
-                GoRoute(
-                  path: '/fences/:id',
-                  builder: (_, s) => FencePage(id: s.pathParameters['id']!),
                 ),
                 GoRoute(
                   path: '/tasks',
@@ -181,6 +140,7 @@ class _WearAppState extends State<WearApp> {
                 GoRoute(
                   path: '/communications',
                   builder: (_, s) => CommunicationsPage(
+                    filterRequest: s.uri.queryParameters['filterRequest'],
                     action: s.uri.queryParameters['action'],
                     deviceId: s.uri.queryParameters['deviceId'],
                     personId: s.uri.queryParameters['personId'],
@@ -203,6 +163,8 @@ class _WearAppState extends State<WearApp> {
                     taskId: s.uri.queryParameters['taskId'],
                     initialStatus: s.uri.queryParameters['status'],
                     initialType: s.uri.queryParameters['type'],
+                    initialSeverity: s.uri.queryParameters['severity'],
+                    filterRequest: s.uri.queryParameters['filterRequest'],
                     initialClaimantUserId:
                         s.uri.queryParameters['claimantUserId'],
                     initialEscalated:

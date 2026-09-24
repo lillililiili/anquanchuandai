@@ -48,6 +48,10 @@ class WearEvent {
     required this.fenceId,
     required this.fenceAction,
     required this.version,
+    this.externalClosureStatus = 'not_synced',
+    this.fieldReportStatus = '',
+    this.verificationStatus = '',
+    this.reviewStatus = '',
     this.reminderOnly = false,
     this.reporterUserId = '',
     this.deviceType = '',
@@ -61,13 +65,22 @@ class WearEvent {
     if (id.isEmpty) throw const FormatException('事件缺少有效编号');
     return WearEvent(
       id: id,
+      externalClosureStatus: _text(json['externalClosureStatus']).isEmpty
+          ? 'not_synced'
+          : _text(json['externalClosureStatus']),
+      fieldReportStatus: _text(json['fieldReportStatus']),
+      verificationStatus: _text(json['verificationStatus']),
+      reviewStatus: _text(json['reviewStatus']),
       type: _text(json['type']),
-      reminderOnly: _boolean(json['reminderOnly']),
+      reminderOnly:
+          _text(json['type']) != 'sos' && _boolean(json['reminderOnly']),
       deviceType: _text(json['deviceType']),
       alarmCode: _text(json['alarmCode']),
       alarmName: _text(json['alarmName']),
       alarmDescription: _text(json['alarmDescription']),
-      severity: _text(json['severity']),
+      severity: _text(json['type']) == 'sos'
+          ? 'emergency'
+          : _text(json['severity']),
       status: _text(json['status']),
       occurredAt: _text(json['occurredAt']),
       receivedAt: _text(json['receivedAt']),
@@ -98,6 +111,10 @@ class WearEvent {
 
   final String id;
   final String type;
+  final String externalClosureStatus;
+  final String fieldReportStatus;
+  final String verificationStatus;
+  final String reviewStatus;
   final bool reminderOnly;
   final String deviceType;
   final String alarmCode;
@@ -130,8 +147,10 @@ class WearEvent {
   final String fenceAction;
   final int version;
 
-  bool get isWarning => severity == 'warning';
-  bool get isEmergency => severity == 'emergency';
+  // Legacy SOS rows may have no level, or the retired "high" level.
+  bool get isSos => type == 'sos';
+  bool get isWarning => !isSos && severity == 'warning';
+  bool get isEmergency => isSos || severity == 'emergency';
   bool get isHighRisk => isEmergency;
   String get severityLabel => isEmergency
       ? '紧急'
@@ -141,11 +160,15 @@ class WearEvent {
   String get deviceTypeLabel =>
       const {'helmet': '智能安全帽', 'belt': '智能安全带', 'watch': '智能手表'}[deviceType] ??
       '设备';
-  bool get isClosed => status == 'closed';
+  // Local workflow completion only; never authoritative external closure.
+  bool get isPlatformComplete =>
+      const {'verified', 'confirmed', 'closed'}.contains(status);
 
   // Names describe the event-time alarm, never the device's current state.
-  String get alarmLabel => alarmName.isNotEmpty
+  String get alarmLabel => alarmName.isNotEmpty && alarmName != '告警名称未提供'
       ? alarmName
+      : isSos
+      ? 'SOS 求助'
       : alarmCode.isNotEmpty
       ? alarmCode
       : '告警名称未提供';
@@ -170,11 +193,13 @@ class WearEvent {
 
   String get statusLabel =>
       const {
-        'open': '待处理',
-        'claimed': '待处理',
+        'open': '待现场核验',
+        'claimed': '待现场核验',
         'handling': '处置中',
         'pending_review': '待管理员审批',
-        'closed': '已关闭',
+        'verified': '已核验',
+        'confirmed': '已确认',
+        'closed': '历史已处理',
       }[status] ??
       (status.isEmpty ? '未知状态' : status);
 }

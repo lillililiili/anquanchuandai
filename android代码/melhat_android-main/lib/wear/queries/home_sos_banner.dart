@@ -4,7 +4,7 @@ import '../core.dart';
 import '../events/event_models.dart';
 import '../events/event_repository.dart';
 
-/// One SOS opens its detail; multiple SOS events open the scoped list.
+/// One SOS opens its detail; multiple SOS events select the emergency message filter.
 class HomeSosBanner extends StatefulWidget {
   const HomeSosBanner({super.key, required this.refreshVersion});
   final int refreshVersion;
@@ -51,7 +51,10 @@ class _HomeSosBannerState extends State<HomeSosBanner> {
       ).fetchPage(const EventFilters(type: 'sos', status: 'active'), 1, 1);
       if (!mounted || request != _request || scope != session.scopeKey) return;
       final rows = page.records.where(
-        (e) => e.type == 'sos' && !e.isClosed && e.siteId == session.siteId,
+        (e) =>
+            e.type == 'sos' &&
+            !e.isPlatformComplete &&
+            e.siteId == session.siteId,
       );
       setState(() {
         _event = rows.firstOrNull;
@@ -68,13 +71,21 @@ class _HomeSosBannerState extends State<HomeSosBanner> {
   }
 
   Future<void> _open(WearEvent event) async {
+    if (_total > 1) {
+      context.go(
+        Uri(
+          path: '/events',
+          queryParameters: {
+            'severity': 'emergency',
+            'status': 'active',
+            'filterRequest': DateTime.now().microsecondsSinceEpoch.toString(),
+          },
+        ).toString(),
+      );
+      return;
+    }
     await context.push(
-      _total > 1
-          ? '/sos-events'
-          : Uri(
-              path: '/events',
-              queryParameters: {'eventId': event.id},
-            ).toString(),
+      Uri(path: '/events', queryParameters: {'eventId': event.id}).toString(),
     );
     if (mounted) await _load();
   }
@@ -122,9 +133,9 @@ class _HomeSosBannerState extends State<HomeSosBanner> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          event.demo ? 'SOS 紧急求助 · 演示' : 'SOS 紧急求助',
-                          style: const TextStyle(
+                        const Text(
+                          'SOS 紧急求助',
+                          style: TextStyle(
                             color: red,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,

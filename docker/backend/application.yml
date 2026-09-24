@@ -33,6 +33,9 @@ spring:
 
 melhat:
   demo-mode: true
+  call-lab:
+    enabled: true
+    upstream-base-url: ${MELHAT_CALL_LAB_UPSTREAM_BASE_URL:http://host.docker.internal:5188}
   download:
     allow-private-network: true
   callback:

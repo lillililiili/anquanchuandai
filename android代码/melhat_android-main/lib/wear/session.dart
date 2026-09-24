@@ -62,6 +62,8 @@ class WearSession extends ChangeNotifier {
       hasRole('admin') ||
       hasRole('wear_platform_admin');
   bool can(String permission) {
+    // Personnel records are read-only in Android, including administrator accounts.
+    if (permission == 'wear:person:edit') return false;
     if (!isAdmin &&
         !const {
           'wear:site:list',

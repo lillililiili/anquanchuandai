@@ -4,6 +4,23 @@ import 'package:rolling_intelligence_headband/wear/events/event_policy.dart';
 
 void main() {
   group('WearEvent', () {
+    test('platform completion remains separate from external closure and legacy history', () {
+      for (final status in ['verified', 'confirmed', 'closed']) {
+        final event = WearEvent.fromJson({
+          'id': '41', 'status': status, 'type': 'sos',
+          'fieldReportStatus': 'submitted',
+          'verificationStatus': status == 'verified' ? 'verified' : 'unknown',
+          'reviewStatus': status == 'verified' ? 'approved' : 'unknown',
+          'externalClosureStatus': 'not_synced',
+        });
+        expect(event.isPlatformComplete, isTrue);
+        expect(event.externalClosureStatus, 'not_synced');
+        expect(event.fieldReportStatus, 'submitted');
+        expect(event.statusLabel, {'verified': '已核验', 'confirmed': '已确认', 'closed': '历史已处理'}[status]);
+      }
+      expect(WearEvent.fromJson({'id': '42', 'status': 'pending_review'}).isPlatformComplete, isFalse);
+    });
+
     test('keeps occurrence-time person and device snapshots', () {
       final event = WearEvent.fromJson({
         'id': '41',

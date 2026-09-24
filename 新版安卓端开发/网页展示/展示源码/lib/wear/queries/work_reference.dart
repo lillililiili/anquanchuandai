@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core.dart';
 import 'query_utils.dart';
+import 'inspection.dart';
 
 String workOwnerLabel(JsonMap task, WearSession session) {
   final explicit = textOf(task['ownerName'], '');
@@ -85,6 +86,7 @@ class TaskReferenceView extends StatelessWidget {
     this.memberEquipment = const {},
     this.preview = false,
     this.onManageMembers,
+    this.inspectionActions,
   });
   final JsonMap task;
   final List<JsonMap> equipment, events;
@@ -96,6 +98,7 @@ class TaskReferenceView extends StatelessWidget {
   final Widget details, equipmentDetails;
   final bool preview;
   final VoidCallback? onManageMembers;
+  final Widget? inspectionActions;
   static const ink = Color(0xFF101F43),
       muted = Color(0xFF6B88AF),
       blue = Color(0xFF008BFF);
@@ -125,25 +128,6 @@ class TaskReferenceView extends StatelessWidget {
         ),
         Expanded(
           child: Text(value, style: const TextStyle(fontSize: 14, color: ink)),
-        ),
-      ],
-    ),
-  );
-  Widget _heading(IconData icon, String title, {Color color = blue}) => Padding(
-    padding: const EdgeInsets.only(top: 2, bottom: 10),
-    child: Row(
-      children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: ink,
-            ),
-          ),
         ),
       ],
     ),
@@ -278,9 +262,19 @@ class TaskReferenceView extends StatelessWidget {
                                 color: const Color(0xFFE2F3FF),
                                 borderRadius: BorderRadius.circular(5),
                               ),
-                              child: const Text(
-                                '只读关联',
-                                style: TextStyle(fontSize: 12, color: blue),
+                              child: Text(
+                                inspectionStatus(
+                                  task['inspectionStatus'] ??
+                                      (task['status'] == 'ended'
+                                          ? 'completed'
+                                          : 'in_progress'),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: inspectionColor(
+                                    task['inspectionStatus'],
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -309,6 +303,7 @@ class TaskReferenceView extends StatelessWidget {
                             context,
                           ).copyWith(dividerColor: Colors.transparent),
                           child: ExpansionTile(
+                            key: PageStorageKey('task-info-${task['id']}'),
                             tilePadding: EdgeInsets.zero,
                             visualDensity: VisualDensity.compact,
                             minTileHeight: 36,
@@ -334,97 +329,24 @@ class TaskReferenceView extends StatelessWidget {
                   const SizedBox(height: 10),
                   _card(
                     Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _heading(
-                                Icons.groups,
-                                '参与人员 · ${members.length} 人',
-                              ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            '安全提醒',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: ink,
                             ),
-                            if (onManageMembers != null)
-                              TextButton(
-                                onPressed: onManageMembers,
-                                child: const Text(
-                                  '调整人员',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ),
-                          ],
+                          ),
                         ),
-                        _line(),
-                        if (members.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(14),
-                            child: Text(
-                              '暂无参与人员',
-                              style: TextStyle(color: muted),
-                            ),
-                          ),
-                        for (final person in members) ...[
-                          InkWell(
-                            key: ValueKey(
-                              'task-person-${idOf(person['personId'])}',
-                            ),
-                            onTap: () => onPerson(person),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Row(
-                                children: [
-                                  _avatar(),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          textOf(person['name']),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: ink,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Wrap(
-                                          spacing: 9,
-                                          runSpacing: 4,
-                                          children: [
-                                            for (final type in [
-                                              'helmet',
-                                              'belt',
-                                              'watch',
-                                            ])
-                                              _memberStatus(person, type),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          _line(),
-                        ],
-                        Theme(
-                          data: Theme.of(
-                            context,
-                          ).copyWith(dividerColor: Colors.transparent),
-                          child: ExpansionTile(
-                            tilePadding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                            minTileHeight: 32,
-                            title: Text(
-                              '装备检查（${equipment.length}）',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: muted,
-                              ),
-                            ),
-                            children: [equipmentDetails],
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            '正确佩戴安全帽与防护用品，保持通讯畅通。',
+                            style: TextStyle(color: muted),
                           ),
                         ),
                       ],
@@ -432,112 +354,154 @@ class TaskReferenceView extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   _card(
-                    Column(
-                      children: [
-                        _heading(
-                          Icons.warning_amber_rounded,
-                          '待核验事件',
-                          color: const Color(0xFFFFA000),
+                    Theme(
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        key: PageStorageKey('task-members-${task['id']}'),
+                        tilePadding: EdgeInsets.zero,
+                        initiallyExpanded: false,
+                        title: Row(
+                          children: [
+                            const Icon(Icons.groups, color: blue, size: 26),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '参与人员 · ${members.length} 人',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: ink,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        _line(),
-                        if (events.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              '暂无关联事件',
-                              style: TextStyle(color: muted),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6, bottom: 6),
+                          child: Text(
+                            members.isEmpty
+                                ? '暂无参与人员'
+                                : '${members.map((p) => textOf(p['name'])).join('、')}\n展开查看人员与装备状态',
+                            style: const TextStyle(fontSize: 12, color: muted),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        children: [
+                          if (onManageMembers != null)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: onManageMembers,
+                                child: const Text('调整人员'),
+                              ),
+                            ),
+                          if (members.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: Text(
+                                '暂无参与人员',
+                                style: TextStyle(color: muted),
+                              ),
+                            ),
+                          for (final person in members) ...[
+                            InkWell(
+                              key: ValueKey(
+                                'task-person-${idOf(person['personId'])}',
+                              ),
+                              onTap: () => onPerson(person),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  children: [
+                                    _avatar(),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            textOf(person['name']),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: ink,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Wrap(
+                                            spacing: 9,
+                                            runSpacing: 4,
+                                            children: [
+                                              for (final type in [
+                                                'helmet',
+                                                'belt',
+                                                'watch',
+                                              ])
+                                                _memberStatus(person, type),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            _line(),
+                          ],
+                          Theme(
+                            data: Theme.of(
+                              context,
+                            ).copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              key: PageStorageKey(
+                                'task-equipment-${task['id']}',
+                              ),
+                              tilePadding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                              minTileHeight: 32,
+                              title: Text(
+                                '装备检查（${equipment.length}）',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: muted,
+                                ),
+                              ),
+                              children: [equipmentDetails],
                             ),
                           ),
-                        for (final event in events)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 11),
-                            child: Row(
-                              children: [
-                                _avatar(),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        textOf(event['personName'], '未关联人员'),
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w700,
-                                          color: ink,
-                                        ),
-                                      ),
-                                      Text(
-                                        textOf(
-                                          event['description'],
-                                          eventTypeLabel(event['type']),
-                                        ),
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: ink,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${formatTime(event['occurredAt'])} · ${eventStatusLabel(event['status'])} · ${textOf(event['severity'], '风险未知')}${event['taskMatch'] == 'pending' ? '\n存在多个候选任务，需人工确认关联' : ''}',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: muted,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                FilledButton(
-                                  key: ValueKey(
-                                    'task-event-${idOf(event['id'])}',
-                                  ),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: blue,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                    ),
-                                    minimumSize: const Size(88, 44),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  onPressed: () => onEvent(event),
-                                  child: const Text(
-                                    '查看核验',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      decoration: TextDecoration.none,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: onGuardian,
-                    icon: const Icon(Icons.call, size: 25),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: blue,
-                      minimumSize: const Size.fromHeight(48),
-                      side: const BorderSide(color: blue),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  ?inspectionActions,
+                  if (inspectionActions == null)
+                    OutlinedButton.icon(
+                      onPressed: onGuardian,
+                      icon: const Icon(Icons.call, size: 25),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: blue,
+                        minimumSize: const Size.fromHeight(48),
+                        side: const BorderSide(color: blue),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      label: const Text(
+                        '联系监护人',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    label: const Text(
-                      '联系监护人',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

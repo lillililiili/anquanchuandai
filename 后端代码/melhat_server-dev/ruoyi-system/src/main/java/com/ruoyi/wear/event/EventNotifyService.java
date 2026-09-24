@@ -58,7 +58,7 @@ public class EventNotifyService
         payload.put("type", "wear.event");
         payload.put("eventId", String.valueOf(event.getId()));
         payload.put("siteId", String.valueOf(event.getSiteId()));
-        payload.put("severity", event.getSeverity());
+        payload.put("severity", EventSeverityPolicy.effectiveSeverity(event));
         payload.put("demo", event.getDemo() != null && event.getDemo().intValue() == 1);
         String json = JSON.toJSONString(payload);
         for (Long userId : eventAccess.recipients(event))

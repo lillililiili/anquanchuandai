@@ -22,6 +22,8 @@ class EventsPage extends StatefulWidget {
     this.initialEscalated,
     this.initialStatus,
     this.initialType,
+    this.initialSeverity,
+    this.filterRequest,
   });
 
   final String? eventId;
@@ -31,6 +33,8 @@ class EventsPage extends StatefulWidget {
   final bool? initialEscalated;
   final String? initialStatus;
   final String? initialType;
+  final String? initialSeverity;
+  final String? filterRequest;
 
   @override
   State<EventsPage> createState() => _EventsPageState();
@@ -59,6 +63,12 @@ class _EventsPageState extends State<EventsPage> {
     if (controller == null) return;
     var next = controller.filters;
     var filtersChanged = false;
+    if (widget.initialSeverity != null &&
+        (oldWidget.initialSeverity != widget.initialSeverity ||
+            oldWidget.filterRequest != widget.filterRequest)) {
+      next = EventFilters(severity: widget.initialSeverity!);
+      filtersChanged = true;
+    }
     if (oldWidget.personId != widget.personId) {
       next = next.copyWith(personId: widget.personId ?? '');
       filtersChanged = true;
@@ -187,6 +197,7 @@ class _EventsPageState extends State<EventsPage> {
     initialEscalated: widget.initialEscalated,
     initialStatus: widget.initialStatus,
     initialType: widget.initialType,
+    initialSeverity: widget.initialSeverity,
   );
 
   SharedPreferencesEventStateStore _store(WearSession session) =>
@@ -290,16 +301,7 @@ class _EventsPageState extends State<EventsPage> {
           onSubmit: () => _execute(controller, EventCommand.handle),
           onConfirm: () => _execute(controller, EventCommand.confirm),
           onReview: () => _editReason(controller, EventCommand.close),
-          onCommunication: () => context.push(
-            Uri(
-              path: '/communications',
-              queryParameters: {
-                'eventId': event.id,
-                if (event.deviceId.isNotEmpty) 'deviceId': event.deviceId,
-                if (event.personId.isNotEmpty) 'personId': event.personId,
-              },
-            ).toString(),
-          ),
+          onCommunication: () => _openCommunication(event),
           legacyDetail: _detail(controller, event, includeHandle: false),
         );
       }
@@ -460,6 +462,21 @@ class _EventsPageState extends State<EventsPage> {
     );
   }
 
+  void _openCommunication(WearEvent event) {
+    context.go(
+      Uri(
+        path: '/communications',
+        queryParameters: {
+          'eventId': event.id,
+          'filterRequest': DateTime.now().microsecondsSinceEpoch.toString(),
+          if (event.personId.isNotEmpty) 'personId': event.personId,
+          if (event.personId.isEmpty && event.deviceId.isNotEmpty)
+            'deviceId': event.deviceId,
+        },
+      ).toString(),
+    );
+  }
+
   void _backToEvents() {
     if (_controller?.writing == true) return;
     if (context.canPop()) {
@@ -616,7 +633,7 @@ class _EventsPageState extends State<EventsPage> {
       ),
       const SizedBox(height: 4),
       Text(
-        '共 ${controller.total} 条 · ${controller.actor.isAdmin ? '全站未关闭' : '我的待办'} ${controller.inboxCount}',
+        '共 ${controller.total} 条 · ${controller.actor.isAdmin ? '全站核验待办' : '我的待办'} ${controller.inboxCount}',
         style: const TextStyle(color: WearColors.muted),
       ),
     ],
@@ -718,7 +735,7 @@ class _EventsPageState extends State<EventsPage> {
                         ),
                       ],
                     ),
-                    if (event.isEmergency && !event.isClosed)
+                    if (event.isEmergency && !event.isPlatformComplete)
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
@@ -884,9 +901,7 @@ class _EventsPageState extends State<EventsPage> {
           OutlinedButton.icon(
             onPressed: controller.writing
                 ? null
-                : () => context.push(
-                    '/communications?eventId=${Uri.encodeQueryComponent(event.id)}&deviceId=${Uri.encodeQueryComponent(event.deviceId)}',
-                  ),
+                : () => _openCommunication(event),
             icon: const Icon(Icons.call_outlined),
             label: const Text('打开可用通信能力'),
           ),
@@ -942,7 +957,7 @@ class _EventsPageState extends State<EventsPage> {
               ? null
               : () => _editReason(controller, EventCommand.close),
           icon: const Icon(Icons.task_alt),
-          label: const Text('审批通过并结束'),
+          label: const Text('审批通过 · 完成核验'),
         ),
       if (controller.can(EventCommand.reopen))
         OutlinedButton.icon(
@@ -1032,7 +1047,7 @@ class _EventsPageState extends State<EventsPage> {
           maxLines: 5,
           textInputAction: TextInputAction.newline,
           decoration: const InputDecoration(
-            labelText: '异常原因（选填）',
+            labelText: '异常原因（必填）',
             hintText: '记录现场核实情况和已采取的措施',
             alignLabelWithHint: true,
           ),
@@ -1238,7 +1253,7 @@ class _EventsPageState extends State<EventsPage> {
           canPop: !controller.writing,
           child: AlertDialog(
             title: Text(switch (command) {
-              EventCommand.close => '关闭事件',
+              EventCommand.close => '审批现场核验',
               EventCommand.reopen => '重开事件',
               _ => '填写说明',
             }),
@@ -1536,12 +1551,14 @@ class _EventsPageState extends State<EventsPage> {
 }
 
 const _statuses = {
-  'active': '未关闭',
+  'active': '核验待办',
   'open': '待处理',
   'claimed': '待处理',
   'handling': '处置中',
   'pending_review': '待管理员审批',
-  'closed': '已关闭',
+  'verified': '已核验',
+  'confirmed': '已确认',
+  'closed': '历史已处理',
 };
 
 const _types = {
@@ -1564,8 +1581,8 @@ String _actionLabel(String value) =>
       'handle': '处置',
       'manual_sos': '手动 SOS 报警',
       'transfer': '转交',
-      'review': '复核',
-      'close': '关闭',
+      'close': '历史处理',
+      'review': '审批通过',
       'reopen': '重开',
       'escalate': '升级',
     }[value] ??

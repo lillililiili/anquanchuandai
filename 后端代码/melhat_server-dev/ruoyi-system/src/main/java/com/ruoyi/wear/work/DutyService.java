@@ -250,7 +250,7 @@ public class DutyService
             {
                 continue;
             }
-            if (EventStateMachine.CLOSED.equals(event.getStatus()))
+            if (EventStateMachine.isComplete(event.getStatus()))
             {
                 continue;
             }
@@ -393,7 +393,7 @@ public class DutyService
         List<WearSafetyEvent> rows = eventMapper.selectList(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>())
                 .eq(WearSafetyEvent::getSiteId, siteId)
                 .ne(WearSafetyEvent::getStatus, EventStateMachine.PENDING_REVIEW)
-                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED).orderByAsc(WearSafetyEvent::getId).last("FOR UPDATE"));
+                .notIn(WearSafetyEvent::getStatus, EventStateMachine.CLOSED, EventStateMachine.VERIFIED, EventStateMachine.CONFIRMED).orderByAsc(WearSafetyEvent::getId).last("FOR UPDATE"));
         for (WearSafetyEvent row : rows)
         {
             ids.add(String.valueOf(row.getId()));

@@ -138,13 +138,7 @@ void main() {
         expect(find.text('开启通知'), findsOneWidget);
         await tester.tap(find.byTooltip('返回我的'));
         await tester.pumpAndSettle();
-        await open('设置');
-        expect(find.text('值班交接'), findsOneWidget);
-        expect(find.text('切换厂站'), findsOneWidget);
-        expect(find.text('外观设置'), findsNothing);
-        expect(find.text('深色'), findsNothing);
-        await tester.tap(find.byTooltip('返回我的'));
-        await tester.pumpAndSettle();
+        expect(find.text('设置'), findsNothing);
         await open('帮助与反馈');
         expect(find.text('复制诊断信息'), findsOneWidget);
         await tester.tap(find.byTooltip('返回我的'));

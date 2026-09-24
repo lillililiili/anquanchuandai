@@ -64,6 +64,8 @@ services:
       DB_PASSWORD: melhat
       JWT_SECRET: local-docker-jwt-secret
       MELHAT_CALLBACK_TOKEN: local-docker-callback
+      MELHAT_CALL_LAB_ENABLED: "true"
+      MELHAT_CALL_LAB_UPSTREAM_BASE_URL: http://host.docker.internal:5188
     ports:
       - "18084:18084"
     volumes:

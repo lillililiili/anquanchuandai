@@ -69,6 +69,13 @@ class EventEvidenceTest {
         assertThrows(ServiceException.class,()->service.save(event,2,Collections.singletonList(large)));
         verify(large,never()).getBytes();
     }
+    @Test void evidenceMustBelongToCurrentEventAndSubmissionVersion() throws Exception {
+        assertFalse(service.hasSubmission(1L,1));
+        tx.execute(status->{try {service.save(event,1,Collections.singletonList(new MockMultipartFile("files","现场.png","image/png",png)));}catch(IOException ex){throw new RuntimeException(ex);}return null;});
+        assertTrue(service.hasSubmission(1L,1));
+        assertFalse(service.hasSubmission(1L,2));
+        assertFalse(service.hasSubmission(2L,1));
+    }
     @Test void failedSubmissionRollsBackBothDatabaseAndFiles() throws Exception {
         tx.execute(status->{try {service.save(event,1,Collections.singletonList(new MockMultipartFile("files","现场.png","image/png",png)));}catch(IOException ex){throw new RuntimeException(ex);}status.setRollbackOnly();return null;});
         assertEquals(0,db.queryForObject("SELECT COUNT(*) FROM wear_event_media",Integer.class));

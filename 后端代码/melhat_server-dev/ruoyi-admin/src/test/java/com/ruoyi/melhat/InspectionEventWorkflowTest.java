@@ -32,6 +32,7 @@ class InspectionEventWorkflowTest {
         actions=mock(WearEventActionMapper.class); sites=mock(SiteAccessService.class);
         notifications=mock(EventNotifyService.class);
         evidence=mock(EventEvidenceService.class);
+        when(evidence.hasSubmission(1L,1)).thenReturn(true);
         ReflectionTestUtils.setField(service,"evidence",evidence);
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(new org.apache.ibatis.builder.MapperBuilderAssistant(new com.baomidou.mybatisplus.core.MybatisConfiguration(),""), com.ruoyi.wear.event.domain.WearEventAction.class);
         ReflectionTestUtils.setField(service,"eventMapper",events);
@@ -65,10 +66,10 @@ class InspectionEventWorkflowTest {
         verify(events,never()).reopenIfClosed(anyLong(),anyInt(),anyString());
     }
 
-    @Test void groupMemberSubmitsAbnormalWithPhotosAndClosesImmediately() {
-        when(events.handleIfActive(1L,"closed",1,"inspector")).thenReturn(1);
+    @Test void groupMemberSubmitsAbnormalWithPhotosAndVerifiesWithoutExternalClosure() {
+        when(events.handleIfActive(1L,"verified",1,"inspector")).thenReturn(1);
         service.handle(1L,"围栏定位偏移",1);
-        verify(events).handleIfActive(1L,"closed",1,"inspector");
+        verify(events).handleIfActive(1L,"verified",1,"inspector");
         verify(notifications).notifyAfterCommit(row);
         verify(sites,never()).assertCanClaimEvent();
         assertThrows(ServiceException.class,()->service.claim(1L,1));
@@ -82,10 +83,10 @@ class InspectionEventWorkflowTest {
     }
     @Test void ownDeviceReminderConfirmsOnceWithoutReviewNotification() {
         row.setEventType("realtime");row.setSeverity("warning");row.setAlarmName("低电量");
-        when(events.closeIfStatus(1L,"open",1,"inspector")).thenReturn(1);
+        when(events.confirmIfStatus(1L,"open",1,"inspector")).thenReturn(1);
         service.confirm(1L,1);
-        verify(events).closeIfStatus(1L,"open",1,"inspector");verifyNoInteractions(notifications);
-        when(events.closeIfStatus(1L,"open",1,"inspector")).thenReturn(0);
+        verify(events).confirmIfStatus(1L,"open",1,"inspector");verifyNoInteractions(notifications);
+        when(events.confirmIfStatus(1L,"open",1,"inspector")).thenReturn(0);
         assertThrows(ServiceException.class,()->service.confirm(1L,1));
         verify(actions,times(1)).insert(any());
     }
@@ -139,24 +140,47 @@ class InspectionEventWorkflowTest {
         assertThrows(ServiceException.class,()->service.close(1L,"已核实",1));
         verify(actions,never()).insert(any());
         when(events.closeIfStatus(1L,"pending_review",1,"admin")).thenAnswer(call->{
-            row.setStatus("closed");row.setVersion(2);return 1;
+            row.setStatus("verified");row.setVersion(2);return 1;
         });
-        assertEquals("closed",service.close(1L,"现场已确认安全",1).getStatus());
-        verify(actions).insert(argThat(action -> "close".equals(action.getAction())
-                && "admin".equals(action.getActor()) && "closed".equals(action.getToStatus())));
+        assertEquals("verified",service.close(1L,"现场已确认安全",1).getStatus());
+        verify(actions).insert(argThat(action -> "review".equals(action.getAction())
+                && "admin".equals(action.getActor()) && "verified".equals(action.getToStatus())));
         assertThrows(ServiceException.class,()->service.close(1L,"重复审批",1));
     }
-    @Test void emptyOptionalReportClosesAbnormalButEmergencyStillNeedsReview() throws Exception {
-        when(events.handleIfActive(1L,"closed",1,"inspector")).thenReturn(1);
-        service.report(1L,null,1,null);
-        verify(events).handleIfActive(1L,"closed",1,"inspector");
-        row.setSeverity("emergency");
-        when(events.handleIfActive(1L,"pending_review",1,"inspector")).thenReturn(1);
-        service.report(1L,"  ",1,Collections.emptyList());
-        verify(events).handleIfActive(1L,"pending_review",1,"inspector");
+    @Test void reportRequiresBothCommentAndCurrentAttachments() throws Exception {
+        org.springframework.web.multipart.MultipartFile photo=new org.springframework.mock.web.MockMultipartFile("files","现场.png","image/png",new byte[]{1});
+        for (String severity : Arrays.asList("abnormal","emergency")) {
+            row.setSeverity(severity);
+            for (String comment : Arrays.asList(null,""," \n\t")) {
+                assertThrows(ServiceException.class,()->service.report(1L,comment,1,Collections.singletonList(photo)));
+                assertThrows(ServiceException.class,()->service.handle(1L,comment,1));
+            }
+            assertThrows(ServiceException.class,()->service.report(1L,"现场情况",1,null));
+            assertThrows(ServiceException.class,()->service.report(1L,"现场情况",1,Collections.emptyList()));
+            assertThrows(ServiceException.class,()->service.report(1L,"现场情况",1,Collections.singletonList(new org.springframework.mock.web.MockMultipartFile("files",new byte[0]))));
+        }
+        verify(evidence,never()).save(any(),anyInt(),any());
+        verify(events,never()).handleIfActive(anyLong(),anyString(),anyInt(),anyString());
+        verifyNoInteractions(actions,notifications);
+    }
+    @Test void jsonHandleCannotBypassCurrentSubmissionEvidence() {
+        when(evidence.hasSubmission(1L,1)).thenReturn(false);
+        assertThrows(ServiceException.class,()->service.handle(1L,"现场情况",1));
+        verify(events,never()).handleIfActive(anyLong(),anyString(),anyInt(),anyString());
+    }
+    @Test void completeReportSavesMediaBeforeAdvancingWorkflow() throws Exception {
+        org.springframework.web.multipart.MultipartFile photo=new org.springframework.mock.web.MockMultipartFile("files","现场.png","image/png",new byte[]{1});
+        for (String severity : Arrays.asList("abnormal","emergency")) {
+            row.setSeverity(severity);
+            String target=com.ruoyi.wear.event.EventStateMachine.handleTarget(severity);
+            when(events.handleIfActive(1L,target,1,"inspector")).thenReturn(1);
+            service.report(1L,"现场已核实",1,Collections.singletonList(photo));
+            verify(events).handleIfActive(1L,target,1,"inspector");
+        }
+        verify(evidence,times(2)).save(eq(row),eq(1),any());
         verify(actions,times(2)).insert(any());
     }
-    @Test void multipartEndpointAcceptsOmittedCommentAndFiles() throws Exception {
+    @Test void multipartEndpointDelegatesOmittedFieldsToServiceValidation() throws Exception {
         com.ruoyi.wear.web.v1.WearEventController controller=new com.ruoyi.wear.web.v1.WearEventController();
         EventCommandService commands=mock(EventCommandService.class);
         ReflectionTestUtils.setField(controller,"commandService",commands);
@@ -179,7 +203,7 @@ class InspectionEventWorkflowTest {
         assertTrue(InspectionAccessConfig.allowsInspector("GET","/api/v1/events/1/media"));
         for(String path: Arrays.asList("/api/v1/work-tasks","/api/v1/duty/operators","/api/v1/people/1/equipment"))
             assertFalse(InspectionAccessConfig.allowsInspector("GET",path),path);
-        for(String action: Arrays.asList("claim","transfer","close","reopen","task"))
+        for(String action: Arrays.asList("claim","transfer","close","review","reopen","task"))
             assertFalse(InspectionAccessConfig.allowsInspector("POST","/api/v1/events/1/"+action),action);
     }
 }

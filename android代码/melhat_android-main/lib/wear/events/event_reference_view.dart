@@ -184,9 +184,9 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                           gap(),
                           card(
                             Text(
-                              e.isClosed
-                                  ? '手动 SOS 已结束，可查看审批记录。'
-                                  : '手动 SOS 已提交 → 管理员审批 → 结束\n无需一级审查，等待管理员审批。',
+                              e.isPlatformComplete
+                                  ? '本次平台处理已完成，正式结案仍以原安监系统为准。'
+                                  : '手动 SOS 已提交 → 管理员审批 → 已核验\n无需一级审查，等待管理员审批。',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: _muted,
@@ -208,7 +208,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                           FilledButton.icon(
                             onPressed: c.writing ? null : widget.onReview,
                             icon: const Icon(Icons.fact_check_outlined),
-                            label: const Text('审批通过并结束'),
+                            label: const Text('审批通过 · 完成核验'),
                           ),
                         if (!e.isWarning && !c.can(EventCommand.handle)) ...[
                           gap(),
@@ -358,7 +358,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
               ),
               const SizedBox(height: 6),
               Text(
-                e.isWarning ? '查看提醒 · 收到结束' : '定位现场 · 协同处置',
+                e.isWarning ? '查看提醒 · 本人确认' : '定位现场 · 协同处置',
                 style: TextStyle(fontSize: 12, color: _muted),
               ),
             ],
@@ -404,7 +404,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
             const SizedBox(width: 6),
             WearBadge(
               text: e.statusFor(admin: c.actor.isAdmin),
-              color: e.isClosed ? WearColors.online : levelColor,
+              color: e.isPlatformComplete ? WearColors.online : levelColor,
             ),
           ],
         ),
@@ -415,6 +415,44 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           '${e.deviceTypeLabel} ${known(e.sn, '未知')} · ${e.taskId.isEmpty ? '未关联作业' : '关联作业 ${e.taskId}'}',
         ),
         infoRow(Icons.schedule, '事件发生时间', formatTime(e.occurredAt)),
+        const SizedBox(height: 8),
+        const Text('外部结案：未同步', style: TextStyle(fontSize: 12, color: _muted)),
+        const Text(
+          '平台核验不代表正式结案，正式结案由原安监系统确认。',
+          style: TextStyle(fontSize: 10, color: _muted),
+        ),
+        if (e.status == 'closed')
+          const Text(
+            '历史已处理记录，不能据此推定已核验或已结案。',
+            style: TextStyle(fontSize: 10, color: _muted),
+          ),
+        if (e.status == 'pending_review')
+          Text(
+            e.source == 'manual_sos'
+                ? '审批人员：管理员（须与报警人不同）'
+                : e.type == 'sos'
+                ? '审批人员：管理员（允许审批本人上报的设备 SOS）'
+                : '审批人员：管理员（须与现场上报人不同）',
+            style: const TextStyle(fontSize: 11, color: _muted),
+          ),
+        for (final action
+            in c.actions
+                .where(
+                  (item) => const {
+                    'handle',
+                    'review',
+                    'confirm',
+                  }.contains(item.action),
+                )
+                .take(2))
+          Text(
+            '${action.action == 'handle'
+                ? '现场上报'
+                : action.action == 'review'
+                ? '管理员审批'
+                : '本人确认'}：${action.actor} · ${formatTime(action.createTime)}',
+            style: const TextStyle(fontSize: 11, color: _muted),
+          ),
         line(),
         const Text(
           '告警描述',
@@ -447,7 +485,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           Container(key: _formAnchor, child: heading('上报异常原因')),
           const SizedBox(height: 4),
           const Text(
-            '异常原因说明（选填）',
+            '异常原因说明（必填）',
             style: TextStyle(fontSize: 12, color: _muted),
           ),
           const SizedBox(height: 9),
@@ -515,7 +553,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                   ? '已上报'
                   : e.isEmergency
                   ? '提交待审批'
-                  : '提交并结束',
+                  : '提交核验',
             ),
           ),
         ),
@@ -549,7 +587,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           SizedBox(width: 8),
           Flexible(
             child: Text(
-              e.isEmergency ? '现场上报 → 管理员审批 → 结束' : '说明和附件均可不填，提交成功后事件自动结束',
+              '请填写异常原因说明，并添加至少一个现场照片或视频后提交',
               style: TextStyle(fontSize: 10, color: _muted),
             ),
           ),
@@ -569,11 +607,12 @@ class _EventReferenceViewState extends State<EventReferenceView> {
     }
     if (!submitted) return null;
     if (e.status == 'pending_review') {
-      return '现场记录已保存，等待管理员审批，当前事件尚未结束。';
+      return '现场记录已保存，等待管理员审批，平台核验尚未完成。';
     }
-    if (e.status == 'closed') return '核验内容已保存，事件已关闭。';
+    if (e.status == 'verified') return '现场记录已保存，平台核验已完成，外部结案未同步。';
+    if (e.status == 'closed') return '历史记录已处理，核验结果待确认；外部结案未同步。';
     if (c.can(EventCommand.close)) {
-      return '核验已提交，内容已保存。确认处置完成后，可在“更多处置与记录”中关闭事件；修改说明后可补充提交。';
+      return '现场记录已保存，请管理员审批核验结果。';
     }
     return '核验已提交，内容已保存。当前状态：${e.statusFor(admin: c.actor.isAdmin)}。';
   }

@@ -56,8 +56,8 @@ String eventTypeLabel(Object? value) => switch (value?.toString()) {
 };
 
 String eventStatusLabel(Object? value) => switch (value?.toString()) {
-  'open' => '待认领',
-  'claimed' => '已认领',
+  'open' => '待处理',
+  'claimed' => '待处理',
   'handling' => '处理中',
   'pending_review' => '待复核',
   'closed' => '已关闭',
@@ -122,25 +122,28 @@ Future<List<JsonMap>> loadEquipmentWithTelemetry(
 /// Use server membership; account IDs and personnel IDs are different domains.
 Future<List<JsonMap>> loadPersonActiveTasks(
   WearApi api,
-  String personId,
-) async {
+  String personId, {
+  bool allSite = false,
+}) async {
   final rows = <String, JsonMap>{};
-  for (final status in ['in_progress', 'paused']) {
+  for (final status in allSite ? ['in_progress', 'paused'] : [null]) {
+    final seen = <String>{};
     for (var current = 1; ; current++) {
       final page = await api.page(
-        '/api/v1/work-tasks',
+        allSite ? '/api/v1/work-tasks' : '/api/v1/work-tasks/mine',
         current: current,
         size: 100,
-        query: {'status': status},
+        query: {'status': ?status},
       );
-      final before = rows.length;
+      final before = seen.length;
       for (final row in page.records) {
+        seen.add(idOf(row['id']));
         if (row['status'] == 'in_progress' || row['status'] == 'paused') {
           rows[idOf(row['id'])] = row;
         }
       }
       if (!page.hasMore) break;
-      if (before == rows.length) throw const FormatException('作业分页未继续返回');
+      if (before == seen.length) throw const FormatException('作业分页未继续返回');
     }
   }
   final tasks = <JsonMap>[];

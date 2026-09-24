@@ -250,7 +250,9 @@ class _DevicePageState extends State<DevicePage> {
     try {
       final responses = await Future.wait([
         session.api.get('/api/v1/devices/${widget.id}'),
-        session.api.get('/api/v1/devices/${widget.id}/assignments'),
+        session.isAdmin
+            ? session.api.get('/api/v1/devices/${widget.id}/assignments')
+            : Future.value(<JsonMap>[]),
       ]);
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
         return;
@@ -325,26 +327,28 @@ class _DevicePageState extends State<DevicePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    _actionPanel(context, device),
-                    const SizedBox(height: 22),
-                    QuerySection(
-                      title: '历史领用记录（${_history.length}）',
-                      children: _history
-                          .map(
-                            (item) => QueryRow(
-                              title: textOf(item['personName'], '未关联人员'),
-                              subtitle:
-                                  '${formatTime(item['issuedAt'])} 至 ${item['returnedAt'] == null ? '当前' : formatTime(item['returnedAt'])}',
-                              onTap: item['personId'] == null
-                                  ? null
-                                  : () => context.push(
-                                      '/people/${textOf(item['personId'])}',
-                                    ),
-                            ),
-                          )
-                          .toList(),
-                    ),
+                    if (_session!.isAdmin) ...[
+                      const SizedBox(height: 18),
+                      _actionPanel(context, device),
+                      const SizedBox(height: 22),
+                      QuerySection(
+                        title: '历史领用记录（${_history.length}）',
+                        children: _history
+                            .map(
+                              (item) => QueryRow(
+                                title: textOf(item['personName'], '未关联人员'),
+                                subtitle:
+                                    '${formatTime(item['issuedAt'])} 至 ${item['returnedAt'] == null ? '当前' : formatTime(item['returnedAt'])}',
+                                onTap: item['personId'] == null
+                                    ? null
+                                    : () => context.push(
+                                        '/people/${textOf(item['personId'])}',
+                                      ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),

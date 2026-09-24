@@ -29,12 +29,7 @@ void main() {
       expect(find.text('/communications?personId=7'), findsOneWidget);
       router.pop();
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('查看轨迹'));
-      await tester.tap(find.text('查看轨迹'));
-      await tester.pumpAndSettle();
-      expect(find.text('/tracks?personId=7'), findsOneWidget);
-      router.pop();
-      await tester.pumpAndSettle();
+      expect(find.text('查看轨迹'), findsNothing);
       await tester.ensureVisible(find.text('HELMET-42'));
       await tester.tap(find.text('HELMET-42'));
       await tester.pumpAndSettle();
@@ -220,7 +215,7 @@ Future<GoRouter> _mount(
   final session = WearSession(dio: dio, credentials: _MemoryCredentials())
     ..token = 'token'
     ..siteId = '1'
-    ..me = {'userId': '99'};
+    ..me = {'userId': '99', 'roles': ['wear_platform_admin']};
   addTearDown(session.dispose);
   final router = GoRouter(
     initialLocation: '/people/7',
@@ -229,7 +224,7 @@ Future<GoRouter> _mount(
         path: '/people/:id',
         builder: (_, state) => PersonPage(id: state.pathParameters['id']!),
       ),
-      for (final path in ['/communications', '/tracks', '/devices/:id'])
+      for (final path in ['/communications', '/devices/:id'])
         GoRoute(
           path: path,
           builder: (_, state) => Scaffold(body: Text(state.uri.toString())),

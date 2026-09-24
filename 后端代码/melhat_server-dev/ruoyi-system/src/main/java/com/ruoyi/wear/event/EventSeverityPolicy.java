@@ -16,6 +16,10 @@ public final class EventSeverityPolicy {
                 && (code.equals(device+".battery") || code.equals(device+".low_battery"))) return WARNING;
         return ABNORMAL;
     }
-    public static boolean isEmergency(WearSafetyEvent event) { return EMERGENCY.equals(event.getSeverity()); }
+    /** Original SOS type is authoritative even when newer snapshot fields are absent. */
+    public static String effectiveSeverity(WearSafetyEvent event) {
+        return "sos".equals(event.getEventType()) ? EMERGENCY : event.getSeverity();
+    }
+    public static boolean isEmergency(WearSafetyEvent event) { return EMERGENCY.equals(effectiveSeverity(event)); }
     private static String value(String v) { return v==null?"":v.trim(); }
 }

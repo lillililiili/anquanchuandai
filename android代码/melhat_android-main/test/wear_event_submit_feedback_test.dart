@@ -17,6 +17,10 @@ void main() {
     'high_risk',
     'empty_abnormal',
     'empty_emergency',
+    'text_only',
+    'media_only',
+    'whitespace',
+    'removed_media',
     'mixed_media',
   ]) {
     testWidgets(
@@ -63,7 +67,7 @@ void main() {
                     postSucceeded = true;
                     serverEvent = {
                       ...serverEvent,
-                      'status': emergency ? 'pending_review' : 'closed',
+                      'status': emergency ? 'pending_review' : 'verified',
                       'version': (serverEvent['version'] as int) + 1,
                     };
                     actions.insert(0, {
@@ -126,11 +130,21 @@ void main() {
 
         expect(find.textContaining('当前状态 ·'), findsNothing);
         expect(find.text('紧急事件处理进度'), findsNothing);
-        if (!empty) {
+        if (!empty && mode != 'media_only') {
           await tester.ensureVisible(input);
-          await tester.enterText(input, '正常');
+          await tester.enterText(
+            input,
+            mode == 'whitespace' ? '   \n\t' : '正常',
+          );
+        }
+        if (!empty && mode != 'text_only') {
+          await attachTestCameraPhoto(tester, withVideo: mode == 'mixed_media');
+          if (mode == 'removed_media') {
+            await tester.ensureVisible(find.byTooltip('移除附件'));
+            await tester.tap(find.byTooltip('移除附件'));
+            await tester.pumpAndSettle();
+          }
           if (mode == 'mixed_media') {
-            await attachTestCameraPhoto(tester, withVideo: true);
             expect(find.byTooltip('移除附件'), findsNWidgets(3));
             final add = find.byKey(const ValueKey('event-capture-photo'));
             await tester.ensureVisible(add);
@@ -144,6 +158,21 @@ void main() {
           }
         }
         await tapSubmit();
+        if (empty ||
+            [
+              'text_only',
+              'media_only',
+              'whitespace',
+              'removed_media',
+            ].contains(mode)) {
+          expect(writes, isEmpty);
+          expect(input, findsOneWidget);
+          expect(find.textContaining('请填写异常原因说明并添加至少一个现场照片或视频'), findsWidgets);
+          expect(tester.widget<FilledButton>(submit).onPressed, isNotNull);
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+          return;
+        }
         expect(writes.single.path, '/api/v1/events/169/report');
         expect(Map.fromEntries((writes.single.data as FormData).fields), {
           'comment': empty ? '' : '正常',
@@ -151,7 +180,7 @@ void main() {
         });
         expect(
           (writes.single.data as FormData).files,
-          hasLength(mode == 'mixed_media' ? 3 : 0),
+          hasLength(mode == 'mixed_media' ? 3 : 1),
         );
         if (mode == 'mixed_media') {
           expect(
@@ -174,7 +203,7 @@ void main() {
           expect(find.byType(SnackBar), findsOneWidget);
           if (mode == 'refresh_failed') expect(message, contains('刷新失败'));
           if (mode != 'refresh_failed') {
-            expect(message, contains(emergency ? '等待管理员审批' : '事件已关闭'));
+            expect(message, contains(emergency ? '等待管理员审批' : '平台核验已完成'));
           }
           if (mode == 'success') {
             await tester.pumpWidget(const SizedBox.shrink());
@@ -182,7 +211,7 @@ void main() {
             await tester.pumpWidget(app());
             await tester.pumpAndSettle();
             expect(input, findsNothing);
-            expect(find.textContaining('已关闭'), findsWidgets);
+            expect(find.textContaining('平台核验已完成'), findsWidgets);
             expect(writes.length, 1);
           }
         }

@@ -25,7 +25,7 @@ class EventStateMachineTest {
     @Test
     void handleMovesHighRiskToReview() {
         assertEquals("pending_review", EventStateMachine.handleTarget("emergency"));
-        assertEquals("closed", EventStateMachine.handleTarget("abnormal"));
+        assertEquals("verified", EventStateMachine.handleTarget("abnormal"));
         assertTrue(EventStateMachine.canHandle("claimed"));
         assertTrue(EventStateMachine.canHandle("handling"));
         assertTrue(EventStateMachine.canHandle("open"));

@@ -159,9 +159,12 @@ void main() {
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         await tester.ensureVisible(
-          find.byKey(const ValueKey('home-tool-supervision')),
+          find.byKey(const ValueKey('home-tool-tasks')),
         );
         await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('home-tool-tracks')), findsNothing);
+        expect(find.byKey(const ValueKey('home-tool-fences')), findsNothing);
+        expect(find.byKey(const ValueKey('home-tool-supervision')), findsNothing);
         expect(find.text('近期未关闭事件'), findsNothing);
         expect(find.text('已领用人员'), findsNothing);
         expect(find.byType(NavigationBar), findsOneWidget);

@@ -22,6 +22,7 @@ class CommunicationsPage extends StatefulWidget {
     this.deviceId,
     this.personId,
     this.eventId,
+    this.filterRequest,
     this.action,
     this.video = false,
   });
@@ -29,6 +30,7 @@ class CommunicationsPage extends StatefulWidget {
   final String? deviceId;
   final String? personId;
   final String? eventId;
+  final String? filterRequest;
   final String? action;
   final bool video;
 
@@ -56,6 +58,8 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   bool _favoriteBusy = false;
   ContactVideoRequest? _videoRequest;
   ContactFilters _filters = const ContactFilters();
+  String? _personFilter;
+  bool _applyRouteTarget = true;
   List<JsonMap> _tasks = const [];
   bool _batchBusy = false;
   bool _preparingCall = false;
@@ -92,8 +96,10 @@ class _CommunicationsPageState extends State<CommunicationsPage>
     }
     if (oldWidget.deviceId != widget.deviceId ||
         oldWidget.personId != widget.personId ||
-        oldWidget.eventId != widget.eventId) {
+        oldWidget.eventId != widget.eventId ||
+        oldWidget.filterRequest != widget.filterRequest) {
       _loading = true;
+      _applyRouteTarget = true;
       _selectedKeys.clear();
       _controller?.selectDevice(null);
       unawaited(_load());
@@ -207,6 +213,8 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         _equipmentByPerson.clear();
         _selectedKeys.clear();
         _filters = const ContactFilters();
+        _personFilter = null;
+        _applyRouteTarget = true;
         _rosterScope = null;
         _refreshWarning = null;
         _tasksUnavailable = false;
@@ -227,14 +235,15 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       CommunicationDevice? selected;
       String eventType = '';
       String? resolvedDeviceId = _clean(widget.deviceId);
+      String? personId = _clean(widget.personId);
       final eventId = _clean(widget.eventId);
 
       if (eventId != null) {
         final event = await gateway.event(eventId);
         eventType = idOf(event['type']);
         resolvedDeviceId ??= _clean(idOf(event['deviceId']));
+        personId ??= _clean(idOf(event['personId']));
       }
-      final personId = _clean(widget.personId);
       if (personId != null) {
         person =
             people.where((item) => item.id == personId).firstOrNull ??
@@ -246,13 +255,14 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                   .where((item) => item.id == resolvedDeviceId)
                   .firstOrNull;
       }
-      if (resolvedDeviceId != null && selected == null) {
+      // An event's person takes priority over a device that may now be reassigned.
+      if (resolvedDeviceId != null && selected == null && person == null) {
         selected = await gateway.device(resolvedDeviceId);
         final assignedPersonId = selected.personId;
         if (person == null && assignedPersonId != null) {
-          person = people
-              .where((item) => item.id == assignedPersonId)
-              .firstOrNull;
+          person =
+              people.where((item) => item.id == assignedPersonId).firstOrNull ??
+              await gateway.person(assignedPersonId);
         }
       }
       if (selected != null &&
@@ -280,25 +290,25 @@ class _CommunicationsPageState extends State<CommunicationsPage>
               .where((d) => d.personId == p.id)
               .toList();
         }
-        _people = people;
+        _people = [
+          ...people,
+          if (person != null && people.every((p) => p.id != person!.id)) person,
+        ];
         _devices = devices;
         _equipment = equipment;
         _history = history;
         _eventType = eventType;
         _loading = false;
-        if (selected != null && resolvedDeviceId != null) {
-          _selectedKeys
-            ..clear()
-            ..add('d:${selected.id}');
-        } else if (person != null) {
-          _selectedKeys
-            ..clear()
-            ..add('p:${person.id}');
-          _equipmentByPerson[person.id] = equipment;
-        } else if (selected != null) {
-          _selectedKeys
-            ..clear()
-            ..add('d:${selected.id}');
+        if (_applyRouteTarget) {
+          _filters = const ContactFilters();
+          _search.clear();
+          _personFilter = person?.id;
+          _selectedKeys.clear();
+          if (person != null) {
+            _selectedKeys.add('p:${person.id}');
+            _equipmentByPerson[person.id] = equipment;
+          }
+          _applyRouteTarget = false;
         }
       });
       _pruneSelection();
@@ -365,34 +375,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         return;
       }
       _snack(_errorText(error));
-    }
-  }
-
-  Future<void> _selectDevice(CommunicationDevice device) async {
-    _controller?.selectDevice(device);
-    final session = _session;
-    final gateway = _gateway;
-    if (session == null || gateway == null) return;
-    final generation = ++_loadGeneration;
-    final scope = session.scopeKey;
-    try {
-      final history = await _readHistory(
-        eventId: _clean(widget.eventId),
-        deviceId: device.id,
-      );
-      if (!mounted ||
-          generation != _loadGeneration ||
-          scope != session.scopeKey) {
-        return;
-      }
-      setState(() => _history = history);
-    } catch (error) {
-      if (error is StaleSessionException) return;
-      if (mounted &&
-          generation == _loadGeneration &&
-          scope == session.scopeKey) {
-        _snack(_errorText(error));
-      }
     }
   }
 
@@ -503,6 +485,20 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                     const SizedBox(height: 18),
                                   ],
                                   _filterBar(),
+                                  if (_personFilter != null)
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: InputChip(
+                                        label: Text(
+                                          '联系人：${_people.where((p) => p.id == _personFilter).firstOrNull?.name ?? _personFilter}',
+                                        ),
+                                        deleteButtonTooltipMessage: '清除联系人筛选',
+                                        onDeleted: () => setState(() {
+                                          _personFilter = null;
+                                          _pruneSelection();
+                                        }),
+                                      ),
+                                    ),
                                   if (_refreshWarning != null ||
                                       _tasksUnavailable)
                                     Padding(
@@ -525,7 +521,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                         vertical: 18,
                                       ),
                                       child: Text(
-                                        '没有匹配的人员或设备',
+                                        '没有匹配的联系人',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: WearColors.muted,
@@ -600,7 +596,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
               onChanged: (_) => setState(_pruneSelection),
               onSubmitted: (_) => unawaited(_load()),
               decoration: InputDecoration(
-                hintText: '搜索人员或设备',
+                hintText: '搜索联系人',
                 hintStyle: const TextStyle(color: WearColors.muted),
                 prefixIcon: const Icon(Icons.search, color: WearColors.muted),
                 filled: true,
@@ -725,11 +721,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
           'online': '在线',
           'offline': '离线',
         }),
-        const InlineFilterGroup('device', '设备', {
-          'helmet': '安全帽',
-          'belt': '安全带',
-          'watch': '手表',
-        }),
         InlineFilterGroup('team', '班组', {
           for (final p in _people)
             if (p.teamId.isNotEmpty)
@@ -758,21 +749,32 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       footer: const Padding(
         padding: EdgeInsets.only(top: 8),
         child: Text(
-          '状态同步主平台 · 未选设备类型时按安全帽在线状态筛选',
+          '状态同步主平台 · 按联系人安全帽在线状态筛选',
           style: TextStyle(fontSize: 11, color: WearColors.muted),
         ),
       ),
     ),
   );
 
-  List<CommunicationDevice> _batchDevices() => selectedContactDevices(
-    selectedKeys: _selectedKeys,
-    visibleKeys: _visibleContacts.map((c) => c.key).toSet(),
-    devices: <String, CommunicationDevice>{
-      for (final d in [..._devices, ..._equipment]) d.id: d,
-    }.values.toList(),
-    filters: _filters,
-  );
+  CommunicationDevice? get _explicitDevice => [
+    ..._devices,
+    ..._equipment,
+  ].where((d) => d.id == widget.deviceId && d.personId != null).firstOrNull;
+
+  List<CommunicationDevice> _batchDevices() =>
+      selectedContactDevices(
+        selectedKeys: _selectedKeys,
+        visibleKeys: _visibleContacts.map((c) => c.key).toSet(),
+        devices: <String, CommunicationDevice>{
+          for (final d in [..._devices, ..._equipment]) d.id: d,
+        }.values.toList(),
+        filters: _filters,
+      ).where((device) {
+        final explicit = _explicitDevice;
+        return explicit == null ||
+            device.personId != explicit.personId ||
+            device.id == explicit.id;
+      }).toList();
 
   Widget _batchTtsCard() => WearCard(
     child: Column(
@@ -996,15 +998,12 @@ class _CommunicationsPageState extends State<CommunicationsPage>
 
   Widget _contactTile(_CommsContact contact) {
     final selected = _selectedKeys.contains(contact.key);
-    final helmet = contact.person == null
-        ? null
-        : PersonHelmetStatus(contact.person!.id, _devices);
-    final statusLabel = helmet?.label ?? contact.device?.stateLabel ?? '';
-    final isOnline =
-        helmet?.isOnline ?? contact.device?.isNormalOnline ?? false;
+    final helmet = PersonHelmetStatus(contact.person.id, _devices);
+    final statusLabel = helmet.label;
+    final isOnline = helmet.isOnline;
     final statusColor = isOnline
         ? const Color(0xFF0AA56C)
-        : (helmet?.device?.isAbnormal ?? contact.device?.isAbnormal ?? false)
+        : (helmet.device?.isAbnormal ?? false)
         ? WearColors.warning
         : WearColors.muted;
     return Padding(
@@ -1060,7 +1059,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                               const SizedBox(width: 5),
                               Expanded(
                                 child: Text(
-                                  '$statusLabel${(helmet?.device?.simulatedPresence ?? contact.device?.simulatedPresence ?? false) ? ' · 联调' : ''}',
+                                  '$statusLabel${(helmet.device?.simulatedPresence ?? false) ? ' · 联调' : ''}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -1352,52 +1351,20 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   }
 
   List<_CommsContact> get _allContacts {
-    final seenDevices = <String>{};
     final items = <_CommsContact>[
       for (final person in _people) _CommsContact.person(person),
     ];
-    for (final device in _devices) {
-      seenDevices.add(device.id);
-      items.add(
-        _CommsContact.device(
-          device,
-          ownerName: _people
-              .where((p) => p.id == device.personId)
-              .firstOrNull
-              ?.name,
-        ),
-      );
-    }
-    for (final device in _equipment) {
-      if (seenDevices.add(device.id)) {
-        items.add(
-          _CommsContact.device(
-            device,
-            ownerName: _people
-                .where((p) => p.id == device.personId)
-                .firstOrNull
-                ?.name,
-          ),
-        );
-      }
-    }
     return items;
   }
 
   List<_CommsContact> get _visibleContacts {
     final query = _search.text.trim().toLowerCase();
     final visible = _allContacts.where((item) {
-      if (query.isNotEmpty && !item.matches(query)) return false;
-      final person =
-          item.person ??
-          _people.where((p) => p.id == item.device?.personId).firstOrNull;
-      if (item.device != null && !_filters.matchesDevice(item.device!)) {
+      if (_personFilter != null && item.person.id != _personFilter) {
         return false;
       }
-      if (person == null) {
-        return _filters.teams.isEmpty && _filters.tasks.isEmpty;
-      }
-      return _filters.matchesPerson(person, _devices, _tasks);
+      if (query.isNotEmpty && !item.matches(query)) return false;
+      return _filters.matchesPerson(item.person, _devices, _tasks);
     }).toList();
     return _favorites?.order(visible, (contact) => contact.key) ?? visible;
   }
@@ -1460,21 +1427,13 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   }
 
   Future<void> _activateContact(_CommsContact contact) async {
-    final person = contact.person;
-    final device = contact.device;
-    if (person != null) {
-      await _selectPerson(person);
-      return;
-    }
-    if (device != null) {
-      await _selectDevice(device);
-    }
+    await _selectPerson(contact.person);
   }
 
   Future<CommunicationDevice?> _deviceOf(_CommsContact contact) async {
-    if (contact.device != null) return contact.device;
     final person = contact.person;
-    if (person == null) return null;
+    final explicit = _explicitDevice;
+    if (explicit != null && explicit.personId == person.id) return explicit;
     final cached = _equipmentByPerson[person.id];
     if (cached != null) {
       final matching = cached.where(_filters.matchesDevice);
@@ -1596,65 +1555,13 @@ class _CommsHero extends StatelessWidget {
 }
 
 class _CommsContact {
-  const _CommsContact._({
-    required this.key,
-    this.person,
-    this.device,
-    this.ownerName,
-  });
-
-  factory _CommsContact.person(PersonOption person) =>
-      _CommsContact._(key: 'p:${person.id}', person: person);
-
-  factory _CommsContact.device(
-    CommunicationDevice device, {
-    String? ownerName,
-  }) => _CommsContact._(
-    ownerName: ownerName,
-    key: 'd:${device.id}',
-    device: device,
-  );
-
-  final String key;
-  final String? ownerName;
-  final PersonOption? person;
-  final CommunicationDevice? device;
-
-  IconData get icon {
-    if (person != null) return Icons.person_outline;
-    return switch (device?.typeCode) {
-      'helmet' => Icons.engineering_outlined,
-      'belt' => Icons.safety_check_outlined,
-      _ => Icons.devices_other_outlined,
-    };
-  }
-
-  String get title {
-    if (person != null) return person!.name;
-    final item = device!;
-    final type = _deviceTypeLabel(item.typeCode);
-    final owner = ownerName?.trim() ?? item.personName?.trim() ?? '';
-    if (owner.isNotEmpty) return '$owner的$type';
-    return item.sn.isEmpty ? '设备 ${item.id}' : item.sn;
-  }
-
-  String get subtitle {
-    if (person != null) {
-      return person!.personCode.isEmpty ? '现场人员' : person!.personCode;
-    }
-    final item = device!;
-    final sn = item.sn.isEmpty ? item.id : item.sn;
-    return '$sn · ${_deviceTypeLabel(item.typeCode)}';
-  }
-
+  const _CommsContact.person(this.person);
+  final PersonOption person;
+  String get key => 'p:${person.id}';
+  IconData get icon => Icons.person_outline;
+  String get title => person.name;
+  String get subtitle => person.personCode.isEmpty ? '现场人员' : person.personCode;
   bool matches(String query) =>
       title.toLowerCase().contains(query) ||
       subtitle.toLowerCase().contains(query);
 }
-
-String _deviceTypeLabel(String typeCode) => switch (typeCode) {
-  'helmet' => '安全帽',
-  'belt' => '安全带',
-  'watch' => '手表',
-  _ => '设备',
-};

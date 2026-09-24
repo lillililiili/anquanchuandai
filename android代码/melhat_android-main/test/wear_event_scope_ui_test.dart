@@ -50,12 +50,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.text(admin ? '共 0 条 · 全站未关闭 45' : '共 0 条 · 我的待办 3'),
+        find.text(admin ? '共 0 条 · 全站核验待办 45' : '共 0 条 · 我的待办 3'),
         findsOneWidget,
       );
       if (!admin) {
         expect(find.text('进行中组内告警 · 本人设备提醒'), findsOneWidget);
-        expect(find.textContaining('全站未关闭'), findsNothing);
+        expect(find.textContaining('全站核验待办'), findsNothing);
       }
       expect(tester.takeException(), isNull);
     });

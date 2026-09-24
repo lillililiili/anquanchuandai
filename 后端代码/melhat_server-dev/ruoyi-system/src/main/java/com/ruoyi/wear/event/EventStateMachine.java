@@ -10,7 +10,13 @@ public final class EventStateMachine
     public static final String CLAIMED = "claimed";
     public static final String HANDLING = "handling";
     public static final String PENDING_REVIEW = "pending_review";
-    public static final String CLOSED = "closed";
+    public static final String CLOSED = "closed"; // Historical local completion; external closure is unknown.
+    public static final String VERIFIED = "verified";
+    public static final String CONFIRMED = "confirmed";
+
+    public static boolean isComplete(String status) {
+        return VERIFIED.equals(status) || CONFIRMED.equals(status) || CLOSED.equals(status);
+    }
 
     public static final String SOS = "sos";
     public static final String FALL = "fall";
@@ -42,7 +48,7 @@ public final class EventStateMachine
 
     public static String handleTarget(String severity)
     {
-        return EventSeverityPolicy.EMERGENCY.equals(severity) ? PENDING_REVIEW : CLOSED;
+        return EventSeverityPolicy.EMERGENCY.equals(severity) ? PENDING_REVIEW : VERIFIED;
     }
 
     public static boolean canTransfer(String status)
@@ -62,6 +68,6 @@ public final class EventStateMachine
 
     public static boolean canReopen(String status)
     {
-        return CLOSED.equals(status);
+        return isComplete(status);
     }
 }

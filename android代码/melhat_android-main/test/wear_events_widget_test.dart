@@ -73,7 +73,7 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('本人已认领事件的原处置草稿在离开后恢复，窄屏键盘下可提交且防重', (tester) async {
+  testWidgets('事件上报草稿在离开后恢复，窄屏键盘下可提交且防重', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = 1.5;
@@ -127,12 +127,6 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('wear-event-event-1')));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('event-original-actions')),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('event-original-actions')));
-    await tester.pumpAndSettle();
     final firstInput = find.byKey(const ValueKey('event-handle-input-event-1'));
     await tester.ensureVisible(firstInput);
     await tester.pumpAndSettle();
@@ -157,12 +151,6 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wear-event-event-1')));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('event-original-actions')),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('event-original-actions')));
     await tester.pumpAndSettle();
     final restoredInput = find.byKey(
       const ValueKey('event-handle-input-event-1'),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../config/backend_config.dart';
 import 'data.dart';
@@ -67,6 +68,7 @@ class WearApi {
     Map<String, dynamic>? query,
     Object? data,
     bool raw = false,
+    bool binary = false,
   }) async {
     final requestEpoch = epoch();
     final headers = <String, dynamic>{};
@@ -93,11 +95,28 @@ class WearApi {
         options: Options(
           method: method,
           headers: headers,
+          contentType: data is FormData ? 'multipart/form-data' : null,
+          responseType: binary ? ResponseType.bytes : null,
           validateStatus: (_) => true,
         ),
       );
       if (requestEpoch != epoch()) throw const StaleSessionException();
-      final body = jsonMap(response.data);
+      dynamic payload = response.data;
+      if (binary && payload is List<int>) {
+        // JSON failures must never be exported as a supposedly valid workbook.
+        if (payload.length >= 4 &&
+            payload[0] == 0x50 &&
+            payload[1] == 0x4b &&
+            response.statusCode == 200) {
+          return payload;
+        }
+        try {
+          payload = jsonDecode(utf8.decode(payload));
+        } catch (_) {
+          throw const WearApiException(502, '下载文件格式不正确，请重试');
+        }
+      }
+      final body = jsonMap(payload);
       final code = intOf(body['code'], response.statusCode ?? 0);
       if (code != 200 || (response.statusCode ?? 500) >= 400) {
         final effectiveCode = (response.statusCode ?? 0) >= 400
@@ -109,7 +128,7 @@ class WearApi {
           _safeMessage(body['msg'], effectiveCode),
         );
       }
-      if (response.data is! Map) {
+      if (payload is! Map || binary) {
         throw const WearApiException(502, '服务响应格式不正确，请稍后重试');
       }
       return raw ? body : body['data'];

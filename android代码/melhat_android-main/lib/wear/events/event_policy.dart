@@ -34,7 +34,7 @@ abstract final class EventPolicy {
       case EventCommand.handle:
         return actor.canRead && !event.isWarning && active;
       case EventCommand.confirm:
-        return actor.canRead && event.isWarning && !event.isClosed;
+        return actor.canRead && event.isWarning && !event.isPlatformComplete;
       case EventCommand.close:
         return actor.isReviewer &&
             event.isEmergency &&
@@ -42,7 +42,7 @@ abstract final class EventPolicy {
                 event.reporterUserId == actor.userId) &&
             event.status == 'pending_review';
       case EventCommand.reopen:
-        return actor.isReviewer && !event.isWarning && event.isClosed;
+        return actor.isReviewer && !event.isWarning && event.isPlatformComplete;
       case EventCommand.assignTask:
         return actor.canAssignTask && event.taskMatch == 'pending';
     }

@@ -13,6 +13,19 @@ public class EventDto
     private String type;
     private String severity;
     private String status;
+    private String fieldReportStatus;
+    private String verificationStatus;
+    private String reviewStatus;
+    public String getFieldReportStatus() { return fieldReportStatus; }
+    public void setFieldReportStatus(String value) { fieldReportStatus = value; }
+    public String getVerificationStatus() { return verificationStatus; }
+    public void setVerificationStatus(String value) { verificationStatus = value; }
+    public String getReviewStatus() { return reviewStatus; }
+    public void setReviewStatus(String value) { reviewStatus = value; }
+    // No authority connector exists yet. Never infer external closure from local actions.
+    // This read-only field is not accepted by any command DTO.
+    public String getExternalClosureStatus() { return "not_synced"; }
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "GMT+8")
     private Date occurredAt;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "GMT+8")

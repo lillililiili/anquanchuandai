@@ -32,8 +32,19 @@ export function transferEvent(id, data) {
   return request({ url: '/api/v1/events/' + id + '/transfer', method: 'post', data })
 }
 
-export function closeEvent(id, data) {
-  return request({ url: '/api/v1/events/' + id + '/close', method: 'post', data })
+export function reviewEvent(id, data) {
+  return request({ url: '/api/v1/events/' + id + '/review', method: 'post', data })
+}
+
+// Compatibility export for the legacy workspace; this never closes an external case.
+export const closeEvent = reviewEvent
+
+export function listEventMedia(id) {
+  return request({ url: '/api/v1/events/' + id + '/media', method: 'get' })
+}
+
+export function fetchEventMedia(id, mediaId) {
+  return request({ url: '/api/v1/events/' + id + '/media/' + encodeURIComponent(mediaId), method: 'get', responseType: 'blob' })
 }
 
 export function reopenEvent(id, data) {
@@ -57,11 +68,13 @@ export function fenceActionLabel(action) {
 
 export function eventStatusLabel(status) {
   const map = {
-    open: '待认领',
-    claimed: '已认领',
+    open: '待现场核验',
+    claimed: '待现场核验',
     handling: '处置中',
     pending_review: '待复核',
-    closed: '已关闭'
+    verified: '已核验',
+    confirmed: '已确认',
+    closed: '历史已处理'
   }
   return map[status] || status || '-'
 }

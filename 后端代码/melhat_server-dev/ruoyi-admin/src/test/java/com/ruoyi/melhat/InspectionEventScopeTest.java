@@ -75,6 +75,35 @@ class InspectionEventScopeTest {
         assertThrows(ServiceException.class,()->access.assertReadable(manual));
     }
 
+    @Test void legacySosUsesEmergencyFilterWithoutLosingGroupAuthorization() {
+        db.update("UPDATE wear_safety_event SET event_type='sos',severity='high',alarm_name=null,alarm_code=null WHERE id=1");
+        db.update("UPDATE wear_safety_event SET event_type='sos',severity='warning',alarm_name='告警名称未提供' WHERE id=2");
+        EventQueryService query = new EventQueryService();
+        ReflectionTestUtils.setField(query,"eventMapper",events);
+        ReflectionTestUtils.setField(query,"eventAccess",access);
+        ReflectionTestUtils.setField(query,"siteAccessService",sites);
+        ReflectionTestUtils.setField(query,"commandService",mock(EventCommandService.class));
+        when(events.selectPage(any(Page.class),any())).thenAnswer(call -> {
+            List<Long> matched = ids(call.getArgument(1));
+            assertEquals(Collections.singletonList(1L), matched);
+            return new Page<WearSafetyEvent>(1,20,matched.size());
+        });
+        query.page(1,20,null,"all",null,"emergency",null,null,null,null,null,null,null,null);
+        when(sites.isPlatformAdmin(any())).thenReturn(true);
+        when(events.selectPage(any(Page.class),any())).thenAnswer(call -> {
+            List<Long> matched = ids(call.getArgument(1));
+            assertEquals(Arrays.asList(1L,2L), matched);
+            return new Page<WearSafetyEvent>(1,20,matched.size());
+        });
+        query.page(1,20,null,"all",null,"emergency",null,null,null,null,null,null,null,null);
+        when(events.selectPage(any(Page.class),any())).thenAnswer(call -> {
+            List<Long> matched = ids(call.getArgument(1));
+            assertEquals(Collections.singletonList(4L), matched);
+            return new Page<WearSafetyEvent>(1,20,matched.size());
+        });
+        query.page(1,20,null,"all",null,"warning",null,null,null,null,null,null,null,null);
+    }
+
     private List<Long> ids(LambdaQueryWrapper<WearSafetyEvent> query) {
         query.getSqlSegment();
         String sql=query.getExpression().getNormal().getSqlSegment();
@@ -248,6 +277,30 @@ class InspectionEventScopeTest {
         when(sites.isPlatformAdmin(any())).thenReturn(true);
         assertFalse(ids(access.scope(new LambdaQueryWrapper<>())).contains(1L));
         assertFalse(ids(access.scope(new LambdaQueryWrapper<>())).contains(6L));
+    }
+
+    @Test void platformCompletionLeavesAuditVisibleButRemovesEveryTodoCount() {
+        for (String status : Arrays.asList("verified", "confirmed", "closed")) {
+            db.update("UPDATE wear_safety_event SET status=? WHERE id IN (1,4)", status);
+            assertTrue(ids(access.scope(new LambdaQueryWrapper<>())).contains(1L));
+            assertFalse(ids(access.actionable(access.scope(new LambdaQueryWrapper<>()))).contains(1L));
+            assertEquals(3, queryService().inboxCount().get("count"));
+            WearSafetyEvent complete = new WearSafetyEvent(); complete.setStatus(status);
+            assertTrue(access.recipients(complete).isEmpty());
+        }
+    }
+
+    @Test void pcOverviewAndEventInboxUseTheSameScopeAndCompletionDefinition() {
+        db.execute("ALTER TABLE wear_safety_event ADD occurred_at TIMESTAMP");
+        db.update("UPDATE wear_safety_event SET status='verified' WHERE id=1");
+        com.ruoyi.wear.admin.AdminOverviewService overview = new com.ruoyi.wear.admin.AdminOverviewService();
+        ReflectionTestUtils.setField(overview,"eventMapper",events);
+        ReflectionTestUtils.setField(overview,"eventAccess",access);
+        for (boolean admin : Arrays.asList(false, true)) {
+            when(sites.isPlatformAdmin(any())).thenReturn(admin);
+            Map<String,Long> result = ReflectionTestUtils.invokeMethod(overview,"events",Collections.singletonList(1L));
+            assertEquals(((Number)queryService().inboxCount().get("count")).longValue(),result.get("open"));
+        }
     }
 
     private EventQueryService queryService() {

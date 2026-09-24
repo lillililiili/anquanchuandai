@@ -35,7 +35,7 @@ class ApiEventGateway implements EventGateway {
             ).map(WearEvent.fromJson).where((event) {
               return (filters.status == 'all' ||
                       ((filters.status.isEmpty || filters.status == 'active')
-                          ? !event.isClosed
+                          ? !event.isPlatformComplete
                           : event.status == filters.status)) &&
                   (filters.type.isEmpty || event.type == filters.type) &&
                   (filters.personId.isEmpty ||
@@ -180,6 +180,8 @@ class ApiEventGateway implements EventGateway {
             ? 'task'
             : command == EventCommand.handle
             ? 'report'
+            : command == EventCommand.close
+            ? 'review'
             : command.name;
         return WearEvent.fromJson(
           jsonMap(

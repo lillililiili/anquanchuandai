@@ -112,7 +112,8 @@ class EventController extends ChangeNotifier {
 
   bool isHandleCommentSubmitted(String eventId) {
     final text = draftFor(eventId).handleComment.trim();
-    return text.isNotEmpty && text == submittedHandleCommentFor(eventId);
+    final submitted = submittedHandleCommentFor(eventId);
+    return submitted != null && text == submitted;
   }
 
   Future<void> initialize({bool applyInitial = true}) async {
@@ -415,14 +416,6 @@ class EventController extends ChangeNotifier {
       return false;
     }
     final submittedDraft = draftFor(event.id);
-    if (command == EventCommand.handle &&
-        submittedDraft.handleComment.trim().isEmpty) {
-      errorMessage = '请填写现场核验说明后再提交';
-      successMessage = null;
-      conflictMessage = null;
-      notifyListeners();
-      return false;
-    }
     writing = true;
     errorMessage = null;
     conflictMessage = null;
@@ -444,7 +437,9 @@ class EventController extends ChangeNotifier {
         _submittedHandleComments.remove(event.id);
       }
       if (command == EventCommand.ack) _ackedLocally.add(event.id);
-      successMessage = _successText(command);
+      successMessage = command == EventCommand.handle
+          ? (latest.isClosed ? '现场记录已提交，事件已结束' : '现场记录已提交，等待管理员审批')
+          : _successText(command);
       if (selectionGeneration != _detailGeneration ||
           selected?.id != event.id) {
         await reload(current: current);
@@ -530,8 +525,9 @@ class EventController extends ChangeNotifier {
 
   String _successText(EventCommand command) => switch (command) {
     EventCommand.ack => '已确认看见该事件',
-    EventCommand.claim => '事件已认领',
-    EventCommand.handle => '处置记录已提交',
+    EventCommand.claim => '异常无需认领',
+    EventCommand.confirm => '设备提醒已确认，任务已结束',
+    EventCommand.handle => '原因已上报，本次处理已完成，由管理员复核',
     EventCommand.transfer => '事件已转交',
     EventCommand.close => '事件已关闭',
     EventCommand.reopen => '事件已重开',

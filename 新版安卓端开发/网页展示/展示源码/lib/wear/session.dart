@@ -57,13 +57,37 @@ class WearSession extends ChangeNotifier {
   Set<String> get permissions =>
       (me?['permissions'] as List? ?? []).map((e) => e.toString()).toSet();
   bool hasRole(String role) => roles.contains(role);
-  bool can(String permission) =>
-      permissions.contains(permission) || permissions.contains('*:*:*');
-  bool get isDuty => hasRole('wear_duty') || hasRole('wear_team_lead');
-  bool get isReviewer =>
-      hasRole('wear_reviewer') ||
-      hasRole('wear_platform_admin') ||
-      me?['admin'] == true;
+  bool get isAdmin =>
+      me?['admin'] == true ||
+      hasRole('admin') ||
+      hasRole('wear_platform_admin');
+  bool can(String permission) {
+    if (!isAdmin &&
+        !const {
+          'wear:site:list',
+          'wear:site:select',
+          'wear:person:list',
+          'wear:person:query',
+          'wear:device:list',
+          'wear:device:query',
+          'wear:task:list',
+          'wear:task:query',
+          'wear:event:list',
+          'wear:event:query',
+          'wear:event:report',
+          'wear:event:confirm',
+          'wear:inspection:check',
+          'wear:inspection:report',
+        }.contains(permission)) {
+      return false;
+    }
+    return permissions.contains(permission) || permissions.contains('*:*:*');
+  }
+
+  bool get isDuty => isAdmin;
+  bool get isDutyAdmin => isAdmin;
+  bool get canHandover => isAdmin;
+  bool get isReviewer => isAdmin;
   List<JsonMap> get sites => jsonList(
     me?['authorizedSites'],
   ).where((e) => e['status'] == null || idOf(e['status']) == '0').toList();

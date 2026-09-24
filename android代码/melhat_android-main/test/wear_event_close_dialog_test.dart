@@ -8,14 +8,7 @@ import 'wear_session_test.dart'
     show MemoryCredentials, identity, reply, transport;
 
 void main() {
-  for (final mode in [
-    'cancel',
-    'back',
-    'confirm',
-    'network',
-    'conflict',
-    'reopen',
-  ]) {
+  for (final mode in ['cancel', 'back', 'confirm', 'network', 'conflict']) {
     testWidgets('event reason dialog survives $mode', (tester) async {
       final confirm = mode != 'cancel' && mode != 'back';
       final fails = mode == 'network' || mode == 'conflict';
@@ -45,7 +38,7 @@ void main() {
                 if (request.method == 'POST') {
                   expect(
                     request.path,
-                    '/api/v1/events/169/${reopen ? 'reopen' : 'close'}',
+                    '/api/v1/events/169/${reopen ? 'reopen' : 'review'}',
                   );
                   expect(request.data, {'reason': '已确认现场正常', 'version': 3});
                   writes++;
@@ -60,7 +53,7 @@ void main() {
                   }
                   event = {
                     ...event,
-                    'status': reopen ? 'open' : 'closed',
+                    'status': reopen ? 'open' : 'verified',
                     'version': 4,
                   };
                   return reply(event);
@@ -101,16 +94,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(OutlinedButton, '复核与记录'));
-      await tester.pumpAndSettle();
       final close = reopen
           ? find.widgetWithText(OutlinedButton, '重开')
-          : find.widgetWithText(FilledButton, '审批通过并结束').first;
+          : find.widgetWithText(FilledButton, '审批通过 · 完成核验').first;
       await tester.ensureVisible(close);
       await tester.pumpAndSettle();
       await tester.tap(close);
       await tester.pumpAndSettle();
-      expect(find.text(reopen ? '重开事件' : '关闭事件'), findsOneWidget);
+      expect(find.text(reopen ? '重开事件' : '审批现场核验'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.tap(find.text('确认提交'));
       await tester.pumpAndSettle();
@@ -133,7 +124,7 @@ void main() {
       expect(writes, confirm ? 1 : 0);
       expect(
         event['status'],
-        reopen ? 'open' : (confirm && !fails ? 'closed' : 'pending_review'),
+        reopen ? 'open' : (confirm && !fails ? 'verified' : 'pending_review'),
       );
       if (!confirm || fails) {
         await tester.ensureVisible(close);

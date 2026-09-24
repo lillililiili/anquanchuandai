@@ -7,54 +7,42 @@ class EventActor {
     required this.permissions,
     this.userName = '',
   });
-
   final String userId;
   final Set<String> roles;
   final Set<String> permissions;
   final String userName;
-
-  bool _can(String permission) =>
-      permissions.contains(permission) || permissions.contains('*:*:*');
-
+  bool _can(String value) =>
+      permissions.contains(value) || permissions.contains('*:*:*');
+  bool get isAdmin =>
+      roles.contains('admin') || roles.contains('wear_platform_admin');
   bool get canRead => _can('wear:event:list') || _can('wear:event:query');
-
-  bool get isDuty =>
-      _can('wear:event:claim') &&
-      (roles.contains('wear_duty') || roles.contains('wear_team_lead'));
-
-  bool get isReviewer =>
-      _can('wear:event:review') &&
-      (roles.contains('wear_reviewer') ||
-          roles.contains('wear_platform_admin') ||
-          roles.contains('admin'));
-
-  bool get canAssignTask =>
-      _can('wear:task:edit') &&
-      (roles.contains('wear_duty') || roles.contains('wear_team_lead'));
+  bool get isDuty => isAdmin;
+  bool get isReviewer => isAdmin && _can('wear:event:review');
+  bool get canAssignTask => isAdmin && _can('wear:task:edit');
 }
 
 abstract final class EventPolicy {
+  // The server authorizes task membership for every returned event and command.
   static bool can(EventCommand command, WearEvent event, EventActor actor) {
+    final active = const {'open', 'claimed', 'handling'}.contains(event.status);
     switch (command) {
       case EventCommand.ack:
-        return actor.canRead;
+        return actor.isAdmin && actor.canRead && !event.isWarning;
       case EventCommand.claim:
-        return actor.isDuty && event.status == 'open';
-      case EventCommand.handle:
-        return actor.isDuty &&
-            event.claimantUserId == actor.userId &&
-            const {'claimed', 'handling'}.contains(event.status);
       case EventCommand.transfer:
-        return actor.isDuty &&
-            event.claimantUserId == actor.userId &&
-            const {'claimed', 'handling'}.contains(event.status);
+        return false;
+      case EventCommand.handle:
+        return actor.canRead && !event.isWarning && active;
+      case EventCommand.confirm:
+        return actor.canRead && event.isWarning && !event.isClosed;
       case EventCommand.close:
-        if (event.isHighRisk) {
-          return actor.isReviewer && event.status == 'pending_review';
-        }
-        return actor.isDuty && event.status == 'handling';
+        return actor.isReviewer &&
+            event.isEmergency &&
+            !(event.source == 'manual_sos' &&
+                event.reporterUserId == actor.userId) &&
+            event.status == 'pending_review';
       case EventCommand.reopen:
-        return actor.isReviewer && event.status == 'closed';
+        return actor.isReviewer && !event.isWarning && event.isClosed;
       case EventCommand.assignTask:
         return actor.canAssignTask && event.taskMatch == 'pending';
     }

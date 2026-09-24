@@ -222,10 +222,7 @@ void main() {
         '/communications',
         '/people?name=张',
         '/devices',
-        '/supervision',
         '/tasks',
-        '/tracks',
-        '/fences',
       ]) {
         router.go(route);
         await tester.pumpAndSettle();

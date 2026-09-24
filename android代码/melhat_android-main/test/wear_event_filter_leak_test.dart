@@ -107,7 +107,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
       }
-      expect(queries.last['statuses'] == 'open' || queries.last['status'] == 'open', true);
+      expect(
+        queries.last['statuses'] == 'open' || queries.last['status'] == 'open',
+        true,
+      );
       expect(
         queries.last.containsKey('type'),
         false,
@@ -119,14 +122,18 @@ void main() {
         await tester.pumpAndSettle();
       }
       expect(find.textContaining('共 24 条'), findsOneWidget);
-      expect(find.textContaining('全站未关闭 35'), findsOneWidget);
+      expect(find.textContaining('我的待办 35'), findsOneWidget);
       final workspace = find.byKey(const ValueKey('wear-events-workspace'));
       for (var i = 0; i < 14; i++) {
         await tester.drag(workspace, const Offset(0, -650));
         await tester.pumpAndSettle();
       }
       expect(
-        queries.any((q) => q['current'] == 2 && (q['status'] == 'open' || q['statuses'] == 'open')),
+        queries.any(
+          (q) =>
+              q['current'] == 2 &&
+              (q['status'] == 'open' || q['statuses'] == 'open'),
+        ),
         true,
       );
       expect(find.byKey(const ValueKey('wear-event-24')), findsOneWidget);
@@ -149,10 +156,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(queries.last['escalated'], 'true');
       expect(queries.last.containsKey('type'), false);
-      expect(queries.last['status'] == 'all' || !queries.last.containsKey('status'), true);
+      expect(
+        queries.last['status'] == 'all' || !queries.last.containsKey('status'),
+        true,
+      );
       expect(queries.last.containsKey('statuses'), false);
-      final collapse2 = find.byKey(const ValueKey('inline-filter-collapse-top'));
+      final collapse2 = find.byKey(
+        const ValueKey('inline-filter-collapse-top'),
+      );
       if (collapse2.evaluate().isNotEmpty) {
+        await tester.ensureVisible(collapse2);
+        await tester.pumpAndSettle();
         await tester.tap(collapse2);
         await tester.pumpAndSettle();
       }

@@ -60,7 +60,9 @@ String eventStatusLabel(Object? value) => switch (value?.toString()) {
   'claimed' => '待处理',
   'handling' => '处理中',
   'pending_review' => '待复核',
-  'closed' => '已关闭',
+  'verified' => '已核验',
+  'confirmed' => '已确认',
+  'closed' => '历史已处理',
   _ => '状态未知',
 };
 

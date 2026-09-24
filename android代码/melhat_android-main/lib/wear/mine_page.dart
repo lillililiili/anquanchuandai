@@ -362,13 +362,6 @@ class _WearMinePageState extends State<WearMinePage> {
                                   ),
                                 ),
                               ),
-                              if (session.isAdmin)
-                                _menuRow(
-                                  Icons.settings,
-                                  const Color(0xFF9256F8),
-                                  '设置',
-                                  () => context.push('/settings'),
-                                ),
                               _menuRow(
                                 Icons.chat,
                                 _blue,
@@ -573,7 +566,7 @@ class _WearMinePageState extends State<WearMinePage> {
           ),
           const SizedBox(height: 14),
           const Text(
-            '我的装备：查看当前账号关联人员的设备和绑定记录。\n\n通讯服务：查看接警连接、通知权限和绑定状态。\n\n设置：切换厂站、查看并确认值班交接。\n\n账号操作：确认后退出当前账号；通话中请先结束通话。',
+            '我的装备：查看当前账号关联人员的设备和绑定记录。\n\n通讯服务：查看接警连接、通知权限和绑定状态。\n\n账号操作：确认后退出当前账号；通话中请先结束通话。',
             style: TextStyle(height: 1.6),
           ),
           const SizedBox(height: 18),

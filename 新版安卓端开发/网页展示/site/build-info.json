@@ -1742,8 +1742,8 @@
                             "sha256":  "b63207cf529949ec4727b68c23dbb38ce255b6f6f4ae1effcb5c1dcf2852d238"
                         }
                     ],
-    "builtAt":  "2026-09-21T14:35:26.4351995+08:00",
-    "mainJsSha256":  "06d4ebfc5abafbdf5e9c977d3967530aa3849f8e853436d6546798e6e768f1dd",
+    "builtAt":  "2026-09-23T13:58:49.6597088+08:00",
+    "mainJsSha256":  "a9dce015146e60fa49b457f070283aa9248ad0029394894f17ea022bbbbd3085",
     "source":  "C:\\Users\\qiyue\\Desktop\\开发项目\\android代码\\melhat_android-main",
     "isolatedBuild":  true,
     "sourceCapturedAt":  "2026-09-21T13:54:43.005210+08:00",

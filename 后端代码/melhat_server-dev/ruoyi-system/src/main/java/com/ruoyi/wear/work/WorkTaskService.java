@@ -368,7 +368,7 @@ public class WorkTaskService
         }
         if (hasOpenHighRisk(id) && !acknowledgeOpenHighRisk)
         {
-            throw new ServiceException("存在未关闭的高风险事件，确认后才能结束任务", HttpStatus.CONFLICT);
+            throw new ServiceException("存在尚未完成平台核验的高风险事件，核验后才能结束任务", HttpStatus.CONFLICT);
         }
         if (taskMapper.endIfActive(id, version, SecurityUtils.getUsername()) == 0)
         {
@@ -582,7 +582,7 @@ public class WorkTaskService
     {
         return eventMapper.selectCount(new LambdaQueryWrapper<WearSafetyEvent>()
                 .eq(WearSafetyEvent::getTaskId, taskId)
-                .ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED)
+                .notIn(WearSafetyEvent::getStatus, EventStateMachine.CLOSED, EventStateMachine.VERIFIED, EventStateMachine.CONFIRMED)
                 .eq(WearSafetyEvent::getSeverity, "high")) > 0;
     }
 

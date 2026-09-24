@@ -81,7 +81,7 @@ public class EventQueryService
         LambdaQueryWrapper<WearSafetyEvent> query = new LambdaQueryWrapper<WearSafetyEvent>()
                 .in(WearSafetyEvent::getSiteId, scope);
         eventAccess.scope(query);
-        List<String> selectedStatuses = splitChoices(statuses, java.util.Arrays.asList("open", "claimed", "handling", "pending_review", "closed"));
+        List<String> selectedStatuses = splitChoices(statuses, java.util.Arrays.asList("open", "claimed", "handling", "pending_review", "verified", "confirmed", "closed"));
         List<String> selectedTypes = splitChoices(types, java.util.Arrays.asList("sos", "fall", "impact", "geofence", "realtime"));
         List<String> selectedCodes = splitChoices(alarmCodes, null);
         if (!selectedTypes.isEmpty() || !selectedCodes.isEmpty())
@@ -109,7 +109,7 @@ public class EventQueryService
         {
             query.in(WearSafetyEvent::getStatus, selectedStatuses);
         }
-        else if (StringUtils.isNotEmpty(status) && !"all".equals(status))
+        else if (StringUtils.isNotEmpty(status) && !"all".equals(status) && !"active".equals(status))
         {
             query.eq(WearSafetyEvent::getStatus, status);
         }
@@ -138,7 +138,13 @@ public class EventQueryService
         {
             if(!java.util.Arrays.asList("warning","abnormal","emergency").contains(severity))
                 throw new ServiceException("告警等级无效",400);
-            query.eq(WearSafetyEvent::getSeverity, severity);
+            if (EventSeverityPolicy.EMERGENCY.equals(severity)) {
+                query.and(level -> level.eq(WearSafetyEvent::getEventType, "sos")
+                        .or().eq(WearSafetyEvent::getSeverity, severity));
+            } else {
+                query.apply("COALESCE(event_type,'')<>'sos'")
+                        .eq(WearSafetyEvent::getSeverity, severity);
+            }
         }
         if (StringUtils.isNotEmpty(claimantUserId))
         {

@@ -23,7 +23,7 @@ public class EventAccessService {
     }
 
     public LambdaQueryWrapper<WearSafetyEvent> actionable(LambdaQueryWrapper<WearSafetyEvent> query) {
-        query.ne(WearSafetyEvent::getStatus, EventStateMachine.CLOSED);
+        query.notIn(WearSafetyEvent::getStatus, EventStateMachine.CLOSED, EventStateMachine.VERIFIED, EventStateMachine.CONFIRMED);
         // Pending emergency approval remains visible to its group until the workflow ends.
         return query;
     }
@@ -50,7 +50,8 @@ public class EventAccessService {
                 + "AND p.status='0' AND p.del_flag='0') OR t.id IN (SELECT m.task_id FROM wear_work_task_member m "
                 + "JOIN wear_person p ON p.id=m.person_id WHERE p.account_user_id={0} "
                 + "AND p.status='0' AND p.del_flag='0')))";
-        query.apply("(TRIM(COALESCE(alarm_name,''))<>'' OR TRIM(COALESCE(alarm_code,''))<>'') AND COALESCE(alarm_name,'')<>'告警名称未提供'");
+        // Legacy SOS has a recoverable name/type; retain the existing authorization below.
+        query.apply("(event_type='sos' OR ((TRIM(COALESCE(alarm_name,''))<>'' OR TRIM(COALESCE(alarm_code,''))<>'') AND COALESCE(alarm_name,'')<>'告警名称未提供'))");
         String manual = "(COALESCE(source,'')='manual_sos' AND event_type='sos')";
         return query.apply("((" + manual + (admin ? "" : " AND reporter_user_id={0}")
                 + ") OR (NOT " + manual + " AND ((" + reminder + " AND " + own + ") OR (NOT " + reminder
@@ -66,7 +67,7 @@ public class EventAccessService {
     }
 
     public List<Long> recipients(WearSafetyEvent event) {
-        if (EventStateMachine.CLOSED.equals(event.getStatus())) return new java.util.ArrayList<>();
+        if (EventStateMachine.isComplete(event.getStatus())) return new java.util.ArrayList<>();
         List<Long> users = db.queryForList("SELECT DISTINCT u.user_id FROM sys_user u WHERE u.status='0' "
                 + "AND u.del_flag='0' AND (u.user_id=1 OR u.user_id IN (SELECT a.user_id FROM wear_site_account a "
                 + "WHERE a.site_id=? AND a.status='0') OR u.user_id IN (SELECT ur.user_id FROM sys_user_role ur "

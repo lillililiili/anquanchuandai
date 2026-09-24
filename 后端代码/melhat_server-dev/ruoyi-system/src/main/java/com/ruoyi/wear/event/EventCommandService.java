@@ -81,6 +81,9 @@ public class EventCommandService
         if(EventReminderPolicy.isReminder(event)) throw new ServiceException("警告请点击收到",400);
         if(!EventStateMachine.canHandle(event.getStatus()) || !version.equals(event.getVersion()))
             throw new ServiceException("事件已更新，请刷新后重试",409);
+        comment = requireReportComment(comment);
+        if (files == null || files.isEmpty() || files.stream().anyMatch(file -> file == null || file.isEmpty()))
+            throw new ServiceException("请添加至少一个有效的现场照片或视频", HttpStatus.BAD_REQUEST);
         evidence.save(event,version,files);
         return handle(id,comment,version);
     }
@@ -101,10 +104,10 @@ public class EventCommandService
         if (!EventReminderPolicy.isReminder(event))
             throw new ServiceException("此事件请通过上报流程提交", HttpStatus.FORBIDDEN);
         // Accept legacy pending-review reminders as well, without involving an administrator.
-        if (EventStateMachine.CLOSED.equals(event.getStatus()) ||
-                eventMapper.closeIfStatus(id, event.getStatus(), version, SecurityUtils.getUsername()) == 0)
+        if (EventStateMachine.isComplete(event.getStatus()) ||
+                eventMapper.confirmIfStatus(id, event.getStatus(), version, SecurityUtils.getUsername()) == 0)
             throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
-        insertAction(id, "confirm", SecurityUtils.getUsername(), "本人已收到警告", event.getStatus(), EventStateMachine.CLOSED);
+        insertAction(id, "confirm", SecurityUtils.getUsername(), "本人已收到警告", event.getStatus(), EventStateMachine.CONFIRMED);
         return EventViews.toDto(eventMapper.selectById(id));
     }
 
@@ -121,14 +124,14 @@ public class EventCommandService
         WearSafetyEvent event = requireReadable(id);
         if (EventReminderPolicy.isReminder(event))
             throw new ServiceException("设备提醒请直接确认", HttpStatus.BAD_REQUEST);
-        comment = comment == null ? "" : comment.trim();
-        if (comment.length() > 500)
-            throw new ServiceException("异常原因不能超过500字", HttpStatus.BAD_REQUEST);
+        comment = requireReportComment(comment);
+        if (!evidence.hasSubmission(id, version))
+            throw new ServiceException("请添加至少一个有效的现场照片或视频", HttpStatus.BAD_REQUEST);
         if (!EventStateMachine.canHandle(event.getStatus()))
         {
             throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
         }
-        String to = EventStateMachine.handleTarget(event.getSeverity());
+        String to = EventStateMachine.handleTarget(EventSeverityPolicy.effectiveSeverity(event));
         String actor = SecurityUtils.getUsername();
         int rows = eventMapper.handleIfActive(id, to, version, actor);
         if (rows == 0)
@@ -147,13 +150,22 @@ public class EventCommandService
         throw new ServiceException("异常由作业组共同处理，无需转交", HttpStatus.FORBIDDEN);
     }
 
+    private String requireReportComment(String comment) {
+        if (StringUtils.isBlank(comment))
+            throw new ServiceException("请填写异常原因说明", HttpStatus.BAD_REQUEST);
+        comment = comment.trim();
+        if (comment.length() > 500)
+            throw new ServiceException("异常原因不能超过500字", HttpStatus.BAD_REQUEST);
+        return comment;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public EventDto close(Long id, String reason, Integer version)
     {
         requireVersion(version);
         if (StringUtils.isEmpty(reason))
         {
-            throw new ServiceException("关闭原因不能为空", HttpStatus.BAD_REQUEST);
+            throw new ServiceException("审批意见不能为空", HttpStatus.BAD_REQUEST);
         }
         WearSafetyEvent event = requireReadable(id);
         String actor = SecurityUtils.getUsername();
@@ -177,7 +189,7 @@ public class EventCommandService
         {
             throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
         }
-        insertAction(id, "close", actor, reason, from, EventStateMachine.CLOSED);
+        insertAction(id, "review", actor, reason, from, EventStateMachine.VERIFIED);
         return EventViews.toDto(eventMapper.selectById(id));
     }
 
@@ -203,7 +215,7 @@ public class EventCommandService
         {
             throw new ServiceException("当前状态冲突，请刷新后重试", HttpStatus.CONFLICT);
         }
-        insertAction(id, "reopen", actor, reason, EventStateMachine.CLOSED, target);
+        insertAction(id, "reopen", actor, reason, event.getStatus(), target);
         WearSafetyEvent latest = eventMapper.selectById(id);
         notifyService.notifyAfterCommit(latest);
         return EventViews.toDto(latest);

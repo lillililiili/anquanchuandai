@@ -362,12 +362,13 @@ class _WearMinePageState extends State<WearMinePage> {
                                   ),
                                 ),
                               ),
-                              _menuRow(
-                                Icons.settings,
-                                const Color(0xFF9256F8),
-                                '设置',
-                                () => context.push('/settings'),
-                              ),
+                              if (session.isAdmin)
+                                _menuRow(
+                                  Icons.settings,
+                                  const Color(0xFF9256F8),
+                                  '设置',
+                                  () => context.push('/settings'),
+                                ),
                               _menuRow(
                                 Icons.chat,
                                 _blue,

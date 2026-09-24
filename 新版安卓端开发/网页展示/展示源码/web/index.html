@@ -1,12 +1,290 @@
 <!doctype html>
-<html lang="zh-CN"><head><base href="$FLUTTER_BASE_HREF"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:;"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>安卓当前页面 · 静态展示</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#eaf2fa;color:#152449;font-family:Arial,"Microsoft YaHei",sans-serif}body{display:flex;align-items:center;justify-content:center}.phone{width:360px;height:640px;position:relative;flex:none;overflow:hidden;box-shadow:0 18px 65px #345a7a30;background:#eff6fd}.status{height:24px;padding:3px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#59666c;background:#edf4f9}#app{width:360px;height:616px;position:relative}#loading{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:12px;background:#edf6fe}#loading b{color:#307cff;font-size:24px}.guide{position:fixed;left:30px;top:30px;width:230px;font-size:14px;line-height:1.8}.guide strong{font-size:20px}.guide p{color:#607290}.guide button{padding:9px 16px;background:white;border:1px solid #d2dfea;border-radius:8px;color:#24529a;cursor:pointer}@media(max-width:950px){.guide{display:none}}
-.guide{position:fixed;left:24px;top:24px;bottom:24px;width:230px;font-size:13px;line-height:1.7;overflow:auto;scrollbar-width:thin}.guide h1{font-size:20px;margin:0 0 4px}.meta{font-size:11px;letter-spacing:1px;color:#72889c}.guide a{color:#305979;text-decoration:none}.guide details{border-top:1px solid #d8e4ee;padding:8px 0}.guide summary{cursor:pointer;font-weight:600}.guide details div{border-left:1px solid #bfcfdd;margin:6px 0 0 7px;padding-left:15px;display:grid;gap:3px}.guide details div a{padding:3px 6px;border-radius:4px}.guide a:hover,.guide a.active{color:#176df2;background:#dceafd}.guide .reset{display:inline-block;padding:6px 9px;border:1px solid #c7d7e5;border-radius:7px;background:#f8fbfd}footer{font-size:11px;color:#708496;margin-top:14px}@media(max-width:1050px){.guide{display:none}}</style></head><body>
-<aside class="guide"><span class="meta">CURRENT ANDROID · 2026.09.21</span><h1>安卓页面展示</h1><p>手机内为当前安卓样式。<br>滑动查看下方内容，点击按钮进入子页面。</p><nav><details open><summary><a href="#/workbench">现场</a></summary><div><a href="#/tasks">作业列表</a><a href="#/tasks/3">作业详情</a><a href="#/people">人员列表</a><a href="#/people/10">人员详情</a><a href="#/devices">设备列表</a><a href="#/devices/12">设备详情</a><a href="#/tracks?personId=10">人员轨迹</a><a href="#/fences">电子围栏</a><a href="#/fences/1">围栏详情</a><a href="#/sos-events">SOS 列表</a></div></details><details ><summary><a href="#/communications">通讯</a></summary><div><a href="#/communications">联系人与筛选</a><a href="#/communications?action=tts">批量播报</a></div></details><details ><summary><a href="#/events">消息</a></summary><div><a href="#/events?eventId=172">事件详情</a><a href="#/events?eventId=170">SOS 详情</a></div></details><details ><summary><a href="#/me">我的</a></summary><div><a href="#/settings">设置</a><a href="#/handovers">交接记录</a><a href="#/sites">切换厂站</a></div></details></nav><p><a class="reset" href="?login=1#/login">查看登录页</a> <a class="reset" href="?reset=1#/workbench">重置展示</a></p><p><a href="review/index.html" target="_blank">查看上下屏与子页面截图 ↗</a></p><footer>联系人、作业和事件来自本地数据快照。所有操作仅在本页演示，刷新后恢复。</footer></aside>
-<main class="phone" id="phone"><div class="status"><span>10:42</span><span aria-label="信号及电量">▰ ◢ ▮</span></div><div id="app"><div id="loading"><b>ROLLING</b><span>正在打开安卓展示页面…</span></div></div></main>
-<script>
-function fit(){const s=Math.min(innerWidth/360,(innerHeight-(innerWidth>600?40:0))/640);document.querySelector('#phone').style.transform=`scale(${s})`;}
-addEventListener('resize',fit);fit();
-if(location.protocol==='file:'){document.querySelector('#loading').innerHTML='<b>ROLLING</b><span>请双击同目录的「打开安卓演示.cmd」<br>即可自动启动并打开网页。</span>';}else{const s=document.createElement('script');s.src='flutter_bootstrap.js';document.body.appendChild(s);}
-</script></body></html>
+<html lang="zh-CN">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:;">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>智能穿戴管理平台 · 安卓端页面展示</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #eaf2fa;
+      color: #152449;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .phone {
+      width: 360px;
+      height: 640px;
+      position: relative;
+      flex: none;
+      overflow: hidden;
+      box-shadow: 0 18px 65px #345a7a30;
+      background: #eff6fd;
+      border-radius: 20px;
+    }
+    .status {
+      height: 24px;
+      padding: 3px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #59666c;
+      background: #edf4f9;
+    }
+    #app {
+      width: 360px;
+      height: 616px;
+      position: relative;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      gap: 12px;
+      background: #edf6fe;
+    }
+    #loading b {
+      color: #307cff;
+      font-size: 24px;
+    }
+    .guide {
+      position: fixed;
+      left: 24px;
+      top: 24px;
+      bottom: 24px;
+      width: 240px;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow: auto;
+      scrollbar-width: thin;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(33, 56, 85, 0.08);
+      border: 1px solid #d2dfea;
+    }
+    .guide h1 {
+      font-size: 18px;
+      margin: 0 0 4px;
+      color: #102144;
+    }
+    .meta {
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      color: #6d8299;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .guide p {
+      color: #576b80;
+      margin: 6px 0 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .role-panel {
+      margin: 10px 0 14px;
+      padding: 10px;
+      background: #f1f6fc;
+      border-radius: 10px;
+      border: 1px solid #d5e3f2;
+    }
+    .role-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e3d6b;
+      margin-bottom: 8px;
+    }
+    .role-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      transition: all 0.15s ease;
+    }
+    .role-btn.admin {
+      background: #2f6fed;
+      color: #ffffff;
+      border: 1px solid #255ecc;
+    }
+    .role-btn.worker {
+      background: #ffffff;
+      color: #1e4a7a;
+      border: 1px solid #c2d7ed;
+    }
+    .role-btn:hover {
+      filter: brightness(0.96);
+      transform: translateY(-1px);
+    }
+    .guide a {
+      color: #305979;
+      text-decoration: none;
+    }
+    .guide details {
+      border-top: 1px solid #d8e4ee;
+      padding: 8px 0;
+    }
+    .guide summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #1c3656;
+    }
+    .guide details div {
+      border-left: 2px solid #cbdcee;
+      margin: 6px 0 0 7px;
+      padding-left: 12px;
+      display: grid;
+      gap: 4px;
+    }
+    .guide details div a {
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: #3f5a77;
+    }
+    .guide a:hover, .guide a.active {
+      color: #176df2;
+      background: #e5f0fe;
+    }
+    .guide .reset {
+      display: inline-block;
+      padding: 5px 8px;
+      border: 1px solid #c7d7e5;
+      border-radius: 6px;
+      background: #f8fbfd;
+      font-size: 12px;
+      margin-right: 4px;
+      margin-bottom: 6px;
+    }
+    footer {
+      font-size: 11px;
+      color: #708496;
+      margin-top: 14px;
+      line-height: 1.5;
+    }
+    @media(max-width: 1050px) {
+      .guide { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="guide">
+    <span class="meta">ROLLING · WEARABLE</span>
+    <h1>智能穿戴管理展示</h1>
+    <p>手机内沿用当前安卓原生代码、图片、图标、配色与按钮交互。长页面可触控或滚轮滑动。</p>
+
+    <!-- 双演示账号切换面板 -->
+    <div class="role-panel">
+      <div class="role-title">演示账号快速切换：</div>
+      <a href="?role=admin#/workbench" class="role-btn admin">
+        <span>🛡️ 管理员 (admin)</span>
+        <span style="font-size:11px;opacity:0.85;">全系统调度</span>
+      </a>
+      <a href="?role=qa_chen#/workbench" class="role-btn worker">
+        <span>👷 巡检员 (qa_chen)</span>
+        <span style="font-size:11px;color:#617e9e;">陈建国 · 装备</span>
+      </a>
+    </div>
+
+    <p style="margin-bottom:8px;">
+      <a class="reset" href="?login=1#/login">🔑 体验登录页</a>
+      <a class="reset" href="?role=admin#/workbench">🔄 重置展示</a>
+    </p>
+
+    <nav>
+      <details open>
+        <summary><a href="#/workbench">现场 · 工作台</a></summary>
+        <div>
+          <a href="#/tasks">作业任务列表</a>
+          <a href="#/tasks/3">作业详情与检查</a>
+          <a href="#/people">人员列表</a>
+          <a href="#/people/10">人员档案详情</a>
+          <a href="#/devices">设备列表</a>
+          <a href="#/devices/12">设备详情与连接</a>
+          <a href="#/tracks?personId=10">人员轨迹回放</a>
+          <a href="#/fences">电子围栏列表</a>
+          <a href="#/fences/1">围栏规则与区域</a>
+          <a href="#/sos-events">SOS 列表</a>
+        </div>
+      </details>
+      <details open>
+        <summary><a href="#/communications">通讯 · 对讲与呼叫</a></summary>
+        <div>
+          <a href="#/communications">联系人与状态筛选</a>
+          <a href="#/communications?action=tts">批量播报</a>
+          <a href="#/lab-call/preview-1">音视频通话演示</a>
+        </div>
+      </details>
+      <details open>
+        <summary><a href="#/events">消息 · 统一告警流水</a></summary>
+        <div>
+          <a href="#/events">全部事件流水</a>
+          <a href="#/events?eventId=172">事件详情与处置</a>
+          <a href="#/events?eventId=170">SOS 告警事件详情</a>
+        </div>
+      </details>
+      <details open>
+        <summary><a href="#/me">我的 · 个人与设置</a></summary>
+        <div>
+          <a href="#/me">个人中心与我的装备</a>
+          <a href="#/settings">系统设置 (仅管理员)</a>
+          <a href="#/handovers">值班交接记录</a>
+          <a href="#/sites">切换厂站</a>
+        </div>
+      </details>
+    </nav>
+
+    <footer>
+      所有按钮样式与布局严格对齐安卓原生端。<br>
+      数据来自本地快照，修改在内存中实时响应，刷新即可恢复初始。
+    </footer>
+  </aside>
+
+  <main class="phone" id="phone">
+    <div class="status">
+      <span>10:42</span>
+      <span aria-label="信号及电量">▰ ◢ ▮</span>
+    </div>
+    <div id="app">
+      <div id="loading">
+        <b>ROLLING</b>
+        <span>正在打开安卓展示页面…</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function fit() {
+      const s = Math.min(innerWidth / 360, (innerHeight - (innerWidth > 600 ? 40 : 0)) / 640);
+      document.querySelector('#phone').style.transform = `scale(${s})`;
+    }
+    addEventListener('resize', fit);
+    fit();
+
+    if (location.protocol === 'file:') {
+      document.querySelector('#loading').innerHTML = '<b>ROLLING</b><span>请双击同目录的「打开安卓演示.cmd」<br>即可自动启动并打开网页。</span>';
+    } else {
+      const s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
+      document.body.appendChild(s);
+    }
+  </script>
+</body>
+</html>

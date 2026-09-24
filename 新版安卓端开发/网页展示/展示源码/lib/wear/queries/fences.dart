@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../core.dart';
 import 'query_widgets.dart';
+import 'backend_tiles.dart';
 
 class FencesPage extends StatefulWidget {
   const FencesPage({super.key});
@@ -74,7 +75,18 @@ class _FencesPageState extends State<FencesPage> {
   Widget build(BuildContext context) {
     return QueryPage(
       title: '电子围栏',
-      subtitle: '只读查看平台围栏规则；禁用围栏仍保留历史事件。',
+      subtitle: '与主平台共用围栏规则；禁用围栏仍保留历史事件。',
+      actions: [
+        if (_session?.can('wear:fence:edit') == true)
+          IconButton(
+            tooltip: '新增围栏',
+            icon: const Icon(Icons.add_location_alt_outlined),
+            onPressed: () async {
+              await context.push('/fences/new');
+              if (mounted) _load(page: 1);
+            },
+          ),
+      ],
       body: Column(
         children: [
           Expanded(
@@ -104,7 +116,10 @@ class _FencesPageState extends State<FencesPage> {
                         text: enabled ? '启用' : '停用',
                         color: enabled ? WearColors.primary : WearColors.muted,
                       ),
-                      onTap: () => context.push('/fences/${idOf(fence['id'])}'),
+                      onTap: () async {
+                        await context.push('/fences/${idOf(fence['id'])}');
+                        if (mounted) _load(page: _current);
+                      },
                     );
                   },
                 ),
@@ -196,6 +211,17 @@ class _FencePageState extends State<FencePage> {
         : _polygon(fence['polygon']);
     return QueryPage(
       title: fence == null ? '围栏详情' : textOf(fence['name']),
+      actions: [
+        if (fence != null && _session!.can('wear:fence:edit'))
+          IconButton(
+            tooltip: '编辑围栏',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () async {
+              await context.push('/fences/${widget.id}/edit');
+              if (mounted) _load();
+            },
+          ),
+      ],
       body: QueryStateView(
         loading: _loading,
         error: _error,
@@ -231,7 +257,11 @@ class _FencePageState extends State<FencePage> {
                                 children: [
                                   TileLayer(
                                     urlTemplate:
-                                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                        '/api/v1/fences/map-tiles/{z}/{x}/{y}',
+                                    tileProvider: BackendTileProvider(
+                                      _session!.api,
+                                      _session!.scopeKey,
+                                    ),
                                     userAgentPackageName:
                                         'rolling_intelligence_headband',
                                   ),

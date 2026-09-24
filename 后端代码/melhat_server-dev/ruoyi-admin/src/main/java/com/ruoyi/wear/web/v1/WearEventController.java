@@ -139,7 +139,8 @@ public class WearEventController
         return R.ok(commandService.transfer(id, strVal(body, "toUserId"), strVal(body, "reason"), intVal(body, "version")));
     }
 
-    @PostMapping("/{id:\\d+}/close")
+    // /close remains a compatibility alias for PLATFORM review, never external closure.
+    @PostMapping({"/{id:\\d+}/review", "/{id:\\d+}/close"})
     public R<EventDto> close(@PathVariable Long id, @RequestBody Map<String, Object> body)
     {
         return R.ok(commandService.close(id, strVal(body, "reason"), intVal(body, "version")));

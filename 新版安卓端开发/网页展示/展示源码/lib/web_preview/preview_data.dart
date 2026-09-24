@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../wear/core.dart';
+import '../wear/events/event_models.dart';
 
 class PreviewCredentials implements CredentialStore {
   String? _token;
   @override Future<String?> read() async => _token;
   @override Future<void> write(String? token) async => _token = token;
 }
+
 WearSession createPreviewSession({required JsonMap snapshot}) => WearSession(
   credentials: PreviewCredentials(),
   dio: Dio(BaseOptions(baseUrl: 'https://preview.invalid'))
@@ -17,31 +19,99 @@ WearSession createPreviewSession({required JsonMap snapshot}) => WearSession(
 
 /// A frozen business snapshot. All changes stay in memory; no network fallback.
 class PreviewAdapter implements HttpClientAdapter {
-  PreviewAdapter(JsonMap snapshot) : data = jsonMap(jsonDecode(jsonEncode(snapshot)));
+  PreviewAdapter(JsonMap snapshot) : data = jsonMap(jsonDecode(jsonEncode(snapshot))) {
+    // Lists, details and actions must interpret the same frozen legacy snapshot.
+    data['events'] = list('events').map((row) {
+      final event = WearEvent.fromJson(row);
+      return event.isSos ? {
+        ...row, 'severity': event.severity, 'alarmName': event.alarmLabel,
+        'reminderOnly': false,
+      } : row;
+    }).toList();
+  }
   final JsonMap data;
-  String account = '静态展示';
+  String account = 'admin';
   String? siteId;
   final List<JsonMap> labCalls = [], broadcasts = [];
   List<JsonMap> list(String key) => jsonList(data[key]);
-  String get userId => idOf(jsonMap(data['identity'])['userId']);
-  String get personId => idOf(jsonMap(data['identity'])['personId']);
+
+  bool get isAdmin => account == 'admin';
+
+  JsonMap get adminIdentity => {
+    'status': '0',
+    'userId': '1',
+    'personId': '1',
+    'nickName': '系统管理员',
+    'name': '系统管理员',
+    'userName': 'admin',
+    'username': 'admin',
+    'admin': true,
+    'roles': ['admin', 'wear_duty', 'wear_team_lead', 'wear_reviewer', 'wear_platform_admin'],
+    'permissions': ['*:*:*'],
+    'authorizedSites': list('sites'),
+    'sipId': null,
+  };
+
+  JsonMap get workerIdentity => {
+    ...jsonMap(data['identity']),
+    'userName': 'qa_chen',
+    'username': 'qa_chen',
+    'nickName': '陈建国',
+    'name': '陈建国',
+    'userId': '114',
+    'personId': '10',
+    'admin': false,
+    'roles': ['wear_duty', 'wear_team_lead', 'wear_reviewer'],
+    'permissions': [
+      'wear:site:list',
+      'wear:site:select',
+      'wear:person:list',
+      'wear:person:query',
+      'wear:device:list',
+      'wear:device:query',
+      'wear:task:list',
+      'wear:task:query',
+      'wear:event:list',
+      'wear:event:query',
+      'wear:event:report',
+      'wear:event:confirm',
+      'wear:inspection:check',
+      'wear:inspection:report',
+      'wear:call:start',
+      'wear:command:tts',
+    ],
+    'authorizedSites': list('sites'),
+    'sipId': null,
+  };
+
+  JsonMap get currentIdentity => isAdmin ? adminIdentity : workerIdentity;
+
+  String get userId => idOf(currentIdentity['userId']);
+  String get personId => idOf(currentIdentity['personId']);
+
   List<JsonMap> scoped(String key) => list(key).where((r) {
     if (siteId == null) return true;
     if (key == 'people') return (r['siteIds'] as List? ?? []).contains(siteId);
     return r['siteId'] == null || idOf(r['siteId']) == siteId;
   }).toList();
+
   JsonMap? find(String key, String id) => list(key).where((r) => idOf(r['id']) == id).firstOrNull;
+
   JsonMap page(List<JsonMap> rows, RequestOptions o) {
     final current = intOf(o.queryParameters['current'], 1).clamp(1, 99999);
     final size = intOf(o.queryParameters['size'], 20).clamp(1, 500);
     return {'records': rows.skip((current-1)*size).take(size).toList(), 'total': rows.length, 'current': current, 'size': size};
   }
+
   ResponseBody reply(Object? value, {bool raw = false, int code = 200, String msg = '本地展示操作'}) => ResponseBody.fromString(
     jsonEncode(raw ? value : {'code': code, 'msg': msg, 'data': value}), code,
     headers: {Headers.contentTypeHeader: [Headers.jsonContentType]},
   );
+
   List<JsonMap> equipment(String id) => list('assignments').where((a) => idOf(a['personId'])==id && a['returnedAt']==null && (siteId==null || idOf(a['siteId'])==siteId)).toList();
+
   DateTime? time(Object? value) => DateTime.tryParse(idOf(value));
+
   List<JsonMap> tracks(String id, RequestOptions o) {
     final from=time(o.queryParameters['from']),to=time(o.queryParameters['to']);
     final held=list('assignments').where((a)=>idOf(a['personId'])==id && a['typeCode']=='helmet').toList();
@@ -54,14 +124,16 @@ class PreviewAdapter implements HttpClientAdapter {
     if(rows.length>500)rows=List.generate(500,(i)=>rows[(i*(rows.length-1)/499).round()]);
     return rows;
   }
+
   JsonMap location(JsonMap person) {
     final hat=equipment(idOf(person['id'])).where((d)=>d['typeCode']=='helmet').firstOrNull;
     final samples=list('samples').where((s)=>hat!=null && s['deviceId']==hat['deviceId'] && s['lat']!=null && s['lng']!=null).toList()..sort((a,b)=>idOf(b['occurredAt']).compareTo(idOf(a['occurredAt'])));
     final last=samples.firstOrNull;
     return {'personId':person['id'],'personCode':person['personCode'],'personName':person['name'],'deviceId':hat?['deviceId'],'sn':hat?['sn'],'floor':'unknown','floorSource':'unknown','source':hat==null?'unknown':'helmet','lat':last?['lat'],'lng':last?['lng'],'occurredAt':last?['occurredAt'],'locationQuality':last==null?'unknown':'stale','connectionQuality':hat?['connectionQuality']??'unknown','demo':true};
   }
+
   List<JsonMap> filterEvents(RequestOptions o) => scoped('events').where((e) {
-    for (final k in ['type','personId','taskId','claimantUserId','alarmCode']) {
+    for (final k in ['type','personId','taskId','claimantUserId','alarmCode','severity']) {
       final v=idOf(o.queryParameters[k]); if(v.isNotEmpty && idOf(e[k])!=v) return false;
     }
     final status=idOf(o.queryParameters['status']);
@@ -74,16 +146,26 @@ class PreviewAdapter implements HttpClientAdapter {
     if(idOf(o.queryParameters['escalated'])=='true' && e['escalated']!=true) return false;
     return true;
   }).toList();
+
   @override Future<ResponseBody> fetch(RequestOptions o, Stream<Uint8List>? stream, Future<void>? cancelFuture) async {
     final p=o.path, body=jsonMap(o.data), parts=p.split('/');
     final write=o.method!='GET';
     if(p=='/captchaImage') return reply({'code':200,'captchaEnabled':true,'uuid':'static-preview'},raw:true);
-    if(p=='/login') {account=textOf(body['username']);siteId=null;return reply({'code':200,'token':'local-preview-only'},raw:true);}
-    if(p=='/logout') return reply(null);
-    if(p=='/api/v1/me') return reply({...jsonMap(data['identity']),'userName':account,'username':account,'currentSiteId':siteId});
-    if(p=='/api/v1/me/current-site') {siteId=idOf(body['siteId']);return reply({'currentSiteId':siteId});}
+    if(p=='/login') {
+      final input = textOf(body['username']).trim();
+      account = (input == 'qa_chen' || input == 'user') ? 'qa_chen' : 'admin';
+      siteId = null;
+      return reply({'code':200,'token':'local-preview-$account'},raw:true);
+    }
+    if(p=='/logout') {
+      siteId = null;
+      return reply(null);
+    }
+    if(p=='/api/v1/me') return reply({...currentIdentity, 'currentSiteId': siteId});
+    if(p=='/api/v1/me/current-site') {siteId=idOf(body['siteId']);return reply({'currentSiteId': siteId});}
     if(p=='/api/v1/sites') return reply(list('sites'));
-    if(p=='/api/v1/me/equipment') return reply(equipment(personId));
+    if(p=='/api/v1/me/equipment') return reply(isAdmin ? [] : equipment('10'));
+    if(p=='/api/v1/account-recovery/requests') return reply({'id':'REC-20260923-001','status':'pending'});
     if(p=='/api/v1/events/inbox/count') return reply({'count':scoped('events').where((e)=>e['status']!='closed').length});
     if(p=='/api/v1/duty/summary') {
       final active=scoped('tasks').where((t)=>['ready','in_progress','paused'].contains(t['status'])).toList();
@@ -122,6 +204,7 @@ class PreviewAdapter implements HttpClientAdapter {
     if(p.startsWith('/api/v1/work-tasks/')) {
       final id=parts[4],task=find('tasks',parts[4]);
       if(p.endsWith('/events'))return reply(scoped('events').where((e)=>idOf(e['taskId'])==id).toList());
+      if(p.endsWith('/inspection'))return reply({'total': 6, 'completed': 3, 'progress': 0.5});
       if(p.endsWith('/equipment-check')) {
         final checks=<JsonMap>[];
         for(final m in jsonList(task?['members'])) {
@@ -138,6 +221,7 @@ class PreviewAdapter implements HttpClientAdapter {
     if(p=='/api/v1/events')return reply(page(filterEvents(o),o));
     if(p.startsWith('/api/v1/events/')) {
       final id=parts[4],event=find('events',parts[4]);if(event==null)return reply(null,code:404,msg:'快照中没有此事件');
+      if(p.endsWith('/media'))return reply([]);
       if(p.contains('/map-tiles/')) {final tile=jsonMap(data['mapTiles'])[parts.skip(6).join('/')];return tile==null?reply(null,code:404,msg:'此底图未缓存'):reply(tile);}
       if(parts.length==5)return reply(event);
       final action=parts.last;
@@ -146,11 +230,10 @@ class PreviewAdapter implements HttpClientAdapter {
       if(write) {
         final old=event['status'];event['version']=intOf(event['version'])+1;
         if(action=='claim'){event['status']='claimed';event['claimantUserId']=userId;}
-        if(action=='handle')event['status']=['sos','fall','impact'].contains(event['type'])?'pending_review':'handling';
+        if(action=='handle' || action=='report')event['status']=WearEvent.fromJson(event).isEmergency?'pending_review':'handling';
         if(action=='close')event['status']='closed';if(action=='reopen')event['status']='open';
         if(action=='task')event['taskId']=body['taskId'];if(action=='transfer')event['claimantUserId']=body['toUserId'];
         data['eventActions']=[...list('eventActions'),{'id':'preview-${event['version']}','eventId':id,'action':action,'actor':account,'reason':body['reason']??body['comment'],'fromStatus':old,'toStatus':event['status'],'createTime':DateTime.now().toIso8601String()}];
-        // jsonList returns typed copies, so explicitly commit the local replacement.
         data['events']=list('events').map((r)=>idOf(r['id'])==id?event:r).toList();return reply(event);
       }
     }

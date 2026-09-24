@@ -156,7 +156,7 @@ void main() {
         expect(find.byType(LinearProgressIndicator), findsNothing);
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(find.textContaining('无需一级审查'), findsOneWidget);
-        expect(find.text('审批通过并结束'), findsNothing);
+        expect(find.text('审批通过 · 完成核验'), findsNothing);
         expect(
           find.byKey(const ValueKey('event-handle-submit-90')),
           findsNothing,

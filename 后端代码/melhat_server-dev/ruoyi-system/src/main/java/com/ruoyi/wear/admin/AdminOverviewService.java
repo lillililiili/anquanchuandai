@@ -36,6 +36,7 @@ public class AdminOverviewService
     @Autowired private WearWorkTaskMapper taskMapper;
     @Autowired private WearGeoFenceMapper fenceMapper;
     @Autowired private WearSafetyEventMapper eventMapper;
+    @Autowired private com.ruoyi.wear.event.EventAccessService eventAccess;
 
     public Map<String, Object> overview()
     {
@@ -124,8 +125,9 @@ public class AdminOverviewService
     {
         Map<String, Long> map = new LinkedHashMap<String, Long>();
         if (siteIds.isEmpty()) { map.put("open", 0L); map.put("last7Days", 0L); return map; }
-        long open = eventMapper.selectCount(new LambdaQueryWrapper<WearSafetyEvent>()
-                .in(WearSafetyEvent::getSiteId, siteIds).ne(WearSafetyEvent::getStatus, "closed"));
+        // Same scope and completion definition as the Android/PC event inbox.
+        long open = eventMapper.selectCount(eventAccess.actionable(eventAccess.scope(new LambdaQueryWrapper<WearSafetyEvent>()
+                .in(WearSafetyEvent::getSiteId, siteIds))));
         Date from = dayStart(-6);
         long recent = eventMapper.selectCount(new LambdaQueryWrapper<WearSafetyEvent>()
                 .in(WearSafetyEvent::getSiteId, siteIds).ge(WearSafetyEvent::getOccurredAt, from));

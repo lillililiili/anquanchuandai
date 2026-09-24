@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/queries/query_utils.dart';
-import 'package:rolling_intelligence_headband/wear/queries/supervision.dart';
 import 'package:rolling_intelligence_headband/wear/queries/workbench.dart';
 
 void main() {
@@ -62,43 +61,6 @@ void main() {
     expect(taskGroup('ended'), '已结束');
   });
 
-  test('lost supervision aggregates distinct people across active tasks', () {
-    final result = aggregateLostSupervision(
-      [
-        {'id': '11', 'title': '东区巡检'},
-        {'id': '12', 'title': '高处作业'},
-      ],
-      {
-        '11': [
-          {
-            'personId': '7',
-            'personName': '张三',
-            'typeCode': 'helmet',
-            'result': 'missing',
-          },
-          {
-            'personId': '8',
-            'personName': '李四',
-            'typeCode': 'belt',
-            'result': 'unknown',
-          },
-        ],
-        '12': [
-          {
-            'personId': '7',
-            'personName': '张三',
-            'typeCode': 'helmet',
-            'result': 'unknown',
-          },
-        ],
-      },
-    );
-
-    expect(result, hasLength(1));
-    expect(result.single['personId'], '7');
-    expect(jsonList(result.single['tasks']), hasLength(2));
-  });
-
   test('recent event codes have Chinese presentation labels', () {
     expect(eventTypeLabel('geofence'), '围栏告警');
     expect(eventStatusLabel('pending_review'), '待复核');
@@ -106,7 +68,7 @@ void main() {
   });
 
   testWidgets(
-    'workbench retains server supervision count without duplicate dashboard',
+    'administrator workbench retains only people devices and tasks tools',
     (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1;
@@ -161,6 +123,7 @@ void main() {
         ..siteId = '1'
         ..me = {
           'userId': '7',
+          'roles': ['wear_platform_admin'],
           'authorizedSites': [
             {'id': '1', 'name': '一号厂站'},
           ],
@@ -175,18 +138,17 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('home-tool-supervision')),
+        find.byKey(const ValueKey('home-tool-tasks')),
         250,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('home-tool-supervision')),
-          matching: find.text('2'),
-        ),
-        findsOneWidget,
-      );
+      for (final key in ['people', 'devices', 'tasks']) {
+        expect(find.byKey(ValueKey('home-tool-$key')), findsOneWidget);
+      }
+      for (final key in ['tracks', 'fences', 'supervision']) {
+        expect(find.byKey(ValueKey('home-tool-$key')), findsNothing);
+      }
       expect(find.text('已领用人员'), findsNothing);
       expect(find.text('在用装备'), findsNothing);
       expect(find.text('近期未关闭事件'), findsNothing);

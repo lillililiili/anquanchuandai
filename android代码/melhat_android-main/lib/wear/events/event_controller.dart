@@ -40,6 +40,7 @@ class EventController extends ChangeNotifier {
     this.initialEscalated,
     this.initialStatus,
     this.initialType,
+    this.initialSeverity,
   }) : _store = store,
        _scopeKey = scopeKey,
        _actor = actor;
@@ -53,6 +54,7 @@ class EventController extends ChangeNotifier {
   final bool? initialEscalated;
   final String? initialStatus;
   final String? initialType;
+  final String? initialSeverity;
 
   EventStateStore _store;
   String _scopeKey;
@@ -129,6 +131,11 @@ class EventController extends ChangeNotifier {
         ..addAll(restored.drafts);
     }
     if (applyInitial) {
+      if (initialSeverity != null) {
+        filters = EventFilters(severity: initialSeverity!);
+        current = 1;
+        scrollOffset = 0;
+      }
       filters = filters.copyWith(
         personId: initialPersonId ?? filters.personId,
         taskId: initialTaskId ?? filters.taskId,
@@ -139,14 +146,15 @@ class EventController extends ChangeNotifier {
       );
     }
     // Older home-detail links persisted a hidden SOS-only list filter.
-    // Emergency filtering now uses the existing escalated control instead.
+    // Emergency shortcuts use the severity quick filter, without a hidden type filter.
     if (filters.type == 'sos') {
       filters = filters.copyWith(type: '');
       current = 1;
       scrollOffset = 0;
     }
     final target = applyInitial
-        ? initialEventId ?? restored?.selectedEventId ?? ''
+        ? initialEventId ??
+              (initialSeverity != null ? '' : restored?.selectedEventId ?? '')
         : restored?.selectedEventId ?? '';
     await reload(current: current);
     if (target.isNotEmpty && _acceptScope(scope)) await select(target);
@@ -416,6 +424,15 @@ class EventController extends ChangeNotifier {
       return false;
     }
     final submittedDraft = draftFor(event.id);
+    if (command == EventCommand.handle &&
+        (submittedDraft.handleComment.trim().isEmpty ||
+            submittedDraft.photoPaths.isEmpty)) {
+      errorMessage = '请填写异常原因说明并添加至少一个现场照片或视频';
+      conflictMessage = null;
+      successMessage = null;
+      notifyListeners();
+      return false;
+    }
     writing = true;
     errorMessage = null;
     conflictMessage = null;
@@ -438,7 +455,13 @@ class EventController extends ChangeNotifier {
       }
       if (command == EventCommand.ack) _ackedLocally.add(event.id);
       successMessage = command == EventCommand.handle
-          ? (latest.isClosed ? '现场记录已提交，事件已结束' : '现场记录已提交，等待管理员审批')
+          ? (latest.status == 'verified'
+                ? '现场记录已提交，平台核验已完成'
+                : latest.status == 'pending_review'
+                ? '现场记录已提交，等待管理员审批'
+                : '现场记录已提交，请核对平台核验状态')
+          : command == EventCommand.close && latest.status != 'verified'
+          ? '审批请求已提交，请核对平台核验状态'
           : _successText(command);
       if (selectionGeneration != _detailGeneration ||
           selected?.id != event.id) {
@@ -526,10 +549,10 @@ class EventController extends ChangeNotifier {
   String _successText(EventCommand command) => switch (command) {
     EventCommand.ack => '已确认看见该事件',
     EventCommand.claim => '异常无需认领',
-    EventCommand.confirm => '设备提醒已确认，任务已结束',
+    EventCommand.confirm => '设备提醒已确认',
     EventCommand.handle => '原因已上报，本次处理已完成，由管理员复核',
     EventCommand.transfer => '事件已转交',
-    EventCommand.close => '事件已关闭',
+    EventCommand.close => '平台核验已完成，外部结案未同步',
     EventCommand.reopen => '事件已重开',
     EventCommand.assignTask => '事件关联任务已确认',
   };

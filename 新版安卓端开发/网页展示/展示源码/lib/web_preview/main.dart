@@ -23,10 +23,15 @@ Future<void> main() async {
   await (FontLoader('NotoPreview')..addFont(Future.value(fontData))).load();
   final snapshot = jsonDecode(await rootBundle.loadString('assets/preview/snapshot.json')) as Map<String,dynamic>;
   final session = createPreviewSession(snapshot: snapshot);
-  if (Uri.base.queryParameters['login'] != '1') {
-    await session.login((snapshot['identity'] as Map)['userName'] as String, 'preview');
+
+  final role = Uri.base.queryParameters['role'] ?? 'admin';
+  final isLogin = Uri.base.queryParameters['login'] == '1';
+  if (!isLogin) {
+    final account = (role == 'qa_chen' || role == 'user') ? 'qa_chen' : 'admin';
+    await session.login(account, 'preview');
     await session.selectSite('1');
   }
+
   runApp(
     WearApp(
       session: session,

@@ -95,7 +95,7 @@ const metrics = computed(() => [
   { key: 'devices', label: '设备资产', value: overview.value.devices?.total || 0, detail: `已领用 ${overview.value.devices?.issued || 0} 台`, path: '/assets/devices' },
   { key: 'tasks', label: '作业任务', value: overview.value.tasks?.active || 0, detail: `草稿 ${overview.value.tasks?.draft || 0} 项`, path: '/work/tasks' },
   { key: 'fences', label: '围栏规则', value: overview.value.fences?.total || 0, detail: `启用 ${overview.value.fences?.enabled || 0} 条`, path: '/work/fences' },
-  { key: 'events', label: '未关闭事件', value: overview.value.events?.open || 0, detail: `7 日新增 ${overview.value.events?.last7Days || 0} 条`, path: '/audit/events' }
+  { key: 'events', label: '平台核验待办', value: overview.value.events?.open || 0, detail: `7 日新增 ${overview.value.events?.last7Days || 0} 条`, path: '/audit/events' }
 ])
 
 const assetRows = computed(() => {
@@ -111,7 +111,7 @@ const taskRows = computed(() => [
   { key: 'paused', label: '已暂停', value: overview.value.tasks?.paused || 0 }
 ])
 const attentionRows = computed(() => [
-  { key: 'events', label: '未关闭事件', value: overview.value.events?.open || 0, hint: '核对处置时间线与关联对象', path: '/audit/events' },
+  { key: 'events', label: '平台核验待办', value: overview.value.events?.open || 0, hint: '核对处置时间线与关联对象', path: '/audit/events' },
   { key: 'maintenance', label: '维修中设备', value: overview.value.devices?.maintenance || 0, hint: '检查维修和恢复入库状态', path: '/assets/devices' },
   { key: 'drafts', label: '草稿任务', value: overview.value.tasks?.draft || 0, hint: '补齐成员、时段和关联区域', path: '/work/tasks' },
   { key: 'fences', label: '未启用围栏', value: Math.max(0, Number(overview.value.fences?.total || 0) - Number(overview.value.fences?.enabled || 0)), hint: '检查范围和生效规则', path: '/work/fences' }

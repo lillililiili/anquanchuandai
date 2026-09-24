@@ -23,10 +23,22 @@ public final class EventViews
         dto.setType(row.getEventType());
         dto.setDeviceType(row.getDeviceType());
         dto.setAlarmCode(row.getAlarmCode());
-        dto.setAlarmName(row.getAlarmName());
+        String name = row.getAlarmName();
+        if ("sos".equals(row.getEventType()) && (name == null || name.trim().isEmpty()
+                || "告警名称未提供".equals(name.trim()))) name = "SOS 求助";
+        dto.setAlarmName(name);
         dto.setAlarmDescription(row.getAlarmDescription());
-        dto.setSeverity(row.getSeverity());
+        dto.setSeverity(EventSeverityPolicy.effectiveSeverity(row));
         dto.setStatus(row.getStatus());
+        boolean legacy = EventStateMachine.CLOSED.equals(row.getStatus());
+        boolean verified = EventStateMachine.VERIFIED.equals(row.getStatus());
+        boolean awaitingReview = EventStateMachine.PENDING_REVIEW.equals(row.getStatus());
+        boolean warning = EventReminderPolicy.isReminder(row);
+        dto.setFieldReportStatus(legacy ? "unknown" : warning || ManualSosService.isManual(row)
+                ? "not_required" : verified || awaitingReview ? "submitted" : "pending");
+        dto.setVerificationStatus(legacy ? "unknown" : warning ? "not_required" : verified ? "verified" : "pending");
+        dto.setReviewStatus(legacy ? "unknown" : !EventSeverityPolicy.isEmergency(row) ? "not_required"
+                : verified ? "approved" : awaitingReview ? "pending" : "not_submitted");
         dto.setOccurredAt(row.getOccurredAt());
         dto.setReceivedAt(row.getReceivedAt());
         dto.setPersonId(str(row.getPersonId()));

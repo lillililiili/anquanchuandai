@@ -33,7 +33,7 @@ void main() {
           'sourceEventId': 'call-lab:helmet.fence_exit:fixture',
           'severity': id == 'a' ? 'abnormal' : 'emergency',
           'status': handled.contains(id)
-              ? (id == 'a' ? 'closed' : 'pending_review')
+              ? (id == 'a' ? 'verified' : 'pending_review')
               : 'claimed',
           'claimantUserId': 'event-ui-$scale',
           'siteId': '1',
@@ -128,7 +128,7 @@ void main() {
           'version': '3',
         });
         expect(input, findsNothing);
-        expect(find.text('已关闭'), findsOneWidget);
+        expect(find.text('已核验'), findsOneWidget);
         await click(find.byTooltip('返回事件列表'));
         await click(find.byKey(const ValueKey('wear-event-s')));
         expect(find.text('事件详情'), findsOneWidget);

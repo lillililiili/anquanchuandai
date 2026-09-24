@@ -31,23 +31,28 @@ public interface WearSafetyEventMapper extends BaseMapper<WearSafetyEvent>
               @Param("version") Integer version, @Param("actor") String actor);
 
     @Update("UPDATE wear_safety_event SET claimant_user_id=#{toUserId}, version=version+1, update_by=#{actor}, update_time=NOW() "
-            + "WHERE id=#{id} AND site_id=#{siteId} AND claimant_user_id=#{fromUserId} AND version=#{version} AND status<>'closed'")
+            + "WHERE id=#{id} AND site_id=#{siteId} AND claimant_user_id=#{fromUserId} AND version=#{version} AND status NOT IN ('closed','verified','confirmed')")
     int transferDuty(@Param("id") Long id, @Param("siteId") Long siteId, @Param("fromUserId") Long fromUserId,
                      @Param("toUserId") Long toUserId, @Param("version") Integer version, @Param("actor") String actor);
 
-    @Update("UPDATE wear_safety_event SET status = 'closed', version = version + 1, "
+    @Update("UPDATE wear_safety_event SET status = 'verified', version = version + 1, "
             + "update_by = #{actor}, update_time = NOW() "
             + "WHERE id = #{id} AND version = #{version} AND status = #{fromStatus}")
     int closeIfStatus(@Param("id") Long id, @Param("fromStatus") String fromStatus,
             @Param("version") Integer version, @Param("actor") String actor);
 
+    @Update("UPDATE wear_safety_event SET status='confirmed', version=version+1, update_by=#{actor}, update_time=NOW() "
+            + "WHERE id=#{id} AND version=#{version} AND status=#{fromStatus}")
+    int confirmIfStatus(@Param("id") Long id, @Param("fromStatus") String fromStatus,
+            @Param("version") Integer version, @Param("actor") String actor);
+
     @Update("UPDATE wear_safety_event SET status = 'open', claimant_user_id = NULL, version = version + 1, "
             + "update_by = #{actor}, update_time = NOW() "
-            + "WHERE id = #{id} AND version = #{version} AND status = 'closed'")
+            + "WHERE id = #{id} AND version = #{version} AND status IN ('closed','verified','confirmed')")
     int reopenIfClosed(@Param("id") Long id, @Param("version") Integer version, @Param("actor") String actor);
 
     @Update("UPDATE wear_safety_event SET status='pending_review', version=version+1, update_by=#{actor}, update_time=NOW() "
-            + "WHERE id=#{id} AND version=#{version} AND status='closed' AND source='manual_sos' AND event_type='sos'")
+            + "WHERE id=#{id} AND version=#{version} AND status IN ('closed','verified') AND source='manual_sos' AND event_type='sos'")
     int reopenManualSos(@Param("id") Long id, @Param("version") Integer version, @Param("actor") String actor);
 
     @Update("UPDATE wear_safety_event SET repeat_count = repeat_count + 1, update_time = NOW() WHERE id = #{id}")
