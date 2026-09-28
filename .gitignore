@@ -1,1 +1,11 @@
 audit-android-20260923/
+
+# Local browser automation logs and snapshots
+/.playwright-cli/
+
+# Vite development caches
+**/.vite/
+
+# Generated verification artifacts and temporary files
+/output/
+/tmp/
