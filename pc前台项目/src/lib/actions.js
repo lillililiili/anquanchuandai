@@ -35,7 +35,7 @@ export function toggleRecording(personId) {
   toast("已开始模拟录像，点击停止保存记录");
 }
 
-export function callPerson(personId) {
+export async function callPerson(personId) {
   const person = db.person(personId);
   if (!person || !person.active) throw Error("人员不可用");
   const existing = db.state.calls.find((call) => call.status !== "已结束");
@@ -45,7 +45,7 @@ export function callPerson(personId) {
     toast("已打开当前通话，可邀请该人员加入");
     return;
   }
-  db.startCall([personId], "单呼", person.station);
+  await db.startCall([personId], "单呼", person.station);
   session.selectedMembers = [personId];
   go("dispatch");
 }

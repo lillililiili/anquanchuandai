@@ -52,5 +52,4 @@ onUnmounted(() => {
   <Topbar />
   <Sidebar />
   <main id="main" :class="['main', route.name + '-page']"><slot /></main>
-  <div class="page-foot">示例数据</div>
 </template>

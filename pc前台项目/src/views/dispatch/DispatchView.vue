@@ -190,30 +190,30 @@ function openBroadcasts() {
 }
 
 function startCall(kind) {
-  runGuarded(() => {
+  runGuarded(async () => {
     const ids = session.selectedMembers.filter((id) => people().some((person) => person.id === id));
-    db.startCall(ids, kind, session.station);
-    toast("模拟呼叫已发起");
+    await db.startCall(ids, kind, session.station);
+    toast("呼叫已发起");
   });
 }
 
 function connectCall(id) {
-  runGuarded(() => {
-    db.updateCall(id, "connect");
-    toast("模拟通话已接通");
+  runGuarded(async () => {
+    await db.updateCall(id, "connect");
+    toast("通话已接通");
   });
 }
 
 function endCall(id) {
-  runGuarded(() => {
-    db.updateCall(id, "end");
+  runGuarded(async () => {
+    await db.updateCall(id, "end");
     toast("通话已结束，记录已保存");
   });
 }
 
 function muteCall(id) {
-  runGuarded(() => {
-    db.updateCall(id, "mute");
+  runGuarded(async () => {
+    await db.updateCall(id, "mute");
   });
 }
 
@@ -260,7 +260,7 @@ function sendBroadcast() {
     session.broadcastDraft = "";
     broadcastText.value = BROADCAST_DEFAULT;
     charCount.value = "最多 200 字";
-    toast("广播已发送（本地模拟），回执已保存");
+    toast("广播已发送，回执已保存");
   } catch (error) {
     broadcastError.value = error.message || "操作失败";
   }
@@ -316,13 +316,13 @@ function sendBroadcast() {
       <AppPanel :title="'当前通话：' + (activeCall ? activeCall.kind : '未发起')">
         <template v-if="activeCall">
           <div class="call-status">
-            <AppIcon :name="activeCall.status === '通话中' ? 'phone-fill' : 'phone-find-line'" />{{ "　" + activeCall.status + (activeCall.status === "通话中" ? " · 模拟接通" : " · 等待接听") }}
+            <AppIcon :name="activeCall.status === '通话中' ? 'phone-fill' : 'phone-find-line'" />{{ "　" + activeCall.status + (activeCall.status === "通话中" ? " · 已接通" : " · 等待接听") }}
           </div>
           <CallVideos :call="activeCall" />
           <div v-for="personId in activeCall.members" :key="personId" class="call-member">
             <PersonAvatar :person="db.person(personId)" />
             <div>{{ personName(personId) }}{{ "　" }}<small>{{ helmetOf(personId)?.id || "未绑定" }}</small></div>
-            <AppStatus :color="joined(activeCall, personId) ? 'green' : 'yellow'">{{ joined(activeCall, personId) ? "已接通（示例）" : "振铃中（示例）" }}</AppStatus>
+            <AppStatus :color="joined(activeCall, personId) ? 'green' : 'yellow'">{{ joined(activeCall, personId) ? "已接通" : "振铃中" }}</AppStatus>
             <AppIcon name="voiceprint-line" />
           </div>
           <div class="form-actions">
@@ -331,12 +331,12 @@ function sendBroadcast() {
             <AppButton icon="user-add-line" @click="openInvite(activeCall.id)">邀请成员</AppButton>
           </div>
           <div v-if="activeCall.status === '正在呼叫'" class="form-actions">
-            <AppButton tone="primary wide" icon="phone-line" @click="connectCall(activeCall.id)">模拟接通</AppButton>
+            <AppButton tone="primary wide" icon="phone-line" @click="connectCall(activeCall.id)">接通</AppButton>
           </div>
         </template>
         <template v-else>
           <AppEmpty text="选择人员后发起单呼或群呼" />
-          <p class="note">会话状态为交互示例，通信通道兼容性待联调。</p>
+          <p class="note">通信通道兼容性待联调。</p>
         </template>
       </AppPanel>
       <AppPanel title="文字广播">

@@ -172,7 +172,7 @@ function openRecords() {
           <template #extra>厂区示意 · 非实测</template>
           <div style="height:220px"><PlantMap :person="camera?.id || ''" :legend="false" /></div>
           <div class="detail-section">
-            <h3>来源风险提示　<AppTag color="yellow">来源摘要（示例）</AppTag></h3>
+            <h3>来源风险提示　<AppTag color="yellow">来源摘要</AppTag></h3>
             <p class="note">本作业存在高处作业、受限空间临近、热表面等风险，请按作业方案落实安全防护措施。</p>
             <AppButton tone="plain blue" @click="openRisk">查看完整风险信息 ›</AppButton>
           </div>

@@ -1,6 +1,6 @@
 <template>
   <form class="master-form" novalidate @submit.prevent="submit">
-    <p class="notice">仅保存到当前页面，刷新恢复初始演示数据。{{ entity === 'accounts' ? '不设置真实密码；账号创建后再分配授权。' : '' }}</p>
+    <p class="notice">保存到后台服务，刷新后仍在。{{ entity === 'people' ? '人员变更会写入监护前台。' : '' }}{{ entity === 'accounts' ? '不设置真实密码；账号创建后再分配授权。' : '' }}</p>
     <div v-if="error || Object.keys(localErrors).length" ref="errorBox" class="notice error" role="alert" tabindex="-1">
       <strong>未保存，请检查以下内容</strong><p v-if="error">{{ error.message }} <small>{{ error.errorCode }} · {{ error.requestId }}</small></p>
       <ul><li v-for="(message, key) in errors" :key="key"><a :href="'#field-' + key" @click.prevent="focusField(key)">{{ message }}</a></li></ul>
@@ -33,12 +33,12 @@
       <small class="error">{{ errors.bindings }}</small><button class="button" type="button" @click="form.bindings.push({ roleId: '', siteIds: [siteId], allAreas: true, areaIds: [] })">添加角色范围</button>
     </template>
     <template v-if="entity === 'roles'">
-      <fieldset id="field-operations"><legend>允许操作</legend><div class="choice-grid"><label v-for="op in OPERATIONS.filter(item => !item.startsWith('integrations:'))" :key="op"><input v-model="form.operations" type="checkbox" :value="op" />{{ operationNames[op] || op }}</label></div><small class="error">{{ errors.operations }}</small></fieldset>
+      <fieldset id="field-operations"><legend>允许操作</legend><div class="choice-grid"><label v-for="op in OPERATIONS.filter(item => !item.startsWith('integrations:') && item !== 'groups:write')" :key="op"><input v-model="form.operations" type="checkbox" :value="op" />{{ operationNames[op] || op }}</label></div><small class="error">{{ errors.operations }}</small></fieldset>
       <label id="field-siteIds">厂站范围<select v-model="form.siteIds" multiple><option v-for="s in options.sites" :key="s.id" :value="s.id">{{ s.name }}</option></select><small class="error">{{ errors.siteIds }}</small></label>
       <label class="inline-check"><input v-model="form.allAreas" type="checkbox" />所选厂站全部区域</label>
       <label v-if="!form.allAreas" id="field-areaIds">限定区域<select v-model="form.areaIds" multiple><option v-for="a in options.scopeAreas?.filter(a => form.siteIds.includes(a.siteId))" :key="a.id" :value="a.id">{{ a.name }} · {{ a.siteId }}</option></select><small class="error">{{ errors.areaIds }}</small></label>
     </template>
-    <div class="form-footer"><span class="muted">{{ record ? '版本 ' + record.version : '新记录' }} · 演示数据</span><button class="button" type="button" :disabled="busy" @click="$emit('close')">取消</button><button class="button primary" type="submit" :disabled="busy">{{ busy ? '正在保存…' : '保存本地记录' }}</button></div>
+    <div class="form-footer"><span class="muted">{{ record ? '版本 ' + record.version : '新记录' }}</span><button class="button" type="button" :disabled="busy" @click="$emit('close')">取消</button><button class="button primary" type="submit" :disabled="busy">{{ busy ? '正在保存…' : '保存本地记录' }}</button></div>
   </form>
 </template>
 <script setup>

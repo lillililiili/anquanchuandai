@@ -12,3 +12,8 @@
 .location-page > .note {
   bottom: 48px;
 }
+.location-layout th:first-child,
+.location-layout td:first-child {
+  white-space: nowrap;
+  width: 1%;
+}

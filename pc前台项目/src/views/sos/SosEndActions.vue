@@ -6,9 +6,9 @@ import { toast } from "@/stores/notify";
 
 defineOptions({ inheritAttrs: false });
 
-function confirmEnd() {
+async function confirmEnd() {
   try {
-    db.sos("end");
+    await db.sos("end");
     closeModal();
     toast("SOS 协助已结束，记录已保存");
   } catch (error) {

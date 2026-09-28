@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAdminService } from './service'
 import { localTime, toUtc } from './time'
-import { createSeed } from './seed'
+import { createLegacySeed as createSeed } from './legacySeed'
 import { safeTarget, peopleReturn } from './navigation'
 let api, serial
 const siteId = 'site-empty'
 beforeEach(() => {
   const items = new Map()
-  api = createAdminService({ delay: 0, now: () => '2026-09-19T08:00:00Z', storage: { getItem: k => items.get(k), setItem: (k, v) => items.set(k, v), removeItem: k => items.delete(k) } })
+  api = createAdminService({ delay: 0, now: () => '2026-09-19T08:00:00Z', seed: createSeed, storage: { getItem: k => items.get(k), setItem: (k, v) => items.set(k, v), removeItem: k => items.delete(k) } })
   api.login('demo-system', 'Admin@2026'); serial = 0
 })
 const query = async (entity, extra = {}) => (await api.query('master', { entity, siteId, pageSize: 100, ...extra })).data

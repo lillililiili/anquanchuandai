@@ -28,7 +28,7 @@ function submit() {
   try {
     db.updateCall(props.callId, "invite", personId.value);
     closeModal();
-    toast("已邀请成员加入模拟通话");
+    toast("已邀请成员加入通话");
   } catch (err) {
     error.value = err.message || "操作失败";
     saving.value = false;

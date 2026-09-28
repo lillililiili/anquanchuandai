@@ -144,7 +144,7 @@
         type: "设备通信",
         status: "待现场核验",
         time: "10:39",
-        externalStatus: "处理中（同步示例）",
+        externalStatus: "处理中",
       },
       {
         id: "RL-E-0915-002",
@@ -199,7 +199,7 @@
         type: "安全带挂接",
         status: "待认领",
         time: "10:33",
-        externalStatus: "处理中（同步示例）",
+        externalStatus: "处理中",
       },
       {
         id: "RL-E-0915-007",
@@ -282,7 +282,7 @@
         personName: people.find((p) => p.id === m.personId).name,
         workName: works.find((w) => w.id === m.workId).name,
       },
-      source: "设备回传（示例）",
+      source: "设备回传",
     }));
     return {
       version: 1,
@@ -401,8 +401,10 @@
       const raw = storage && storage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed.version === 1) state = parsed;
-        else throw Error("版本不匹配");
+        if (parsed.version !== 1) throw Error("版本不匹配");
+        const stationName = parsed.stations?.[0]?.name || "";
+        if (!/[\u4e00-\u9fff]/.test(stationName)) storage.removeItem(KEY);
+        else state = parsed;
       }
     } catch (e) {
       loadError = "本地数据读取失败，已载入初始数据：" + e.message;
@@ -427,7 +429,7 @@
         item.text = "收到安全帽 SOS";
         changed = true;
       }
-      if (item.text === "周明加入（演练示例）") {
+      if (item.text === "周明加入") {
         item.text = "周明加入协助";
         changed = true;
       }
@@ -446,6 +448,9 @@
       }
     }
     const listeners = new Set();
+    let remoteCommit = null;
+    let voice = null;
+    let applyingVoice = false;
     const now = (s) =>
       DATE +
       " " +
@@ -460,8 +465,9 @@
       const next = clone(state);
       next.clock++;
       const value = fn(next);
-      validate(next);
       next.audit.push({ id: "A" + ++next.seq, time: now(next), text: label });
+      validate(next);
+      if (remoteCommit) remoteCommit(next);
       if (storage) storage.setItem(KEY, JSON.stringify(next));
       state = next;
       listeners.forEach((fn) => fn(state));
@@ -909,7 +915,25 @@
         return g.id;
       });
     }
+    function helmetsFor(ids) {
+      return ids.map((id) => {
+        const wearer = requireItem(state.people, id);
+        const helmet = currentDevices(id).find((item) => item.type === "H");
+        if (!helmet) throw Error(wearer.name + "没有领用安全帽");
+        return { hatNumber: helmet.id, name: wearer.name };
+      });
+    }
     function startCall(members, kind = "群呼", station = "S1") {
+      members = [...new Set(members)];
+      if (!members.length) throw Error("请选择呼叫人员");
+      if (kind === "单呼" && members.length !== 1) throw Error("单呼只能选择一人");
+      members.forEach((pid) => {
+        const wearer = requireItem(state.people, pid);
+        if (!wearer.active || wearer.station !== station) throw Error("呼叫人员无效");
+      });
+      if (state.calls.some((call) => call.status !== "已结束")) throw Error("请先结束当前通话");
+      const hats = helmetsFor(members);
+      const rtc = voice ? voice("/api/guardian/v1/call", { hats }) : null;
       return commit("发起" + kind, (s) => {
         members = [...new Set(members)];
         if (!members.length) throw Error("请选择呼叫人员");
@@ -931,6 +955,7 @@
           status: "正在呼叫",
           muted: false,
           joined: [],
+          rtc,
           history: [{ time: now(s), text: "发起" + kind }],
         };
         s.calls.unshift(call);
@@ -938,7 +963,10 @@
       });
     }
     function updateCall(id, action, pid) {
-      return commit("更新模拟通话", (s) => {
+      if (voice && !applyingVoice && action === "connect") return connectVoice(id);
+      if (voice && !applyingVoice && action === "end") return endVoice(id);
+      if (voice && !applyingVoice && action === "mute") return muteVoice(id);
+      return commit("更新通话", (s) => {
         const c = requireItem(s.calls, id);
         if (c.status === "已结束") throw Error("通话已经结束");
         if (action === "connect") {
@@ -960,7 +988,7 @@
         c.history.push({
           time: now(s),
           text: {
-            connect: "模拟接通",
+            connect: "接通",
             end: "通话结束",
             mute: "切换静音",
             invite: "邀请成员",
@@ -968,8 +996,51 @@
         });
       });
     }
+    async function connectVoice(id) {
+      const call = state.calls.find((item) => item.id === id);
+      if (!call) throw Error("记录不存在");
+      if (call.status === "已结束") throw Error("通话已经结束");
+      const rtcApi = await import("../lib/rtc.js");
+      await rtcApi.joinChannel(call.rtc);
+      applyingVoice = true;
+      try {
+        return updateCall(id, "connect");
+      } finally {
+        applyingVoice = false;
+      }
+    }
+    async function endVoice(id) {
+      const call = state.calls.find((item) => item.id === id);
+      if (!call) throw Error("记录不存在");
+      if (call.status === "已结束") throw Error("通话已经结束");
+      const rtcApi = await import("../lib/rtc.js");
+      await rtcApi.leaveChannel();
+      if (call.rtc && call.rtc.channel) voice("/api/guardian/v1/call/end", { channel: call.rtc.channel });
+      applyingVoice = true;
+      try {
+        return updateCall(id, "end");
+      } finally {
+        applyingVoice = false;
+      }
+    }
+    async function muteVoice(id) {
+      const call = state.calls.find((item) => item.id === id);
+      if (!call) throw Error("记录不存在");
+      const rtcApi = await import("../lib/rtc.js");
+      await rtcApi.setMuted(!call.muted);
+      applyingVoice = true;
+      try {
+        return updateCall(id, "mute");
+      } finally {
+        applyingVoice = false;
+      }
+    }
     function broadcast(groupId, text) {
-      return commit("发送模拟文字广播", (s) => {
+      if (!text.trim() || text.length > 200) throw Error("广播内容需为 1–200 字");
+      const group = requireItem(state.groups, groupId);
+      const hats = helmetsFor(group.members);
+      if (voice) voice("/api/guardian/v1/broadcast", { content: text.trim(), hats });
+      return commit("发送文字广播", (s) => {
         const g = requireItem(s.groups, groupId);
         if (!text.trim() || text.length > 200)
           throw Error("广播内容需为 1–200 字");
@@ -982,11 +1053,13 @@
           station: g.station,
           date: DATE,
           time: now(s),
-          status: "已发送（模拟）",
+          status: "已发送",
         });
       });
     }
-    function sos(action) {
+    function sos(action, ready) {
+      if (voice && !ready && action === "join") return joinSosVoice();
+      if (voice && !ready && action === "end") return endSosVoice();
       return commit("SOS 协助操作", (s) => {
         if (s.sos.status === "ended") throw Error("本次协助已结束");
         if (action === "join" && s.sos.members.includes("operator"))
@@ -995,9 +1068,10 @@
           s.sos.status = "active";
           if (!s.sos.members.includes("operator"))
             s.sos.members.push("operator");
+          if (ready) s.sos.rtc = ready;
           s.sos.timeline.push({
             time: now(s).slice(11),
-            text: "值守员加入协助（模拟）",
+            text: "值守员加入协助",
           });
         }
         if (action === "end") {
@@ -1019,9 +1093,53 @@
         }
       });
     }
+    async function joinSosVoice() {
+      if (state.sos.status === "ended") throw Error("本次协助已结束");
+      if (state.sos.members.includes("operator")) throw Error("值守员已经加入");
+      const wearer = state.people.find((item) => item.id === state.sos.personId);
+      const helmet = currentDevices(state.sos.personId).find((item) => item.type === "H");
+      const hatNumber = helmet ? helmet.id : state.sos.deviceId;
+      if (!hatNumber) throw Error((wearer && wearer.name ? wearer.name : "求助人") + "没有领用安全帽");
+      const rtc = voice("/api/guardian/v1/call", {
+        hats: [{ hatNumber, name: wearer && wearer.name ? wearer.name : state.sos.personName || "" }],
+      });
+      const rtcApi = await import("../lib/rtc.js");
+      await rtcApi.joinChannel(rtc);
+      return sos("join", rtc);
+    }
+    async function endSosVoice() {
+      if (state.sos.status === "ended") throw Error("本次协助已结束");
+      const channel = state.sos.rtc && state.sos.rtc.channel;
+      const rtcApi = await import("../lib/rtc.js");
+      await rtcApi.leaveChannel();
+      if (channel) voice("/api/guardian/v1/call/end", { channel });
+      return sos("end", true);
+    }
     function tracks(pid, date, start, end) {
       if (start >= end) throw Error("结束时间必须晚于开始时间");
-      if (date !== DATE || !person(pid)) return [];
+      if (!person(pid)) return [];
+      const reported = (state.locations || [])
+        .filter(
+          (item) =>
+            item.personId === pid &&
+            item.inside &&
+            item.x != null &&
+            item.y != null &&
+            typeof item.time === "string" &&
+            item.time.slice(0, 10) === date &&
+            item.time.slice(11, 16) >= start &&
+            item.time.slice(11, 16) <= end,
+        )
+        .map((item) => ({
+          time: item.time.slice(11, 16),
+          x: Number(item.x),
+          y: Number(item.y),
+          personId: pid,
+          deviceId: item.deviceId || deviceAt(pid, item.time)?.id || "未绑定",
+        }))
+        .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
+      if (reported.length) return reported;
+      if (date !== DATE) return [];
       const offset = Number(pid.slice(1)) * 2;
       const base = [
         { time: "09:00", x: 79, y: 76 },
@@ -1092,6 +1210,27 @@
       sos,
       tracks,
       reset,
+      revision: () => state.seq || 0,
+      replaceRemote(next) {
+        if (!next || next.version !== 1) return false;
+        if (!/[\u4e00-\u9fff]/.test(next.stations?.[0]?.name || "")) return false;
+        state = next;
+        if (storage) {
+          try {
+            storage.setItem(KEY, JSON.stringify(next));
+          } catch {
+            /* 浏览器拒绝写入时仍使用这次读到的快照。 */
+          }
+        }
+        listeners.forEach((fn) => fn(state));
+        return true;
+      },
+      setRemoteCommit: (fn) => {
+        remoteCommit = fn;
+      },
+      setVoice: (fn) => {
+        voice = fn;
+      },
     };
   }
   function validate(s) {

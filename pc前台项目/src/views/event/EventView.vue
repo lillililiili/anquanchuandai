@@ -199,7 +199,7 @@ function openMaterials() {
           <AppPanel title="现场影像证据">
             <div v-if="eventMedia[0]" class="media-preview-wrap" data-action="preview-media" :data-id="eventMedia[0].id" style="cursor:pointer" @click="previewMedia(eventMedia[0])">
               <MediaImage :media="eventMedia[0]" />
-              <span class="video-label">示例画面 · 非实时</span>
+              <span class="video-label">非实时</span>
             </div>
             <VideoFrame v-else :person-id="eventRecord.personId" />
           </AppPanel>
@@ -275,7 +275,7 @@ function openMaterials() {
             <dt><AppIcon name="lock-fill" /> {{ eventRecord.externalId }}</dt>
             <dd class="yellow">状态：{{ eventRecord.externalStatus }}</dd>
             <dt>摘要</dt>
-            <dd>{{ eventRecord.externalStatus === "待回传" ? "待回传" : "回传成功（示例）" }}</dd>
+            <dd>{{ eventRecord.externalStatus === "待回传" ? "待回传" : "回传成功" }}</dd>
             <dt>核验记录</dt>
             <dd>{{ verified ? "已提交" : "未提交" }}</dd>
           </dl>

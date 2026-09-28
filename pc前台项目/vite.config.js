@@ -13,5 +13,11 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5191,
     strictPort: true,
+    proxy: {
+      "/api/guardian": {
+        target: "http://127.0.0.1:18084",
+        changeOrigin: true,
+      },
+    },
   },
 });

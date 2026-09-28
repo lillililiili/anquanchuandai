@@ -65,7 +65,7 @@ function samples(c) {
     const station = c.siteId === 'site-2' ? 2 : c.siteId === 'site-1' ? 1 : 'empty'
     return [{ sourceId: 'device-001', name: '来源安全帽样本', manufacturer: '预置厂商（非真实厂家）', sn: `EQ-SN-EQ-${station}-001`, type: 'HELMET' }, { sourceId: 'device-002', name: '来源安全带样本', manufacturer: '合成样本厂商', sn: `SAMPLE-${c.siteId}-BELT-002`, type: 'BELT' }]
   }
-  return ['person-001', 'person-002'].map(sourceId => ({ sourceId, name: '同名演示人员', sourceSystem: 'MOCK_PERSON', sourcePersonId: `${c.siteId}-${sourceId}` }))
+  return ['person-001', 'person-002'].map(sourceId => ({ sourceId, name: '同名人员', sourceSystem: 'MOCK_PERSON', sourcePersonId: `${c.siteId}-${sourceId}` }))
 }
 function sourceFields(c, sample) {
   return { sourceName: sample.name, sourceSystem: sample.sourceSystem || 'MOCK_DEVICE', sourcePersonId: sample.sourcePersonId || null, sourceId: sample.sourceId, sourceConnectorId: c.id, source: SOURCE }
@@ -105,12 +105,12 @@ export function applyIntegration(state, actor, type, input, { fail, now }) {
   if (input.expectedVersion !== row.version) throw fail(409, 'VERSION_CONFLICT', '配置或任务已变化，请重新读取')
   const invalid = (field, message) => { throw Object.assign(fail(400, 'VALIDATION_ERROR', message), { fields: { [field]: message } }) }
   if (type === 'integrationSettings.update') {
-    if (!SCENARIOS.includes(input.defaultScenario)) invalid('defaultScenario', '请选择演示结果')
+    if (!SCENARIOS.includes(input.defaultScenario)) invalid('defaultScenario', '请选择返回结果')
     row.defaultScenario = input.defaultScenario; row.version++; return row
   }
   if (type === 'integrations.update') {
     const next = { ...row, ...Object.fromEntries(config.filter(k => Object.hasOwn(input, k)).map(k => [k, input[k]])) }
-    if (!Object.hasOwn(ENDPOINTS, next.endpointKey)) invalid('endpointKey', '请选择演示地址')
+    if (!Object.hasOwn(ENDPOINTS, next.endpointKey)) invalid('endpointKey', '请选择连接地址')
     if (next.scenario !== null && !SCENARIOS.includes(next.scenario)) invalid('scenario', '请选择确定性场景或使用厂站默认值')
     if (next.mappedSiteId !== null && next.mappedSiteId !== row.siteId) invalid('mappedSiteId', '只能映射至当前授权厂站')
     if (next.areaId !== null && !state.areas.some(a => a.id === next.areaId && a.siteId === row.siteId && a.enabled !== false)) invalid('areaId', '请选择本厂站启用区域')

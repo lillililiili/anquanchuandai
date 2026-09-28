@@ -1,13 +1,39 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import OlMap from "ol/Map";
+import View from "ol/View";
+import TileLayer from "ol/layer/Tile";
+import XYZ from "ol/source/XYZ";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import Feature from "ol/Feature";
+import Point from "ol/geom/Point";
+import LineString from "ol/geom/LineString";
+import Polygon from "ol/geom/Polygon";
+import Overlay from "ol/Overlay";
+import DragPan from "ol/interaction/DragPan";
+import { defaults as defaultInteractions } from "ol/interaction/defaults";
+import { fromLonLat, toLonLat } from "ol/proj";
+import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
+import "ol/ol.css";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
-import AppStatus from "@/components/ui/AppStatus.vue";
 import { db, tick } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { toast } from "@/stores/notify";
 import { helmetOf, people } from "@/lib/queries";
+import {
+  LABEL_TILES,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  PLANT_CENTER,
+  PLANT_ZOOM,
+  SATELLITE_TILES,
+  clampPercent,
+  lonLatToPercent,
+  percentToLonLat,
+} from "./map-geo.js";
 
 const props = defineProps({
   mode: { type: String, default: "live" },
@@ -21,8 +47,8 @@ const props = defineProps({
 
 const route = useRoute();
 const mapEl = ref(null);
-const worldEl = ref(null);
-const canvasEl = ref(null);
+const olEl = ref(null);
+const scaleText = ref("500 m");
 const zones = [
   ["锅炉区", 34, 31],
   ["配电区", 20, 73],
@@ -56,168 +82,244 @@ const areas = [
   ],
 ];
 
-let zoom = 1;
-let pan = [0, 0];
-let drag = null;
-let observer;
-let context;
-
 const visiblePeople = computed(() => {
   tick.value;
   const source = props.person ? people().filter((item) => item.id === props.person) : people();
   return source.filter((item) => !props.personIds || props.personIds.includes(item.id));
 });
-
 const showMarkers = computed(() => props.markers !== false && props.mode !== "fence");
 const selected = computed(() => {
   tick.value;
   return db.person(props.person || session.person);
 });
 
+let map;
+let dragPan;
+let observer;
+let dragging = null;
+const personOverlays = new Map();
+const zoneOverlays = [];
+let popupOverlay;
+
+const areaSource = new VectorSource();
+const fenceSource = new VectorSource();
+const trackSource = new VectorSource();
+const draftSource = new VectorSource();
+
 function workName(personId) {
   return db.currentWork(personId)?.name || "待分配";
 }
 
-function applyTransform() {
-  if (!worldEl.value) return;
-  worldEl.value.style.transform = `translate(${pan[0]}px,${pan[1]}px) scale(${zoom})`;
+function projected(point) {
+  return fromLonLat(percentToLonLat(point));
 }
 
-function paint() {
-  const element = mapEl.value;
-  const canvas = canvasEl.value;
-  if (!element || !canvas) return;
-  context ||= canvas.getContext("2d");
-  const ctx = context;
-  const width = element.clientWidth;
-  const height = element.clientHeight;
-  if (!width || !height) return;
-  canvas.width = width * devicePixelRatio;
-  canvas.height = height * devicePixelRatio;
-  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-  ctx.clearRect(0, 0, width, height);
-  const poly = (points, color, fill, dash = []) => {
-    if (!points?.length) return;
-    ctx.beginPath();
-    points.forEach((point, index) => {
-      const x = (point[0] * width) / 100;
-      const y = (point[1] * height) / 100;
-      if (index) ctx.lineTo(x, y);
-      else ctx.moveTo(x, y);
-    });
-    ctx.closePath();
-    ctx.strokeStyle = color;
-    ctx.fillStyle = fill;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash(dash);
-    ctx.fill();
-    ctx.stroke();
-    ctx.setLineDash([]);
-  };
-  if (session.layers.areas && props.mode !== "fence") {
-    areas.forEach((points, index) => poly(points, index ? "#00e9dd" : "#ffcc42", index ? "#00dac00b" : "#ffcc420a", [6, 4]));
+function percentFromCoordinate(coordinate) {
+  return clampPercent(lonLatToPercent(toLonLat(coordinate)));
+}
+
+function ring(points) {
+  const line = points.map((point) => projected(point));
+  if (line.length && (line[0][0] !== line[line.length - 1][0] || line[0][1] !== line[line.length - 1][1])) {
+    line.push(line[0]);
   }
+  return line;
+}
+
+function polygonFeature(points, stroke, fill, dash) {
+  const feature = new Feature({ geometry: new Polygon([ring(points)]) });
+  feature.setStyle(
+    new Style({
+      stroke: new Stroke({ color: stroke, width: 2.5, lineDash: dash }),
+      fill: new Fill({ color: fill }),
+    }),
+  );
+  return feature;
+}
+
+function circleFeature(point, radius, fill, stroke) {
+  const feature = new Feature({ geometry: new Point(projected(point)) });
+  feature.setStyle(
+    new Style({
+      image: new CircleStyle({
+        radius,
+        fill: new Fill({ color: fill }),
+        stroke: new Stroke({ color: stroke, width: 2 }),
+      }),
+    }),
+  );
+  return feature;
+}
+
+function lineFeature(points, color) {
+  const feature = new Feature({ geometry: new LineString(points.map((point) => projected([point.x, point.y]))) });
+  feature.setStyle(
+    new Style({
+      stroke: new Stroke({ color, width: 4 }),
+    }),
+  );
+  return feature;
+}
+
+function trackGroups(points) {
+  const groups = [];
+  points.forEach((point) => {
+    if (!groups.length || point.gap) groups.push([point]);
+    else groups[groups.length - 1].push(point);
+  });
+  return groups.filter((group) => group.length > 1);
+}
+
+function replaceFeatures(source, features) {
+  source.clear();
+  source.addFeatures(features);
+}
+
+function renderShapes() {
+  const shapes = [];
+  if (session.layers.areas && props.mode !== "fence") {
+    areas.forEach((points, index) => {
+      shapes.push(polygonFeature(points, index ? "#00e9dd" : "#ffcc42", index ? "#00dac00b" : "#ffcc420a", [6, 4]));
+    });
+  }
+  replaceFeatures(areaSource, shapes);
+
+  const fences = [];
   if (session.layers.fences && props.mode !== "fence") {
     db.state.fences
       .filter((fence) => fence.station === session.station && fence.enabled && !fence.archived)
-      .forEach((fence) => poly(fence.points, "#15e1be", "#00bfa021", [7, 3]));
+      .forEach((fence) => fences.push(polygonFeature(fence.points, "#15e1be", "#00bfa021", [7, 3])));
   }
+  replaceFeatures(fenceSource, fences);
+
+  const draft = [];
   if (props.mode === "fence" && session.fenceDraft) {
-    poly(session.fenceDraft.points, "#20b9ff", "#1294fa44", [5, 4]);
-    session.fenceDraft.points.forEach((point) => {
-      ctx.beginPath();
-      ctx.arc((point[0] * width) / 100, (point[1] * height) / 100, 7, 0, Math.PI * 2);
-      ctx.fillStyle = "#168bff";
-      ctx.fill();
-      ctx.strokeStyle = "#e7faff";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    });
+    if (session.fenceDraft.points.length) {
+      draft.push(polygonFeature(session.fenceDraft.points, "#20b9ff", "#1294fa44", [5, 4]));
+    }
+    session.fenceDraft.points.forEach((point) => draft.push(circleFeature(point, 7, "#168bff", "#e7faff")));
   }
+  replaceFeatures(draftSource, draft);
+
+  const tracks = [];
   if (props.mode === "tracks") {
     const points = session.trackPoints;
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "#09d9ff";
-    ctx.shadowColor = "#00aaff";
-    ctx.shadowBlur = 7;
-    ctx.beginPath();
+    trackGroups(points).forEach((group) => tracks.push(lineFeature(group, "#09d9ff")));
     points.forEach((point, index) => {
-      const x = (point.x * width) / 100;
-      const y = (point.y * height) / 100;
-      if (!index || point.gap) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      const active = index === session.trackIndex;
+      tracks.push(circleFeature([point.x, point.y], active ? 8 : 5, active ? "#008fff" : "#def9ff", active ? "#ffffff" : "#00bfff"));
     });
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    points.forEach((point) => {
-      ctx.beginPath();
-      ctx.arc((point.x * width) / 100, (point.y * height) / 100, 5, 0, Math.PI * 2);
-      ctx.fillStyle = "#def9ff";
-      ctx.fill();
-      ctx.strokeStyle = "#00bfff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    });
-    const current = points[session.trackIndex];
-    if (current) {
-      ctx.beginPath();
-      ctx.arc((current.x * width) / 100, (current.y * height) / 100, 13, 0, Math.PI * 2);
-      ctx.fillStyle = "#008fff";
-      ctx.fill();
-      ctx.strokeStyle = "white";
-      ctx.stroke();
-    }
   }
+  replaceFeatures(trackSource, tracks);
 }
 
-function pointOf(event) {
-  const bounds = worldEl.value.getBoundingClientRect();
-  return [
-    Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100)),
-    Math.max(0, Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100)),
-  ];
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 }
 
-function onPointerDown(event) {
-  if (event.target.closest("button,.map-popup,.map-editbar")) return;
-  if (props.mode === "fence" && session.fenceDraft && session.fenceMode === "draw") {
-    if (event.detail > 1) return;
-    session.fenceUndo.push(structuredClone(session.fenceDraft.points));
-    session.fenceDraft.points.push(pointOf(event));
-    paint();
+function ensurePopup() {
+  if (popupOverlay || !map) return;
+  const element = document.createElement("div");
+  element.className = "map-popup";
+  popupOverlay = new Overlay({ element, positioning: "bottom-left", offset: [16, -18], stopEvent: true });
+  map.addOverlay(popupOverlay);
+}
+
+function renderPopup() {
+  if (!map) return;
+  ensurePopup();
+  const person = props.popup ? selected.value : null;
+  if (!person) {
+    popupOverlay.setPosition(undefined);
     return;
   }
-  if (props.mode === "fence" && session.fenceDraft && session.fenceMode === "edit") {
-    const point = pointOf(event);
-    const index = session.fenceDraft.points.findIndex((item) => Math.hypot(item[0] - point[0], item[1] - point[1]) < 3);
-    if (index >= 0) {
-      session.fenceUndo.push(structuredClone(session.fenceDraft.points));
-      drag = { node: index };
+  const valid = db.locationValid(person.id);
+  popupOverlay.getElement().innerHTML =
+    `<b>${esc(person.name)}</b>　${esc(helmetOf(person.id)?.id || "未绑定")}` +
+    `<p>作业：${esc(workName(person.id))}</p>` +
+    `<p>位置：${esc(person.area)}　<span class="status ${valid ? "green" : "yellow"}"><b></b>${valid ? "位置有效" : "待核验"}</span></p>` +
+    `<div class="row"><a class="text-link" href="#/tracks/${esc(person.id)}">历史轨迹 →</a><a class="text-link" href="#/person/${esc(person.id)}">查看人员</a></div>`;
+  popupOverlay.setPosition(projected(person.position));
+}
+
+function renderPeople() {
+  if (!map) return;
+  const wanted = showMarkers.value && session.layers.people ? visiblePeople.value : [];
+  const ids = new Set(wanted.map((person) => person.id));
+  for (const [id, overlay] of personOverlays) {
+    if (ids.has(id)) continue;
+    map.removeOverlay(overlay);
+    personOverlays.delete(id);
+  }
+  wanted.forEach((person) => {
+    let overlay = personOverlays.get(person.id);
+    if (!overlay) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.innerHTML = '<i class="ri-user-fill" aria-hidden="true"></i>';
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        choose(button.dataset.id);
+      });
+      overlay = new Overlay({ element: button, positioning: "center-center", stopEvent: true });
+      map.addOverlay(overlay);
+      personOverlays.set(person.id, overlay);
     }
-  } else drag = { start: [event.clientX, event.clientY], pan: [...pan] };
-  if (drag) mapEl.value.setPointerCapture(event.pointerId);
+    const button = overlay.getElement();
+    button.dataset.id = person.id;
+    button.className = [
+      "map-person",
+      db.locationValid(person.id) ? "" : "warning",
+      selected.value?.id === person.id ? "selected" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    button.setAttribute("aria-label", "定位 " + person.name);
+    overlay.setPosition(projected(person.position));
+  });
 }
 
-function onPointerMove(event) {
-  if (!drag) return;
-  if (drag.node !== undefined) {
-    session.fenceDraft.points[drag.node] = pointOf(event);
-    paint();
-    return;
-  }
-  pan = [drag.pan[0] + event.clientX - drag.start[0], drag.pan[1] + event.clientY - drag.start[1]];
-  applyTransform();
+function renderZones() {
+  if (!map || zoneOverlays.length) return;
+  zones.forEach(([label, x, y]) => {
+    const element = document.createElement("span");
+    element.className = "map-zone";
+    element.textContent = label;
+    const overlay = new Overlay({
+      element,
+      position: projected([x, y]),
+      positioning: "center-center",
+      stopEvent: false,
+    });
+    map.addOverlay(overlay);
+    zoneOverlays.push(overlay);
+  });
 }
 
-function onPointerUp() {
-  drag = null;
+function syncPan() {
+  if (!dragPan) return;
+  const drawing = props.mode === "fence" && (session.fenceMode === "draw" || session.fenceMode === "edit");
+  dragPan.setActive(!drawing);
 }
 
-function onDoubleClick() {
-  if (props.mode === "fence" && session.fenceMode === "draw") {
-    session.fenceMode = "edit";
-    toast("绘制完成，可拖动节点调整");
-  }
+function render() {
+  if (!map) return;
+  renderShapes();
+  renderPeople();
+  renderPopup();
+  renderZones();
+  syncPan();
+}
+
+function updateScale() {
+  if (!map) return;
+  const view = map.getView();
+  const resolution = view.getResolution() || 1;
+  const ground = resolution * Math.cos((PLANT_CENTER[1] * Math.PI) / 180);
+  const meters = ground * 96;
+  const steps = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
+  const nice = steps.find((step) => step >= meters) || steps[steps.length - 1];
+  scaleText.value = nice >= 1000 ? `0　　${nice / 1000} km` : `0　　${nice} m`;
 }
 
 function choose(id) {
@@ -226,15 +328,19 @@ function choose(id) {
   location.hash = "#/person/" + id;
 }
 
-function setZoom(next) {
-  zoom = next;
-  applyTransform();
+function zoomBy(delta) {
+  if (!map) return;
+  const view = map.getView();
+  const next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, (view.getZoom() || PLANT_ZOOM) + delta));
+  view.setZoom(next);
 }
 
 function resetView() {
-  zoom = 1;
-  pan = [0, 0];
-  applyTransform();
+  if (!map) return;
+  const view = map.getView();
+  view.setCenter(fromLonLat(PLANT_CENTER));
+  view.setZoom(PLANT_ZOOM);
+  view.setRotation(0);
 }
 
 function setMode(mode) {
@@ -251,27 +357,93 @@ function undo() {
     return;
   }
   session.fenceDraft.points = session.fenceUndo.pop();
-  paint();
 }
 
-function popupStyle(person) {
-  return {
-    left: Math.min(60, person.position[0] + 3) + "%",
-    top: Math.max(3, person.position[1] - 31) + "%",
-  };
+function rememberPoints() {
+  session.fenceUndo.push(session.fenceDraft.points.map((point) => [Number(point[0]), Number(point[1])]));
+}
+
+function onSingleClick(event) {
+  if (props.mode !== "fence" || !session.fenceDraft || session.fenceMode !== "draw") return;
+  rememberPoints();
+  session.fenceDraft.points.push(percentFromCoordinate(event.coordinate));
+}
+
+function onDoubleClick(event) {
+  if (props.mode === "fence" && session.fenceMode === "draw") {
+    event.preventDefault();
+    session.fenceMode = "edit";
+    toast("绘制完成，可拖动节点调整");
+  }
+}
+
+function onPointerDown(event) {
+  if (props.mode !== "fence" || session.fenceMode !== "edit" || !session.fenceDraft) return;
+  const point = percentFromCoordinate(event.coordinate);
+  const index = session.fenceDraft.points.findIndex((item) => Math.hypot(item[0] - point[0], item[1] - point[1]) < 3);
+  if (index < 0) return;
+  rememberPoints();
+  dragging = index;
+  event.preventDefault();
+}
+
+function onPointerMove(event) {
+  if (dragging == null || !session.fenceDraft) return;
+  session.fenceDraft.points[dragging] = percentFromCoordinate(event.coordinate);
+}
+
+function onPointerUp() {
+  dragging = null;
 }
 
 onMounted(() => {
-  observer = new ResizeObserver(() => paint());
+  map = new OlMap({
+    target: olEl.value,
+    layers: [
+      new TileLayer({ source: new XYZ({ url: SATELLITE_TILES }) }),
+      new TileLayer({ source: new XYZ({ url: LABEL_TILES }) }),
+      new VectorLayer({ source: areaSource, zIndex: 3 }),
+      new VectorLayer({ source: fenceSource, zIndex: 4 }),
+      new VectorLayer({ source: trackSource, zIndex: 5 }),
+      new VectorLayer({ source: draftSource, zIndex: 6 }),
+    ],
+    view: new View({
+      center: fromLonLat(PLANT_CENTER),
+      zoom: PLANT_ZOOM,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+    }),
+    controls: [],
+    interactions: defaultInteractions({ doubleClickZoom: false, altShiftDragRotate: false, pinchRotate: false }),
+  });
+  dragPan = map
+    .getInteractions()
+    .getArray()
+    .find((item) => item instanceof DragPan);
+  map.on("singleclick", onSingleClick);
+  map.on("dblclick", onDoubleClick);
+  map.on("pointerdown", onPointerDown);
+  map.on("pointermove", onPointerMove);
+  map.on("pointerup", onPointerUp);
+  map.on("moveend", updateScale);
+  observer = new ResizeObserver(() => map.updateSize());
   observer.observe(mapEl.value);
-  paint();
+  render();
+  updateScale();
 });
 
-onUnmounted(() => observer?.disconnect());
+onUnmounted(() => {
+  observer?.disconnect();
+  personOverlays.clear();
+  map?.setTarget(null);
+  map?.dispose();
+  map = null;
+});
 
 watch(
   () => [
     tick.value,
+    session.person,
     session.layers.people,
     session.layers.areas,
     session.layers.fences,
@@ -282,58 +454,23 @@ watch(
     session.fenceMode,
     props.mode,
     props.person,
+    props.popup,
+    props.markers,
   ],
-  () => paint(),
+  () => render(),
   { deep: true },
 );
 </script>
 
 <template>
-  <div
-    ref="mapEl"
-    :class="['map', mapClass]"
-    :data-map="mode"
-    :data-person="person"
-    @pointerdown="onPointerDown"
-    @pointermove="onPointerMove"
-    @pointerup="onPointerUp"
-    @dblclick="onDoubleClick"
-  >
-    <div ref="worldEl" class="map-world">
-      <img src="/assets/plant-map.png" alt="厂区示意底图" />
-      <canvas ref="canvasEl" aria-label="作业区域与轨迹图层"></canvas>
-      <div class="map-labels">
-        <span v-for="[label, x, y] in zones" :key="label" class="map-zone" :style="{ left: x + '%', top: y + '%' }">{{ label }}</span>
-      </div>
-      <button
-        v-for="person in showMarkers && session.layers.people ? visiblePeople : []"
-        :key="person.id"
-        type="button"
-        :class="['map-person', db.locationValid(person.id) ? '' : 'warning', selected?.id === person.id ? 'selected' : '']"
-        :style="{ left: person.position[0] + '%', top: person.position[1] + '%' }"
-        :aria-label="'定位 ' + person.name"
-        @click="choose(person.id)"
-      >
-        <AppIcon name="user-fill" />
-      </button>
-      <div v-if="popup && selected" class="map-popup" :style="popupStyle(selected)">
-        <b>{{ selected.name }}</b>　{{ helmetOf(selected.id)?.id || "未绑定" }}
-        <p>作业：{{ workName(selected.id) }}</p>
-        <p>
-          位置：{{ selected.area }}　<AppStatus :color="db.locationValid(selected.id) ? 'green' : 'yellow'">{{ db.locationValid(selected.id) ? "位置有效" : "待核验" }}</AppStatus>
-        </p>
-        <div class="row">
-          <a class="text-link" :href="'#/tracks/' + selected.id">历史轨迹 →</a>
-          <a class="text-link" :href="'#/person/' + selected.id">查看人员</a>
-        </div>
-      </div>
-    </div>
-    <div class="map-caption">厂区示意 · 非实测</div>
+  <div ref="mapEl" :class="['map', mapClass]" :data-map="mode" :data-person="person">
+    <div ref="olEl" class="map-ol"></div>
+    <div class="map-caption">阳城电厂卫星图 · 示意位置</div>
     <div class="map-compass">N<br /><AppIcon name="navigation-fill" /></div>
     <div class="map-tools">
       <AppButton tone="icon-only" icon="crosshair-2-line" aria-label="重置地图" @click="resetView" />
-      <AppButton tone="icon-only" icon="add-line" aria-label="放大地图" @click="setZoom(Math.min(3, zoom + 0.2))" />
-      <AppButton tone="icon-only" icon="subtract-line" aria-label="缩小地图" @click="setZoom(Math.max(1, zoom - 0.2))" />
+      <AppButton tone="icon-only" icon="add-line" aria-label="放大地图" @click="zoomBy(1)" />
+      <AppButton tone="icon-only" icon="subtract-line" aria-label="缩小地图" @click="zoomBy(-1)" />
     </div>
     <div v-if="legend" class="map-legend">
       图例<br />
@@ -341,7 +478,7 @@ watch(
       <AppIcon name="checkbox-blank-line" color="cyan" /> 作业区域<br />
       <AppIcon name="error-warning-line" color="yellow" /> 待核验位置
     </div>
-    <div class="map-scale">0　　　　 250　　　500 m<hr /></div>
+    <div class="map-scale">{{ scaleText }}<hr /></div>
     <template v-if="mode === 'fence'">
       <div class="map-editbar">
         <AppButton :tone="session.fenceMode === 'select' ? 'primary' : ''" icon="cursor-line" @click="setMode('select')">选择</AppButton>

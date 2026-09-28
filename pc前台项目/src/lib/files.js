@@ -1,33 +1,43 @@
-let database;
+function fileUrl(id) {
+  return "/api/guardian/v1/files/" + encodeURIComponent(id);
+}
 
-function blobDB() {
-  database ||= new Promise((resolve, reject) => {
-    const request = indexedDB.open("rolling-native-files", 1);
-    request.onupgradeneeded = () => request.result.createObjectStore("files");
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(Error("无法访问本地文件存储"));
-  });
-  return database;
+async function failureMessage(response, fallback) {
+  try {
+    return (await response.json()).message || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export async function blobPut(id, blob) {
-  const store = await blobDB();
-  return new Promise((resolve, reject) => {
-    const transaction = store.transaction("files", "readwrite");
-    transaction.objectStore("files").put(blob, id);
-    transaction.oncomplete = () => resolve(id);
-    transaction.onerror = () => reject(Error("照片保存失败，请检查磁盘空间"));
-    transaction.onabort = () => reject(Error("照片保存事务已取消"));
-  });
+  let response;
+  try {
+    response = await fetch(fileUrl(id), {
+      method: "PUT",
+      headers: { "Content-Type": blob.type || "application/octet-stream" },
+      body: blob,
+    });
+  } catch {
+    throw Error("照片保存失败，请检查磁盘空间");
+  }
+  if (!response.ok) {
+    const fallback = response.status === 413 ? "图片不能超过 10MB" : "照片保存失败，请检查磁盘空间";
+    throw Error(await failureMessage(response, fallback));
+  }
+  return id;
 }
 
 export async function blobGet(id) {
-  const store = await blobDB();
-  return new Promise((resolve, reject) => {
-    const request = store.transaction("files").objectStore("files").get(id);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(Error("照片读取失败"));
-  });
+  let response;
+  try {
+    response = await fetch(fileUrl(id));
+  } catch {
+    throw Error("照片读取失败");
+  }
+  if (response.status === 404) return undefined;
+  if (!response.ok) throw Error(await failureMessage(response, "照片读取失败"));
+  return response.blob();
 }
 
 export function download(filename, content, type = "text/plain;charset=utf-8") {

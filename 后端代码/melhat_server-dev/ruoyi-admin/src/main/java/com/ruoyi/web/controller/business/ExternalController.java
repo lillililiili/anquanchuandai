@@ -3,6 +3,7 @@ package com.ruoyi.web.controller.business;
 import com.alibaba.fastjson2.JSON;
 import com.ruoyi.common.core.domain.R;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.guardian.GuardianIngest;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.headband.pojo.param.GnssNotifyParam;
@@ -59,6 +60,8 @@ public class ExternalController {
     private ISosAlarmRecordService sosAlarmRecordService;
     @Autowired
     private HeadbandService headbandService;
+    @Autowired
+    private GuardianIngest guardianIngest;
 
     @Autowired
     private ExecutorService executorService = Executors.newCachedThreadPool();
@@ -88,7 +91,7 @@ public class ExternalController {
             back = new ResponseVO(200, "告警类型不能是空", null);
             return back;
         }
-        SafetyHatListVO hat = safetyHatInfoService.getByHatNumber(helmetSn);
+        SafetyHatListVO hat = findHat(helmetSn);
         if (hat == null) {
             log.error("帽子-{}不存在", helmetSn);
             back = new ResponseVO(200, "帽子不存在", null);
@@ -109,6 +112,7 @@ public class ExternalController {
         }
         alarm.setCreateTime(new Date());
         realTimeAlarmService.save(alarm);
+        rememberAlarm(helmetSn, type, startTime);
 
         //推送到前端
         WebSocketSever.sendAllMessage(JSON.toJSONString(new WebsocktMsg("alarm", alarm)));
@@ -154,7 +158,7 @@ public class ExternalController {
             back = new ResponseVO(200, "定位时间不能是空", null);
             return back;
         }
-        SafetyHatListVO hat = safetyHatInfoService.getByHatNumber(helmetSn);
+        SafetyHatListVO hat = findHat(helmetSn);
         if (hat == null) {
             log.error("帽子-{}不存在", helmetSn);
             back = new ResponseVO(200, "帽子不存在", null);
@@ -172,6 +176,7 @@ public class ExternalController {
         record.setTimestamp(timestamp);
         record.setCreateTime(new Date());
         safetyHatLocationRecordService.save(record);
+        rememberLocation(helmetSn, longitude, latitude, timestamp);
 
         //推送到前端
 //        WebSocketSever.sendAllMessage(JSON.toJSONString(new WebsocktMsg("location",record)));
@@ -198,7 +203,7 @@ public class ExternalController {
             back = new ResponseVO(200, "帽子编号不能是空", null);
             return back;
         }
-        SafetyHatListVO hat = safetyHatInfoService.getByHatNumber(helmetSn);
+        SafetyHatListVO hat = findHat(helmetSn);
         if (hat == null) {
             log.error("帽子-{}不存在", helmetSn);
             back = new ResponseVO(200, "帽子不存在", null);
@@ -215,12 +220,46 @@ public class ExternalController {
         record.setCallTime(new Date());
         record.setCreateTime(new Date());
         sosAlarmRecordService.save(record);
+        rememberSos(helmetSn, longitude, latitude);
 
         back = new ResponseVO(200, "success", null);
         //呼叫帽子
         executorService.execute(() -> callHat(helmetSn));
         return back;
 
+    }
+
+    private SafetyHatListVO findHat(String helmetSn) {
+        try {
+            return safetyHatInfoService.getByHatNumber(helmetSn);
+        } catch (ServiceException error) {
+            if ("未获取到帽子".equals(error.getMessage())) return null;
+            throw error;
+        }
+    }
+
+    private void rememberAlarm(String helmetSn, String type, String startTime) {
+        try {
+            guardianIngest.alarm(helmetSn, type, startTime);
+        } catch (RuntimeException error) {
+            log.error("安全帽告警未写入监护快照", error);
+        }
+    }
+
+    private void rememberLocation(String helmetSn, String longitude, String latitude, String timestamp) {
+        try {
+            guardianIngest.location(helmetSn, longitude, latitude, timestamp);
+        } catch (RuntimeException error) {
+            log.error("安全帽定位未写入监护快照", error);
+        }
+    }
+
+    private void rememberSos(String helmetSn, String longitude, String latitude) {
+        try {
+            guardianIngest.sos(helmetSn, longitude, latitude);
+        } catch (RuntimeException error) {
+            log.error("安全帽 SOS 未写入监护快照", error);
+        }
     }
 
     public void callHat(String helmetSn){

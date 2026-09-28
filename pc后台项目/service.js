@@ -9,6 +9,7 @@ import { GROUP_QUERIES, GROUP_COMMANDS, queryCollaboration, authorizeCollaborati
 import { authorizationDiff, needsAuthorizationPreview } from './authorizationPreview'
 import { INTEGRATION_QUERIES, INTEGRATION_COMMANDS, queryIntegrations, authorizeIntegration, applyIntegration } from './integrationData'
 import { queryAudit } from './auditData'
+import { portalEnabled, publishPortal, readTelemetry } from './portalSync'
 export { relationship } from './relations'
 export { can } from './access'
 
@@ -24,8 +25,27 @@ function stable(value) {
   return value
 }
 
-export function createAdminService({ storage, delay = 200, seed = createSeed, commands = {}, now = () => new Date().toISOString() } = {}) {
-  let state = seed(), epoch = 0, sequence = 0, contextGeneration = 0
+const ADMIN_STATE_KEY = 'wearable-admin-state-v1'
+function browserStore() { return typeof localStorage === 'undefined' ? null : localStorage }
+function loadAdminState(seed) {
+  const store = browserStore()
+  if (!store) return seed()
+  try {
+    const parsed = JSON.parse(store.getItem(ADMIN_STATE_KEY) || '')
+    if (!parsed?.sites || !parsed.devices || !parsed.people || !parsed.accounts) return seed()
+    return parsed
+  } catch { return seed() }
+}
+function saveAdminState(state) {
+  const store = browserStore()
+  if (!store) return
+  store.setItem(ADMIN_STATE_KEY, JSON.stringify(state))
+}
+function clearAdminState() { browserStore()?.removeItem(ADMIN_STATE_KEY) }
+
+export function createAdminService({ storage, delay = 200, seed = createSeed, commands = {}, now = () => new Date().toISOString(), initialState = null } = {}) {
+  let state = initialState || loadAdminState(seed), epoch = 0, sequence = 0, contextGeneration = 0
+  let remoteSave = null, remoteLogin = null
   let scenario = { target: 'overview', mode: 'normal', delayNext: false }
   const listeners = new Set()
   const previews = new Map()
@@ -93,7 +113,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     if (!master && !hasSite(state, current, input.siteId, permission)) throw fail(403, 'PERMISSION_DENIED', '当前身份无此查询权限')
     if ((captured.target === kind || (master && captured.target === input.entity)) && captured.mode !== 'normal') {
       if (captured.mode === 'unavailable') return response({ availability: 'NOT_CONNECTED', reason: '当前查询来源未接入（预置场景）' })
-      throw fail(captured.mode === 'forbidden' ? 403 : 503, captured.mode === 'forbidden' ? 'SECTION_DENIED' : 'SOURCE_FAILURE', captured.mode === 'forbidden' ? '当前分区无权限（预置场景）' : '演示数据请求失败，请恢复场景后重试')
+      throw fail(captured.mode === 'forbidden' ? 403 : 503, captured.mode === 'forbidden' ? 'SECTION_DENIED' : 'SOURCE_FAILURE', captured.mode === 'forbidden' ? '当前分区无权限（预置场景）' : '数据请求失败，请恢复场景后重试')
     }
     if (master) return response(queryMaster(state, current, kind, input, { fail, page, now: now(), relationship }))
     if (INTEGRATION_QUERIES.includes(kind)) return response(queryIntegrations(state, current, kind, input, { fail, page, now: now() }))
@@ -123,6 +143,23 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     throw fail(400, 'UNKNOWN_QUERY', '未实现此查询')
   }
   function response(data) { return copy({ code: 200, requestId: `admin-mock-${++sequence}`, data }) }
+  function persist() {
+    if (remoteSave) remoteSave(copy(state))
+    else saveAdminState(state)
+  }
+  function remember(draft) {
+    const previous = state
+    state = draft
+    try { persist() }
+    catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') }
+  }
+  async function rememberPublished(draft, type) {
+    if (portalEnabled() && /^(assignments|devices|maintenance|people)\./.test(type)) {
+      try { await publishPortal(draft) }
+      catch (error) { throw fail(error.code >= 400 && error.code < 500 ? 400 : 503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') }
+    }
+    remember(draft)
+  }
   async function execute(type, input, { signal } = {}) {
     const user = actor(), startEpoch = epoch, generation = contextGeneration
     await wait(signal)
@@ -152,7 +189,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
         }
       }
       draft.idempotency[key] = { fingerprint, result }
-      state = draft
+      remember(draft)
       emit('revision')
       return copy(result)
     }
@@ -166,7 +203,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
       const result = response(output); draft.revision++
       draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: output.areaId || null, actorName: user.name, action: type, objectId: output.id, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before: row ? redact(copy(row)) : null, after: redact(copy(output)), source: '前端内存本地；未修改真实凭据、未发送通知' })
-      draft.idempotency[key] = { fingerprint, result }; state = draft; emit('revision'); return copy(result)
+      draft.idempotency[key] = { fingerprint, result }; remember(draft); emit('revision'); return copy(result)
     }
     if (MAINTENANCE_COMMANDS.includes(type)) {
       checkSite(actor(), input.siteId)
@@ -178,7 +215,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
       const result = response(output); draft.revision++
       draft.audit.push({ id: `audit-${++sequence}`, siteId: device.siteId, areaId: device.areaId, actorName: user.name, action: type, objectId: device.id, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, after: redact(output), source: '前端内存本地；非正式审批或设备安全认证' })
-      draft.idempotency[key] = { fingerprint, result }; state = draft; emit('revision'); return copy(result)
+      draft.idempotency[key] = { fingerprint, result }; await rememberPublished(draft, type); emit('revision'); return copy(result)
     }
     if (type.startsWith('assignments.')) {
       checkSite(actor(), input.siteId)
@@ -190,7 +227,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
       const result = response(output); draft.revision++
       for (const h of output.history) draft.audit.push({ id: `audit-${++sequence}`, siteId: h.siteId, areaId: h.areaId, actorName: user.name, action: type, objectId: h.deviceId, batchId: output.batchId, occurredAt: h.occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, after: { historyId: h.id, batchId: h.batchId, action: h.action, condition: h.condition, maintenanceOrderId: h.maintenanceOrderId }, source: '前端内存本地；人员及设备快照通过领用历史授权查询' })
-      draft.idempotency[key] = { fingerprint, result }; state = draft; emit('revision'); return copy(result)
+      draft.idempotency[key] = { fingerprint, result }; await rememberPublished(draft, type); emit('revision'); return copy(result)
     }
     if (ENTITIES[type.split('.')[0]] || type.startsWith('devices.')) {
       const deviceCommand = type.startsWith('devices.')
@@ -210,7 +247,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       const result = response(output)
       draft.revision++
       draft.audit.push({ id: `audit-${++sequence}`, siteId: meta.entity === 'sites' ? output.id : input.siteId, areaId: output.areaId || null, actorName: user.name, action: type, objectId: output.id, occurredAt: now(), result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before, after: redact(copy(output)), source: '前端内存本地' })
-      draft.idempotency[key] = { fingerprint, result }; state = draft
+      draft.idempotency[key] = { fingerprint, result }; await rememberPublished(draft, type)
       const authorizationChanged = ['accounts', 'roles', 'sites', 'areas'].includes(meta.entity)
       if (authorizationChanged) contextGeneration++
       if (!state.accounts.some(a => a.id === user.id && a.enabled)) { clearSession(); epoch++; emit('expired') }
@@ -239,7 +276,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     draft.revision++
     draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: object.areaId, actorName: user.name, action: type, objectId: object.id, occurredAt: new Date().toISOString(), result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before, after: redact(copy(command.locate(draft, input))), source: '前端内存本地' })
     draft.idempotency[key] = { fingerprint, result }
-    state = draft
+    remember(draft)
     emit('revision')
     return copy(result)
   }
@@ -251,7 +288,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     canAny: (operation, siteId) => { try { return hasSite(state, actor(), siteId, operation) } catch { return false } },
     isSystem: () => system(state.accounts.find(a => a.id === storage?.getItem(TOKEN_KEY))),
     login(username, password) {
-      // Local-only fixture credential; never a production authentication boundary.
+      if (remoteLogin) remoteLogin(username, password)
       const account = state.accounts.find(a => (a.loginName === username || a.id === username) && a.enabled)
       if (!account || password !== 'Admin@2026') throw fail(401, 'IDENTITY_INVALID', '账号或密码错误，或账号已停用')
       const id = account.id
@@ -266,7 +303,12 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       scenario = { ...next, delayNext: next.delayNext === true }; contextGeneration++; emit('scenario')
     },
     restoreScenario() { scenario = { target: 'overview', mode: 'normal', delayNext: false }; contextGeneration++; emit('scenario') },
-    reset() { state = seed(); scenario = { target: 'overview', mode: 'normal', delayNext: false }; epoch++; contextGeneration++; clearSession(); emit('reset') },
+    reset() { clearAdminState(); const previous = state; state = seed(); try { persist() } catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') } scenario = { target: 'overview', mode: 'normal', delayNext: false }; epoch++; contextGeneration++; clearSession(); emit('reset') },
+    hydrate: async () => { if (!portalEnabled() || !await readTelemetry(state)) return false; try { persist() } catch { /* 电量已在内存，台账保存失败不阻断页面 */ } emit('revision'); return true },
+    exportState: () => copy(state),
+    replaceState(next) { if (!next) return; state = next; emit('revision') },
+    setRemoteSave(fn) { remoteSave = fn },
+    setRemoteLogin(fn) { remoteLogin = fn },
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) }
   }
 }

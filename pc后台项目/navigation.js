@@ -2,7 +2,7 @@ export const MENU = [
   { path: '/admin/overview', title: '管理工作台', permission: 'overview:read', description: '设备概况、待核实的领用记录和最近操作' },
   { path: '/admin/assets/devices', title: '装备资产', permission: 'assets:read', description: '设备台账 → 发放回收 → 维修与退役' },
   { path: '/admin/people', title: '人员组织', permission: 'people:read', description: '人员档案、组织班组、厂站区域与当班名册' },
-  { path: '/admin/access/accounts', title: '权限协作', permission: 'access:read', description: '登录账号、角色范围、协助组与通知范围' },
+  { path: '/admin/access/accounts', title: '权限协作', permission: 'access:read', description: '登录账号与角色范围' },
   { path: '/admin/audit', title: '操作日志', permission: 'audit:read', description: '查看谁在何时修改了什么，以及处理结果' }
 ]
 export const METRICS = [
@@ -19,11 +19,10 @@ export const WORKSPACES = [
   { path: '/admin/sites', title: '厂站资料', entity: 'sites', group: 'people' },
   { path: '/admin/duty', title: '班次名册', entity: 'dutyShifts', group: 'people' },
   { path: '/admin/access/accounts', title: '本地账号', entity: 'accounts', group: 'access' },
-  { path: '/admin/access/roles', title: '基础角色', entity: 'roles', group: 'access' },
-  { path: '/admin/access/groups', title: '常设协助组', entity: 'groups', group: 'access' }
+  { path: '/admin/access/roles', title: '基础角色', entity: 'roles', group: 'access' }
 ]
 export const menuPath = path => path.startsWith('/admin/integrations/') ? '/admin/integrations' : path.startsWith('/admin/assets/') ? '/admin/assets/devices' : path.startsWith('/admin/access/') ? '/admin/access/accounts' : /^\/admin\/(people|organization|sites|duty)(\/|$)/.test(path) ? '/admin/people' : path
-const allowed = new Set([...MENU.map(m => m.path), ...WORKSPACES.map(m => m.path), '/admin/legacy', '/admin/assets/assignments', '/admin/assets/maintenance', '/admin/integrations/settings'])
+const allowed = new Set([...MENU.map(m => m.path), ...WORKSPACES.map(m => m.path), '/admin/assets/assignments', '/admin/assets/maintenance'])
 export function cleanIntegrationQuery(query = {}) {
   const base = cleanQuery(query)
   const result = Object.fromEntries(['siteId', 'keyword', 'pageNum', 'pageSize'].filter(k => base[k] !== undefined).map(k => [k, base[k]]))
@@ -80,14 +79,13 @@ export function safeTarget(value) {
   try {
     const url = new URL(value, 'http://admin.local')
     if (/^\/admin\/integrations(?:\/|$)/.test(url.pathname)) return '/admin/overview'
-    if (url.origin !== 'http://admin.local' || (!allowed.has(url.pathname) && !/^\/admin\/integrations\/(?:jobs\/)?[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/access\/groups\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/assets\/(devices|maintenance)\/[\w-]{1,100}$/.test(url.pathname))) return '/admin/overview'
+    if (url.origin !== 'http://admin.local' || (!allowed.has(url.pathname) && !/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/assets\/(devices|maintenance)\/[\w-]{1,100}$/.test(url.pathname))) return '/admin/overview'
     const raw = Object.fromEntries(url.searchParams)
     const cleaned = url.pathname.startsWith('/admin/integrations') ? cleanIntegrationQuery(raw) : url.pathname === '/admin/assets/assignments' ? cleanAssignmentQuery(raw) : url.pathname.startsWith('/admin/assets/maintenance') ? cleanMaintenanceQuery(raw) : url.pathname.startsWith('/admin/assets/') ? cleanDeviceQuery(raw) : cleanQuery(raw)
     if (url.pathname.startsWith('/admin/integrations/') && raw.returnTo) cleaned.returnTo = integrationReturn(raw.returnTo)
     if (/^\/admin\/assets\/maintenance\/[\w-]{1,100}$/.test(url.pathname) && raw.returnTo) cleaned.returnTo = maintenanceReturn(raw.returnTo)
     if (/^\/admin\/assets\/devices\/[\w-]{1,100}$/.test(url.pathname) && raw.returnTo) cleaned.returnTo = recordReturn(raw.returnTo, '/admin/assets/devices')
     if (/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && raw.returnTo) cleaned.returnTo = recordReturn(raw.returnTo, '/admin/people')
-    if (/^\/admin\/access\/groups\/[\w-]{1,100}$/.test(url.pathname) && raw.returnTo) cleaned.returnTo = recordReturn(raw.returnTo, '/admin/access/groups')
     const search = new URLSearchParams(cleaned).toString()
     return url.pathname + (search ? '?' + search : '')
   } catch { return '/admin/overview' }

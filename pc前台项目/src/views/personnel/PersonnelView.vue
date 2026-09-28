@@ -223,7 +223,7 @@ function talk() {
               <div class="detail-call">
                 <h3>语音对讲</h3>
                 <AppButton tone="primary wide" icon="mic-line" @click="talk">发起对讲</AppButton>
-                <small>与 {{ current.person.name }} 进行模拟通话</small>
+                <small>与 {{ current.person.name }} 进行通话</small>
               </div>
             </div>
           </div>

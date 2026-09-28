@@ -50,7 +50,7 @@ function submit() {
     </tr>
   </AppTable>
   <div class="detail-section">
-    <h3>位置变化演示</h3>
+    <h3>位置变化</h3>
     <p class="note">仅对已启用围栏及其适用人员生成记录。</p>
     <form class="form-stack" @submit.prevent="submit">
       <AppField label="人员">

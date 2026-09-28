@@ -168,7 +168,7 @@ function openEvents() {
           </div>
           <div class="vitals-footer">
             <span>观测时间：{{ vital.record ? vital.record.observedAt : "—" }}</span>
-            <span>演示数据 · 非诊断</span>
+            <span>非诊断</span>
           </div>
         </AppPanel>
         <AppPanel v-else title="当前位置" extra-class="flush person-location-fill">
@@ -197,7 +197,7 @@ function openEvents() {
           <AppEmpty v-else text="暂无待核验事件" />
         </AppPanel>
         <AppPanel title="现场视频（来自安全帽）">
-          <template #extra>示例画面 · 非实时</template>
+          <template #extra>非实时</template>
           <div class="side-video">
             <VideoFrame :person-id="person.id" />
             <div class="stack">

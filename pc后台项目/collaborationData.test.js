@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAdminService } from './service'
-import { createSeed, TOKEN_KEY, SESSION_VERSION_KEY } from './seed'
+import { TOKEN_KEY, SESSION_VERSION_KEY } from './seed'
+import { createLegacySeed as createSeed } from './legacySeed'
 import { authorizationEffects } from './authorizationPreview'
 import { can } from './access'
 import { safeTarget, recordReturn } from './navigation'
@@ -183,7 +184,7 @@ describe('A5 persistent-person group model in page memory', () => {
     api.setScenario({ target: 'groups', mode: 'forbidden' }); await expect(q('groups')).rejects.toMatchObject({ code: 403 })
   })
   it('preserves safe group return and refresh reset isolation', async () => {
-    expect(safeTarget('/admin/access/groups/group-1?siteId=site-1&returnTo=https://bad')).toBe('/admin/access/groups/group-1?siteId=site-1&returnTo=%2Fadmin%2Faccess%2Fgroups')
+    expect(safeTarget('/admin/access/groups/group-1?siteId=site-1&returnTo=https://bad')).toBe('/admin/overview')
     expect(recordReturn('https://evil', '/admin/access/groups')).toBe('/admin/access/groups')
     await createGroup(); api.logout(); api.login('demo-system', 'Admin@2026'); expect((await q('groups')).total).toBe(2); api.reset(); api.login('demo-system', 'Admin@2026'); expect((await q('groups')).total).toBe(1); expect(storage.getItem('Wearable-Portal-Mock-Token')).toBe('portal')
   })

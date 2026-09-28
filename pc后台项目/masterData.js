@@ -68,6 +68,8 @@ export function queryMaster(state, actor, kind, input, { fail, page, now, relati
     if (kind === 'impacts') return { rows: impacts(state, entity, row, now, input.all === true), availability: 'AVAILABLE' }
     const data = { ...row }
     if (entity === 'people') {
+      data.organizationName = state.organizations.find(o => o.id === row.organizationId)?.name || '未关联'
+      data.areaName = state.areas.find(a => a.id === row.areaId)?.name || '未关联'
       data.equipment = state.devices.filter(d => state.assignments.some(a => a.active && a.personId === row.id && a.deviceId === d.id) && can(state, actor, 'assets:read', d)).map(d => { const r = relationship(state, d); return { ...d, relation: r.state, startedAt: r.assignment?.startedAt || null, assignmentSource: r.assignment?.source || 'INITIAL_SNAPSHOT' } })
       data.slots = personSlots(state, actor, row)
       data.history = historyRows(state, actor, { siteId: row.siteId, personId: row.id }).slice(0, 20)

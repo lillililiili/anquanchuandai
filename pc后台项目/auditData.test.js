@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { queryAudit, redactAudit, auditCsvCell, AUDIT_RESULTS } from './auditData'
 import { createAdminService } from './service'
-import { createSeed } from './seed'
+import { createLegacySeed as createSeed } from './legacySeed'
 import { safeTarget, cleanIntegrationQuery, integrationReturn, menuPath } from './navigation'
 
 function setup() {

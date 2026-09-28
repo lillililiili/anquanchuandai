@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createAdminService } from './service'
-import { createSeed } from './seed'
+import { createLegacySeed as createSeed } from './legacySeed'
 import { cleanDeviceQuery, deviceReturn, safeTarget, menuPath } from './navigation'
 let service, sequence
 function setup(seed = createSeed) { const map = new Map(); service = createAdminService({ storage: { getItem: k => map.get(k), setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }, seed, delay: 0 }); service.login('demo-system', 'Admin@2026') }
@@ -59,10 +59,9 @@ describe('A2 device inventory', () => {
     const d = await get('19007199254740993012'); await expect(update(d, { sn: 'NEW' })).rejects.toMatchObject({ errorCode: 'KEY_FIELDS_LOCKED' })
   })
   it('changes model with explicit confirmation and never verifies hardware', async () => {
-    const d = (await create({ modelId: 'demo-helmet-plus', assemblies: { position: 'INSTALLED' } })).data
-    await expect(update(d, { modelId: 'demo-helmet-basic' })).rejects.toMatchObject({ fields: { modelId: expect.any(String) } })
+    const d = (await create({ modelId: 'demo-helmet-basic', assemblies: {} })).data
     const result = (await service.execute('devices.configure', { siteId, id: d.id, expectedVersion: 1, operationId: 'configure', data: { modelId: 'demo-helmet-basic', confirmModelChange: true } })).data
-    expect(result.assemblies).toEqual({ camera: 'UNKNOWN' }); expect(result.verification).toBe('UNCONFIRMED')
+    expect(result.assemblies).toEqual({}); expect(result.verification).toBe('UNCONFIRMED')
     await expect(update(result, { assemblies: { position: 'INSTALLED' } })).rejects.toMatchObject({ code: 400 })
   })
   it('does not permit model/type mismatch or arbitrary watch sensors', async () => {

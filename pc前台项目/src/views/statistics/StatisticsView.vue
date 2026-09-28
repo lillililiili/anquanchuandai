@@ -184,11 +184,11 @@ function exportStatistics() {
   </PageHeading>
   <div class="row space-between">
     <AppTabs v-model="session.statsTab" box :tabs="statTabs" />
-    <small class="stats-notice"><AppIcon name="information-line" />本页为示例数据，所有统计均按当前筛选计算。</small>
+    <small class="stats-notice"><AppIcon name="information-line" />所有统计均按当前筛选计算。</small>
   </div>
   <AppStatCards :items="summaryCards" />
   <div class="grid equal">
-    <AppPanel title="三类装备连接状态（示例）">
+    <AppPanel title="三类装备连接状态">
       <template #extra>
         <div class="legend"><span><b></b>已领用</span><span class="cyan"><b></b>在线</span><small>单位：件</small></div>
       </template>
@@ -205,7 +205,7 @@ function exportStatistics() {
         </div>
       </div>
     </AppPanel>
-    <AppPanel title="事件核验进度（示例）">
+    <AppPanel title="事件核验进度">
       <template #extra>单位：起</template>
       <div style="padding:12px 18px">
         <div class="row space-between">
@@ -268,7 +268,7 @@ function exportStatistics() {
           <td><AppTag :color="statusColor(item.status)">{{ item.status }}</AppTag></td>
           <td>
             <AppStatus v-if="item.externalStatus === '待回传'" color="muted">待回传</AppStatus>
-            <AppStatus v-else>摘要成功（示例）</AppStatus>
+            <AppStatus v-else>摘要成功</AppStatus>
           </td>
           <td><a class="btn small" :href="'#/event/' + item.id">查看</a></td>
         </tr>

@@ -1,6 +1,6 @@
 <template>
   <ModalPanel :open="!!intent" side heading-id="maintenance-heading" title="设备运维本地办理" @close="close">
-    <p class="notice">只修改当前页面。本地验收不代表正式审批或设备安全认证；不改变通信、上报时间或真实能力。</p>
+    <p class="notice">办理写入后台台账，刷新后仍保留。停用、报废和维修结果会同步到监护前台。本地验收不代表正式审批或设备安全认证；不改变通信、上报时间或真实能力。</p>
     <p v-if="loading" role="status">正在读取设备、工单与处理人…</p>
     <div v-if="error" ref="errorBox" tabindex="-1" role="alert" class="notice error"><strong>办理未完成</strong><p>{{ error.message }} · {{ error.errorCode }} · {{ error.requestId }}</p><ul><li v-for="(message, key) in error.fields" :key="key"><a href="#" @click.prevent="focus(key)">{{ message }}</a></li></ul><button class="button" :disabled="busy" @click="reload">重新读取（清除本次输入）</button></div>
     <form v-if="device" class="master-form assignment-form maintenance-form" novalidate @submit.prevent="submit" @input="changed" @change="changed">
@@ -56,7 +56,7 @@ async function submit() {
   const id = generation, h = handlers.value?.rows.find(h => h.id === form.value.handlerId)
   const input = { siteId: store.siteId, operationId, deviceId: device.value.id, deviceVersion: device.value.version, ...(order.value ? { id: order.value.id, orderVersion: order.value.version } : {}), ...(needsHandler.value ? { handlerId: form.value.handlerId, handlerVersion: h?.version } : {}), ...(needsReason.value ? { reason: form.value.reason } : {}), ...(needsInspection.value ? { inspection: form.value.inspection } : {}), ...(type.value === 'maintenance.inspect' ? { repairContent: form.value.repairContent, result: form.value.result } : {}), ...(needsAck.value ? { acknowledged: form.value.acknowledged } : {}), ...(scrapping.value ? { codeConfirmation: form.value.codeConfirmation, secondConfirmed: reviewing.value } : {}) }
   busy.value = true; error.value = null
-  try { await provider.execute(type.value, input, { signal: controller.signal }); if (id !== generation) return; notice.value = `${ACTIONS[type.value]}已在本页本地完成。`; cleanup() } catch (e) { if (id === generation && e.name !== 'AbortError') { reviewing.value = false; report(e); if (e.code === 401) provider.invalidate() } } finally { if (id === generation) busy.value = false }
+  try { await provider.execute(type.value, input, { signal: controller.signal }); if (id !== generation) return; notice.value = `${ACTIONS[type.value]}已写入后台。`; cleanup() } catch (e) { if (id === generation && e.name !== 'AbortError') { reviewing.value = false; report(e); if (e.code === 401) provider.invalidate() } } finally { if (id === generation) busy.value = false }
 }
 watch(() => store.maintenanceIntent, value => { if (!value) return; previousGuard = store.leaveGuard; intent.value = { ...value }; store.leaveGuard = guard; dirty.value = false; notice.value = ''; task(initialize) })
 const unsubscribe = provider.subscribe(e => { if (['identity', 'expired', 'reset', 'context', 'authorization'].includes(e.kind)) { cleanup(); notice.value = '' } })

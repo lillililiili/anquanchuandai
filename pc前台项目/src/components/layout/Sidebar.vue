@@ -35,6 +35,6 @@ const active = computed(() => ownerOf[route.name] || route.name);
         <span>{{ label }}</span>
       </a>
     </nav>
-    <div class="sidebar-bottom"><small>示例数据</small></div>
+
   </aside>
 </template>

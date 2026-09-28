@@ -32,7 +32,6 @@ function defaults() {
     dispatchTab: "people",
     sosConfirm: false,
     hidePerson: false,
-    captcha: "K7M2",
     broadcastDraft: "",
     showPassword: false,
   };
@@ -44,7 +43,7 @@ function load() {
     const saved = JSON.parse(sessionStorage.getItem("rolling-view") || "null");
     if (saved && typeof saved === "object") Object.assign(state, saved);
   } catch {
-    /* 损坏的会话不阻止进入演示。 */
+    /* 损坏的会话不阻止进入页面。 */
   }
   state.station = localStorage.getItem("rolling-station") || state.station || "S1";
   state.recording = null;

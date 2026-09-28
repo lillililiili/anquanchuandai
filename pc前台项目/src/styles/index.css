@@ -159,4 +159,5 @@
 @import "./overrides/159-personnel.css";
 @import "./overrides/160-works.css";
 @import "./overrides/161-alarm-urgency.css";
+@import "./components/map-ol.css";
 @import "./pages/screen.css";

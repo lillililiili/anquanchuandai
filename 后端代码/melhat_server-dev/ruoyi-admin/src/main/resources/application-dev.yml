@@ -31,6 +31,8 @@ server:
     tomcat:
         # tomcat的URI编码
         uri-encoding: UTF-8
+        max-http-form-post-size: 20MB
+        max-swallow-size: 20MB
         # 连接数满后的排队数，默认为100
         accept-count: 1000
         threads:

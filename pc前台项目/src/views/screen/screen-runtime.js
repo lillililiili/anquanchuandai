@@ -49,8 +49,8 @@ function frame() {
       <section class="screen-panel screen-map" aria-label="厂区态势"><img src="/assets/screen-plant.png" alt="电厂夜景三维示意图"><h2>厂区态势</h2><div data-screen-pins></div></section>
       <section class="screen-panel screen-events" aria-label="重点事件轮播">${title("重点事件")}<div class="screen-events-list"></div><div class="screen-event-summary"></div></section>
       <section class="screen-panel screen-trend">${title('心率趋势 <span class="screen-trend-person"></span>')}<div data-screen-trend></div></section>
-      <section class="screen-panel screen-videos" aria-label="现场视频轮播">${title("现场视频", `<div class="screen-video-meta"><span>演示画面</span><span data-video-page></span></div>`)}<div class="screen-video-grid"></div></section>
-      <footer class="screen-footer"><span>本地演示数据 / 场景示意</span><span>数据刷新时间<time data-screen-refresh></time></span></footer>
+      <section class="screen-panel screen-videos" aria-label="现场视频轮播">${title("现场视频", `<div class="screen-video-meta"><span>现场画面</span><span data-video-page></span></div>`)}<div class="screen-video-grid"></div></section>
+      <footer class="screen-footer"><span>场景示意</span><span>数据刷新时间<time data-screen-refresh></time></span></footer>
     </main></div>`;
 }
 
@@ -172,7 +172,7 @@ export function mountScreen(root) {
     const hi = Math.max(100, Math.ceil(Math.max(...values) / 10) * 10);
     const y = (value) => 139 - ((value - lo) / (hi - lo)) * 116;
     const points = vital.trend.map((point, index) => [55 + (index * 262) / Math.max(1, vital.trend.length - 1), y(point.value)]);
-    return `<svg class="screen-chart" viewBox="0 0 346 164" role="img" aria-label="${esc(db.person(state.personId)?.name)}心率趋势${vital.demo ? "，示例曲线" : ""}"><defs><linearGradient id="heart-fill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#009ffe" stop-opacity=".48"/><stop offset="1" stop-color="#0062bd" stop-opacity=".08"/></linearGradient></defs><text x="4" y="10">次/分</text>${Array.from({ length: 5 }, (_, index) => {
+    return `<svg class="screen-chart" viewBox="0 0 346 164" role="img" aria-label="${esc(db.person(state.personId)?.name)}心率趋势${vital.demo ? "" : ""}"><defs><linearGradient id="heart-fill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#009ffe" stop-opacity=".48"/><stop offset="1" stop-color="#0062bd" stop-opacity=".08"/></linearGradient></defs><text x="4" y="10">次/分</text>${Array.from({ length: 5 }, (_, index) => {
       const value = lo + (index * (hi - lo)) / 4;
       return `<path class="grid" d="M35 ${y(value)}H345"/><text x="3" y="${y(value) + 5}">${Math.round(value)}</text>`;
     }).join("")}${points.map(([x]) => `<path class="grid" d="M${x} 23V139"/>`).join("")}<path d="M${points[0][0]} 139L${points.map((point) => point.join(" ")).join("L")}L${points.at(-1)[0]} 139Z" fill="url(#heart-fill)"/><path d="M${points.map((point) => point.join(" ")).join("L")}" fill="none" stroke="#1ce4ff" stroke-width="2.2"/>${points
@@ -232,7 +232,7 @@ export function mountScreen(root) {
       shown
         .map((person) => {
           const helmet = db.currentDevices(person.id).find((device) => device.type === "H");
-          return `<div class="screen-video-tile" data-person-id="${esc(person.id)}" aria-label="${esc(person.area)} ${esc(helmet.id)}演示画面"><img src="/assets/${scene(person)}" alt="${esc(person.area)}现场场景"><span class="screen-video-label">${esc(person.area === "锅炉区" ? "锅炉平台" : person.area)} · ${esc(helmet.id)}<small>演示画面</small></span></div>`;
+          return `<div class="screen-video-tile" data-person-id="${esc(person.id)}" aria-label="${esc(person.area)} ${esc(helmet.id)}现场画面"><img src="/assets/${scene(person)}" alt="${esc(person.area)}现场场景"><span class="screen-video-label">${esc(person.area === "锅炉区" ? "锅炉平台" : person.area)} · ${esc(helmet.id)}<small>现场画面</small></span></div>`;
         })
         .join("") || '<div class="screen-no-data">暂无可用视频通道</div>';
     if (html !== state.videosHtml) {

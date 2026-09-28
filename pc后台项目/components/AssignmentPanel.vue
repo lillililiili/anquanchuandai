@@ -1,5 +1,5 @@
 <template><ModalPanel :open="!!intent" side heading-id="assignment-heading" :title="intent?.mode === 'issue' ? '本地装备领用' : '本地装备归还'" @close="close">
-  <p class="notice">整次提交全部成功或全部失败。只操作当前页面，刷新恢复种子。</p>
+  <p class="notice">整次提交全部成功或全部失败。领用和归还会写入监护前台，刷新后仍保留。</p>
   <p v-if="loading" role="status">正在读取候选与关系…</p>
   <div v-if="error" ref="errorBox" tabindex="-1" role="alert" class="notice error"><strong>办理未完成</strong><p>{{ error.message }} · {{ error.errorCode }} · {{ error.requestId }}</p><ul><li v-for="(message, key) in error.fields" :key="key"><a :href="'#' + key" @click.prevent="focus(key)">{{ message }}</a></li></ul><button class="button" :disabled="busy" @click="reload">重新读取（清除本次选择）</button></div>
   <form v-if="intent" class="master-form assignment-form" @submit.prevent="submit" @input="dirty = true; acknowledged = false" @change="dirty = true">

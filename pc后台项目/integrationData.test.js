@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createAdminService } from './service'
-import { createSeed } from './seed'
+import { createLegacySeed as createSeed } from './legacySeed'
 
 let service, sequence
 const siteId = 'site-1', deviceId = '19007199254740993000'
@@ -49,7 +49,7 @@ describe('A6 synthetic integration transactions', () => {
   })
   it('same-name people remain two external identities and reimport is stable', async () => {
     await configure('PERSON'); await confirm(await preview('PERSON'))
-    const people = (await q('master', { entity: 'people', pageSize: 100 })).rows.filter(p => p.name === '同名演示人员')
+    const people = (await q('master', { entity: 'people', pageSize: 100 })).rows.filter(p => p.name === '同名人员')
     expect(people).toHaveLength(2); expect(new Set(people.map(p => p.sourcePersonId)).size).toBe(2)
     const job = await preview('PERSON'); expect(job.counts.skipped).toBe(2); await confirm(job)
     expect((await q('master', { entity: 'people', pageSize: 100 })).total).toBe(27)

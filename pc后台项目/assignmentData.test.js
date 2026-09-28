@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createAdminService } from './service'
-import { createSeed } from './seed'
+import { createLegacySeed as createSeed } from './legacySeed'
 import { cleanAssignmentQuery, assignmentReturn, safeTarget } from './navigation'
 let service, sequence
 const siteId = 'site-1', personId = 'person-1-4', ids = [12, 13, 14].map(i => '19007199254740993' + String(i).padStart(3, '0'))

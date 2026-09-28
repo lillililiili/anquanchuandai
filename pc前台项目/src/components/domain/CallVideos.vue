@@ -76,7 +76,7 @@ const tiles = computed(() => {
           <div class="call-video-error" hidden>模拟视频暂不可用，请刷新后重试</div>
         </template>
         <template v-else>
-          <img :src="'/assets/' + tile.poster" :alt="(tile.person?.area || '') + '示例场景'" />
+          <img :src="'/assets/' + tile.poster" :alt="(tile.person?.area || '') + '现场场景'" />
           <div class="call-video-unavailable">
             <AppIcon name="vidicon-off-line" />
             <strong>{{ tile.status }}</strong>

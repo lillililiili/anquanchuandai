@@ -11,7 +11,7 @@ import { callPerson, capturePhoto, runGuarded, toggleRecording } from "@/lib/act
 const props = defineProps({
   personId: { type: String, default: "P1" },
   asset: { type: String, default: "" },
-  label: { type: String, default: "示例画面 · 非实时" },
+  label: { type: String, default: "非实时" },
   showName: Boolean,
   controls: Boolean,
   frameClass: { type: String, default: "" },

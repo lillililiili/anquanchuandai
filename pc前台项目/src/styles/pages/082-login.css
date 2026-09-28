@@ -83,28 +83,6 @@
   top: 6px;
   color: #84a8c2;
 }
-.captcha-row {
-  display: grid;
-  grid-template-columns: 1fr 113px 47px;
-  gap: 13px;
-}
-.captcha-code {
-  color: #15336e;
-  background: #f8fafb;
-  border-radius: 4px;
-  font-size: 30px;
-  letter-spacing: 2px;
-  font-weight: bold;
-  display: grid;
-  place-items: center;
-  height: 48px;
-}
-.captcha-row .btn {
-  border-radius: 50%;
-  height: 47px;
-  width: 47px;
-  padding: 0;
-}
 .login-card button[type="submit"] {
   margin-top: 43px;
   height: 52px;
@@ -133,10 +111,4 @@
   letter-spacing: 3px;
   font-size: 15px;
 }
-.login-help {
-  position: absolute;
-  bottom: 28px;
-  right: 30px;
-  color: #9dbad0;
-  font-size: 13px;
-}
+

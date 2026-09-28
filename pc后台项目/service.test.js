@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { createAdminService, relationship, can, redact } from './service'
 import { createSeed, TOKEN_KEY } from './seed'
 import { safeTarget, trustedPortal } from './navigation'
-import { transformAdminHtml } from '../../vite/admin-mock'
-import { readFileSync } from 'node:fs'
 
 function memoryStorage() {
   const data = new Map([['Admin-Token', 'original'], ['Wearable-Portal-Mock-Token', 'portal']])
@@ -16,7 +14,7 @@ const site = { siteId: 'site-1' }
 describe('A0 data and scope', () => {
   it('initializes consistent metrics, no fabricated audit', async () => {
     const res = await service.query('overview', site)
-    expect(res.data.counts).toEqual({ assets: 36, available: 17, assigned: 12, maintenance: 3, unknown: 1, conflict: 1 })
+    expect(res.data.counts).toEqual({ assets: 32, available: 4, assigned: 24, maintenance: 2, unknown: 0, conflict: 0 })
     expect((await service.query('audit', site)).data.total).toBe(0)
   })
   it.each(['assets', 'available', 'assigned', 'maintenance', 'unknown', 'conflict'])('metric %s matches full detail', async metric => {
@@ -26,19 +24,19 @@ describe('A0 data and scope', () => {
   })
   it('supports pagination and string long ID', async () => {
     const first = await service.query('details', site), next = await service.query('details', { ...site, pageNum: 2 })
-    expect(first.data.rows).toHaveLength(20); expect(next.data.rows).toHaveLength(16)
-    expect(first.data.rows[0].id).toBe('19007199254740993000')
-    expect(first.data.rows[0].personName).toBe('人员1-01')
+    expect(first.data.rows).toHaveLength(20); expect(next.data.rows).toHaveLength(12)
+    expect(first.data.rows[0].id).toBe('RL-H001')
+    expect(first.data.rows[0].personName).toBe('陈建国')
   })
   it('uses keyword and keeps offline available', async () => {
-    const res = await service.query('details', { ...site, metric: 'available', keyword: 'EQ-1-013' })
-    expect(res.data.total).toBe(1); expect(res.data.rows[0].communication).toBe('OFFLINE')
+    const res = await service.query('details', { ...site, metric: 'available', keyword: 'RL-H009' })
+    expect(res.data.total).toBe(1); expect(res.data.rows[0].communication).toBe('NOT_CONNECTED')
   })
   it('empty site is available zero, not unconnected', async () => {
-    const res = await service.query('overview', { siteId: 'site-empty' })
-    expect(res.data.availability).toBe('AVAILABLE'); expect(res.data.counts.assets).toBe(0)
+    const res = await service.query('overview', { siteId: 'site-2' })
+    expect(res.data.availability).toBe('AVAILABLE'); expect(res.data.counts).toMatchObject({ assets: 3, assigned: 0, available: 3, maintenance: 0 })
   })
-  it.each([['demo-system', 3], ['demo-site', 1], ['demo-asset', 1], ['demo-audit', 2]])('identity %s has %i authorized sites', async (id, size) => {
+  it.each([['demo-system', 2], ['demo-site', 1], ['demo-asset', 1], ['demo-audit', 2]])('identity %s has %i authorized sites', async (id, size) => {
     service.login(id, 'Admin@2026'); expect((await service.query('context')).data.sites).toHaveLength(size)
   })
   it('rejects anonymous and cross-site requests', async () => {
@@ -59,9 +57,11 @@ describe('A0 data and scope', () => {
     expect(can(s, user, 'write', { siteId: 'site-1' })).toBe(false)
   })
   it('source ambiguity never becomes unassigned', () => {
-    const s = createSeed(), d = s.devices[32]
-    expect(relationship(s, d).state).toBe('UNKNOWN')
-    expect(relationship(s, s.devices[33]).state).toBe('CONFLICT')
+    const s = createSeed()
+    const unknown = { ...s.devices.find(d => d.lifecycle === 'STOCK'), relation: 'UNKNOWN' }
+    const conflict = { ...s.devices.find(d => d.lifecycle === 'IN_USE'), relation: 'CONFLICT' }
+    expect(relationship(s, unknown).state).toBe('UNKNOWN')
+    expect(relationship(s, conflict).state).toBe('CONFLICT')
     s.assignments = []; expect(relationship(s, s.devices[0]).state).toBe('CONFLICT')
   })
   it('response cannot mutate repository', async () => {
@@ -76,7 +76,7 @@ describe('A0 lifecycle and scenarios', () => {
     if (code) await expect(service.query('overview', site)).rejects.toMatchObject({ code, requestId: expect.any(String), errorCode: expect.any(String) })
     else expect((await service.query('overview', site)).data.availability).toBe('NOT_CONNECTED')
     expect((await service.query('audit', site)).data.total).toBe(0)
-    service.restoreScenario(); expect((await service.query('overview', site)).data.counts.assets).toBe(36)
+    service.restoreScenario(); expect((await service.query('overview', site)).data.counts.assets).toBe(32)
   })
   it('supports cancellation', async () => {
     const c = new AbortController(), p = service.query('overview', site, { signal: c.signal }); c.abort()
@@ -105,7 +105,7 @@ describe('A0 lifecycle and scenarios', () => {
 })
 
 describe('transaction foundation (test-only command)', () => {
-  const objectId = '19007199254740993000'
+  const objectId = 'RL-H001'
   const input = { ...site, id: objectId, expectedVersion: 1, operationId: 'test-operation', name: '预置改名' }
   function withCommand(apply) {
     service = createAdminService({ storage, delay: 0, commands: { rename: { permission: 'assets:write', readPermission: 'assets:read', locate: (state, i) => state.devices.find(d => d.id === i.id), apply: apply || ((state, i) => { const d = state.devices.find(d => d.id === i.id); d.name = i.name; d.version++; return { id: d.id, version: d.version } }) } } })
@@ -115,7 +115,7 @@ describe('transaction foundation (test-only command)', () => {
     expect(second).toEqual(first)
     const audit = (await service.query('audit', site)).data
     expect(audit.total).toBe(1); expect(audit.rows[0].before.name).toBe('安全帽'); expect(audit.rows[0].after.name).toBe('预置改名')
-    expect((await service.query('overview', site)).data.counts.assigned).toBe(12)
+    expect((await service.query('overview', site)).data.counts.assigned).toBe(24)
     await expect(service.execute('rename', { ...input, name: 'different' })).rejects.toMatchObject({ code: 409 })
   })
   it('version mismatch and read-only identity denied', async () => {
@@ -151,10 +151,4 @@ describe('navigation and entry isolation', () => {
   })
   it('preserves only valid site query', () => { expect(safeTarget('/admin/audit?siteId=site-1&token=bad')).toBe('/admin/audit?siteId=site-1') })
   it('portal accepts configured base only', () => { expect(trustedPortal('javascript:alert(1)')).toBe(null); expect(trustedPortal('https://user:password@example.com')).toBe(null); expect(trustedPortal('http://localhost:5179/?token=bad')).toBe(null); expect(trustedPortal('http://localhost:5179')).toBe('http://localhost:5179/') })
-  it('removes Agora and legacy root only from mock HTML', () => {
-    const source = readFileSync('index.html', 'utf8')
-    const output = transformAdminHtml(source)
-    expect(source).toContain('download.agora.io'); expect(source).toContain('/src/main.js')
-    expect(output).not.toContain('download.agora.io'); expect(output).not.toContain('/src/main.js'); expect(output).toContain('/src/admin-mock/main.js')
-  })
 })

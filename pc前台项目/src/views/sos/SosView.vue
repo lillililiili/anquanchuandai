@@ -37,7 +37,7 @@ const onStation = computed(() => {
 
 const videoLabel = computed(() => {
   revision();
-  return alarm.value?.status === "waiting" ? "待接入" : "示例画面 · 非实时";
+  return alarm.value?.status === "waiting" ? "待接入" : "非实时";
 });
 
 const badge = computed(() => {
@@ -50,8 +50,8 @@ function openRecords() {
 }
 
 function joinSos() {
-  runGuarded(() => {
-    db.sos("join");
+  runGuarded(async () => {
+    await db.sos("join");
     toast("已加入 SOS 协助");
   });
 }

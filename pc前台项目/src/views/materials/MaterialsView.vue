@@ -171,7 +171,7 @@ async function saveMedia(id) {
         >
           <div class="preview">
             <MediaImage :media="item" />
-            <span class="video-label">示例画面 · 非实时</span>
+            <span class="video-label">非实时</span>
             <template v-if="item.kind === 'video'">
               <span class="play-overlay"><AppIcon name="play-fill" /></span>
               <span class="video-time">{{ durationText(item.duration) }}</span>

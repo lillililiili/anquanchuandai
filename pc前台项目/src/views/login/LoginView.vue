@@ -7,26 +7,35 @@ import { go } from "@/lib/actions";
 
 const account = ref("");
 const password = ref("");
-const captcha = ref("");
 const error = ref("");
-session.captcha ||= "K7M2";
 
-function refreshCaptcha() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  session.captcha = Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
-}
-
-function submit() {
+async function submit() {
   error.value = "";
-  if (account.value !== "admin" || password.value !== "123456") {
-    error.value = "账号或密码错误。演示账号：admin / 123456";
+  try {
+    const response = await fetch("/api/guardian/v1/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ account: account.value, password: password.value }),
+    });
+    if (!response.ok) {
+      if (response.status >= 500) {
+        error.value = "后端未连接，修改未保存";
+        return;
+      }
+      let message = "账号或密码错误。";
+      try {
+        message = (await response.json()).message || message;
+      } catch {
+        /* 没有 JSON 正文时保留上面的默认文案。 */
+      }
+      error.value = message;
+      return;
+    }
+  } catch {
+    error.value = "后端未连接，修改未保存";
     return;
   }
-  if (captcha.value.toUpperCase() !== session.captcha) {
-    error.value = "验证码错误，请重新输入";
-    return;
-  }
-  sessionStorage.setItem("rolling-session", "admin");
+  sessionStorage.setItem("rolling-session", account.value);
   go("overview");
 }
 </script>
@@ -51,19 +60,8 @@ function submit() {
         <span>密码</span>
         <div class="input-icon">
           <AppIcon name="lock-line" />
-          <input v-model="password" name="password" :type="session.showPassword ? 'text' : 'password'" autocomplete="current-password" required />
+          <input v-model="password" name="password" :type="session.showPassword ? 'text' : 'password'" placeholder="请输入密码" autocomplete="current-password" required />
           <AppButton tone="icon-only plain" :icon="session.showPassword ? 'eye-line' : 'eye-off-line'" aria-label="显示或隐藏密码" @click="session.showPassword = !session.showPassword" />
-        </div>
-      </label>
-      <label class="field">
-        <span>图形验证码</span>
-        <div class="captcha-row">
-          <div class="input-icon">
-            <AppIcon name="shield-check-line" />
-            <input v-model="captcha" name="captcha" type="text" placeholder="请输入验证码" maxlength="4" autocomplete="off" required />
-          </div>
-          <span class="captcha-code" aria-label="验证码">{{ session.captcha }}</span>
-          <AppButton icon="refresh-line" aria-label="刷新验证码" @click="refreshCaptcha" />
         </div>
       </label>
       <button class="btn primary" type="submit">登录</button>
@@ -74,6 +72,5 @@ function submit() {
       为电力行业现场作业安全保驾护航
       <small>更安全 · 更高效 · 更可持续</small>
     </div>
-    <div class="login-help">演示账号：admin　密码：123456　｜　演示环境 · 非真实登录页</div>
   </div>
 </template>

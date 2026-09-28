@@ -1,0 +1,28 @@
+.map-ol {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.map-ol .ol-viewport {
+  cursor: grab;
+}
+.map-ol .ol-viewport:active {
+  cursor: grabbing;
+}
+.map-caption,
+.map-compass,
+.map-tools,
+.map-legend,
+.map-scale,
+.map-editbar,
+.map-instruction {
+  z-index: 6;
+}
+.ol-overlay-container .map-person,
+.ol-overlay-container .map-zone,
+.ol-overlay-container .map-popup {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+}

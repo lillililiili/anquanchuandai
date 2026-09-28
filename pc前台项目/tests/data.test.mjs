@@ -222,6 +222,12 @@ test("轨迹查询不补齐缺口并校验时间范围", () => {
   const p = d.tracks("P1", D.DATE, "09:00", "10:42");
   assert.equal(p.find((x) => x.time === "09:46").gap, true);
   assert.equal(p.filter((x) => x.time > "09:38" && x.time < "09:46").length, 0);
+  d.state.locations = [{ id: "LOC1", personId: "P1", deviceId: "RL-H001", x: 30, y: 40, time: "2026-09-15 10:30:00", inside: true }];
+  const reported = d.tracks("P1", D.DATE, "09:00", "10:42");
+  assert.deepEqual(reported.map((item) => item.time), ["10:30"]);
+  assert.equal(reported[0].x, 30);
+  assert.equal(reported[0].deviceId, "RL-H001");
+  assert.equal(d.tracks("P2", D.DATE, "09:00", "10:42").length > 1, true);
 });
 test("停用人员自动结束当前领用并移除作业及分组，历史保留", () => {
   const d = create();

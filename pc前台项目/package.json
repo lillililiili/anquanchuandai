@@ -10,6 +10,8 @@
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
+    "agora-rtc-sdk-ng": "^4.24.8",
+    "ol": "^7.4.0",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3"
   },

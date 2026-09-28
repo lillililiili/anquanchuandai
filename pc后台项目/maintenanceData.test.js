@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createAdminService } from './service'
-import { createSeed } from './seed'
+import { createLegacySeed as createSeed } from './legacySeed'
 import { maintenanceManager } from './maintenanceData'
 import { cleanMaintenanceQuery, maintenanceReturn, safeTarget } from './navigation'
 let service, seq

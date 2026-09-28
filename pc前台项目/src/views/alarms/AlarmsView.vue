@@ -248,7 +248,7 @@ function rowClass(item) {
         <div class="form-actions">
           <a :class="['btn', 'wide', sosSelected ? 'danger sos-action' : 'primary']" :href="'#/event/' + selectedAlarm.id">{{ sosSelected ? "立即响应 SOS" : "进入现场核验" }}</a>
         </div>
-        <p class="note cyan"><AppIcon name="checkbox-circle-fill" />摘要回传（示例） · {{ selectedAlarm.verification ? "核验记录已提交" : "核验记录未提交" }}</p>
+        <p class="note cyan"><AppIcon name="checkbox-circle-fill" />摘要回传 · {{ selectedAlarm.verification ? "核验记录已提交" : "核验记录未提交" }}</p>
       </template>
       <AppEmpty v-else />
     </AppPanel>
