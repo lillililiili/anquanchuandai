@@ -2,8 +2,7 @@
   <div class="admin-shell" :class="{ compact }" :data-section="visualSection">
     <a class="skip-link" href="#main-content">跳到正文</a>
     <header class="topbar">
-      <div class="brand"><span aria-hidden="true" class="brand-mark">W</span><span>智能穿戴设备平台<small>管理中心</small></span></div>
-      <span class="muted" title="台账保存在后台服务。领用和人员变更同时写入监护前台。">台账已接入后台</span>
+      <div class="brand"><span class="rl-brand" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></span><span class="brand-product">智能穿戴设备平台<small>管理中心</small></span></div>
       <div class="top-actions">
         <label class="site-picker">当前厂站<select :disabled="!store.sites.length" :value="store.siteId" @change="selectSite($event.target.value)"><option v-if="!store.sites.length" value="">无授权厂站</option><option v-for="site in store.sites" :key="site.id" :value="site.id">{{ site.name }}</option></select></label>
         <span class="identity-name"><User aria-hidden="true" />{{ store.identity?.name }}</span>
@@ -13,7 +12,7 @@
     <aside class="sidebar">
       <div class="nav-heading"><span v-if="!compact">管理菜单</span><button :aria-expanded="!compact" aria-label="折叠菜单" class="button text-button" @click="compact = !compact">{{ compact ? '展开' : '收起' }}</button></div>
       <nav aria-label="主导航"><router-link v-for="(item, index) in MENU" :key="item.path" :aria-current="menuPath(route.path) === item.path ? 'page' : undefined" :class="{ active: menuPath(route.path) === item.path }" :title="item.title" :to="{ path: item.path, query: store.siteId ? { siteId: store.siteId } : {} }"><component :is="icons[index]" aria-hidden="true" /><span v-if="!compact">{{ item.title }}</span></router-link></nav>
-      <div class="sidebar-bottom"><p v-if="!compact" class="small muted">前台负责现场监护<br>后台负责资产与管理</p><a v-if="portal" class="button" :href="portal" rel="noopener noreferrer" target="_blank">打开监护前台</a><button v-else class="button" disabled>前台地址未配置</button><small v-if="!compact">领用与前台同步</small></div>
+      <div class="sidebar-bottom"><a v-if="portal" class="button" :href="portal" rel="noopener noreferrer" target="_blank">打开监护前台</a><button v-else class="button" disabled>前台地址未配置</button></div>
     </aside>
     <main id="main-content" class="main-content" tabindex="-1">
       <p v-if="contextError" class="notice error" role="alert">{{ contextError }} <button class="button" @click="initialize">重新加载</button></p>

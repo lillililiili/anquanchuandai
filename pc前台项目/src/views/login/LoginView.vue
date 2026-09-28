@@ -42,9 +42,9 @@ async function submit() {
 
 <template>
   <div class="login-page">
-    <img class="login-logo" src="/assets/logo.png" alt="ROLLING" />
+    <div class="login-logo rl-brand rl-brand-light" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></div>
     <div class="login-copy">
-      <h1>融瓴智能穿戴安全监护平台</h1>
+      <h1>智能穿戴安全监护平台</h1>
       <p>现场人员 · 智能装备 · 作业监护</p>
     </div>
     <form class="login-card" @submit.prevent="submit">

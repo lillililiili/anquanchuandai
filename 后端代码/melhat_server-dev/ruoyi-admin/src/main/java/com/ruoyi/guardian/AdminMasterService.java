@@ -172,6 +172,7 @@ public class AdminMasterService {
                 if (area != null) requireEnabled(state, actor, "areas", area, siteId, input);
                 if (!queries.allows(state, actor, "organization:write", siteId, area)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "目标区域不在可维护范围");
             }
+            if ("areas".equals(entity)) record.put("points", areaPoints(data));
         }
         if ("sites".equals(entity)) {
             record.remove("siteId");
@@ -284,6 +285,26 @@ public class AdminMasterService {
         return false;
     }
 
+    private JSONArray areaPoints(JSONObject data) {
+        if (data.get("points") == null) return new JSONArray();
+        JSONArray raw = data.getJSONArray("points");
+        if (raw == null || raw.isEmpty()) return new JSONArray();
+        if (raw.size() < 3) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "地图范围至少需要 3 个点，或清空后只保存名称");
+        JSONArray clean = new JSONArray();
+        for (int i = 0; i < raw.size(); i++) {
+            JSONArray pair = raw.getJSONArray(i);
+            if (pair == null || pair.size() < 2) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "地图范围的节点无效");
+            double x = pair.getDoubleValue(0);
+            double y = pair.getDoubleValue(1);
+            if (x < 0 || x > 100 || y < 0 || y > 100) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "地图范围需要落在厂区地图内");
+            JSONArray point = new JSONArray();
+            point.add(x);
+            point.add(y);
+            clean.add(point);
+        }
+        return clean;
+    }
+
     private void publish(JSONObject admin) {
         guardian.update(new GuardianStore.Edit() {
             @Override
@@ -293,6 +314,21 @@ public class AdminMasterService {
                     JSONObject station = find(snapshot, "stations", stationId);
                     if (station != null && site.getString("name") != null) station.put("name", site.getString("name"));
                 }
+                JSONArray mapAreas = new JSONArray();
+                for (JSONObject area : rows(admin, "areas")) {
+                    if (!area.getBooleanValue("enabled")) continue;
+                    JSONArray points = area.getJSONArray("points");
+                    if (points == null || points.size() < 3) continue;
+                    String station = PORTAL_SITES.get(area.getString("siteId"));
+                    if (station == null) continue;
+                    JSONObject item = new JSONObject();
+                    item.put("id", area.getString("id"));
+                    item.put("name", area.getString("name"));
+                    item.put("station", station);
+                    item.put("points", points);
+                    mapAreas.add(item);
+                }
+                snapshot.put("mapAreas", mapAreas);
                 for (JSONObject person : rows(admin, "people")) {
                     String portalId = person.getString("portalId");
                     if (portalId == null || portalId.isEmpty()) portalId = PORTAL_PEOPLE.get(person.getString("id"));

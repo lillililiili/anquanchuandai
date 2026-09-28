@@ -12,14 +12,20 @@ import PersonAvatar from "@/components/domain/PersonAvatar.vue";
 import VideoFrame from "@/components/domain/VideoFrame.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import VideoThumb from "./VideoThumb.vue";
-import { areas } from "@/mock/data";
+
 import { db } from "@/mock/runtime";
 import { toast } from "@/stores/notify";
 import { filtersOf, session } from "@/stores/session";
 import { helmetOf, people, personName, revision, works } from "@/lib/queries";
 
 const layouts = ["1+7", "2\u00d74", "3\u00d73"];
-const areaOptions = [["", "全部区域"], ...areas];
+const areaOptions = computed(() => {
+  revision();
+  const names = Array.isArray(db.state.mapAreas)
+    ? db.state.mapAreas.filter((area) => area.station === session.station).map((area) => area.name)
+    : ["锅炉区", "汽机厂房", "配电区", "循环水区"];
+  return [["", "全部区域"], ...names];
+});
 const draft = reactive({ area: "", workId: "" });
 
 watch(

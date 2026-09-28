@@ -16,12 +16,9 @@
   white-space: nowrap;
 }
 .brand {
-  width: 176px;
+  flex: none;
   display: flex;
   align-items: center;
-}
-.brand img {
-  width: 176px;
 }
 .brand-divider,
 .top-divider {

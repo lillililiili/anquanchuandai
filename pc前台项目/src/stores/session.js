@@ -19,7 +19,7 @@ function defaults() {
     trackSpeed: 1,
     trackPoints: [],
     selectedMembers: ["P1", "P2", "P3"],
-    layers: { people: true, areas: true, fences: false },
+    layers: { people: true, areas: true, fences: true },
     filters: {},
     fenceDraft: null,
     fenceMode: "select",
@@ -48,7 +48,11 @@ function load() {
   state.station = localStorage.getItem("rolling-station") || state.station || "S1";
   state.recording = null;
   state.trackPlaying = false;
-  state.layers = { people: true, areas: true, fences: false, ...state.layers };
+  state.layers = { people: true, areas: true, fences: true, ...state.layers };
+  if (state.layerVersion !== 2) {
+    state.layers.fences = true;
+    state.layerVersion = 2;
+  }
   state.filters = state.filters || {};
   state.formDrafts = state.formDrafts || {};
   state.selectedMembers = Array.isArray(state.selectedMembers) ? state.selectedMembers : ["P1", "P2", "P3"];

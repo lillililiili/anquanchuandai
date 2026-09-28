@@ -1,0 +1,34 @@
+/* Shared identity: keep identical to the admin project's assets/brand.css. */
+.rl-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  width: auto;
+  color: #123458;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.rl-brand.rl-brand-light { color: #f0f8ff; }
+.rl-brand .rl-brand-mark {
+  display: block;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+.rl-brand .rl-brand-type {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+.rl-brand .rl-brand-name {
+  font: 700 24px/1 "Microsoft YaHei", "PingFang SC", sans-serif;
+  letter-spacing: 5px;
+}
+.rl-brand .rl-brand-en {
+  font: 700 9px/1 Arial, sans-serif;
+  letter-spacing: 2px;
+}
+.rl-brand:focus-visible { outline: 2px solid #12ced0; outline-offset: 5px; border-radius: 3px; }

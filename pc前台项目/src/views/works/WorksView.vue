@@ -15,7 +15,7 @@ import PageHeading from "@/components/layout/PageHeading.vue";
 import PlantMap from "@/components/domain/PlantMap.vue";
 import WorkInfo from "@/components/domain/WorkInfo.vue";
 import AssociateWorks from "./AssociateWorks.vue";
-import { areas, DATE } from "@/mock/data";
+import { DATE } from "@/mock/data";
 import { db } from "@/mock/runtime";
 import { openModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
@@ -24,7 +24,13 @@ import { runGuarded } from "@/lib/actions";
 import { events, personName, revision, search, works } from "@/lib/queries";
 
 const hours = ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"];
-const areaOptions = [["", "全部区域"], ...areas];
+const areaOptions = computed(() => {
+  revision();
+  const names = Array.isArray(db.state.mapAreas)
+    ? db.state.mapAreas.filter((area) => area.station === session.station).map((area) => area.name)
+    : ["锅炉区", "汽机厂房", "配电区", "循环水区"];
+  return [["", "全部区域"], ...names];
+});
 const statusOptions = [["", "全部"], "监护中", "已结束"];
 const syncOptions = [
   ["", "全部"],

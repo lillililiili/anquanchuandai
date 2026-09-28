@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>融瓴 · 安全守护</title>
+  <path d="M32 3 57 13v18c0 14-10 24-25 30C17 55 7 45 7 31V13L32 3Z" fill="#0875E8"/>
+  <path d="m32 3 25 10v18c0 14-10 24-25 30v-7c11-5 18-13 18-23V18l-18-7V3Z" fill="#12CED0"/>
+  <circle cx="29" cy="23" r="6" fill="white"/>
+  <path d="M18 43v-4a11 11 0 0 1 22 0v4" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <path d="m34 40 6 6 13-16" stroke="#0875E8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m34 40 6 6 13-16" stroke="#12CED0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

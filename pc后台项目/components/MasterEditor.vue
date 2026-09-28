@@ -12,6 +12,7 @@
       <label><span class="field-label">名称 / 姓名<span class="required-mark" aria-hidden="true">*</span></span><input id="field-name" aria-required="true" v-model="form.name" aria-label="名称 / 姓名" maxlength="100" :aria-invalid="!!errors.name" aria-describedby="error-name" /><small id="error-name" class="error">{{ errors.name }}</small></label>
       <label v-if="entity === 'sites'">厂站时区<input id="field-timezone" v-model="form.timezone" list="timezones" aria-describedby="error-timezone" /><datalist id="timezones"><option>Asia/Shanghai</option><option>UTC</option><option>America/New_York</option></datalist><small id="error-timezone" class="error">{{ errors.timezone }}</small></label>
       <label v-if="['organizations', 'areas'].includes(entity)">上级节点<select id="field-parentId" v-model="form.parentId"><option value="">根节点</option><option v-for="o in options[entity]?.filter(x => x.id !== record?.id)" :key="o.id" :value="o.id">{{ o.name }}</option></select><small id="error-parentId" class="error">{{ errors.parentId }}</small></label>
+      <div v-if="entity === 'areas'" class="wide"><AreaRangeMap v-model="form.points" /><small id="error-points" class="error">{{ errors.points }}</small></div>
       <label v-if="entity === 'people'">组织 / 班组<select id="field-organizationId" v-model="form.organizationId"><option value="">尚未关联</option><option v-for="o in options.organizations" :key="o.id" :value="o.id">{{ o.name }}</option></select><small class="error">{{ errors.organizationId }}</small></label>
       <label v-if="['people', 'organizations'].includes(entity)">所属 / 关联区域<select id="field-areaId" v-model="form.areaId"><option value="">尚未关联（不代表全厂授权）</option><option v-for="o in options.areas" :key="o.id" :value="o.id">{{ o.name }}</option></select><small class="error">{{ errors.areaId }}</small></label>
       <label v-if="entity === 'people'" class="wide">备注<textarea id="field-remark" v-model="form.remark" maxlength="500" rows="3" /><small class="error">{{ errors.remark }}</small></label>
@@ -43,6 +44,7 @@
 </template>
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
+import AreaRangeMap from './AreaRangeMap.vue'
 import { OPERATIONS, DELEGATE_ROLES } from '../access'
 import { localTime, toUtc } from '../time'
 const props = defineProps({ entity: String, record: Object, options: Object, siteId: String, timezone: String, busy: Boolean, error: Object, isSystem: Boolean })
@@ -52,7 +54,7 @@ if (props.entity === 'accounts') {
   r.roleScopes ||= {}
   for (const id of r.roleIds || []) if (!r.roleScopes[id]) { const g = props.options.roles.find(role => role.id === id)?.grants?.[0]; if (g) r.roleScopes[id] = { siteIds: g.siteIds, areaIds: g.areaIds } }
 }
-const form = ref({ code: r.code || '', name: r.name || '', loginName: r.loginName || '', timezone: r.timezone || 'Asia/Shanghai', parentId: r.parentId || '', areaId: r.areaId || '', organizationId: r.organizationId || '', remark: r.remark || '', personId: r.personId || '', personIds: [...(r.personIds || [])], localStart: localTime(r.startsAt, props.timezone), localEnd: localTime(r.endsAt, props.timezone), operations: [...(grant?.operations || [])], siteIds: [...(grant?.siteIds || [props.siteId])], allAreas: !grant || grant.areaIds === '*', areaIds: Array.isArray(grant?.areaIds) ? [...grant.areaIds] : [], bindings: (r.roleIds || []).map(roleId => ({ roleId, siteIds: [...(r.roleScopes?.[roleId]?.siteIds || [props.siteId])], allAreas: r.roleScopes?.[roleId]?.areaIds === '*' || !r.roleScopes?.[roleId], areaIds: Array.isArray(r.roleScopes?.[roleId]?.areaIds) ? [...r.roleScopes[roleId].areaIds] : [] })) })
+const form = ref({ code: r.code || '', name: r.name || '', loginName: r.loginName || '', timezone: r.timezone || 'Asia/Shanghai', parentId: r.parentId || '', areaId: r.areaId || '', organizationId: r.organizationId || '', remark: r.remark || '', personId: r.personId || '', personIds: [...(r.personIds || [])], points: Array.isArray(r.points) ? r.points.map(point => [...point]) : [], localStart: localTime(r.startsAt, props.timezone), localEnd: localTime(r.endsAt, props.timezone), operations: [...(grant?.operations || [])], siteIds: [...(grant?.siteIds || [props.siteId])], allAreas: !grant || grant.areaIds === '*', areaIds: Array.isArray(grant?.areaIds) ? [...grant.areaIds] : [], bindings: (r.roleIds || []).map(roleId => ({ roleId, siteIds: [...(r.roleScopes?.[roleId]?.siteIds || [props.siteId])], allAreas: r.roleScopes?.[roleId]?.areaIds === '*' || !r.roleScopes?.[roleId], areaIds: Array.isArray(r.roleScopes?.[roleId]?.areaIds) ? [...r.roleScopes[roleId].areaIds] : [] })) })
 const initial = JSON.stringify(form.value), memberKeyword = ref(''), localErrors = ref({}), errorBox = ref(null)
 const errors = computed(() => ({ ...props.error?.fields, ...localErrors.value }))
 const assignableRoles = computed(() => props.options.roles?.filter(r => r.id !== 'system' && (props.isSystem || DELEGATE_ROLES.includes(r.id))) || [])
@@ -69,6 +71,7 @@ async function submit() {
   if (props.entity === 'dutyShifts') {
     for (const [field, key] of [['startsAt', 'localStart'], ['endsAt', 'localEnd']]) { try { data[field] = toUtc(data[key], props.timezone) } catch (e) { localErrors.value[field] = e.message } }
   }
+  if (props.entity === 'areas' && data.points.length > 0 && data.points.length < 3) localErrors.value.points = '地图范围至少需要 3 个点，或清空后只保存名称'
   if (Object.keys(localErrors.value).length) { await nextTick(); errorBox.value?.focus(); return }
   if (props.entity === 'roles') data.areaIds = data.allAreas ? '*' : data.areaIds
   data.bindings = data.bindings.map(b => ({ roleId: b.roleId, siteIds: b.siteIds, areaIds: b.allAreas ? '*' : b.areaIds }))

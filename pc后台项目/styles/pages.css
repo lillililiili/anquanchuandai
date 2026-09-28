@@ -1,30 +1,45 @@
-/* Showroom identity: imagery lives in assets, all controls and facts remain HTML. */
-.login-page { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: var(--canvas); }
-.login-intro { position: relative; min-height: 100vh; background: var(--soft-blue); color: var(--ink); padding: 40px 7%; overflow: hidden; }
-.login-intro .brand { margin-bottom: 38px; }
-.login-intro .eyebrow { color: var(--muted); font-size: 13px; letter-spacing: 2px; }
-.login-intro h1 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.3; font-weight: 800; letter-spacing: .5px; margin: 12px 0; }
-.login-intro h1 span { color: var(--cyan); }
-.login-intro > p { color: var(--muted); max-width: 560px; font-size: 15px; }
-.login-foot { position: absolute; bottom: 22px; left: 7%; margin: 0; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 9px 14px; font-size: 14px !important; }
-.login-side { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 32px 7%; border-left: 1px solid var(--line); }
-.login-card { width: 100%; background: var(--card); border: 1px solid var(--line); padding: 30px; border-radius: 4px; box-shadow: none; max-width: 540px; }
-.login-card h2 { font-size: 26px; margin: 22px 0 8px; }
-.login-card > p { font-size: 13px; }
-.login-card fieldset { max-height: 380px; overflow: auto; padding: 4px; margin: 20px -4px; }
-.identity-option { display: flex; gap: 10px; align-items: center; padding: 15px 13px; border: 1px solid var(--line); margin-bottom: 10px; border-radius: 4px; cursor: pointer; transition: background .2s, border-color .2s; }
-.identity-option:last-child { margin-bottom: 0; }
-.identity-option.selected { border-color: var(--blue); background: var(--soft-blue); }
-.identity-option small { display: block; color: var(--muted); margin-top: 4px; font-size: 13px; }
-.identity-option strong { font-size: 14px; }
-.identity-icon { width: 28px; height: 28px; color: var(--blue-dark); flex: none; }
-.identity-option:nth-of-type(2) .identity-icon { color: var(--cyan-dark); }
-.identity-option:nth-of-type(3) .identity-icon { color: var(--purple); }
-.identity-option:nth-of-type(4) .identity-icon { color: var(--orange); }
-.enter { width: 100%; margin: 4px 0 18px; min-height: 46px; font-weight: 650; font-size: 15px; }
-.login-card .login-boundary { font-size: 13px; margin-bottom: 0; line-height: 1.9; }
-.login-version { font-size: 13px; letter-spacing: 1px; color: var(--muted); text-align: center; margin: 24px 0 0; }
-.overview-hero { position: relative; min-height: 120px; display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+/* Login: a quiet industrial image and a focused account form. */
+.login-page { min-height: 100vh; min-height: 100svh; display: grid; grid-template-columns: 55% 45%; background: var(--card); }
+.login-intro { position: relative; isolation: isolate; min-height: 100vh; min-height: 100svh; padding: 40px clamp(32px, 4.4vw, 80px); overflow: hidden; background: #e7eef4; }
+.login-background { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: center 60%; }
+.login-intro::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(239,245,250,.86) 0%, rgba(239,245,250,.66) 38%, rgba(239,245,250,0) 70%, rgba(20,39,59,.45) 100%); }
+.login-intro .brand { align-items: center; gap: 12px; }
+.login-intro .brand-product { font-size: 14px; border-color: #b9c9d8; }
+.login-intro .brand small { display: block; margin: 4px 0 0; font-size: 12px; }
+.login-intro-copy { margin-top: clamp(64px, 12vh, 130px); }
+.login-intro-copy .eyebrow { color: #49637c; font-size: 14px; letter-spacing: 3px; margin-bottom: 20px; }
+.login-intro h1 { font-size: clamp(30px, 3vw, 48px); line-height: 1.5; letter-spacing: 2px; font-weight: 600; color: #1d3852; margin: 0 0 20px; }
+.login-intro-copy p { color: #4d6377; font-size: 15px; line-height: 1.9; margin: 0; }
+.login-foot { position: absolute; bottom: 28px; left: clamp(32px, 4.4vw, 80px); margin: 0; color: #fff; font-size: 13px; letter-spacing: 1px; }
+.login-foot span { margin: 0 16px; opacity: .7; }
+.login-side { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 80px 40px; min-width: 0; }
+.login-card { width: 100%; max-width: 360px; }
+.login-kicker { display: block; color: var(--blue-dark); font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+.login-card h2 { font-size: 30px; line-height: 1.5; font-weight: 600; margin: 0 0 8px; letter-spacing: 1px; }
+.login-card > .muted { margin: 0 0 36px; font-size: 14px; }
+.login-card form { margin: 0; }
+.login-card .notice { margin: 0 0 18px; font-size: 13px; }
+.enter { width: 100%; margin: 8px 0 0; min-height: 48px; font-weight: 500; font-size: 15px; position: relative; }
+.enter svg { position: absolute; right: 18px; width: 18px; height: 18px; }
+.login-help { margin: 24px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
+.login-version { position: absolute; bottom: 28px; left: 24px; right: 24px; font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+@media (max-width: 1100px) { .login-page { grid-template-columns: 50% 50%; } .login-intro { padding: 32px; } .login-intro .brand-product { font-size: 12px; padding-left: 12px; margin-left: 0; } .login-intro .brand { gap: 8px; } .login-foot { left: 32px; } }
+@media (max-width: 760px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-intro { min-height: 260px; padding: 24px; }
+  .login-intro .brand-product { font-size: 13px; }
+  .login-background { object-position: center 65%; }
+  .login-intro::before { background: rgba(238,245,250,.82); }
+  .login-intro-copy { margin-top: 30px; }
+  .login-intro-copy .eyebrow, .login-intro-copy p, .login-foot { display: none; }
+  .login-intro h1 { font-size: 28px; line-height: 1.45; letter-spacing: 1px; margin: 0; }
+  .login-side { padding: 36px 24px 76px; }
+  .login-card h2 { font-size: 26px; }
+  .login-card > .muted { margin-bottom: 28px; }
+  .login-version { bottom: 24px; }
+}
+@media (min-width: 761px) and (max-height: 680px) { .login-intro-copy { margin-top: 48px; } .login-side { padding-top: 48px; padding-bottom: 72px; } }
+.overview-hero { position: relative; min-height: 120px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding: 24px; margin-bottom: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
 .overview-hero h1 { font-size: 22px; margin-bottom: 8px; }
 .overview-hero p { max-width: 460px; color: var(--muted); font-size: 13px; }
 .overview-hero .hero-site { display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--muted); margin-top: 20px; }
@@ -33,15 +48,15 @@
 .scope-bar { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 14px; color: var(--muted); padding-bottom: 15px; margin-bottom: 16px; }
 .scope-bar strong { color: var(--ink); }
 .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.metric-card { --metric-color: var(--blue-dark); --metric-soft: var(--soft-blue); text-align: left; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 4px; color: var(--metric-color); transition: transform .2s, box-shadow .2s; min-width: 0; box-shadow: none; }
+.metric-card { --metric-color: var(--blue-dark); --metric-soft: var(--soft-blue); display: flex; flex-direction: column; text-align: left; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); transition: border-color .15s, background .15s; min-width: 0; box-shadow: none; }
 .metric-card:hover { border-color: var(--blue); box-shadow: none; }
 .metric-title { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 650; }
-.metric-title svg { width: 34px; height: 34px; padding: 7px; background: var(--metric-color); color: white; border-radius: 4px; }
+.metric-title svg { width: 34px; height: 34px; padding: 7px; background: var(--soft-blue); color: var(--blue-dark); border-radius: 4px; }
 .metric-card > strong { display: block; font-family: var(--font-number); font-size: 30px; font-weight: 600; line-height: 1; margin: 16px 0; font-variant-numeric: tabular-nums; }
 .metric-card strong small { margin-left: 9px; font-family: 'Microsoft YaHei', sans-serif; font-size: 14px; color: var(--muted); font-weight: 400; }
-.metric-card p { font-size: 13px; color: var(--muted); min-height: 20px; margin-bottom: 12px; }
-.metric-link { display: flex; justify-content: space-between; font-size: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
-.attention { display: flex; align-items: center; gap: 15px; background: var(--soft-orange); border: 1px solid #efd9a4; border-radius: 4px; padding: 14px 20px; margin: 18px 0; }
+.metric-card p { font-size: 13px; color: var(--muted); min-height: 40px; margin-bottom: 12px; }
+.metric-link { display: flex; justify-content: space-between; width: 100%; margin-top: auto; font-size: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.attention { display: flex; align-items: center; gap: 15px; background: var(--soft-orange); border: 1px solid #efd9a4; border-radius: var(--radius); padding: 16px 20px; margin: 20px 0; }
 .attention-icon { width: 30px; height: 30px; flex: none; color: var(--orange); }
 .attention > div { margin-right: auto; } .attention strong { font-size: 14px; color: var(--orange); }
 .attention p { font-size: 14px; color: var(--muted); margin: 3px 0 0; } .attention b { margin: 0 6px; }
@@ -53,8 +68,7 @@
 .entry-list a > span:last-child { margin-left: auto; }
 .entry-stage { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 40px; color: var(--blue); background: var(--soft-blue); border-radius: 4px; font-size: 13px; min-height: 40px; }
 .entry-stage svg { width: 20px; height: 20px; }
-.entry-list a:nth-child(2) .entry-stage { background: var(--soft-cyan); color: var(--cyan-dark); }
-.entry-list a:nth-child(3) .entry-stage { background: var(--soft-purple); color: var(--purple); }
+
 .empty-records { text-align: center; padding: 20px 12px; color: var(--muted); }
 .empty-records .state-art { width: 115px; height: 90px; }
 .empty-records h3 { color: var(--ink); margin-bottom: 8px; }
@@ -71,7 +85,7 @@
 .tree-panel { min-width: 0; max-height: 360px; overflow: auto; }
 .data-tree { list-style: none; padding: 0 0 0 14px; margin: 8px 0; border-left: 1px solid var(--line); }
 .tree-node { display: flex; justify-content: space-between; gap: 16px; width: 100%; border: 0; border-radius: 4px; background: transparent; padding: 10px; text-align: left; color: var(--ink); }
-.tree-node:hover, .tree-node.selected { background: var(--soft-cyan); color: var(--cyan-dark); }
+.tree-node:hover, .tree-node.selected { background: var(--soft-blue); color: var(--blue-dark); }
 .tree-node span { overflow-wrap: anywhere; } .tree-node small { white-space: nowrap; }
 .device-list-heading { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; } .device-list-heading h2 { margin-right: auto; }
 .device-detail-tools { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
@@ -89,7 +103,7 @@
 .device-changes { padding-left: 22px; } .device-changes li { border-bottom: 1px solid var(--line); padding: 16px 0; } .device-changes dd { overflow-wrap: anywhere; }
 .person-header { display: flex; align-items: center; gap: 22px; margin-top: 18px; }
 .person-header .badge { margin-left: auto; } .person-header p { margin-bottom: 4px; }
-.person-monogram { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 4px; background: var(--soft-cyan); color: var(--cyan-dark); font-size: 26px; flex: none; }
+.person-monogram { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 4px; background: var(--soft-blue); color: var(--blue-dark); font-size: 26px; flex: none; }
 .equipment-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0; }
 .equipment-slots > .panel { margin-top: 0; position: relative; overflow: hidden; }
 .equipment-slots h2 { margin-bottom: 16px; }
@@ -109,21 +123,17 @@
 .record-line span, .maintenance-records small { color: var(--muted); font-size: 13px; }
 .maintenance-rules { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 12px; }
 .maintenance-form .reset-confirm { overflow-wrap: anywhere; margin: 16px 0; }
-@media (min-width: 1800px) { .login-card { padding: 38px; } .login-intro { padding-top: 56px; } .login-intro .brand { margin-bottom: 55px; } .overview-hero { min-height: 120px; } }
-@media (max-width: 1200px) { .login-page { grid-template-columns: 56% 44%; } .login-card { padding: 24px; } .login-side { padding: 24px; } .metrics { gap: 10px; } .metric-card { padding: 16px; } .overview-hero p { max-width: 360px; } }
-@media (max-width: 1000px) { .tree-pair, .equipment-slots, .device-detail-grid { grid-template-columns: 1fr; } .overview-grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(2, 1fr); } .attention { flex-wrap: wrap; } }
-@media (max-width: 750px) { .login-page { grid-template-columns: 1fr; } .login-intro { min-height: 540px; padding: 25px; background-position: center 55%; } .login-intro .brand { margin-bottom: 22px; } .login-intro h1 { font-size: 31px; } .login-intro > p:not(.login-foot) { font-size: 13px; max-width: 350px; } .login-side { padding: 22px; } .login-card { max-width: none; } .login-foot { left: 25px; } .overview-hero { padding: 20px; min-height: 140px; } .overview-hero h1 { font-size: 26px; } .overview-hero > .button { align-self: start; } .overview-hero p { max-width: 220px; } .device-header, .person-header { flex-wrap: wrap; } .person-header .badge { margin-left: 0; } }
 
-.login-intro .eyebrow, .login-intro > p { color: var(--muted); }
-.login-intro h1 { font-size: 32px; margin-top: 80px; }
-.login-intro h1 span { color: var(--blue-dark); }
-.login-intro .brand small { color: var(--muted); }
-.login-foot { background: transparent; border: 0; color: var(--muted); }
-.login-card { border-radius: 4px; max-width: 440px; }
-.hero-caption { position: static; align-self: flex-end; background: none; font-size: 12px; }
-.overview-hero { flex-wrap: wrap; gap: 16px; }
+@media (max-width: 1200px) { .metrics { gap: 10px; } .metric-card { padding: 16px; } .overview-hero p { max-width: 360px; } }
+@media (max-width: 1000px) { .tree-pair, .equipment-slots, .device-detail-grid { grid-template-columns: 1fr; } .overview-grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: repeat(2, 1fr); } .attention { flex-wrap: wrap; } }
+@media (max-width: 750px) { .overview-hero { padding: 20px; min-height: 140px; } .overview-hero h1 { font-size: 26px; } .overview-hero > .button { align-self: start; } .overview-hero p { max-width: 220px; } .device-header, .person-header { flex-wrap: wrap; } .person-header .badge { margin-left: 0; } }
+
+.hero-caption { position: static; grid-column: 1 / -1; text-align: right; background: none; font-size: 12px; padding: 0; }
+.overview-hero { gap: 12px; }
 .device-header .device-mark { flex-basis: 96px; width: 96px; }
 .device-header { padding: 16px; gap: 16px; }
 .device-header h2 { font-size: 20px; }
 .record-fields { font-size: 14px; }
 .device-detail-tools { margin-bottom: 16px; }
+
+@media (max-width: 480px) { .overview-hero { grid-template-columns: 1fr; } .overview-hero > .button { justify-self: start; } .hero-caption { text-align: left; } .metrics { grid-template-columns: 1fr; } .overview-hero h1 { font-size: 22px; } .overview-hero p { max-width: none; } .overview-hero .hero-site { flex-wrap: wrap; } .attention { padding: 16px; } .attention > .button { width: 100%; } }

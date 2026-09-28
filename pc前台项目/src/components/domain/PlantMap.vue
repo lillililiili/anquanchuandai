@@ -23,6 +23,7 @@ import { db, tick } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { toast } from "@/stores/notify";
 import { helmetOf, people } from "@/lib/queries";
+import { areaOccupancy, displayedAreas, validPosition } from "./map-areas.js";
 import {
   LABEL_TILES,
   MAX_ZOOM,
@@ -42,6 +43,8 @@ const props = defineProps({
   popup: Boolean,
   legend: { type: Boolean, default: true },
   markers: { type: Boolean, default: true },
+  fences: { type: Boolean, default: true },
+  areaCounts: Boolean,
   mapClass: { type: String, default: "" },
 });
 
@@ -49,39 +52,10 @@ const route = useRoute();
 const mapEl = ref(null);
 const olEl = ref(null);
 const scaleText = ref("500 m");
-const zones = [
-  ["锅炉区", 34, 31],
-  ["配电区", 20, 73],
-  ["汽机厂房", 52, 73],
-  ["循环水区", 81, 35],
-];
-const areas = [
-  [
-    [29, 20],
-    [43, 20],
-    [43, 58],
-    [29, 58],
-  ],
-  [
-    [13, 61],
-    [29, 61],
-    [29, 87],
-    [13, 87],
-  ],
-  [
-    [40, 64],
-    [65, 64],
-    [65, 83],
-    [40, 83],
-  ],
-  [
-    [73, 27],
-    [90, 27],
-    [90, 75],
-    [73, 75],
-  ],
-];
-
+const occupancy = computed(() => {
+  tick.value;
+  return areaOccupancy(db.state, session.station, (id) => db.locationValid(id));
+});
 const visiblePeople = computed(() => {
   tick.value;
   const source = props.person ? people().filter((item) => item.id === props.person) : people();
@@ -98,7 +72,9 @@ let dragPan;
 let observer;
 let dragging = null;
 const personOverlays = new Map();
-const zoneOverlays = [];
+const areaOverlays = new Map();
+const hoveredId = ref("");
+let hideTimer = 0;
 let popupOverlay;
 
 const areaSource = new VectorSource();
@@ -126,11 +102,11 @@ function ring(points) {
   return line;
 }
 
-function polygonFeature(points, stroke, fill, dash) {
+function polygonFeature(points, stroke, fill, dash, width = 2.5) {
   const feature = new Feature({ geometry: new Polygon([ring(points)]) });
   feature.setStyle(
     new Style({
-      stroke: new Stroke({ color: stroke, width: 2.5, lineDash: dash }),
+      stroke: new Stroke({ color: stroke, width, lineDash: dash }),
       fill: new Fill({ color: fill }),
     }),
   );
@@ -177,18 +153,18 @@ function replaceFeatures(source, features) {
 
 function renderShapes() {
   const shapes = [];
-  if (session.layers.areas && props.mode !== "fence") {
-    areas.forEach((points, index) => {
-      shapes.push(polygonFeature(points, index ? "#00e9dd" : "#ffcc42", index ? "#00dac00b" : "#ffcc420a", [6, 4]));
+  if ((props.areaCounts || session.layers.areas) && props.mode !== "fence") {
+    displayedAreas(db.state, session.station).forEach((area) => {
+      shapes.push(polygonFeature(area.points, "#09dce3", "rgba(9, 220, 227, 0.04)", [8, 6], 2));
     });
   }
   replaceFeatures(areaSource, shapes);
 
   const fences = [];
-  if (session.layers.fences && props.mode !== "fence") {
+  if (props.fences && (props.areaCounts || session.layers.fences) && props.mode !== "fence") {
     db.state.fences
       .filter((fence) => fence.station === session.station && fence.enabled && !fence.archived)
-      .forEach((fence) => fences.push(polygonFeature(fence.points, "#15e1be", "#00bfa021", [7, 3])));
+      .forEach((fence) => fences.push(polygonFeature(fence.points, "#1ce3b1", "rgba(28, 227, 177, 0.22)")));
   }
   replaceFeatures(fenceSource, fences);
 
@@ -213,22 +189,61 @@ function renderShapes() {
   replaceFeatures(trackSource, tracks);
 }
 
+function renderAreaLabels() {
+  const areas = (props.areaCounts || session.layers.areas) && props.mode !== "fence" ? occupancy.value.areas : [];
+  const ids = new Set(areas.map((area) => area.id));
+  for (const [id, overlay] of areaOverlays) {
+    if (ids.has(id)) continue;
+    map.removeOverlay(overlay);
+    areaOverlays.delete(id);
+  }
+  areas.forEach((area) => {
+    let overlay = areaOverlays.get(area.id);
+    if (!overlay) {
+      const element = document.createElement("div");
+      overlay = new Overlay({ element, positioning: "center-center", stopEvent: false });
+      map.addOverlay(overlay);
+      areaOverlays.set(area.id, overlay);
+    }
+    const element = overlay.getElement();
+    element.className = "map-zone" + (props.areaCounts ? " map-zone-count" : "");
+    element.dataset.areaId = area.id;
+    element.setAttribute("aria-label", area.name + (props.areaCounts ? `，有效定位 ${area.personIds.length} 人` : ""));
+    element.innerHTML = `<span>${esc(area.name)}</span>` + (props.areaCounts ? `<strong>${area.personIds.length}<small> 人</small></strong>` : "");
+    overlay.setPosition(new Polygon([ring(area.points)]).getInteriorPoint().getCoordinates());
+  });
+}
+
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+}
+
+function showPersonCard(id) {
+  window.clearTimeout(hideTimer);
+  if (hoveredId.value !== id) hoveredId.value = id;
+}
+
+function hidePersonCard() {
+  window.clearTimeout(hideTimer);
+  hideTimer = window.setTimeout(() => {
+    hoveredId.value = "";
+  }, 160);
 }
 
 function ensurePopup() {
   if (popupOverlay || !map) return;
   const element = document.createElement("div");
   element.className = "map-popup";
-  popupOverlay = new Overlay({ element, positioning: "bottom-left", offset: [16, -18], stopEvent: true });
+  element.addEventListener("pointerenter", () => window.clearTimeout(hideTimer));
+  element.addEventListener("pointerleave", hidePersonCard);
+  popupOverlay = new Overlay({ element, positioning: "bottom-left", offset: [26, -26], stopEvent: true });
   map.addOverlay(popupOverlay);
 }
 
 function renderPopup() {
   if (!map) return;
   ensurePopup();
-  const person = props.popup ? selected.value : null;
+  const person = props.popup ? visiblePeople.value.find((item) => item.id === hoveredId.value && validPosition(item.position)) : null;
   if (!person) {
     popupOverlay.setPosition(undefined);
     return;
@@ -244,7 +259,7 @@ function renderPopup() {
 
 function renderPeople() {
   if (!map) return;
-  const wanted = showMarkers.value && session.layers.people ? visiblePeople.value : [];
+  const wanted = showMarkers.value && (props.areaCounts || session.layers.people) ? visiblePeople.value.filter((person) => validPosition(person.position)) : [];
   const ids = new Set(wanted.map((person) => person.id));
   for (const [id, overlay] of personOverlays) {
     if (ids.has(id)) continue;
@@ -261,6 +276,8 @@ function renderPeople() {
         event.stopPropagation();
         choose(button.dataset.id);
       });
+      button.addEventListener("pointerenter", () => showPersonCard(button.dataset.id));
+      button.addEventListener("pointerleave", hidePersonCard);
       overlay = new Overlay({ element: button, positioning: "center-center", stopEvent: true });
       map.addOverlay(overlay);
       personOverlays.set(person.id, overlay);
@@ -279,23 +296,6 @@ function renderPeople() {
   });
 }
 
-function renderZones() {
-  if (!map || zoneOverlays.length) return;
-  zones.forEach(([label, x, y]) => {
-    const element = document.createElement("span");
-    element.className = "map-zone";
-    element.textContent = label;
-    const overlay = new Overlay({
-      element,
-      position: projected([x, y]),
-      positioning: "center-center",
-      stopEvent: false,
-    });
-    map.addOverlay(overlay);
-    zoneOverlays.push(overlay);
-  });
-}
-
 function syncPan() {
   if (!dragPan) return;
   const drawing = props.mode === "fence" && (session.fenceMode === "draw" || session.fenceMode === "edit");
@@ -305,9 +305,9 @@ function syncPan() {
 function render() {
   if (!map) return;
   renderShapes();
+  renderAreaLabels();
   renderPeople();
   renderPopup();
-  renderZones();
   syncPan();
 }
 
@@ -324,7 +324,10 @@ function updateScale() {
 
 function choose(id) {
   session.person = id;
-  if (route.name === "location" || route.name === "overview") return;
+  if (route.name === "location" || route.name === "overview" || route.name === "screen") {
+    showPersonCard(id);
+    return;
+  }
   location.hash = "#/person/" + id;
 }
 
@@ -402,8 +405,8 @@ onMounted(() => {
     layers: [
       new TileLayer({ source: new XYZ({ url: SATELLITE_TILES }) }),
       new TileLayer({ source: new XYZ({ url: LABEL_TILES }) }),
-      new VectorLayer({ source: areaSource, zIndex: 3 }),
-      new VectorLayer({ source: fenceSource, zIndex: 4 }),
+      new VectorLayer({ source: fenceSource, zIndex: 3 }),
+      new VectorLayer({ source: areaSource, zIndex: 4 }),
       new VectorLayer({ source: trackSource, zIndex: 5 }),
       new VectorLayer({ source: draftSource, zIndex: 6 }),
     ],
@@ -433,8 +436,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.clearTimeout(hideTimer);
   observer?.disconnect();
   personOverlays.clear();
+  areaOverlays.clear();
   map?.setTarget(null);
   map?.dispose();
   map = null;
@@ -456,6 +461,10 @@ watch(
     props.person,
     props.popup,
     props.markers,
+    props.fences,
+    props.areaCounts,
+    props.personIds,
+    hoveredId.value,
   ],
   () => render(),
   { deep: true },
@@ -474,11 +483,19 @@ watch(
     </div>
     <div v-if="legend" class="map-legend">
       图例<br />
-      <AppIcon name="user-fill" color="blue" /> 人员位置<br />
+      <template v-if="showMarkers"><AppIcon name="user-fill" color="blue" /> 人员位置<br /></template>
       <AppIcon name="checkbox-blank-line" color="cyan" /> 作业区域<br />
-      <AppIcon name="error-warning-line" color="yellow" /> 待核验位置
+      <template v-if="fences"><AppIcon name="shape-line" color="green" /> 电子围栏<br /></template>
+      <template v-if="showMarkers"><AppIcon name="error-warning-line" color="yellow" /> 待核验位置</template>
     </div>
     <div class="map-scale">{{ scaleText }}<hr /></div>
+    <div v-if="areaCounts" class="map-area-summary" aria-label="作业区域人数统计">
+      <span>有效定位人数</span>
+      <span>区域内 <b>{{ occupancy.inside }}</b></span>
+      <span>{{ occupancy.areas.length ? "区域外" : "未配置区域" }} <b>{{ occupancy.outside }}</b></span>
+      <span class="map-count-unverified">待核验 <b>{{ occupancy.unverified }}</b></span>
+      <small v-if="occupancy.overlapping">重叠区域分别计数，区域内总人数已去重</small>
+    </div>
     <template v-if="mode === 'fence'">
       <div class="map-editbar">
         <AppButton :tone="session.fenceMode === 'select' ? 'primary' : ''" icon="cursor-line" @click="setMode('select')">选择</AppButton>

@@ -70,9 +70,9 @@ onUnmounted(() => clearInterval(timer));
 
 <template>
   <header class="topbar">
-    <a class="brand" href="#/overview"><img src="/assets/logo.png" alt="ROLLING" /></a>
+    <a class="brand rl-brand rl-brand-light" href="#/overview" aria-label="融瓴 ROLLING，返回综合总览"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></a>
     <span class="brand-divider"></span>
-    <strong>融瓴智能穿戴安全监护平台</strong>
+    <strong>智能穿戴安全监护平台</strong>
     <div class="top-actions">
       <a class="screen-entry" href="#/screen" @click="openScreen"><AppIcon name="dashboard-3-line" />数据大屏</a>
       <AppIcon name="building-2-line" color="blue" />

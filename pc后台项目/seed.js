@@ -34,11 +34,11 @@ export function createSeed() {
       { id: 'org-elec', siteId: 'site-1', name: '电气一班', areaId: 'area-electric' }
     ],
     areas: [
-      { id: 'area-boiler', siteId: 'site-1', name: '锅炉区' },
-      { id: 'area-turbine', siteId: 'site-1', name: '汽机厂房' },
-      { id: 'area-electric', siteId: 'site-1', name: '配电区' },
-      { id: 'area-water', siteId: 'site-1', name: '循环水区' },
-      { id: 'area-bei', siteId: 'site-2', name: '主厂区' }
+      { id: 'area-boiler', siteId: 'site-1', name: '锅炉区', points: [[29, 20], [43, 20], [43, 58], [29, 58]] },
+      { id: 'area-turbine', siteId: 'site-1', name: '汽机厂房', points: [[40, 64], [65, 64], [65, 83], [40, 83]] },
+      { id: 'area-electric', siteId: 'site-1', name: '配电区', points: [[13, 61], [29, 61], [29, 87], [13, 87]] },
+      { id: 'area-water', siteId: 'site-1', name: '循环水区', points: [[73, 27], [90, 27], [90, 75], [73, 75]] },
+      { id: 'area-bei', siteId: 'site-2', name: '主厂区', points: [] }
     ],
     people: [], dutyShifts: [], devices: [], assignments: [], history: [],
     maintenanceOrders: [], maintenanceRecords: [], lifecycleHistory: [], groups: [], groupHistory: [], integrations: [], audit: [], idempotency: {}
