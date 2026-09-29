@@ -9,3 +9,7 @@ audit-android-20260923/
 # Generated verification artifacts and temporary files
 /output/
 /tmp/
+
+# Local Sketch previews and backend build copies
+/.codex-previews/
+/后端代码/melhat_server-dev/ruoyi-admin/bin/
