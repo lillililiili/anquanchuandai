@@ -55,7 +55,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       MELHAT_DEMO_MODE: ${MELHAT_DEMO_MODE:-false}
-      HEADBAND_SERVER: ${HEADBAND_SERVER:-http://api.hel.epplink.com:30090}
+      HEADBAND_SERVER: ${HEADBAND_SERVER:-https://api.hel.epplink.com:30090}
       TOKEN_SERVICE_USERNAME: ${TOKEN_SERVICE_USERNAME:-}
       TOKEN_SERVICE_PASSWORD: ${TOKEN_SERVICE_PASSWORD:-}
     command:

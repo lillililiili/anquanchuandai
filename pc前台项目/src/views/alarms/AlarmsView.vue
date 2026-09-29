@@ -239,7 +239,7 @@ function rowClass(item) {
         </div>
         <div class="detail-section">
           <h3>现场位置</h3>
-          <PlantMap :person="selectedAlarm.personId" :legend="false" />
+          <PlantMap :person="selectedAlarm.personId" focus-person :focus-key="selectedAlarm.id" :legend="false" />
         </div>
         <div class="detail-section">
           <h3>现场视频</h3>

@@ -20,7 +20,7 @@ Get-Content -Raw ../sql/migrations/20260916_page_schema.sql | docker exec -i mel
 
 在本目录创建 `.env`，参考 `.env.example` 填写平台提供的账号凭据。
 不要把平台凭据提交到 Git，也不要在聊天中粘贴密码。
-默认平台地址使用 HTTP，凭据传输不加密；真实环境应向平台确认 HTTPS 地址或使用受信网络。
+默认平台地址使用 `https://api.hel.epplink.com:30090`，认证及设备查询通过 HTTPS 访问；基础地址末尾不加斜杠，接口路径自带斜杠。
 
 重新构建后端 JAR 后，在本目录执行：
 

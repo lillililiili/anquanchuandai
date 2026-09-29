@@ -15,6 +15,7 @@ import Overlay from "ol/Overlay";
 import DragPan from "ol/interaction/DragPan";
 import { defaults as defaultInteractions } from "ol/interaction/defaults";
 import { fromLonLat, toLonLat } from "ol/proj";
+import { boundingExtent } from "ol/extent";
 import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
 import "ol/ol.css";
 import AppButton from "@/components/ui/AppButton.vue";
@@ -39,7 +40,10 @@ import {
 const props = defineProps({
   mode: { type: String, default: "live" },
   person: { type: String, default: "" },
+  focusPerson: Boolean,
+  focusKey: { type: String, default: "" },
   personIds: { type: Array, default: null },
+  work: { type: Object, default: null },
   popup: Boolean,
   legend: { type: Boolean, default: true },
   markers: { type: Boolean, default: true },
@@ -58,8 +62,26 @@ const occupancy = computed(() => {
 });
 const visiblePeople = computed(() => {
   tick.value;
+  if (props.focusPerson && !props.person) return [];
   const source = props.person ? people().filter((item) => item.id === props.person) : people();
-  return source.filter((item) => !props.personIds || props.personIds.includes(item.id));
+  return source.filter((item) =>
+    (!props.personIds || props.personIds.includes(item.id)) &&
+    (!props.work || props.work.members?.includes(item.id)),
+  );
+});
+const visibleAreas = computed(() => {
+  tick.value;
+  const areas = displayedAreas(db.state, session.station);
+  if (!props.work) return areas;
+  const area = areas.find((item) => props.work.areaId ? item.id === props.work.areaId : item.name === props.work.area);
+  return area ? [area] : [];
+});
+const workFocusPoints = computed(() => {
+  if (!props.work) return [];
+  return [
+    ...visibleAreas.value.flatMap((area) => area.points),
+    ...visiblePeople.value.map((person) => person.position).filter(validPosition),
+  ];
 });
 const showMarkers = computed(() => props.markers !== false && props.mode !== "fence");
 const selected = computed(() => {
@@ -153,8 +175,8 @@ function replaceFeatures(source, features) {
 
 function renderShapes() {
   const shapes = [];
-  if ((props.areaCounts || session.layers.areas) && props.mode !== "fence") {
-    displayedAreas(db.state, session.station).forEach((area) => {
+  if ((props.work || props.areaCounts || session.layers.areas) && props.mode !== "fence") {
+    visibleAreas.value.forEach((area) => {
       shapes.push(polygonFeature(area.points, "#09dce3", "rgba(9, 220, 227, 0.04)", [8, 6], 2));
     });
   }
@@ -190,7 +212,7 @@ function renderShapes() {
 }
 
 function renderAreaLabels() {
-  const areas = (props.areaCounts || session.layers.areas) && props.mode !== "fence" ? occupancy.value.areas : [];
+  const areas = props.areaCounts && props.mode !== "fence" ? occupancy.value.areas : [];
   const ids = new Set(areas.map((area) => area.id));
   for (const [id, overlay] of areaOverlays) {
     if (ids.has(id)) continue;
@@ -206,10 +228,10 @@ function renderAreaLabels() {
       areaOverlays.set(area.id, overlay);
     }
     const element = overlay.getElement();
-    element.className = "map-zone" + (props.areaCounts ? " map-zone-count" : "");
+    element.className = "map-zone map-zone-count";
     element.dataset.areaId = area.id;
-    element.setAttribute("aria-label", area.name + (props.areaCounts ? `，有效定位 ${area.personIds.length} 人` : ""));
-    element.innerHTML = `<span>${esc(area.name)}</span>` + (props.areaCounts ? `<strong>${area.personIds.length}<small> 人</small></strong>` : "");
+    element.setAttribute("aria-label", `有效定位 ${area.personIds.length} 人`);
+    element.innerHTML = `<strong>${area.personIds.length}<small> 人</small></strong>`;
     overlay.setPosition(new Polygon([ring(area.points)]).getInteriorPoint().getCoordinates());
   });
 }
@@ -259,7 +281,7 @@ function renderPopup() {
 
 function renderPeople() {
   if (!map) return;
-  const wanted = showMarkers.value && (props.areaCounts || session.layers.people) ? visiblePeople.value.filter((person) => validPosition(person.position)) : [];
+  const wanted = showMarkers.value && (props.focusPerson || props.work || props.areaCounts || session.layers.people) ? visiblePeople.value.filter((person) => validPosition(person.position)) : [];
   const ids = new Set(wanted.map((person) => person.id));
   for (const [id, overlay] of personOverlays) {
     if (ids.has(id)) continue;
@@ -340,10 +362,60 @@ function zoomBy(delta) {
 
 function resetView() {
   if (!map) return;
+  if (props.work || props.focusPerson) {
+    focusSelection();
+    return;
+  }
   const view = map.getView();
   view.setCenter(fromLonLat(PLANT_CENTER));
   view.setZoom(PLANT_ZOOM);
   view.setRotation(0);
+}
+
+function focusWork() {
+  if (!map || !props.work) return;
+  map.updateSize();
+  const size = map.getSize();
+  if (!size || size.some((value) => value <= 0)) return;
+  const view = map.getView();
+  view.cancelAnimations();
+  view.setRotation(0);
+  if (workFocusPoints.value.length) {
+    // Leave room for the caption, controls and marker radius in the compact map.
+    view.fit(boundingExtent(workFocusPoints.value.map(projected)), {
+      size,
+      padding: [48, 64, 36, 32],
+      maxZoom: MAX_ZOOM,
+    });
+  } else {
+    view.setCenter(fromLonLat(PLANT_CENTER));
+    view.setZoom(PLANT_ZOOM);
+  }
+}
+
+function focusSelection() {
+  if (props.work) {
+    focusWork();
+    return;
+  }
+  if (!map || !props.focusPerson) return;
+  map.updateSize();
+  const size = map.getSize();
+  if (!size || size.some((value) => value <= 0)) return;
+  const view = map.getView();
+  const person = visiblePeople.value.find((item) => item.id === props.person && validPosition(item.position));
+  view.cancelAnimations();
+  view.setRotation(0);
+  if (person) {
+    view.fit(new Point(projected(person.position)), {
+      size,
+      padding: [48, 64, 32, 32],
+      maxZoom: PLANT_ZOOM,
+    });
+  } else {
+    view.setCenter(fromLonLat(PLANT_CENTER));
+    view.setZoom(PLANT_ZOOM);
+  }
 }
 
 function setMode(mode) {
@@ -429,9 +501,13 @@ onMounted(() => {
   map.on("pointermove", onPointerMove);
   map.on("pointerup", onPointerUp);
   map.on("moveend", updateScale);
-  observer = new ResizeObserver(() => map.updateSize());
+  observer = new ResizeObserver(() => {
+    map.updateSize();
+    focusSelection();
+  });
   observer.observe(mapEl.value);
   render();
+  focusSelection();
   updateScale();
 });
 
@@ -459,15 +535,30 @@ watch(
     session.fenceMode,
     props.mode,
     props.person,
+    props.focusPerson,
     props.popup,
     props.markers,
     props.fences,
     props.areaCounts,
     props.personIds,
+    props.work,
     hoveredId.value,
   ],
   () => render(),
   { deep: true },
+);
+
+watch(
+  () => [props.work?.id, session.station, JSON.stringify(workFocusPoints.value)],
+  () => focusWork(),
+  { flush: "post" },
+);
+
+watch(
+  () => [props.focusPerson, props.focusKey, props.person, session.station,
+    props.focusPerson ? JSON.stringify(visiblePeople.value.map((person) => person.position)) : ""],
+  () => { if (props.focusPerson) focusSelection(); },
+  { flush: "post" },
 );
 </script>
 

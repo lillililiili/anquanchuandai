@@ -71,7 +71,7 @@ xss:
 
 
 headband:
-    server: ${HEADBAND_SERVER:http://api.hel.epplink.com:30090}
+    server: ${HEADBAND_SERVER:https://api.hel.epplink.com:30090}
     token:
      url: /api/auth/token
      username: ${TOKEN_SERVICE_USERNAME:}

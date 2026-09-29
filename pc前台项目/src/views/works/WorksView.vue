@@ -202,7 +202,7 @@ function syncSource() {
         <WorkInfo :work="selected" />
         <div class="detail-section">
           <h3>作业区域示意图</h3>
-          <div style="height:220px"><PlantMap :person="selected.members[0] || ''" :legend="false" /></div>
+          <div style="height:220px"><PlantMap :work="selected" :person="selected.members[0] || ''" :legend="false" :fences="false" /></div>
         </div>
         <p class="note"><AppIcon name="information-line" />许可及摘要以原工作票系统为准。</p>
       </template>
