@@ -69,6 +69,7 @@ public class AdminAssignmentService {
     }
 
     public JSONObject execute(String accountId, String type, JSONObject input) {
+        RemovedAssetFeatures.requireCommand(type, input);
         if (!"assignments.issue".equals(type) && !"assignments.return".equals(type)) throw AdminQueryService.fail(400, "COMMAND_NOT_AVAILABLE", "不支持此领用操作");
         JSONObject state = ledger.read();
         if (state == null) throw AdminQueryService.fail(503, "SOURCE_FAILURE", "后台台账尚未保存");

@@ -1,6 +1,6 @@
 export const MENU = [
   { path: '/admin/overview', title: '管理工作台', permission: 'overview:read', description: '设备概况、待核实的领用记录和最近操作' },
-  { path: '/admin/assets/devices', title: '装备资产', permission: 'assets:read', description: '设备台账 → 发放回收 → 维修与退役' },
+  { path: '/admin/assets/devices', title: '装备资产', permission: 'assets:read', description: '设备台账 → 发放与回收' },
   { path: '/admin/people', title: '人员组织', permission: 'people:read', description: '人员档案、组织班组、厂站区域与当班名册' },
   { path: '/admin/access/accounts', title: '权限协作', permission: 'access:read', description: '登录账号与角色范围' },
   { path: '/admin/audit', title: '操作日志', permission: 'audit:read', description: '查看谁在何时修改了什么，以及处理结果' }
@@ -9,7 +9,6 @@ export const METRICS = [
   { key: 'assets', label: '资产总数', note: '当前厂站内您有权查看的设备' },
   { key: 'available', label: '可领设备', note: '库存中尚未领用的设备，含离线设备' },
   { key: 'assigned', label: '已领用设备', note: '每台设备计一次，不含领用记录有矛盾的设备' },
-  { key: 'maintenance', label: '未完成维修单', note: '尚未完成的维修单数量' },
   { key: 'unknown', label: '领用情况不明', note: '领用信息不完整，请核实领用人' },
   { key: 'conflict', label: '领用记录有矛盾', note: '领用人或设备状态不一致，请人工核实' }
 ]
@@ -63,6 +62,7 @@ export function cleanDeviceQuery(query = {}) {
   const common = cleanQuery(query), result = Object.fromEntries(['siteId', 'areaId', 'selectedId', 'keyword', 'pageNum', 'pageSize'].filter(k => common[k] !== undefined).map(k => [k, common[k]]))
   const enums = { type: ['HELMET', 'BELT', 'WATCH'], lifecycle: ['STOCK', 'IN_USE', 'MAINTENANCE', 'DISABLED', 'SCRAPPED'], relation: ['ASSIGNED', 'UNASSIGNED', 'UNKNOWN', 'CONFLICT'], communication: ['NOT_CONNECTED', 'ONLINE', 'OFFLINE', 'UNKNOWN'] }
   for (const [key, values] of Object.entries(enums)) if (values.includes(query[key])) result[key] = query[key]
+  if(query.source === 'PLATFORM') result.source = 'PLATFORM'
   return result
 }
 export function cleanQuery(query = {}) {
@@ -78,6 +78,7 @@ export function safeTarget(value) {
   if (typeof value !== 'string' || !value.startsWith('/admin/') || /[\\\s#]/.test(value)) return '/admin/overview'
   try {
     const url = new URL(value, 'http://admin.local')
+    if (/^\/admin\/assets\/maintenance(?:\/|$)/.test(url.pathname)) { const siteId = cleanQuery(Object.fromEntries(url.searchParams)).siteId; return '/admin/assets/devices' + (siteId ? '?siteId=' + encodeURIComponent(siteId) : '') }
     if (/^\/admin\/integrations(?:\/|$)/.test(url.pathname)) return '/admin/overview'
     if (url.origin !== 'http://admin.local' || (!allowed.has(url.pathname) && !/^\/admin\/people\/[\w-]{1,100}$/.test(url.pathname) && !/^\/admin\/assets\/(devices|maintenance)\/[\w-]{1,100}$/.test(url.pathname))) return '/admin/overview'
     const raw = Object.fromEntries(url.searchParams)

@@ -3,9 +3,9 @@
     <div class="overview-hero"><div><span class="eyebrow">管理中心 / 管理工作台</span><h1>管理工作台</h1><p>从资产概况进入明细，先核对事实，再办理业务。</p><span class="hero-site"><Location aria-hidden="true" /><strong>{{ store.sites.find(s => s.id === store.siteId)?.name }}</strong> · 当前授权范围</span></div><button class="button" @click="refresh">刷新概况</button><span class="hero-caption">装备示意 · 数据日期 2026-09-15 · 非实时设备数据</span></div>
     <QueryState :data="overview.data.value" :error="overview.error.value" :loading="overview.loading.value" @retry="loadOverview">
       <div v-if="overview.data.value?.counts" class="metrics">
-        <button v-for="(metric, index) in METRICS.slice(0, 4)" :key="metric.key" class="metric-card" @click="openDetails(metric)"><span class="metric-title"><component :is="metricIcons[index]" aria-hidden="true" />{{ metric.label }}</span><strong>{{ overview.data.value.counts[metric.key] }}<small>{{ metric.key === 'maintenance' ? '单' : '台' }}</small></strong><p>{{ metric.note }}</p><span class="metric-link">查看明细 <span aria-hidden="true">↗</span></span></button>
+        <button v-for="(metric, index) in METRICS.slice(0, 3)" :key="metric.key" class="metric-card" @click="openDetails(metric)"><span class="metric-title"><component :is="metricIcons[index]" aria-hidden="true" />{{ metric.label }}</span><strong>{{ overview.data.value.counts[metric.key] }}<small>台</small></strong><p>{{ metric.note }}</p><span class="metric-link">查看明细 <span aria-hidden="true">↗</span></span></button>
       </div>
-      <div v-if="overview.data.value?.counts" class="attention"><WarningFilled class="attention-icon" aria-hidden="true" /><div><strong>待核实的领用关系</strong><p>领用记录不完整或有矛盾，请核实后再办理。</p></div><button v-for="metric in METRICS.slice(4)" :key="metric.key" class="button" @click="openDetails(metric)">{{ metric.label }} <b>{{ overview.data.value.counts[metric.key] }}</b> 台</button></div>
+      <div v-if="overview.data.value?.counts" class="attention"><WarningFilled class="attention-icon" aria-hidden="true" /><div><strong>待核实的领用关系</strong><p>领用记录不完整或有矛盾，请核实后再办理。</p></div><button v-for="metric in METRICS.slice(3)" :key="metric.key" class="button" @click="openDetails(metric)">{{ metric.label }} <b>{{ overview.data.value.counts[metric.key] }}</b> 台</button></div>
     </QueryState>
     <div class="overview-grid">
       <section class="panel"><div class="section-heading"><h2>管理工作入口</h2><span class="muted small">选择需要办理的事项</span></div>
@@ -16,7 +16,7 @@
           <ul v-if="audit.data.value?.rows?.length" class="audit-list"><li v-for="record in audit.data.value.rows" :key="record.id"><strong>{{ record.action }}</strong><p>{{ record.actorName }} · {{ beijingTime(record.occurredAt) }}</p></li></ul>
           <div v-else class="empty-records"><img :src="stateArt" class="state-art" alt="" width="115" height="90" loading="lazy" /><h3>暂无管理变更记录</h3><p>新增设备或修改资料后，可在这里查看操作记录。</p><small>管理记录保存在后台服务，刷新后还在。</small></div>
         </QueryState>
-        <div class="boundary-note"><strong>说明</strong><p>发放、回收和人员装备变更会写入监护前台。账号、维修和台账保存在后台服务。</p></div>
+        <div class="boundary-note"><strong>说明</strong><p>发放、回收和人员装备变更会写入监护前台。账号和台账保存在后台服务。</p></div>
       </section>
     </div>
     <ModalPanel side :open="!!selected" :title="selected ? selected.label + ' · 只读明细' : ''" @close="closeDetails">
@@ -35,7 +35,7 @@
 <script setup>
 import { beijingTime } from '../tablePresentation'
 import { ref, watch } from 'vue'
-import { Box, Tickets, User, Tools, Location, WarningFilled, Key, Connection, Document } from '@element-plus/icons-vue'
+import { Box, Tickets, User, Location, WarningFilled, Key, Connection, Document } from '@element-plus/icons-vue'
 import stateArt from '../assets/visual/state-empty.webp'
 import { useAdminStore } from '../store'
 import { useQuery } from '../useQuery'
@@ -43,7 +43,7 @@ import { METRICS, MENU } from '../navigation'
 import QueryState from '../components/QueryState.vue'
 import ModalPanel from '../components/ModalPanel.vue'
 const store = useAdminStore(), overview = useQuery(), audit = useQuery(), details = useQuery()
-const metricIcons = [Box, Tickets, User, Tools]
+const metricIcons = [Box, Tickets, User]
 const entryIcons = [Box, User, Key, Connection, Document]
 const selected = ref(null), pageNum = ref(1), keyword = ref(''), submittedKeyword = ref('')
 const relationNames = { ASSIGNED: '已领用', UNASSIGNED: '未领用', UNKNOWN: '领用情况不明', CONFLICT: '领用记录有矛盾' }

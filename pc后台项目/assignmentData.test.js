@@ -134,7 +134,7 @@ describe('A3 atomic assignment transactions', () => {
   it('safe routes preserve only legal assignment filters and maintenance target', () => {
     expect(cleanAssignmentQuery({ tab: 'returns', type: 'BELT', pageSize: '101', deviceId: ids[0], url: 'evil' })).toEqual({ tab: 'returns', type: 'BELT', deviceId: ids[0] })
     expect(assignmentReturn('https://evil.test')).toBe('/admin/assets/assignments')
-    expect(safeTarget('/admin/assets/maintenance/repair-1?siteId=site-new')).toBe('/admin/assets/maintenance/repair-1?siteId=site-new')
+    expect(safeTarget('/admin/assets/maintenance/repair-1?siteId=site-new')).toBe('/admin/assets/devices?siteId=site-new')
   })
   it('history paginates beyond twenty and filters by device/type/action/batch', async () => {
     for (let i = 0; i < 11; i++) {

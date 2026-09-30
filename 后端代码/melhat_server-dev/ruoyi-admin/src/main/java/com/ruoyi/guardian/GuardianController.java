@@ -20,6 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/guardian/v1")
 public class GuardianController {
+    @org.springframework.beans.factory.annotation.Autowired private WearableSessions sessions;
     private final GuardianStore store;
     private final GuardianFiles files;
     private final AdminLedgerStore ledger;
@@ -44,7 +45,13 @@ public class GuardianController {
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("ok", true);
         result.put("operator", operatorBody());
+        result.put("token", sessions.issue(duty, "guardian"));
         return result;
+    }
+
+    @PostMapping("/logout")
+    public Map<String, Object> logout(HttpServletRequest request) {
+        sessions.revoke(request); return java.util.Collections.singletonMap("ok", true);
     }
 
     @PostMapping("/broadcast")
@@ -142,9 +149,9 @@ public class GuardianController {
     }
 
     @PutMapping("/snapshot")
-    public Map<String, Object> replace(@RequestBody JSONObject state) {
+    public Map<String, Object> replace(@RequestBody JSONObject state, @org.springframework.web.bind.annotation.RequestHeader("X-Wearable-Revision") int expectedSeq) {
         try {
-            store.replace(state);
+            store.replaceFromClient(state, expectedSeq);
         } catch (IllegalArgumentException error) {
             throw new GuardianRejected(error.getMessage());
         } catch (IllegalStateException error) {

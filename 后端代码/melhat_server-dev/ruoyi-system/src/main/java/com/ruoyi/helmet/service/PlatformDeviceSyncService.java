@@ -41,7 +41,11 @@ public class PlatformDeviceSyncService {
 
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Integer> sync(String operator) throws Exception {
-        List<HeadbandVO> devices = preview();
+        return syncRecords(preview(), operator);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Integer> syncRecords(List<HeadbandVO> devices, String operator) {
         int added = 0, updated = 0, unchanged = 0, skippedDeleted = 0;
         for (HeadbandVO device : devices) {
             List<SafetyHatInfo> existing = mapper.findIncludingDeleted(device.getHelmetSn());

@@ -24,7 +24,13 @@ public class AdminLedgerStore {
     public JSONObject read() {
         synchronized (lock) {
             List<String> rows = jdbc.query("SELECT body FROM admin_ledger WHERE id = 1", (rs, row) -> rs.getString("body"));
-            if (rows.isEmpty()) return null;
+            if (rows.isEmpty()) {
+                try (java.io.InputStream input = new org.springframework.core.io.ClassPathResource("admin-seed.json").getInputStream()) {
+                    JSONObject initial = JSON.parseObject(new String(org.springframework.util.StreamUtils.copyToByteArray(input), StandardCharsets.UTF_8));
+                    write(initial);
+                    return initial;
+                } catch (java.io.IOException error) { throw new IllegalStateException("后台初始台账不可用", error); }
+            }
             JSONObject state = JSON.parseObject(rows.get(0));
             if (!readable(state)) return null;
             return state;

@@ -28,6 +28,16 @@ public class GuardianStore {
     private final GuardianHatArchive hats;
     private JSONObject state;
     private boolean hatsMirrored;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private AdminLedgerStore ledger;
+
+    private void projectPlatform() {
+        if(ledger==null)return;
+        JSONObject next=JSON.parseObject(state.toJSONString());
+        if(PlatformProjection.apply(next,ledger.read())) {
+            next.put("seq",state.getIntValue("seq")+1);
+            commit(next);
+        }
+    }
 
     public GuardianStore(GuardianHatArchive hats) {
         this.hats = hats;
@@ -36,6 +46,7 @@ public class GuardianStore {
     public JSONObject snapshot() {
         synchronized (lock) {
             ensure();
+            projectPlatform();
             mirrorHats();
             return JSON.parseObject(state.toJSONString());
         }
@@ -44,6 +55,21 @@ public class GuardianStore {
     public void replace(JSONObject next) {
         GuardianValidator.check(next);
         synchronized (lock) {
+            commit(next);
+        }
+    }
+
+    public void replaceFromClient(JSONObject next, int expectedSeq) {
+        synchronized (lock) {
+            ensure();
+            projectPlatform();
+            for (String key : new String[]{"works", "stations", "people", "devices", "bindings", "mapAreas", "platformSync"}) {
+                if (!java.util.Objects.equals(state.get(key), next.get(key)))
+                    throw new IllegalArgumentException("作业票、人员与装备来源资料只读，请刷新后重试");
+            }
+            if (expectedSeq != state.getIntValue("seq") || next.getIntValue("seq") <= expectedSeq)
+                throw new IllegalArgumentException("数据已变化，请刷新后重试");
+            GuardianValidator.check(next);
             commit(next);
         }
     }

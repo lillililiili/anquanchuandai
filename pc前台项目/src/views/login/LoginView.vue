@@ -4,6 +4,8 @@ import AppButton from "@/components/ui/AppButton.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import { session } from "@/stores/session";
 import { go } from "@/lib/actions";
+import { saveAuth } from "@/lib/auth";
+import { refreshSnapshot } from "@/mock/runtime";
 
 const account = ref("");
 const password = ref("");
@@ -31,11 +33,13 @@ async function submit() {
       error.value = message;
       return;
     }
+    const body = await response.json();
+    saveAuth(body.token, account.value);
+    await refreshSnapshot();
   } catch {
     error.value = "后端未连接，修改未保存";
     return;
   }
-  sessionStorage.setItem("rolling-session", account.value);
   go("overview");
 }
 </script>

@@ -122,29 +122,11 @@ test("设备状态更新统一统计，低电量仍为在线", () => {
   d.updateDevice("RL-B001", { battery: 60, online: true, active: true });
   assert.equal(d.stats().online, 24);
 });
-test("作业成员去重、不允许同时分配两项作业、变更影响统计", () => {
-  const d = create();
-  assert.throws(
-    () => d.updateWork("GL-20260915-018", { members: ["P1", "P4"] }),
-    /其他作业/,
-  );
-  d.updateWork("GL-20260915-018", {
-    members: ["P1", "P2", "P3", "P8", "P8"],
-    supervisor: "P3",
-    leader: "P2",
-  });
-  assert.equal(d.work("GL-20260915-018").members.length, 4);
-  assert.equal(d.stats().assigned, 8);
-  assert.equal(d.stats({ workId: "GL-20260915-018" }).devices.length, 12);
-  assert.throws(
-    () =>
-      d.updateWork("GL-20260915-018", {
-        members: ["P1"],
-        start: "12:00",
-        end: "10:00",
-      }),
-    /晚于/,
-  );
+test("来源作业票不可在本地修改或伪造同步成功", () => {
+  const d = create(), before = JSON.stringify(d.state);
+  assert.throws(() => d.updateWork("GL-20260915-018", { members: ["P1"], start: "12:00" }), /作业票信息只读/);
+  assert.throws(() => d.syncWorks("S1"), /两票系统尚未对接/);
+  assert.equal(JSON.stringify(d.state), before);
 });
 test("抓拍、录像记录生成相同日期的关联资料", () => {
   const d = create(),

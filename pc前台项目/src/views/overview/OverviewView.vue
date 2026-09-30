@@ -1,4 +1,5 @@
 <script setup>
+import PlatformEquipment from "@/components/domain/PlatformEquipment.vue";
 import { computed } from "vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -35,7 +36,7 @@ const cards = computed(() => {
       color: "cyan",
       detail: `${stats.assigned} 人参与　${stats.people.length - stats.assigned} 人待分配`,
     },
-    { icon: "wifi-line", label: "通信在线", value: stats.online + " / " + stats.devices.length, unit: "", color: "cyan" },
+    { icon: "wifi-line", label: "领用装备在线", value: stats.online + " / " + stats.devices.length, unit: "", color: "cyan" },
     { icon: "alarm-warning-line", label: "待核验事件", value: stats.unresolved, unit: "起", color: "yellow" },
   ];
 });
@@ -50,6 +51,7 @@ function eventIcon(item) {
 </script>
 
 <template>
+  <PlatformEquipment />
   <AppStatCards :items="cards" variant="flat" />
   <div class="overview-layout">
     <div class="overview-map"><PlantMap popup /></div>
@@ -65,7 +67,7 @@ function eventIcon(item) {
           </tr>
         </AppTable>
       </AppPanel>
-      <AppPanel title="装备接入概况">
+      <AppPanel title="领用装备概况（含示例）">
         <template #extra>总计 {{ summary.devices.length }}　|　在线 {{ summary.online }}</template>
         <div v-for="[type, count] in equipment" :key="type" class="progress-row">
           <img :src="'/assets/' + { H: 'helmet', B: 'harness', W: 'watch' }[type] + '.png?v=transparent-20260921'" :alt="typeNames[type]" />
@@ -85,7 +87,7 @@ function eventIcon(item) {
           <td>{{ work.members.length }} 人</td>
           <td>{{ personName(work.leader) }}</td>
           <td>{{ work.source }}　{{ work.id }}</td>
-          <td><AppStatus :color="work.synced ? 'green' : 'yellow'">{{ work.synced ? "已同步" : "待同步" }}</AppStatus></td>
+          <td><AppStatus color="yellow">示例 · 待对接</AppStatus></td>
           <td><a class="btn small" :href="'#/work/' + work.id">查看监护</a></td>
         </tr>
       </AppTable>

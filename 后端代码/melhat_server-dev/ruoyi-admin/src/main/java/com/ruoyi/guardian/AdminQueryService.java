@@ -42,7 +42,7 @@ public class AdminQueryService {
     private Map<String, Object> overview(JSONObject state, JSONObject actor, JSONObject input) {
         String siteId = requiredSite(state, actor, input, "assets:read");
         Map<String, Object> counts = new LinkedHashMap<String, Object>();
-        for (String metric : Arrays.asList("assets", "available", "assigned", "maintenance", "unknown", "conflict")) counts.put(metric, rowsFor(state, actor, siteId, metric).size());
+        for (String metric : Arrays.asList("assets", "available", "assigned", "unknown", "conflict")) counts.put(metric, rowsFor(state, actor, siteId, metric).size());
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("availability", "AVAILABLE");
         body.put("counts", counts);
@@ -84,6 +84,7 @@ public class AdminQueryService {
             String needle = keyword == null ? "" : keyword.trim().toLowerCase();
             for (JSONObject device : visible) {
                 JSONObject row = project(state, actor, device);
+                if("PLATFORM".equals(input.getString("source")) && !"PLATFORM".equals(row.getString("source")))continue;
                 if (!matches(input, row)) continue;
                 String areaId = input.getString("areaId");
                 if (areaId != null && !areaId.isEmpty() && !areaId.equals(row.getString("areaId"))) continue;
@@ -97,6 +98,8 @@ public class AdminQueryService {
             paging.put("keyword", "");
             Map<String, Object> body = new LinkedHashMap<String, Object>();
             body.put("availability", "AVAILABLE");
+            rows.sort((left,right)->Boolean.compare("PLATFORM".equals(right.getString("source")),"PLATFORM".equals(left.getString("source"))));
+            body.put("platformSync",state.getJSONObject("platformSync")==null?null:state.getJSONObject("platformSync").get(siteId));
             body.putAll(page(rows, paging, false));
             return body;
         }
@@ -209,7 +212,7 @@ public class AdminQueryService {
     }
 
     private List<JSONObject> rowsFor(JSONObject state, JSONObject actor, String siteId, String metric) {
-        if (!Arrays.asList("assets", "available", "assigned", "maintenance", "unknown", "conflict").contains(metric)) throw fail(400, "INVALID_METRIC", "不支持的明细类型");
+        if (!Arrays.asList("assets", "available", "assigned", "unknown", "conflict").contains(metric)) throw fail(400, "INVALID_METRIC", "不支持的明细类型");
         List<JSONObject> rows = new ArrayList<JSONObject>();
         for (JSONObject device : array(state, "devices")) {
             if (!siteId.equals(device.getString("siteId")) || !can(state, actor, "assets:read", device.getString("siteId"), device.getString("areaId"))) continue;
@@ -239,14 +242,20 @@ public class AdminQueryService {
         copy.put("areaName", nameOf(state, "areas", device.getString("areaId"), "未分配区域"));
         copy.put("modelName", modelName(device.getString("type")));
         copy.put("declaration", declaration(device.getString("type")));
-        copy.put("activeOrderIds", openOrders(state, device.getString("id")));
-        copy.put("maintenanceActions", maintenance.getObject().deviceButtons(state, actor, device, relation.getString("state")));
+
+
         copy.put("writable", !"SCRAPPED".equals(device.getString("lifecycle")));
         applyTelemetry(copy);
         return copy;
     }
 
     private void applyTelemetry(JSONObject device) {
+        if ("PLATFORM".equals(device.getString("source"))) {
+            try { if(java.time.Instant.parse(device.getString("sourceTime")).isBefore(java.time.Instant.now().minusSeconds(300))) {
+                device.put("communication","UNKNOWN");device.put("freshness","STALE");
+            }} catch(Exception error) { device.put("communication","UNKNOWN"); }
+            return;
+        }
         JSONObject remote = snapshotDevice(device.getString("portalDeviceId") != null ? device.getString("portalDeviceId") : device.getString("code"));
         if (remote == null) remote = snapshotDevice(device.getString("id"));
         if (remote == null || !remote.containsKey("online")) return;

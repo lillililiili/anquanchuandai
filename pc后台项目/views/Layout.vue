@@ -22,7 +22,7 @@
       <footer class="workspace-footer">台账保存在后台服务 · 领用同步到监护前台 · 通信和电量来自快照，不能手改</footer>
     </main>
     <AssignmentPanel />
-    <MaintenancePanel />
+
   </div>
 </template>
 <script setup>
@@ -33,9 +33,8 @@ import { getAdminProvider } from '@admin-provider'
 import { useAdminStore } from '../store'
 import { MENU, trustedPortal, safeTarget, menuPath } from '../navigation'
 import AssignmentPanel from '../components/AssignmentPanel.vue'
-import MaintenancePanel from '../components/MaintenancePanel.vue'
 const provider = getAdminProvider(), store = useAdminStore(), route = useRoute(), router = useRouter()
-const visualSection = computed(() => route.path.includes('/maintenance') ? 'maintenance' : route.path.includes('/access') ? 'access' : /^\/admin\/(people|organization|sites|duty)/.test(route.path) ? 'people' : 'assets')
+const visualSection = computed(() => route.path.includes('/access') ? 'access' : /^\/admin\/(people|organization|sites|duty)/.test(route.path) ? 'people' : 'assets')
 const icons = [House, Box, User, Key, Document]
 const portal = trustedPortal(import.meta.env.VITE_ADMIN_PORTAL_URL || 'http://127.0.0.1:5191/')
 const compact = ref(false)
@@ -62,7 +61,7 @@ async function initialize(reconcile = false) {
 async function selectSite(id) {
   if (!store.confirmLeave()) { await nextTick(); document.querySelector('.site-picker select').value = store.siteId; return }
   contextError.value = ''; store.selectSite(id)
-  router.replace({ path: /^\/admin\/people\//.test(route.path) ? '/admin/people' : /^\/admin\/assets\/devices\//.test(route.path) ? '/admin/assets/devices' : /^\/admin\/assets\/maintenance\//.test(route.path) ? '/admin/assets/maintenance' : route.path, query: { siteId: id } })
+  router.replace({ path: /^\/admin\/people\//.test(route.path) ? '/admin/people' : /^\/admin\/assets\/devices\//.test(route.path) ? '/admin/assets/devices' : route.path, query: { siteId: id } })
 }
 function logout() { provider.logout() }
 const unsubscribe = provider.subscribe(event => {

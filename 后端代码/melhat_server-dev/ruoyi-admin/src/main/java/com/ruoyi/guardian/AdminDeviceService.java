@@ -16,6 +16,7 @@ public class AdminDeviceService {
     private static final List<String> TYPES = Arrays.asList("HELMET", "BELT", "WATCH");
     private final AdminLedgerStore ledger;
     private final GuardianHatArchive hats;
+    @org.springframework.beans.factory.annotation.Autowired private AdminQueryService queries;
 
     public AdminDeviceService(AdminLedgerStore ledger, GuardianHatArchive hats) {
         this.ledger = ledger;
@@ -31,6 +32,17 @@ public class AdminDeviceService {
         JSONObject actor = account(state, accountId);
         if (actor == null) throw AdminQueryService.fail(401, "IDENTITY_INVALID", "请先登录");
         if (input == null) input = new JSONObject();
+        JSONObject existing = "devices.create".equals(type) ? null : findDevice(state, input.getString("id"), input.getString("siteId"));
+        String areaId = existing == null ? null : existing.getString("areaId");
+        JSONObject fields = input.getJSONObject("data");
+        if(existing!=null && "PLATFORM".equals(existing.getString("source")) && fields!=null) {
+            for(String key:new String[]{"code","sn"}) if(fields.containsKey(key) && !java.util.Objects.equals(fields.getString(key),existing.getString(key)))
+                throw AdminQueryService.fail(400,"PLATFORM_ID_READ_ONLY","厂家设备编号和SN不能修改");
+        }
+        String nextArea = fields != null && fields.containsKey("areaId") ? fields.getString("areaId") : areaId;
+        if ((existing != null && !queries.allows(state, actor, "assets:write", input.getString("siteId"), areaId))
+                || !queries.allows(state, actor, "assets:write", input.getString("siteId"), nextArea))
+            throw AdminQueryService.fail(403, "PERMISSION_DENIED", "当前身份无此操作或数据范围权限");
         String operationId = input.getString("operationId");
         if (operationId == null || operationId.trim().isEmpty() || operationId.length() > 100) {
             throw AdminQueryService.fail(400, "OPERATION_REQUIRED", "操作标识无效");
@@ -71,6 +83,8 @@ public class AdminDeviceService {
         line.put("siteId", input.getString("siteId"));
         line.put("areaId", output.getString("areaId"));
         line.put("actorName", actor.getString("name"));
+        line.put("actorId", actor.getString("id"));
+        line.put("occurredAt", java.time.Instant.now().toString());
         line.put("action", type);
         line.put("objectId", output.getString("id"));
         line.put("operationId", operationId);

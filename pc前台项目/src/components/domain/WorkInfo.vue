@@ -19,6 +19,8 @@ const record = computed(() => {
 <template>
   <AppEmpty v-if="!record" text="暂无关联作业" />
   <dl v-else class="info">
+    <dt>数据来源</dt>
+    <dd>示例数据，待对接两票系统；作业票信息只读</dd>
     <dt>工作票号</dt>
     <dd>{{ record.id }} <AppTag color="muted">只读</AppTag></dd>
     <dt>作业名称</dt>

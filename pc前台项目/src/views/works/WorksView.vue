@@ -14,13 +14,9 @@ import FilterBar from "@/components/layout/FilterBar.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import PlantMap from "@/components/domain/PlantMap.vue";
 import WorkInfo from "@/components/domain/WorkInfo.vue";
-import AssociateWorks from "./AssociateWorks.vue";
 import { DATE } from "@/mock/data";
 import { db } from "@/mock/runtime";
-import { openModal } from "@/stores/modal";
-import { toast } from "@/stores/notify";
 import { filtersOf, session } from "@/stores/session";
-import { runGuarded } from "@/lib/actions";
 import { events, personName, revision, search, works } from "@/lib/queries";
 
 const hours = ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"];
@@ -32,12 +28,8 @@ const areaOptions = computed(() => {
   return [["", "全部区域"], ...names];
 });
 const statusOptions = [["", "全部"], "监护中", "已结束"];
-const syncOptions = [
-  ["", "全部"],
-  ["yes", "已同步"],
-  ["no", "待同步"],
-];
-const draft = reactive({ q: "", area: "", date: DATE, status: "", sync: "" });
+
+const draft = reactive({ q: "", area: "", date: DATE, status: "" });
 
 watch(
   () => session.filters.works,
@@ -47,7 +39,6 @@ watch(
     draft.area = query.area || "";
     draft.date = query.date || DATE;
     draft.status = query.status || "";
-    draft.sync = query.sync || "";
   },
   { immediate: true },
 );
@@ -60,7 +51,6 @@ const list = computed(() => {
       search(work.name + " " + work.id, query.q) &&
       (!query.area || work.area === query.area) &&
       (!query.date || work.date === query.date) &&
-      (!query.sync || (query.sync === "yes" ? work.synced : !work.synced)) &&
       (!query.status || work.status === query.status),
   );
 });
@@ -81,7 +71,6 @@ function applyFilters() {
     area: draft.area,
     date: draft.date,
     status: draft.status,
-    sync: draft.sync,
   };
 }
 
@@ -112,16 +101,6 @@ function barStyle(work) {
   };
 }
 
-function openAssociate() {
-  openModal({ title: "关联已有作业", view: AssociateWorks });
-}
-
-function syncSource() {
-  runGuarded(() => {
-    db.syncWorks(session.station);
-    toast("来源信息已刷新（本地模拟）");
-  });
-}
 </script>
 
 <template>
@@ -140,14 +119,9 @@ function syncSource() {
       <AppField label="监护状态">
         <AppSelect v-model="draft.status" name="status" :options="statusOptions" />
       </AppField>
-      <AppField label="同步状态">
-        <AppSelect v-model="draft.sync" name="sync" :options="syncOptions" />
-      </AppField>
+
     </FilterBar>
-    <div class="works-actions" role="group" aria-label="作业管理操作">
-      <AppButton tone="primary" @click="openAssociate">关联已有作业</AppButton>
-      <AppButton icon="refresh-line" @click="syncSource">刷新来源</AppButton>
-    </div>
+    <p class="note">示例数据，待对接两票系统。作业票信息只读，由两票系统维护。</p>
   </div>
   <div class="grid cols-2">
     <div class="stack">
@@ -172,7 +146,7 @@ function syncSource() {
             <td>{{ work.members.length }} 人</td>
             <td>{{ deviceSummary(work.members) }}</td>
             <td><b class="yellow">{{ pendingCount(work.id) }}</b></td>
-            <td><AppStatus :color="work.synced ? 'green' : 'yellow'">{{ work.synced ? "已同步" : "待同步" }}</AppStatus></td>
+            <td><AppStatus color="yellow">示例 · 待对接</AppStatus></td>
             <td><a class="btn small" :href="'#/work/' + work.id" @click.stop>查看</a></td>
           </tr>
         </AppTable>
@@ -198,7 +172,7 @@ function syncSource() {
         <a class="btn primary" :href="'#/work/' + selected.id">进入作业监护　›</a>
       </template>
       <template v-if="selected">
-        <h3>{{ selected.name }}　<AppTag color="green">进行中</AppTag></h3>
+        <h3>{{ selected.name }}　<AppTag>{{ selected.status }}</AppTag></h3>
         <WorkInfo :work="selected" />
         <div class="detail-section">
           <h3>作业区域示意图</h3>

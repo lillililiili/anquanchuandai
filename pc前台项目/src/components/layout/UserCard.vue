@@ -1,4 +1,5 @@
 <script setup>
+import { authFetch } from "@/lib/auth";
 import { computed, onMounted, ref } from "vue";
 import { db, tick } from "@/mock/runtime";
 import { session } from "@/stores/session";
@@ -11,7 +12,7 @@ const stationName = computed(() => {
 
 onMounted(async () => {
   try {
-    const response = await fetch("/api/guardian/v1/operator");
+    const response = await authFetch("/api/guardian/v1/operator");
     if (!response.ok) return;
     const body = await response.json();
     if (body.loginName) profile.value.loginName = body.loginName;

@@ -676,46 +676,11 @@
         d.updated = now(s);
       });
     }
-    function updateWork(id, fields) {
-      return commit("保存作业成员", (s) => {
-        const w = requireItem(s.works, id);
-        const members = [...new Set(fields.members || [])];
-        for (const pid of members) {
-          const p = requireItem(s.people, pid);
-          if (!p.active || p.station !== w.station) throw Error("作业成员无效");
-          if (
-            s.works.some(
-              (other) =>
-                other.id !== id &&
-                other.date === w.date &&
-                other.status !== "已结束" &&
-                other.members.includes(pid),
-            )
-          )
-            throw Error(p.name + " 已参加其他作业");
-        }
-        if (fields.start && fields.end && fields.start >= fields.end)
-          throw Error("结束时间必须晚于开始时间");
-        w.members = members;
-        w.supervisor = members.includes(fields.supervisor)
-          ? fields.supervisor
-          : members[0] || null;
-        w.leader = members.includes(fields.leader)
-          ? fields.leader
-          : members[0] || null;
-        if (fields.start) w.start = fields.start;
-        if (fields.end) w.end = fields.end;
-      });
+    function updateWork() {
+      throw Error("作业票信息只读，由两票系统维护");
     }
-    function syncWorks(station) {
-      return commit("刷新作业来源（本地模拟）", (s) =>
-        s.works
-          .filter((w) => w.station === station)
-          .forEach((w) => {
-            w.synced = true;
-            w.syncedAt = now(s);
-          }),
-      );
+    function syncWorks() {
+      throw Error("两票系统尚未对接，不能模拟同步成功");
     }
     function claim(id) {
       return commit("认领事件", (s) => {

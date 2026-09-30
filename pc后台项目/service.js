@@ -288,9 +288,9 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     canAny: (operation, siteId) => { try { return hasSite(state, actor(), siteId, operation) } catch { return false } },
     isSystem: () => system(state.accounts.find(a => a.id === storage?.getItem(TOKEN_KEY))),
     login(username, password) {
-      if (remoteLogin) remoteLogin(username, password)
-      const account = state.accounts.find(a => (a.loginName === username || a.id === username) && a.enabled)
-      if (!account || password !== 'Admin@2026') throw fail(401, 'IDENTITY_INVALID', '账号或密码错误，或账号已停用')
+      const authenticated = remoteLogin ? remoteLogin(username, password)?.identity : null
+      const account = state.accounts.find(a => (authenticated ? a.id === authenticated.id : a.loginName === username || a.id === username) && a.enabled)
+      if (!account || (!remoteLogin && password !== 'Admin@2026')) throw fail(401, 'IDENTITY_INVALID', '账号或密码错误，或账号已停用')
       const id = account.id
       storage.setItem(TOKEN_KEY, id); storage.setItem(SESSION_VERSION_KEY, String(state.accounts.find(a => a.id === id).credentialVersion || 1)); previews.clear(); epoch++; emit('identity'); return copy(actor())
     },

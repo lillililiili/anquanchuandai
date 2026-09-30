@@ -6,9 +6,9 @@
       <div class="login-intro-copy">
         <span class="eyebrow">智能穿戴 · 安全管理</span>
         <h1 id="login-platform-title">让装备管理有序<br>让作业安全可依</h1>
-        <p>统一管理人员与装备，让每一次领用、<br class="login-copy-break">每一项维护都有据可查。</p>
+        <p>统一管理人员与装备，让每一次领用、<br class="login-copy-break">每一次归还都有据可查。</p>
       </div>
-      <p class="login-foot">人员档案<span>·</span>装备资产<span>·</span>运维管理</p>
+      <p class="login-foot">人员档案<span>·</span>装备资产<span>·</span>领用管理</p>
     </section>
     <div class="login-side"><section class="login-card" aria-labelledby="login-heading">
       <span class="login-kicker">管理中心</span>

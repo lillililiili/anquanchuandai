@@ -332,12 +332,23 @@ public class AdminMasterService {
                 for (JSONObject person : rows(admin, "people")) {
                     String portalId = person.getString("portalId");
                     if (portalId == null || portalId.isEmpty()) portalId = PORTAL_PEOPLE.get(person.getString("id"));
+                    if (portalId == null) portalId = "ADMIN-" + person.getString("id");
+                    person.put("portalId", portalId);
                     JSONObject remote = find(snapshot, "people", portalId);
-                    if (remote == null) continue;
+                    String station = PORTAL_SITES.get(person.getString("siteId"));
+                    if (station == null) throw AdminQueryService.fail(400, "SITE_NOT_MAPPED", "厂站尚未建立监护映射");
+                    if (remote == null) {
+                        remote = new JSONObject();
+                        remote.put("id", portalId);
+                        remote.put("position", null);
+                        remote.put("locationValid", false);
+                        remote.put("phone", "");
+                        remote.put("updated", "—");
+                        snapshot.getJSONArray("people").add(remote);
+                    }
                     remote.put("name", person.getString("name"));
                     remote.put("team", nameOf(admin, "organizations", person.getString("organizationId")));
                     remote.put("area", nameOf(admin, "areas", person.getString("areaId")));
-                    String station = PORTAL_SITES.get(person.getString("siteId"));
                     if (station != null) remote.put("station", station);
                     remote.put("active", person.getBooleanValue("enabled"));
                 }

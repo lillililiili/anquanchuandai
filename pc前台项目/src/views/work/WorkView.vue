@@ -98,14 +98,14 @@ function openRecords() {
   <template v-else>
     <PageHeading>
       <template #title>
-        <a class="text-link" href="#/works"><AppIcon name="arrow-left-line" /> 返回作业列表</a>　{{ record.name }}　<AppTag>进行中</AppTag>
+        <a class="text-link" href="#/works"><AppIcon name="arrow-left-line" /> 返回作业列表</a>　{{ record.name }}　<AppTag>{{ record.status }}</AppTag>
       </template>
       <template #actions>
         <AppStatCards :items="stats" variant="mini" />
       </template>
     </PageHeading>
     <div class="row muted" style="margin-bottom:18px">
-      工作票编号　{{ record.id }}　<AppTag color="muted">只读（来源：作业管理系统）</AppTag>
+      工作票编号　{{ record.id }}　<AppTag color="muted">示例数据 · 只读 · 待对接两票系统</AppTag>
       <span class="spacer"></span>
       负责人　{{ personName(record.leader) }}　|　监护人　{{ personName(record.supervisor) }}　|　作业时间　{{ record.date }} {{ record.start }} – {{ record.end }}
     </div>

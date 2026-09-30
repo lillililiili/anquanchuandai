@@ -1,11 +1,12 @@
 <template>
   <form class="master-form" novalidate @submit.prevent="submit" @input="emit('dirty')" @change="emit('dirty')">
-    <p class="notice">仅保存到当前页面，刷新重置。厂商、SN和型号可以稍后补充，不代表设备已接入。</p>
+    <p class="notice">保存后写入后台台账，刷新后仍保留。厂商、SN和型号可以稍后补充，建档不代表设备已接入。</p>
     <div v-if="error || Object.keys(localErrors).length" ref="summary" class="notice error" role="alert" tabindex="-1"><strong>未能保存，请检查资料</strong><p v-if="error">{{ error.message }} · {{ error.errorCode }} · {{ error.requestId }}</p><ul><li v-for="(message, field) in errors" :key="field"><a :href="'#device-' + field" @click.prevent="focus(field)">{{ message }}</a></li></ul></div>
+    <p v-if="row?.source === 'PLATFORM'" class="notice">设备编号与SN来自厂家，不能修改；其他资产资料可以补充。</p>
     <fieldset :disabled="busy"><div class="form-grid">
       <label v-for="f in fields" :key="f.key" :class="{ wide: f.key === 'remark' }">{{ f.label }}{{ f.required ? ' *' : '' }}
         <textarea v-if="f.key === 'remark'" :id="'device-' + f.key" v-model="form[f.key]" :aria-label="f.label" rows="3" maxlength="500" />
-        <input v-else :id="'device-' + f.key" v-model="form[f.key]" :type="f.key === 'purchasedOn' ? 'date' : 'text'" :aria-label="f.label" :aria-invalid="Boolean(errors[f.key])" :aria-describedby="errors[f.key] ? 'error-' + f.key : undefined" :disabled="Boolean(row && f.critical && row.keyEditReason)" maxlength="100" />
+        <input v-else :id="'device-' + f.key" v-model="form[f.key]" :type="f.key === 'purchasedOn' ? 'date' : 'text'" :aria-label="f.label" :aria-invalid="Boolean(errors[f.key])" :aria-describedby="errors[f.key] ? 'error-' + f.key : undefined" :disabled="Boolean(row && ((f.critical && row.keyEditReason) || (row.source === 'PLATFORM' && ['code','sn'].includes(f.key))))" maxlength="100" />
         <small v-if="errors[f.key]" :id="'error-' + f.key" class="error">{{ errors[f.key] }}</small>
       </label>
       <label>设备类型 *<select id="device-type" v-model="form.type" aria-label="设备类型" :disabled="Boolean(row)" @change="changeType"><option v-for="(name, key) in DEVICE_TYPES" :key="key" :value="key">{{ name }}</option></select></label>
@@ -16,7 +17,7 @@
     <fieldset id="device-assemblies"><legend>实例选配（本地配置）</legend><p v-if="!model?.options.length" class="muted">此模板暂无可配置选配，厂家能力待确认。</p><div class="form-grid"><label v-for="o in model?.options || []" :key="o.id">{{ o.name }}<select v-model="form.assemblies[o.id]" :aria-label="o.name" :disabled="Boolean(row?.keyEditReason)"><option v-for="(name, key) in ASSEMBLY" :key="key" :value="key">{{ name }}</option></select></label></div><small v-if="errors.assemblies" class="error">{{ errors.assemblies }}</small></fieldset>
     <div v-if="modelChanged" class="notice"><p>型号将变更。原选配配置将重置，移除不兼容项：{{ removed.join('、') || '无；仍需重新确认装配状态' }}。接入和真实验证状态不会改变。</p><label class="inline-check"><input v-model="form.confirmModelChange" type="checkbox" />我已确认型号变更及选配清理</label></div>
     <p v-if="!form.manufacturer.trim() || !form.sn.trim()" class="muted">厂家身份未完整核验：缺少厂商或SN，允许保存并待补充。</p>
-    </fieldset><div class="form-footer"><span class="muted">{{ row ? `版本 ${row.version}` : '新建：库存 · 未领用 · 通信未接入' }}</span><div class="actions"><button type="button" class="button" :disabled="busy" @click="emit('close')">取消</button><button class="button primary" :disabled="busy">{{ busy ? '保存中…' : '保存本地设备' }}</button></div></div>
+    </fieldset><div class="form-footer"><span class="muted">{{ row ? `版本 ${row.version}` : '新建：库存 · 未领用 · 通信未接入' }}</span><div class="actions"><button type="button" class="button" :disabled="busy" @click="emit('close')">取消</button><button class="button primary" :disabled="busy">{{ busy ? '保存中…' : '保存设备档案' }}</button></div></div>
   </form>
 </template>
 <script setup>

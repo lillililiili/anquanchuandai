@@ -47,7 +47,7 @@
 .hero-caption { position: absolute; right: 18px; bottom: 12px; font-size: 13px; color: var(--muted); background: var(--card); border-radius: 5px; padding: 4px 8px; }
 .scope-bar { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 14px; color: var(--muted); padding-bottom: 15px; margin-bottom: 16px; }
 .scope-bar strong { color: var(--ink); }
-.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .metric-card { --metric-color: var(--blue-dark); --metric-soft: var(--soft-blue); display: flex; flex-direction: column; text-align: left; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); transition: border-color .15s, background .15s; min-width: 0; box-shadow: none; }
 .metric-card:hover { border-color: var(--blue); box-shadow: none; }
 .metric-title { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 650; }

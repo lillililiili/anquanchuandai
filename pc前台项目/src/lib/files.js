@@ -1,3 +1,4 @@
+import { authFetch } from "./auth.js";
 function fileUrl(id) {
   return "/api/guardian/v1/files/" + encodeURIComponent(id);
 }
@@ -13,7 +14,7 @@ async function failureMessage(response, fallback) {
 export async function blobPut(id, blob) {
   let response;
   try {
-    response = await fetch(fileUrl(id), {
+    response = await authFetch(fileUrl(id), {
       method: "PUT",
       headers: { "Content-Type": blob.type || "application/octet-stream" },
       body: blob,
@@ -31,7 +32,7 @@ export async function blobPut(id, blob) {
 export async function blobGet(id) {
   let response;
   try {
-    response = await fetch(fileUrl(id));
+    response = await authFetch(fileUrl(id));
   } catch {
     throw Error("照片读取失败");
   }

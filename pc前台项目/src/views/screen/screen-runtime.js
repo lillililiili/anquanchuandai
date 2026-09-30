@@ -37,7 +37,7 @@ function frame() {
         <div class="screen-station">${symbols.factory}<span>${esc(station)}</span></div><div class="screen-clock"><time data-screen-clock></time><small>白班 08:00 — 16:00</small></div>
       </header>
       <section class="screen-stats" aria-label="当班概况"></section>
-      <section class="screen-panel screen-equipment">${title("三类装备接入", "<small>在线 / 佩戴合规</small>")}<div data-equipment></div></section>
+      <section class="screen-panel screen-equipment">${title("领用装备（含示例）", "<small>在线 / 佩戴待核验</small>")}<div data-equipment></div></section>
       <section class="screen-panel screen-vitals" aria-label="人员生命体征轮播">${title("人员生命体征", `<small data-person-mode>自动轮播 · ${INTERVALS.person / 1000}秒</small>`)}
         <div class="screen-vital-identity"><span class="screen-person-name" data-screen-person></span><span data-person-page></span></div>
         <div class="screen-vital-data"><div class="screen-person-meta"><span data-person-device></span><span data-person-status></span></div>
@@ -50,7 +50,7 @@ function frame() {
       <section class="screen-panel screen-events" aria-label="重点事件轮播">${title("重点事件")}<div class="screen-events-list"></div><div class="screen-event-summary"></div></section>
       <section class="screen-panel screen-trend">${title('心率趋势 <span class="screen-trend-person"></span>')}<div data-screen-trend></div></section>
       <section class="screen-panel screen-videos" aria-label="现场视频轮播">${title("现场视频", `<div class="screen-video-meta"><span>现场画面</span><span data-video-page></span></div>`)}<div class="screen-video-grid"></div></section>
-      <footer class="screen-footer"><span>场景示意</span><span>数据刷新时间<time data-screen-refresh></time></span></footer>
+      <footer class="screen-footer"><span data-platform-summary></span><span>数据刷新时间<time data-screen-refresh></time></span></footer>
     </main></div>`;
 }
 
@@ -81,11 +81,6 @@ export function mountScreen(root) {
     return `<circle cx="44" cy="44" r="${radius}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-dasharray="${drawn} ${length}" transform="rotate(-90 44 44)"/>`;
   }
   function equipmentPanel(stats) {
-    const openHooks = new Set(
-      events()
-        .filter((item) => item.status !== "已核验" && item.type === "安全带挂接")
-        .map((item) => item.deviceId),
-    );
     const rows = [
       ["H", "安全帽", "智能安全帽", "#19d7ff", "#2ad58a"],
       ["B", "安全带", "智能安全带", "#ff9a2e", "#ff7a22"],
@@ -94,26 +89,24 @@ export function mountScreen(root) {
       const list = stats.devices.filter((device) => device.type === key);
       const total = list.length;
       const online = list.filter((device) => device.online).length;
-      const compliant = list.filter((device) => device.online && !openHooks.has(device.id)).length;
-      const low = list.filter((device) => device.battery <= 20).length;
+      // No verified wear telemetry is available; alarm closure is not wear evidence.
+      const low = list.filter((device) => Number.isFinite(device.battery) && device.battery < 20).length;
       const missing = total - online;
       const onlineRate = total ? (online / total) * 100 : 0;
-      const compliantRate = total ? (compliant / total) * 100 : 0;
       const outerColor = missing ? "#ff9a2e" : outer;
-      const innerColor = compliant < total ? "#ff7a22" : inner;
-      return { key, short, name, total, online, compliant, low, missing, onlineRate, compliantRate, outerColor, innerColor };
+      return { key, short, name, total, online, low, missing, onlineRate, outerColor };
     });
     query("[data-equipment]").innerHTML = `<div class="screen-gear-rings">${rows
       .map(
         (row) => `<div class="screen-gear-item">
-          <div class="screen-gear-ring" aria-label="${row.name} 佩戴合规 ${row.compliant}/${row.total || "—"}">
+          <div class="screen-gear-ring" aria-label="${row.name} 在线 ${row.online}/${row.total || "—"}，佩戴状态待核验">
             <svg viewBox="0 0 88 88" aria-hidden="true">
               <circle cx="44" cy="44" r="36" fill="none" stroke="#16384c" stroke-width="7"/>
               ${gearRing(row.onlineRate, row.outerColor, 36, 7)}
               <circle cx="44" cy="44" r="26" fill="none" stroke="#10283a" stroke-width="6"/>
-              ${gearRing(row.compliantRate, row.innerColor, 26, 6)}
+
             </svg>
-            <div><strong>${row.total ? row.compliant + "/" + row.total : "—"}</strong><small>合规</small></div>
+            <div><strong>${row.total ? row.online + "/" + row.total : "—"}</strong><small>在线</small></div>
           </div>
           <b>${row.name}</b>
           <span>${row.total ? `在线 <em class="${row.missing ? "warn" : ""}">${row.online}/${row.total}</em>${row.missing ? ` · <i>缺 ${row.missing}</i>` : ""}` : "暂无装备"}</span>
@@ -121,13 +114,13 @@ export function mountScreen(root) {
       )
       .join("")}</div>
       <table class="screen-gear-table">
-        <thead><tr><th></th><th>在线</th><th>佩戴合规</th><th>电量&lt;20%</th><th>信号</th></tr></thead>
+        <thead><tr><th></th><th>在线</th><th>佩戴状态</th><th>电量&lt;20%</th><th>信号</th></tr></thead>
         <tbody>${rows
           .map(
             (row) => `<tr>
               <td>${row.short}</td>
               <td class="${row.missing ? "warn" : "ok"}">${row.total ? row.online + "/" + row.total : "—"}</td>
-              <td class="${row.compliant < row.total ? "warn" : "ok"}">${row.total ? row.compliant + "/" + row.total : "—"}</td>
+              <td class="muted">${row.total ? "待核验" : "—"}</td>
               <td class="${row.low ? "warn" : "muted"}">${row.low || "—"}</td>
               <td class="${row.missing ? "bad" : "good"}">${row.missing ? row.missing + " 中断" : "正常"}</td>
             </tr>`,
@@ -146,7 +139,7 @@ export function mountScreen(root) {
     query(".screen-stats").innerHTML = [
       [symbols.worker, "当班人员", `${stats.people.length}<span class="unit">人</span><span class="detail">作业关联 ${stats.assigned} · 待分配 ${stats.people.length - stats.assigned}</span>`, ""],
       [symbols.document, "监护作业", `${stats.works.filter((work) => work.status !== "已结束").length}<span class="unit">项</span>`, "hex cyan"],
-      [symbols.antenna, "装备在线", `<span class="fraction">${stats.online} / ${stats.devices.length}</span><span class="unit">台</span>`, "hex"],
+      [symbols.antenna, "领用装备在线", `<span class="fraction">${stats.online} / ${stats.devices.length}</span><span class="unit">台</span>`, "hex"],
       [symbols.warning, "待核验事件", `${stats.unresolved}<span class="unit">项</span>`, "hex warn"],
     ]
       .map(
@@ -234,6 +227,11 @@ export function mountScreen(root) {
   }
   function refresh() {
     statistics(db.stats(scope()));
+    const factory = db.state.devices.filter(d => d.source === "PLATFORM" && d.station === session.station);
+    const current = factory.filter(d => d.freshness === "CURRENT" && Date.now() - Date.parse(d.updated) <= 300000 && d.online != null);
+    const online = current.filter(d => d.online).length;
+    const footer = query("[data-platform-summary]");
+    if (footer) footer.textContent = `厂家安全帽（真实查询）：共 ${factory.length} 台 · 在线 ${online} · 离线 ${current.length - online} · 待刷新 ${factory.length - current.length}；其他监护统计含示例数据`;
     renderPerson();
     renderEvents();
     renderVideos();
