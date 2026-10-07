@@ -37,7 +37,7 @@ class LoginResponse extends BaseResponse {
 
   @override
   String toString() =>
-      'LoginResponse(code: $code, msg: $msg, token: $token, user: $user)';
+      'LoginResponse(code: $code, msg: $msg, token: [redacted])';
 }
 
 class CommonResponse<T> extends BaseResponse {

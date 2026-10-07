@@ -1,4 +1,6 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
+import 'wear/app.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -17,6 +19,13 @@ void main() async {
 
   // 关闭 signals 日志输出
   SignalsObserver.instance = null;
+
+  // Production and normal debug builds use only the authorized /api/v1 platform.
+  // The former app remains available explicitly for development comparison.
+  if (!kDebugMode || !const bool.fromEnvironment('LEGACY_DEMO')) {
+    runApp(const WearApp());
+    return;
+  }
 
   // 初始化 UserStore（会从持久化加载数据）
   await UserStore.init();
