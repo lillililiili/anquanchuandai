@@ -33,11 +33,11 @@ void main() {
   tearDown(() => controller.dispose());
 
   test(
-    'local SDK join does not show connected until server confirms it',
+    'local voice SDK join does not show connected until server confirms it',
     () async {
       final serverConnected = Completer<CallSession>();
       gateway.joinResult = serverConnected.future;
-      final start = controller.startCall(video: true);
+      final start = controller.startCall();
 
       await rtc.joinStarted.future;
       rtc.emitLocalJoined();

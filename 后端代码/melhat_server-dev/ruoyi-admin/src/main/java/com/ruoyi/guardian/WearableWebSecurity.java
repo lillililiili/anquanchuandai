@@ -16,7 +16,7 @@ public class WearableWebSecurity implements WebMvcConfigurer {
         registry.addInterceptor(new HandlerInterceptor() {
             @Override public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
                 String path = request.getRequestURI();
-                if ("POST".equals(request.getMethod()) && (path.equals("/api/admin/v1/login") || path.equals("/api/guardian/v1/login"))) return true;
+                if ("POST".equals(request.getMethod()) && (path.equals("/api/admin/v1/login") || path.equals("/api/guardian/v1/login") || path.equals("/api/guardian/v1/mobile/login"))) return true;
                 try {
                     request.setAttribute("wearable.actor", sessions.require(request, path.startsWith("/api/admin/") ? "admin" : "guardian"));
                     response.setHeader("Cache-Control", "no-store");

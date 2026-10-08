@@ -130,7 +130,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       _gateway = WearCommunicationsGateway(session.api);
       _controller = CommunicationsController(
         gateway: _gateway!,
-        rtc: AgoraWearRtcEngine(),
+        rtc: session.api.isMock ? OfflineWearRtcEngine() : AgoraWearRtcEngine(),
         userId: session.userId,
         permissions: session.permissions,
       )..addListener(_onControllerChanged);
@@ -485,6 +485,28 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                     const SizedBox(height: 18),
                                   ],
                                   _filterBar(),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: SizedBox(
+                                      height:
+                                          MediaQuery.textScalerOf(
+                                            context,
+                                          ).scale(12) *
+                                          4.5,
+                                      child: Text(
+                                        _capabilityNotice ??
+                                            '选择联系人后，可按设备能力发起语音或文字广播。',
+                                        key: const ValueKey(
+                                          'communications-capability-notice',
+                                        ),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          height: 1.5,
+                                          color: WearColors.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   if (_personFilter != null)
                                     Align(
                                       alignment: Alignment.centerLeft,
@@ -542,13 +564,13 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 _loadError == null &&
                 controller?.activeCall == null)
               ContactActionBar(
-                onVoice: _canUseActions
+                onVoice: _canUseActions && _hasSelectedCapability('intercom')
                     ? () => unawaited(_startCallForSelection())
                     : null,
-                onVideo: _canUseActions
-                    ? () => unawaited(_startCallForSelection(video: true))
+                onVideo: null,
+                onBroadcast: _canUseActions && _hasSelectedCapability('tts')
+                    ? _showBroadcast
                     : null,
-                onBroadcast: _canUseActions ? _showBroadcast : null,
               ),
           ],
         ),
@@ -563,6 +585,30 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       !_preparingCall &&
       _controller?.busy == false &&
       _session?.callActive.value == false;
+
+  bool _hasSelectedCapability(String action) => _batchDevices().any(
+    (d) => action == 'intercom'
+        ? _controller?.policy.canStartVoice(d) == true
+        : _controller?.policy.canSendTts(d) == true,
+  );
+
+  String? get _capabilityNotice {
+    final policy = _controller?.policy;
+    if (policy == null) return null;
+    if (!policy.canStartCalls && !policy.canSubmitTts) {
+      return '当前账号未获设备语音或广播权限，可查看通讯录和事件记录。';
+    }
+    final devices = [..._devices, ..._equipment];
+    if (!devices.any((d) => d.supports('intercom') || d.supports('tts'))) {
+      return '当前范围内暂无支持语音或广播的设备；手机求助和事件文字跟进仍可使用。';
+    }
+    if (_selectedKeys.isNotEmpty &&
+        !_hasSelectedCapability('intercom') &&
+        !_hasSelectedCapability('tts')) {
+      return '所选联系人暂无可用的设备通讯能力，请选择有对应装备的联系人。';
+    }
+    return null;
+  }
 
   void _showBroadcast() {
     setState(() => _action = 'tts');
@@ -808,7 +854,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
           controller: _tts,
           minLines: 2,
           maxLines: 4,
-          maxLength: 300,
+          maxLength: 200,
           decoration: const InputDecoration(
             hintText: '输入要播报的内容',
             border: OutlineInputBorder(),
@@ -998,6 +1044,17 @@ class _CommunicationsPageState extends State<CommunicationsPage>
 
   Widget _contactTile(_CommsContact contact) {
     final selected = _selectedKeys.contains(contact.key);
+    final canCall =
+        _refreshWarning == null &&
+        !_batchBusy &&
+        !_preparingCall &&
+        _controller?.busy == false &&
+        _session?.callActive.value == false &&
+        [..._devices, ..._equipment].any(
+          (d) =>
+              d.personId == contact.person.id &&
+              _controller?.policy.canStartVoice(d) == true,
+        );
     final helmet = PersonHelmetStatus(contact.person.id, _devices);
     final statusLabel = helmet.label;
     final isOnline = helmet.isOnline;
@@ -1093,11 +1150,14 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                   ),
                 ),
                 IconButton(
-                  tooltip: '呼叫',
-                  onPressed: () => unawaited(_callContact(contact)),
-                  icon: const Icon(
+                  key: ValueKey('contact-call-${contact.key}'),
+                  tooltip: canCall ? '呼叫' : '暂无可用设备语音或权限',
+                  onPressed: canCall
+                      ? () => unawaited(_callContact(contact))
+                      : null,
+                  icon: Icon(
                     Icons.call_outlined,
-                    color: WearColors.brand,
+                    color: canCall ? WearColors.brand : WearColors.muted,
                   ),
                 ),
               ],
@@ -1237,13 +1297,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
               Icons.people_outline,
               '参与人员',
               () => _showCallParticipants(controller),
-            ),
-            action(
-              Icons.videocam_outlined,
-              '开启视频',
-              controller.activeCall?.isTerminal == false
-                  ? () => _snack('真实通道尚未接入同一通话内开启安全帽视频；语音通话保持不变，未发起新的呼叫。')
-                  : null,
             ),
           ],
         ),

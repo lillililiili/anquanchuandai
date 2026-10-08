@@ -69,7 +69,11 @@ class SharedPreferencesEventStateStore implements EventStateStore {
       if ((_writeGenerations[userId] ?? 0) != _writeGeneration) return;
       await _writeNow(value);
     });
-    _writeTails[userId] = operation.catchError((_) {});
+    final tail = operation.catchError((_) {});
+    _writeTails[userId] = tail;
+    // Retain only outstanding writes, not a completed future from an old session.
+    await tail;
+    if (identical(_writeTails[userId], tail)) _writeTails.remove(userId);
     await operation;
   }
 

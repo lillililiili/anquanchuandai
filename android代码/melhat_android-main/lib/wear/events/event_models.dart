@@ -17,6 +17,10 @@ enum EventCommand {
   close,
   reopen,
   assignTask,
+  saveVerification,
+  verify,
+  joinAssistance,
+  endAssistance,
 }
 
 class WearEvent {
@@ -58,6 +62,12 @@ class WearEvent {
     this.alarmCode = '',
     this.alarmName = '',
     this.alarmDescription = '',
+    this.locationDescription = '',
+    this.observations = const [],
+    this.verification = const {},
+    this.verificationDraft = const {},
+    this.assistance = const {},
+    this.permissions,
   });
 
   factory WearEvent.fromJson(EventJson json) {
@@ -78,6 +88,21 @@ class WearEvent {
       alarmCode: _text(json['alarmCode']),
       alarmName: _text(json['alarmName']),
       alarmDescription: _text(json['alarmDescription']),
+      locationDescription: _text(json['location']),
+      observations: (json['observations'] as List? ?? [])
+          .whereType<Map>()
+          .map((v) => Map<String, dynamic>.from(v))
+          .toList(),
+      verification: Map<String, dynamic>.from(
+        json['verification'] as Map? ?? {},
+      ),
+      verificationDraft: Map<String, dynamic>.from(
+        json['verificationDraft'] as Map? ?? {},
+      ),
+      assistance: Map<String, dynamic>.from(json['assistance'] as Map? ?? {}),
+      permissions: json['permissions'] is Map
+          ? Map<String, dynamic>.from(json['permissions'] as Map)
+          : null,
       severity: _text(json['type']) == 'sos'
           ? 'emergency'
           : _text(json['severity']),
@@ -120,6 +145,10 @@ class WearEvent {
   final String alarmCode;
   final String alarmName;
   final String alarmDescription;
+  final String locationDescription;
+  final List<EventJson> observations;
+  final EventJson verification, verificationDraft, assistance;
+  final EventJson? permissions;
   final String severity;
   final String status;
   final String occurredAt;
@@ -181,10 +210,15 @@ class WearEvent {
 
   String get typeLabel =>
       const {
-        'sos': 'SOS 求助',
+        'sos': '人员求助',
         'fall': '跌落（设备告警）',
         'impact': '撞击',
-        'geofence': '围栏',
+        'geofence': '电子围栏',
+        'communication': '设备通信',
+        'battery': '低电量',
+        'location': '位置异常',
+        'belt': '安全带挂接',
+        'vitals': '生命体征',
         'realtime': '实时告警',
       }[type] ??
       (type.isEmpty ? '未知类型' : type);
@@ -193,9 +227,10 @@ class WearEvent {
 
   String get statusLabel =>
       const {
-        'open': '待现场核验',
-        'claimed': '待现场核验',
-        'handling': '处置中',
+        'open': '待认领',
+        'field_pending': '待现场核验',
+        'claimed': '处理中',
+        'handling': '处理中',
         'pending_review': '待管理员审批',
         'verified': '已核验',
         'confirmed': '已确认',
@@ -371,7 +406,7 @@ class EventFilters {
       : status == 'all'
       ? const []
       : status == 'active' || status.isEmpty
-      ? const ['open', 'claimed', 'handling', 'pending_review']
+      ? const ['open', 'field_pending', 'claimed', 'handling']
       : [status];
   List<String> get selectedTypes => types.isNotEmpty
       ? types
@@ -443,7 +478,11 @@ class EventFilters {
 
 class EventDraft {
   const EventDraft({
+    this.baseVersion,
     this.handleComment = '',
+    this.conclusion = '',
+    this.situation = '',
+    this.measures = '',
     this.photoPaths = const [],
     this.transferUserId = '',
     this.transferReason = '',
@@ -455,7 +494,13 @@ class EventDraft {
   factory EventDraft.fromJson(Object? value) {
     if (value is! Map) return const EventDraft();
     return EventDraft(
+      baseVersion: value['baseVersion'] == null
+          ? -1
+          : _integer(value['baseVersion']),
       handleComment: _text(value['handleComment']),
+      conclusion: _text(value['conclusion']),
+      situation: _text(value['situation']),
+      measures: _text(value['measures']),
       photoPaths: value['photoPaths'] is List
           ? (value['photoPaths'] as List)
                 .map(_text)
@@ -471,6 +516,8 @@ class EventDraft {
   }
 
   final String handleComment;
+  final int? baseVersion;
+  final String conclusion, situation, measures;
   final List<String> photoPaths;
   final String transferUserId;
   final String transferReason;
@@ -481,6 +528,9 @@ class EventDraft {
   bool get isEmpty =>
       photoPaths.isEmpty &&
       handleComment.isEmpty &&
+      conclusion.isEmpty &&
+      situation.isEmpty &&
+      measures.isEmpty &&
       transferUserId.isEmpty &&
       transferReason.isEmpty &&
       closeReason.isEmpty &&
@@ -488,7 +538,11 @@ class EventDraft {
       taskId.isEmpty;
 
   EventJson toJson() => {
+    'baseVersion': baseVersion,
     'handleComment': handleComment,
+    'conclusion': conclusion,
+    'situation': situation,
+    'measures': measures,
     'photoPaths': photoPaths,
     'transferUserId': transferUserId,
     'transferReason': transferReason,
@@ -498,7 +552,11 @@ class EventDraft {
   };
 
   EventDraft copyWith({
+    int? baseVersion,
     String? handleComment,
+    String? conclusion,
+    String? situation,
+    String? measures,
     List<String>? photoPaths,
     String? transferUserId,
     String? transferReason,
@@ -506,7 +564,11 @@ class EventDraft {
     String? reopenReason,
     String? taskId,
   }) => EventDraft(
+    baseVersion: baseVersion ?? this.baseVersion,
     handleComment: handleComment ?? this.handleComment,
+    conclusion: conclusion ?? this.conclusion,
+    situation: situation ?? this.situation,
+    measures: measures ?? this.measures,
     photoPaths: photoPaths ?? this.photoPaths,
     transferUserId: transferUserId ?? this.transferUserId,
     transferReason: transferReason ?? this.transferReason,

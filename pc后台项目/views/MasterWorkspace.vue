@@ -22,14 +22,14 @@
       <p v-if="saveError" role="alert" tabindex="-1" class="notice error">{{ saveError.message }} · {{ saveError.errorCode }}</p>
       <div class="actions"><button class="button" :disabled="busy" @click="cancelPreview">返回修改 / 重新预览</button><button class="button primary" :disabled="busy || !!saveError" @click="commitPending">确认授权生效</button></div>
     </ModalPanel>
-    <ModalPanel heading-id="reset-credential-heading" :open="!!resetAccount" title="重置登录状态" @close="closeReset">
-      <form v-if="resetAccount" @submit.prevent="resetCredential"><p>账号：{{ resetAccount.name }}</p><p class="notice">未修改真实密码，重新登录可进入；不代表其他浏览器或终端已退出。</p><label>重置原因<textarea v-model="resetReason" required maxlength="500" /></label><label class="inline-check"><input v-model="resetConfirmed" type="checkbox" required />确认仅更新账号的登录验证信息，不改变人员和装备绑定关系</label><p v-if="saveError" ref="resetErrorBox" tabindex="-1" class="notice error" role="alert">{{ saveError.message }}</p><button class="button primary" :disabled="busy || !resetConfirmed">确认重置登录状态</button></form>
+    <ModalPanel heading-id="reset-credential-heading" :open="!!resetAccount" title="重置登录密码" @close="closeReset">
+      <form v-if="resetAccount" @submit.prevent="resetCredential"><p>账号：{{ resetAccount.name }}</p><p class="notice">设置新密码后，该账号的PC和安卓已有会话将失效，须使用新密码登录。</p><label>新登录密码<input v-model="resetPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="72" /></label><label>重置原因<textarea v-model="resetReason" required maxlength="500" /></label><label class="inline-check"><input v-model="resetConfirmed" type="checkbox" required />确认重置密码并使已有会话失效，保留人员和装备绑定关系</label><p v-if="saveError" ref="resetErrorBox" tabindex="-1" class="notice error" role="alert">{{ saveError.message }}</p><button class="button primary" :disabled="busy || !resetConfirmed">确认重置登录密码</button></form>
     </ModalPanel>
     <ModalPanel side :open="editorOpen" :title="(editing ? '编辑' : '新增') + ENTITIES[entity].title" @close="closeEditor">
       <MasterEditor v-if="editorOpen" :key="editorKey" :entity="entity" :record="editing" :options="editorOptions" :site-id="store.siteId" :timezone="currentSite?.timezone || 'UTC'" :busy="busy" :error="saveError" :is-system="provider.isSystem()" @dirty="dirty = $event" @save="save" @close="closeEditor" />
     </ModalPanel>
     <ModalPanel side heading-id="record-heading" :open="entity !== 'people' && !!selected && !editorOpen && !action" :title="ENTITIES[entity].title + ' · 只读详情'" @close="closeInspect">
-      <button v-if="entity === 'accounts' && selected" class="button" :disabled="!editable(selected) || selected.id === store.identity?.id" @click="openReset(selected)">重置登录状态</button>
+      <button v-if="entity === 'accounts' && selected" class="button" :disabled="!editable(selected) || selected.id === store.identity?.id" @click="openReset(selected)">重置登录密码</button>
       <template v-if="selected"><h3>{{ selected.name }}</h3><dl class="record-fields"><dt>标识</dt><dd>{{ selected.id }}</dd><dt>状态 / 版本</dt><dd>{{ selected.enabled ? '启用' : '停用' }} · v{{ selected.version }}</dd><dt>关联信息</dt><dd>{{ summary(selected) }}</dd><template v-if="entity === 'accounts'"><dt>关联人员</dt><dd>{{ options.people?.find(p => p.id === selected.personId)?.name || '未关联 / 当前不可见' }}</dd><dt>角色范围</dt><dd v-for="roleId in selected.roleIds" :key="roleId">{{ options.roles?.find(r => r.id === roleId)?.name || roleId }} · {{ selected.roleScopes?.[roleId]?.siteIds?.join('、') || '模板范围' }} · {{ selected.roleScopes?.[roleId]?.areaIds === '*' ? '全厂' : selected.roleScopes?.[roleId]?.areaIds?.join('、') || '模板区域' }}</dd></template><template v-if="entity === 'roles'"><dt>操作与范围</dt><dd v-for="(g, index) in selected.grants" :key="index">{{ g.operations.join('、') }}<p>{{ g.siteIds.join('、') }} · {{ g.areaIds === '*' ? '全部区域' : g.areaIds.join('、') }}</p></dd></template><template v-if="entity === 'dutyShifts'"><dt>班次时间（{{ currentSite?.timezone || 'UTC' }}）</dt><dd>{{ displayTime(selected.startsAt) }} 至 {{ displayTime(selected.endsAt) }}</dd><dt>当时的成员名单</dt><dd>{{ selected.memberSnapshots?.map(p => p.name).join('、') }}</dd></template></dl><p class="notice">未连接真实认证或设备。</p></template>
     </ModalPanel>
     <ModalPanel heading-id="impact-heading" :open="!!action" title="操作影响确认" @close="closeAction">
@@ -54,14 +54,14 @@ import TreeBranch from '../components/TreeBranch.vue'
 import AuthorizationPreview from '../components/AuthorizationPreview.vue'
 const provider = getAdminProvider(), store = useAdminStore(), route = useRoute(), router = useRouter()
 const entity = computed(() => route.meta.entity === 'organizations' ? query.value.tree || 'organizations' : route.meta.entity)
-const guidance = { people: '人员不等于登录账号。先建立人员档案，再按需关联组织、名册和账号。', organizations: '两棵树分别维护。组织与区域的关联不代表数据授权。', areas: '厂站区域与组织独立；已有引用不可级联删除。', sites: '厂站是范围边界。新建厂站仅向系统管理员开放，不自动授权其他身份。', dutyShifts: '手工维护未来班次及成员；无名册不推断当班人数。', accounts: '本地身份选择，不设置密码；新账号默认无授权。', roles: '操作与范围按同一角色匹配，再取并集；不跨角色拼接权限。' }
+const guidance = { people: '人员不等于登录账号。先建立人员档案，再按需关联组织、名册和账号。', organizations: '两棵树分别维护。组织与区域的关联不代表数据授权。', areas: '厂站区域与组织独立；已有引用不可级联删除。', sites: '厂站是范围边界。新建厂站仅向系统管理员开放，不自动授权其他身份。', dutyShifts: '手工维护未来班次及成员；无名册不推断当班人数。', accounts: '维护统一登录账号和密码；普通用户关联人员后分配本人业务角色，新账号默认无授权。', roles: '操作与范围按同一角色匹配，再取并集；不跨角色拼接权限。' }
 const currentSite = computed(() => store.sites.find(s => s.id === store.siteId))
 const query = computed(() => cleanQuery(route.query)), pageNum = computed(() => Number(query.value.pageNum || 1)), pageSize = computed(() => Number(query.value.pageSize || 20))
 const keyword = ref(query.value.keyword || ''), status = ref(query.value.status || ''), organizationId = ref(query.value.organizationId || ''), areaId = ref(query.value.areaId || '')
 const list = ref(null), options = ref({}), trees = ref({}), loading = ref(false), loadError = ref(null), notice = ref(''), selected = ref(null)
 const editorOpen = ref(false), editing = ref(null), editorKey = ref(0), editorOptions = ref({}), dirty = ref(false), busy = ref(false), saveError = ref(null)
 const action = ref(null), impactLoading = ref(false), impactError = ref(null), impactData = ref(null)
-const preview = ref(null), pending = ref(null), resetAccount = ref(null), resetReason = ref(''), resetConfirmed = ref(false)
+const preview = ref(null), pending = ref(null), resetAccount = ref(null), resetReason = ref(''), resetPassword = ref(''), resetConfirmed = ref(false)
 watch(saveError, async error => { if (error) { await nextTick(); document.querySelector('dialog[open][aria-labelledby="auth-preview-heading"] [role="alert"], dialog[open][aria-labelledby="reset-credential-heading"] [role="alert"]')?.focus() } })
 let controller, saveController, impactController, run = 0, operationId
 const writable = computed(() => { void store.revision; return ['roles', 'sites'].includes(entity.value) ? provider.isSystem() : provider.canAny(ENTITIES[entity.value].write, store.siteId) })
@@ -158,11 +158,11 @@ async function commitPending() {
   catch (e) { if (e.name !== 'AbortError') saveError.value = e }
   finally { busy.value = false }
 }
-function openReset(row) { resetAccount.value = row; resetReason.value = ''; resetConfirmed.value = false; saveError.value = null; operationId = crypto.randomUUID() }
+function openReset(row) { resetAccount.value = row; resetReason.value = ''; resetPassword.value = ''; resetConfirmed.value = false; saveError.value = null; operationId = crypto.randomUUID() }
 function closeReset() { if (allowLeave()) resetAccount.value = null }
 async function resetCredential() {
   busy.value = true; saveError.value = null; saveController = new AbortController()
-  try { await provider.execute('accounts.resetCredential', { siteId: store.siteId, id: resetAccount.value.id, expectedVersion: resetAccount.value.version, operationId, reason: resetReason.value, confirm: resetConfirmed.value }, { signal: saveController.signal }); resetAccount.value = null; resetReason.value = ''; notice.value = '账号的登录验证信息已更新，未修改真实密码。'; await load() }
+  try { await provider.execute('accounts.resetCredential', { siteId: store.siteId, id: resetAccount.value.id, expectedVersion: resetAccount.value.version, operationId, reason: resetReason.value, password: resetPassword.value, confirm: resetConfirmed.value }, { signal: saveController.signal }); resetAccount.value = null; resetReason.value = ''; resetPassword.value = ''; notice.value = '登录密码已重置，该账号的已有会话已失效。'; await load() }
   catch (e) { if (e.name !== 'AbortError') saveError.value = e }
   finally { busy.value = false }
 }

@@ -1,5 +1,5 @@
-export const OPERATIONS = ['overview:read', 'assets:read', 'people:read', 'people:write', 'organization:read', 'organization:write', 'sites:read', 'sites:write', 'duty:read', 'duty:write', 'access:read', 'accounts:write', 'roles:write', 'audit:read', 'integrations:read', 'integrations:write', 'assets:write', 'groups:write']
-export const DELEGATE_ROLES = ['viewer', 'people-editor', 'asset-operator']
+export const OPERATIONS = ['overview:read', 'assets:read', 'people:read', 'people:write', 'organization:read', 'organization:write', 'sites:read', 'sites:write', 'duty:read', 'duty:write', 'access:read', 'accounts:write', 'roles:write', 'audit:read', 'integrations:read', 'integrations:write', 'assets:write', 'groups:write', 'self:read', 'events:read', 'events:claim', 'events:observe', 'events:verify', 'sos:create', 'sos:assist', 'works:read', 'communications:voice', 'communications:broadcast']
+export const DELEGATE_ROLES = ['viewer', 'people-editor', 'asset-operator', 'mobile-user']
 export function effectiveGrants(state, actor) {
   if (!actor?.enabled) return []
   return state.roles.filter(r => r.enabled !== false && actor.roleIds.includes(r.id)).flatMap(role => role.grants.map(g => {

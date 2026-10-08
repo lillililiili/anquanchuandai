@@ -1,5 +1,7 @@
 <script setup>
 import { computed } from "vue";
+import { sharedCalls } from '@/lib/shared-communications';
+import { session } from '@/stores/session';
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppTag from "@/components/ui/AppTag.vue";
 import { db } from "@/mock/runtime";
@@ -11,7 +13,7 @@ const props = defineProps({
 
 const call = computed(() => {
   revision();
-  return db.state.calls.find((item) => item.id === props.callId) || null;
+  return [...sharedCalls(session.station), ...db.state.calls].find((item) => item.id === props.callId) || null;
 });
 
 const names = computed(() => {

@@ -61,7 +61,7 @@ void main() {
             ..token = 'test'
             ..siteId = '1'
             ..me = {
-              ...identity(user: '7', roles: ['wear_duty']),
+              ...identity(user: '7', roles: ['wear_platform_admin']),
               'permissions': ['wear:event:list', 'wear:event:claim'],
             };
       addTearDown(session.dispose);
@@ -79,6 +79,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      await click(find.byKey(const ValueKey('inline-filter-toggle')));
       await click(find.byKey(const ValueKey('filter-flags-mine')));
       expect(reads.last['claimantUserId'], '7');
       await click(find.byKey(const ValueKey('filter-flags-escalated')));
@@ -86,14 +87,13 @@ void main() {
       expect(reads.last['claimantUserId'], '7', reason: '组合筛选保留我负责条件');
       await click(find.byKey(const ValueKey('wear-event-a')));
       expect(find.byType(EventsPage), findsWidgets);
-      await click(find.text('更多处置与记录'));
       expect(
         find.byKey(const ValueKey('event-claim')).hitTestable(),
         findsOneWidget,
       );
-      await click(find.byKey(const ValueKey('event-next-claim')));
+      await click(find.byKey(const ValueKey('event-claim')));
       expect(writes, ['/api/v1/events/a/claim']);
-      expect(find.byKey(const ValueKey('event-next-claim')), findsNothing);
+      expect(find.byKey(const ValueKey('event-claim')), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -131,7 +131,11 @@ void main() {
               ..initialized = true
               ..token = 'test'
               ..siteId = '1'
-              ..me = identity(roles: ['wear_platform_admin']);
+              ..me = {
+                ...identity(roles: ['wear_platform_admin']),
+                'personId': '7',
+                'permissions': ['*:*:*'],
+              };
         addTearDown(session.dispose);
         await tester.pumpWidget(
           WearApp(session: session, enableNotifications: false),
@@ -164,7 +168,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('home-tool-tracks')), findsNothing);
         expect(find.byKey(const ValueKey('home-tool-fences')), findsNothing);
-        expect(find.byKey(const ValueKey('home-tool-supervision')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('home-tool-supervision')),
+          findsNothing,
+        );
         expect(find.text('近期未关闭事件'), findsNothing);
         expect(find.text('已领用人员'), findsNothing);
         expect(find.byType(NavigationBar), findsOneWidget);

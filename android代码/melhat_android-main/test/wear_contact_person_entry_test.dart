@@ -41,7 +41,7 @@ void main() {
       for (var attempt = 0; attempt < 2; attempt++) {
         router.go('/events?eventId=159');
         await tester.pumpAndSettle();
-        final contact = find.byKey(const ValueKey('event-communication'));
+        final contact = find.text('查看可用通讯装备');
         await tester.ensureVisible(contact);
         await tester.tap(contact);
         await tester.pumpAndSettle();
@@ -59,7 +59,7 @@ void main() {
         );
         expect(find.byKey(const ValueKey('contact-p:3')), findsNothing);
         expect(find.text('1 项'), findsOneWidget);
-        expect(find.text('语音群聊').hitTestable(), findsOneWidget);
+        expect(find.text('设备语音').hitTestable(), findsOneWidget);
         final clear = find.byTooltip('清除联系人筛选');
         await tester.ensureVisible(clear);
         await tester.tap(clear);

@@ -1,10 +1,13 @@
 import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
+
 import '../core.dart';
+import '../mock_media.dart';
 import 'inspection.dart';
 
 class InspectionGroupTasksPage extends StatefulWidget {
@@ -589,6 +592,9 @@ class InspectionRecordsPage extends StatelessWidget {
   );
 
   Widget _mediaTile(BuildContext context, JsonMap media) {
+    if (controller.session.api.isMock) {
+      return MockMediaTile(media: media, width: 88, height: 78);
+    }
     final video = textOf(media['mediaType']).startsWith('video/');
     final session = controller.session;
     final uri = Uri.parse(

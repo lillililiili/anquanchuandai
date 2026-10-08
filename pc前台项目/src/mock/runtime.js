@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { createStore } from "./data.js";
 import { authFetch, authHeaders, clearAuth } from "../lib/auth.js";
+import { createEventApi } from "../lib/guardian-events.js";
 
 export const tick = ref(0);
 export const connection = ref({ status: "connecting", message: "正在连接后端，暂不能办理业务" });
@@ -57,6 +58,12 @@ export async function refreshSnapshot() {
 }
 
 export const guardianReady = refreshSnapshot();
+const eventApi = createEventApi({ fetchImpl: authFetch, refresh: async () => { while (pulling) await new Promise(resolve => setTimeout(resolve, 25)); return refreshSnapshot(); }, current: id => db.event(id) });
+db.claim = id => eventApi.command(id, "claim");
+db.verify = (id, form, submit) => eventApi.command(id, submit ? "verification" : "verification-draft", form);
+db.addEventPhoto = (id, blobId, name, expectedVersion) => eventApi.command(id, "photos", { blobId, name, expectedVersion });
+db.observe = (id, form) => eventApi.command(id, "observations", form);
+db.sos = (action, eventId) => eventApi.command(eventId, action === "join" ? "assist-join" : "assist-end");
 if (typeof window !== "undefined") {
   window.setInterval(refreshSnapshot, 5000);
   window.addEventListener("online", refreshSnapshot);

@@ -52,19 +52,20 @@ void main() {
   );
 
   testWidgets(
-    'video button keeps explicit device and uses existing video contract',
+    'voice keeps explicit device and removed video cannot initiate a call',
     (tester) async {
       final requests = <RequestOptions>[];
       final router = await openDevice(tester, requests);
       router.go('/communications?deviceId=42&personId=7');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('视频群聊'));
+      expect(find.text('视频群聊'), findsNothing);
+      await tester.tap(find.text('设备语音'));
       await tester.pumpAndSettle();
       final call = requests
           .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
           .single;
       expect(call.data['deviceId'], '42');
-      expect(call.data['video'], true);
+      expect(call.data['video'], false);
       expect(find.text('结束通话').hitTestable(), findsOneWidget);
       await tester.tap(find.text('结束通话'));
       await tester.pumpAndSettle();
@@ -83,7 +84,7 @@ void main() {
       await tester.tap(find.text('文字播报'));
       await tester.pumpAndSettle();
       final input = find.byWidgetPredicate(
-        (w) => w is TextField && w.maxLength == 300,
+        (w) => w is TextField && w.maxLength == 200,
       );
       await tester.enterText(input, '请到集合点');
       await tester.tap(find.byTooltip('收起文字播报'));
@@ -104,7 +105,9 @@ void main() {
     },
   );
 
-  testWidgets('three actions fit small screens and large text', (tester) async {
+  testWidgets('voice and broadcast fit small screens and large text', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -126,19 +129,19 @@ void main() {
         ),
       ),
     );
-    for (final label in ['语音群聊', '视频群聊', '文字播报']) {
+    for (final label in ['设备语音', '文字播报']) {
       expect(find.text(label).hitTestable(), findsOneWidget);
     }
     expect(find.text('清空'), findsNothing);
     final buttons = tester.widgetList<TextButton>(find.byType(TextButton));
-    expect(buttons, hasLength(3));
+    expect(buttons, hasLength(2));
+    expect(find.text('视频群聊'), findsNothing);
     final widths = find
         .byType(TextButton)
         .evaluate()
         .map((e) => tester.getSize(find.byWidget(e.widget)).width)
         .toList();
     expect(widths[0], closeTo(widths[1], .01));
-    expect(widths[1], closeTo(widths[2], .01));
     expect(tester.takeException(), isNull);
   });
 }

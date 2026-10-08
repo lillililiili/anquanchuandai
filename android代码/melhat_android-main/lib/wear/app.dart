@@ -1,15 +1,15 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
+
 import 'core.dart';
 import 'auth_pages.dart';
 import 'notifications.dart';
 import 'mine_page.dart';
-import 'duty_pages.dart';
 import 'queries/queries.dart';
 import 'queries/person_management.dart';
-import 'queries/account_recovery.dart';
 import 'events/events_page.dart';
 import 'communications/communications.dart';
 import 'communications/lab_calls.dart';
@@ -58,7 +58,7 @@ class _WearAppState extends State<WearApp> {
                 path == '/events' ||
                 path == '/sos-events' ||
                 path == '/tasks' ||
-                RegExp(r'^/devices/[0-9]+$').hasMatch(path) ||
+                RegExp(r'^/devices/[^/]+$').hasMatch(path) ||
                 RegExp(r'^/tasks/[^/]+$').hasMatch(path) ||
                 path == '/me' ||
                 path == '/sites')) {
@@ -75,10 +75,6 @@ class _WearAppState extends State<WearApp> {
         ),
       ),
       routes: [
-        GoRoute(
-          path: '/lab-call/:id',
-          builder: (_, s) => LabCallPage(id: s.pathParameters['id']!),
-        ),
         GoRoute(path: '/login', builder: (_, _) => const WearLoginPage()),
         GoRoute(path: '/sites', builder: (_, _) => const WearSitesPage()),
         StatefulShellRoute.indexedStack(
@@ -94,7 +90,7 @@ class _WearAppState extends State<WearApp> {
                 GoRoute(
                   path: '/sos-events',
                   redirect: (_, _) =>
-                      '/events?severity=emergency&status=active',
+                      '/events?type=sos&severity=emergency&status=active',
                 ),
                 GoRoute(
                   path: '/people',
@@ -105,10 +101,6 @@ class _WearAppState extends State<WearApp> {
                   path: '/people-admin/equipment/:id',
                   builder: (_, s) =>
                       PersonEquipmentPage(id: s.pathParameters['id']!),
-                ),
-                GoRoute(
-                  path: '/people-admin/recovery',
-                  builder: (_, _) => const AccountRecoveryPage(),
                 ),
                 GoRoute(
                   path: '/people/:id',
@@ -145,10 +137,7 @@ class _WearAppState extends State<WearApp> {
                     deviceId: s.uri.queryParameters['deviceId'],
                     personId: s.uri.queryParameters['personId'],
                     eventId: s.uri.queryParameters['eventId'],
-                    video: const [
-                      'true',
-                      '1',
-                    ].contains(s.uri.queryParameters['video']),
+                    video: false,
                   ),
                 ),
               ],
@@ -181,14 +170,6 @@ class _WearAppState extends State<WearApp> {
                   path: '/me',
                   builder: (_, _) =>
                       WearMinePage(notifications: _notifications),
-                ),
-                GoRoute(
-                  path: '/settings',
-                  builder: (_, _) => const WearDutyPage(settings: true),
-                ),
-                GoRoute(
-                  path: '/handovers',
-                  builder: (_, _) => const WearDutyPage(),
                 ),
               ],
             ),
@@ -255,7 +236,13 @@ class _WearAppState extends State<WearApp> {
               .startsWith('/lab-call/'),
           session: _session,
           openCall: (id) => _router.push('/lab-call/$id'),
-          child: child ?? const SizedBox.shrink(),
+          child: _session.api.isMock
+              ? Banner(
+                  message: '本地模拟',
+                  location: BannerLocation.topEnd,
+                  child: child ?? const SizedBox.shrink(),
+                )
+              : child ?? const SizedBox.shrink(),
         ),
         title: '智能穿戴管理平台',
         debugShowCheckedModeBanner: false,
@@ -416,6 +403,15 @@ class _WearShellState extends State<WearShell> {
   @override
   Widget build(BuildContext context) {
     final session = WearScope.of(context);
+    const roots = ['/workbench', '/communications', '/events', '/me'];
+    final path = GoRouterState.of(context).uri.path;
+    final visibleIndex = path == '/events'
+        ? 2
+        : path == '/communications'
+        ? 1
+        : path == '/me'
+        ? 3
+        : 0;
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -473,12 +469,13 @@ class _WearShellState extends State<WearShell> {
           ? null
           : NavigationBar(
               height: 60,
-              selectedIndex: widget.shell.currentIndex,
+              selectedIndex: visibleIndex,
               onDestinationSelected: session.busy
                   ? null
                   : (index) {
                       FocusScope.of(context).unfocus();
-                      widget.shell.goBranch(index);
+                      // Bottom entries open their root; top back preserves pushed parents.
+                      context.go(roots[index]);
                     },
               destinations: [
                 const NavigationDestination(

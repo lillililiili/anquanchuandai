@@ -1,10 +1,65 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+
 import '../core.dart';
+import '../mock_media.dart';
 import 'event_video_preview.dart';
+
+/// Photos on their actual employee observation or final verification record.
+class EventStoredPhotos extends StatelessWidget {
+  const EventStoredPhotos({super.key, required this.blobIds});
+  final List<String> blobIds;
+  @override
+  Widget build(BuildContext context) {
+    final session = WearScope.of(context);
+    if (session.api.isMock || blobIds.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final id in blobIds)
+          Builder(
+            builder: (context) {
+              final url = Uri.parse(session.api.dio.options.baseUrl)
+                  .resolve('/api/guardian/v1/files/${Uri.encodeComponent(id)}')
+                  .toString();
+              Widget photo() => Image.network(
+                url,
+                headers: {'X-Wearable-Token': session.token ?? ''},
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.broken_image_outlined,
+                  semanticLabel: '照片加载失败',
+                ),
+              );
+              return InkWell(
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (ctx) => Dialog(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(child: photo()),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('关闭'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                child: SizedBox(width: 96, height: 96, child: photo()),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
 
 class EventPhotoCapture extends StatefulWidget {
   const EventPhotoCapture({
@@ -40,13 +95,8 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
                 onTap: () => Navigator.pop(ctx, 'photo'),
               ),
               ListTile(
-                leading: const Icon(Icons.videocam_outlined),
-                title: const Text('现场录像'),
-                onTap: () => Navigator.pop(ctx, 'video'),
-              ),
-              ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('从相册选择照片或视频'),
+                title: const Text('从相册选择照片'),
                 onTap: () => Navigator.pop(ctx, 'gallery'),
               ),
             ],
@@ -57,21 +107,19 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
       final picker = ImagePicker();
       final List<XFile> files;
       if (choice == 'gallery') {
-        files = await picker.pickMultipleMedia(
+        files = await picker.pickMultiImage(
           limit: 6 - widget.paths.length,
           imageQuality: 85,
           maxWidth: 1920,
           maxHeight: 1920,
         );
       } else {
-        final file = choice == 'video'
-            ? await picker.pickVideo(source: ImageSource.camera)
-            : await picker.pickImage(
-                source: ImageSource.camera,
-                imageQuality: 85,
-                maxWidth: 1920,
-                maxHeight: 1920,
-              );
+        final file = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 85,
+          maxWidth: 1920,
+          maxHeight: 1920,
+        );
         files = [?file];
       }
       if (files.isEmpty || !mounted) return;
@@ -83,8 +131,8 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
       for (final file in files) {
         final size = await file.length();
         total += size;
-        if (size == 0 || size > (isVideo(file.name) ? 50 : 10) * 1024 * 1024) {
-          throw StateError('单张照片不超过10MB，单个视频不超过50MB');
+        if (size == 0 || size > 10 * 1024 * 1024) {
+          throw StateError('单张 JPG/PNG 照片不超过10MB');
         }
       }
       if (total > 100 * 1024 * 1024) throw StateError('附件合计不超过100MB');
@@ -95,16 +143,8 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
       final paths = <String>[];
       for (final file in files) {
         final extension = file.name.split('.').last.toLowerCase();
-        if (![
-          'jpg',
-          'jpeg',
-          'png',
-          'mp4',
-          'webm',
-          'mov',
-          'm4v',
-        ].contains(extension)) {
-          throw StateError('照片支持JPEG/PNG，视频支持MP4/WebM');
+        if (!['jpg', 'jpeg', 'png'].contains(extension)) {
+          throw StateError('仅支持 JPG/PNG 照片');
         }
         final path =
             '${folder.path}/${DateTime.now().microsecondsSinceEpoch}-${paths.length}.$extension';
@@ -132,12 +172,12 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       const Text(
-        '现场照片 / 视频（必填）',
+        '现场照片（选填）',
         style: TextStyle(fontWeight: FontWeight.w700, color: WearColors.ink),
       ),
       const SizedBox(height: 6),
       const Text(
-        '至少1个，最多6个；照片10MB、视频50MB，合计100MB，提交时上传',
+        '最多6张 JPG/PNG，单张不超过10MB；随本次现场补充或核验提交',
         style: TextStyle(color: WearColors.muted, fontSize: 12),
       ),
       const SizedBox(height: 10),
@@ -293,20 +333,15 @@ class _EventSubmittedPhotosState extends State<EventSubmittedPhotos> {
               spacing: 8,
               runSpacing: 8,
               children: rows.map((row) {
+                if (session.api.isMock) return MockMediaTile(media: row);
                 final url = Uri.parse(
                   session.api.dio.options.baseUrl,
                 ).resolve(textOf(row['url'])).toString();
                 final video = textOf(row['mediaType']).startsWith('video/');
-                final headers = {
-                  'Authorization': 'Bearer ${session.token}',
-                  'X-Site-Id': session.siteId ?? '',
-                };
+                final headers = {'X-Wearable-Token': session.token ?? ''};
                 Widget photo() => Image.network(
                   url,
-                  headers: {
-                    'Authorization': 'Bearer ${session.token}',
-                    'X-Site-Id': session.siteId ?? '',
-                  },
+                  headers: headers,
                   fit: BoxFit.contain,
                   errorBuilder: (_, e, s) =>
                       const Icon(Icons.broken_image_outlined),

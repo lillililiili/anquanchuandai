@@ -158,11 +158,13 @@ class _EventLocationCardState extends State<EventLocationCard> {
                           panBuffer: 0,
                           tileProvider: _EventTileProvider(
                             session.api,
-                          '${session.scopeKey}:$_retry',
+                            '${session.scopeKey}:$_retry',
                           ),
-                        errorTileCallback: (tile, error, stack) {
-                          if (attempt == _retry) _tileError(tile, error, stack);
-                        },
+                          errorTileCallback: (tile, error, stack) {
+                            if (attempt == _retry) {
+                              _tileError(tile, error, stack);
+                            }
+                          },
                         ),
                         MarkerLayer(
                           markers: [

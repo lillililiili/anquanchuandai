@@ -28,6 +28,9 @@ public class GuardianVoiceService {
     }
 
     public void broadcast(JSONArray hats, String content) {
+        broadcast(hats, content, "legacy", "历史客户端");
+    }
+    public void broadcast(JSONArray hats, String content, String actorId, String actorName) {
         String text = content == null ? "" : content.trim();
         if (text.isEmpty() || text.length() > 200) throw new GuardianRejected("广播内容需为 1–200 字");
         List<String> numbers = new ArrayList<String>();
@@ -45,9 +48,9 @@ public class GuardianVoiceService {
         record.setDelFlag("0");
         record.setBroadcastType(numbers.size() == 1 ? "01" : "02");
         record.setContent(text);
-        record.setOperator("值守员");
-        record.setCreateBy("duty");
-        record.setUpdateBy("duty");
+        record.setOperator(actorName);
+        record.setCreateBy(actorId);
+        record.setUpdateBy(actorId);
         record.setHatNumber(join(numbers));
         record.setRecipient(join(names));
         record.setRecipientCount(numbers.size());

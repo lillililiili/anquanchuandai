@@ -45,63 +45,19 @@ public final class GuardianValidator {
     }
 
     private static void checkSos(JSONObject state) {
-        JSONObject sos = state.getJSONObject("sos");
-        if (sos == null) throw new IllegalArgumentException("记录不存在或已归档");
-        JSONArray people = state.getJSONArray("people");
-        JSONArray events = state.getJSONArray("events");
-        JSONObject event = findById(events, "RL-E-0915-004");
-        if (!"RL-E-0915-004".equals(sos.getString("eventId"))
-                || !"P8".equals(sos.getString("personId"))
-                || !"何平".equals(sos.getString("personName"))
-                || !"RL-H008".equals(sos.getString("deviceId"))
-                || event == null
-                || !"P8".equals(event.getString("personId"))
-                || !"RL-H008".equals(event.getString("deviceId"))
-                || !"人员求助".equals(event.getString("type"))) {
-            throw new IllegalArgumentException("SOS协助与告警不一致");
+        JSONObject assistance = state.getJSONObject("assistance");
+        if (assistance == null) return; // Unmigrated legacy snapshots remain readable.
+        for (String id : assistance.keySet()) {
+            JSONObject record = assistance.getJSONObject(id);
+            JSONObject event = findById(state.getJSONArray("events"), id);
+            if (event == null || !"人员求助".equals(event.getString("type")) || !id.equals(record.getString("eventId")))
+                throw new IllegalArgumentException("SOS协助与事件不一致");
+            if (!allowed(record.getString("status"), "waiting", "accepted", "active", "ended"))
+                throw new IllegalArgumentException("协助状态无效");
+            Set<String> members = new HashSet<String>();
+            for (Object member : WearableModel.rows(record, "members"))
+                if (!members.add(String.valueOf(member))) throw new IllegalArgumentException("协助成员重复");
         }
-        String status = sos.getString("status");
-        if (!allowed(status, "waiting", "active", "ended")) throw new IllegalArgumentException("本次协助已结束");
-        JSONArray members = sos.getJSONArray("members");
-        int operators = 0;
-        if (members != null) {
-            for (int i = 0; i < members.size(); i++) {
-                String id = members.getString(i);
-                if ("operator".equals(id)) {
-                    operators++;
-                    continue;
-                }
-                if (!active(people, id) || !sameStation(people, id, sos.getString("station"))) {
-                    throw new IllegalArgumentException("呼叫人员无效");
-                }
-            }
-        }
-        if (operators > 1 || ("waiting".equals(status) && operators > 0) || ("active".equals(status) && operators != 1)) {
-            throw new IllegalArgumentException("值守员已经加入");
-        }
-        boolean joined = timelineHas(sos, "值守员加入协助（模拟）");
-        boolean closed = timelineHas(sos, "协助结束，记录已保存");
-        if ("waiting".equals(status) && (joined || closed)) throw new IllegalArgumentException("本次协助已结束");
-        if ("active".equals(status) && !joined) throw new IllegalArgumentException("值守员已经加入");
-        if ("ended".equals(status) && !closed) throw new IllegalArgumentException("本次协助已结束");
-        if (!"ended".equals(status)) return;
-        JSONArray calls = state.getJSONArray("calls");
-        if (calls == null) throw new IllegalArgumentException("记录不存在或已归档");
-        for (int i = 0; i < calls.size(); i++) {
-            JSONObject call = calls.getJSONObject(i);
-            if (call == null || !"SOS协助".equals(call.getString("kind"))) continue;
-            JSONArray callMembers = call.getJSONArray("members");
-            if (callMembers == null || !callMembers.contains("P8")) continue;
-            if (members != null) {
-                boolean complete = true;
-                for (int j = 0; j < members.size(); j++) {
-                    if (!callMembers.contains(members.getString(j))) complete = false;
-                }
-                if (!complete) continue;
-            }
-            return;
-        }
-        throw new IllegalArgumentException("记录不存在或已归档");
     }
 
     private static boolean timelineHas(JSONObject sos, String text) {

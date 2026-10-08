@@ -1,7 +1,11 @@
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
+
 import '../config/backend_config.dart';
 import 'data.dart';
+import 'mock_backend.dart';
+import 'shared_backend.dart';
 
 class WearApiException implements Exception {
   final int code;
@@ -23,15 +27,21 @@ class WearApi {
   final int Function() epoch;
   final void Function()? onUnauthorized;
   CancelToken _cancel = CancelToken();
+  late final SharedBackend shared;
+  final bool _real;
   WearApi({
     Dio? dio,
+    bool? mock,
     required this.token,
     required this.siteId,
     required this.epoch,
     this.onUnauthorized,
-  }) : dio =
+  }) : _real =
+           !(mock ?? BackendConfig.mock) &&
+           dio?.httpClientAdapter is! MockBackend,
+       dio =
            dio ??
-           Dio(
+           (Dio(
              BaseOptions(
                baseUrl: BackendConfig.baseUrl,
                connectTimeout: const Duration(seconds: 15),
@@ -39,11 +49,58 @@ class WearApi {
                sendTimeout: const Duration(seconds: 20),
                contentType: Headers.jsonContentType,
              ),
-           );
+           )) {
+    if (dio == null && (mock ?? BackendConfig.mock)) {
+      this.dio.httpClientAdapter = MockBackend.shared;
+    }
+    shared = SharedBackend(_native, siteId, epoch);
+  }
+
+  bool get isMock => dio.httpClientAdapter is MockBackend;
 
   void invalidate() {
     _cancel.cancel('session changed');
     _cancel = CancelToken();
+    shared.invalidate();
+  }
+
+  Future<dynamic> _native(
+    String method,
+    String path, {
+    Object? data,
+    Map<String, dynamic>? query,
+    String? contentType,
+  }) async {
+    final captured = epoch();
+    final response = await dio.request<dynamic>(
+      path,
+      data: data,
+      queryParameters: query,
+      cancelToken: _cancel,
+      options: Options(
+        method: method,
+        contentType: contentType,
+        headers: {if (token() != null) 'X-Wearable-Token': token()},
+        validateStatus: (_) => true,
+      ),
+    );
+    if (captured != epoch()) throw const StaleSessionException();
+    final status = response.statusCode ?? 0, body = jsonMap(response.data);
+    final code = intOf(body['code'], status);
+    if (status >= 400 || code >= 400) {
+      final effective = status >= 400 ? status : code;
+      if (effective == 401 && !path.endsWith('/login')) onUnauthorized?.call();
+      throw WearApiException(
+        effective,
+        _safeMessage(body['message'] ?? body['msg'], effective),
+      );
+    }
+    if (response.data is! Map && response.data is! List) {
+      throw const WearApiException(502, '服务响应格式不正确');
+    }
+    return body.containsKey('code') && body.containsKey('data')
+        ? body['data']
+        : response.data;
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>
@@ -87,6 +144,9 @@ class WearApi {
       headers['X-Site-Id'] = station;
     }
     try {
+      if (_real) {
+        return await shared.route(method, path, data: data, query: query);
+      }
       final response = await dio.request<dynamic>(
         path,
         data: data,

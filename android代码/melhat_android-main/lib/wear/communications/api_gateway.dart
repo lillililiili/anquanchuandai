@@ -100,6 +100,7 @@ class WearCommunicationsGateway implements CommunicationsGateway {
           .map(CommunicationDevice.fromJson)
           .toList(growable: false);
     } catch (_) {
+      if (!api.isMock) rethrow;
       return const [];
     }
   }
@@ -108,6 +109,7 @@ class WearCommunicationsGateway implements CommunicationsGateway {
     try {
       return jsonList(await api.get('/api/v1/me/equipment'));
     } catch (_) {
+      if (!api.isMock) rethrow;
       return const [];
     }
   }

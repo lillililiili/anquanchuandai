@@ -104,17 +104,6 @@ class _PeoplePageState extends State<PeoplePage> {
       subtitle: '人员档案独立于登录账号，姓名重复时请核对人员编号。',
       body: Column(
         children: [
-          if (_session!.isDutyAdmin)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ActionChip(
-                  label: const Text('重置审批'),
-                  onPressed: () => context.push('/people-admin/recovery'),
-                ),
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(

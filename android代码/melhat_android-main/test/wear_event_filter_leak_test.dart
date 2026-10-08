@@ -16,7 +16,7 @@ void main() {
     (tester) async {
       SharedPreferences.setMockInitialValues({
         'wear.filter-leak.events.1.state': jsonEncode({
-          'filters': {'type': 'sos', 'status': 'open'},
+          'filters': {'status': 'open'},
           'current': 1,
         }),
       });

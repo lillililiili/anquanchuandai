@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../core.dart';
 import 'contact_filters.dart';
 import 'models.dart' show CommunicationDevice, PersonOption;
@@ -8,7 +10,8 @@ import 'lab_video_stream.dart';
 import '../queries/query_utils.dart' show deviceTypeLabel;
 
 /// Opt-in signalling lab. Production RTC remains on its existing controller.
-const bool callLabEnabled = bool.fromEnvironment('CALL_LAB_ENABLED');
+// Keep both existing page flows; MockBackend handles the lab routes locally too.
+const bool callLabEnabled = false;
 
 bool labCallActive(JsonMap call) =>
     const ['ringing', 'connected'].contains(call['state']);

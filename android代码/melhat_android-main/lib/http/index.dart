@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:rolling_intelligence_headband/config/backend_config.dart';
+import 'package:rolling_intelligence_headband/wear/mock_backend.dart';
 import 'package:rolling_intelligence_headband/http/request_options.dart';
 import 'package:rolling_intelligence_headband/http/response/response.dart';
 import 'package:rolling_intelligence_headband/store/user_store.dart';
@@ -21,14 +21,12 @@ class Http {
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         headers: {'Content-Type': 'application/json'},
-        baseUrl: BackendConfig.baseUrl,
+        baseUrl: 'https://mock.invalid', // Retired UI helpers remain isolated from real business.
       ),
-    );
+    )..httpClientAdapter = MockBackend.shared;
 
     // 添加拦截器
     _dio.interceptors.add(_httpInterceptor());
-
-
   }
 
   /// 工厂构造函数 - 返回单例

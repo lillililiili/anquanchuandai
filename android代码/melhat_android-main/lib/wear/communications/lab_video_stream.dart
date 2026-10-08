@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+
 import '../core.dart';
 
 /// Media always goes through the authenticated main platform. Adapter-returned
@@ -65,6 +67,10 @@ class _LabVideoStreamState extends State<LabVideoStream>
     }
     if (!widget.active) return;
     final api = widget.session.api;
+    if (api.isMock) {
+      _failure = '本地模拟模式 · 未连接真实视频';
+      return;
+    }
     final token = api.token(), site = api.siteId();
     if (token == null || site == null) {
       _failure = '请登录后查看画面';

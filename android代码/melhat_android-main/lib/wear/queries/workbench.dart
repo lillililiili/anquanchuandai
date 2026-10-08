@@ -7,7 +7,6 @@ import 'query_widgets.dart';
 import 'work_reference.dart';
 import 'my_equipment_page.dart';
 import 'home_sos_banner.dart';
-import 'inspection_pages.dart';
 import 'current_work.dart';
 import '../events/manual_sos_page.dart';
 
@@ -110,66 +109,82 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     final summary = _summary;
     return Scaffold(
       backgroundColor: WearColors.background,
-      body: QueryStateView(
-        loading: _loading,
-        error: _error,
-        empty: summary == null,
-        onRetry: _load,
-        child: summary == null
-            ? const SizedBox.shrink()
-            : RefreshIndicator(
-                onRefresh: _load,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
-                  children: [
-                    Container(
-                      height: WearHeaderLayout.height(context),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage(
-                            'assets/field-brand/preview/work_reference_header.png',
-                          ),
-                          fit: BoxFit.cover,
-                          opacity: .70,
-                          alignment: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _pageHeader(),
-                          const SizedBox(height: 12),
-                          _greeting(),
-                          const SizedBox(height: 4),
-                          _dutyActions(summary),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          HomeSosBanner(refreshVersion: _request),
-                          _currentWorkCard(),
-                          const SizedBox(height: 12),
-                          _manualSosEntry(),
-                          const SizedBox(height: 12),
-                          _equipmentCard(),
-                          const SizedBox(height: 12),
-                          if (_session!.isAdmin)
-                            _toolsCard()
-                          else
-                            _inspectionTools(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+      body: _error != null && _session!.canRequestSos
+          ? SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  WearEmpty(
+                    title: '现场信息加载失败',
+                    detail: '请检查网络后重试。仍可进入求助页面，提交结果以服务端确认为准。',
+                    onRetry: _load,
+                  ),
+                  const SizedBox(height: 16),
+                  _manualSosEntry(),
+                ],
               ),
-      ),
+            )
+          : QueryStateView(
+              loading: _loading,
+              error: _error,
+              empty: summary == null,
+              onRetry: _load,
+              child: summary == null
+                  ? const SizedBox.shrink()
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 24),
+                        children: [
+                          Container(
+                            height: WearHeaderLayout.height(context),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: const BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage(
+                                  'assets/field-brand/preview/work_reference_header.png',
+                                ),
+                                fit: BoxFit.cover,
+                                opacity: .70,
+                                alignment: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _pageHeader(),
+                                const SizedBox(height: 12),
+                                _greeting(),
+                                const SizedBox(height: 4),
+                                _dutyActions(summary),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              children: [
+                                HomeSosBanner(refreshVersion: _request),
+                                _currentWorkCard(),
+                                const SizedBox(height: 12),
+                                if (_session!.canRequestSos) _manualSosEntry(),
+                                const SizedBox(height: 12),
+                                if (_session!.personId.isNotEmpty)
+                                  _equipmentCard(),
+                                const SizedBox(height: 12),
+                                if (_session!.isAdmin)
+                                  _toolsCard()
+                                else
+                                  _workTools(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
     );
   }
 
@@ -297,7 +312,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                     ),
                     const Spacer(),
                     TextButton(
-                      onPressed: () => _openGroupTasks(task),
+                      onPressed: () => _openTaskList(),
                       child: const Text('全部作业', style: TextStyle(fontSize: 11)),
                     ),
                   ],
@@ -584,9 +599,15 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
           MaterialPageRoute(builder: (_) => const ManualSosPage()),
         );
         if (!mounted || id == null) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('SOS 报警已提交，等待管理员审批')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _session!.api.isMock
+                  ? '模拟 SOS 已创建，请在事件详情中继续跟进'
+                  : 'SOS 已提交，请在事件详情中继续跟进',
+            ),
+          ),
+        );
         context.push('/events?eventId=${Uri.encodeComponent(id)}');
       },
       child: const Padding(
@@ -609,7 +630,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '填写现场情况，提交管理员处理',
+                    '确认即可求助，位置和情况可后补',
                     style: TextStyle(color: WearColors.muted, fontSize: 12),
                   ),
                 ],
@@ -622,44 +643,41 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     ),
   );
 
-  Widget _inspectionTools() => WearCard(
+  Widget _workTools() => WearCard(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const WearSectionTitle('巡检工具'),
+        const WearSectionTitle('作业与事件'),
         const SizedBox(height: 10),
-        _inspectionToolRow(
+        _workToolRow(
           icon: Icons.assignment_outlined,
           title: '我的任务',
-          subtitle: '查看任务与填写巡检结果',
+          subtitle: '查看作业票、人员和装备',
           highlighted: true,
           onTap: () => context.push('/tasks'),
         ),
-        _inspectionToolRow(
+        _workToolRow(
           icon: Icons.fact_check_outlined,
-          title: '巡检记录',
-          subtitle: _recordTask == null ? '当前暂无作业' : '查看当前作业巡检进度与异常记录',
-          onTap: _recordTask == null ? null : _openInspectionRecords,
+          title: '作业事件记录',
+          subtitle: _recordTask == null ? '当前暂无作业' : '查看当前作业关联事件及核验记录',
+          onTap: _recordTask == null ? null : _openWorkEvents,
         ),
       ],
     ),
   );
 
-  void _openInspectionRecords() {
+  void _openWorkEvents() {
     final task = _recordTask;
     if (task == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            InspectionGroupTasksPage(taskId: idOf(task['id']), allTasks: false),
-      ),
+    context.push(
+      '/events?taskId=${Uri.encodeComponent(idOf(task['id']))}&status=all',
     );
   }
 
   JsonMap? get _recordTask =>
       _currentTask ?? jsonList(_summary?['activeTasks']).firstOrNull;
 
-  Widget _inspectionToolRow({
+  Widget _workToolRow({
     Key? key,
     required IconData icon,
     required String title,
@@ -752,14 +770,13 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     IconData icon,
     String route, {
     int count = 0,
-  }) => _inspectionToolRow(
+  }) => _workToolRow(
     key: ValueKey('home-tool-$key'),
     icon: icon,
     title: label,
     subtitle: subtitle,
     count: count,
-    onTap: () =>
-        route == '/tasks' ? _openGroupTasks(_currentTask) : context.push(route),
+    onTap: () => route == '/tasks' ? _openTaskList() : context.push(route),
   );
 
   Widget _equipmentRow(JsonMap item) {
@@ -834,14 +851,8 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     );
   }
 
-  void _openGroupTasks(JsonMap? task) {
-    final groupId = idOf(task?['id']);
-    context.push(
-      task?['workType'] == 'patrol' && groupId.isNotEmpty
-          ? '/tasks?groupId=${Uri.encodeComponent(groupId)}'
-          : '/tasks',
-    );
-  }
+  void _openTaskList() =>
+      context.push(_session!.isAdmin ? '/tasks?scope=all' : '/tasks');
 
   Widget _equipmentBatteryBadge(JsonMap item) {
     final status = connectionLabel(item);
@@ -897,20 +908,14 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     );
   }
 
-  Widget _dutyActions(JsonMap summary) => !_session!.isAdmin
-      ? const SizedBox(height: 32)
-      : Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            key: const ValueKey('home-start-handover'),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF008BFF),
-              visualDensity: VisualDensity.compact,
-              minimumSize: const Size(48, 32),
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-            ),
-            onPressed: () => context.push('/handovers'),
-            child: const Text('发起值班交接', style: TextStyle(fontSize: 11)),
-          ),
-        );
+  Widget _dutyActions(JsonMap summary) => SizedBox(
+    height: 32,
+    child: Align(
+      alignment: Alignment.centerRight,
+      child: Text(
+        '待核验 ${jsonList(summary['pendingEvents']).length}  ·  作业 ${jsonList(summary['activeTasks']).length}  ·  装备 ${intOf(summary['deviceCount'])}',
+        style: const TextStyle(color: WearColors.muted, fontSize: 11),
+      ),
+    ),
+  );
 }

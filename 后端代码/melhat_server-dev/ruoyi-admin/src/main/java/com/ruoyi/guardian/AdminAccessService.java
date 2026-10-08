@@ -18,8 +18,8 @@ import java.util.regex.Pattern;
 @Service
 public class AdminAccessService {
     private static final List<String> AUDIT_QUERIES = Arrays.asList("audit", "auditDetail", "auditExport");
-    private static final List<String> DELEGATE = Arrays.asList("viewer", "people-editor", "asset-operator");
-    private static final List<String> OPERATIONS = Arrays.asList("overview:read", "assets:read", "people:read", "people:write", "organization:read", "organization:write", "sites:read", "sites:write", "duty:read", "duty:write", "access:read", "accounts:write", "roles:write", "audit:read", "integrations:read", "integrations:write", "assets:write", "groups:write");
+    private static final List<String> DELEGATE = Arrays.asList("viewer", "people-editor", "asset-operator", "mobile-user");
+    private static final List<String> OPERATIONS = Arrays.asList("overview:read", "assets:read", "people:read", "people:write", "organization:read", "organization:write", "sites:read", "sites:write", "duty:read", "duty:write", "access:read", "accounts:write", "roles:write", "audit:read", "integrations:read", "integrations:write", "assets:write", "groups:write", "self:read", "events:read", "events:claim", "events:observe", "events:verify", "sos:create", "sos:assist", "works:read", "communications:voice", "communications:broadcast");
     private static final Pattern SECRET = Pattern.compile("password|passwd|token|secret|credential|authorization|cookie", Pattern.CASE_INSENSITIVE);
     private static final Map<String, Preview> PREVIEWS = Collections.synchronizedMap(new LinkedHashMap<String, Preview>());
 
@@ -52,7 +52,7 @@ public class AdminAccessService {
         JSONObject memory = state.getJSONObject("idempotency");
         if (memory == null) { memory = new JSONObject(); state.put("idempotency", memory); }
         JSONObject previous = memory.getJSONObject(key);
-        String fingerprint = input.toJSONString();
+        String fingerprint = org.apache.commons.codec.digest.DigestUtils.sha256Hex(input.toJSONString());
         if (previous != null) {
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
             return previous.getJSONObject("result");
@@ -65,7 +65,7 @@ public class AdminAccessService {
         auditRow(state, actor, type, input, before, output);
         JSONObject envelope = new JSONObject();
         envelope.put("code", 200);
-        envelope.put("data", output);
+        envelope.put("data", WearableModel.safe(output));
         JSONObject stored = new JSONObject();
         stored.put("fingerprint", fingerprint);
         stored.put("result", envelope);
@@ -156,6 +156,7 @@ public class AdminAccessService {
             record.put("builtin", false);
             record.put("credentialVersion", 1);
             record.put("personId", null);
+            record.put("passwordHash", WearableCredentials.hash(data.getString("password")));
         }
         record.put("name", required(data, "name", 100, "名称"));
         record.put("version", (row == null ? 0 : row.getIntValue("version")) + 1);
@@ -271,6 +272,7 @@ public class AdminAccessService {
         String reason = input.getString("reason");
         if (reason == null || reason.trim().isEmpty() || reason.trim().length() > 500) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请填写重置原因（1–500字）");
         if (!Boolean.TRUE.equals(input.getBoolean("confirm"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请确认仅重置本地凭据");
+        row.put("passwordHash", WearableCredentials.hash(input.getString("password")));
         row.put("credentialVersion", row.getIntValue("credentialVersion") + 1);
         row.put("version", row.getIntValue("version") + 1);
         JSONObject output = new JSONObject();
@@ -429,8 +431,8 @@ public class AdminAccessService {
         row.put("occurredAt", Instant.now().toString());
         row.put("result", "SUCCESS");
         row.put("operationId", input.getString("operationId"));
-        row.put("before", before);
-        row.put("after", copy(after));
+        row.put("before", before == null ? null : WearableModel.safe(before));
+        row.put("after", WearableModel.safe(after));
         row.put("source", "后台台账");
         JSONArray audit = state.getJSONArray("audit");
         if (audit == null) { audit = new JSONArray(); state.put("audit", audit); }

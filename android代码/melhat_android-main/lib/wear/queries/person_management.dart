@@ -17,6 +17,7 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
   final _search = TextEditingController();
   bool _loading = true, _busy = false, _more = false;
   int _page = 1;
+  int? _personVersion;
   Object? _error;
   final Map<String, String> _keys = {};
   @override
@@ -48,12 +49,16 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
         current: page,
         query: {'assetStatus': 'in_stock', 'sn': _search.text.trim()},
       );
+      final person = jsonMap(
+        await _session!.api.get('/api/v1/people/${widget.id}'),
+      );
       if (mounted) {
         setState(() {
           _assigned = assigned;
           _devices = devices.records;
           _more = devices.hasMore;
           _page = page;
+          _personVersion = intOf(person['version']);
           _loading = false;
         });
       }
@@ -71,7 +76,8 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
     if (!await confirmManagement(
       context,
       returning ? '确认归还装备？' : '确认分配装备？',
-      '${deviceTypeLabel(row['typeCode'])} · ${textOf(row['sn'])}',
+      '${deviceTypeLabel(row['typeCode'])} · ${textOf(row['sn'])}'
+          '${returning ? '\n请确认装备完好，可正常入库；损坏装备请在 PC 后台办理异常归还。' : ''}',
     )) {
       return;
     }
@@ -88,6 +94,11 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
             : '/api/v1/assignments',
         data: {
           'idempotencyKey': key,
+          if (!_session!.api.isMock) ...{
+            'personVersion': _personVersion,
+            'deviceVersion': returning ? row['deviceVersion'] : row['version'],
+            if (returning) 'assignmentVersion': row['version'],
+          },
           if (returning) 'reason': '人员档案装备归还',
           if (!returning) 'personId': widget.id,
           if (!returning) 'deviceId': row['id'],
@@ -99,6 +110,10 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
         await _load();
       }
     } catch (e) {
+      if (e is WearApiException && e.code == 409) {
+        _keys.remove(action);
+        await _load();
+      }
       if (mounted) managementMessage(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);

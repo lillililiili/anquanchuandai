@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/communications/contact_filters.dart';
 import 'package:rolling_intelligence_headband/wear/communications/communications_page.dart';
-import 'wear_lab_calls_test.dart' show sessionWith;
+import 'wear_communications_fixture.dart' show sessionWith;
 import 'wear_session_test.dart' show reply, transport;
 
 ResponseBody rosterReply(RequestOptions r) {

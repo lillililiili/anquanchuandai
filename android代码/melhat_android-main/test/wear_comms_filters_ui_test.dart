@@ -95,7 +95,7 @@ void main() {
       find
           .byWidgetPredicate(
             (widget) =>
-                widget is TextField && widget.decoration?.hintText == '搜索人员或设备',
+                widget is TextField && widget.decoration?.hintText == '搜索联系人',
           )
           .hitTestable(),
       findsOneWidget,
@@ -121,12 +121,12 @@ void main() {
         await tester.tap(toggle);
         await tester.pumpAndSettle();
       }
-      final watch = find.byKey(const ValueKey('filter-device-watch'));
+      final watch = find.byKey(const ValueKey('filter-presence-online'));
       await tester.ensureVisible(watch);
       await tester.tap(watch);
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
-      expect(find.text('没有匹配的人员或设备'), findsOneWidget);
+      expect(find.text('没有匹配的联系人'), findsOneWidget);
       expect(find.text('0 项'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(requests.where((r) => r.method != 'GET'), isEmpty);

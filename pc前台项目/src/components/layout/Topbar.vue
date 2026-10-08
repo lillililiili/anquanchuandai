@@ -15,6 +15,10 @@ import { events, people, scope } from "@/lib/queries";
 const route = useRoute();
 const now = ref(new Date());
 let timer;
+const operatorName = computed(() => {
+  tick.value;
+  return db.state.operator?.name || db.state.operator?.loginName || "当前账号";
+});
 
 const stations = computed(() => {
   tick.value;
@@ -57,7 +61,7 @@ function openNotices() {
 }
 
 function openUser() {
-  openModal({ title: "值守员", view: UserCard, footer: UserActions });
+  openModal({ title: operatorName.value, view: UserCard, footer: UserActions });
 }
 
 onMounted(() => {
@@ -86,7 +90,7 @@ onUnmounted(() => clearInterval(timer));
       >
         <span class="notification-count">{{ unresolved }}</span>
       </AppButton>
-      <AppButton tone="plain" icon="user-fill" @click="openUser">值守员 <AppIcon name="arrow-down-s-line" /></AppButton>
+      <AppButton tone="plain" icon="user-fill" @click="openUser">{{ operatorName }} <AppIcon name="arrow-down-s-line" /></AppButton>
       <time :datetime="now.toISOString()" aria-label="当前时间">{{ clock }}</time>
     </div>
   </header>

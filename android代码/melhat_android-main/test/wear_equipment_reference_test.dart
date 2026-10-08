@@ -77,7 +77,10 @@ void main() {
                 }),
               )
               ..initialized = true
-              ..me = identity(user: 'real-equipment-$telemetryFailure')
+              ..me = {
+                ...identity(user: 'real-equipment-$telemetryFailure'),
+                'personId': '7',
+              }
               ..siteId = '1'
               ..token = 'test-only';
         addTearDown(session.dispose);
@@ -156,7 +159,7 @@ void main() {
                 }),
               )
               ..initialized = true
-              ..me = identity(user: 'equipment-$scale')
+              ..me = {...identity(user: 'equipment-$scale'), 'personId': '7'}
               ..siteId = '1'
               ..token = 'test-only';
         addTearDown(session.dispose);

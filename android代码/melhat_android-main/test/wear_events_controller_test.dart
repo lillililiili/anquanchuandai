@@ -81,7 +81,12 @@ class FakeEventGateway implements EventGateway {
 const actor = EventActor(
   userId: '12',
   roles: {'wear_duty'},
-  permissions: {'wear:event:list', 'wear:event:query', 'wear:event:claim'},
+  permissions: {
+    'wear:event:list',
+    'wear:event:query',
+    'wear:event:claim',
+    'wear:event:report',
+  },
 );
 
 void main() {
@@ -296,7 +301,10 @@ void main() {
     );
     await load;
     await controller.select('1');
-    await controller.updateDraft('1', const EventDraft(handleComment: '传感器松动', photoPaths: ['camera.jpg']));
+    await controller.updateDraft(
+      '1',
+      const EventDraft(handleComment: '传感器松动', photoPaths: ['camera.jpg']),
+    );
     gateway.heldWrite = Completer<WearEvent>();
 
     final first = controller.execute(EventCommand.handle);

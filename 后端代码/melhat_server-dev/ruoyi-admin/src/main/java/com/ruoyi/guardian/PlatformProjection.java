@@ -9,6 +9,7 @@ final class PlatformProjection {
     static boolean apply(JSONObject snapshot, JSONObject admin) {
         if(admin==null)return false;
         String before=snapshot.toJSONString();
+        GuardianMasterProjection.apply(snapshot, admin);
         JSONArray target=snapshot.getJSONArray("devices");
         for(Object item:admin.getJSONArray("devices")) {
             JSONObject row=(JSONObject)item;if(!"PLATFORM".equals(row.getString("source")))continue;

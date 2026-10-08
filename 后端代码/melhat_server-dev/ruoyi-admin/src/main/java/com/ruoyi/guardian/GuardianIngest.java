@@ -33,9 +33,9 @@ public class GuardianIngest {
                 Helmet helmet = helmet(state, helmetSn);
                 if (helmet == null) return false;
                 Date when = parseTime(startTime);
-                if (when == null) when = portalNow(state);
+                if (when == null) when = new Date();
                 markHeard(helmet, when);
-                addEvent(state, helmet, when, title(type), portalType(type));
+                addEvent(state, helmet, when, title(type), portalType(type), startTime == null ? null : helmetSn + ":" + type + ":" + startTime);
                 return true;
             }
         });
@@ -48,21 +48,24 @@ public class GuardianIngest {
                 Helmet helmet = helmet(state, helmetSn);
                 if (helmet == null) return false;
                 Date when = parseTime(timestamp);
-                if (when == null) when = portalNow(state);
+                if (when == null) when = new Date();
                 return move(state, helmet, longitude, latitude, when);
             }
         });
     }
 
-    public void sos(final String helmetSn, final String longitude, final String latitude) {
+    public void sos(final String helmetSn, final String longitude, final String latitude) { sos(helmetSn, longitude, latitude, null); }
+
+    public void sos(final String helmetSn, final String longitude, final String latitude, final String timestamp) {
         store.update(new GuardianStore.Edit() {
             @Override
             public boolean apply(JSONObject state) {
                 Helmet helmet = helmet(state, helmetSn);
                 if (helmet == null) return false;
-                Date when = portalNow(state);
+                Date when = parseTime(timestamp);
+                if (when == null) when = new Date();
                 markHeard(helmet, when);
-                addEvent(state, helmet, when, "安全帽发起 SOS", "人员求助");
+                addEvent(state, helmet, when, "安全帽发起 SOS", "人员求助", timestamp == null ? null : helmetSn + ":sos:" + timestamp);
                 if (longitude != null && latitude != null && longitude.trim().length() > 0 && latitude.trim().length() > 0) {
                     move(state, helmet, longitude, latitude, when);
                 }
@@ -71,7 +74,8 @@ public class GuardianIngest {
         });
     }
 
-    private static void addEvent(JSONObject state, Helmet helmet, Date when, String title, String type) {
+    private static void addEvent(JSONObject state, Helmet helmet, Date when, String title, String type, String sourceKey) {
+        if (sourceKey != null) for (Object raw : WearableModel.rows(state, "events")) if (sourceKey.equals(((JSONObject)raw).getString("sourceKey"))) return;
         String day = day(when);
         String clock = minute(when);
         JSONObject work = currentWork(state, helmet.personId, day);
@@ -85,6 +89,12 @@ public class GuardianIngest {
         event.put("title", title);
         event.put("type", type);
         event.put("status", "待认领");
+        event.put("source", "device");
+        event.put("sourceKey", sourceKey);
+        event.put("siteId", helmet.device.getString("siteId"));
+        event.put("areaId", helmet.device.getString("areaId"));
+        event.put("version", 1);
+        event.put("createdAt", java.time.Instant.now().toString());
         event.put("time", clock);
         event.put("externalStatus", "待回传");
         event.put("station", helmet.station);
@@ -105,9 +115,11 @@ public class GuardianIngest {
         event.put("timeline", timeline);
         JSONArray events = array(state, "events");
         events.add(0, event);
+        GuardianEvents.normalize(state);
     }
 
     private static boolean move(JSONObject state, Helmet helmet, String longitude, String latitude, Date when) {
+        if (helmet.person == null) return false;
         double lon;
         double lat;
         try {
@@ -221,7 +233,7 @@ public class GuardianIngest {
                 break;
             }
         }
-        if (personId == null) return null;
+        if (personId == null) return new Helmet(device, "", "未关联人员", device.getString("station"), null);
         JSONArray people = state.getJSONArray("people");
         if (people == null) return null;
         for (int i = 0; i < people.size(); i++) {

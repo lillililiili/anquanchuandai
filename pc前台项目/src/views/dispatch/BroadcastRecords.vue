@@ -5,14 +5,15 @@ import AppTag from "@/components/ui/AppTag.vue";
 import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { personName, revision } from "@/lib/queries";
+import { sharedBroadcasts } from '@/lib/shared-communications';
 
 const rows = computed(() => {
   revision();
-  return db.state.broadcasts.filter((item) => item.station === session.station);
+  return [...sharedBroadcasts(session.station), ...db.state.broadcasts.filter((item) => item.station === session.station)];
 });
 
 function names(item) {
-  return (item.members || []).map((id) => personName(id)).join("、");
+  return item.recipientLabel || (item.members || []).map((id) => personName(id)).join("、");
 }
 </script>
 

@@ -14,7 +14,7 @@ import java.util.Map;
 @Service
 public class AdminQueryService {
     private static final List<String> READ_ENTITIES = Arrays.asList("people", "organizations", "areas", "sites", "dutyShifts", "accounts", "roles");
-    private static final List<String> DELEGATE_ROLES = Arrays.asList("viewer", "people-editor", "asset-operator");
+    private static final List<String> DELEGATE_ROLES = Arrays.asList("viewer", "people-editor", "asset-operator", "mobile-user");
     private final AdminLedgerStore ledger;
     private final GuardianStore guardian;
     private final ObjectProvider<AdminMaintenanceService> maintenance;
@@ -329,7 +329,7 @@ public class AdminQueryService {
             }
             JSONObject snapshot = guardian.snapshot();
             String portalId = row.getString("portalId");
-            if (portalId == null || portalId.isEmpty()) portalId = AdminMasterService.portalPersonId(row.getString("id"));
+            if (portalId == null || portalId.isEmpty()) portalId = row.getString("id");
             if (snapshot != null && portalId != null) {
                 for (JSONObject work : array(snapshot, "works")) {
                     if ("已结束".equals(work.getString("status"))) continue;
@@ -397,8 +397,16 @@ public class AdminQueryService {
                 JSONArray sites = grant.getJSONArray("siteIds");
                 if (operations == null || sites == null || !sites.contains(siteId)) continue;
                 if (!(operations.contains("*") || operations.contains(operation))) continue;
+                JSONObject scopes=actor.getJSONObject("roleScopes");
+                JSONObject scope=scopes==null?null:scopes.getJSONObject(role.getString("id"));
+                if(scope!=null && scope.getJSONArray("siteIds")!=null && !scope.getJSONArray("siteIds").contains(siteId)) continue;
                 Object areas = grant.get("areaIds");
-                if ("*".equals(areas) || areaId == null) return true;
+                if(scope!=null && scope.get("areaIds")!=null && !"*".equals(scope.get("areaIds"))) {
+                    JSONArray limit=scope.getJSONArray("areaIds");
+                    if("*".equals(areas)) areas=limit;
+                    else { JSONArray intersection=new JSONArray();if(areas instanceof JSONArray)for(Object a:(JSONArray)areas)if(limit.contains(a))intersection.add(a);areas=intersection; }
+                }
+                if ("*".equals(areas) || areaId == null && areas instanceof JSONArray && !((JSONArray)areas).isEmpty()) return true;
                 if (areas instanceof JSONArray && ((JSONArray) areas).contains(areaId)) return true;
             }
         }

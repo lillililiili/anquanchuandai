@@ -20,25 +20,6 @@ public class AdminAssignmentService {
     private static final List<String> COMMAND_KEYS = Arrays.asList("siteId", "personId", "personVersion", "items", "operationId", "acknowledged");
     private static final List<String> ISSUE_KEYS = Arrays.asList("deviceId", "deviceVersion");
     private static final List<String> RETURN_KEYS = Arrays.asList("deviceId", "deviceVersion", "assignmentId", "assignmentVersion", "condition", "reason", "handlerId", "handlerVersion");
-    private static final Map<String, String> PEOPLE = new LinkedHashMap<String, String>();
-    private static final Map<String, String> SITES = new LinkedHashMap<String, String>();
-    private static final Map<String, String> PORTAL_TYPES = new LinkedHashMap<String, String>();
-    static {
-        PEOPLE.put("person-1-0", "P1");
-        PEOPLE.put("person-1-1", "P2");
-        PEOPLE.put("person-1-2", "P3");
-        PEOPLE.put("person-1-3", "P4");
-        PEOPLE.put("person-1-4", "P5");
-        PEOPLE.put("person-1-5", "P6");
-        PEOPLE.put("person-1-6", "P7");
-        PEOPLE.put("person-1-7", "P8");
-        SITES.put("site-1", "S1");
-        SITES.put("site-2", "S2");
-        PORTAL_TYPES.put("HELMET", "H");
-        PORTAL_TYPES.put("BELT", "B");
-        PORTAL_TYPES.put("WATCH", "W");
-    }
-
     private final AdminLedgerStore ledger;
     private final GuardianStore guardian;
     private final AdminQueryService queries;
@@ -88,13 +69,9 @@ public class AdminAssignmentService {
             return previous.getJSONObject("result");
         }
         JSONObject output = apply(state, actor, type, input);
-        try {
-            syncPortal(state);
-        } catch (AdminQueryService.QueryFailed error) {
-            throw error;
-        } catch (RuntimeException error) {
-            throw AdminQueryService.fail(400, "PORTAL_REJECTED", error.getMessage() == null ? "监护数据保存失败" : error.getMessage());
-        }
+        // The ledger is authoritative. GuardianStore projects this committed data on its next read;
+        // a failed DB transaction must never publish a successful issue/return into a second store.
+        WearableModel.migrate(state);
         state.put("revision", state.getIntValue("revision") + 1);
         JSONObject envelope = new JSONObject();
         envelope.put("code", 200);
@@ -295,75 +272,11 @@ public class AdminAssignmentService {
         guardian.update(new GuardianStore.Edit() {
             @Override
             public boolean apply(JSONObject next) {
-                for (JSONObject device : rows(admin, "devices")) mirror(admin, next, device);
+                GuardianMasterProjection.apply(next, admin);
+                  next.put("seq", next.getIntValue("seq") + 1);
                 return true;
             }
         });
-    }
-
-    private void mirror(JSONObject admin, JSONObject snapshot, JSONObject device) {
-        String type = PORTAL_TYPES.get(device.getString("type"));
-        if (type == null) return;
-        String portalId = device.getString("portalDeviceId");
-        if (portalId == null || portalId.isEmpty()) portalId = device.getString("code");
-        if (portalId == null || portalId.isEmpty()) portalId = device.getString("id");
-        boolean issued = "IN_USE".equals(device.getString("lifecycle"));
-        JSONObject remote = find(snapshot, "devices", portalId);
-        if (remote == null && !issued) return;
-        String station = SITES.get(device.getString("siteId"));
-        if (station == null) station = "S1";
-        boolean active = !"DISABLED".equals(device.getString("lifecycle")) && !"SCRAPPED".equals(device.getString("lifecycle"));
-        if (remote == null) {
-            remote = new JSONObject();
-            remote.put("id", portalId);
-            remote.put("type", type);
-            remote.put("station", station);
-            remote.put("active", active);
-            remote.put("online", false);
-            remote.put("battery", null);
-            remote.put("video", "H".equals(type) ? "available" : null);
-            remote.put("updated", stamp(new Date()));
-            snapshot.getJSONArray("devices").add(remote);
-        } else {
-            remote.put("type", type);
-            remote.put("station", station);
-            remote.put("active", active);
-        }
-        JSONObject assignment = activeAssignment(admin, device.getString("id"));
-        JSONObject person = assignment == null ? null : find(admin, "people", assignment.getString("personId"));
-        String hold = null;
-        if (active && issued && person != null && person.getBooleanValue("enabled")) hold = portalPerson(snapshot, person);
-        reconcile(snapshot, portalId, hold, assignment == null ? null : assignment.getString("startedAt"));
-    }
-
-    private static void reconcile(JSONObject snapshot, String deviceId, String personId, String startedAt) {
-        JSONObject kept = null;
-        JSONArray bindings = snapshot.getJSONArray("bindings");
-        if (bindings == null) return;
-        for (int i = 0; i < bindings.size(); i++) {
-            JSONObject binding = bindings.getJSONObject(i);
-            if (binding == null || binding.get("end") != null || !deviceId.equals(binding.getString("deviceId"))) continue;
-            if (personId != null && personId.equals(binding.getString("personId")) && kept == null) kept = binding;
-            else binding.put("end", stamp(new Date()));
-        }
-        if (personId == null || kept != null) return;
-        snapshot.put("seq", snapshot.getIntValue("seq") + 1);
-        JSONObject binding = new JSONObject();
-        binding.put("id", "BIND" + snapshot.getIntValue("seq"));
-        binding.put("deviceId", deviceId);
-        binding.put("personId", personId);
-        binding.put("start", startedAt == null ? stamp(new Date()) : stamp(startedAt));
-        binding.put("end", null);
-        binding.put("operator", "管理中心");
-        bindings.add(binding);
-    }
-
-    private static String portalPerson(JSONObject snapshot, JSONObject person) {
-        String known = person.getString("portalId");
-        if (known == null || known.isEmpty()) known = PEOPLE.get(person.getString("id"));
-        JSONObject remote = known == null ? null : find(snapshot, "people", known);
-        if (remote == null || !remote.getBooleanValue("active")) throw new IllegalArgumentException("该人员还没有对应的监护前台档案");
-        return known;
     }
 
     private Map<String, Object> candidates(JSONObject state, JSONObject actor, JSONObject input) {

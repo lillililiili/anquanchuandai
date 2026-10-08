@@ -22,10 +22,13 @@ void main() {
           WearSession(
               credentials: MemoryCredentials(),
               dio: transport((request) {
+                if (request.path == '/api/v1/me') {
+                  return reply(identity(user: 'header-site-test', site: '2'));
+                }
                 if (request.path == '/api/v1/me/current-site') {
                   expect(request.method, 'PUT');
                   expect(request.data, {'siteId': '2'});
-                  return reply({'currentSiteId': '2'});
+                  return reply(identity(user: 'header-site-test', site: '2'));
                 }
                 if (request.path.endsWith('/inbox/count')) {
                   return reply({'count': 0});
@@ -119,7 +122,7 @@ void main() {
         await tester.tap(find.byType(NavigationDestination).at(3));
         await tester.pumpAndSettle();
         expect(find.text('通讯服务'), findsOneWidget);
-        expect(find.text('SIP ID'), findsOneWidget);
+        expect(find.text('SIP ID'), findsNothing);
         expect(find.text('值班交接'), findsNothing);
         expect(find.byType(EquipmentPanel), findsNothing);
         Future<void> open(String label) async {
@@ -134,8 +137,8 @@ void main() {
         await tester.tap(find.byTooltip('返回我的'));
         await tester.pumpAndSettle();
         await open('通讯服务');
-        expect(find.text('接警状态'), findsOneWidget);
-        expect(find.text('开启通知'), findsOneWidget);
+        expect(find.textContaining('共用后端查询'), findsOneWidget);
+        expect(find.text('开启通知'), findsNothing);
         await tester.tap(find.byTooltip('返回我的'));
         await tester.pumpAndSettle();
         expect(find.text('设置'), findsNothing);

@@ -6,7 +6,7 @@ import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/communications/communications_page.dart';
 import 'package:rolling_intelligence_headband/wear/communications/lab_calls.dart'
     show callLabEnabled;
-import 'wear_lab_calls_test.dart' show sessionWith;
+import 'wear_communications_fixture.dart' show sessionWith;
 import 'wear_session_test.dart' show reply;
 
 void main() {

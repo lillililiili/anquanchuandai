@@ -2,21 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rolling_intelligence_headband/main.dart';
-import 'package:rolling_intelligence_headband/store/user_store.dart';
-import 'package:rolling_intelligence_headband/router/app_router.dart';
-import 'package:rolling_intelligence_headband/views/login_view.dart';
+import 'package:rolling_intelligence_headband/wear/auth_pages.dart';
 
 void main() {
-  testWidgets('unauthenticated app starts at the real login page', (
-    tester,
-  ) async {
+  testWidgets('Android entry starts at the offline login page', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    UserStore.instance.reset();
-    appRouter.go('/login');
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
-    expect(find.byType(LoginView), findsOneWidget);
-    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.byType(WearLoginPage), findsOneWidget);
+    expect(find.byType(TextFormField), findsNWidgets(3));
+    expect(find.byType(Banner), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

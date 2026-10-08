@@ -220,7 +220,7 @@ public class ExternalController {
         record.setCallTime(new Date());
         record.setCreateTime(new Date());
         sosAlarmRecordService.save(record);
-        rememberSos(helmetSn, longitude, latitude);
+        rememberSos(helmetSn, longitude, latitude, param.getTimestamp());
 
         back = new ResponseVO(200, "success", null);
         //呼叫帽子
@@ -254,9 +254,9 @@ public class ExternalController {
         }
     }
 
-    private void rememberSos(String helmetSn, String longitude, String latitude) {
+    private void rememberSos(String helmetSn, String longitude, String latitude, String timestamp) {
         try {
-            guardianIngest.sos(helmetSn, longitude, latitude);
+            guardianIngest.sos(helmetSn, longitude, latitude, timestamp);
         } catch (RuntimeException error) {
             log.error("安全帽 SOS 未写入监护快照", error);
         }

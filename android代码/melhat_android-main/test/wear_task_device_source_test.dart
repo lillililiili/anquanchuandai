@@ -64,6 +64,12 @@ void main() {
                     'activeTasks': [task],
                   });
                 }
+                if (request.path == '/api/v1/work-tasks/mine') {
+                  return reply({
+                    'records': [task],
+                    'total': 1,
+                  });
+                }
                 if (request.path == '/api/v1/work-tasks/41') return reply(task);
                 if (request.path.endsWith('/equipment-check')) {
                   return reply([
@@ -101,13 +107,18 @@ void main() {
             ..initialized = true
             ..token = 'test-only'
             ..siteId = '1'
-            ..me = identity();
+            ..me = {
+              ...identity(),
+              'roles': ['wear_platform_admin'],
+            };
       addTearDown(session.dispose);
       await tester.pumpWidget(
         WearApp(session: session, enableNotifications: false),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('view-current-work')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('参与人员 · 1 人'));
       await tester.pumpAndSettle();
       expect(find.text('帽在线'), findsOneWidget);
       expect(find.text('带未关联'), findsOneWidget);

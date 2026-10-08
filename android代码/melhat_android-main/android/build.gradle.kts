@@ -20,6 +20,14 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
+    // Use the same NDK as the app (Flutter 3.47.6) for native Flutter plugins.
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.gradle.LibraryExtension> {
+            ndkVersion = "28.2.13676358"
+        }
+    }
+}
+subprojects {
     project.evaluationDependsOn(":app")
 }
 

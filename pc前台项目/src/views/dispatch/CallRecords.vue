@@ -8,10 +8,11 @@ import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { openModal } from "@/stores/modal";
 import { personName, revision } from "@/lib/queries";
+import { sharedCalls } from '@/lib/shared-communications';
 
 const rows = computed(() => {
   revision();
-  return db.state.calls.filter((call) => call.station === session.station);
+  return [...sharedCalls(session.station), ...db.state.calls.filter((call) => call.station === session.station)];
 });
 
 function names(call) {

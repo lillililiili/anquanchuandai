@@ -1,10 +1,13 @@
 import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'api.dart';
 import 'data.dart';
+import '../config/backend_config.dart';
 import 'events/event_state_store.dart';
 
 abstract interface class CredentialStore {
@@ -15,12 +18,23 @@ abstract interface class CredentialStore {
 class SecureCredentialStore implements CredentialStore {
   final FlutterSecureStorage storage;
   const SecureCredentialStore([this.storage = const FlutterSecureStorage()]);
+  String get key =>
+      'wear.shared.access-token.${Uri.parse(BackendConfig.baseUrl).authority}';
   @override
-  Future<String?> read() => storage.read(key: 'wear.access-token');
+  Future<String?> read() => storage.read(key: key);
   @override
   Future<void> write(String? token) => token == null
-      ? storage.delete(key: 'wear.access-token')
-      : storage.write(key: 'wear.access-token', value: token);
+      ? storage.delete(key: key)
+      : storage.write(key: key, value: token);
+}
+
+/// Demo credentials never read or overwrite a real backend login token.
+class MockCredentialStore implements CredentialStore {
+  String? _token;
+  @override
+  Future<String?> read() async => _token;
+  @override
+  Future<void> write(String? token) async => _token = token;
 }
 
 class WearSession extends ChangeNotifier {
@@ -39,10 +53,15 @@ class WearSession extends ChangeNotifier {
   Future<void> Function()? terminateCall;
   final ValueNotifier<int> refreshTick = ValueNotifier(0);
   final ValueNotifier<bool> callActive = ValueNotifier(false);
-  WearSession({Dio? dio, CredentialStore? credentials})
-    : credentials = credentials ?? const SecureCredentialStore() {
+  WearSession({Dio? dio, CredentialStore? credentials, bool? mock})
+    : credentials =
+          credentials ??
+          ((mock ?? BackendConfig.mock)
+              ? MockCredentialStore()
+              : const SecureCredentialStore()) {
     api = WearApi(
       dio: dio,
+      mock: mock,
       token: () => token,
       siteId: () => siteId,
       epoch: () => _epoch,
@@ -50,6 +69,7 @@ class WearSession extends ChangeNotifier {
     );
     callActive.addListener(_emit);
   }
+  String get personId => idOf(me?['personId']);
   String get userId => idOf(me?['userId']);
   String get scopeKey => '$userId.${siteId ?? "none"}.$_epoch';
   Set<String> get roles =>
@@ -63,8 +83,13 @@ class WearSession extends ChangeNotifier {
       hasRole('wear_platform_admin');
   bool can(String permission) {
     // Personnel records are read-only in Android, including administrator accounts.
-    if (permission == 'wear:person:edit') return false;
-    if (!isAdmin &&
+    if (permission == 'wear:person:edit' ||
+        permission == 'wear:task:edit' ||
+        permission.startsWith('wear:inspection:')) {
+      return false;
+    }
+    if (api.isMock &&
+        !isAdmin &&
         !const {
           'wear:site:list',
           'wear:site:select',
@@ -77,19 +102,20 @@ class WearSession extends ChangeNotifier {
           'wear:event:list',
           'wear:event:query',
           'wear:event:report',
-          'wear:event:confirm',
-          'wear:inspection:check',
-          'wear:inspection:report',
         }.contains(permission)) {
       return false;
     }
     return permissions.contains(permission) || permissions.contains('*:*:*');
   }
 
-  bool get isDuty => isAdmin;
+  bool get isDuty => can('wear:event:claim');
   bool get isDutyAdmin => isAdmin;
-  bool get canHandover => isAdmin;
-  bool get isReviewer => isAdmin;
+  bool get canHandover => false;
+  bool get isReviewer => can('wear:event:review');
+  bool get canRequestSos =>
+      personId.isNotEmpty &&
+      (api.isMock ||
+          (me?['sharedOperations'] as List? ?? []).contains('sos:create'));
   List<JsonMap> get sites => jsonList(
     me?['authorizedSites'],
   ).where((e) => e['status'] == null || idOf(e['status']) == '0').toList();
@@ -228,6 +254,7 @@ class WearSession extends ChangeNotifier {
       }
       siteId = id;
       me?['currentSiteId'] = id;
+      if (!api.isMock) me = result;
     } catch (e) {
       error = e.toString();
       rethrow;
@@ -236,6 +263,21 @@ class WearSession extends ChangeNotifier {
       _emit();
       requestRefresh();
     }
+  }
+
+  Future<void> refreshIdentity() async {
+    if (api.isMock || me == null || busy) return;
+    final priorSite = siteId;
+    try {
+      await _loadIdentity();
+      if (priorSite != siteId) _invalidate();
+      error = null;
+    } on StaleSessionException {
+      return;
+    } catch (e) {
+      error = e is WearApiException ? e.message : '身份刷新失败，请重试';
+    }
+    _emit();
   }
 
   void expire() {

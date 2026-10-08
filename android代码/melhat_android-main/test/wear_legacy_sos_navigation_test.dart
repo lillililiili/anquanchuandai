@@ -77,12 +77,8 @@ void main() {
       expect(find.textContaining('紧急 ·'), findsOneWidget);
       expect(find.textContaining('陈建国'), findsWidgets);
       expect(find.textContaining('RL-H001'), findsWidgets);
-      final submit = find.byKey(const ValueKey('event-handle-submit-159'));
-      await tester.ensureVisible(submit);
-      expect(
-        find.descendant(of: submit, matching: find.text('提交待审批')),
-        findsOneWidget,
-      );
+      expect(find.text('提交待审批'), findsNothing);
+      expect(find.text('待值守人员核验'), findsOneWidget);
       await tester.ensureVisible(find.byTooltip('返回事件列表'));
       await tester.tap(find.byTooltip('返回事件列表'));
       await tester.pumpAndSettle();

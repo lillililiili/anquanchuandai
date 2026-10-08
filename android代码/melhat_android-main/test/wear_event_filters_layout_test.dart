@@ -93,12 +93,12 @@ void main() {
         expect(reads.last.containsKey('severity'), isFalse);
         await click(key('filter-status-open'));
         expect(reads.last['statuses'], 'open', reason: '一次点击替换默认未关闭预设');
-        await click(key('filter-status-pending_review'));
+        await click(key('filter-status-field_pending'));
         await click(key('filter-type-type:geofence'));
         await click(key('filter-type-alarm:belt.future_alarm'));
         await click(key('filter-device-helmet'));
         await click(key('filter-device-belt'));
-        expect(reads.last['statuses'], 'open,pending_review');
+        expect(reads.last['statuses'], 'open,field_pending');
         expect(reads.last['types'], 'geofence');
         expect(reads.last['alarmCodes'], 'belt.future_alarm');
         expect(reads.last['deviceTypes'], 'helmet,belt');

@@ -4,22 +4,36 @@ import 'package:rolling_intelligence_headband/wear/events/event_policy.dart';
 
 void main() {
   group('WearEvent', () {
-    test('platform completion remains separate from external closure and legacy history', () {
-      for (final status in ['verified', 'confirmed', 'closed']) {
-        final event = WearEvent.fromJson({
-          'id': '41', 'status': status, 'type': 'sos',
-          'fieldReportStatus': 'submitted',
-          'verificationStatus': status == 'verified' ? 'verified' : 'unknown',
-          'reviewStatus': status == 'verified' ? 'approved' : 'unknown',
-          'externalClosureStatus': 'not_synced',
-        });
-        expect(event.isPlatformComplete, isTrue);
-        expect(event.externalClosureStatus, 'not_synced');
-        expect(event.fieldReportStatus, 'submitted');
-        expect(event.statusLabel, {'verified': '已核验', 'confirmed': '已确认', 'closed': '历史已处理'}[status]);
-      }
-      expect(WearEvent.fromJson({'id': '42', 'status': 'pending_review'}).isPlatformComplete, isFalse);
-    });
+    test(
+      'platform completion remains separate from external closure and legacy history',
+      () {
+        for (final status in ['verified', 'confirmed', 'closed']) {
+          final event = WearEvent.fromJson({
+            'id': '41',
+            'status': status,
+            'type': 'sos',
+            'fieldReportStatus': 'submitted',
+            'verificationStatus': status == 'verified' ? 'verified' : 'unknown',
+            'reviewStatus': status == 'verified' ? 'approved' : 'unknown',
+            'externalClosureStatus': 'not_synced',
+          });
+          expect(event.isPlatformComplete, isTrue);
+          expect(event.externalClosureStatus, 'not_synced');
+          expect(event.fieldReportStatus, 'submitted');
+          expect(
+            event.statusLabel,
+            {'verified': '已核验', 'confirmed': '已确认', 'closed': '历史已处理'}[status],
+          );
+        }
+        expect(
+          WearEvent.fromJson({
+            'id': '42',
+            'status': 'pending_review',
+          }).isPlatformComplete,
+          isFalse,
+        );
+      },
+    );
 
     test('keeps occurrence-time person and device snapshots', () {
       final event = WearEvent.fromJson({
@@ -54,127 +68,132 @@ void main() {
     });
   });
 
-  group('inspection event permissions', () {
-    const inspector = EventActor(
-      userId: '12',
+  group('shared verification permissions', () {
+    const member = EventActor(
+      userId: '13',
+      roles: {'wear_member'},
+      permissions: {'wear:event:list', 'wear:event:report'},
+    );
+    const duty = EventActor(
+      userId: '14',
       roles: {'wear_duty'},
       permissions: {
         'wear:event:list',
+        'wear:event:report',
         'wear:event:claim',
-        'wear:task:edit',
         'wear:event:review',
       },
     );
-    const formerReviewer = EventActor(
-      userId: '21',
-      roles: {'wear_reviewer'},
-      permissions: {'*:*:*'},
-    );
     const admin = EventActor(
-      userId: '1',
+      userId: '12',
       roles: {'admin'},
       permissions: {'*:*:*'},
     );
-    WearEvent event(String status, {bool reminder = false}) =>
+    WearEvent event(String status, {String state = 'waiting'}) =>
         WearEvent.fromJson({
           'id': '1',
-          'type': 'realtime',
+          'type': 'sos',
           'status': status,
-          'claimantUserId': '99',
-          'taskMatch': 'pending',
-          'reminderOnly': reminder,
-          'severity': reminder ? 'warning' : 'emergency',
+          'assistance': {'state': state, 'members': []},
         });
-    test('any returned group member can report without claim or ownership', () {
-      for (final status in ['open', 'claimed', 'handling']) {
+    test(
+      'members supplement authorized active events without acquiring review authority',
+      () {
+        for (final state in ['open', 'field_pending', 'claimed', 'handling']) {
+          expect(
+            EventPolicy.can(EventCommand.handle, event(state), member),
+            isTrue,
+          );
+          for (final cmd in [
+            EventCommand.claim,
+            EventCommand.saveVerification,
+            EventCommand.verify,
+            EventCommand.joinAssistance,
+          ]) {
+            expect(EventPolicy.can(cmd, event(state), member), isFalse);
+          }
+        }
         expect(
-          EventPolicy.can(EventCommand.handle, event(status), inspector),
-          isTrue,
-        );
-        expect(
-          EventPolicy.can(EventCommand.claim, event(status), inspector),
+          EventPolicy.can(EventCommand.handle, event('verified'), member),
           isFalse,
         );
-        expect(
-          EventPolicy.can(EventCommand.transfer, event(status), inspector),
-          isFalse,
-        );
-      }
-      expect(
-        EventPolicy.can(
-          EventCommand.handle,
-          event('pending_review'),
-          inspector,
-        ),
-        isFalse,
-      );
-      expect(event('pending_review').statusFor(admin: false), '待管理员审批');
-    });
-    test('only administrators review, reopen and associate tasks', () {
-      for (final actor in [inspector, formerReviewer]) {
-        expect(
-          EventPolicy.can(EventCommand.close, event('pending_review'), actor),
-          isFalse,
-        );
-        expect(
-          EventPolicy.can(EventCommand.reopen, event('closed'), actor),
-          isFalse,
-        );
-        expect(
-          EventPolicy.can(EventCommand.assignTask, event('open'), actor),
-          isFalse,
-        );
-      }
-      expect(
-        EventPolicy.can(EventCommand.close, event('pending_review'), admin),
-        isTrue,
-      );
-      expect(
-        EventPolicy.can(EventCommand.reopen, event('closed'), admin),
-        isTrue,
-      );
-      expect(
-        EventPolicy.can(EventCommand.assignTask, event('open'), admin),
-        isTrue,
-      );
-    });
-    test('only server-classified reminders can confirm without a report', () {
-      expect(
-        EventPolicy.can(EventCommand.confirm, event('open'), inspector),
-        isFalse,
-      );
-      expect(
-        EventPolicy.can(
-          EventCommand.confirm,
-          event('open', reminder: true),
-          inspector,
-        ),
-        isTrue,
-      );
-      expect(
-        EventPolicy.can(
-          EventCommand.handle,
-          event('open', reminder: true),
-          inspector,
-        ),
-        isFalse,
-      );
-      expect(
-        EventPolicy.can(
-          EventCommand.confirm,
-          event('closed', reminder: true),
-          inspector,
-        ),
-        isFalse,
-      );
-      expect(
-        EventPolicy.can(
-          EventCommand.close,
-          event('pending_review', reminder: true),
-          admin,
-        ),
-        isFalse,
-      );
-    });
+      },
+    );
+    test(
+      'authorized duty and admin can claim, draft and verify using shared states',
+      () {
+        for (final actor in [duty, admin]) {
+          expect(
+            EventPolicy.can(EventCommand.claim, event('open'), actor),
+            isTrue,
+          );
+          expect(
+            EventPolicy.can(EventCommand.claim, event('handling'), actor),
+            isFalse,
+          );
+          expect(
+            EventPolicy.can(
+              EventCommand.saveVerification,
+              event('handling'),
+              actor,
+            ),
+            isTrue,
+          );
+          expect(
+            EventPolicy.can(EventCommand.verify, event('field_pending'), actor),
+            isTrue,
+          );
+          expect(
+            EventPolicy.can(EventCommand.verify, event('verified'), actor),
+            isFalse,
+          );
+          expect(
+            EventPolicy.can(EventCommand.joinAssistance, event('open'), actor),
+            isTrue,
+          );
+          expect(
+            EventPolicy.can(
+              EventCommand.endAssistance,
+              event('handling', state: 'active'),
+              actor,
+            ),
+            isTrue,
+          );
+          expect(
+            EventPolicy.can(
+              EventCommand.joinAssistance,
+              event('handling', state: 'ended'),
+              actor,
+            ),
+            isFalse,
+          );
+        }
+      },
+    );
+    test(
+      'old approval, reopen, transfer, acknowledge and work editing are hidden for everyone',
+      () {
+        for (final actor in [member, duty, admin]) {
+          for (final cmd in [
+            EventCommand.ack,
+            EventCommand.confirm,
+            EventCommand.close,
+            EventCommand.reopen,
+            EventCommand.transfer,
+            EventCommand.assignTask,
+          ]) {
+            for (final state in [
+              'open',
+              'handling',
+              'pending_review',
+              'verified',
+              'closed',
+            ]) {
+              expect(EventPolicy.can(cmd, event(state), actor), isFalse);
+            }
+          }
+        }
+      },
+    );
   });
 }

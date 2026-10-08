@@ -29,6 +29,14 @@ void main() {
                       ],
                     });
                   }
+                  if (request.path == '/api/v1/work-tasks/mine') {
+                    return reply({
+                      'records': [
+                        {'id': '41', 'title': '待加载作业', 'status': 'in_progress'},
+                      ],
+                      'total': 1,
+                    });
+                  }
                   if (request.path.startsWith('/api/v1/work-tasks/')) {
                     return reply(null, code: code, msg: '接口暂不可用');
                   }
@@ -112,7 +120,8 @@ void main() {
                       'total': 1,
                     });
                   }
-                  if (request.path == '/api/v1/work-tasks') {
+                  if (request.path == '/api/v1/work-tasks' ||
+                      request.path == '/api/v1/work-tasks/mine') {
                     return reply({
                       'records': [task],
                       'total': 1,

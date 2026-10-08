@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import '../core.dart';
+import '../mock_media.dart';
 import 'event_controller.dart';
 import 'event_models.dart';
 import 'event_location_card.dart';
@@ -34,16 +36,31 @@ class EventReferenceView extends StatefulWidget {
 }
 
 class _EventReferenceViewState extends State<EventReferenceView> {
-  late final TextEditingController _note = TextEditingController(
-    text: widget.controller
-        .draftFor(widget.controller.selected!.id)
-        .handleComment,
-  );
-  // 随协助组与事件记录 UI 一并停用，保留以便后续恢复。
-  // bool _demoJoined = false;
-  // final _legacyAnchor = GlobalKey();
-  final _formAnchor = GlobalKey();
-  // final _legacyController = ExpansibleController();
+  late final TextEditingController _note;
+  late final TextEditingController _situation;
+  late final TextEditingController _measures;
+  late String _conclusion;
+  late int _formBaseVersion;
+  int _formRevision = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize while the event exists. A revoked session clears the controller
+    // before disposal, including editors hidden from ordinary users.
+    _note = TextEditingController(text: c.draftFor(e.id).handleComment);
+    _situation = TextEditingController(text: _initial('situation'));
+    _measures = TextEditingController(text: _initial('measures'));
+    _conclusion = _initial('conclusion');
+    _formBaseVersion = c.draftFor(e.id).baseVersion ?? e.version;
+  }
+
+  String _initial(String field) {
+    final draft = c.draftFor(e.id).toJson();
+    final local = textOf(draft[field], '');
+    return local.isNotEmpty ? local : textOf(e.verificationDraft[field], '');
+  }
+
   EventController get c => widget.controller;
   WearEvent get e => c.selected!;
   bool get sos => e.type == 'sos';
@@ -55,14 +72,19 @@ class _EventReferenceViewState extends State<EventReferenceView> {
   @override
   void dispose() {
     _note.dispose();
-    // _legacyController.dispose();
+    _situation.dispose();
+    _measures.dispose();
     super.dispose();
   }
 
   String known(String value, [String fallback = '未关联']) =>
       value.isEmpty ? fallback : value;
-  void message(String text) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  void message(String text) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
   Widget card(Widget child, {EdgeInsets padding = const EdgeInsets.all(12)}) =>
       Material(
         color: Colors.white,
@@ -146,15 +168,63 @@ class _EventReferenceViewState extends State<EventReferenceView> {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
   );
-  @override
-  Widget build(BuildContext context) {
-    final draft = c.draftFor(e.id).handleComment;
-    if (_note.text != draft) {
-      _note.value = TextEditingValue(
-        text: draft,
-        selection: TextSelection.collapsed(offset: draft.length),
+  Future<void> _run(EventCommand command) async {
+    FocusScope.of(context).unfocus();
+    final formWasCurrent = _formBaseVersion == e.version;
+    if (command == EventCommand.verify ||
+        command == EventCommand.saveVerification) {
+      await c.updateDraft(
+        e.id,
+        c
+            .draftFor(e.id)
+            .copyWith(
+              baseVersion: _formBaseVersion,
+              conclusion: _conclusion,
+              situation: _situation.text,
+              measures: _measures.text,
+            ),
       );
     }
+    if (!mounted) return;
+    if (command == EventCommand.verify ||
+        command == EventCommand.endAssistance) {
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(command == EventCommand.verify ? '提交最终核验？' : '结束本次协助？'),
+          content: Text(
+            command == EventCommand.verify
+                ? '提交后核验记录只读；平台核验不代表外部系统正式结案。'
+                : '协助记录将保留，事件仍需单独完成核验。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('返回'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('确认'),
+            ),
+          ],
+        ),
+      );
+      if (accepted != true || !mounted) return;
+    }
+    final saved = await c.execute(command);
+    if (saved && formWasCurrent) {
+      _formBaseVersion = c.draftFor(e.id).baseVersion ?? e.version;
+    }
+    if (mounted && saved) {
+      message(c.successMessage ?? (e.demo ? '本地模拟记录已更新' : '记录已更新'));
+      WearScope.of(context).requestRefresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final note = c.draftFor(e.id).handleComment;
+    if (_note.text != note) _note.text = note;
     return PopScope(
       canPop: !c.writing,
       child: Scaffold(
@@ -172,107 +242,114 @@ class _EventReferenceViewState extends State<EventReferenceView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (c.detailLoading || c.writing)
+                        if (c.writing || c.detailLoading)
                           const LinearProgressIndicator(minHeight: 2),
                         if (c.errorMessage != null) _notice(c.errorMessage!),
                         if (c.conflictMessage != null)
-                          _notice('${c.conflictMessage!}；草稿已保留，请核对最新状态'),
+                          _notice('${c.conflictMessage}；填写内容已保留，请载入最新草稿后重新核对'),
+                        if (!e.isPlatformComplete &&
+                            (c.draftFor(e.id).baseVersion ??
+                                    _formBaseVersion) !=
+                                e.version)
+                          OutlinedButton(
+                            onPressed: c.writing
+                                ? null
+                                : () async {
+                                    await c.loadLatestDraft();
+                                    if (!mounted) return;
+                                    setState(() {
+                                      final draft = c.draftFor(e.id);
+                                      _formBaseVersion = e.version;
+                                      _formRevision++;
+                                      _conclusion = draft.conclusion;
+                                      _situation.text = draft.situation;
+                                      _measures.text = draft.measures;
+                                      _note.text = draft.handleComment;
+                                    });
+                                  },
+                            child: const Text('载入最新草稿（替换当前填写）'),
+                          ),
                         if (c.successMessage != null)
                           _notice(c.successMessage!),
                         _summary(),
-                        if (e.source == 'manual_sos') ...[
-                          gap(),
-                          card(
-                            Text(
-                              e.isPlatformComplete
-                                  ? '本次平台处理已完成，正式结案仍以原安监系统为准。'
-                                  : '手动 SOS 已提交 → 管理员审批 → 已核验\n无需一级审查，等待管理员审批。',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: _muted,
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (c.can(EventCommand.confirm) ||
-                            c.can(EventCommand.close))
-                          gap(),
-                        if (c.can(EventCommand.confirm))
+                        gap(),
+                        if (c.can(EventCommand.claim)) ...[
                           FilledButton.icon(
-                            key: const ValueKey('event-confirm-reminder'),
-                            onPressed: c.writing ? null : widget.onConfirm,
-                            icon: const Icon(Icons.check_circle_outline),
-                            label: const Text('收到'),
+                            key: const ValueKey('event-claim'),
+                            style: button(),
+                            onPressed: c.writing
+                                ? null
+                                : () => _run(EventCommand.claim),
+                            icon: const Icon(Icons.assignment_ind_outlined),
+                            label: const Text('认领并开始处理'),
                           ),
-                        if (c.can(EventCommand.close))
-                          FilledButton.icon(
-                            onPressed: c.writing ? null : widget.onReview,
-                            icon: const Icon(Icons.fact_check_outlined),
-                            label: const Text('审批通过 · 完成核验'),
-                          ),
-                        if (!e.isWarning && !c.can(EventCommand.handle)) ...[
                           gap(),
-                          card(
-                            EventSubmittedPhotos(
-                              key: ValueKey('event-media-${e.id}'),
-                              eventId: e.id,
-                              version: e.version,
-                            ),
-                          ),
                         ],
-                        if (!c.can(EventCommand.handle) &&
-                            _handleFeedback != null) ...[
+                        if (e.isSos) ...[_assistanceCard(), gap()],
+                        EventLocationCard(event: e),
+                        gap(),
+                        if (c.can(EventCommand.handle)) ...[
+                          _observationForm(),
                           gap(),
+                        ],
+                        _observations(),
+                        gap(),
+                        if (c.can(EventCommand.handle) ||
+                            c.can(EventCommand.verify)) ...[
                           card(
-                            Text(
-                              _handleFeedback!,
-                              key: ValueKey('event-handle-feedback-${e.id}'),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: _muted,
+                            EventPhotoCapture(
+                              paths: c.draftFor(e.id).photoPaths,
+                              onChanged: (paths) => c.updateDraft(
+                                e.id,
+                                c.draftFor(e.id).copyWith(photoPaths: paths),
                               ),
+                              enabled: !c.writing,
                             ),
                           ),
+                          gap(),
                         ],
-                        gap(),
-                        if (!e.isWarning) EventLocationCard(event: e),
-                        gap(),
-                        if (!e.isWarning && c.can(EventCommand.handle))
-                          ..._assessment(),
-                        gap(),
-                        if (!e.isWarning && c.actor.isAdmin) _communication(),
-                        // 按要求隐藏事件记录卡片，保留原实现。
-                        /*
-                        gap(),
+                        if (c.can(EventCommand.verify)) ...[
+                          _verificationForm(),
+                          gap(),
+                        ],
+                        if (e.isPlatformComplete ||
+                            !c.can(EventCommand.verify)) ...[
+                          _verificationResult(),
+                          gap(),
+                        ],
                         card(
-                          Theme(
-                            data: Theme.of(
-                              context,
-                            ).copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              controller: _legacyController,
-                              expansionAnimationStyle:
-                                  AnimationStyle.noAnimation,
-                              key: const ValueKey('event-original-actions'),
-                              tilePadding: EdgeInsets.zero,
-                              title: Text(
-                                '事件记录',
-                                style: TextStyle(fontSize: 13, color: _muted),
-                              ),
-                              subtitle: Text(
-                                e.isWarning ? '查看本人确认记录' : '处理说明、关联与时间线',
-                                style: TextStyle(fontSize: 10, color: _muted),
-                              ),
+                          EventSubmittedPhotos(
+                            key: ValueKey('event-media-${e.id}'),
+                            eventId: e.id,
+                            version: e.version,
+                          ),
+                        ),
+                        gap(),
+                        if (c.actor.isAdmin && e.deviceId.isNotEmpty) ...[
+                          card(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Container(
-                                  key: _legacyAnchor,
-                                  child: widget.legacyDetail,
+                                heading('联系现场'),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  '按设备可用能力发起语音；通话结束不会完成事件核验。',
+                                  style: TextStyle(color: _muted, fontSize: 12),
+                                ),
+                                OutlinedButton.icon(
+                                  style: outline(),
+                                  onPressed: c.writing
+                                      ? null
+                                      : widget.onCommunication,
+                                  icon: const Icon(Icons.call_outlined),
+                                  label: const Text('查看可用通讯装备'),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                        */
+                          gap(),
+                        ],
+                        _timeline(),
                       ],
                     ),
                   ),
@@ -285,13 +362,315 @@ class _EventReferenceViewState extends State<EventReferenceView> {
     );
   }
 
-  Widget _notice(String text) => Padding(
+  Widget _notice(String value) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: card(
-      Text(text, style: const TextStyle(color: _muted, fontSize: 12)),
+      Text(value, style: const TextStyle(color: _muted, fontSize: 12)),
     ),
   );
 
+  Widget _summary() => card(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            iconCircle(
+              e.isSos ? Icons.sos : Icons.warning_amber_outlined,
+              color: levelColor,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: heading(e.alarmLabel)),
+            WearBadge(text: e.statusLabel),
+          ],
+        ),
+        line(),
+        Text(e.descriptionLabel),
+        const SizedBox(height: 8),
+        infoRow(Icons.person_outline, '相关人员', known(e.personName)),
+        infoRow(
+          Icons.source_outlined,
+          '报警来源',
+          e.source == 'manual_sos'
+              ? '手机手动求助'
+              : e.demo
+              ? '模拟设备上报'
+              : '设备上报',
+        ),
+        infoRow(Icons.devices_outlined, '关联设备', known(e.sn, '未关联设备，仍可文字跟进')),
+        infoRow(
+          Icons.assignment_outlined,
+          '关联作业',
+          known(e.taskId, '未关联作业'),
+          onTap: e.taskId.isEmpty
+              ? null
+              : () => context.push('/tasks/${e.taskId}'),
+        ),
+        infoRow(Icons.schedule, '发生时间', formatTime(e.occurredAt)),
+        if (e.locationDescription.isNotEmpty)
+          infoRow(Icons.place_outlined, '位置说明', e.locationDescription),
+        const Text(
+          '平台核验不代表外部告警已解除或正式结案。',
+          style: TextStyle(color: _muted, fontSize: 12),
+        ),
+      ],
+    ),
+  );
+
+  Widget _assistanceCard() => card(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        heading('SOS 协助'),
+        const SizedBox(height: 8),
+        Text(
+          '本条求助 · ${const {'waiting': '等待接警', 'accepted': '已接警 · 等待加入协助', 'active': '正在协助', 'ended': '协助已结束'}[e.assistance['state']] ?? '等待接警'}',
+        ),
+        Text(
+          '协助人数：${(e.assistance['members'] as List? ?? []).length}',
+          style: const TextStyle(color: _muted),
+        ),
+        const Text(
+          '加入协助会保存记录，不会自动接通语音。',
+          style: TextStyle(color: _muted, fontSize: 12),
+        ),
+        if (c.can(EventCommand.joinAssistance))
+          OutlinedButton.icon(
+            key: const ValueKey('sos-join'),
+            style: outline(red: true),
+            onPressed: c.writing
+                ? null
+                : () => _run(EventCommand.joinAssistance),
+            icon: const Icon(Icons.support_agent),
+            label: const Text('接警并加入协助'),
+          ),
+        if (c.can(EventCommand.endAssistance))
+          OutlinedButton(
+            key: const ValueKey('sos-end'),
+            style: outline(),
+            onPressed: c.writing
+                ? null
+                : () => _run(EventCommand.endAssistance),
+            child: const Text('结束协助'),
+          ),
+      ],
+    ),
+  );
+
+  Widget _observationForm() => card(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        heading('补充现场情况'),
+        const SizedBox(height: 8),
+        TextField(
+          key: const ValueKey('event-observation'),
+          controller: _note,
+          enabled: !c.writing,
+          minLines: 3,
+          maxLines: 5,
+          maxLength: 500,
+          decoration: const InputDecoration(hintText: '记录现场情况或需要的帮助，照片可选'),
+          onChanged: (value) => c.updateDraft(
+            e.id,
+            c.draftFor(e.id).copyWith(handleComment: value),
+          ),
+        ),
+        FilledButton(
+          key: const ValueKey('event-observation-submit'),
+          style: button(),
+          onPressed: c.writing ? null : () => _run(EventCommand.handle),
+          child: const Text('提交现场情况'),
+        ),
+        const Text(
+          '补充记录不会自动完成核验。',
+          style: TextStyle(fontSize: 12, color: _muted),
+        ),
+      ],
+    ),
+  );
+
+  Widget _observations() => card(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        heading('现场补充记录'),
+        const SizedBox(height: 8),
+        if (e.observations.isEmpty)
+          const Text('暂无补充记录', style: TextStyle(color: _muted)),
+        for (final row in e.observations) ...[
+          Text(textOf(row['comment'])),
+          if (!e.demo)
+            EventStoredPhotos(
+              blobIds: (row['photoIds'] as List? ?? []).map(idOf).toList(),
+            ),
+          if (jsonList(row['photos']).isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final photo in jsonList(row['photos']))
+                  MockMediaTile(media: photo),
+              ],
+            ),
+          Text(
+            '${textOf(row['actor'])} · ${formatTime(row['createdAt'])}',
+            style: const TextStyle(fontSize: 12, color: _muted),
+          ),
+          line(),
+        ],
+      ],
+    ),
+  );
+
+  void _rememberVerification() => unawaited(
+    c.updateDraft(
+      e.id,
+      c
+          .draftFor(e.id)
+          .copyWith(
+            baseVersion: _formBaseVersion,
+            conclusion: _conclusion,
+            situation: _situation.text,
+            measures: _measures.text,
+          ),
+    ),
+  );
+  Widget _verificationForm() => card(
+    Column(
+      key: ValueKey(_formRevision),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        heading('最终核验'),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          key: const ValueKey('verification-conclusion'),
+          initialValue: _conclusion.isEmpty ? null : _conclusion,
+          decoration: const InputDecoration(labelText: '核验结论 *'),
+          items: const [
+            '设备通信异常',
+            '需现场处理',
+            '暂无法确认',
+          ].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          onChanged: c.writing
+              ? null
+              : (value) {
+                  setState(() => _conclusion = value ?? '');
+                  _rememberVerification();
+                },
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          key: const ValueKey('verification-situation'),
+          controller: _situation,
+          enabled: !c.writing,
+          minLines: 3,
+          maxLines: 5,
+          maxLength: 500,
+          decoration: const InputDecoration(labelText: '现场情况 *'),
+          onChanged: (_) => _rememberVerification(),
+        ),
+        TextField(
+          key: const ValueKey('verification-measures'),
+          controller: _measures,
+          enabled: !c.writing,
+          minLines: 2,
+          maxLines: 4,
+          maxLength: 500,
+          decoration: const InputDecoration(labelText: '采取措施'),
+          onChanged: (_) => _rememberVerification(),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                key: const ValueKey('verification-save'),
+                style: outline(),
+                onPressed: c.writing
+                    ? null
+                    : () => _run(EventCommand.saveVerification),
+                child: const Text('保存核验草稿'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton(
+                key: const ValueKey('verification-submit'),
+                style: button(),
+                onPressed: c.writing ? null : () => _run(EventCommand.verify),
+                child: const Text('提交最终核验'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _verificationResult() => e.status != 'verified'
+      ? card(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              heading('待值守人员核验'),
+              const SizedBox(height: 8),
+              const Text(
+                '补充现场情况不会自动完成核验，最终结果将在值守人员提交后显示。',
+                style: TextStyle(color: _muted),
+              ),
+            ],
+          ),
+        )
+      : card(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              heading('核验结果（只读）'),
+              const SizedBox(height: 8),
+              Text('核验结论：${textOf(e.verification['conclusion'])}'),
+              Text('现场情况：${textOf(e.verification['situation'])}'),
+              Text('采取措施：${textOf(e.verification['measures'])}'),
+              if (!e.demo)
+                EventStoredPhotos(
+                  blobIds: (e.verification['photoIds'] as List? ?? [])
+                      .map(idOf)
+                      .toList(),
+                ),
+              if (jsonList(e.verification['photos']).isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final photo in jsonList(e.verification['photos']))
+                      MockMediaTile(media: photo),
+                  ],
+                ),
+              Text(
+                '${textOf(e.verification['actor'])} · ${formatTime(e.verification['createdAt'])}',
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+
+  Widget _timeline() => card(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        heading('处理时间线'),
+        const SizedBox(height: 8),
+        if (c.actions.isEmpty)
+          const Text('暂无处理记录', style: TextStyle(color: _muted)),
+        for (final action in c.actions.reversed)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              '${formatTime(action.createTime)} · ${action.actor}\n${action.reason}',
+            ),
+          ),
+      ],
+    ),
+  );
   Widget _hero(BuildContext context) => SizedBox(
     key: const ValueKey('wear-page-hero-event-detail'),
     height: WearHeaderLayout.height(context),
@@ -342,14 +721,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
               ),
               const SizedBox(height: 10),
               WearBadge(
-                text:
-                    '${e.severityLabel} · ${e.isWarning
-                        ? '本人确认'
-                        : e.source == 'manual_sos'
-                        ? '管理员审批'
-                        : e.isEmergency
-                        ? '两级处置'
-                        : '现场处理'}',
+                text: '${e.severityLabel} · ${e.statusLabel}',
                 color: e.isEmergency
                     ? _red
                     : e.isWarning
@@ -358,7 +730,7 @@ class _EventReferenceViewState extends State<EventReferenceView> {
               ),
               const SizedBox(height: 6),
               Text(
-                e.isWarning ? '查看提醒 · 本人确认' : '定位现场 · 协同处置',
+                '现场跟进 · 统一核验',
                 style: TextStyle(fontSize: 12, color: _muted),
               ),
             ],
@@ -367,364 +739,4 @@ class _EventReferenceViewState extends State<EventReferenceView> {
       ],
     ),
   );
-
-  Widget _summary() => card(
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            iconCircle(
-              sos ? Icons.sos : Icons.warning_amber_rounded,
-              color: levelColor,
-              size: 42,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    e.alarmLabel,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: _ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '事件 #${e.id}',
-                    style: const TextStyle(fontSize: 11, color: _muted),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 6),
-            WearBadge(
-              text: e.statusFor(admin: c.actor.isAdmin),
-              color: e.isPlatformComplete ? WearColors.online : levelColor,
-            ),
-          ],
-        ),
-        line(),
-        infoRow(
-          Icons.person_outline,
-          known(e.personName, '人员未知'),
-          '${e.deviceTypeLabel} ${known(e.sn, '未知')} · ${e.taskId.isEmpty ? '未关联作业' : '关联作业 ${e.taskId}'}',
-        ),
-        infoRow(Icons.schedule, '事件发生时间', formatTime(e.occurredAt)),
-        const SizedBox(height: 8),
-        const Text('外部结案：未同步', style: TextStyle(fontSize: 12, color: _muted)),
-        const Text(
-          '平台核验不代表正式结案，正式结案由原安监系统确认。',
-          style: TextStyle(fontSize: 10, color: _muted),
-        ),
-        if (e.status == 'closed')
-          const Text(
-            '历史已处理记录，不能据此推定已核验或已结案。',
-            style: TextStyle(fontSize: 10, color: _muted),
-          ),
-        if (e.status == 'pending_review')
-          Text(
-            e.source == 'manual_sos'
-                ? '审批人员：管理员（须与报警人不同）'
-                : e.type == 'sos'
-                ? '审批人员：管理员（允许审批本人上报的设备 SOS）'
-                : '审批人员：管理员（须与现场上报人不同）',
-            style: const TextStyle(fontSize: 11, color: _muted),
-          ),
-        for (final action
-            in c.actions
-                .where(
-                  (item) => const {
-                    'handle',
-                    'review',
-                    'confirm',
-                  }.contains(item.action),
-                )
-                .take(2))
-          Text(
-            '${action.action == 'handle'
-                ? '现场上报'
-                : action.action == 'review'
-                ? '管理员审批'
-                : '本人确认'}：${action.actor} · ${formatTime(action.createTime)}',
-            style: const TextStyle(fontSize: 11, color: _muted),
-          ),
-        line(),
-        const Text(
-          '告警描述',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: _ink,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          e.descriptionLabel,
-          style: const TextStyle(fontSize: 12, color: _muted, height: 1.5),
-        ),
-        const SizedBox(height: 5),
-        if (!e.isWarning)
-          const Text(
-            '告警需现场核验，不直接判定违规',
-            style: TextStyle(fontSize: 10, color: _muted),
-          ),
-      ],
-    ),
-  );
-
-  List<Widget> _assessment() => [
-    card(
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(key: _formAnchor, child: heading('上报异常原因')),
-          const SizedBox(height: 4),
-          const Text(
-            '异常原因说明（必填）',
-            style: TextStyle(fontSize: 12, color: _muted),
-          ),
-          const SizedBox(height: 9),
-          TextField(
-            key: ValueKey('event-handle-input-${e.id}'),
-            controller: _note,
-            enabled: !c.writing,
-            minLines: 3,
-            maxLines: 5,
-            maxLength: 500,
-            style: const TextStyle(fontSize: 14, color: _ink),
-            decoration: InputDecoration(
-              hintText: '请说明为什么发生本次异常，以及现场实际情况',
-              filled: true,
-              fillColor: const Color(0xFFF9FCFF),
-              contentPadding: const EdgeInsets.all(10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFD8E4F3)),
-              ),
-              counterStyle: const TextStyle(fontSize: 10, color: _muted),
-            ),
-            onChanged: (value) => unawaited(
-              c.updateDraft(
-                e.id,
-                c.draftFor(e.id).copyWith(handleComment: value),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-    gap(),
-    _attachmentCard(),
-    gap(),
-    Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            style: outline(),
-            onPressed: c.writing
-                ? null
-                : () async {
-                    await c.updateDraft(e.id, c.draftFor(e.id));
-                    if (mounted) message('说明与附件草稿已保存在本机');
-                  },
-            child: const Text('保存草稿'),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: FilledButton(
-            key: ValueKey('event-handle-submit-${e.id}'),
-            style: button(),
-            onPressed:
-                c.writing ||
-                    !c.can(EventCommand.handle) ||
-                    c.isHandleCommentSubmitted(e.id)
-                ? null
-                : widget.onSubmit,
-            child: Text(
-              c.writing
-                  ? '提交中…'
-                  : c.isHandleCommentSubmitted(e.id)
-                  ? '已上报'
-                  : e.isEmergency
-                  ? '提交待审批'
-                  : '提交核验',
-            ),
-          ),
-        ),
-      ],
-    ),
-    if (_handleFeedback case final feedback?)
-      Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: card(
-          Text(
-            feedback,
-            key: ValueKey('event-handle-feedback-${e.id}'),
-            style: const TextStyle(fontSize: 12, color: _muted),
-          ),
-        ),
-      ),
-    if (!c.can(EventCommand.handle))
-      Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(
-          '本次处理已完成，可查看上报记录。',
-          style: const TextStyle(fontSize: 10, color: _muted),
-        ),
-      ),
-    Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.info_outline, color: _muted, size: 18),
-          SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              '请填写异常原因说明，并添加至少一个现场照片或视频后提交',
-              style: TextStyle(fontSize: 10, color: _muted),
-            ),
-          ),
-        ],
-      ),
-    ),
-  ];
-  String? get _handleFeedback {
-    if (c.conflictMessage != null) {
-      return '${c.conflictMessage}；填写内容已保留，请核对最新状态后重试。';
-    }
-    final submitted = c.isHandleCommentSubmitted(e.id);
-    if (c.errorMessage != null) {
-      return submitted
-          ? '核验已提交，内容已保存；最新数据刷新失败：${c.errorMessage}。请稍后刷新，勿重复提交。'
-          : '${c.errorMessage}；填写内容已保留。';
-    }
-    if (!submitted) return null;
-    if (e.status == 'pending_review') {
-      return '现场记录已保存，等待管理员审批，平台核验尚未完成。';
-    }
-    if (e.status == 'verified') return '现场记录已保存，平台核验已完成，外部结案未同步。';
-    if (e.status == 'closed') return '历史记录已处理，核验结果待确认；外部结案未同步。';
-    if (c.can(EventCommand.close)) {
-      return '现场记录已保存，请管理员审批核验结果。';
-    }
-    return '核验已提交，内容已保存。当前状态：${e.statusFor(admin: c.actor.isAdmin)}。';
-  }
-
-  Widget _attachmentCard() => card(
-    EventPhotoCapture(
-      key: ValueKey('event-evidence-${e.id}'),
-      paths: c.draftFor(e.id).photoPaths,
-      enabled: !c.writing,
-      onChanged: (paths) => unawaited(
-        c.updateDraft(e.id, c.draftFor(e.id).copyWith(photoPaths: paths)),
-      ),
-    ),
-  );
-
-  Widget _communication() => card(
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        heading('通信与协助'),
-        const SizedBox(height: 6),
-        const Text(
-          '联系现场人员，核实情况并协同处置',
-          style: TextStyle(fontSize: 12, color: _muted),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          key: const ValueKey('event-communication'),
-          style: outline(),
-          onPressed: c.writing ? null : widget.onCommunication,
-          icon: const Icon(Icons.call_outlined, size: 20),
-          label: const Text('联系现场'),
-        ),
-        // 按要求隐藏协助组、加入/结束协助及硬件提示，保留联系现场。
-        /*
-        if (sos) ...[
-          line(),
-          infoRow(
-            Icons.people_outline,
-            '协助组：待接入',
-            _demoJoined ? '本地演示已加入 · 未建立实际会话' : '暂无已接入的协助组信息',
-            onTap: _assist,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton.icon(
-                onPressed: c.writing ? null : _assist,
-                icon: const Icon(Icons.person_add_alt_1, size: 18),
-                label: Text(_demoJoined ? '已加入（示例）' : '加入协助'),
-              ),
-              OutlinedButton.icon(
-                onPressed: c.writing
-                    ? null
-                    : () {
-                        if (_demoJoined) {
-                          setState(() => _demoJoined = false);
-                          message('本地协助演示已结束，未关闭事件');
-                        } else {
-                          message('当前没有本页建立的协助会话；事件状态未改变');
-                        }
-                      },
-                icon: const Icon(Icons.call_end, size: 18),
-                label: const Text('结束协助'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '帽端长按 SOS 3 秒退出：硬件行为待联调。',
-            style: TextStyle(fontSize: 10, color: _muted),
-          ),
-        ],
-        */
-      ],
-    ),
-  );
-  // 协助组入口停用时，不启用本地演示交互。
-  /*
-  Future<void> _assist() async {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('协助组服务尚未接入'),
-        content: Text(
-          '求助人员：${known(e.personName)}\n设备：${known(e.sn)}\n可打开已有通信能力，或体验本地协助状态。两者都不会自动呼叫或关闭事件。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('关闭'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _demoJoined = true);
-            },
-            child: const Text('体验本地加入'),
-          ),
-          if (e.deviceId.isNotEmpty)
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                widget.onCommunication();
-              },
-              child: const Text('打开已有通信'),
-            ),
-        ],
-      ),
-    );
-  }
-  */
 }

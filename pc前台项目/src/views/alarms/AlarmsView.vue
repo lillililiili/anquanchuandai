@@ -15,7 +15,6 @@ import FilterBar from "@/components/layout/FilterBar.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import PlantMap from "@/components/domain/PlantMap.vue";
 import VideoFrame from "@/components/domain/VideoFrame.vue";
-import { DATE } from "@/mock/data";
 import { db } from "@/mock/runtime";
 import { session, filtersOf } from "@/stores/session";
 import { events, personName, revision, search, statusColor } from "@/lib/queries";
@@ -28,7 +27,7 @@ const columns = ["事件编号", "类型", "人员", "设备编号", "发生时�
 const stored = filtersOf("alarms");
 const draft = reactive({
   q: stored.q || "",
-  date: stored.date || DATE,
+  date: stored.date || "",
   type: stored.type || "",
   status: stored.status || "",
 });
@@ -52,7 +51,7 @@ const alarms = computed(() => {
         (!query.type || item.type === query.type) &&
         (!query.status || item.status === query.status),
     )
-    .sort((a, b) => urgency(a) - urgency(b) || b.time.localeCompare(a.time));
+    .sort((a, b) => urgency(a) - urgency(b) || (b.date + b.time).localeCompare(a.date + a.time));
 });
 
 const openSos = computed(() => alarms.value.filter((item) => item.type === "人员求助" && item.status !== "已核验"));
@@ -98,13 +97,12 @@ function applyFilters() {
     type: draft.type,
     status: draft.status,
   };
-  if (!draft.date) draft.date = DATE;
 }
 
 function resetFilters() {
   session.filters.alarms = {};
   draft.q = "";
-  draft.date = DATE;
+  draft.date = "";
   draft.type = "";
   draft.status = "";
 }
@@ -114,9 +112,9 @@ function selectAlarm(event, id) {
   session.event = id;
 }
 
-function claimAlarm(id) {
+async function claimAlarm(id) {
   try {
-    db.claim(id);
+    await db.claim(id);
     toast("事件已认领");
   } catch (error) {
     toast(error.message || "操作失败", true);
@@ -199,7 +197,7 @@ function rowClass(item) {
             <td><AppTag :color="statusColor(item.status)">{{ item.status }}</AppTag></td>
             <td>
               <a v-if="item.type === '人员求助' && item.status !== '已核验'" class="btn small danger sos-row-go" :href="'#/event/' + item.id" @click.stop>立即响应</a>
-              <AppButton v-else-if="item.status === '待认领'" tone="small primary" @click.stop="claimAlarm(item.id)">马上认领</AppButton>
+              <AppButton v-else-if="item.status === '待认领' && item.permissions?.['events:claim']" tone="small primary" @click.stop="claimAlarm(item.id)">马上认领</AppButton>
               <a v-else-if="item.status !== '已核验'" class="btn small primary" :href="'#/event/' + item.id" @click.stop>去核验</a>
               <a v-else class="btn small" :href="'#/event/' + item.id" @click.stop>查看</a>
             </td>

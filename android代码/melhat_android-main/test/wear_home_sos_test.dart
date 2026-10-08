@@ -93,7 +93,7 @@ void main() {
       expect(find.byType(EventReferenceView), findsNothing);
       expect(requests.single['severity'], 'emergency');
       expect(requests.single['current'], 1);
-      expect(requests.single.containsKey('type'), isFalse);
+      expect(requests.single['type'], 'sos');
       expect(requests.single.containsKey('personId'), isFalse);
       expect(requests.single.containsKey('deviceTypes'), isFalse);
       expect(requests.single['statuses'], isNot(contains('closed')));
@@ -144,7 +144,7 @@ void main() {
   );
   for (final scale in [1.0, 1.5]) {
     testWidgets(
-      'SOS shortcut opens matching detail and disappears after closure at $scale',
+      'SOS shortcut opens matching detail and disappears after external verification at $scale',
       (tester) async {
         tester.view.physicalSize = const Size(360, 800);
         tester.view.devicePixelRatio = 1;
@@ -240,28 +240,19 @@ void main() {
         );
         expect(detail.controller.selected!.id, '19');
         expect(detail.controller.selected!.type, 'sos');
-        final approve = find.widgetWithText(FilledButton, '审批通过 · 完成核验');
-        await tester.ensureVisible(approve);
-        await tester.tap(approve);
+        expect(find.text('审批通过 · 完成核验'), findsNothing);
+        // Another terminal finalizes the same shared event; refresh must remove the banner.
+        closed = true;
+        final refresh = detail.controller.select('19');
         await tester.pumpAndSettle();
-        await tester.enterText(
-          find.descendant(
-            of: find.byType(AlertDialog),
-            matching: find.byType(TextField),
-          ),
-          '现场已确认安全',
-        );
-        await tester.tap(find.text('确认提交'));
-        await tester.pumpAndSettle();
-        expect(closed, isTrue);
+        await refresh;
         expect(detail.controller.selected!.isPlatformComplete, isTrue);
         expect(detail.controller.selected!.status, 'verified');
         expect(detail.controller.selected!.externalClosureStatus, 'not_synced');
-        expect(approve, findsNothing);
         GoRouter.of(tester.element(find.byType(EventReferenceView))).pop();
         await tester.pumpAndSettle();
         expect(banner, findsNothing);
-        expect(writes, 1);
+        expect(writes, 0);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
       },

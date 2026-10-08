@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'core.dart';
 import 'notifications.dart';
 import 'package:flutter/services.dart';
@@ -39,6 +38,7 @@ class _WearMinePageState extends State<WearMinePage> {
               'wear_reviewer': '复核员',
               'wear_readonly': '只读',
               'wear_device_admin': '设备管理员',
+              'wear_member': '普通用户',
               'wear_platform_admin': '平台管理员',
               'admin': '管理员',
             }[role] ??
@@ -267,8 +267,8 @@ class _WearMinePageState extends State<WearMinePage> {
                               ),
                               _profileRow(
                                 Icons.badge_outlined,
-                                'SIP ID',
-                                textOf(session.me?['sipId'], '未分配'),
+                                '数据模式',
+                                session.api.isMock ? '本地模拟' : '在线业务',
                                 last: true,
                               ),
                             ],
@@ -307,7 +307,7 @@ class _WearMinePageState extends State<WearMinePage> {
                                         ),
                                         const SizedBox(height: 3),
                                         Text(
-                                          '接警连接、通知权限与设备绑定',
+                                          '当前通讯连接与模拟模式说明',
                                           style: TextStyle(
                                             fontSize: 10.5 * unit,
                                             color: _muted,
@@ -352,16 +352,17 @@ class _WearMinePageState extends State<WearMinePage> {
                         _surface(
                           Column(
                             children: [
-                              _menuRow(
-                                Icons.safety_check,
-                                const Color(0xFF00BC75),
-                                '我的装备',
-                                () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => const MyEquipmentPage(),
+                              if (session.personId.isNotEmpty)
+                                _menuRow(
+                                  Icons.safety_check,
+                                  const Color(0xFF00BC75),
+                                  '我的装备',
+                                  () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const MyEquipmentPage(),
+                                    ),
                                   ),
                                 ),
-                              ),
                               _menuRow(
                                 Icons.chat,
                                 _blue,
@@ -566,7 +567,7 @@ class _WearMinePageState extends State<WearMinePage> {
           ),
           const SizedBox(height: 14),
           const Text(
-            '我的装备：查看当前账号关联人员的设备和绑定记录。\n\n通讯服务：查看接警连接、通知权限和绑定状态。\n\n账号操作：确认后退出当前账号；通话中请先结束通话。',
+            '我的装备：查看当前账号关联人员的设备和绑定记录。\n\n通讯服务：查看实际连接情况；本轮不提供离线推送绑定。\n\n账号操作：确认后退出当前账号；通话中请先结束通话。',
             style: TextStyle(height: 1.6),
           ),
           const SizedBox(height: 18),
@@ -603,54 +604,31 @@ class _WearMinePageState extends State<WearMinePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '接警状态',
+            '通讯服务',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              WearBadge(
-                text: widget.notifications.socketConnected
-                    ? '前台连接正常'
-                    : '前台连接重试中',
-                color: widget.notifications.socketConnected
-                    ? WearColors.primary
-                    : WearColors.warning,
-              ),
-              WearBadge(
-                text: widget.notifications.permissionGranted
-                    ? '通知权限已开启'
-                    : '通知权限未开启',
-                color: widget.notifications.permissionGranted
-                    ? WearColors.primary
-                    : WearColors.warning,
-              ),
-            ],
+          WearBadge(
+            text: _session!.api.isMock
+                ? '本地模拟 · 未连接真实通讯'
+                : _session!.callActive.value
+                ? '设备通话会话进行中'
+                : '未建立设备通话',
+            color: WearColors.muted,
           ),
           const SizedBox(height: 12),
           Text(
-            widget.notifications.status,
+            _session!.api.isMock
+                ? widget.notifications.status
+                : '业务数据通过共用后端查询，设备语音连接情况以通话页为准。',
             style: const TextStyle(color: WearColors.muted),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            children: [
-              TextButton.icon(
-                onPressed: widget.notifications.requestPermission,
-                icon: const Icon(Icons.notifications_outlined),
-                label: const Text('开启通知'),
-              ),
-              TextButton(onPressed: openAppSettings, child: const Text('系统设置')),
-              if (widget.notifications.configured &&
-                  !widget.notifications.registered)
-                TextButton(
-                  onPressed: widget.notifications.bind,
-                  child: const Text('重试绑定'),
-                ),
-            ],
+          const SizedBox(height: 8),
+          Text(
+            _session!.api.isMock
+                ? '模拟语音和广播不会通知或播放到真实设备。本轮不提供后台离线推送。'
+                : '广播受理不代表现场已经听到。本轮不提供后台离线推送。',
+            style: const TextStyle(color: WearColors.muted, fontSize: 12),
           ),
         ],
       ),

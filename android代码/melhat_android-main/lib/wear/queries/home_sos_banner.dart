@@ -77,6 +77,7 @@ class _HomeSosBannerState extends State<HomeSosBanner> {
           path: '/events',
           queryParameters: {
             'severity': 'emergency',
+            'type': 'sos',
             'status': 'active',
             'filterRequest': DateTime.now().microsecondsSinceEpoch.toString(),
           },

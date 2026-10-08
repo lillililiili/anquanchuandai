@@ -103,6 +103,7 @@ Future<List<JsonMap>> loadEquipmentWithTelemetry(
             'lastReportedAt',
             'lastTelemetryAt',
             'battery',
+            'telemetryNote',
             'demo',
           ])
             key: device[key],

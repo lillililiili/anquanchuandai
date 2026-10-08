@@ -12,7 +12,7 @@ import AppTable from "@/components/ui/AppTable.vue";
 import AppTabs from "@/components/ui/AppTabs.vue";
 import AppTag from "@/components/ui/AppTag.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
-import { DATE, typeNames } from "@/mock/data";
+import { typeNames } from "@/mock/data";
 import { db } from "@/mock/runtime";
 import { filtersOf, session } from "@/stores/session";
 import { personName, revision, scope, statusColor, works } from "@/lib/queries";
@@ -35,7 +35,7 @@ const eventColumns = ["人员", "设备", "关联作业", "事件", "核验状�
 
 const stored = filtersOf("statistics");
 const draft = reactive({
-  date: stored.date || DATE,
+  date: stored.date || "",
   workId: stored.workId || "",
 });
 
@@ -47,7 +47,7 @@ const workOptions = computed(() => {
 const stats = computed(() => {
   revision();
   const query = filtersOf("statistics");
-  return db.stats(scope({ date: query.date || DATE, workId: query.workId || "" }));
+  return db.stats(scope({ date: query.date || "", workId: query.workId || "" }));
 });
 
 const detailKind = computed(() => {
@@ -104,7 +104,7 @@ function applyFilters() {
     date: draft.date,
     workId: draft.workId,
   };
-  if (!draft.date) draft.date = DATE;
+  if (!draft.date) draft.date = "";
 }
 
 function exportStatistics() {

@@ -15,7 +15,7 @@ import 'wear_session_test.dart'
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  for (final entry in {'TTS': 'tts', '对讲': 'intercom', '视频': 'video'}.entries) {
+  for (final entry in {'TTS': 'tts', '对讲': 'intercom'}.entries) {
     testWidgets(
       'device ${entry.key} opens reachable operation without sending',
       (tester) async {
@@ -34,7 +34,7 @@ void main() {
           ).uri.queryParameters['action'],
           entry.value,
         );
-        final operation = find.text(entry.value == 'tts' ? '提交播报指令' : '语音群聊');
+        final operation = find.text(entry.value == 'tts' ? '提交播报指令' : '设备语音');
         expect(operation.hitTestable(), findsOneWidget);
         expect(find.text('安全帽呼叫'), findsNothing);
         expect(find.text('视频呼叫'), findsNothing);
@@ -56,7 +56,7 @@ void main() {
     expect(find.text('联系人00').hitTestable(), findsOneWidget);
     expect(
       tester
-          .widget<TextButton>(find.widgetWithText(TextButton, '语音群聊'))
+          .widget<TextButton>(find.widgetWithText(TextButton, '设备语音'))
           .onPressed,
       isNull,
     );
@@ -74,7 +74,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('联系人07'));
     await tester.pumpAndSettle();
-    expect(find.text('语音群聊').hitTestable(), findsOneWidget);
+    expect(find.text('设备语音').hitTestable(), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNothing);
     expect(requests.where((r) => r.method != 'GET'), isEmpty);
     expect(tester.takeException(), isNull);
@@ -106,7 +106,7 @@ void main() {
       expect(find.text('提交播报指令').hitTestable(), findsOneWidget);
       await tester.enterText(
         find.byWidgetPredicate(
-          (widget) => widget is TextField && widget.maxLength == 300,
+          (widget) => widget is TextField && widget.maxLength == 200,
         ),
         '请返回集合点',
       );
@@ -148,8 +148,8 @@ void main() {
       router.go('/communications?deviceId=42&action=video');
       await tester.pumpAndSettle();
       expect(find.text('视频呼叫'), findsNothing);
-      expect(find.text('语音群聊').hitTestable(), findsOneWidget);
-      await tester.tap(find.text('语音群聊'));
+      expect(find.text('设备语音').hitTestable(), findsOneWidget);
+      await tester.tap(find.text('设备语音'));
       await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(640, 360);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
@@ -160,10 +160,7 @@ void main() {
       expect(find.text('麦克风').hitTestable(), findsOneWidget);
       expect(find.text('扬声器').hitTestable(), findsOneWidget);
       expect(find.text('参与人员').hitTestable(), findsOneWidget);
-      expect(find.text('开启视频').hitTestable(), findsOneWidget);
-      await tester.tap(find.byTooltip('开启视频'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('真实通道尚未接入'), findsOneWidget);
+      expect(find.text('开启视频'), findsNothing);
       final starts = requests
           .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
           .toList();
@@ -190,8 +187,8 @@ void main() {
       final router = await openDevice(tester, requests);
       router.go('/communications?deviceId=42&personId=7&action=intercom');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('语音群聊'));
-      await tester.tap(find.text('语音群聊'));
+      await tester.ensureVisible(find.text('设备语音'));
+      await tester.tap(find.text('设备语音'));
       await tester.pumpAndSettle();
       final create = requests
           .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
@@ -315,7 +312,11 @@ Future<GoRouter> openDevice(
         };
   addTearDown(session.dispose);
   await tester.pumpWidget(
-    WearApp(session: session, enableNotifications: false, fontFamily: fontFamily),
+    WearApp(
+      session: session,
+      enableNotifications: false,
+      fontFamily: fontFamily,
+    ),
   );
   await tester.pumpAndSettle();
   final router = GoRouter.of(tester.element(find.byType(NavigationBar)));

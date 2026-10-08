@@ -22,9 +22,7 @@ class ContactActionBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _button(context, '语音群聊', Icons.call_outlined, onVoice),
-          const SizedBox(width: 8),
-          _button(context, '视频群聊', Icons.videocam_outlined, onVideo),
+          _button(context, '设备语音', Icons.call_outlined, onVoice),
           const SizedBox(width: 8),
           _button(context, '文字播报', Icons.volume_up_outlined, onBroadcast),
         ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -9,6 +10,7 @@ import 'package:jpush_flutter/jpush_interface.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'core.dart';
 
 class WearNotice {
@@ -69,6 +71,7 @@ class WearNotifications extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _heartbeat;
   DateTime? _lastPong;
   bool _disposed = false, _foreground = true, _binding = false;
+  bool _sharedPolling = false;
   bool _bindAgain = false;
   bool _gettingRegistration = false;
   String _registrationId = '';
@@ -154,6 +157,25 @@ class WearNotifications extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> start() async {
+    if (session.api.isMock) {
+      status = '本地模拟模式 · 未连接推送或后台接警';
+      _emit();
+      return;
+    }
+    if (_push == null) {
+      // Phase three uses scoped HTTP polling. No legacy websocket or push binding.
+      _sharedPolling = true;
+      status = '前台每30秒同步事件；后台离线推送未开放';
+      WidgetsBinding.instance.addObserver(this);
+      _poll = Timer.periodic(const Duration(seconds: 30), (_) async {
+        if (_foreground && session.me != null && !session.busy) {
+          await session.refreshIdentity();
+          session.requestRefresh();
+        }
+      });
+      _emit();
+      return;
+    }
     WidgetsBinding.instance.addObserver(this);
     session.addListener(_sessionChanged);
     session.beforeLogout = unbind;
@@ -246,6 +268,7 @@ class WearNotifications extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> requestPermission() async {
+    if (session.api.isMock) return;
     if (kIsWeb) return;
     registered = false;
     permissionGranted = (await Permission.notification.request()).isGranted;
@@ -507,6 +530,15 @@ class WearNotifications extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_sharedPolling) {
+      _foreground = state == AppLifecycleState.resumed;
+      if (_foreground) {
+        unawaited(
+          session.refreshIdentity().then((_) => session.requestRefresh()),
+        );
+      }
+      return;
+    }
     _foreground = state == AppLifecycleState.resumed;
     if (_foreground) {
       if (_scope.isNotEmpty && !socketConnected) _connect();

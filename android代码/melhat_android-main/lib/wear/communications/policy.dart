@@ -12,8 +12,7 @@ class CommunicationsPolicy {
   bool canStartVoice(CommunicationDevice device) =>
       canStartCalls && device.supports('intercom');
 
-  bool canStartVideo(CommunicationDevice device) =>
-      canStartVoice(device) && device.supports('video');
+  bool canStartVideo(CommunicationDevice device) => false;
 
   bool canSendTts(CommunicationDevice device) =>
       canSubmitTts && device.supports('tts');

@@ -120,14 +120,14 @@ class _MyEquipmentPageState extends State<MyEquipmentPage> {
                     padding: EdgeInsets.all(16),
                     child: WearEmpty(
                       title: '暂无领用装备',
-                      detail: '当前账号尚未领用设备，以后台领用记录为准。',
+                      detail: '当前没有正在领用的设备，过往记录可在绑定历史中查看。',
                     ),
                   ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
                   child: Column(
                     children: [
-                      if (!_loading)
+                      if (!_loading && _error == null)
                         for (final item in rows) _card(item),
                       if (!_loading && _error == null) _historyRow(rows),
                     ],
@@ -155,6 +155,7 @@ class _MyEquipmentPageState extends State<MyEquipmentPage> {
           (r) =>
               const {
                 'admin': '管理员',
+                'member': '普通用户',
                 'wear_platform_admin': '平台管理员',
                 'wear_duty': '值班员',
                 'wear_team_lead': '班组长',
@@ -410,6 +411,15 @@ class _MyEquipmentPageState extends State<MyEquipmentPage> {
                                   '设备状态暂不可用',
                                   style: TextStyle(fontSize: 10, color: _muted),
                                 ),
+                              if (item['telemetryUnavailable'] != true &&
+                                  idOf(item['telemetryNote']).isNotEmpty)
+                                Text(
+                                  idOf(item['telemetryNote']),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: _muted,
+                                  ),
+                                ),
                               if (extra)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 2),
@@ -550,13 +560,11 @@ class _MyEquipmentPageState extends State<MyEquipmentPage> {
     if (id.isNotEmpty) context.push('/devices/${Uri.encodeComponent(id)}');
   }
 
-  Future<List<JsonMap>> _fetchHistory(List<JsonMap> rows) async {
+  Future<List<JsonMap>> _fetchHistory() async {
     final session = _session!;
     final scope = session.scopeKey;
-    final ids = rows
-        .map((r) => idOf(r['personId']))
-        .where((id) => id.isNotEmpty)
-        .toSet();
+    // Returned equipment remains discoverable without an active assignment.
+    final ids = {if (session.personId.isNotEmpty) session.personId};
     if (ids.isEmpty) return [];
     final results = await Future.wait(
       ids.map(
@@ -607,7 +615,7 @@ class _MyEquipmentPageState extends State<MyEquipmentPage> {
                 ),
                 Expanded(
                   child: FutureBuilder<List<JsonMap>>(
-                    future: future ??= _fetchHistory(rows),
+                    future: future ??= _fetchHistory(),
                     builder: (ctx, snapshot) {
                       if (scope != WearScope.of(ctx).scopeKey) {
                         return const Center(child: Text('账号或厂站已切换，请重新打开'));

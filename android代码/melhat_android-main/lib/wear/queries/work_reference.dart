@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core.dart';
 import 'query_utils.dart';
-import 'inspection.dart';
 
 String workOwnerLabel(JsonMap task, WearSession session) {
   final explicit = textOf(task['ownerName'], '');
@@ -87,6 +86,8 @@ class TaskReferenceView extends StatelessWidget {
     this.preview = false,
     this.onManageMembers,
     this.inspectionActions,
+    this.onEventRecords,
+    this.canViewPeople = true,
   });
   final JsonMap task;
   final List<JsonMap> equipment, events;
@@ -99,6 +100,8 @@ class TaskReferenceView extends StatelessWidget {
   final bool preview;
   final VoidCallback? onManageMembers;
   final Widget? inspectionActions;
+  final VoidCallback? onEventRecords;
+  final bool canViewPeople;
   static const ink = Color(0xFF101F43),
       muted = Color(0xFF6B88AF),
       blue = Color(0xFF008BFF);
@@ -263,18 +266,8 @@ class TaskReferenceView extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
-                                inspectionStatus(
-                                  task['inspectionStatus'] ??
-                                      (task['status'] == 'ended'
-                                          ? 'completed'
-                                          : 'in_progress'),
-                                ),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: inspectionColor(
-                                    task['inspectionStatus'],
-                                  ),
-                                ),
+                                taskStatusLabel(task['status']),
+                                style: TextStyle(fontSize: 12, color: blue),
                               ),
                             ),
                           ],
@@ -390,14 +383,6 @@ class TaskReferenceView extends StatelessWidget {
                           ),
                         ),
                         children: [
-                          if (onManageMembers != null)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: onManageMembers,
-                                child: const Text('调整人员'),
-                              ),
-                            ),
                           if (members.isEmpty)
                             const Padding(
                               padding: EdgeInsets.all(14),
@@ -411,7 +396,9 @@ class TaskReferenceView extends StatelessWidget {
                               key: ValueKey(
                                 'task-person-${idOf(person['personId'])}',
                               ),
-                              onTap: () => onPerson(person),
+                              onTap: canViewPeople
+                                  ? () => onPerson(person)
+                                  : null,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 10,
@@ -481,27 +468,32 @@ class TaskReferenceView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ?inspectionActions,
-                  if (inspectionActions == null)
-                    OutlinedButton.icon(
-                      onPressed: onGuardian,
-                      icon: const Icon(Icons.call, size: 25),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: blue,
-                        minimumSize: const Size.fromHeight(48),
-                        side: const BorderSide(color: blue),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      label: const Text(
-                        '联系监护人',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
+                  OutlinedButton.icon(
+                    key: const ValueKey('task-event-records'),
+                    onPressed: onEventRecords,
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('作业事件记录'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: onGuardian,
+                    icon: const Icon(Icons.call, size: 25),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: blue,
+                      minimumSize: const Size.fromHeight(48),
+                      side: const BorderSide(color: blue),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                    label: const Text(
+                      '联系监护人',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

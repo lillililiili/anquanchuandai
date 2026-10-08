@@ -19,21 +19,6 @@ public class AdminMasterService {
     private static final List<String> ENTITIES = Arrays.asList("people", "organizations", "areas", "sites", "dutyShifts");
     private static final List<String> ACTIONS = Arrays.asList("create", "update", "status", "delete");
     private static final Pattern CJK = Pattern.compile("[\\u4e00-\\u9fff]");
-    private static final Map<String, String> PORTAL_PEOPLE = new LinkedHashMap<String, String>();
-    private static final Map<String, String> PORTAL_SITES = new LinkedHashMap<String, String>();
-    static {
-        PORTAL_PEOPLE.put("person-1-0", "P1");
-        PORTAL_PEOPLE.put("person-1-1", "P2");
-        PORTAL_PEOPLE.put("person-1-2", "P3");
-        PORTAL_PEOPLE.put("person-1-3", "P4");
-        PORTAL_PEOPLE.put("person-1-4", "P5");
-        PORTAL_PEOPLE.put("person-1-5", "P6");
-        PORTAL_PEOPLE.put("person-1-6", "P7");
-        PORTAL_PEOPLE.put("person-1-7", "P8");
-        PORTAL_SITES.put("site-1", "S1");
-        PORTAL_SITES.put("site-2", "S2");
-    }
-
     private final AdminLedgerStore ledger;
     private final GuardianStore guardian;
     private final AdminQueryService queries;
@@ -44,7 +29,6 @@ public class AdminMasterService {
         this.queries = queries;
     }
 
-    public static String portalPersonId(String adminId) { return PORTAL_PEOPLE.get(adminId); }
 
     public boolean handles(String type) {
         if (type == null || !type.contains(".")) return false;
@@ -275,7 +259,7 @@ public class AdminMasterService {
         JSONObject snapshot = guardian.snapshot();
         if (snapshot == null) return false;
         String portalId = person.getString("portalId");
-        if (portalId == null || portalId.isEmpty()) portalId = PORTAL_PEOPLE.get(person.getString("id"));
+        if (portalId == null || portalId.isEmpty()) portalId = person.getString("id");
         if (portalId == null) return false;
         for (JSONObject work : rows(snapshot, "works")) {
             if ("已结束".equals(work.getString("status"))) continue;
@@ -306,54 +290,18 @@ public class AdminMasterService {
     }
 
     private void publish(JSONObject admin) {
-        guardian.update(new GuardianStore.Edit() {
-            @Override
-            public boolean apply(JSONObject snapshot) {
-                for (JSONObject site : rows(admin, "sites")) {
-                    String stationId = PORTAL_SITES.get(site.getString("id"));
-                    JSONObject station = find(snapshot, "stations", stationId);
-                    if (station != null && site.getString("name") != null) station.put("name", site.getString("name"));
-                }
-                JSONArray mapAreas = new JSONArray();
-                for (JSONObject area : rows(admin, "areas")) {
-                    if (!area.getBooleanValue("enabled")) continue;
-                    JSONArray points = area.getJSONArray("points");
-                    if (points == null || points.size() < 3) continue;
-                    String station = PORTAL_SITES.get(area.getString("siteId"));
-                    if (station == null) continue;
-                    JSONObject item = new JSONObject();
-                    item.put("id", area.getString("id"));
-                    item.put("name", area.getString("name"));
-                    item.put("station", station);
-                    item.put("points", points);
-                    mapAreas.add(item);
-                }
-                snapshot.put("mapAreas", mapAreas);
-                for (JSONObject person : rows(admin, "people")) {
-                    String portalId = person.getString("portalId");
-                    if (portalId == null || portalId.isEmpty()) portalId = PORTAL_PEOPLE.get(person.getString("id"));
-                    if (portalId == null) portalId = "ADMIN-" + person.getString("id");
-                    person.put("portalId", portalId);
-                    JSONObject remote = find(snapshot, "people", portalId);
-                    String station = PORTAL_SITES.get(person.getString("siteId"));
-                    if (station == null) throw AdminQueryService.fail(400, "SITE_NOT_MAPPED", "厂站尚未建立监护映射");
-                    if (remote == null) {
-                        remote = new JSONObject();
-                        remote.put("id", portalId);
-                        remote.put("position", null);
-                        remote.put("locationValid", false);
-                        remote.put("phone", "");
-                        remote.put("updated", "—");
-                        snapshot.getJSONArray("people").add(remote);
-                    }
-                    remote.put("name", person.getString("name"));
-                    remote.put("team", nameOf(admin, "organizations", person.getString("organizationId")));
-                    remote.put("area", nameOf(admin, "areas", person.getString("areaId")));
-                    if (station != null) remote.put("station", station);
-                    remote.put("active", person.getBooleanValue("enabled"));
-                }
-                return true;
+        WearableModel.migrate(admin);
+        guardian.update(snapshot -> {
+            GuardianMasterProjection.apply(snapshot, admin);
+            JSONArray mapAreas = new JSONArray();
+            for (JSONObject area : rows(admin, "areas")) {
+                if (!area.getBooleanValue("enabled") || area.getJSONArray("points") == null || area.getJSONArray("points").size() < 3) continue;
+                JSONObject site = find(admin, "sites", area.getString("siteId"));
+                if (site != null) mapAreas.add(WearableModel.object("id",area.getString("id"),"name",area.getString("name"),"station",site.getString("portalStation"),"points",area.get("points")));
             }
+            snapshot.put("mapAreas",mapAreas);
+            snapshot.put("seq", snapshot.getIntValue("seq") + 1);
+            return true;
         });
     }
 

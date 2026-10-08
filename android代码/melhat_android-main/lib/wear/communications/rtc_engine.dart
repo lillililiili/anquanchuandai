@@ -31,6 +31,25 @@ abstract interface class WearRtcAudioRoute {
   Future<void> setSpeakerphone(bool enabled);
 }
 
+/// A second guard behind demo credentials: this engine has no native SDK.
+class OfflineWearRtcEngine implements WearRtcEngine, WearRtcAudioRoute {
+  @override
+  Future<void> join(RtcCredentials credentials, RtcCallbacks callbacks) async {
+    throw const RtcJoinFailure('本地模拟模式不建立真实音视频连接');
+  }
+
+  @override
+  Future<void> renewToken(String token) async {}
+  @override
+  Future<void> setMicrophoneMuted(bool muted) async {}
+  @override
+  Future<void> setSpeakerphone(bool enabled) async {}
+  @override
+  Future<void> leave() async {}
+  @override
+  Future<void> dispose() async {}
+}
+
 /// Android duty calls never publish phone camera tracks, including old video credentials.
 ChannelMediaOptions wearAudioOnlyChannelOptions() => const ChannelMediaOptions(
   clientRoleType: ClientRoleType.clientRoleBroadcaster,

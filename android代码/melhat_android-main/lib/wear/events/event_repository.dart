@@ -143,11 +143,28 @@ class ApiEventGateway implements EventGateway {
     return _fresh(() async {
       final data = switch (command) {
         EventCommand.ack => null,
+        EventCommand.joinAssistance ||
+        EventCommand.endAssistance ||
         EventCommand.claim ||
         EventCommand.confirm => <String, dynamic>{'version': event.version},
+        EventCommand.saveVerification ||
+        EventCommand.verify => FormData.fromMap({
+          'version': draft.baseVersion ?? event.version,
+          'conclusion': draft.conclusion,
+          'situation': draft.situation.trim(),
+          'measures': draft.measures.trim(),
+          'files': await Future.wait(
+            draft.photoPaths.map(
+              (path) => MultipartFile.fromFile(
+                path,
+                filename: path.replaceAll('\\', '/').split('/').last,
+              ),
+            ),
+          ),
+        }),
         EventCommand.handle => FormData.fromMap({
           'comment': draft.handleComment.trim(),
-          'version': event.version,
+          'version': draft.baseVersion ?? event.version,
           'files': await Future.wait(
             draft.photoPaths.map(
               (path) async => MultipartFile.fromFile(
@@ -176,7 +193,15 @@ class ApiEventGateway implements EventGateway {
         },
       };
       try {
-        final actionPath = command == EventCommand.assignTask
+        final actionPath = command == EventCommand.saveVerification
+            ? 'verification-draft'
+            : command == EventCommand.verify
+            ? 'verify'
+            : command == EventCommand.joinAssistance
+            ? 'assistance/join'
+            : command == EventCommand.endAssistance
+            ? 'assistance/end'
+            : command == EventCommand.assignTask
             ? 'task'
             : command == EventCommand.handle
             ? 'report'

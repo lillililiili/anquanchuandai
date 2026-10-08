@@ -63,7 +63,7 @@ public class GuardianStore {
         synchronized (lock) {
             ensure();
             projectPlatform();
-            for (String key : new String[]{"works", "stations", "people", "devices", "bindings", "mapAreas", "platformSync"}) {
+            for (String key : new String[]{"works", "stations", "people", "devices", "bindings", "mapAreas", "platformSync", "events", "sos", "assistance", "eventOperations", "uploads"}) {
                 if (!java.util.Objects.equals(state.get(key), next.get(key)))
                     throw new IllegalArgumentException("作业票、人员与装备来源资料只读，请刷新后重试");
             }
@@ -77,11 +77,64 @@ public class GuardianStore {
     public void update(Edit edit) {
         synchronized (lock) {
             ensure();
+            projectPlatform();
             JSONObject next = JSON.parseObject(state.toJSONString());
             if (edit == null || !edit.apply(next)) return;
             GuardianValidator.check(next);
             commit(next);
         }
+    }
+
+    public void replaceScoped(JSONObject next, int expectedSeq, GuardianAccess.Context ctx) {
+        update(current -> {
+            if(expectedSeq!=current.getIntValue("seq") || next.getIntValue("seq")<=expectedSeq)
+                throw AdminQueryService.fail(409,"VERSION_CONFLICT","数据已变化，请刷新后重试");
+            JSONObject visible=ctx.snapshot(current);
+            for(String key:new String[]{"events","assistance","sos","works","stations","people","devices","bindings","mapAreas","platformSync","vitals","locations"}) {
+                if(!java.util.Objects.equals(visible.get(key),next.get(key)))
+                    throw AdminQueryService.fail(409,"SNAPSHOT_READ_ONLY","事件、SOS和来源资料须使用共用业务接口，不能整份覆盖");
+            }
+            // Preserve invisible rows and all migrated event media. Only legacy domains remain writable.
+            for(String key:new String[]{"fences","fenceRecords","groups","calls","broadcasts","media"}) {
+                com.alibaba.fastjson2.JSONArray old=WearableModel.rows(visible,key), supplied=WearableModel.rows(next,key);
+                if(java.util.Objects.equals(old,supplied)) continue;
+                java.util.Set<String> visibleIds=new java.util.HashSet<>();
+                for(Object raw:old) visibleIds.add(((JSONObject)raw).getString("id"));
+                com.alibaba.fastjson2.JSONArray merged=new com.alibaba.fastjson2.JSONArray();
+                for(Object raw:WearableModel.rows(current,key)) if(!visibleIds.contains(((JSONObject)raw).getString("id"))) merged.add(raw);
+                for(Object raw:supplied) {
+                    JSONObject row=(JSONObject)raw;
+                    String site=WearableModel.siteId(ctx.data,row.getString("station"));
+                    if(!ctx.can("events:read",site,null)) throw AdminQueryService.fail(403,"PERMISSION_DENIED","快照变更超出授权范围");
+                    JSONObject prior=WearableModel.find(visible,key,row.getString("id"));
+                    if("media".equals(key) && (migratedPhoto(row) || migratedPhoto(prior)) && !java.util.Objects.equals(prior,row))
+                        throw AdminQueryService.fail(409,"SNAPSHOT_READ_ONLY","事件照片只能通过业务接口保存");
+                    if(!visibleIds.contains(row.getString("id")) && WearableModel.find(current,key,row.getString("id"))!=null)
+                        throw AdminQueryService.fail(409,"ID_CONFLICT","记录编号已存在");
+                    if("media".equals(key) && prior==null && row.getString("blobId")!=null) {
+                        JSONObject uploads=current.getJSONObject("uploads"), upload=uploads==null?null:uploads.getJSONObject(row.getString("blobId"));
+                        if(upload==null || !ctx.id().equals(upload.getString("ownerId")) || upload.getString("eventId")!=null)
+                            throw AdminQueryService.fail(403,"PHOTO_SCOPE","不能引用其他人员的照片");
+                        if(row.getString("eventId")!=null&&!row.getString("eventId").isEmpty()) ctx.requireEvent(WearableModel.find(current,"events",row.getString("eventId")),null);
+                        upload.put("eventId",row.getString("eventId"));upload.put("mediaId",row.getString("id"));
+                    }
+                    merged.add(row);
+                }
+                if("media".equals(key)) for(Object raw:old) {
+                    JSONObject row=(JSONObject)raw;
+                    if(migratedPhoto(row) && WearableModel.find(next,key,row.getString("id"))==null)
+                        throw AdminQueryService.fail(409,"SNAPSHOT_READ_ONLY","不能通过快照删除事件照片");
+                }
+                current.put(key,merged);
+            }
+            current.put("clock",next.get("clock"));current.put("seq",next.getIntValue("seq"));
+            WearableModel.rows(current,"audit").add(WearableModel.object("id","A-"+java.util.UUID.randomUUID(),"time",java.time.Instant.now().toString(),"text","保存未迁移业务","actorId",ctx.id(),"actorName",ctx.name()));
+            return true;
+        });
+    }
+
+    private static boolean migratedPhoto(JSONObject row) {
+        return row!=null && ("核验上传".equals(row.getString("source")) || "现场补充".equals(row.getString("source")) || row.getString("purpose")!=null);
     }
 
     private void commit(JSONObject next) {
@@ -115,16 +168,18 @@ public class GuardianStore {
     }
 
     private void ensure() {
-        if (state != null && readable(state)) return;
+        if (state != null && readable(state)) { GuardianEvents.normalize(state); return; }
         try {
             if (Files.exists(file)) {
                 JSONObject saved = JSON.parseObject(readBytes(Files.readAllBytes(file)));
                 if (readable(saved)) {
                     state = saved;
+                    if (GuardianEvents.normalize(state)) persist();
                     return;
                 }
             }
             state = JSON.parseObject(readStream(new ClassPathResource("guardian-seed.json").getInputStream()));
+            GuardianEvents.normalize(state);
             persist();
         } catch (Exception e) {
             throw new IllegalStateException("监护数据不可用", e);
@@ -145,7 +200,10 @@ public class GuardianStore {
     private void persist() {
         try {
             if (file.getParent() != null) Files.createDirectories(file.getParent());
-            Files.write(file, state.toJSONString().getBytes(StandardCharsets.UTF_8));
+            Path temporary = file.resolveSibling(file.getFileName() + ".tmp");
+            Files.write(temporary, state.toJSONString().getBytes(StandardCharsets.UTF_8));
+            try { Files.move(temporary, file, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
+            catch (java.nio.file.AtomicMoveNotSupportedException unsupported) { Files.move(temporary, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
         } catch (Exception e) {
             throw new IllegalStateException("监护数据保存失败", e);
         }

@@ -3,7 +3,6 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'core.dart';
-import 'password_reset_page.dart';
 export 'sites_page.dart';
 
 class WearLoginPage extends StatefulWidget {
@@ -21,6 +20,7 @@ class _WearLoginPageState extends State<WearLoginPage> {
   String? _uuid, _captchaError, _localCode;
   Uint8List? _captchaBytes;
   WearSession? _session;
+  bool get _requiresCaptcha => _captchaEnabled || _session?.api.isMock == true;
   final _rand = Random();
   @override
   void initState() {
@@ -104,11 +104,12 @@ class _WearLoginPageState extends State<WearLoginPage> {
   Future<void> _submit() async {
     if (_session!.busy || !_form.currentState!.validate()) return;
     final typed = _code.text.trim();
-    if (typed.isEmpty) {
+    if (_requiresCaptcha && typed.isEmpty) {
       setState(() => _captchaError = '请输入验证码');
       return;
     }
-    if (!_captchaEnabled &&
+    if (_requiresCaptcha &&
+        !_captchaEnabled &&
         _localCode != null &&
         typed.toUpperCase() != _localCode) {
       _useLocalCaptcha(error: '验证码错误，请重新输入');
@@ -136,14 +137,19 @@ class _WearLoginPageState extends State<WearLoginPage> {
     super.dispose();
   }
 
-  void _openPasswordReset() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            WearPasswordResetPage(initialAccount: _username.text.trim()),
-      ),
-    );
-  }
+  void _openPasswordReset() => showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('联系管理员'),
+      content: const Text('忘记密码请联系本单位管理员重置。安卓端不受理账号恢复审批。'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('知道了'),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -374,80 +380,82 @@ class _WearLoginPageState extends State<WearLoginPage> {
                     value == null || value.isEmpty ? '请输入密码' : null,
               ),
               const SizedBox(height: 10),
-              const Text(
-                '图形验证码',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: WearColors.ink,
+              if (_requiresCaptcha) ...[
+                const Text(
+                  '图形验证码',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: WearColors.ink,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _code,
-                      enabled: !session.busy,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      decoration: _field(
-                        hint: '请输入图形验证码',
-                        prefix: const Icon(Icons.image_outlined),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _code,
+                        enabled: !session.busy,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _submit(),
+                        decoration: _field(
+                          hint: '请输入图形验证码',
+                          prefix: const Icon(Icons.image_outlined),
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? '请输入验证码'
+                            : null,
                       ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? '请输入验证码'
-                          : null,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: session.busy ? null : _captcha,
-                    child: ClipRRect(
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: session.busy ? null : _captcha,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          width: 96,
+                          height: 44,
+                          child: _captchaBoard(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: session.busy ? null : _captcha,
                       borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        width: 96,
+                      child: const SizedBox(
+                        width: 40,
                         height: 44,
-                        child: _captchaBoard(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  InkWell(
-                    onTap: session.busy ? null : _captcha,
-                    borderRadius: BorderRadius.circular(10),
-                    child: const SizedBox(
-                      width: 40,
-                      height: 44,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.refresh,
-                            size: 18,
-                            color: WearColors.brand,
-                          ),
-                          Text(
-                            '刷新',
-                            style: TextStyle(
-                              fontSize: 10,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.refresh,
+                              size: 18,
                               color: WearColors.brand,
                             ),
-                          ),
-                        ],
+                            Text(
+                              '刷新',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: WearColors.brand,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              GestureDetector(
-                onTap: session.busy ? null : _captcha,
-                child: const Text(
-                  '验证码不清楚？点击刷新',
-                  style: TextStyle(fontSize: 12, color: WearColors.muted),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: session.busy ? null : _captcha,
+                  child: const Text(
+                    '验证码不清楚？点击刷新',
+                    style: TextStyle(fontSize: 12, color: WearColors.muted),
+                  ),
+                ),
+              ],
               if (_captchaError != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -477,8 +485,14 @@ class _WearLoginPageState extends State<WearLoginPage> {
               ),
               TextButton(
                 onPressed: session.busy ? null : _openPasswordReset,
-                child: const Text('忘记密码 / 申请重置  >'),
+                child: const Text('忘记密码？联系管理员  >'),
               ),
+              if (session.api.isMock)
+                const Text(
+                  '本地模拟：管理员 demo / 普通用户 member\n密码均为 123456，不连接真实后端',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: WearColors.muted, fontSize: 12),
+                ),
               if (session.token != null && session.me == null && !session.busy)
                 TextButton(
                   onPressed: session.initialize,

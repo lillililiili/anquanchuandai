@@ -46,39 +46,47 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  test('contact read permissions do not promote legacy wildcard inspector', () {
-    final session = appSession(authenticated: true);
-    addTearDown(session.dispose);
-    session.me = {
-      ...session.me!,
-      'roles': ['wear_team_lead', 'wear_reviewer'],
-      'admin': false,
-      'permissions': ['*:*:*'],
-    };
-    for (final permission in [
-      'wear:person:list',
-      'wear:person:query',
-      'wear:device:list',
-      'wear:device:query',
-    ]) {
-      expect(session.can(permission), isTrue, reason: permission);
-    }
-    for (final permission in [
-      'wear:person:edit',
-      'wear:device:edit',
-      'wear:task:edit',
-      'wear:event:review',
-      'wear:event:claim',
-      'wear:call:start',
-      'wear:command:tts',
-      'wear:duty:handover',
-    ]) {
-      expect(session.can(permission), isFalse, reason: permission);
-    }
-    expect(session.isAdmin, isFalse);
-    expect(session.isDuty, isFalse);
-    expect(session.isReviewer, isFalse);
-    session.me = {...session.me!, 'permissions': <String>[]};
-    expect(session.can('wear:person:list'), isFalse);
-  });
+  test(
+    'explicit contact read permissions do not grant management operations',
+    () {
+      final session = appSession(authenticated: true);
+      addTearDown(session.dispose);
+      session.me = {
+        ...session.me!,
+        'roles': ['member'],
+        'admin': false,
+        'permissions': [
+          'wear:person:list',
+          'wear:person:query',
+          'wear:device:list',
+          'wear:device:query',
+        ],
+      };
+      for (final permission in [
+        'wear:person:list',
+        'wear:person:query',
+        'wear:device:list',
+        'wear:device:query',
+      ]) {
+        expect(session.can(permission), isTrue, reason: permission);
+      }
+      for (final permission in [
+        'wear:person:edit',
+        'wear:device:edit',
+        'wear:task:edit',
+        'wear:event:review',
+        'wear:event:claim',
+        'wear:call:start',
+        'wear:command:tts',
+        'wear:duty:handover',
+      ]) {
+        expect(session.can(permission), isFalse, reason: permission);
+      }
+      expect(session.isAdmin, isFalse);
+      expect(session.isDuty, isFalse);
+      expect(session.isReviewer, isFalse);
+      session.me = {...session.me!, 'permissions': <String>[]};
+      expect(session.can('wear:person:list'), isFalse);
+    },
+  );
 }

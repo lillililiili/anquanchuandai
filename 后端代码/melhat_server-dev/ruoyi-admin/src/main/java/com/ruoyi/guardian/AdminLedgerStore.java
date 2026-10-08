@@ -40,6 +40,11 @@ public class AdminLedgerStore {
             ensureSchema();
             if (!imported()) importInitial();
             JSONObject state = assemble();
+            if (readable(state)) {
+                boolean changed = WearableModel.migrate(state);
+                changed = WearableCredentials.migrate(state) || changed;
+                if (changed) { state.put("revision", state.getIntValue("revision") + 1); write(state); }
+            }
             return readable(state) ? state : null;
         }
     }

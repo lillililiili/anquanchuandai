@@ -18,6 +18,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/v1")
 public class AdminLedgerController {
     @org.springframework.beans.factory.annotation.Autowired private WearableSessions sessions;
+    @org.springframework.beans.factory.annotation.Autowired private WearableCredentials credentials;
     @org.springframework.beans.factory.annotation.Autowired private AdminPlatformService platform;
 
     @PostMapping("/platform/helmets/sync")
@@ -64,7 +65,7 @@ public class AdminLedgerController {
             limited.put("sites", queries.query(actor.getString("id"), "context", new JSONObject()).get("sites"));
             state = limited;
         }
-        body.put("state", state);
+        body.put("state", WearableModel.safe(state));
         return body;
     }
 
@@ -85,7 +86,7 @@ public class AdminLedgerController {
         String type = body == null ? "" : body.getString("type");
         JSONObject input = body == null ? new JSONObject() : body.getJSONObject("input");
         RemovedAssetFeatures.requireCommand(type, input);
-        if (type != null && access.handles(type)) return access.execute(accountId, type, input);
+        if (type != null && access.handles(type)) return WearableModel.safe(access.execute(accountId, type, input));
         if (type != null && master.handles(type)) return master.execute(accountId, type, input);
         if (type != null && type.startsWith("assignments.")) return assignments.execute(accountId, type, input);
         return devices.execute(accountId, type, input);
@@ -100,7 +101,7 @@ public class AdminLedgerController {
         RemovedAssetFeatures.requireQuery(kind, input);
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("code", 200);
-        result.put("data", access.handlesQuery(kind) ? access.query(accountId, kind, input) : assignments.handlesQuery(kind) ? assignments.query(accountId, kind, input) : queries.query(accountId, kind, input));
+        result.put("data", WearableModel.safe(new JSONObject(access.handlesQuery(kind) ? access.query(accountId, kind, input) : assignments.handlesQuery(kind) ? assignments.query(accountId, kind, input) : queries.query(accountId, kind, input))));
         return result;
     }
 
@@ -117,8 +118,10 @@ public class AdminLedgerController {
     public Map<String, Object> login(@RequestBody JSONObject body) {
         String username = body == null ? "" : String.valueOf(body.getString("username"));
         String password = body == null ? "" : String.valueOf(body.getString("password"));
-        JSONObject account = findAccount(store.read(), username);
-        if (account == null || !"Admin@2026".equals(password)) throw AdminQueryService.fail(401, "IDENTITY_INVALID", "账号或密码错误，或账号已停用");
+        JSONObject account = credentials.authenticate(username, password);
+        if (account.getJSONArray("roleIds") == null || account.getJSONArray("roleIds").isEmpty()
+                || (account.getJSONArray("roleIds").size() == 1 && account.getJSONArray("roleIds").contains("mobile-user")))
+            throw AdminQueryService.fail(403, "PERMISSION_DENIED", "此账号没有后台管理权限");
         Map<String, Object> identity = new LinkedHashMap<String, Object>();
         identity.put("id", account.getString("id"));
         identity.put("name", account.getString("name"));

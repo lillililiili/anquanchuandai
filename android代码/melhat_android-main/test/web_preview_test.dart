@@ -13,7 +13,7 @@ void main() {
   test('preview equipment supports the current communication policy', () async {
     final session = createPreviewSession();
     addTearDown(session.dispose);
-    await session.login('demo', 'preview', code: 'demo');
+    await session.login('demo', '123456', code: 'demo');
     await session.selectSite('1');
     final policy = CommunicationsPolicy(
       userId: session.userId,
@@ -23,29 +23,32 @@ void main() {
       jsonMap(await session.api.get('/api/v1/devices/201')),
     );
     expect(policy.canStartVoice(device), isTrue);
-    expect(policy.canStartVideo(device), isTrue);
+    expect(policy.canStartVideo(device), isFalse);
     expect(policy.canSendTts(device), isTrue);
-    final call = jsonMap(await session.api.post('/api/v1/calls', data: {
-      'deviceId': device.id, 'kind': 'single', 'video': true,
-    }));
+    final call = jsonMap(
+      await session.api.post(
+        '/api/v1/calls',
+        data: {'deviceId': device.id, 'kind': 'single', 'video': false},
+      ),
+    );
     expect(call['demo'], isTrue);
     expect(call['requesterUserId'], session.userId);
   });
   test('preview login, site selection and actions are local', () async {
     final session = createPreviewSession();
     addTearDown(session.dispose);
-    await session.login('any-account', 'any-password', code: 'any-code');
-    expect(session.me?['userName'], 'any-account');
+    await session.login('demo', '123456', code: 'any-code');
+    expect(session.me?['userName'], 'demo');
     expect(session.siteId, isNull);
     await session.selectSite('1');
     expect(session.siteName, '演示厂站A');
     expect((await session.api.page('/api/v1/events')).records.length, 2);
     await session.api.post(
-      '/api/v1/events/401/handle',
+      '/api/v1/events/401/report',
       data: {'comment': '演示核验', 'version': 1},
     );
     final event = jsonMap(await session.api.get('/api/v1/events/401'));
-    expect(event['status'], 'handled');
+    expect(event['status'], 'handling');
     await session.logout();
     expect(session.me, isNull);
   });
@@ -63,9 +66,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     final fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'random');
-    await tester.enterText(fields.at(1), '1');
-    await tester.enterText(fields.at(2), 'arbitrary');
+    await tester.enterText(fields.at(0), 'demo');
+    await tester.enterText(fields.at(1), '123456');
+    await tester.enterText(fields.at(2), '7K4P');
     await tester.ensureVisible(find.text('登录'));
     await tester.tap(find.text('登录'));
     await tester.pumpAndSettle();
@@ -76,12 +79,26 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('sites-enter')));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('东区巡检'), findsWidgets);
+    expect(find.text('东区高处检修作业'), findsWidgets);
+    await tester.tap(find.text('通讯').last);
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('陈建国'), findsWidgets);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('我的').last);
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.tap(find.text('消息').last);
     await tester.pumpAndSettle();
-    // Preview events omit the core alarm name; retain the explicit fallback.
-    final eventTitle = find.text('告警名称未提供').first;
+    final eventTitle = find.text('进入作业禁区').first;
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('wear-event-401')),
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.ensureVisible(eventTitle);
+    await tester.pumpAndSettle();
     await tester.tap(eventTitle);
     await tester.pumpAndSettle();
     expect(find.text('事件详情'), findsOneWidget);

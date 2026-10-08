@@ -347,7 +347,7 @@ class _EventsPageState extends State<EventsPage> {
                     key: const ValueKey('wear-page-hero-events'),
                     title: '消息',
                     subtitle: controller.actor.isAdmin
-                        ? '异常上报与管理员复核'
+                        ? '事件跟进与现场核验'
                         : '进行中组内告警 · 本人设备提醒',
                     background: WearArt.eventsHero,
                   ),
@@ -506,7 +506,7 @@ class _EventsPageState extends State<EventsPage> {
     final statuses = filters.selectedStatuses.toSet();
     final active =
         statuses.length == 4 &&
-        statuses.containsAll({'open', 'claimed', 'handling', 'pending_review'});
+        statuses.containsAll({'open', 'field_pending', 'claimed', 'handling'});
     return WearCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: InlineFilters(
@@ -739,9 +739,9 @@ class _EventsPageState extends State<EventsPage> {
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
-                          event.status == 'pending_review'
-                              ? '现场已上报 · 等待管理员审批'
-                              : '请优先处理 · 需管理员审批',
+                          event.isPlatformComplete
+                              ? '平台核验已完成'
+                              : '请优先接警 · 可文字跟进',
                           style: const TextStyle(
                             color: WearColors.danger,
                             fontSize: 12,
@@ -1551,22 +1551,22 @@ class _EventsPageState extends State<EventsPage> {
 }
 
 const _statuses = {
-  'active': '核验待办',
-  'open': '待处理',
-  'claimed': '待处理',
-  'handling': '处置中',
-  'pending_review': '待管理员审批',
+  'active': '待核验事件',
+  'open': '待认领',
+  'field_pending': '待现场核验',
+  'handling': '处理中',
   'verified': '已核验',
-  'confirmed': '已确认',
-  'closed': '历史已处理',
 };
 
 const _types = {
   '': '全部类型',
-  'fall': '跌落（设备告警）',
-  'impact': '撞击',
-  'geofence': '围栏',
-  'realtime': '实时告警',
+  'sos': '人员求助',
+  'geofence': '电子围栏',
+  'communication': '设备通信',
+  'battery': '低电量',
+  'location': '位置异常',
+  'belt': '安全带挂接',
+  'vitals': '生命体征',
 };
 
 const _deviceTypes = {'helmet': '安全帽', 'belt': '安全带', 'watch': '手表'};

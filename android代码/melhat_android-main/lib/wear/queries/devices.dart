@@ -389,16 +389,7 @@ class _DevicePageState extends State<DevicePage> {
         ),
       );
     }
-    if (actions.contains('video')) {
-      buttons.add(
-        FilledButton.icon(
-          onPressed: () =>
-              _openCommunications(context, personId: personId, action: 'video'),
-          icon: const Icon(Icons.videocam_outlined),
-          label: const Text('视频'),
-        ),
-      );
-    }
+
     return QuerySection(
       title: '设备能力',
       children: [Wrap(spacing: 8, runSpacing: 8, children: buttons)],

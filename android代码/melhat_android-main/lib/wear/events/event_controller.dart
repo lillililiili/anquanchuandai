@@ -145,13 +145,6 @@ class EventController extends ChangeNotifier {
         type: initialType,
       );
     }
-    // Older home-detail links persisted a hidden SOS-only list filter.
-    // Emergency shortcuts use the severity quick filter, without a hidden type filter.
-    if (filters.type == 'sos') {
-      filters = filters.copyWith(type: '');
-      current = 1;
-      scrollOffset = 0;
-    }
     final target = applyInitial
         ? initialEventId ??
               (initialSeverity != null ? '' : restored?.selectedEventId ?? '')
@@ -392,7 +385,11 @@ class EventController extends ChangeNotifier {
     if (draft.isEmpty) {
       _drafts.remove(eventId);
     } else {
-      _drafts[eventId] = draft;
+      _drafts[eventId] = draft.copyWith(
+        baseVersion:
+            draft.baseVersion ??
+            (selected?.id == eventId ? selected?.version : -1),
+      );
     }
     notifyListeners();
     await _persist();
@@ -400,6 +397,22 @@ class EventController extends ChangeNotifier {
 
   Future<void> updateScroll(double offset) async {
     scrollOffset = offset < 0 ? 0 : offset;
+    await _persist();
+  }
+
+  Future<void> loadLatestDraft() async {
+    final e = selected;
+    if (e == null) return;
+    final form = e.verificationDraft;
+    _drafts[e.id] = EventDraft(
+      baseVersion: e.version,
+      conclusion: form['conclusion']?.toString() ?? '',
+      situation: form['situation']?.toString() ?? '',
+      measures: form['measures']?.toString() ?? '',
+    );
+    conflictMessage = null;
+    errorMessage = null;
+    notifyListeners();
     await _persist();
   }
 
@@ -425,11 +438,24 @@ class EventController extends ChangeNotifier {
     }
     final submittedDraft = draftFor(event.id);
     if (command == EventCommand.handle &&
-        (submittedDraft.handleComment.trim().isEmpty ||
-            submittedDraft.photoPaths.isEmpty)) {
-      errorMessage = '请填写异常原因说明并添加至少一个现场照片或视频';
+        submittedDraft.handleComment.trim().isEmpty) {
+      errorMessage = '请填写现场情况，照片可选';
       conflictMessage = null;
       successMessage = null;
+      notifyListeners();
+      return false;
+    }
+    if ((command == EventCommand.verify &&
+            (!const [
+                  '设备通信异常',
+                  '需现场处理',
+                  '暂无法确认',
+                ].contains(submittedDraft.conclusion) ||
+                submittedDraft.situation.trim().isEmpty)) ||
+        submittedDraft.situation.length > 500 ||
+        submittedDraft.measures.length > 500 ||
+        submittedDraft.handleComment.length > 500) {
+      errorMessage = '请选择核验结论并填写现场情况；填写内容不能超过500字';
       notifyListeners();
       return false;
     }
@@ -444,25 +470,22 @@ class EventController extends ChangeNotifier {
       final latest = await gateway.execute(command, event, submittedDraft);
       if (!_acceptScope(scope)) return false;
       if (command == EventCommand.handle) {
-        // Keep the visible note; only a confirmed POST marks it as submitted.
         _submittedHandleComments[event.id] = submittedDraft.handleComment
             .trim();
-      } else if (command != EventCommand.ack && command != EventCommand.claim) {
+        _drafts[event.id] = submittedDraft.copyWith(
+          baseVersion: latest.version,
+          handleComment: '',
+          photoPaths: [],
+        );
+      } else if (command == EventCommand.verify) {
         _drafts.remove(event.id);
+      } else if (command == EventCommand.saveVerification) {
+        _drafts[event.id] = submittedDraft.copyWith(
+          photoPaths: [],
+          baseVersion: latest.version,
+        );
       }
-      if (command == EventCommand.reopen) {
-        _submittedHandleComments.remove(event.id);
-      }
-      if (command == EventCommand.ack) _ackedLocally.add(event.id);
-      successMessage = command == EventCommand.handle
-          ? (latest.status == 'verified'
-                ? '现场记录已提交，平台核验已完成'
-                : latest.status == 'pending_review'
-                ? '现场记录已提交，等待管理员审批'
-                : '现场记录已提交，请核对平台核验状态')
-          : command == EventCommand.close && latest.status != 'verified'
-          ? '审批请求已提交，请核对平台核验状态'
-          : _successText(command);
+      successMessage = '${event.demo ? '本地模拟：' : ''}${_successText(command)}';
       if (selectionGeneration != _detailGeneration ||
           selected?.id != event.id) {
         await reload(current: current);
@@ -471,6 +494,10 @@ class EventController extends ChangeNotifier {
       selected = latest;
       try {
         await _refreshAfterWrite(event.id, scope);
+        if (_acceptScope(scope)) {
+          successMessage =
+              '${event.demo ? '本地模拟：' : ''}${_successText(command)}';
+        }
       } on EventStaleScope {
         return true;
       } catch (error) {
@@ -548,9 +575,13 @@ class EventController extends ChangeNotifier {
 
   String _successText(EventCommand command) => switch (command) {
     EventCommand.ack => '已确认看见该事件',
-    EventCommand.claim => '异常无需认领',
+    EventCommand.claim => '已认领，进入处理中',
     EventCommand.confirm => '设备提醒已确认',
-    EventCommand.handle => '原因已上报，本次处理已完成，由管理员复核',
+    EventCommand.handle => '现场情况已补充，事件状态保持不变',
+    EventCommand.saveVerification => '核验草稿已保存',
+    EventCommand.verify => '平台核验已完成，外部结案未同步',
+    EventCommand.joinAssistance => '已加入协助；未自动建立语音通话',
+    EventCommand.endAssistance => '协助已结束，事件核验状态保持不变',
     EventCommand.transfer => '事件已转交',
     EventCommand.close => '平台核验已完成，外部结案未同步',
     EventCommand.reopen => '事件已重开',

@@ -35,7 +35,7 @@ public class WearableSessions {
         if (value == null) throw unauthorized();
         JSONObject session = JSONObject.parseObject(value);
         JSONObject state = ledger.read();
-        if (!audience.equals(session.getString("audience")) || state == null) throw unauthorized();
+        if (!(audience.equals(session.getString("audience")) || "guardian".equals(audience) && "mobile".equals(session.getString("audience"))) || state == null) throw unauthorized();
         for (Object item : state.getJSONArray("accounts")) {
             JSONObject actor = (JSONObject) item;
             if (actor.getString("id").equals(session.getString("accountId")) && actor.getBooleanValue("enabled")

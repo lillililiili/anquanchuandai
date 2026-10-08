@@ -4,161 +4,67 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import static com.ruoyi.guardian.WearableModel.*;
 
 @RestController
 @RequestMapping("/api/guardian/v1")
 public class GuardianController {
-    @org.springframework.beans.factory.annotation.Autowired private WearableSessions sessions;
+    private final WearableSessions sessions;
+    private final WearableCredentials credentials;
     private final GuardianStore store;
-    private final GuardianFiles files;
-    private final AdminLedgerStore ledger;
+    private final GuardianEvents events;
+    private final GuardianAccess access;
     private final GuardianVoiceService voice;
-
-    public GuardianController(GuardianStore store, GuardianFiles files, AdminLedgerStore ledger, GuardianVoiceService voice) {
-        this.store = store;
-        this.files = files;
-        this.ledger = ledger;
-        this.voice = voice;
+    public GuardianController(WearableSessions sessions,WearableCredentials credentials,GuardianStore store,GuardianEvents events,GuardianAccess access,GuardianVoiceService voice) {
+        this.sessions=sessions;this.credentials=credentials;this.store=store;this.events=events;this.access=access;this.voice=voice;
     }
-
-    @PostMapping("/login")
-    public Map<String, Object> login(@RequestBody JSONObject body) {
-        String account = body == null ? null : body.getString("account");
-        String password = body == null ? null : body.getString("password");
-        JSONObject duty = accountById("demo-duty");
-        String loginName = duty == null || duty.getString("loginName") == null ? "duty" : duty.getString("loginName");
-        if (duty == null || !duty.getBooleanValue("enabled") || !loginName.equals(account) || !"123456".equals(password)) {
-            throw new GuardianUnauthorized("账号或密码错误。");
+    @PostMapping("/login") public JSONObject login(@RequestBody JSONObject body) {
+        JSONObject actor=credentials.authenticate(body.getString("account"),body.getString("password"));
+        GuardianAccess.Context ctx=access.context(actor);
+        boolean duty=false;
+        for(Object raw:rows(ctx.data,"sites")) {JSONObject site=(JSONObject)raw;
+            if(ctx.can("events:read",site.getString("id"),null)) duty=true;
+            for(Object p:rows(ctx.data,"people")) {JSONObject person=(JSONObject)p;if(site.getString("id").equals(person.getString("siteId"))&&ctx.can("events:read",site.getString("id"),person.getString("areaId"))) duty=true;}
         }
-        Map<String, Object> result = new LinkedHashMap<String, Object>();
-        result.put("ok", true);
-        result.put("operator", operatorBody());
-        result.put("token", sessions.issue(duty, "guardian"));
-        return result;
+        if(!duty) throw AdminQueryService.fail(403,"PERMISSION_DENIED","此账号没有PC监护权限，请使用移动端本人业务");
+        return object("ok",true,"operator",identity(ctx),"token",sessions.issue(actor,"guardian"));
     }
-
-    @PostMapping("/logout")
-    public Map<String, Object> logout(HttpServletRequest request) {
-        sessions.revoke(request); return java.util.Collections.singletonMap("ok", true);
+    @PostMapping("/logout") public JSONObject logout(HttpServletRequest r){sessions.revoke(r);return object("ok",true);}
+    @GetMapping("/operator") public JSONObject operator(HttpServletRequest r){return identity(access.context(WearableSessions.actor(r)));}
+    private JSONObject identity(GuardianAccess.Context ctx){JSONObject body=ctx.identity();body.put("roleName","授权值守人员");return body;}
+    @GetMapping("/snapshot") public JSONObject snapshot(HttpServletRequest r){return object("state",events.snapshot(WearableSessions.actor(r)));}
+    @PutMapping("/snapshot") public JSONObject replace(@RequestBody JSONObject next,@RequestHeader("X-Wearable-Revision") int revision,HttpServletRequest r){store.replaceScoped(next,revision,access.context(WearableSessions.actor(r)));return object("ok",true);}
+    @GetMapping("/events") public JSONObject list(HttpServletRequest r,@RequestParam(required=false) String siteId,@RequestParam(required=false) String status,@RequestParam(required=false) String type,@RequestParam(defaultValue="1") int pageNum,@RequestParam(defaultValue="20") int pageSize){return events.list(WearableSessions.actor(r),siteId,status,type,pageNum,pageSize);}
+    @GetMapping("/events/{id}") public JSONObject event(@PathVariable String id,HttpServletRequest r){return events.detail(WearableSessions.actor(r),id);}
+    @PostMapping("/events/{id}/{action}") public JSONObject command(@PathVariable String id,@PathVariable String action,@RequestBody JSONObject input,HttpServletRequest r){return events.command(WearableSessions.actor(r),id,action,input);}
+    @PostMapping("/sos") public JSONObject sos(@RequestBody JSONObject input,HttpServletRequest r){return events.createSos(WearableSessions.actor(r),input);}
+    @PutMapping("/files/{id}") public JSONObject upload(@PathVariable String id,HttpServletRequest r)throws IOException{events.upload(WearableSessions.actor(r),id,r.getContentType(),r.getInputStream());return object("ok",true,"id",id);}
+    @GetMapping("/files/{id}") public ResponseEntity<byte[]> file(@PathVariable String id,HttpServletRequest r){GuardianFiles.Stored f=events.file(WearableSessions.actor(r),id);return f==null?ResponseEntity.notFound().build():ResponseEntity.ok().contentType(MediaType.parseMediaType(f.type)).body(f.bytes);}
+    @PostMapping("/broadcast") public JSONObject broadcast(@RequestBody JSONObject body,HttpServletRequest r){
+        GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));JSONArray hats=authorizedHats(ctx,body,"communications:broadcast");
+        voice.broadcast(hats,body.getString("content"),ctx.id(),ctx.name());return object("ok",true);
     }
-
-    @PostMapping("/broadcast")
-    public Map<String, Object> broadcast(@RequestBody JSONObject body) {
-        voice.broadcast(body == null ? null : body.getJSONArray("hats"), body == null ? null : body.getString("content"));
-        Map<String, Object> result = new LinkedHashMap<String, Object>();
-        result.put("ok", true);
-        return result;
+    @PostMapping("/call") public Map<String,Object> call(@RequestBody JSONObject body,HttpServletRequest r){
+        GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));JSONArray hats=authorizedHats(ctx,body,"communications:voice");Map<String,Object> result=voice.call(hats);
+        store.update(state->{JSONObject records=state.getJSONObject("voiceSessions");if(records==null){records=new JSONObject();state.put("voiceSessions",records);}records.put(String.valueOf(result.get("channel")),object("ownerId",ctx.id(),"hats",hats,"createdAt",java.time.Instant.now().toString()));return true;});
+        result.put("ok",true);return result;
     }
-
-    @PostMapping("/call")
-    public Map<String, Object> call(@RequestBody JSONObject body) {
-        Map<String, Object> result = voice.call(body == null ? null : body.getJSONArray("hats"));
-        result.put("ok", true);
-        return result;
+    @PostMapping("/call/end") public JSONObject end(@RequestBody JSONObject body,HttpServletRequest r){
+        GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));String channel=body.getString("channel");JSONObject records=store.snapshot().getJSONObject("voiceSessions"),record=records==null?null:records.getJSONObject(channel);
+        if(record==null||!ctx.id().equals(record.getString("ownerId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","不能结束其他账号的设备通话");
+        authorizedHats(ctx,object("hats",record.get("hats")),"communications:voice");voice.end(channel);return object("ok",true);
     }
-
-    @PostMapping("/call/end")
-    public Map<String, Object> endCall(@RequestBody JSONObject body) {
-        voice.end(body == null ? null : body.getString("channel"));
-        Map<String, Object> result = new LinkedHashMap<String, Object>();
-        result.put("ok", true);
-        return result;
-    }
-
-    @GetMapping("/operator")
-    public Map<String, Object> operator() {
-        return operatorBody();
-    }
-
-    private Map<String, Object> operatorBody() {
-        JSONObject duty = accountById("demo-duty");
-        JSONObject role = roleById(duty == null ? "duty" : firstRole(duty));
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
-        body.put("loginName", duty == null || duty.getString("loginName") == null ? "duty" : duty.getString("loginName"));
-        body.put("name", duty == null || duty.getString("name") == null ? "值守员" : duty.getString("name"));
-        body.put("roleName", role == null || role.getString("name") == null ? "平台值守员" : role.getString("name"));
-        return body;
-    }
-
-    private JSONObject accountById(String id) {
-        JSONObject state = ledger.read();
-        if (state == null) return null;
-        JSONArray accounts = state.getJSONArray("accounts");
-        if (accounts == null) return null;
-        for (int i = 0; i < accounts.size(); i++) {
-            JSONObject account = accounts.getJSONObject(i);
-            if (account != null && id.equals(account.getString("id"))) return account;
-        }
-        return null;
-    }
-
-    private JSONObject roleById(String id) {
-        JSONObject state = ledger.read();
-        if (state == null || id == null) return null;
-        JSONArray roles = state.getJSONArray("roles");
-        if (roles == null) return null;
-        for (int i = 0; i < roles.size(); i++) {
-            JSONObject role = roles.getJSONObject(i);
-            if (role != null && id.equals(role.getString("id"))) return role;
-        }
-        return null;
-    }
-
-    private static String firstRole(JSONObject account) {
-        JSONArray roleIds = account.getJSONArray("roleIds");
-        if (roleIds == null || roleIds.isEmpty()) return "duty";
-        return roleIds.getString(0);
-    }
-
-    @PutMapping("/files/{id}")
-    public Map<String, Object> saveFile(@PathVariable("id") String id, HttpServletRequest request) {
-        try {
-            files.save(id, request.getContentType(), request.getInputStream());
-        } catch (IOException error) {
-            throw new GuardianRejected("照片保存失败，请检查磁盘空间");
-        }
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
-        body.put("ok", true);
-        return body;
-    }
-
-    @GetMapping("/files/{id}")
-    public ResponseEntity<byte[]> readFile(@PathVariable("id") String id) {
-        GuardianFiles.Stored stored = files.read(id);
-        if (stored == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType(stored.type)).body(stored.bytes);
-    }
-
-    @GetMapping("/snapshot")
-    public Map<String, Object> snapshot() {
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
-        body.put("state", store.snapshot());
-        return body;
-    }
-
-    @PutMapping("/snapshot")
-    public Map<String, Object> replace(@RequestBody JSONObject state, @org.springframework.web.bind.annotation.RequestHeader("X-Wearable-Revision") int expectedSeq) {
-        try {
-            store.replaceFromClient(state, expectedSeq);
-        } catch (IllegalArgumentException error) {
-            throw new GuardianRejected(error.getMessage());
-        } catch (IllegalStateException error) {
-            throw new GuardianRejected(error.getMessage() == null ? "监护数据保存失败" : error.getMessage());
-        }
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
-        body.put("ok", true);
-        return body;
+    private JSONArray authorizedHats(GuardianAccess.Context ctx,JSONObject body,String permission){
+        JSONArray requested=body.getJSONArray("hats"),result=new JSONArray();if(requested==null||requested.isEmpty()||requested.size()>50)throw new GuardianRejected("请选择1至50个安全帽");
+        for(Object raw:requested){String number=((JSONObject)raw).getString("hatNumber");JSONObject device=null;
+            for(Object d:rows(ctx.data,"devices"))if(Objects.equals(number,((JSONObject)d).getString("portalDeviceId")))device=(JSONObject)d;
+            if(device==null||!"HELMET".equals(device.getString("type"))||!ctx.can(permission,device.getString("siteId"),device.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","设备不在通讯授权范围");
+            String wearer="";for(Object rawAssignment:rows(ctx.data,"assignments")){JSONObject a=(JSONObject)rawAssignment;if(a.getBooleanValue("active")&&device.getString("id").equals(a.getString("deviceId"))){JSONObject p=find(ctx.data,"people",a.getString("personId"));if(p!=null)wearer=p.getString("name");}}
+            result.add(object("hatNumber",number,"name",wearer));
+        }return result;
     }
 }

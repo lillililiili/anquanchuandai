@@ -115,7 +115,12 @@ class CallSession {
 
   bool get isConnected => status == WearCallStatus.connected && !demo;
   bool get isTerminal => status.isTerminal;
-  String get statusLabel => demo ? '演示状态（未连接真实设备）' : status.label;
+  String get statusLabel => demo
+      ? '演示状态（未连接真实设备）'
+      : status == WearCallStatus.connected &&
+            connectionQuality == 'local_joined'
+      ? '本端已加入（设备接通待确认）'
+      : status.label;
 }
 
 class RtcCredentials {

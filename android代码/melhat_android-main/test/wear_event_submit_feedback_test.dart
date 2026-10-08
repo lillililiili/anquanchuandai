@@ -1,223 +1,125 @@
-import 'event_photo_fixture.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:rolling_intelligence_headband/wear/core.dart';
-import 'package:rolling_intelligence_headband/wear/events/events_page.dart';
-import 'wear_session_test.dart'
-    show MemoryCredentials, identity, reply, transport;
+import 'wear_acceptance_fixture.dart';
 
 void main() {
   for (final mode in [
     'success',
-    'conflict',
     'network',
-    'refresh_failed',
-    'high_risk',
-    'empty_abnormal',
-    'empty_emergency',
-    'text_only',
-    'media_only',
+    'conflict',
+    'empty',
     'whitespace',
-    'removed_media',
-    'mixed_media',
   ]) {
     testWidgets(
-      'non-SOS submit preserves notes and reports $mode at the form',
-      (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        tester.view.physicalSize = const Size(390, 844);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
-        final emergency = ['high_risk', 'empty_emergency'].contains(mode);
-        final empty = mode.startsWith('empty_');
-        var serverEvent = <String, dynamic>{
-          'id': '169',
-          'type': emergency ? 'sos' : 'realtime',
-          'severity': emergency ? 'emergency' : 'abnormal',
-          'alarmName': '静默 / 长时间静止',
-          'status': 'claimed',
-          'claimantUserId': mode,
-          'version': 2,
-          'siteId': '1',
-        };
-        final writes = <RequestOptions>[];
-        final actions = <Map<String, dynamic>>[];
-        var postSucceeded = false;
-        final session =
-            WearSession(
-                credentials: MemoryCredentials(),
-                dio: transport((request) {
-                  if (request.method == 'POST') {
-                    writes.add(request);
-                    if (mode == 'conflict') {
-                      serverEvent = {...serverEvent, 'version': 3};
-                      return reply(null, code: 409, msg: '状态已更新，请刷新');
-                    }
-                    if (mode == 'network') {
-                      throw DioException(
-                        requestOptions: request,
-                        type: DioExceptionType.connectionError,
-                      );
-                    }
-                    postSucceeded = true;
-                    serverEvent = {
-                      ...serverEvent,
-                      'status': emergency ? 'pending_review' : 'verified',
-                      'version': (serverEvent['version'] as int) + 1,
-                    };
-                    actions.insert(0, {
-                      'id': '${actions.length + 1}',
-                      'action': 'handle',
-                      'reason': Map.fromEntries(
-                        (request.data as FormData).fields,
-                      )['comment'],
-                      'actor': 'operator',
-                      'toStatus': serverEvent['status'],
-                    });
-                    return reply(serverEvent);
-                  }
-                  if (mode == 'refresh_failed' && postSucceeded) {
-                    throw DioException(
-                      requestOptions: request,
-                      type: DioExceptionType.connectionError,
-                    );
-                  }
-                  if (request.path.endsWith('/actions')) return reply(actions);
-                  if (request.path == '/api/v1/events/169') {
-                    return reply(serverEvent);
-                  }
-                  if (request.path == '/api/v1/events') {
-                    return reply({
-                      'records': [serverEvent],
-                      'total': 1,
-                      'current': 1,
-                      'size': 20,
-                    });
-                  }
-                  if (request.path.endsWith('/inbox/count')) {
-                    return reply({'count': 1});
-                  }
-                  return reply({});
-                }),
-              )
-              ..initialized = true
-              ..token = 'test'
-              ..siteId = '1'
-              ..me = {
-                ...identity(user: mode),
-                'permissions': ['wear:event:list', 'wear:event:claim'],
-              };
-        addTearDown(session.dispose);
-        Widget app() => WearScope(
-          session: session,
-          child: const MaterialApp(home: EventsPage(eventId: '169')),
+      'observation $mode preserves editable notes and never verifies',
+      (t) async {
+        final backend = AcceptanceBackend();
+        await launchAcceptance(t, backend, account: 'member');
+        await openAcceptance(t, '/events?eventId=402');
+        final originalStatus = backend.events.last['status'];
+        final text = mode == 'empty'
+            ? ''
+            : mode == 'whitespace'
+            ? '   '
+            : '现场需要协助';
+        await enterAcceptance(t, 'event-observation', text);
+        if (['network', 'conflict'].contains(mode)) {
+          backend
+            ..failSuffix = '/report'
+            ..networkFailure = mode == 'network'
+            ..failCode = 409;
+        }
+        await tapAcceptance(
+          t,
+          find.byKey(const ValueKey('event-observation-submit')),
         );
-        await tester.pumpWidget(app());
-        await tester.pumpAndSettle();
-        final input = find.byKey(const ValueKey('event-handle-input-169'));
-        final submit = find.byKey(const ValueKey('event-handle-submit-169'));
-        Future<void> tapSubmit() async {
-          await tester.ensureVisible(submit);
-          await tester.pumpAndSettle();
-          await tester.tap(submit);
-          await tester.pumpAndSettle();
-        }
-
-        expect(find.textContaining('当前状态 ·'), findsNothing);
-        expect(find.text('紧急事件处理进度'), findsNothing);
-        if (!empty && mode != 'media_only') {
-          await tester.ensureVisible(input);
-          await tester.enterText(
-            input,
-            mode == 'whitespace' ? '   \n\t' : '正常',
-          );
-        }
-        if (!empty && mode != 'text_only') {
-          await attachTestCameraPhoto(tester, withVideo: mode == 'mixed_media');
-          if (mode == 'removed_media') {
-            await tester.ensureVisible(find.byTooltip('移除附件'));
-            await tester.tap(find.byTooltip('移除附件'));
-            await tester.pumpAndSettle();
-          }
-          if (mode == 'mixed_media') {
-            expect(find.byTooltip('移除附件'), findsNWidgets(3));
-            final add = find.byKey(const ValueKey('event-capture-photo'));
-            await tester.ensureVisible(add);
-            await tester.tap(add);
-            await tester.pumpAndSettle();
-            expect(find.text('现场拍照'), findsOneWidget);
-            expect(find.text('现场录像'), findsOneWidget);
-            expect(find.text('从相册选择照片或视频'), findsOneWidget);
-            await tester.binding.handlePopRoute();
-            await tester.pumpAndSettle();
-          }
-        }
-        await tapSubmit();
-        if (empty ||
-            [
-              'text_only',
-              'media_only',
-              'whitespace',
-              'removed_media',
-            ].contains(mode)) {
-          expect(writes, isEmpty);
-          expect(input, findsOneWidget);
-          expect(find.textContaining('请填写异常原因说明并添加至少一个现场照片或视频'), findsWidgets);
-          expect(tester.widget<FilledButton>(submit).onPressed, isNotNull);
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pumpAndSettle();
-          return;
-        }
-        expect(writes.single.path, '/api/v1/events/169/report');
-        expect(Map.fromEntries((writes.single.data as FormData).fields), {
-          'comment': empty ? '' : '正常',
-          'version': '2',
-        });
-        expect(
-          (writes.single.data as FormData).files,
-          hasLength(mode == 'mixed_media' ? 3 : 1),
-        );
-        if (mode == 'mixed_media') {
+        final posts = backend.writes.where((r) => r.path.endsWith('/report'));
+        if (['empty', 'whitespace'].contains(mode)) {
+          expect(posts, isEmpty);
+          expect(find.textContaining('请填写现场情况'), findsWidgets);
+        } else if (mode != 'success') {
+          expect(posts, hasLength(1));
           expect(
-            (writes.single.data as FormData).files.last.value.filename,
-            'test-video.mp4',
+            t
+                .widget<TextField>(
+                  find.byKey(const ValueKey('event-observation')),
+                )
+                .controller!
+                .text,
+            text,
           );
-        }
-        final feedback = find.byKey(
-          const ValueKey('event-handle-feedback-169'),
-        );
-        final message = tester.widget<Text>(feedback).data!;
-        if (mode == 'conflict' || mode == 'network') {
-          expect(tester.widget<TextField>(input).controller!.text, '正常');
-          expect(message, contains('填写内容已保留'));
-          expect(tester.widget<FilledButton>(submit).onPressed, isNotNull);
+          expect(backend.events.last['observations'], isEmpty);
+          backend.failSuffix = null;
+          await tapAcceptance(
+            t,
+            find.byKey(const ValueKey('event-observation-submit')),
+          );
+          expect(backend.events.last['observations'], hasLength(1));
         } else {
-          expect(message, contains('已保存'));
-          expect(input, findsNothing);
-          expect(submit, findsNothing);
-          expect(find.byType(SnackBar), findsOneWidget);
-          if (mode == 'refresh_failed') expect(message, contains('刷新失败'));
-          if (mode != 'refresh_failed') {
-            expect(message, contains(emergency ? '等待管理员审批' : '平台核验已完成'));
-          }
-          if (mode == 'success') {
-            await tester.pumpWidget(const SizedBox.shrink());
-            await tester.pumpAndSettle();
-            await tester.pumpWidget(app());
-            await tester.pumpAndSettle();
-            expect(input, findsNothing);
-            expect(find.textContaining('平台核验已完成'), findsWidgets);
-            expect(writes.length, 1);
+          expect(posts, hasLength(1));
+          expect(backend.events.last['observations'], hasLength(1));
+        }
+        expect(backend.events.last['status'], originalStatus);
+        expect(backend.events.last['verification'], isEmpty);
+        expect(t.takeException(), isNull);
+      },
+    );
+  }
+  for (final mode in ['network', 'conflict', 'invalid', 'success']) {
+    testWidgets(
+      'final verification $mode preserves draft or completes read-only',
+      (t) async {
+        final backend = AcceptanceBackend();
+        await launchAcceptance(t, backend);
+        await openAcceptance(t, '/events?eventId=401');
+        if (mode != 'invalid') await fillVerification(t);
+        if (['network', 'conflict'].contains(mode)) {
+          backend
+            ..failSuffix = '/verify'
+            ..networkFailure = mode == 'network'
+            ..failCode = 409;
+        }
+        await tapAcceptance(
+          t,
+          find.byKey(const ValueKey('verification-submit')),
+        );
+        await tapAcceptance(t, find.text('确认'));
+        if (mode == 'success') {
+          expect(backend.events.first['status'], 'verified');
+          expect(find.text('核验结果（只读）'), findsOneWidget);
+          expect(
+            find.byKey(const ValueKey('verification-submit')),
+            findsNothing,
+          );
+        } else {
+          expect(backend.events.first['status'], isNot('verified'));
+          expect(
+            find.byKey(const ValueKey('verification-submit')),
+            findsOneWidget,
+          );
+          if (mode == 'invalid') {
+            expect(
+              backend.writes.where((r) => r.path.endsWith('/verify')),
+              isEmpty,
+            );
+            expect(find.textContaining('请选择核验结论'), findsWidgets);
+          } else {
+            expect(
+              t
+                  .widget<TextField>(
+                    find.byKey(const ValueKey('verification-situation')),
+                  )
+                  .controller!
+                  .text,
+              '已到现场，人员安全',
+            );
+            expect(
+              backend.writes.where((r) => r.path.endsWith('/verify')),
+              hasLength(1),
+            );
           }
         }
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pumpAndSettle();
+        expect(t.takeException(), isNull);
       },
     );
   }

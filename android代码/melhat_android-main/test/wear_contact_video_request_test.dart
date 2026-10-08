@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/communications/lab_calls.dart';
 import 'package:rolling_intelligence_headband/wear/communications/contact_video_request.dart';
-import 'wear_lab_calls_test.dart' show sessionWith, row;
+import 'wear_communications_fixture.dart' show sessionWith, row;
 import 'wear_session_test.dart' show reply;
 
 void main() {

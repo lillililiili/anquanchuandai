@@ -5,8 +5,6 @@ import '../core.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
 import 'work_reference.dart';
-import 'inspection.dart';
-import 'inspection_pages.dart';
 
 String _workTypeLabel(Object? value) => switch (value?.toString()) {
   'patrol' => '巡检',
@@ -92,23 +90,11 @@ class _TasksPageState extends State<TasksPage> {
   @override
   Widget build(BuildContext context) {
     if (widget.groupId != null) {
-      return InspectionGroupTasksPage(taskId: widget.groupId!);
+      return TaskPage(id: widget.groupId!);
     }
     final groups = <String, List<JsonMap>>{};
     for (final task in _records) {
-      groups
-          .putIfAbsent(
-            _session!.isDutyAdmin
-                ? taskGroup(task['status'])
-                : inspectionStatus(
-                    task['inspectionStatus'] ??
-                        (task['status'] == 'ended'
-                            ? 'completed'
-                            : 'in_progress'),
-                  ),
-            () => [],
-          )
-          .add(task);
+      groups.putIfAbsent(taskGroup(task['status']), () => []).add(task);
     }
     const order = ['进行中', '有异常', '已完成', '待开始', '已结束', '状态未知'];
     return QueryPage(
@@ -122,7 +108,7 @@ class _TasksPageState extends State<TasksPage> {
               }
             }
           : null,
-      subtitle: _mine ? '仅显示我所属的作业组，进入后查看组内巡检任务' : '当前厂站的授权作业 · 可按状态和类型筛选',
+      subtitle: _mine ? '查看参与的作业、人员、装备及事件记录' : '当前厂站的授权作业 · 可按状态和类型筛选',
       body: Column(
         children: [
           if (_session!.isDutyAdmin)
@@ -224,16 +210,9 @@ class _TasksPageState extends State<TasksPage> {
                             key: ValueKey('task-${idOf(task['id'])}'),
                             title: textOf(task['title']),
                             subtitle:
-                                '${_workTypeLabel(task['workType'])} · ${textOf(task['spaceName'])}\n${formatTime(task['plannedStart'])} 至 ${formatTime(task['plannedEnd'])}',
+                                '${_workTypeLabel(task['workType'])} · ${textOf(task['spaceName'])}\n${formatTime(task['plannedStart'] ?? task['plannedStartAt'])} 至 ${formatTime(task['plannedEnd'] ?? task['plannedEndAt'])}',
                             trailing: WearBadge(
-                              text: _session!.isDutyAdmin
-                                  ? taskStatusLabel(task['status'])
-                                  : inspectionStatus(
-                                      task['inspectionStatus'] ??
-                                          (task['status'] == 'ended'
-                                              ? 'completed'
-                                              : 'in_progress'),
-                                    ),
+                              text: taskStatusLabel(task['status']),
                             ),
                             onTap: () async {
                               await context.push('/tasks/${idOf(task['id'])}');
@@ -311,142 +290,6 @@ class _TaskPageState extends State<TaskPage> {
   Object? _error;
   int _request = 0;
   bool _preview = false;
-  bool _editingMembers = false;
-  InspectionController? _inspection;
-
-  @override
-  void dispose() {
-    _inspection?.dispose();
-    super.dispose();
-  }
-
-  Future<void> _manageMembers() async {
-    final session = _session!;
-    final scope = session.scopeKey;
-    if (_editingMembers || _preview) return;
-    setState(() => _editingMembers = true);
-    try {
-      final people = <JsonMap>[];
-      for (var page = 1; ; page++) {
-        final result = await session.api.page(
-          '/api/v1/people',
-          current: page,
-          size: 100,
-        );
-        people.addAll(result.records);
-        if (result.records.isEmpty || people.length >= result.total) break;
-      }
-      if (!mounted || scope != session.scopeKey) return;
-      final previous = jsonList(
-        _task?['members'],
-      ).map((p) => idOf(p['personId'])).toSet();
-      final selected = {...previous};
-      var query = '';
-      final approved = await showModalBottomSheet<bool>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, update) => SafeArea(
-            child: SizedBox(
-              height: MediaQuery.sizeOf(ctx).height * .75,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      '调整作业人员',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '保存后同步业务作业成员，并用于通讯中的作业组筛选。',
-                      style: TextStyle(fontSize: 12, color: WearColors.muted),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: '搜索姓名或工号',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (v) => update(() => query = v.trim()),
-                    ),
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          for (final person in people.where(
-                            (p) =>
-                                (p['status'] == null ||
-                                    idOf(p['status']) == '0' ||
-                                    previous.contains(idOf(p['id']))) &&
-                                '${p['name']} ${p['personCode']}'.contains(
-                                  query,
-                                ),
-                          ))
-                            CheckboxListTile(
-                              value: selected.contains(idOf(person['id'])),
-                              title: Text(textOf(person['name'])),
-                              subtitle: Text(textOf(person['personCode'])),
-                              onChanged: (v) => update(() {
-                                if (v == true) {
-                                  selected.add(idOf(person['id']));
-                                } else {
-                                  selected.remove(idOf(person['id']));
-                                }
-                              }),
-                            ),
-                        ],
-                      ),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: Text('保存 · ${selected.length} 人'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      if (approved != true || !mounted || scope != session.scopeKey) return;
-      final added = selected.difference(previous).toList();
-      if (added.isNotEmpty) {
-        await session.api.post(
-          '/api/v1/work-tasks/${widget.id}/members',
-          data: {'personIds': added},
-        );
-      }
-      for (final id in previous.difference(selected)) {
-        if (scope != session.scopeKey) return;
-        await session.api.delete('/api/v1/work-tasks/${widget.id}/members/$id');
-      }
-      if (mounted && scope == session.scopeKey) {
-        session.requestRefresh();
-        await _load();
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('作业人员已更新')));
-        }
-      }
-    } catch (e) {
-      if (mounted && scope == session.scopeKey) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('人员调整未全部完成，请核对刷新后的名单：$e')));
-        session.requestRefresh();
-        await _load();
-      }
-    } finally {
-      if (mounted) setState(() => _editingMembers = false);
-    }
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -474,6 +317,7 @@ class _TaskPageState extends State<TaskPage> {
       final results = await Future.wait([
         session.api.get('/api/v1/work-tasks/${widget.id}'),
         session.api.get('/api/v1/work-tasks/${widget.id}/equipment-check'),
+        session.api.get('/api/v1/work-tasks/${widget.id}/events'),
       ]);
       final task = jsonMap(results[0]);
       final memberEquipment = <String, List<JsonMap>?>{};
@@ -514,23 +358,7 @@ class _TaskPageState extends State<TaskPage> {
         _task = task;
         _equipment = jsonList(results[1]);
         _memberEquipment = memberEquipment;
-        _events = const [];
-        if (_inspection == null) {
-          _inspection = InspectionController(session, widget.id);
-          _inspection!.addListener(() {
-            if (!mounted || _task == null || _inspection?.data == null) return;
-            setState(() {
-              _task!['inspectionStatus'] =
-                  _inspection!.items.any((i) => i['status'] == 'abnormal')
-                  ? 'abnormal'
-                  : _task!['status'] == 'ended' ||
-                        (_inspection!.total > 0 &&
-                            _inspection!.completed == _inspection!.total)
-                  ? 'completed'
-                  : 'in_progress';
-            });
-          });
-        }
+        _events = jsonList(results[2]);
         _loading = false;
       });
     } catch (error) {
@@ -624,6 +452,7 @@ class _TaskPageState extends State<TaskPage> {
           owner: workOwnerLabel(task, _session!),
           guardian: workGuardianLabel(task),
           preview: _preview,
+          canViewPeople: _session!.isAdmin,
           onBack: _back,
           onRefresh: _preview ? _showPreview : _load,
           onPerson: (person) {
@@ -632,7 +461,7 @@ class _TaskPageState extends State<TaskPage> {
               return;
             }
             final id = idOf(person['personId']);
-            if (id.isNotEmpty) context.push('/people/$id');
+            if (id.isNotEmpty && _session!.isAdmin) context.push('/people/$id');
           },
           onEvent: (event) {
             if (_preview) {
@@ -650,35 +479,12 @@ class _TaskPageState extends State<TaskPage> {
             }
           },
           onGuardian: _contactGuardian,
-          inspectionActions: _inspection == null
-              ? null
-              : InspectionActions(
-                  controller: _inspection!,
-                  task: task,
-                  onGuardian: _contactGuardian,
-                ),
-          onManageMembers:
-              !_preview &&
-                  !_editingMembers &&
-                  task['status'] != 'ended' &&
-                  (_session!.isDuty ||
-                      _session!.me?['admin'] == true ||
-                      _session!.hasRole('wear_platform_admin'))
-              ? _manageMembers
-              : null,
+          onEventRecords: () => context.push(
+            '/events?taskId=${Uri.encodeComponent(widget.id)}&status=all',
+          ),
           details: Column(
             children: [
-              DetailField(
-                label: '状态',
-                value: _session!.isDutyAdmin
-                    ? taskStatusLabel(task['status'])
-                    : inspectionStatus(
-                        task['inspectionStatus'] ??
-                            (task['status'] == 'ended'
-                                ? 'completed'
-                                : 'in_progress'),
-                      ),
-              ),
+              DetailField(label: '状态', value: taskStatusLabel(task['status'])),
               DetailField(
                 label: '作业类型',
                 value: _workTypeLabel(task['workType']),
@@ -687,7 +493,7 @@ class _TaskPageState extends State<TaskPage> {
               DetailField(
                 label: '计划时间',
                 value:
-                    '${formatTime(task['plannedStart'])} 至 ${formatTime(task['plannedEnd'])}',
+                    '${formatTime(task['plannedStart'] ?? task['plannedStartAt'])} 至 ${formatTime(task['plannedEnd'] ?? task['plannedEndAt'])}',
               ),
               DetailField(
                 label: '实际时间',

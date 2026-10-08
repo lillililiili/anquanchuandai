@@ -154,7 +154,7 @@ void main() {
     },
   );
   test(
-    'platform admin is reviewer, never automatically a duty claimant',
+    'role label alone does not grant review or claim permissions',
     () async {
       final session = WearSession(
         credentials: MemoryCredentials('token'),
@@ -162,8 +162,10 @@ void main() {
       );
       addTearDown(session.dispose);
       await session.initialize();
-      expect(session.isReviewer, true);
+      expect(session.isReviewer, false);
       expect(session.isDuty, false);
+      session.me!['permissions'] = ['wear:event:list', 'wear:event:review'];
+      expect(session.isReviewer, true);
     },
   );
   test('active call blocks site changes and logout', () async {
