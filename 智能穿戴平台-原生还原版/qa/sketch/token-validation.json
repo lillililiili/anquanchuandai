@@ -1,0 +1,376 @@
+{
+  "passed": 53,
+  "checks": [
+    {
+      "label": "主色一default",
+      "id": "-wxo7UjqvqneQNTivHtc5",
+      "token": "--theme-accent",
+      "value": "#83f6fd",
+      "passed": true
+    },
+    {
+      "label": "主色一hover",
+      "id": "n7CkTUcdpqHP7UXB2RmbJ",
+      "token": "--theme-accent-hover",
+      "value": "#a0f8fd",
+      "passed": true
+    },
+    {
+      "label": "主色一active",
+      "id": "UYUa-g11WkOm_jP1rEsGi",
+      "token": "--theme-accent-active",
+      "value": "#5dcad2",
+      "passed": true
+    },
+    {
+      "label": "主色一disabled",
+      "id": "ZqNiVP01gnKu5b96oTQGJ",
+      "token": "--theme-accent-disabled",
+      "value": "#c4fbfe",
+      "passed": true
+    },
+    {
+      "label": "主色二default",
+      "id": "qRBKuAXstQZQ-Adi1786E",
+      "token": "--theme-primary",
+      "value": "#4faff7",
+      "passed": true
+    },
+    {
+      "label": "主色二hover",
+      "id": "RtqN3Tnmau-jJigZ5Ulgy",
+      "token": "--theme-primary-hover",
+      "value": "#7fcefa",
+      "passed": true
+    },
+    {
+      "label": "主色二active",
+      "id": "5HRorMkldRqfvl9vuwTiP",
+      "token": "--theme-primary-active",
+      "value": "#3c89f5",
+      "passed": true
+    },
+    {
+      "label": "主色二disabled",
+      "id": "0DqUfZvbn2Pe4RWtujfBL",
+      "token": "--theme-primary-disabled",
+      "value": "#193a60",
+      "passed": true
+    },
+    {
+      "label": "错误色",
+      "id": "bgx6_Z0f5bZSkU5MQnMpC",
+      "token": "--theme-red",
+      "value": "#de554f",
+      "passed": true
+    },
+    {
+      "label": "错误色hover",
+      "id": "7kIY4YA3JBjw8xrZ9Ti4i",
+      "token": "--theme-red-hover",
+      "value": "#e57163",
+      "passed": true
+    },
+    {
+      "label": "错误色active",
+      "id": "iDyLw7sFKwPzxSPx-Oa-J",
+      "token": "--theme-red-active",
+      "value": "#a03e35",
+      "passed": true
+    },
+    {
+      "label": "错误色disabled",
+      "id": "8n0Bqat4ECiHiQZJn1zpV",
+      "token": "--theme-red-disabled",
+      "value": "#f4bcb2",
+      "passed": true
+    },
+    {
+      "label": "二级警告色",
+      "id": "pbsEu087YP8CGkPvrF3Fi",
+      "token": "--theme-orange",
+      "value": "#f09840",
+      "passed": true
+    },
+    {
+      "label": "二级警告色hover",
+      "id": "jXBrWpcD3_ly-TCrrRuiF",
+      "token": "--theme-orange-hover",
+      "value": "#ec9a5e",
+      "passed": true
+    },
+    {
+      "label": "二级警告色active",
+      "id": "g0wz-sZhLBPKg0wIycB8P",
+      "token": "--theme-orange-active",
+      "value": "#b16022",
+      "passed": true
+    },
+    {
+      "label": "二级警告色disabled",
+      "id": "l_fCxcXcC0qGUklaJ2rfq",
+      "token": "--theme-orange-disabled",
+      "value": "#f4bc93",
+      "passed": true
+    },
+    {
+      "label": "三级警告色",
+      "id": "q4n21qokeoWg7KlzJmIqq",
+      "token": "--theme-yellow",
+      "value": "#fef770",
+      "passed": true
+    },
+    {
+      "label": "三级警告色hover",
+      "id": "jKEY74xfLrVExmTSWQVK-",
+      "token": "--theme-yellow-hover",
+      "value": "#fef886",
+      "passed": true
+    },
+    {
+      "label": "三级警告色active",
+      "id": "FPRBQemcDpuTP94FN4By8",
+      "token": "--theme-yellow-active",
+      "value": "#dad245",
+      "passed": true
+    },
+    {
+      "label": "三级警告色disabled",
+      "id": "4Z0TPLR19NRHtu-yj452N",
+      "token": "--theme-yellow-disabled",
+      "value": "#fefbaa",
+      "passed": true
+    },
+    {
+      "label": "成功色",
+      "id": "T5RcUyQT5IghgzpSxeiO5",
+      "token": "--theme-green",
+      "value": "#71e96f",
+      "passed": true
+    },
+    {
+      "label": "成功色hover",
+      "id": "n5A0ADBRu3fBju5r-GP85",
+      "token": "--theme-green-hover",
+      "value": "#73be91",
+      "passed": true
+    },
+    {
+      "label": "成功色active",
+      "id": "bNvGuLBHdP6CBtLMKp0SV",
+      "token": "--theme-green-active",
+      "value": "#3b865c",
+      "passed": true
+    },
+    {
+      "label": "成功色disabled",
+      "id": "q-NWfrwzf3JJdPWedMImW",
+      "token": "--theme-green-disabled",
+      "value": "#a2d8b5",
+      "passed": true
+    },
+    {
+      "label": "一级文字色",
+      "id": "jtSw0dSaOLMCbpJZ8r685",
+      "token": "--theme-heading",
+      "value": "#ffffff",
+      "passed": true
+    },
+    {
+      "label": "二级文字色",
+      "id": "s8CDc_MMPf_T-I4Ansvub",
+      "token": "--theme-text",
+      "value": "#d1dae5",
+      "passed": true
+    },
+    {
+      "label": "三级文字色",
+      "id": "caLqFh68iaBHwJ0xAuBjN",
+      "token": "--theme-muted",
+      "value": "#b0becb",
+      "passed": true
+    },
+    {
+      "label": "禁用文字色",
+      "id": "iO7e00gReqiGS0Gu97Wc8",
+      "token": "--theme-disabled",
+      "value": "#677987",
+      "passed": true
+    },
+    {
+      "label": "链接文字色",
+      "id": "DkqsLz4stLMaeLeapa9cq",
+      "token": "--theme-link",
+      "value": "#83f6fd",
+      "passed": true
+    },
+    {
+      "label": "默认页面底层背景色",
+      "id": "lmrmXOJDe_YhUu9GpxILn",
+      "token": "--theme-bg",
+      "value": "#121e37",
+      "passed": true
+    },
+    {
+      "label": "卡片背景色",
+      "id": "StgLM69wj7o-zvpT2mSnq",
+      "token": "--theme-card",
+      "value": "rgba(80, 177, 249, 0.12)",
+      "passed": true
+    },
+    {
+      "label": "组件背景色1",
+      "id": "dahG5nevYHNrnmj2rTPxa",
+      "token": "--theme-component-bg-1",
+      "value": "rgba(131, 246, 253, 0.2)",
+      "passed": true
+    },
+    {
+      "label": "组件背景色2",
+      "id": "g-wfUunFHDxHfl3kZ3Mjt",
+      "token": "--theme-component-bg-2",
+      "value": "rgba(131, 246, 253, 0.5)",
+      "passed": true
+    },
+    {
+      "label": "组件背景色3",
+      "id": "FFge0hZ_AL7ZJ5RU1nL_e",
+      "token": "--theme-component-bg-3",
+      "value": "rgba(37, 85, 111, 0.2)",
+      "passed": true
+    },
+    {
+      "label": "组件背景色4",
+      "id": "-8ZXFXlMTJL4LS69yUA9i",
+      "token": "--theme-component-bg-4",
+      "value": "rgba(127, 206, 250, 0.15)",
+      "passed": true
+    },
+    {
+      "label": "组件背景色5",
+      "id": "MebGf0ilqOrAaDxYrVs6X",
+      "token": "--theme-component-bg-5",
+      "value": "rgba(60, 137, 245, 0.2)",
+      "passed": true
+    },
+    {
+      "label": "组件背景色6",
+      "id": "2oSUB8OPHFLejMvhOzGRK",
+      "token": "--theme-component-bg-6",
+      "value": "#295f75",
+      "passed": true
+    },
+    {
+      "label": "分割线色",
+      "id": "z-NLC-qMpg58iEm8Ytzlo",
+      "token": "--theme-divider",
+      "value": "rgba(255, 255, 255, 0.1)",
+      "passed": true
+    },
+    {
+      "label": "边框色",
+      "id": "r9ta2IVBN-3LwYIyoc78h",
+      "token": "--theme-border",
+      "value": "rgba(131, 246, 253, 0.5)",
+      "passed": true
+    },
+    {
+      "label": "边框禁用色",
+      "id": "Y3XSweGgWbZE1V23yPY0U",
+      "token": "--theme-border-disabled",
+      "value": "rgba(131, 246, 253, 0.2)",
+      "passed": true
+    },
+    {
+      "label": "下拉背景色",
+      "id": "b2Z78PKjHnxv19CT7sopb",
+      "token": "--theme-dropdown",
+      "value": "#2e6086",
+      "passed": true
+    },
+    {
+      "label": "表头背景色",
+      "id": "kUxpaXQ5XGi1MBGFVI2Wv",
+      "token": "--theme-table-head",
+      "value": "#25556f",
+      "passed": true
+    },
+    {
+      "label": "表格选中色",
+      "id": "lkX-HL0rLIAlvX88PF1Hy",
+      "token": "--theme-selected",
+      "value": "#254570",
+      "passed": true
+    },
+    {
+      "label": "斑马格深色",
+      "id": "vmcXjlIatgc3wjlAqoipM",
+      "token": "--theme-row-odd",
+      "value": "rgba(13, 29, 58, 0.9)",
+      "passed": true
+    },
+    {
+      "label": "斑马格浅色",
+      "id": "0V6RIoqr2m-cKz-yIjeHV",
+      "token": "--theme-row-even",
+      "value": "rgba(17, 35, 69, 0.8)",
+      "passed": true
+    },
+    {
+      "label": "按钮默认色",
+      "id": "_Kaa4yFm3ygT29qzrYYIw",
+      "token": "--theme-button",
+      "value": "#4faff7",
+      "passed": true
+    },
+    {
+      "label": "按钮悬浮色",
+      "id": "o15yTiYGHXHvRFsEbMD1g",
+      "token": "--theme-button-hover",
+      "value": "#7fcefa",
+      "passed": true
+    },
+    {
+      "label": "按钮点击色",
+      "id": "FfPHU5d9_LMRgFUEljC5m",
+      "token": "--theme-button-active",
+      "value": "#3c89f5",
+      "passed": true
+    },
+    {
+      "label": "按钮禁用色",
+      "id": "JPqAYwHovoaSR1oKvMgvs",
+      "token": "--theme-button-disabled",
+      "value": "#193a60",
+      "passed": true
+    },
+    {
+      "label": "标签色-红色",
+      "id": "FqibCYUea8NQMo3HtcgDm",
+      "token": "--theme-tag-red",
+      "value": "rgba(222, 85, 79, 0.25)",
+      "passed": true
+    },
+    {
+      "label": "标签色-橙色",
+      "id": "SpboQ5AsOOj833lyUAm50",
+      "token": "--theme-tag-orange",
+      "value": "rgba(240, 152, 64, 0.2)",
+      "passed": true
+    },
+    {
+      "label": "标签色-绿色",
+      "id": "qFWSchYWZxE5vec3pbQve",
+      "token": "--theme-tag-green",
+      "value": "rgba(113, 233, 111, 0.2)",
+      "passed": true
+    },
+    {
+      "label": "标签色-主题色",
+      "id": "6AUJ747WSqISxpZIschKV",
+      "token": "--theme-tag-primary",
+      "value": "rgba(79, 175, 247, 0.2)",
+      "passed": true
+    }
+  ]
+}

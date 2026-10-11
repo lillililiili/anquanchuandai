@@ -476,6 +476,11 @@
         drag = null;
       const ctx = canvas.getContext("2d");
       function paint() {
+        // Canvas cannot resolve CSS variables itself; share the visual theme.
+        const theme = getComputedStyle(document.documentElement);
+        const color = (name) => theme.getPropertyValue(name).trim();
+        const blue = color("--blue"), cyan = color("--cyan"),
+          green = color("--green"), yellow = color("--yellow");
         const w = el.clientWidth,
           h = el.clientHeight;
         canvas.width = w * devicePixelRatio;
@@ -528,8 +533,8 @@
           ].forEach((p, i) =>
             poly(
               p,
-              i ? "#00e9dd" : "#ffcc42",
-              i ? "#00dac00b" : "#ffcc420a",
+              i ? cyan : yellow,
+              (i ? cyan : yellow) + "0b",
               [6, 4],
             ),
           );
@@ -538,15 +543,15 @@
             .filter(
               (f) => f.station === R.s.station && f.enabled && !f.archived,
             )
-            .forEach((f) => poly(f.points, "#15e1be", "#00bfa021", [7, 3]));
+            .forEach((f) => poly(f.points, green, green + "21", [7, 3]));
         if (mode === "fence" && R.s.fenceDraft) {
-          poly(R.s.fenceDraft.points, "#20b9ff", "#1294fa44", [5, 4]);
+          poly(R.s.fenceDraft.points, blue, blue + "44", [5, 4]);
           R.s.fenceDraft.points.forEach((p) => {
             ctx.beginPath();
             ctx.arc((p[0] * w) / 100, (p[1] * h) / 100, 7, 0, Math.PI * 2);
-            ctx.fillStyle = "#168bff";
+            ctx.fillStyle = blue;
             ctx.fill();
-            ctx.strokeStyle = "#e7faff";
+            ctx.strokeStyle = "#ffffff";
             ctx.lineWidth = 3;
             ctx.stroke();
           });
@@ -554,9 +559,9 @@
         if (mode === "tracks") {
           const pts = R.s.trackPoints;
           ctx.lineWidth = 4;
-          ctx.strokeStyle = "#09d9ff";
-          ctx.shadowColor = "#00aaff";
-          ctx.shadowBlur = 7;
+          ctx.strokeStyle = cyan;
+          ctx.shadowColor = blue;
+          ctx.shadowBlur = 0;
           ctx.beginPath();
           pts.forEach((p, i) => {
             const x = (p.x * w) / 100,
@@ -570,9 +575,9 @@
           pts.forEach((p) => {
             ctx.beginPath();
             ctx.arc((p.x * w) / 100, (p.y * h) / 100, 5, 0, Math.PI * 2);
-            ctx.fillStyle = "#def9ff";
+            ctx.fillStyle = "#ffffff";
             ctx.fill();
-            ctx.strokeStyle = "#00bfff";
+            ctx.strokeStyle = blue;
             ctx.lineWidth = 2;
             ctx.stroke();
           });
@@ -580,7 +585,7 @@
           if (p) {
             ctx.beginPath();
             ctx.arc((p.x * w) / 100, (p.y * h) / 100, 13, 0, Math.PI * 2);
-            ctx.fillStyle = "#008fff";
+            ctx.fillStyle = blue;
             ctx.fill();
             ctx.strokeStyle = "white";
             ctx.stroke();

@@ -982,11 +982,11 @@
             .map((t) => {
               const n = ev.filter((a) => a.status === t).length;
               return n
-                ? `<span style="flex:${n};background:${{ 待现场核验: "#f3b744", 待认领: "#ee786b", 处理中: "#318add", 已核验: "#27baa8" }[t]}">${n}</span>`
+                ? `<span style="flex:${n};background:${{ 待现场核验: "var(--yellow)", 待认领: "var(--red)", 处理中: "var(--blue)", 已核验: "var(--green)" }[t]}">${n}</span>`
                 : "";
             })
             .join("") ||
-          '<span style="flex:1;background:#163e59">暂无事件</span>'
+          '<span style="flex:1;background:var(--panel2)">暂无事件</span>'
         }</div><div class="row space-between">${states.map((t) => `<div>${dot(t, statusColor(t))}<h3 style="margin:8px 0">${ev.filter((a) => a.status === t).length}</h3></div>`).join("")}</div><p class="note">核验记录提交后计入已核验。</p></div>`,
         "单位：起",
       )}</div><div style="margin-top:14px">${panel("详细追溯记录", detail)}</div><p class="note">统计口径：当前筛选 ${st.people.length} 人，3 类装备共 ${st.devices.length} 件；正式事件结案以原安监系统为准。</p>`

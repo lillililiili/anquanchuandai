@@ -1,0 +1,580 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sketch 原稿参数核验</title><style>body{margin:0;background:#f5f7fa;color:#172338;font:15px/1.7 "Microsoft YaHei",sans-serif}main{max-width:1320px;margin:40px auto;padding:0 24px}h1{font-size:28px}table{border-collapse:collapse;width:100%;background:white}th,td{padding:12px;border:1px solid #dce2e9;text-align:left;vertical-align:top}th{background:#e9eff5}small{color:#596778}details{padding:12px;background:white;border-bottom:1px solid #dce2e9}summary{cursor:pointer;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}a{color:#176daf}</style><main><h1>Sketch 原稿、当前页面与 Skill：参数对照</h1><p>结论：不能把 Skill 当作比当前页面更准确的原稿转录。当前在输入框圆角、英文数字字体上更接近；Skill 在输入框聚焦颜色、部分独立色板记录上更接近。卡片透明度等两者均需校正。</p><p><small>2026-10-10 · 读取原始 Sketch 的 52,178 个图层，核查组件规范板及业务实例。对照现有 CSS 与 Skill 文本，未修改原型。这是参数核验，不是全部页面逐像素还原验收。</small></p><table><thead><tr><th>项目</th><th>Sketch 原始参数</th><th>当前页面</th><th>Skill 文本</th><th>判断</th></tr></thead><tbody><tr><td>主按钮四态</td><td>蓝 #4FAFF7 / #7FCEFA / #3C89F5 / #193A60</td><td>一致</td><td>一致</td><td>两者一致</td></tr><tr><td>普通输入框圆角 / 高度</td><td>4px / 32px；87个300×32外框均为4px</td><td>4px / 32px</td><td>2px / 32px</td><td>当前圆角更准确</td></tr><tr><td>输入框聚焦边框</td><td>青 #83F6FD，2px</td><td>蓝 #4FAFF7</td><td>青 #83F6FD</td><td>Skill颜色更接近</td></tr><tr><td>正常输入框填充</td><td>透明，无启用的填充</td><td>固定 #0D1D3A</td><td>固定 #0E182D</td><td>两者都不是直接还原</td></tr><tr><td>英文、数字推荐字体</td><td>字体规范表明确 Arial（两个系统均如此）</td><td>大屏数字使用 Arial</td><td>Roboto 优先</td><td>当前大屏更接近；不代表所有数字已统一</td></tr><tr><td>复选框可见方框</td><td>16×16px</td><td>围栏18×18px</td><td>14×14px</td><td>两者均不一致</td></tr><tr><td>开关</td><td>32×20px</td><td>本轮不作当前页面比较</td><td>36×20px</td><td>Skill数值与原稿不符</td></tr><tr><td>卡片底色</td><td>颜色表为 #50B1F9、12%透明度；业务画板也有20%</td><td>主面板实色 #17294A</td><td>卡片 #182B4D / 85%</td><td>两者均未逐值还原</td></tr><tr><td>字号与大圆角限制</td><td>基础24/18/16/14/12；业务实例另有20/21/11/30px，长表单卡片有12px圆角</td><td>保留大屏特殊字号；主卡片4px</td><td>只准指定字号；圆角禁止超过6px</td><td>Skill硬限制不能视作原稿事实</td></tr><tr><td>工作票和缺陷单主题</td><td>整页覆盖底层为 #121E37；原稿预览也是深色</td><td>当前项目采用深色</td><td>将上述画板描述为Light</td><td>Skill主题归类不符合此Sketch的这两张画板</td></tr></tbody></table><p>原稿颜色表标题写有 Light Mode，但表内白色正文、深蓝页面底以及实际深色画板不支持仅按这个标题推断双主题。原稿本身也存在说明和实例差异，应分别记录，不用统一硬规则覆盖。</p><p>Skill 特有的 #182B4D、#0E182D、#1C3863、#1F385C 在此次解析的原稿颜色数据中没有找到。#2E6086 则确实用于下拉面板。图层透明度应与色值一起保留，不能只保留 Hex。</p><p>后续依据顺序：用户确认的布局和交互边界 → Sketch 明确规范及可见图层 → 核实后的可复用规范。先纠正 Skill 中未经原稿支持的数值，再用它约束后续页面。</p><p><a href="comparison-evidence.json">本表与关键图层JSON</a> · <a href="color-evidence.json">颜色证据</a> · <a href="controls-evidence.json">控件证据</a> · <a href="typography-evidence.json">字体证据</a> · <a href="preview.png">Sketch内置原始预览</a></p><h2>关键原始图层（点击展开）</h2><details><summary>输入框 / input输入框 / 路径 · OO_JcofjMEpaejS9TiU6s</summary><pre>{
+  &quot;id&quot;: &quot;OO_JcofjMEpaejS9TiU6s&quot;,
+  &quot;class&quot;: &quot;rectangle&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;输入框&quot;,
+  &quot;path&quot;: &quot;输入框 / input输入框 / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 32,
+    &quot;width&quot;: 300,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [],
+  &quot;borders&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#83F6FD&quot;,
+        &quot;alpha&quot;: 0.35
+      },
+      &quot;opacity&quot;: 1,
+      &quot;thickness&quot;: 1
+    }
+  ],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    4
+  ]
+}</pre></details><details><summary>输入框 / input输入框 / 路径 · fyhpzVlnlv6Z-szUUqXTU</summary><pre>{
+  &quot;id&quot;: &quot;fyhpzVlnlv6Z-szUUqXTU&quot;,
+  &quot;class&quot;: &quot;rectangle&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;输入框&quot;,
+  &quot;path&quot;: &quot;输入框 / input输入框 / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 32,
+    &quot;width&quot;: 300,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [],
+  &quot;borders&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#83F6FD&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;opacity&quot;: 1,
+      &quot;thickness&quot;: 1
+    }
+  ],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    4
+  ]
+}</pre></details><details><summary>输入框 / input输入框 / 路径 · ii-3dhDcMuCP6O9_aM8eh</summary><pre>{
+  &quot;id&quot;: &quot;ii-3dhDcMuCP6O9_aM8eh&quot;,
+  &quot;class&quot;: &quot;rectangle&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;输入框&quot;,
+  &quot;path&quot;: &quot;输入框 / input输入框 / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 32,
+    &quot;width&quot;: 300,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [],
+  &quot;borders&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#83F6FD&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;opacity&quot;: 1,
+      &quot;thickness&quot;: 2
+    }
+  ],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    4
+  ]
+}</pre></details><details><summary>复选框 / Checkbox 多选 / Checkbox 多选 / Checkbox 多选 / checkbox / item/unit/checkbox / 路径 · 32EMICkB5gc53lKl3ovqh</summary><pre>{
+  &quot;id&quot;: &quot;32EMICkB5gc53lKl3ovqh&quot;,
+  &quot;class&quot;: &quot;shapePath&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;复选框&quot;,
+  &quot;path&quot;: &quot;复选框 / Checkbox 多选 / Checkbox 多选 / Checkbox 多选 / checkbox / item/unit/checkbox / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 16,
+    &quot;width&quot;: 16,
+    &quot;x&quot;: -2.571758278209442e-15,
+    &quot;y&quot;: -1.714505518806294e-15
+  },
+  &quot;fills&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#FFFFFF&quot;,
+        &quot;alpha&quot;: 0
+      },
+      &quot;opacity&quot;: 1
+    }
+  ],
+  &quot;borders&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#83F6FD&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;opacity&quot;: 1,
+      &quot;thickness&quot;: 1
+    }
+  ],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    0
+  ]
+}</pre></details><details><summary>开关 / Switch 开关 / bg / 路径 · g__GhdR1d9dK-EQIOHb7m</summary><pre>{
+  &quot;id&quot;: &quot;g__GhdR1d9dK-EQIOHb7m&quot;,
+  &quot;class&quot;: &quot;rectangle&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;开关&quot;,
+  &quot;path&quot;: &quot;开关 / Switch 开关 / bg / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 20,
+    &quot;width&quot;: 32,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#83F6FD&quot;,
+        &quot;alpha&quot;: 0.2
+      },
+      &quot;opacity&quot;: 1
+    }
+  ],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    12
+  ]
+}</pre></details><details><summary>字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理 · KlMNTbOGHFsfeA1HEp3PA</summary><pre>{
+  &quot;id&quot;: &quot;KlMNTbOGHFsfeA1HEp3PA&quot;,
+  &quot;class&quot;: &quot;text&quot;,
+  &quot;name&quot;: &quot;管理&quot;,
+  &quot;top&quot;: &quot;字体&quot;,
+  &quot;path&quot;: &quot;字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 22,
+    &quot;width&quot;: 29,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 1
+  },
+  &quot;fills&quot;: [],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;text&quot;: &quot;Arial&quot;,
+  &quot;runs&quot;: [
+    {
+      &quot;location&quot;: 0,
+      &quot;length&quot;: 5,
+      &quot;font&quot;: {
+        &quot;name&quot;: &quot;Helvetica&quot;,
+        &quot;size&quot;: 14
+      },
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#FFFFFF&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;paragraph&quot;: {
+        &quot;_class&quot;: &quot;paragraphStyle&quot;,
+        &quot;maximumLineHeight&quot;: 22,
+        &quot;minimumLineHeight&quot;: 22,
+        &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+        &quot;alignment&quot;: 0
+      }
+    }
+  ],
+  &quot;textStyle&quot;: {
+    &quot;paragraphStyle&quot;: {
+      &quot;_class&quot;: &quot;paragraphStyle&quot;,
+      &quot;maximumLineHeight&quot;: 22,
+      &quot;minimumLineHeight&quot;: 22,
+      &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+      &quot;alignment&quot;: 0
+    },
+    &quot;MSAttributedStringTextTransformAttribute&quot;: 0,
+    &quot;MSAttributedStringColorAttribute&quot;: {
+      &quot;_class&quot;: &quot;color&quot;,
+      &quot;alpha&quot;: 1,
+      &quot;blue&quot;: 1,
+      &quot;green&quot;: 1,
+      &quot;red&quot;: 0.9999999403953552
+    },
+    &quot;underlineStyle&quot;: 0,
+    &quot;textStyleVerticalAlignmentKey&quot;: 0,
+    &quot;kerning&quot;: 0,
+    &quot;MSAttributedStringFontAttribute&quot;: {
+      &quot;_class&quot;: &quot;fontDescriptor&quot;,
+      &quot;attributes&quot;: {
+        &quot;name&quot;: &quot;Helvetica&quot;,
+        &quot;size&quot;: 14
+      }
+    },
+    &quot;strikethroughStyle&quot;: 0
+  }
+}</pre></details><details><summary>字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理 · RzpvbSxw1p3gOXd8gX8fT</summary><pre>{
+  &quot;id&quot;: &quot;RzpvbSxw1p3gOXd8gX8fT&quot;,
+  &quot;class&quot;: &quot;text&quot;,
+  &quot;name&quot;: &quot;管理&quot;,
+  &quot;top&quot;: &quot;字体&quot;,
+  &quot;path&quot;: &quot;字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 22,
+    &quot;width&quot;: 29,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 1
+  },
+  &quot;fills&quot;: [],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;text&quot;: &quot;Arial&quot;,
+  &quot;runs&quot;: [
+    {
+      &quot;location&quot;: 0,
+      &quot;length&quot;: 5,
+      &quot;font&quot;: {
+        &quot;name&quot;: &quot;Helvetica&quot;,
+        &quot;size&quot;: 14
+      },
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#FFFFFF&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;paragraph&quot;: {
+        &quot;_class&quot;: &quot;paragraphStyle&quot;,
+        &quot;maximumLineHeight&quot;: 22,
+        &quot;minimumLineHeight&quot;: 22,
+        &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+        &quot;alignment&quot;: 0
+      }
+    }
+  ],
+  &quot;textStyle&quot;: {
+    &quot;paragraphStyle&quot;: {
+      &quot;_class&quot;: &quot;paragraphStyle&quot;,
+      &quot;maximumLineHeight&quot;: 22,
+      &quot;minimumLineHeight&quot;: 22,
+      &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+      &quot;alignment&quot;: 0
+    },
+    &quot;MSAttributedStringTextTransformAttribute&quot;: 0,
+    &quot;textStyleVerticalAlignmentKey&quot;: 0,
+    &quot;underlineStyle&quot;: 0,
+    &quot;MSAttributedStringColorAttribute&quot;: {
+      &quot;_class&quot;: &quot;color&quot;,
+      &quot;alpha&quot;: 1,
+      &quot;blue&quot;: 1,
+      &quot;green&quot;: 1,
+      &quot;red&quot;: 0.9999999403953552
+    },
+    &quot;kerning&quot;: 0,
+    &quot;MSAttributedStringFontAttribute&quot;: {
+      &quot;_class&quot;: &quot;fontDescriptor&quot;,
+      &quot;attributes&quot;: {
+        &quot;name&quot;: &quot;Helvetica&quot;,
+        &quot;size&quot;: 14
+      }
+    },
+    &quot;strikethroughStyle&quot;: 0
+  }
+}</pre></details><details><summary>监盘总览 / 内容 / Frame 427319546 / 编组 11 / 123.45 · 0418B125-CFA7-4EFB-B666-93D953D4A5EE</summary><pre>{
+  &quot;id&quot;: &quot;0418B125-CFA7-4EFB-B666-93D953D4A5EE&quot;,
+  &quot;class&quot;: &quot;text&quot;,
+  &quot;name&quot;: &quot;123.45&quot;,
+  &quot;top&quot;: &quot;监盘总览&quot;,
+  &quot;path&quot;: &quot;监盘总览 / 内容 / Frame 427319546 / 编组 11 / 123.45&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 21,
+    &quot;width&quot;: 69,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;text&quot;: &quot;123.45&quot;,
+  &quot;runs&quot;: [
+    {
+      &quot;location&quot;: 0,
+      &quot;length&quot;: 6,
+      &quot;font&quot;: {
+        &quot;name&quot;: &quot;SourceHanSansCN-Bold&quot;,
+        &quot;size&quot;: 21
+      },
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#FFFFFF&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;paragraph&quot;: {
+        &quot;_class&quot;: &quot;paragraphStyle&quot;,
+        &quot;maximumLineHeight&quot;: 21,
+        &quot;minimumLineHeight&quot;: 21,
+        &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+        &quot;alignment&quot;: 0
+      }
+    }
+  ],
+  &quot;textStyle&quot;: {
+    &quot;paragraphStyle&quot;: {
+      &quot;_class&quot;: &quot;paragraphStyle&quot;,
+      &quot;maximumLineHeight&quot;: 21,
+      &quot;minimumLineHeight&quot;: 21,
+      &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+      &quot;alignment&quot;: 0
+    },
+    &quot;MSAttributedStringTextTransformAttribute&quot;: 0,
+    &quot;textStyleVerticalAlignmentKey&quot;: 0,
+    &quot;underlineStyle&quot;: 0,
+    &quot;MSAttributedStringColorAttribute&quot;: {
+      &quot;_class&quot;: &quot;color&quot;,
+      &quot;alpha&quot;: 1,
+      &quot;blue&quot;: 1,
+      &quot;green&quot;: 1,
+      &quot;red&quot;: 0.9999999403953552
+    },
+    &quot;kerning&quot;: 0,
+    &quot;MSAttributedStringFontAttribute&quot;: {
+      &quot;_class&quot;: &quot;fontDescriptor&quot;,
+      &quot;attributes&quot;: {
+        &quot;name&quot;: &quot;SourceHanSansCN-Bold&quot;,
+        &quot;size&quot;: 21
+      }
+    },
+    &quot;strikethroughStyle&quot;: 0
+  }
+}</pre></details><details><summary>监盘总览 / 导航条 / 华能睿驭无人化管控系统 · 7D1B84FD-6446-4834-8055-06EEE12D2CEE</summary><pre>{
+  &quot;id&quot;: &quot;7D1B84FD-6446-4834-8055-06EEE12D2CEE&quot;,
+  &quot;class&quot;: &quot;text&quot;,
+  &quot;name&quot;: &quot;华能睿驭无人化管控系统&quot;,
+  &quot;top&quot;: &quot;监盘总览&quot;,
+  &quot;path&quot;: &quot;监盘总览 / 导航条 / 华能睿驭无人化管控系统&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 30,
+    &quot;width&quot;: 371,
+    &quot;x&quot;: 771.9999999999927,
+    &quot;y&quot;: 27
+  },
+  &quot;fills&quot;: [
+    {
+      &quot;type&quot;: 1,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#D8D8D8&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;opacity&quot;: 1,
+      &quot;stops&quot;: [
+        {
+          &quot;position&quot;: 0,
+          &quot;hex&quot;: &quot;#FFFFFF&quot;,
+          &quot;alpha&quot;: 1
+        },
+        {
+          &quot;position&quot;: 1,
+          &quot;hex&quot;: &quot;#A3E4FF&quot;,
+          &quot;alpha&quot;: 1
+        }
+      ]
+    }
+  ],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [
+    {
+      &quot;_class&quot;: &quot;shadow&quot;,
+      &quot;isEnabled&quot;: true,
+      &quot;blurRadius&quot;: 4,
+      &quot;offsetX&quot;: 0,
+      &quot;offsetY&quot;: 2,
+      &quot;spread&quot;: 0,
+      &quot;color&quot;: {
+        &quot;_class&quot;: &quot;color&quot;,
+        &quot;alpha&quot;: 0.6565231643356644,
+        &quot;blue&quot;: 0,
+        &quot;green&quot;: 0,
+        &quot;red&quot;: 0
+      },
+      &quot;contextSettings&quot;: {
+        &quot;_class&quot;: &quot;graphicsContextSettings&quot;,
+        &quot;blendMode&quot;: 0,
+        &quot;opacity&quot;: 1
+      }
+    }
+  ],
+  &quot;text&quot;: &quot;华能睿驭无人化管控系统&quot;,
+  &quot;runs&quot;: [
+    {
+      &quot;location&quot;: 0,
+      &quot;length&quot;: 11,
+      &quot;font&quot;: {
+        &quot;name&quot;: &quot;SourceHanSansCN-Heavy&quot;,
+        &quot;size&quot;: 30
+      },
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#FFFFFF&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;paragraph&quot;: {
+        &quot;_class&quot;: &quot;paragraphStyle&quot;,
+        &quot;paragraphSpacing&quot;: 1,
+        &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+        &quot;alignment&quot;: 0
+      }
+    }
+  ],
+  &quot;textStyle&quot;: {
+    &quot;paragraphStyle&quot;: {
+      &quot;_class&quot;: &quot;paragraphStyle&quot;,
+      &quot;paragraphSpacing&quot;: 1,
+      &quot;allowsDefaultTighteningForTruncation&quot;: 0,
+      &quot;alignment&quot;: 0
+    },
+    &quot;textStyleVerticalAlignmentKey&quot;: 0,
+    &quot;kerning&quot;: 3.719999999999997,
+    &quot;MSAttributedStringColorAttribute&quot;: {
+      &quot;_class&quot;: &quot;color&quot;,
+      &quot;alpha&quot;: 1,
+      &quot;blue&quot;: 1,
+      &quot;green&quot;: 1,
+      &quot;red&quot;: 1
+    },
+    &quot;MSAttributedStringFontAttribute&quot;: {
+      &quot;_class&quot;: &quot;fontDescriptor&quot;,
+      &quot;attributes&quot;: {
+        &quot;name&quot;: &quot;SourceHanSansCN-Heavy&quot;,
+        &quot;size&quot;: 30
+      }
+    }
+  }
+}</pre></details><details><summary>颜色 / Frame 427320548 / Frame 48097500 / 主题色&amp;功能色 / Frame 420 / Token/color / 路径 · StgLM69wj7o-zvpT2mSnq</summary><pre>{
+  &quot;id&quot;: &quot;StgLM69wj7o-zvpT2mSnq&quot;,
+  &quot;class&quot;: &quot;shapePath&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;颜色&quot;,
+  &quot;path&quot;: &quot;颜色 / Frame 427320548 / Frame 48097500 / 主题色&amp;功能色 / Frame 420 / Token/color / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 40,
+    &quot;width&quot;: 40,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#50B1F9&quot;,
+        &quot;alpha&quot;: 0.12
+      },
+      &quot;opacity&quot;: 1
+    }
+  ],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    0
+  ]
+}</pre></details><details><summary>运行管理-缺陷单管理-缺陷单处理 / Frame 48097355 / 路径 · gikbC3t8uxeoq7IyvXlGB</summary><pre>{
+  &quot;id&quot;: &quot;gikbC3t8uxeoq7IyvXlGB&quot;,
+  &quot;class&quot;: &quot;rectangle&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;运行管理-缺陷单管理-缺陷单处理&quot;,
+  &quot;path&quot;: &quot;运行管理-缺陷单管理-缺陷单处理 / Frame 48097355 / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 560,
+    &quot;width&quot;: 1896,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#50B1F9&quot;,
+        &quot;alpha&quot;: 0.12
+      },
+      &quot;opacity&quot;: 1
+    }
+  ],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    12
+  ]
+}</pre></details><details><summary>运行管理-缺陷单管理-缺陷单处理 / 路径 · TVg_bJ9vbXlHa-43CXYQ-</summary><pre>{
+  &quot;id&quot;: &quot;TVg_bJ9vbXlHa-43CXYQ-&quot;,
+  &quot;class&quot;: &quot;rectangle&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;运行管理-缺陷单管理-缺陷单处理&quot;,
+  &quot;path&quot;: &quot;运行管理-缺陷单管理-缺陷单处理 / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 3782,
+    &quot;width&quot;: 1920,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#121E37&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;opacity&quot;: 1
+    }
+  ],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    0
+  ]
+}</pre></details><details><summary>工作票 / 路径 · Jx8DTCDEAFqDItFW2nce4</summary><pre>{
+  &quot;id&quot;: &quot;Jx8DTCDEAFqDItFW2nce4&quot;,
+  &quot;class&quot;: &quot;rectangle&quot;,
+  &quot;name&quot;: &quot;路径&quot;,
+  &quot;top&quot;: &quot;工作票&quot;,
+  &quot;path&quot;: &quot;工作票 / 路径&quot;,
+  &quot;visible&quot;: true,
+  &quot;frame&quot;: {
+    &quot;height&quot;: 5280,
+    &quot;width&quot;: 1920,
+    &quot;x&quot;: 0,
+    &quot;y&quot;: 0
+  },
+  &quot;fills&quot;: [
+    {
+      &quot;type&quot;: 0,
+      &quot;color&quot;: {
+        &quot;hex&quot;: &quot;#121E37&quot;,
+        &quot;alpha&quot;: 1
+      },
+      &quot;opacity&quot;: 1
+    }
+  ],
+  &quot;borders&quot;: [],
+  &quot;opacity&quot;: 1,
+  &quot;shadows&quot;: [],
+  &quot;radii&quot;: [
+    0
+  ]
+}</pre></details></main></html>

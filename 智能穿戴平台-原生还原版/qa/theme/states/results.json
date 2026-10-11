@@ -1,0 +1,1456 @@
+{
+  "results": [
+    {
+      "name": "button-input-states",
+      "passed": true,
+      "checks": [
+        "主按钮默认色为 #4FAFF7",
+        "登录主按钮高40px",
+        "登录输入框均为32px",
+        "主按钮悬停色为 #7FCEFA",
+        "主按钮按下色为 #3C89F5",
+        "禁用主按钮底色与文字符合规范",
+        "键盘焦点显示2px青色外框"
+      ],
+      "measurements": [
+        {
+          "description": "主按钮默认色为 #4FAFF7",
+          "value": {
+            "background": "#4faff7",
+            "color": "#ffffff",
+            "border": "#4faff7",
+            "borderWidth": "1px",
+            "outline": "#ffffff",
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "focusVisible": false,
+            "width": 438,
+            "height": 40
+          }
+        },
+        {
+          "description": "登录主按钮高40px",
+          "value": 40
+        },
+        {
+          "description": "登录输入框均为32px",
+          "value": [
+            {
+              "name": "account",
+              "height": 32
+            },
+            {
+              "name": "password",
+              "height": 32
+            },
+            {
+              "name": "captcha",
+              "height": 32
+            }
+          ]
+        },
+        {
+          "description": "主按钮悬停色为 #7FCEFA",
+          "value": {
+            "background": "#7fcefa",
+            "color": "#121e37",
+            "border": "#7fcefa",
+            "borderWidth": "1px",
+            "outline": "#121e37",
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "focusVisible": false,
+            "width": 438,
+            "height": 40
+          }
+        },
+        {
+          "description": "主按钮按下色为 #3C89F5",
+          "value": {
+            "background": "#3c89f5",
+            "color": "#ffffff",
+            "border": "#3c89f5",
+            "borderWidth": "1px",
+            "outline": "#ffffff",
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "focusVisible": false,
+            "width": 438,
+            "height": 40
+          }
+        },
+        {
+          "description": "禁用主按钮底色与文字符合规范",
+          "value": {
+            "background": "#193a60",
+            "color": "#677987",
+            "border": "#25556f",
+            "borderWidth": "1px",
+            "outline": "#677987",
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "focusVisible": false,
+            "width": 438,
+            "height": 40
+          }
+        },
+        {
+          "description": "键盘焦点显示2px青色外框",
+          "value": {
+            "background": "#4faff7",
+            "color": "#ffffff",
+            "border": "#4faff7",
+            "borderWidth": "1px",
+            "outline": "#83f6fd",
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "focusVisible": true,
+            "width": 438,
+            "height": 40
+          }
+        }
+      ]
+    },
+    {
+      "name": "table-form-modal",
+      "passed": true,
+      "checks": [
+        "人员选中行背景为 #254570",
+        "表格单双行使用规范斑马背景",
+        "普通筛选表单控件与按钮高32px",
+        "弹窗使用规范面板底色与1px青色边框"
+      ],
+      "measurements": [
+        {
+          "description": "人员选中行背景为 #254570",
+          "value": {
+            "background": "#254570",
+            "color": "#d1dae5",
+            "border": "#d1dae5",
+            "borderWidth": "0px",
+            "outline": "#d1dae5",
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "focusVisible": false,
+            "width": 938,
+            "height": 77
+          }
+        },
+        {
+          "description": "表格单双行使用规范斑马背景",
+          "value": {
+            "even": {
+              "background": "#112345",
+              "color": "#d1dae5",
+              "border": "#d1dae5",
+              "borderWidth": "0px",
+              "outline": "#d1dae5",
+              "outlineWidth": "3px",
+              "outlineStyle": "none",
+              "focusVisible": false,
+              "width": 938,
+              "height": 77
+            },
+            "odd": {
+              "background": "#0d1d3a",
+              "color": "#d1dae5",
+              "border": "#d1dae5",
+              "borderWidth": "0px",
+              "outline": "#d1dae5",
+              "outlineWidth": "3px",
+              "outlineStyle": "none",
+              "focusVisible": false,
+              "width": 938,
+              "height": 77
+            }
+          }
+        },
+        {
+          "description": "普通筛选表单控件与按钮高32px",
+          "value": [
+            {
+              "text": "q",
+              "height": 32
+            },
+            {
+              "text": "team",
+              "height": 32
+            },
+            {
+              "text": "workStatus",
+              "height": 32
+            },
+            {
+              "text": "查询",
+              "height": 32
+            },
+            {
+              "text": "重置",
+              "height": 32
+            }
+          ]
+        },
+        {
+          "description": "弹窗使用规范面板底色与1px青色边框",
+          "value": {
+            "background": "#17294a",
+            "color": "#d1dae5",
+            "border": "#83f6fd",
+            "borderWidth": "1px",
+            "outline": "#d1dae5",
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "focusVisible": false,
+            "width": 650,
+            "height": 350.296875
+          }
+        }
+      ]
+    },
+    {
+      "name": "personnel-tabs-1672",
+      "passed": true,
+      "checks": [
+        "1672×941 装备信息按钮文字及边界无裁切",
+        "1672×941 作业信息按钮文字及边界无裁切",
+        "1672×941 事件信息按钮文字及边界无裁切"
+      ],
+      "measurements": [
+        {
+          "description": "1672×941 装备信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1600,
+              "right": 1632,
+              "top": 95,
+              "bottom": 127,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1193,
+              "right": 1304,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1304,
+              "right": 1415,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1415,
+              "right": 1526,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1526,
+              "right": 1637,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1457,
+              "right": 1637,
+              "top": 821.390625,
+              "bottom": 853.390625,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            }
+          ]
+        },
+        {
+          "description": "1672×941 作业信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1600,
+              "right": 1632,
+              "top": 95,
+              "bottom": 127,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1193,
+              "right": 1304,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1304,
+              "right": 1415,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1415,
+              "right": 1526,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1526,
+              "right": 1637,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1457,
+              "right": 1637,
+              "top": 821.390625,
+              "bottom": 853.390625,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            }
+          ]
+        },
+        {
+          "description": "1672×941 事件信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1600,
+              "right": 1632,
+              "top": 95,
+              "bottom": 127,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1193,
+              "right": 1304,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1304,
+              "right": 1415,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1415,
+              "right": 1526,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 111,
+              "scrollWidth": 111,
+              "left": 1526,
+              "right": 1637,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1457,
+              "right": 1637,
+              "top": 821.390625,
+              "bottom": 853.390625,
+              "card": {
+                "left": 1180,
+                "right": 1650,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fence-checkbox-1672",
+      "passed": true,
+      "checks": [
+        "1672×941围栏复选框18px且标签单行"
+      ],
+      "measurements": [
+        {
+          "description": "1672×941围栏复选框18px且标签单行",
+          "value": [
+            {
+              "text": "进入时提示",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 230,
+              "clientWidth": 230
+            },
+            {
+              "text": "离开时提示",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 230,
+              "clientWidth": 230
+            },
+            {
+              "text": "启用",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 230,
+              "clientWidth": 230
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "overview-card-1672",
+      "passed": true,
+      "checks": [
+        "1672×941总览末行查看监护按钮完整处于原卡片边界内"
+      ],
+      "measurements": [
+        {
+          "description": "1672×941总览末行查看监护按钮完整处于原卡片边界内",
+          "value": {
+            "button": {
+              "left": 895.640625,
+              "right": 963.640625,
+              "top": 857.75,
+              "bottom": 889.75,
+              "height": 32
+            },
+            "card": {
+              "left": 213,
+              "right": 1020.296875,
+              "top": 695,
+              "bottom": 902
+            },
+            "fits": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "personnel-tabs-1366",
+      "passed": true,
+      "checks": [
+        "1366×768 装备信息按钮文字及边界无裁切",
+        "1366×768 作业信息按钮文字及边界无裁切",
+        "1366×768 事件信息按钮文字及边界无裁切"
+      ],
+      "measurements": [
+        {
+          "description": "1366×768 装备信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1299,
+              "right": 1331,
+              "top": 92,
+              "bottom": 124,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 983.65625,
+              "right": 1071.734375,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1071.734375,
+              "right": 1159.828125,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1159.828125,
+              "right": 1247.90625,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1247.90625,
+              "right": 1336,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1156,
+              "right": 1336,
+              "top": 824.015625,
+              "bottom": 856.015625,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            }
+          ]
+        },
+        {
+          "description": "1366×768 作业信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1299,
+              "right": 1331,
+              "top": 92,
+              "bottom": 124,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 983.65625,
+              "right": 1071.734375,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1071.734375,
+              "right": 1159.828125,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1159.828125,
+              "right": 1247.90625,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1247.90625,
+              "right": 1336,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1156,
+              "right": 1336,
+              "top": 824.015625,
+              "bottom": 856.015625,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            }
+          ]
+        },
+        {
+          "description": "1366×768 事件信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1299,
+              "right": 1331,
+              "top": 92,
+              "bottom": 124,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 983.65625,
+              "right": 1071.734375,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1071.734375,
+              "right": 1159.828125,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1159.828125,
+              "right": 1247.90625,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 88,
+              "scrollWidth": 88,
+              "left": 1247.90625,
+              "right": 1336,
+              "top": 165,
+              "bottom": 203,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1156,
+              "right": 1336,
+              "top": 824.015625,
+              "bottom": 856.015625,
+              "card": {
+                "left": 970.65625,
+                "right": 1349,
+                "top": 81,
+                "bottom": 875.71875
+              },
+              "fits": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fence-checkbox-1366",
+      "passed": true,
+      "checks": [
+        "1366×768围栏复选框18px且标签单行"
+      ],
+      "measurements": [
+        {
+          "description": "1366×768围栏复选框18px且标签单行",
+          "value": [
+            {
+              "text": "进入时提示",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 213,
+              "clientWidth": 213
+            },
+            {
+              "text": "离开时提示",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 213,
+              "clientWidth": 213
+            },
+            {
+              "text": "启用",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 213,
+              "clientWidth": 213
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "overview-card-1366",
+      "passed": true,
+      "checks": [
+        "1366×768总览末行查看监护按钮完整处于原卡片边界内"
+      ],
+      "measurements": [
+        {
+          "description": "1366×768总览末行查看监护按钮完整处于原卡片边界内",
+          "value": {
+            "button": {
+              "left": 741.59375,
+              "right": 809.59375,
+              "top": 795.75,
+              "bottom": 827.75,
+              "height": 32
+            },
+            "card": {
+              "left": 196,
+              "right": 841.046875,
+              "top": 633,
+              "bottom": 840
+            },
+            "fits": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "personnel-tabs-1920",
+      "passed": true,
+      "checks": [
+        "1920×1080 装备信息按钮文字及边界无裁切",
+        "1920×1080 作业信息按钮文字及边界无裁切",
+        "1920×1080 事件信息按钮文字及边界无裁切"
+      ],
+      "measurements": [
+        {
+          "description": "1920×1080 装备信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1848,
+              "right": 1880,
+              "top": 95,
+              "bottom": 127,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1358.328125,
+              "right": 1489.984375,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1489.984375,
+              "right": 1621.65625,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1621.65625,
+              "right": 1753.328125,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1753.328125,
+              "right": 1885,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1705,
+              "right": 1885,
+              "top": 821.390625,
+              "bottom": 853.390625,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            }
+          ]
+        },
+        {
+          "description": "1920×1080 作业信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1848,
+              "right": 1880,
+              "top": 95,
+              "bottom": 127,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1358.328125,
+              "right": 1489.984375,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1489.984375,
+              "right": 1621.65625,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1621.65625,
+              "right": 1753.328125,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1753.328125,
+              "right": 1885,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1705,
+              "right": 1885,
+              "top": 821.390625,
+              "bottom": 853.390625,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            }
+          ]
+        },
+        {
+          "description": "1920×1080 事件信息按钮文字及边界无裁切",
+          "value": [
+            {
+              "text": "关闭人员详情",
+              "width": 30,
+              "scrollWidth": 30,
+              "left": 1848,
+              "right": 1880,
+              "top": 95,
+              "bottom": 127,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "人员信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1358.328125,
+              "right": 1489.984375,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "装备信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1489.984375,
+              "right": 1621.65625,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "作业信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1621.65625,
+              "right": 1753.328125,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "事件信息",
+              "width": 132,
+              "scrollWidth": 132,
+              "left": 1753.328125,
+              "right": 1885,
+              "top": 168,
+              "bottom": 208,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            },
+            {
+              "text": "发起对讲",
+              "width": 178,
+              "scrollWidth": 178,
+              "left": 1705,
+              "right": 1885,
+              "top": 821.390625,
+              "bottom": 853.390625,
+              "card": {
+                "left": 1345.328125,
+                "right": 1898,
+                "top": 84,
+                "bottom": 873.09375
+              },
+              "fits": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fence-checkbox-1920",
+      "passed": true,
+      "checks": [
+        "1920×1080围栏复选框18px且标签单行"
+      ],
+      "measurements": [
+        {
+          "description": "1920×1080围栏复选框18px且标签单行",
+          "value": [
+            {
+              "text": "进入时提示",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 292,
+              "clientWidth": 292
+            },
+            {
+              "text": "离开时提示",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 292,
+              "clientWidth": 292
+            },
+            {
+              "text": "启用",
+              "width": 18,
+              "height": 18,
+              "lineCount": 1,
+              "scrollWidth": 292,
+              "clientWidth": 292
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "overview-card-1920",
+      "passed": true,
+      "checks": [
+        "1920×1080总览末行查看监护按钮完整处于原卡片边界内"
+      ],
+      "measurements": [
+        {
+          "description": "1920×1080总览末行查看监护按钮完整处于原卡片边界内",
+          "value": {
+            "button": {
+              "left": 1013.21875,
+              "right": 1081.21875,
+              "top": 857.75,
+              "bottom": 889.75,
+              "height": 32
+            },
+            "card": {
+              "left": 213,
+              "right": 1159.515625,
+              "top": 695,
+              "bottom": 902
+            },
+            "fits": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty-station",
+      "passed": true,
+      "checks": [
+        "空厂站 overview 不残留上个厂站人员与关联记录",
+        "空厂站 personnel 不残留上个厂站人员与关联记录",
+        "空厂站 works 不残留上个厂站人员与关联记录",
+        "空厂站 materials 不残留上个厂站人员与关联记录",
+        "空厂站 location 不残留上个厂站人员与关联记录",
+        "空厂站 alarms 不残留上个厂站人员与关联记录",
+        "空厂站 statistics 不残留上个厂站人员与关联记录"
+      ],
+      "measurements": [
+        {
+          "description": "空厂站 overview 不残留上个厂站人员与关联记录",
+          "value": {
+            "station": "S2",
+            "people": 0,
+            "works": 0,
+            "events": 0,
+            "materials": 0
+          }
+        },
+        {
+          "description": "空厂站 personnel 不残留上个厂站人员与关联记录",
+          "value": {
+            "station": "S2",
+            "people": 0,
+            "works": 0,
+            "events": 0,
+            "materials": 0
+          }
+        },
+        {
+          "description": "空厂站 works 不残留上个厂站人员与关联记录",
+          "value": {
+            "station": "S2",
+            "people": 0,
+            "works": 0,
+            "events": 0,
+            "materials": 0
+          }
+        },
+        {
+          "description": "空厂站 materials 不残留上个厂站人员与关联记录",
+          "value": {
+            "station": "S2",
+            "people": 0,
+            "works": 0,
+            "events": 0,
+            "materials": 0
+          }
+        },
+        {
+          "description": "空厂站 location 不残留上个厂站人员与关联记录",
+          "value": {
+            "station": "S2",
+            "people": 0,
+            "works": 0,
+            "events": 0,
+            "materials": 0
+          }
+        },
+        {
+          "description": "空厂站 alarms 不残留上个厂站人员与关联记录",
+          "value": {
+            "station": "S2",
+            "people": 0,
+            "works": 0,
+            "events": 0,
+            "materials": 0
+          }
+        },
+        {
+          "description": "空厂站 statistics 不残留上个厂站人员与关联记录",
+          "value": {
+            "station": "S2",
+            "people": 0,
+            "works": 0,
+            "events": 0,
+            "materials": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "browser-health",
+      "passed": true,
+      "checks": [
+        "浏览器无脚本错误",
+        "资源请求无失败"
+      ],
+      "measurements": [
+        {
+          "description": "浏览器无脚本错误",
+          "value": []
+        },
+        {
+          "description": "资源请求无失败",
+          "value": []
+        }
+      ]
+    }
+  ],
+  "browserErrors": [],
+  "failedRequests": []
+}

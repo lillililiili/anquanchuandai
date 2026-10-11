@@ -65,7 +65,7 @@
 
 ## 验证与交付文件
 
-运行 `npm test` 执行 18 项数据测试；运行 `npm run check` 检查 JavaScript 语法。无需 `npm install`。
+运行 `npm test` 执行 27 项数据测试；运行 `npm run check` 检查 JavaScript 语法。无需 `npm install`。
 
 - [数据联动验收清单](qa/interaction-checks.md)
 - [视觉对比报告](design-qa.md)
@@ -74,6 +74,38 @@
 - `qa/page-checks.json`：页面视口、边界与可见动作清单。
 
 源码：`js/data.js` 为统一查询/操作层；`js/ui.js` 为共享组件、路由、地图与存储；`js/views.js` 为页面；`js/actions.js` 为交互；`css/app.css` 为样式；`js/media-data.js` 为直接打开 HTML 时使用的本地场景图片副本。
+
+## Sketch 原始参数校正（当前版本，2026-10-10）
+
+已核对原始 Sketch 的组件图层和53条颜色表。`css/theme-tokens.css` 集中保存色值、透明度及相关来源ID；`css/theme.css`、`css/theme-screen.css` 使用这些变量。卡片、表格、边框透明度，输入默认/悬停/聚焦状态，下拉菜单、16px选择控件和状态标签已校正；原有布局、路由、业务交互和存储键保持不变。
+
+- [本轮18页前后对比](qa/sketch/index.html)
+- [本轮验收记录](qa/sketch/acceptance.md)
+- [项目样式约定及适配边界](STYLE.md)
+- [修订后的个人Skill副本](qa/sketch/skill-update/data/personal-ui-framework/SKILL.md)：桌面 `C:/Users/19221/Desktop/data` 同步更新，原始A/B提示词和旧合并版保留。
+
+PowerShell下复验本轮成果（浏览器检查串行运行）：
+
+```powershell
+$env:THEME_QA_DIR = 'qa/sketch'
+node scripts/check-theme.cjs after
+node scripts/check-theme-states.cjs
+node scripts/check-theme-flows.cjs
+```
+
+`qa/sketch/before`是本轮修改前保存的基线，不应在修改后重新生成。原生选择框和日期面板保留浏览器行为，其系统弹出外观可能因浏览器而异。
+
+## 第一版 UI 规范主题（历史记录，2026-10-10）
+
+第一版依据PDF及已确认方案统一了深蓝主题。下列截图和验收记录保留当时结果；当前版本使用上方Sketch校正后的参数和检查目录。
+
+- [18 页样式前后对比](qa/theme/index.html)
+- [主题验收记录](qa/theme/acceptance.md)
+- `node scripts/check-theme.cjs after`：三种分辨率的逐页布局及截图检查；使用已保存的 `before` 基线。
+- `node scripts/check-theme-flows.cjs`：独立浏览器上下文中的登录、四条业务链、大屏与通话回归。
+- `node scripts/check-theme-states.cjs`：按钮状态、键盘聚焦、侧栏页签、空状态和控件尺寸检查。
+
+浏览器检查默认使用本机 Chrome 与 Codex 附带的 Playwright。其他环境可用 `CHROME_PATH`、`PLAYWRIGHT_MODULE` 指定路径；运行原型本身不需要这些依赖。
 
 ## 人员详情生命体征（2026-09-21 更新）
 

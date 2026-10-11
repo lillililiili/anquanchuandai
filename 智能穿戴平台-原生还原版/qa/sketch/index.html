@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sketch 参数校正 · 前后对比</title>
+  <style>
+    :root{color-scheme:dark;font-family:"Microsoft YaHei",sans-serif;background:#121e37;color:#d1dae5}
+    *{box-sizing:border-box}body{margin:0}header{padding:24px 28px;background:#162847;border-bottom:1px solid #25556f}h1{margin:0 0 10px;color:#fff;font-size:24px}p{margin:8px 0;font-size:14px;line-height:1.7}a{color:#83f6fd}nav{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:18px}select,button{height:34px;padding:0 12px;border:1px solid #25556f;border-radius:4px;background:#17294a;color:#d1dae5;font:inherit;font-size:14px}button{cursor:pointer}button[aria-pressed=true]{background:#4faff7;color:#121e37}button:focus-visible,select:focus-visible{outline:2px solid #83f6fd;outline-offset:3px}.status{font-size:12px;color:#b0becb;margin-left:auto}.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px}figure{margin:0;min-width:0;background:#17294a;border:1px solid #25556f;border-radius:4px;overflow:hidden}figcaption{display:flex;justify-content:space-between;padding:12px 16px;font-size:14px;color:#83f6fd;border-bottom:1px solid #25556f}figure img{display:block;width:100%;height:auto}.compare.single{grid-template-columns:1fr}.compare.single figure:first-child{display:none}.notes{padding:0 28px 24px;color:#b0becb;font-size:12px}.swatches{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}.swatches span{display:flex;align-items:center;gap:8px;font-size:12px}.swatches i{display:inline-block;width:18px;height:18px;border:1px solid #677987;border-radius:3px}@media(max-width:900px){.compare{grid-template-columns:1fr}.status{width:100%;margin:0}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>智能穿戴平台 · Sketch 参数校正</h1>
+    <p>左侧为上一版，右侧为按 Sketch 原始参数校正后的版本。保留现有导航、分栏、模块与交互流程。</p>
+    <p><a href="../../index.html" target="_blank" rel="noopener">打开修改后的可交互原型 ↗</a>　 ·　 <a href="acceptance.md">验收记录</a>　 ·　 <a href="../../STYLE.md">项目样式约定</a>　 ·　 <a href="reference/comparison.html">修正依据</a>　 ·　 <a href="after/inventory.json">页面检查数据</a>　 ·　 <a href="flows/results.json">交互回归结果</a></p>
+    <div class="swatches"><span><i style="background:#121e37"></i>页面 #121E37</span><span><i style="background:rgba(80,177,249,.12)"></i>卡片 #50B1F9 · 12%</span><span><i style="background:#4faff7"></i>主色 #4FAFF7</span><span><i style="background:#83f6fd"></i>强调 #83F6FD</span></div>
+    <nav>
+      <label for="page">页面</label><select id="page"></select>
+      <button id="split" aria-pressed="true">前后并排</button><button id="after-only" aria-pressed="false">仅看修改后</button>
+      <span class="status">18 个页面 · 3 种分辨率 · 原图基准 1672 × 941</span>
+    </nav>
+  </header>
+  <main class="compare" id="compare">
+    <figure><figcaption>上一版<a id="before-link" target="_blank" rel="noopener">查看原图 ↗</a></figcaption><img id="before" alt="修改前页面截图"></figure>
+    <figure><figcaption>Sketch 核实后<a id="after-link" target="_blank" rel="noopener">查看原图 ↗</a></figcaption><img id="after" alt="修改后页面截图"></figure>
+  </main>
+  <p class="notes">截图使用独立测试数据。顶部时钟和大屏自动轮播内容可能不同；可直接打开原型检查完整流程。</p>
+  <script>
+    const pages=[['overview','综合总览'],['login','登录'],['personnel','人员与装备'],['person-P1','人员详情'],['works','作业列表'],['work-GL-20260915-018','作业详情'],['video','视频墙'],['single-P1','单路监看'],['materials','现场影像资料'],['location','实时定位'],['tracks-P1','历史轨迹'],['fences','电子围栏'],['alarms','告警列表'],['event-RL-E-0915-001','事件核验'],['dispatch','调度通信'],['sos','SOS 协同'],['statistics','统计追溯'],['screen','数据大屏'],['vital-history-modal','生命体征记录弹窗'],['notifications-modal','通知弹窗']];
+    const select=document.getElementById('page');
+    for(const [value,label] of pages){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option)}
+    function show(){for(const stage of ['before','after']){const src=stage+'/'+select.value+'.png';document.getElementById(stage).src=src;document.getElementById(stage+'-link').href=src}}
+    select.addEventListener('change',show);show();
+    for(const id of ['split','after-only']) document.getElementById(id).addEventListener('click',()=>{document.getElementById('compare').classList.toggle('single',id==='after-only');for(const x of ['split','after-only'])document.getElementById(x).setAttribute('aria-pressed',String(x===id))});
+  </script>
+</body>
+</html>

@@ -1,0 +1,545 @@
+{
+  "samples": [
+    {
+      "at": 622.7999999821186,
+      "route": "dispatch",
+      "call": {
+        "id": "CALL101",
+        "members": [
+          "P2"
+        ],
+        "kind": "单呼",
+        "station": "S1",
+        "date": "2026-09-15",
+        "time": "2026-09-15 10:42:19",
+        "status": "正在呼叫",
+        "muted": false,
+        "joined": [],
+        "history": [
+          {
+            "time": "2026-09-15 10:42:19",
+            "text": "发起单呼"
+          }
+        ]
+      },
+      "videos": [
+        {
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "readyState": 0,
+          "networkState": 1,
+          "paused": true,
+          "currentTime": 0,
+          "duration": null,
+          "muted": true,
+          "autoplay": true,
+          "error": null,
+          "width": 0,
+          "height": 0,
+          "rect": {
+            "x": 721.421875,
+            "y": 276.28125,
+            "width": 726.28125,
+            "height": 320,
+            "top": 276.28125,
+            "right": 1447.703125,
+            "bottom": 596.28125,
+            "left": 721.421875
+          },
+          "style": {
+            "display": "block",
+            "visibility": "visible"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "loadstart",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 2,
+          "error": null,
+          "at": 618
+        },
+        {
+          "event": "suspend",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 1,
+          "error": null,
+          "at": 618.9000000059605
+        }
+      ]
+    },
+    {
+      "at": 1627.7999999821186,
+      "route": "dispatch",
+      "call": {
+        "id": "CALL101",
+        "members": [
+          "P2"
+        ],
+        "kind": "单呼",
+        "station": "S1",
+        "date": "2026-09-15",
+        "time": "2026-09-15 10:42:19",
+        "status": "正在呼叫",
+        "muted": false,
+        "joined": [],
+        "history": [
+          {
+            "time": "2026-09-15 10:42:19",
+            "text": "发起单呼"
+          }
+        ]
+      },
+      "videos": [
+        {
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "readyState": 4,
+          "networkState": 1,
+          "paused": false,
+          "currentTime": 0.903739,
+          "duration": 7.900481,
+          "muted": true,
+          "autoplay": true,
+          "error": null,
+          "width": 960,
+          "height": 540,
+          "rect": {
+            "x": 721.421875,
+            "y": 276.28125,
+            "width": 726.28125,
+            "height": 320,
+            "top": 276.28125,
+            "right": 1447.703125,
+            "bottom": 596.28125,
+            "left": 721.421875
+          },
+          "style": {
+            "display": "block",
+            "visibility": "visible"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "loadstart",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 2,
+          "error": null,
+          "at": 618
+        },
+        {
+          "event": "suspend",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 1,
+          "error": null,
+          "at": 618.9000000059605
+        },
+        {
+          "event": "loadedmetadata",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 710.0999999940395
+        },
+        {
+          "event": "play",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 710.7999999821186
+        },
+        {
+          "event": "waiting",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 711
+        },
+        {
+          "event": "loadeddata",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000461,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "canplay",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000554,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "playing",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000566,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "canplaythrough",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000596,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.6999999880791
+        }
+      ]
+    },
+    {
+      "at": 5631.699999988079,
+      "route": "dispatch",
+      "call": {
+        "id": "CALL101",
+        "members": [
+          "P2"
+        ],
+        "kind": "单呼",
+        "station": "S1",
+        "date": "2026-09-15",
+        "time": "2026-09-15 10:42:19",
+        "status": "正在呼叫",
+        "muted": false,
+        "joined": [],
+        "history": [
+          {
+            "time": "2026-09-15 10:42:19",
+            "text": "发起单呼"
+          }
+        ]
+      },
+      "videos": [
+        {
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "readyState": 4,
+          "networkState": 1,
+          "paused": false,
+          "currentTime": 4.907665,
+          "duration": 7.900481,
+          "muted": true,
+          "autoplay": true,
+          "error": null,
+          "width": 960,
+          "height": 540,
+          "rect": {
+            "x": 721.421875,
+            "y": 276.28125,
+            "width": 726.28125,
+            "height": 320,
+            "top": 276.28125,
+            "right": 1447.703125,
+            "bottom": 596.28125,
+            "left": 721.421875
+          },
+          "style": {
+            "display": "block",
+            "visibility": "visible"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "loadstart",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 2,
+          "error": null,
+          "at": 618
+        },
+        {
+          "event": "suspend",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 1,
+          "error": null,
+          "at": 618.9000000059605
+        },
+        {
+          "event": "loadedmetadata",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 710.0999999940395
+        },
+        {
+          "event": "play",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 710.7999999821186
+        },
+        {
+          "event": "waiting",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 711
+        },
+        {
+          "event": "loadeddata",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000461,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "canplay",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000554,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "playing",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000566,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "canplaythrough",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000596,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.6999999880791
+        }
+      ]
+    },
+    {
+      "at": 10635.699999988079,
+      "route": "dispatch",
+      "call": {
+        "id": "CALL101",
+        "members": [
+          "P2"
+        ],
+        "kind": "单呼",
+        "station": "S1",
+        "date": "2026-09-15",
+        "time": "2026-09-15 10:42:19",
+        "status": "正在呼叫",
+        "muted": false,
+        "joined": [],
+        "history": [
+          {
+            "time": "2026-09-15 10:42:19",
+            "text": "发起单呼"
+          }
+        ]
+      },
+      "videos": [
+        {
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "readyState": 4,
+          "networkState": 1,
+          "paused": false,
+          "currentTime": 1.949137,
+          "duration": 7.900481,
+          "muted": true,
+          "autoplay": true,
+          "error": null,
+          "width": 960,
+          "height": 540,
+          "rect": {
+            "x": 721.421875,
+            "y": 276.28125,
+            "width": 726.28125,
+            "height": 320,
+            "top": 276.28125,
+            "right": 1447.703125,
+            "bottom": 596.28125,
+            "left": 721.421875
+          },
+          "style": {
+            "display": "block",
+            "visibility": "visible"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "loadstart",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 2,
+          "error": null,
+          "at": 618
+        },
+        {
+          "event": "suspend",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 0,
+          "networkState": 1,
+          "error": null,
+          "at": 618.9000000059605
+        },
+        {
+          "event": "loadedmetadata",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 710.0999999940395
+        },
+        {
+          "event": "play",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 710.7999999821186
+        },
+        {
+          "event": "waiting",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 711
+        },
+        {
+          "event": "loadeddata",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000461,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "canplay",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000554,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "playing",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000566,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.5999999940395
+        },
+        {
+          "event": "canplaythrough",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000596,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 724.6999999880791
+        },
+        {
+          "event": "waiting",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0,
+          "readyState": 1,
+          "networkState": 1,
+          "error": null,
+          "at": 8675
+        },
+        {
+          "event": "canplay",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000182,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 8686.799999982119
+        },
+        {
+          "event": "playing",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.0002,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 8686.799999982119
+        },
+        {
+          "event": "canplaythrough",
+          "src": "http://127.0.0.1:5211/assets/call-boiler.webm",
+          "time": 0.000209,
+          "readyState": 4,
+          "networkState": 1,
+          "error": null,
+          "at": 8686.799999982119
+        }
+      ]
+    }
+  ],
+  "network": [
+    {
+      "url": "http://127.0.0.1:5211/assets/call-boiler.webm",
+      "status": 200,
+      "headers": {
+        "transfer-encoding": "chunked",
+        "cache-control": "no-cache",
+        "keep-alive": "timeout=5",
+        "date": "Sat, 10 Oct 2026 10:36:12 GMT",
+        "content-type": "video/webm",
+        "connection": "keep-alive"
+      }
+    }
+  ],
+  "failures": [],
+  "pageErrors": [],
+  "legacy": {
+    "singlePreview": true,
+    "connected": true,
+    "muted": true,
+    "looped": true,
+    "ended": true,
+    "canceled": true,
+    "groupChannels": 6,
+    "areaClips": 4,
+    "unavailableChannels": 2,
+    "pageErrors": []
+  }
+}

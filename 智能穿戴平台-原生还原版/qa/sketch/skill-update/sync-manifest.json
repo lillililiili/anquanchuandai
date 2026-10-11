@@ -1,0 +1,68 @@
+{
+  "targetRoot": "C:\\Users\\19221\\Desktop\\data",
+  "files": [
+    {
+      "relativePath": "AGENTS.md",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\AGENTS.md",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\AGENTS.md",
+      "oldSha256": "bd36fb9e97bc48e313d83128812d0c997c5430c0fb49fc5b6fbb6ed1815daa80",
+      "newSha256": "786a25cf3f59931350f0155b211e330ea94199173bf3d2fac4e0bb1f9b2d6bf7"
+    },
+    {
+      "relativePath": "使用说明.md",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\使用说明.md",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\使用说明.md",
+      "oldSha256": "36e2f197a67bc3ca54a4e04814ef21e2b6732a4ed643a4d832881719cc4ba4e6",
+      "newSha256": "345506c20b973b5956ea98428b836056458e6f0fcc0d07bb050e767de63b7a8d"
+    },
+    {
+      "relativePath": "personal-ui-framework/SKILL.md",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\personal-ui-framework\\SKILL.md",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\personal-ui-framework\\SKILL.md",
+      "oldSha256": "b6d5dcc86132c7c9ad1f5db8a7f6ca2a536426993b7f6a5e7b5e98c7c2c9cf83",
+      "newSha256": "1617d9e7096f24964bf33b816643a6f27cbfafbfa1bfaaa02b53cc5fc24a80d9"
+    },
+    {
+      "relativePath": "personal-ui-framework/references/合并提示词.md",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\personal-ui-framework\\references\\合并提示词.md",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\personal-ui-framework\\references\\合并提示词.md",
+      "oldSha256": "179209894fde631ddbc61fc9c4431563a22bfb3f1d25f3d1e466388674c27f7d",
+      "newSha256": "314afd928954c3ff7ce301307895ac3cb8f5c1598de0e0dd365ebf8969e80e9a"
+    },
+    {
+      "relativePath": "personal-ui-framework/references/完整性核对.md",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\personal-ui-framework\\references\\完整性核对.md",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\personal-ui-framework\\references\\完整性核对.md",
+      "oldSha256": "8c09119b4232447fc82b23dfd8c4a6e83a32cce58d1caac67119e231c0da25cb",
+      "newSha256": "42b48e531c83acd994ff9d5e3247a9235568840c596333515ff8c3308f0e7d93"
+    },
+    {
+      "relativePath": "personal-ui-framework/references/合并提示词-历史未核实版.md",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\personal-ui-framework\\references\\合并提示词-历史未核实版.md",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\personal-ui-framework\\references\\合并提示词-历史未核实版.md",
+      "oldSha256": null,
+      "newSha256": "179209894fde631ddbc61fc9c4431563a22bfb3f1d25f3d1e466388674c27f7d"
+    },
+    {
+      "relativePath": "personal-ui-framework/references/Sketch核实参数.md",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\personal-ui-framework\\references\\Sketch核实参数.md",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\personal-ui-framework\\references\\Sketch核实参数.md",
+      "oldSha256": null,
+      "newSha256": "82ebcaedcc053cd670e64fd587af9a968d43aa07fccffef3853bcebd28fd6ee9"
+    },
+    {
+      "relativePath": "personal-ui-framework/references/Sketch证据.json",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\personal-ui-framework\\references\\Sketch证据.json",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\personal-ui-framework\\references\\Sketch证据.json",
+      "oldSha256": null,
+      "newSha256": "7e3bf0d4c726d326da439111368f54937db97b293a368a7ab56fb16e2dfbaa1b"
+    },
+    {
+      "relativePath": "personal-ui-framework/references/修订校验.json",
+      "source": "D:\\沉积岩\\anquanchuandai\\智能穿戴平台-原生还原版\\qa\\sketch\\skill-update\\data\\personal-ui-framework\\references\\修订校验.json",
+      "destination": "C:\\Users\\19221\\Desktop\\data\\personal-ui-framework\\references\\修订校验.json",
+      "oldSha256": null,
+      "newSha256": "21cef644c4498e4db375379442b4e80286381bd5aab63ffe7c8e6fd594200379"
+    }
+  ]
+}

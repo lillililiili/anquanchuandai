@@ -1,0 +1,985 @@
+/* Native Sketch component theme. Load after theme-tokens.css and structural styles. */
+
+html,
+body {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+  font-family: var(--theme-font);
+  font-size: var(--theme-font-size-body);
+  font-weight: var(--theme-font-weight-regular);
+}
+
+/* Ordinary UI is scoped separately from the data-screen presentation. */
+:is(.main, .topbar, .sidebar, .login-page, .modal, #toasts) {
+  color: var(--theme-text);
+  font-family: var(--theme-font);
+}
+
+:is(.main, .modal) h1,
+.main .page-heading h1,
+.main .person-summary h1,
+.main .event-banner h1 {
+  color: var(--theme-heading);
+  font-size: var(--theme-font-size-page);
+  font-weight: var(--theme-font-weight-title);
+}
+
+:is(.main, .modal) h2,
+.main .panel-heading h2,
+.main .sos-banner h2,
+.modal header h2 {
+  color: var(--theme-heading);
+  font-size: var(--theme-font-size-section);
+  font-weight: var(--theme-font-weight-title);
+  letter-spacing: 0;
+}
+
+:is(.main, .modal) h3,
+.main .detail-section h3,
+.main .media-card h3,
+.main .record-entry h3,
+.main .fence-row h3,
+.main .alarm-detail .panel-body > h3 {
+  color: var(--theme-heading);
+  font-size: var(--theme-font-size-component);
+  font-weight: var(--theme-font-weight-title);
+}
+
+.main .page-heading p,
+.main .person-summary p,
+.main .sos-banner p,
+.main .remote-box p,
+.main .field > span {
+  color: var(--theme-muted);
+  font-size: var(--theme-font-size-body);
+}
+
+:is(.main, .modal, .login-page, .topbar, .sidebar) small,
+.main .note,
+.main .count-label,
+.main .stats-notice,
+.main .char-count,
+.main .record-entry time,
+.main .track-labels,
+.main .time-axis,
+.page-foot {
+  color: var(--theme-muted);
+  font-size: var(--theme-font-size-caption);
+}
+
+:is(.main, .topbar, .sidebar, .login-page, .modal, #toasts) .blue {
+  color: var(--theme-primary) !important;
+}
+
+:is(.main, .modal) .text-link,
+.main .note i {
+  color: var(--theme-accent);
+}
+
+:is(.main, .modal) .text-link:hover {
+  color: var(--theme-link-hover);
+}
+
+:is(.main, .modal) .text-link:active {
+  color: var(--theme-link-active);
+}
+
+:is(.main, .modal) .text-link:is(:disabled, [aria-disabled="true"]) {
+  color: var(--theme-link-disabled);
+  cursor: not-allowed;
+}
+
+/* Shell sizes and their original responsive breakpoints are untouched. */
+.topbar,
+.sidebar {
+  background: var(--theme-nav-surface);
+  border-color: var(--theme-border);
+}
+
+.topbar > strong {
+  color: var(--theme-heading);
+  font-size: var(--theme-font-size-section);
+  letter-spacing: 0;
+}
+
+.brand-divider,
+.top-divider {
+  background: var(--theme-border);
+}
+
+.top-actions time,
+.sidebar-bottom small {
+  color: var(--theme-muted);
+}
+
+.sidebar a {
+  color: var(--theme-text);
+  font-size: var(--theme-font-size-component);
+}
+
+.sidebar a i {
+  font-size: 22px;
+}
+
+.sidebar a:hover {
+  background: var(--theme-card);
+  color: var(--theme-accent);
+}
+
+.sidebar a.active {
+  background: var(--theme-selected);
+  border-left-color: var(--theme-primary);
+  color: var(--theme-accent);
+}
+
+.sidebar a.active i {
+  color: var(--theme-accent);
+}
+
+.sidebar-bottom a {
+  border-top-color: var(--theme-border);
+}
+
+.notification-count {
+  background: var(--theme-red);
+}
+
+/* Surfaces retain all original panel heights, column widths and padding. */
+.main .panel,
+.main .stat,
+.main .person-vitals,
+.main .media-card,
+.modal {
+  border-color: var(--theme-border);
+  border-radius: var(--theme-radius);
+  background: var(--theme-panel);
+  box-shadow: none;
+}
+
+/* Large form/panel radius follows the source long-page panel; compact cards stay 4px. */
+.main .panel,
+.modal {
+  border-radius: var(--theme-radius-panel);
+}
+
+.main .stats.flat .stat,
+.main .stats.mini .stat {
+  background: transparent;
+}
+
+.main .panel-heading,
+.modal header,
+.modal footer,
+.main .detail-section,
+.main .participant,
+.main .recent-media,
+.main .record-entry,
+.main .member-row,
+.main .call-member,
+.main .works-actions {
+  border-color: var(--theme-divider);
+}
+
+.main .panel-heading h2,
+.main .detail-section h3 {
+  color: var(--theme-accent);
+  border-left-color: var(--theme-accent);
+}
+
+.main .panel-heading > div,
+.main .info dt,
+.main .record-entry p,
+.main .media-card p,
+.main .fence-row p {
+  color: var(--theme-muted);
+}
+
+.main .info,
+.modal .info {
+  font-size: var(--theme-font-size-body);
+}
+
+.main .info dd,
+.main .track-segment b {
+  color: var(--theme-text);
+}
+
+.main .stat span {
+  color: var(--theme-text);
+  font-size: var(--theme-font-size-body);
+}
+
+.main .stat strong {
+  color: var(--theme-accent);
+}
+
+.main .stat strong small,
+.main .stat em {
+  color: var(--theme-muted);
+}
+
+.main .avatar {
+  color: var(--theme-heading);
+  background: var(--theme-selected);
+}
+
+.main .avatar.photo {
+  border-color: var(--theme-primary);
+}
+
+.main .device-strip.large .device-item,
+.main.personnel-page aside.person-detail-focused .detail-section .device-item,
+.main .remote-box,
+.modal .check-grid label {
+  border-color: var(--theme-border);
+  border-radius: var(--theme-radius);
+  background: var(--theme-card);
+}
+
+/* Shared button states. No generic button sizing reaches markers or video tiles. */
+:is(.main, .topbar, .login-page, .modal) .btn {
+  background: transparent;
+  color: var(--theme-primary);
+  border-color: var(--theme-primary);
+  border-radius: var(--theme-radius);
+  font-weight: var(--theme-font-weight-regular);
+  box-shadow: none;
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn:not(:where(.video-controls .btn, .tabs .btn, .captcha-row .btn)),
+.main .filters .btn,
+.main .form-actions .btn,
+.main .works-toolbar .btn,
+.main .side-video .btn,
+.main.personnel-page aside.person-detail-focused .detail-call .btn {
+  height: var(--theme-control-height);
+  min-height: var(--theme-control-height);
+  padding: 4px 12px;
+  font-size: var(--theme-font-size-body);
+  line-height: 22px;
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn.small {
+  padding-inline: 9px;
+  font-size: var(--theme-font-size-caption);
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn.icon-only {
+  width: var(--theme-control-height);
+  padding-inline: 4px;
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn i {
+  font-size: var(--theme-font-size-section);
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn:hover:not(:disabled) {
+  background: var(--theme-component-bg-3);
+  border-color: var(--theme-primary-hover);
+  color: var(--theme-primary-hover);
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn:active:not(:disabled),
+:is(.main, .topbar, .login-page, .modal) .btn.active {
+  background: var(--theme-component-bg-3);
+  border-color: var(--theme-primary-active);
+  color: var(--theme-primary-active);
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn.primary {
+  background: var(--theme-primary);
+  border-color: var(--theme-primary);
+  color: var(--theme-heading);
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn.primary:hover:not(:disabled) {
+  background: var(--theme-primary-hover);
+  border-color: var(--theme-primary-hover);
+  color: var(--theme-bg);
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn.primary:active:not(:disabled) {
+  background: var(--theme-primary-active);
+  border-color: var(--theme-primary-active);
+  color: var(--theme-heading);
+}
+
+:is(.main, .modal) .btn.danger {
+  color: var(--theme-red);
+  border-color: var(--theme-red);
+  background: var(--theme-tag-red);
+}
+
+:is(.main, .modal) .btn.danger:hover:not(:disabled) {
+  color: var(--theme-heading);
+  border-color: var(--theme-red-hover);
+  background: var(--theme-red-hover);
+}
+
+:is(.main, .modal) .btn.danger:active:not(:disabled) {
+  color: var(--theme-heading);
+  background: var(--theme-red-active);
+  border-color: var(--theme-red-active);
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn.plain {
+  background: transparent;
+  border-color: transparent;
+}
+
+:is(.main, .topbar, .login-page, .modal) .btn:disabled {
+  color: var(--theme-disabled);
+  background: var(--theme-primary-disabled);
+  border-color: var(--theme-border);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+:is(.main, .topbar, .sidebar, .login-page, .modal) :is(button, a):focus-visible {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 2px;
+}
+
+/* Source input: transparent fill, 4px radius, cyan border; special controls excluded. */
+:where(.main, .topbar, .login-page, .modal) :where(input, select, textarea) {
+  --control-pad-x: 13px;
+  --control-pad-y: 4px;
+  --control-pad-end: var(--control-pad-x);
+}
+
+:is(.main, .topbar, .login-page, .modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea) {
+  box-sizing: border-box;
+  color: var(--theme-text);
+  background: var(--theme-input-bg);
+  border: var(--theme-border-width) solid var(--theme-input-border);
+  border-radius: var(--theme-radius);
+  padding: var(--control-pad-y) var(--control-pad-end) var(--control-pad-y) var(--control-pad-x);
+  font-size: var(--theme-font-size-body);
+  line-height: 22px;
+}
+
+:is(.main, .topbar, .login-page, .modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select) {
+  height: var(--theme-control-height);
+  min-height: var(--theme-control-height);
+}
+
+:is(.main, .login-page, .modal) textarea {
+  --control-pad-y: 10px;
+  line-height: 1.6;
+}
+
+:is(.main, .topbar, .login-page, .modal) select {
+  --control-pad-end: 24px;
+}
+
+:is(.main, .modal) .searchbox input {
+  --control-pad-x: 39px;
+  --control-pad-end: 13px;
+}
+
+.login-card input:not([type="checkbox"]) {
+  --control-pad-x: 53px;
+  --control-pad-end: 13px;
+}
+
+:is(.main, .topbar, .login-page, .modal) select option {
+  color: var(--theme-text);
+  background: var(--theme-dropdown);
+}
+
+:is(.main, .login-page, .modal) :is(input, textarea)::placeholder {
+  color: var(--theme-muted);
+}
+
+:is(.main, .topbar, .login-page, .modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea):hover:not(:disabled):not([readonly]) {
+  border-color: var(--theme-accent);
+}
+
+:is(.main, .topbar, .login-page, .modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea):focus {
+  outline: none;
+  border: var(--theme-focus-width) solid var(--theme-accent);
+  padding: calc(var(--control-pad-y) - 1px) calc(var(--control-pad-end) - 1px) calc(var(--control-pad-y) - 1px) calc(var(--control-pad-x) - 1px);
+}
+
+:is(.main, .topbar, .login-page, .modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea):disabled,
+:is(.main, .login-page, .modal) :is(input:not([type="checkbox"]):not([type="radio"]), textarea)[readonly] {
+  color: var(--theme-disabled);
+  background: var(--theme-input-disabled-bg);
+  border-color: var(--theme-border-disabled);
+}
+
+/* The native input retains browser semantics and keyboard behavior at 16px. */
+:is(.main, .modal, .login-page) input:is([type="checkbox"], [type="radio"]) {
+  width: var(--theme-selection-size);
+  min-width: var(--theme-selection-size);
+  height: var(--theme-selection-size);
+  min-height: var(--theme-selection-size);
+  padding: 0;
+  accent-color: var(--theme-accent);
+  flex: 0 0 var(--theme-selection-size);
+}
+
+:is(.main, .modal, .login-page) input:is([type="checkbox"], [type="radio"]):focus-visible {
+  outline: var(--theme-focus-width) solid var(--theme-accent);
+  outline-offset: 2px;
+}
+
+:is(.main, .modal) input[type="range"] {
+  accent-color: var(--theme-primary);
+}
+
+/* Do not inherit the full-width text-field rule in the existing fence form. */
+.main .fence-layout .form-stack input[type="checkbox"] {
+  width: var(--theme-selection-size);
+  min-width: var(--theme-selection-size);
+  height: var(--theme-selection-size);
+  min-height: var(--theme-selection-size);
+  flex: 0 0 var(--theme-selection-size);
+}
+
+.main .fence-layout .form-stack label.row {
+  justify-content: flex-start;
+  gap: 8px;
+  white-space: nowrap;
+  min-height: var(--theme-control-height-small);
+}
+
+:is(.main, .modal) .searchbox > i {
+  top: 7px;
+  color: var(--theme-muted);
+  font-size: var(--theme-font-size-section);
+}
+
+.main .upload-area {
+  color: var(--theme-text);
+  background: var(--theme-row-odd);
+  border-color: var(--theme-border);
+  font-size: var(--theme-font-size-body);
+}
+
+.main .upload-area:hover,
+.main .upload-area:focus-within {
+  border-color: var(--theme-primary);
+}
+
+/* Tables and selection share the same flat row palette. */
+:is(.main, .modal) thead,
+:is(.main, .modal) th,
+.main .location-layout .table-scroll th {
+  color: var(--theme-text);
+  background: var(--theme-table-head);
+  border-color: var(--theme-border);
+}
+
+:is(.main, .modal) td {
+  border-color: var(--theme-divider);
+}
+
+/* Keep all three work rows visible in the existing fixed-height overview card. */
+.main .overview-bottom .compact td {
+  padding-block: 3px;
+}
+
+:is(.main, .modal) tbody tr:nth-child(odd) {
+  background: var(--theme-row-odd);
+}
+
+:is(.main, .modal) tbody tr:nth-child(even) {
+  background: var(--theme-row-even);
+}
+
+:is(.main, .modal) tbody tr[data-action]:hover {
+  background: var(--theme-table-hover);
+}
+
+:is(.main, .modal) tbody tr.selected,
+:is(.main, .modal) tbody tr.selected:hover {
+  background: var(--theme-selected);
+}
+
+:is(.main, .modal) td strong {
+  color: var(--theme-heading);
+  font-size: var(--theme-font-size-body);
+}
+
+.main .pagination {
+  color: var(--theme-muted);
+  border-color: var(--theme-border);
+  font-size: var(--theme-font-size-caption);
+}
+
+/* Tabs keep their original width allocation and placement. */
+:is(.main, .modal) .tabs {
+  border-color: var(--theme-border);
+}
+
+:is(.main, .modal) .tabs :is(.btn, a) {
+  min-height: var(--theme-control-height);
+  padding-block: 5px;
+  color: var(--theme-text);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  font-size: var(--theme-font-size-body);
+  line-height: 20px;
+}
+
+:is(.main, .modal) .tabs :is(.btn, a):hover {
+  color: var(--theme-primary-hover);
+  background: var(--theme-card);
+}
+
+:is(.main, .modal) .tabs :is(.btn, a).active {
+  color: var(--theme-accent);
+  border-bottom-color: var(--theme-accent);
+  background: var(--theme-selected);
+}
+
+:is(.main, .modal) .tabs.box {
+  border-radius: var(--theme-radius);
+}
+
+:is(.main, .modal) .tabs.box .btn {
+  border: 0;
+}
+
+:is(.main, .modal) .tabs.box .btn.active {
+  color: var(--theme-heading);
+  background: var(--theme-primary-active);
+}
+
+:is(.main, .modal) .tag {
+  border-radius: var(--theme-radius-tag);
+  border-color: var(--theme-tag-primary-border);
+  background: var(--theme-tag-primary);
+  height: var(--theme-tag-height);
+  padding-block: 1px;
+  line-height: 22px;
+  font-size: var(--theme-font-size-caption);
+}
+
+/* Dense tables and metadata adopt the source 22px small tag to preserve row height. */
+:is(.main, .modal) :is(td, .info, .panel-heading, .device-item, .track-segment) .tag {
+  height: var(--theme-tag-height-small);
+  padding-block: 0;
+  line-height: 20px;
+}
+
+:is(.main, .modal) .tag.orange {
+  border-color: var(--theme-orange);
+  background: var(--theme-tag-orange);
+}
+
+:is(.main, .modal) .tag.yellow {
+  border-color: var(--theme-yellow);
+  background: var(--theme-tag-yellow);
+}
+
+:is(.main, .modal) .tag.green {
+  border-color: var(--theme-green);
+  background: var(--theme-tag-green);
+}
+
+:is(.main, .modal) .tag.red {
+  border-color: var(--theme-red);
+  background: var(--theme-tag-red);
+}
+
+:is(.main, .modal) .tag.muted {
+  border-color: var(--theme-disabled);
+  background: var(--theme-tag-muted);
+}
+
+:is(.main, .modal) .warning-box {
+  color: var(--theme-yellow);
+  border-color: var(--theme-yellow);
+  background: var(--theme-tag-yellow);
+  border-radius: var(--theme-radius);
+}
+
+:is(.main, .modal) .warning-box h3 {
+  color: var(--theme-yellow);
+}
+
+:is(.main, .modal) .empty {
+  color: var(--theme-muted);
+}
+
+:is(.main, .modal) .empty i {
+  color: var(--theme-disabled);
+}
+
+:is(.main, .modal) .empty span {
+  font-size: var(--theme-font-size-body);
+}
+
+/* Maps: tint only; coordinates, controls and marker geometry stay unchanged. */
+.main .map {
+  border-color: var(--theme-border);
+  border-radius: var(--theme-radius);
+  background: var(--theme-row-odd);
+}
+
+.main :is(.map-caption, .map-zone, .map-popup, .map-legend, .map-editbar, .map-instruction, .layer-controls),
+.main .map-tools .btn {
+  color: var(--theme-text);
+  background: var(--theme-overlay-surface);
+  border-color: var(--theme-border);
+  border-radius: var(--theme-radius);
+  box-shadow: none;
+}
+
+.main .map-popup {
+  border-color: var(--theme-primary);
+  box-shadow: 0 4px 16px var(--theme-shadow-soft);
+}
+
+.main .map-zone {
+  border-color: var(--theme-accent);
+}
+
+.main .map-person {
+  color: var(--theme-heading);
+  background: var(--theme-primary);
+  border-color: var(--theme-heading);
+  box-shadow: 0 0 0 4px var(--theme-marker-primary-ring);
+}
+
+.main .map-person.warning {
+  background: var(--theme-orange);
+  border-color: var(--theme-yellow);
+  box-shadow: 0 0 0 4px var(--theme-marker-warning-ring);
+}
+
+.main .map-person.selected {
+  box-shadow: 0 0 0 6px var(--theme-marker-selected-ring);
+}
+
+.main .map-person:focus-visible {
+  outline-color: var(--theme-accent);
+}
+
+.main .map-compass,
+.main .map-scale {
+  color: var(--theme-text);
+}
+
+.main .map-compass i {
+  color: var(--theme-accent);
+}
+
+.main.location-page > .note {
+  background: var(--theme-panel);
+}
+
+.main :is(.fence-row, .group-row) {
+  border-color: var(--theme-border);
+}
+
+.main :is(.fence-row, .group-row):hover,
+.main .member-row:hover {
+  background: var(--theme-card);
+}
+
+.main :is(.fence-row, .group-row).selected {
+  background: var(--theme-selected);
+  border-left-color: var(--theme-primary);
+}
+
+.main .group-row > i,
+.main .call-member > i {
+  color: var(--theme-accent);
+}
+
+/* Media surfaces retain native aspect ratios and source imagery. */
+:is(.main, .modal) :is(.video-frame, .call-video-tile, .call-video-frame, .media-preview) {
+  background: var(--theme-row-odd);
+  border-color: var(--theme-border);
+  border-radius: var(--theme-radius);
+}
+
+:is(.main, .modal) :is(.video-label, .video-name, .call-video-badge) {
+  color: var(--theme-text);
+  background: var(--theme-overlay-surface);
+  border-radius: var(--theme-radius-tag);
+}
+
+:is(.main, .modal) .video-name {
+  font-size: var(--theme-font-size-body);
+}
+
+:is(.main, .modal) .video-controls {
+  color: var(--theme-text);
+  background: var(--theme-overlay-surface);
+  border-color: var(--theme-border);
+  border-top-width: 1px;
+}
+
+:is(.main, .modal) .video-controls .btn {
+  border-left-color: var(--theme-border);
+  border-radius: 0;
+}
+
+:is(.main, .modal) :is(.video-unavailable, .call-video-unavailable, .call-video-error:not([hidden])) {
+  background: var(--theme-overlay-shade);
+}
+
+:is(.main, .modal) .video-unavailable i {
+  color: var(--theme-muted);
+}
+
+.main .media-card:hover,
+.main .media-card.selected,
+.main .video-thumb.selected > .video-frame {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 1px var(--theme-primary);
+}
+
+.main .video-thumb:hover > .video-frame {
+  border-color: var(--theme-primary-hover);
+}
+
+/* Statistics, timeline and watch-observation colors use shared tokens. */
+.main .progress-row .bar,
+.main .work-time-track {
+  background: var(--theme-border);
+}
+
+.main .progress-row .bar > span,
+.main .chart-bars div,
+.main .legend b,
+.main .work-time-track a {
+  background: var(--theme-primary);
+}
+
+.main .chart-bars div:nth-child(2),
+.main .legend .cyan b {
+  background: var(--theme-accent);
+}
+
+.main .chart-bars span {
+  color: var(--theme-text);
+}
+
+.main .axis {
+  color: var(--theme-muted);
+  border-color: var(--theme-border);
+}
+
+.main .segmented-bar {
+  border-radius: var(--theme-radius);
+}
+
+.main .timeline-item,
+.main .timeline.horizontal .timeline-item {
+  border-color: var(--theme-border);
+}
+
+.main .timeline-item:before {
+  background: var(--theme-primary);
+  border-color: var(--theme-accent);
+}
+
+.main .timeline-item time {
+  color: var(--theme-muted);
+}
+
+.main .vital-card {
+  border-color: var(--theme-border);
+  border-left-color: var(--vital-color);
+  border-radius: var(--theme-radius);
+  background: var(--theme-card);
+}
+
+.main .vital-heart { --vital-color: var(--theme-accent); }
+.main .vital-oxygen { --vital-color: var(--theme-green); }
+.main .vital-temperature { --vital-color: var(--theme-orange); }
+.main .vital-pressure { --vital-color: var(--theme-primary); }
+
+.main .vital-card h3 {
+  color: var(--theme-text);
+  font-size: var(--theme-font-size-body);
+}
+
+.main .vital-card strong {
+  font-family: var(--theme-font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.main :is(.vitals-meta, .vitals-footer),
+.main .vitals-human > span,
+.main .vital-card p span,
+.main .vital-card small {
+  color: var(--theme-muted);
+  border-color: var(--theme-border);
+}
+
+.main .call-status {
+  color: var(--theme-yellow);
+  border-color: var(--theme-border);
+  font-size: var(--theme-font-size-section);
+}
+
+.main .sos-banner > i {
+  color: var(--theme-red);
+}
+
+.main .session-badge {
+  color: var(--theme-red);
+  background: var(--theme-tag-red);
+  border: 1px solid var(--theme-red);
+  border-radius: var(--theme-radius-tag);
+  font-size: var(--theme-font-size-body);
+}
+
+/* Login composition and illustration remain in their original positions. */
+.login-page {
+  background-color: var(--theme-bg);
+}
+
+.login-copy h1 {
+  color: var(--theme-heading);
+}
+
+.login-copy p {
+  color: var(--theme-text);
+  border-left-color: var(--theme-accent);
+}
+
+.login-card {
+  background: var(--theme-overlay-surface);
+  border-color: var(--theme-border);
+  border-radius: var(--theme-radius);
+  box-shadow: 0 8px 28px var(--theme-shadow-soft);
+}
+
+.login-card h2 {
+  color: var(--theme-heading);
+  font-size: var(--theme-font-size-page);
+  font-weight: var(--theme-font-weight-title);
+}
+
+.login-card .field > span {
+  color: var(--theme-text);
+  font-size: var(--theme-font-size-body);
+}
+
+.login-card .input-icon > i {
+  top: 7px;
+  color: var(--theme-muted);
+  font-size: var(--theme-font-size-section);
+}
+
+.login-card .input-icon .btn {
+  top: 0;
+  right: 0;
+  color: var(--theme-muted);
+}
+
+.login-page .captcha-code {
+  height: var(--theme-control-height);
+  font-size: 22px;
+  border-radius: var(--theme-radius);
+  color: var(--theme-bg);
+}
+
+.login-page .captcha-row .btn {
+  height: var(--theme-control-height);
+  min-height: var(--theme-control-height);
+  width: var(--theme-control-height);
+  border-radius: var(--theme-radius);
+}
+
+.login-page .login-card button[type="submit"] {
+  height: var(--theme-control-height-large);
+  min-height: var(--theme-control-height-large);
+  font-size: var(--theme-font-size-component);
+  font-weight: var(--theme-font-weight-title);
+}
+
+.login-footer {
+  color: var(--theme-text);
+  border-left-color: var(--theme-border);
+}
+
+.login-footer small,
+.login-help,
+.login-card > small {
+  color: var(--theme-muted);
+  font-size: var(--theme-font-size-caption);
+}
+
+/* Overlays are themed independently of the screen beneath them. */
+.modal-backdrop {
+  background: var(--theme-overlay-shade);
+}
+
+.modal {
+  background: var(--theme-overlay-surface);
+  border-color: var(--theme-border);
+  box-shadow: 0 16px 48px var(--theme-shadow-modal);
+}
+
+.toast {
+  color: var(--theme-text);
+  border-color: var(--theme-green);
+  border-radius: var(--theme-radius);
+  background: var(--theme-panel);
+  box-shadow: 0 4px 16px var(--theme-shadow-soft);
+  font-size: var(--theme-font-size-body);
+}
+
+.toast i {
+  color: var(--theme-green);
+}
+
+.toast.error {
+  border-color: var(--theme-red);
+  background: var(--theme-panel);
+}
+
+.toast.error i,
+:is(.main, .modal, .login-page) .form-error {
+  color: var(--theme-red);
+}
+
+:is(.main, .modal) ::-webkit-scrollbar-track {
+  background: var(--theme-bg);
+}
+
+:is(.main, .modal) ::-webkit-scrollbar-thumb,
+.main .location-layout .table-scroll::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+}
+
+/* Source color states are applied within existing action semantics only. */
+:is(.main, .modal) .btn.danger:disabled {
+  color: var(--theme-disabled);
+  background: var(--theme-red-disabled);
+  border-color: var(--theme-red-disabled);
+}
+
+/* Optional existing small-size contexts retain the native 24px size tier. */
+:is(.main, .modal) .video-controls .btn.small {
+  height: var(--theme-control-height-small);
+  min-height: var(--theme-control-height-small);
+  padding-block: 0;
+}
+
+/* Numeric runs prefer the native Arial face; Chinese content falls back to the UI stack. */
+.top-actions time,
+.main .stat strong,
+.main .vital-card strong,
+.main .record-entry time,
+.main .timeline-item time,
+.main .chart-bars span,
+.main .axis,
+.main .time-axis,
+.main .track-labels,
+.main .char-count,
+.main .pagination,
+.main .count-label {
+  font-family: var(--theme-font-data);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,670 @@
+{
+  "source": "D:\\wx_chat\\xwechat_files\\wxid_x9ztlatrmfbm22_4b89\\msg\\file\\2026-10\\UI规范.sketch",
+  "method": "读取Sketch压缩包内JSON的图层、文字、填充、边框与角半径；保留具体id。不是完整像素一致性审计。",
+  "comparison": [
+    [
+      "主按钮四态",
+      "蓝 #4FAFF7 / #7FCEFA / #3C89F5 / #193A60",
+      "一致",
+      "一致",
+      "两者一致"
+    ],
+    [
+      "普通输入框圆角 / 高度",
+      "4px / 32px；87个300×32外框均为4px",
+      "4px / 32px",
+      "2px / 32px",
+      "当前圆角更准确"
+    ],
+    [
+      "输入框聚焦边框",
+      "青 #83F6FD，2px",
+      "蓝 #4FAFF7",
+      "青 #83F6FD",
+      "Skill颜色更接近"
+    ],
+    [
+      "正常输入框填充",
+      "透明，无启用的填充",
+      "固定 #0D1D3A",
+      "固定 #0E182D",
+      "两者都不是直接还原"
+    ],
+    [
+      "英文、数字推荐字体",
+      "字体规范表明确 Arial（两个系统均如此）",
+      "大屏数字使用 Arial",
+      "Roboto 优先",
+      "当前大屏更接近；不代表所有数字已统一"
+    ],
+    [
+      "复选框可见方框",
+      "16×16px",
+      "围栏18×18px",
+      "14×14px",
+      "两者均不一致"
+    ],
+    [
+      "开关",
+      "32×20px",
+      "本轮不作当前页面比较",
+      "36×20px",
+      "Skill数值与原稿不符"
+    ],
+    [
+      "卡片底色",
+      "颜色表为 #50B1F9、12%透明度；业务画板也有20%",
+      "主面板实色 #17294A",
+      "卡片 #182B4D / 85%",
+      "两者均未逐值还原"
+    ],
+    [
+      "字号与大圆角限制",
+      "基础24/18/16/14/12；业务实例另有20/21/11/30px，长表单卡片有12px圆角",
+      "保留大屏特殊字号；主卡片4px",
+      "只准指定字号；圆角禁止超过6px",
+      "Skill硬限制不能视作原稿事实"
+    ],
+    [
+      "工作票和缺陷单主题",
+      "整页覆盖底层为 #121E37；原稿预览也是深色",
+      "当前项目采用深色",
+      "将上述画板描述为Light",
+      "Skill主题归类不符合此Sketch的这两张画板"
+    ]
+  ],
+  "layers": [
+    {
+      "id": "OO_JcofjMEpaejS9TiU6s",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "输入框",
+      "path": "输入框 / input输入框 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.35
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    {
+      "id": "fyhpzVlnlv6Z-szUUqXTU",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "输入框",
+      "path": "输入框 / input输入框 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    {
+      "id": "ii-3dhDcMuCP6O9_aM8eh",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "输入框",
+      "path": "输入框 / input输入框 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 2
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    {
+      "id": "32EMICkB5gc53lKl3ovqh",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "复选框",
+      "path": "复选框 / Checkbox 多选 / Checkbox 多选 / Checkbox 多选 / checkbox / item/unit/checkbox / 路径",
+      "visible": true,
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": -2.571758278209442e-15,
+        "y": -1.714505518806294e-15
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    {
+      "id": "g__GhdR1d9dK-EQIOHb7m",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "开关",
+      "path": "开关 / Switch 开关 / bg / 路径",
+      "visible": true,
+      "frame": {
+        "height": 20,
+        "width": 32,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.2
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        12
+      ]
+    },
+    {
+      "id": "KlMNTbOGHFsfeA1HEp3PA",
+      "class": "text",
+      "name": "管理",
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "visible": true,
+      "frame": {
+        "height": 22,
+        "width": 29,
+        "x": 0,
+        "y": 1
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "text": "Arial",
+      "runs": [
+        {
+          "location": 0,
+          "length": 5,
+          "font": {
+            "name": "Helvetica",
+            "size": 14
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 22,
+            "minimumLineHeight": 22,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "maximumLineHeight": 22,
+          "minimumLineHeight": 22,
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "MSAttributedStringTextTransformAttribute": 0,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 0.9999999403953552
+        },
+        "underlineStyle": 0,
+        "textStyleVerticalAlignmentKey": 0,
+        "kerning": 0,
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "Helvetica",
+            "size": 14
+          }
+        },
+        "strikethroughStyle": 0
+      }
+    },
+    {
+      "id": "RzpvbSxw1p3gOXd8gX8fT",
+      "class": "text",
+      "name": "管理",
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "visible": true,
+      "frame": {
+        "height": 22,
+        "width": 29,
+        "x": 0,
+        "y": 1
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "text": "Arial",
+      "runs": [
+        {
+          "location": 0,
+          "length": 5,
+          "font": {
+            "name": "Helvetica",
+            "size": 14
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 22,
+            "minimumLineHeight": 22,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "maximumLineHeight": 22,
+          "minimumLineHeight": 22,
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "MSAttributedStringTextTransformAttribute": 0,
+        "textStyleVerticalAlignmentKey": 0,
+        "underlineStyle": 0,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 0.9999999403953552
+        },
+        "kerning": 0,
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "Helvetica",
+            "size": 14
+          }
+        },
+        "strikethroughStyle": 0
+      }
+    },
+    {
+      "id": "0418B125-CFA7-4EFB-B666-93D953D4A5EE",
+      "class": "text",
+      "name": "123.45",
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / Frame 427319546 / 编组 11 / 123.45",
+      "visible": true,
+      "frame": {
+        "height": 21,
+        "width": 69,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "text": "123.45",
+      "runs": [
+        {
+          "location": 0,
+          "length": 6,
+          "font": {
+            "name": "SourceHanSansCN-Bold",
+            "size": 21
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 21,
+            "minimumLineHeight": 21,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "maximumLineHeight": 21,
+          "minimumLineHeight": 21,
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "MSAttributedStringTextTransformAttribute": 0,
+        "textStyleVerticalAlignmentKey": 0,
+        "underlineStyle": 0,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 0.9999999403953552
+        },
+        "kerning": 0,
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "SourceHanSansCN-Bold",
+            "size": 21
+          }
+        },
+        "strikethroughStyle": 0
+      }
+    },
+    {
+      "id": "7D1B84FD-6446-4834-8055-06EEE12D2CEE",
+      "class": "text",
+      "name": "华能睿驭无人化管控系统",
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 华能睿驭无人化管控系统",
+      "visible": true,
+      "frame": {
+        "height": 30,
+        "width": 371,
+        "x": 771.9999999999927,
+        "y": 27
+      },
+      "fills": [
+        {
+          "type": 1,
+          "color": {
+            "hex": "#D8D8D8",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "stops": [
+            {
+              "position": 0,
+              "hex": "#FFFFFF",
+              "alpha": 1
+            },
+            {
+              "position": 1,
+              "hex": "#A3E4FF",
+              "alpha": 1
+            }
+          ]
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [
+        {
+          "_class": "shadow",
+          "isEnabled": true,
+          "blurRadius": 4,
+          "offsetX": 0,
+          "offsetY": 2,
+          "spread": 0,
+          "color": {
+            "_class": "color",
+            "alpha": 0.6565231643356644,
+            "blue": 0,
+            "green": 0,
+            "red": 0
+          },
+          "contextSettings": {
+            "_class": "graphicsContextSettings",
+            "blendMode": 0,
+            "opacity": 1
+          }
+        }
+      ],
+      "text": "华能睿驭无人化管控系统",
+      "runs": [
+        {
+          "location": 0,
+          "length": 11,
+          "font": {
+            "name": "SourceHanSansCN-Heavy",
+            "size": 30
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "paragraphSpacing": 1,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "paragraphSpacing": 1,
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "textStyleVerticalAlignmentKey": 0,
+        "kerning": 3.719999999999997,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 1
+        },
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "SourceHanSansCN-Heavy",
+            "size": 30
+          }
+        }
+      }
+    },
+    {
+      "id": "StgLM69wj7o-zvpT2mSnq",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "颜色",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+      "visible": true,
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.12
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    {
+      "id": "gikbC3t8uxeoq7IyvXlGB",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "运行管理-缺陷单管理-缺陷单处理",
+      "path": "运行管理-缺陷单管理-缺陷单处理 / Frame 48097355 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 560,
+        "width": 1896,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.12
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        12
+      ]
+    },
+    {
+      "id": "TVg_bJ9vbXlHa-43CXYQ-",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "运行管理-缺陷单管理-缺陷单处理",
+      "path": "运行管理-缺陷单管理-缺陷单处理 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 3782,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#121E37",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    {
+      "id": "Jx8DTCDEAFqDItFW2nce4",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "工作票",
+      "path": "工作票 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 5280,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#121E37",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    }
+  ]
+}

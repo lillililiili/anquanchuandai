@@ -1,0 +1,3891 @@
+{
+  "source": "D:\\wx_chat\\xwechat_files\\wxid_x9ztlatrmfbm22_4b89\\msg\\file\\2026-10\\UI规范.sketch",
+  "sourceSha256": "20ee13bff161045011c20cb5c4fda6d8128a6e74c97d8dec7c61f378d137c36f",
+  "checkedOn": "2026-10-10",
+  "layerCount": 52178,
+  "notes": [
+    "Native styles only; bitmap pixels not included. Frame coordinates are local to parent.",
+    "Rules, component examples, business artboard examples and project mappings are distinct.",
+    "Own-layer visible is insufficient for artboard evidence; color samples also preserve accumulated visibility.",
+    "Text font table cell content is the recommendation; Helvetica metadata drawing that cell is not the recommendation."
+  ],
+  "colorRows": [
+    {
+      "label": "主色一default",
+      "labelLayerId": "Q2aq1SmCKl_nvm47WuviS",
+      "id": "-wxo7UjqvqneQNTivHtc5",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#83F6FD",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "主色一hover",
+      "labelLayerId": "TJvIc3zl_t0iI2Az_tMT_",
+      "id": "n7CkTUcdpqHP7UXB2RmbJ",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#A0F8FD",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "主色一active",
+      "labelLayerId": "V3Wrfc0jxPjxssIT76jLF",
+      "id": "UYUa-g11WkOm_jP1rEsGi",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#5DCAD2",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "主色一disabled",
+      "labelLayerId": "xTqqW19KpdhC8gauvxem6",
+      "id": "ZqNiVP01gnKu5b96oTQGJ",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#C4FBFE",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "主色二default",
+      "labelLayerId": "6Vtna7yimI8H57ToQ41H0",
+      "id": "qRBKuAXstQZQ-Adi1786E",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 443 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#4FAFF7",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "主色二hover",
+      "labelLayerId": "elsf8zxb3msHeyEtP9VOa",
+      "id": "RtqN3Tnmau-jJigZ5Ulgy",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 444 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#7FCEFA",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "主色二active",
+      "labelLayerId": "01l9U5_pOjeXy3MtH-Ca2",
+      "id": "5HRorMkldRqfvl9vuwTiP",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 445 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#3C89F5",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "主色二disabled",
+      "labelLayerId": "7kjcthAkLuI_WnJjDTraS",
+      "id": "0DqUfZvbn2Pe4RWtujfBL",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 446 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#193A60",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "错误色",
+      "labelLayerId": "QhleHQ5vF1He3M272VUh0",
+      "id": "bgx6_Z0f5bZSkU5MQnMpC",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 424 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#DE554F",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "错误色hover",
+      "labelLayerId": "n_DIHAdmRCo2Bgo7jguFV",
+      "id": "7kIY4YA3JBjw8xrZ9Ti4i",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 425 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#E57163",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "错误色active",
+      "labelLayerId": "XIcwLYkzHShZdjNV7lJbd",
+      "id": "iDyLw7sFKwPzxSPx-Oa-J",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 426 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#A03E35",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "错误色disabled",
+      "labelLayerId": "QAGxp3uB1A3zFdMOxODff",
+      "id": "8n0Bqat4ECiHiQZJn1zpV",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 427 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#F4BCB2",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "二级警告色",
+      "labelLayerId": "53ZlNASfYVbF5xdMLM6Pv",
+      "id": "pbsEu087YP8CGkPvrF3Fi",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 429 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#F09840",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "二级警告色hover",
+      "labelLayerId": "ln6phcyIxvBmmi-IbVZ5M",
+      "id": "jXBrWpcD3_ly-TCrrRuiF",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 430 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#EC9A5E",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "二级警告色active",
+      "labelLayerId": "E8wN6y_4sjL0IGYHh5Gly",
+      "id": "g0wz-sZhLBPKg0wIycB8P",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 431 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#B16022",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "二级警告色disabled",
+      "labelLayerId": "1XFQiCbNkv-kBQLTLqAqm",
+      "id": "l_fCxcXcC0qGUklaJ2rfq",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 432 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#F4BC93",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "三级警告色",
+      "labelLayerId": "Xe_yK-PyiPi2eDpvjuj2C",
+      "id": "q4n21qokeoWg7KlzJmIqq",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 434 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#FEF770",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "三级警告色hover",
+      "labelLayerId": "97fZSGmEdNWQZR2V1VE3i",
+      "id": "jKEY74xfLrVExmTSWQVK-",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 435 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#FEF886",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "三级警告色active",
+      "labelLayerId": "cP_636QZsw54GQ-nGNv-a",
+      "id": "FPRBQemcDpuTP94FN4By8",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 436 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#DAD245",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "三级警告色disabled",
+      "labelLayerId": "EJZKV-se1JrkO2o4PkfpJ",
+      "id": "4Z0TPLR19NRHtu-yj452N",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 437 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#FEFBAA",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "成功色",
+      "labelLayerId": "RxEtEZiAagJkOSdSt60k-",
+      "id": "T5RcUyQT5IghgzpSxeiO5",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 439 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#71E96F",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "成功色hover",
+      "labelLayerId": "pWj1Wj9_jhCM7GGpmgNns",
+      "id": "n5A0ADBRu3fBju5r-GP85",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 440 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#73BE91",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "成功色active",
+      "labelLayerId": "VgKt7OXD44HHDwLUWzJNO",
+      "id": "bNvGuLBHdP6CBtLMKp0SV",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 441 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#3B865C",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "成功色disabled",
+      "labelLayerId": "SjIQNfFnT2ftw-NNzTDOM",
+      "id": "q-NWfrwzf3JJdPWedMImW",
+      "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 442 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#A2D8B5",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "一级文字色",
+      "labelLayerId": "uNLoozJZ0shvYXFwDyoLN",
+      "id": "jtSw0dSaOLMCbpJZ8r685",
+      "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#FFFFFF",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "二级文字色",
+      "labelLayerId": "g8NO4M7wSzAVmMU0uormG",
+      "id": "s8CDc_MMPf_T-I4Ansvub",
+      "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#D1DAE5",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "三级文字色",
+      "labelLayerId": "vLIXv3vmRrrQamGXkUSQb",
+      "id": "caLqFh68iaBHwJ0xAuBjN",
+      "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#B0BECB",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "禁用文字色",
+      "labelLayerId": "nY21BEusuMDKDYW0BmJ27",
+      "id": "iO7e00gReqiGS0Gu97Wc8",
+      "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#677987",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "链接文字色",
+      "labelLayerId": "V8ssVRBU9hUbvWMzgUQ3V",
+      "id": "DkqsLz4stLMaeLeapa9cq",
+      "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 443 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#83F6FD",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "默认页面底层背景色",
+      "labelLayerId": "JxalXT4Qli1yfxdRiu2MQ",
+      "id": "lmrmXOJDe_YhUu9GpxILn",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#121E37",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "卡片背景色",
+      "labelLayerId": "R5S8suWAuJf3DR3P6q7Bc",
+      "id": "StgLM69wj7o-zvpT2mSnq",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#50B1F9",
+        "alpha": 0.12
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "组件背景色1",
+      "labelLayerId": "1zaPb1ukB4i2HY92Y06YE",
+      "id": "dahG5nevYHNrnmj2rTPxa",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 444 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#83F6FD",
+        "alpha": 0.2
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "组件背景色2",
+      "labelLayerId": "y9P0zPIY2Dpp2hxCpq2WZ",
+      "id": "g-wfUunFHDxHfl3kZ3Mjt",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 445 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#83F6FD",
+        "alpha": 0.5
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "组件背景色3",
+      "labelLayerId": "5LJsk7MD_vWU5FgSk5V0C",
+      "id": "FFge0hZ_AL7ZJ5RU1nL_e",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 446 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#25556F",
+        "alpha": 0.2
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "组件背景色4",
+      "labelLayerId": "yeeW864psnR8tLWdbKm6i",
+      "id": "-8ZXFXlMTJL4LS69yUA9i",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 447 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#7FCEFA",
+        "alpha": 0.15
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "组件背景色5",
+      "labelLayerId": "fQg7U04WigQxU_uX0fbVF",
+      "id": "MebGf0ilqOrAaDxYrVs6X",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 448 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#3C89F5",
+        "alpha": 0.2
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "组件背景色6",
+      "labelLayerId": "gRdLDDkNroOyFuaUmYxBs",
+      "id": "2oSUB8OPHFLejMvhOzGRK",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 449 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#295F75",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "分割线色",
+      "labelLayerId": "1Iq2VeLwUHi5kCtxUrPCe",
+      "id": "z-NLC-qMpg58iEm8Ytzlo",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#FFFFFF",
+        "alpha": 0.1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "边框色",
+      "labelLayerId": "l1A-xog-QDC_ODH_c6D-i",
+      "id": "r9ta2IVBN-3LwYIyoc78h",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#83F6FD",
+        "alpha": 0.5
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "边框禁用色",
+      "labelLayerId": "kyvF2_y8KYS7NT6O69fOJ",
+      "id": "Y3XSweGgWbZE1V23yPY0U",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 443 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#83F6FD",
+        "alpha": 0.2
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "下拉背景色",
+      "labelLayerId": "E5uJD-74T_qCTubUzUSif",
+      "id": "b2Z78PKjHnxv19CT7sopb",
+      "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 450 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#2E6086",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "表头背景色",
+      "labelLayerId": "pSNWM6a2EM-asTh9JGEak",
+      "id": "kUxpaXQ5XGi1MBGFVI2Wv",
+      "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#25556F",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "表格选中色",
+      "labelLayerId": "Y5eATyzlYOQJ1qs_J-F9z",
+      "id": "lkX-HL0rLIAlvX88PF1Hy",
+      "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#254570",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "斑马格深色",
+      "labelLayerId": "ighn4eFu6Ecj_mZ38Ubzn",
+      "id": "vmcXjlIatgc3wjlAqoipM",
+      "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#0D1D3A",
+        "alpha": 0.9
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "斑马格浅色",
+      "labelLayerId": "Z4qVlDXVG_jr558zB_kc5",
+      "id": "0V6RIoqr2m-cKz-yIjeHV",
+      "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#112345",
+        "alpha": 0.8
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "按钮默认色",
+      "labelLayerId": "ytOBgp-QdQmsZD8ZNB-_r",
+      "id": "_Kaa4yFm3ygT29qzrYYIw",
+      "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#4FAFF7",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "按钮悬浮色",
+      "labelLayerId": "N6Stz2XSvvq_BT5d5ATYA",
+      "id": "o15yTiYGHXHvRFsEbMD1g",
+      "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#7FCEFA",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "按钮点击色",
+      "labelLayerId": "y1FBSKXtF7wR9y12Wi5Rn",
+      "id": "FfPHU5d9_LMRgFUEljC5m",
+      "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#3C89F5",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "按钮禁用色",
+      "labelLayerId": "k_ekOIRcuBvuG_Rv25qHt",
+      "id": "JPqAYwHovoaSR1oKvMgvs",
+      "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#193A60",
+        "alpha": 1
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "标签色-红色",
+      "labelLayerId": "uHRhtFHlq6v_q9N1cW-LK",
+      "id": "FqibCYUea8NQMo3HtcgDm",
+      "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#DE554F",
+        "alpha": 0.25
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "标签色-橙色",
+      "labelLayerId": "8cfKG_jjdgcAh1Lb11Vlo",
+      "id": "SpboQ5AsOOj833lyUAm50",
+      "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#F09840",
+        "alpha": 0.2
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "标签色-绿色",
+      "labelLayerId": "qoaC6fuTocFqlEzUFIOzc",
+      "id": "qFWSchYWZxE5vec3pbQve",
+      "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#71E96F",
+        "alpha": 0.2
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    },
+    {
+      "label": "标签色-主题色",
+      "labelLayerId": "_d43nc-I3NPYx_KgpOJ56",
+      "id": "6AUJ747WSqISxpZIschKV",
+      "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+      "frame": {
+        "height": 40,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "color": {
+        "hex": "#4FAFF7",
+        "alpha": 0.2
+      },
+      "layerOpacity": 1,
+      "effectiveVisible": true
+    }
+  ],
+  "targetHexCounts": {
+    "#182B4D": 0,
+    "#0E182D": 0,
+    "#1C3863": 0,
+    "#1F385C": 0,
+    "#2E6086": 73,
+    "#17294A": 0,
+    "#162847": 0,
+    "#1E3760": 0
+  },
+  "componentStateSamples": {
+    "input_default": {
+      "id": "OO_JcofjMEpaejS9TiU6s",
+      "class": "rectangle",
+      "path": "输入框 / input输入框 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.35
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "input_hover": {
+      "id": "fyhpzVlnlv6Z-szUUqXTU",
+      "class": "rectangle",
+      "path": "输入框 / input输入框 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "input_focus": {
+      "id": "ii-3dhDcMuCP6O9_aM8eh",
+      "class": "rectangle",
+      "path": "输入框 / input输入框 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 2
+        }
+      ]
+    },
+    "input_disabled": {
+      "id": "NWroIm5TfgG_SZoHqW39N",
+      "class": "rectangle",
+      "path": "输入框 / input输入框 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#7FCEFA",
+            "alpha": 0.2
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.2
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "input_default_group": {
+      "id": "SswaGrwDPzUoCxrBDOyeS",
+      "class": "group",
+      "path": "输入框 / input输入框",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 1816
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    "input_hover_group": {
+      "id": "TVLLGGcHJfWTBmXnhBrrE",
+      "class": "group",
+      "path": "输入框 / input输入框",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 1888
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    "input_focus_group": {
+      "id": "WGBrOhCaGCODRVtmiSQnc",
+      "class": "group",
+      "path": "输入框 / input输入框",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 1960
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    "input_disabled_group": {
+      "id": "cH8J6vGfWZzufnTmfDgAa",
+      "class": "group",
+      "path": "输入框 / input输入框",
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 2032
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    "input_default_label": {
+      "id": "cGaXaOyQvevEdOcT4gutp",
+      "class": "text",
+      "path": "输入框 / Normal",
+      "frame": {
+        "height": 19,
+        "width": 51,
+        "x": 862,
+        "y": 1821
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "Default",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    "input_hover_label": {
+      "id": "LpnIWrA8_zIyy8O7GV0Iy",
+      "class": "text",
+      "path": "输入框 / Normal",
+      "frame": {
+        "height": 19,
+        "width": 43,
+        "x": 862,
+        "y": 1893
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "Hover",
+      "runs": [
+        {
+          "location": 0,
+          "length": 5,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    "input_focus_label": {
+      "id": "l0rGuh25IdlovLhYTVivU",
+      "class": "text",
+      "path": "输入框 / Normal",
+      "frame": {
+        "height": 19,
+        "width": 44,
+        "x": 862,
+        "y": 1965
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "Focus",
+      "runs": [
+        {
+          "location": 0,
+          "length": 5,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    "input_disabled_label": {
+      "id": "g9Iq1g1lRNF7gusNQnBCq",
+      "class": "text",
+      "path": "输入框 / Normal",
+      "frame": {
+        "height": 19,
+        "width": 54,
+        "x": 862,
+        "y": 2037
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "Disable",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    "checkbox_default": {
+      "id": "32EMICkB5gc53lKl3ovqh",
+      "class": "shapePath",
+      "path": "复选框 / Checkbox 多选 / Checkbox 多选 / Checkbox 多选 / checkbox / item/unit/checkbox / 路径",
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": -2.571758278209442e-15,
+        "y": -1.714505518806294e-15
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        0
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "checkbox_checked": {
+      "id": "Zb7zYWwChCrTirxpNeCbu",
+      "class": "shapePath",
+      "path": "复选框 / Checkbox 多选 / checkbox / item/unit/checkbox / 路径",
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": -2.571758278209442e-15,
+        "y": -1.714505518806294e-15
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        0
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "checkbox_hover": {
+      "id": "Hh-135H2P8kKAvbPcWcqC",
+      "class": "shapePath",
+      "path": "复选框 / Checkbox 多选 / 路径",
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": 0,
+        "y": 3
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        0
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "checkbox_active": {
+      "id": "2MdottpuRVU78g4hftEFC",
+      "class": "shapePath",
+      "path": "复选框 / Checkbox 多选 / 路径",
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": 0,
+        "y": 3
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        0
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#5DCAD2",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "radio_selected_outer": {
+      "id": "h-t4IViD_63gZ0EWVrdh2",
+      "class": "shapePath",
+      "path": "单选框 / Group 427320339 / Frame 427320390 / Radio 单选 / item/单选 / item/unit/radio / 路径",
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        0
+      ],
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "radio_selected_inner": {
+      "id": "Ult4uE8ZaeAL4tmb-ZpLm",
+      "class": "shapePath",
+      "path": "单选框 / Group 427320339 / Frame 427320390 / Radio 单选 / item/单选 / item/unit/radio / 路径",
+      "frame": {
+        "height": 8,
+        "width": 8,
+        "x": 4,
+        "y": 4
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        0
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "switch_off": {
+      "id": "g__GhdR1d9dK-EQIOHb7m",
+      "class": "rectangle",
+      "path": "开关 / Switch 开关 / bg / 路径",
+      "frame": {
+        "height": 20,
+        "width": 32,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        12
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.2
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "switch_on": {
+      "id": "i8ZDtnIG6HRxJI076cCjY",
+      "class": "rectangle",
+      "path": "开关 / Switch 开关 / bg / 路径",
+      "frame": {
+        "height": 20,
+        "width": 32,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        12
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#3B865C",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "switch_disabled": {
+      "id": "3k6gBRbiF_I2Ti3k5B7Nc",
+      "class": "rectangle",
+      "path": "开关 / Switch 开关 / bg / 路径",
+      "frame": {
+        "height": 20,
+        "width": 32,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        12
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#A2D8B5",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "button_primary_default": {
+      "id": "4HFYwkQ-FC6Gp4FBgQYsn",
+      "class": "rectangle",
+      "path": "按钮 / 主要按钮 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#4FAFF7",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "button_primary_hover": {
+      "id": "xXg75oJxJl_WGdmtTTFuN",
+      "class": "rectangle",
+      "path": "按钮 / 主要按钮 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#7FCEFA",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "button_primary_active": {
+      "id": "wFGy3DfrBzcg5MhEENjKM",
+      "class": "rectangle",
+      "path": "按钮 / 主要按钮 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#3C89F5",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "button_primary_disabled": {
+      "id": "A2OOwHqxrDM9sRhfmcp8W",
+      "class": "rectangle",
+      "path": "按钮 / 主要按钮 / 路径",
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#193A60",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "button_small": {
+      "id": "CkstYJO3Hiokoedmyf64Z",
+      "class": "rectangle",
+      "path": "按钮 / 主要按钮 / 路径",
+      "frame": {
+        "height": 24,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#4FAFF7",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "button_large": {
+      "id": "t4_AdXg-GSXV4b5IZwBEI",
+      "class": "rectangle",
+      "path": "按钮 / 主要按钮 / 路径",
+      "frame": {
+        "height": 40,
+        "width": 76,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        4
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#4FAFF7",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": []
+    },
+    "label_regular_outer": {
+      "id": "u5l8kj4z_2rvYWPo3EMKx",
+      "class": "rectangle",
+      "path": "标签 / Tag 标签 / 路径",
+      "frame": {
+        "height": 26,
+        "width": 100,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        3
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 0.38
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    },
+    "label_regular_inner": {
+      "id": "bqYiCzIfiJ8BtJX1-gDMY",
+      "class": "rectangle",
+      "path": "标签 / Tag 标签 / Frame 427320407 / 路径",
+      "frame": {
+        "height": 22,
+        "width": 84,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        0
+      ],
+      "fills": [],
+      "borders": []
+    },
+    "label_small_outer": {
+      "id": "LOi51u2qJoWht0skIr8BL",
+      "class": "rectangle",
+      "path": "标签 / Tag 标签 / 路径",
+      "frame": {
+        "height": 22,
+        "width": 56,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "radii": [
+        3
+      ],
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 0.38
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ]
+    }
+  },
+  "fontSpecification": [
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320322 / Title",
+      "id": "I01Lwfy6qzToDaOLnSTXJ",
+      "text": "Typography 字体",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 56
+      },
+      "lineHeight": 56
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320322 / Description",
+      "id": "_YotLSxU-7RctlAQT_5v9",
+      "text": "将字体大小规则应用到所有组件中，提升组件间的联系性。",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 20
+      },
+      "lineHeight": 30
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320547 / 默认字重：regular",
+      "id": "tqjSh5F6VLLY4t2uZA8ye",
+      "text": "默认字重：regular",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320547 / 加粗字重：bold",
+      "id": "Wh0kKVFAF4RRYTRSOC0lc",
+      "text": "加粗字重：bold",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / OS / 基础控件/表头/分割线 / Frame 43 / 项目名称",
+      "id": "XRHpgEENnvvsa_8R5YPOd",
+      "text": "操作系统",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / OS / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "KpfB8qmeCpbjt-M6s9vvu",
+      "text": "macOS",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / OS / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "NVKn3FM391T22Kwr--Rcn",
+      "text": "Windows",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/表头/分割线 / Frame 43 / 项目名称",
+      "id": "qGRQlY3qk5ngazk-dur6J",
+      "text": "语言",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "holF0GsBBEL1TYBZrdIxs",
+      "text": "中文",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "Wsm2W-w2dS0Zv3jWMbs51",
+      "text": "英文/数字",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "uDsF0nD7m1rPw6DPNAtD_",
+      "text": "中文",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "DecfQpI-iYSo1aEYwj_w3",
+      "text": "英文/数字",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/表头/分割线 / Frame 43 / 项目名称",
+      "id": "Uo91YRUW2bAmoJVMYHqhQ",
+      "text": "字体推荐",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "8KS5lKYgB2i1jgRqkXQ9u",
+      "text": "PingFang",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "KlMNTbOGHFsfeA1HEp3PA",
+      "text": "Arial",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "cyGRgXcTj5l0ofwuuqpd9",
+      "text": "思源黑体",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 删除",
+      "id": "LEl-qlhnDxkwTgMTnVZ7p",
+      "text": "删除",
+      "visible": false,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "RzpvbSxw1p3gOXd8gX8fT",
+      "text": "Arial",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题大/默认/24px",
+      "id": "u_pHZ-YUoNfr1q8ZsBBvx",
+      "text": "Ag 标题大/默认/24px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 24
+      },
+      "lineHeight": 32
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题大/加粗/24px",
+      "id": "h4Q_iAJbZ_47L9WZw86gP",
+      "text": "Ag 标题大/加粗/24px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 24
+      },
+      "lineHeight": 32
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题中/默认/18px",
+      "id": "QpTXHu-2-CK1sxIUZIjux",
+      "text": "Ag 标题中/默认/18px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题中/加粗/18px",
+      "id": "de_gcWw0DF1AMIvVbfwuj",
+      "text": "Ag 标题中/加粗/18px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题小/默认/16px",
+      "id": "1jWIgp6g8JYSVb25Kj4tP",
+      "text": "Ag 标题小/默认/16px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 16
+      },
+      "lineHeight": 24
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题小/加粗/16px",
+      "id": "c0SeQvmpeMfve5layGmWZ",
+      "text": "Ag 标题小/加粗/16px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 16
+      },
+      "lineHeight": 24
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 正文/默认/14px",
+      "id": "YwnDZRx9gfUX8P8kHjruI",
+      "text": "Ag 正文/默认/14px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 正文/加粗/14px",
+      "id": "JThgvRhqG5Wa44DCKLk_S",
+      "text": "Ag 正文/加粗/14px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 正文/加粗/14px",
+      "id": "ZwNrqGsO4utmG5r9UcD26",
+      "text": "Ag 正文/加粗/14px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 辅助文字/默认/12px",
+      "id": "PtZsI-tLvf8Ca3tWb4Vpg",
+      "text": "Ag 辅助文字/默认/12px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 12
+      },
+      "lineHeight": 20
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 辅助文字/加粗/14px",
+      "id": "cUUCWEs4EMlZJvKIzetWd",
+      "text": "Ag 辅助文字/加粗/14px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 12
+      },
+      "lineHeight": 20
+    }
+  ],
+  "fontArtboardExamples": [
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 2 / 12 台",
+      "id": "4A074EA6-2803-405F-B7BA-EC775A3BD209",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 14
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 2 / 12 台",
+      "id": "4A074EA6-2803-405F-B7BA-EC775A3BD209",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 11
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 2 / 12 台",
+      "id": "4A074EA6-2803-405F-B7BA-EC775A3BD209",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 8
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / Frame 427319546 / 编组 11 / 123.45",
+      "id": "0418B125-CFA7-4EFB-B666-93D953D4A5EE",
+      "text": "123.45",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "F46BA73B-AD7C-46A4-90AB-6F9AD735AD0D",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "7D1B84FD-6446-4834-8055-06EEE12D2CEE",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    }
+  ],
+  "interactionText": [
+    {
+      "id": "fLY2LeOzPCXg54zdxVmw-",
+      "class": "text",
+      "path": "多任务流 / Description",
+      "frame": {
+        "height": 30,
+        "width": 352,
+        "x": 262,
+        "y": 791
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "页签最多显示 7 个字，超出部分省略，悬停查看完整内容",
+      "runs": [
+        {
+          "location": 0,
+          "length": 27,
+          "font": {
+            "name": "Helvetica",
+            "size": 14
+          },
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 30,
+            "minimumLineHeight": 30,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "kWcNo3kM2KxEzCuYTwk5I",
+      "class": "text",
+      "path": "按钮 / Frame 427320316 / Description",
+      "frame": {
+        "height": 30,
+        "width": 1900,
+        "x": 100,
+        "y": 218
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "用户通过 Click/Hover（鼠标）或者Enter/Space Bar（键盘）等方式与按钮进行交互，立即触发一个Action（行为）同时获得相应的反馈与结果。",
+      "runs": [
+        {
+          "location": 0,
+          "length": 81,
+          "font": {
+            "name": "Helvetica",
+            "size": 20
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 30,
+            "minimumLineHeight": 30,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lKGMkD72mb7h8KA-urlMj",
+      "class": "text",
+      "path": "日期选择器 / Normal",
+      "frame": {
+        "height": 22,
+        "width": 356,
+        "x": 654,
+        "y": 3131
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "Active（默认展开为日期选项，未hover日期面板）",
+      "runs": [
+        {
+          "location": 0,
+          "length": 28,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "IEvL8Iy6bveLTD20MBMms",
+      "class": "text",
+      "path": "轻提示 / Description",
+      "frame": {
+        "height": 32,
+        "width": 876,
+        "x": 120,
+        "y": 1460
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "Toast 组件最大宽度为 600px，在多语言或特殊场景下支持折行处理，超出两行的部分用省略号表示",
+      "runs": [
+        {
+          "location": 0,
+          "length": 50,
+          "font": {
+            "name": "Helvetica",
+            "size": 20
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 32,
+            "minimumLineHeight": 32,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "ndFVatCmEnmiAD6T1t1w0",
+      "class": "text",
+      "path": "文字提示 / Frame 427320329 / Description",
+      "frame": {
+        "height": 30,
+        "width": 1900,
+        "x": 100,
+        "y": 217
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "文字提示是一种文本标签，当鼠标悬停于某个元素时显示。目标是为这些元素提供轻量的文本解释。",
+      "runs": [
+        {
+          "location": 0,
+          "length": 44,
+          "font": {
+            "name": "Helvetica",
+            "size": 20
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 30,
+            "minimumLineHeight": 30,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "Sya1gk6IBL9wkssd2mash",
+      "class": "text",
+      "path": "文字提示 / 1. 顶部出现",
+      "frame": {
+        "height": 32,
+        "width": 93,
+        "x": 120,
+        "y": 1351
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "1. 顶部出现",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 18
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 32,
+            "minimumLineHeight": 32,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "utMAvdRiqp8e2I4rW3Mjr",
+      "class": "text",
+      "path": "文字提示 / 2. 底部出现",
+      "frame": {
+        "height": 32,
+        "width": 93,
+        "x": 120,
+        "y": 1541
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "2. 底部出现",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 18
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 32,
+            "minimumLineHeight": 32,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "wQvZoENpqZc8HzVSVZ2VC",
+      "class": "text",
+      "path": "文字提示 / 3. 左侧出现",
+      "frame": {
+        "height": 32,
+        "width": 93,
+        "x": 120,
+        "y": 1731
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "3. 左侧出现",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 18
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 32,
+            "minimumLineHeight": 32,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "XcyCeU7ty8fMUBwWPUB-R",
+      "class": "text",
+      "path": "文字提示 / 4. 右侧出现",
+      "frame": {
+        "height": 32,
+        "width": 93,
+        "x": 120,
+        "y": 1915
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "4. 右侧出现",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 18
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 32,
+            "minimumLineHeight": 32,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "Enu48hsUdwvMPgNSfxUoj",
+      "class": "text",
+      "path": "文字提示 / 5. 跟随鼠标出现",
+      "frame": {
+        "height": 32,
+        "width": 129,
+        "x": 120,
+        "y": 2099
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "5. 跟随鼠标出现",
+      "runs": [
+        {
+          "location": 0,
+          "length": 9,
+          "font": {
+            "name": "Helvetica",
+            "size": 18
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 32,
+            "minimumLineHeight": 32,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "gWYqNG2zZuidZeSXwZEg6",
+      "class": "text",
+      "path": "进度条 / 进度0-10%时数字位置出现在目前进度的右边区域",
+      "frame": {
+        "height": 22,
+        "width": 307,
+        "x": 120,
+        "y": 963
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "进度0-10%时数字位置出现在目前进度的右边区域",
+      "runs": [
+        {
+          "location": 0,
+          "length": 24,
+          "font": {
+            "name": "Helvetica",
+            "size": 14
+          },
+          "color": {
+            "hex": "#D1DAE5",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 22,
+            "minimumLineHeight": 22,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "abhBSskq_py2BdVxNZuO2",
+      "class": "text",
+      "path": "进度条 / Progress 进度条 / medium / bar / progress>10% / progress / percentage",
+      "frame": {
+        "height": 20,
+        "width": 25,
+        "x": 421,
+        "y": 2
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "80%",
+      "runs": [
+        {
+          "location": 0,
+          "length": 3,
+          "font": {
+            "name": "Helvetica",
+            "size": 12
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0.9
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 20,
+            "minimumLineHeight": 20,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "LQUNUhRMTJSomUYJuVyej",
+      "class": "text",
+      "path": "折叠面板 / Frame 427320329 / Description",
+      "frame": {
+        "height": 30,
+        "width": 1900,
+        "x": 100,
+        "y": 217
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "可以将较多或较复杂的内容进行分组，分组内容区可以折叠展开或隐藏。",
+      "runs": [
+        {
+          "location": 0,
+          "length": 32,
+          "font": {
+            "name": "Helvetica",
+            "size": 20
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 30,
+            "minimumLineHeight": 30,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "vXvhlbjAXmqbMsoAmzU-H",
+      "class": "text",
+      "path": "步骤条 / 进行中 / content / title",
+      "frame": {
+        "height": 24,
+        "width": 48,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "进行中",
+      "runs": [
+        {
+          "location": 0,
+          "length": 3,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#4FAFF7",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 24,
+            "minimumLineHeight": 24,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "1TNtjKuZ-vsHin9nhFTHq",
+      "class": "text",
+      "path": "步骤条 / 已完成 / content / title",
+      "frame": {
+        "height": 24,
+        "width": 48,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "已完成",
+      "runs": [
+        {
+          "location": 0,
+          "length": 3,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 24,
+            "minimumLineHeight": 24,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "iVHXefGBGnFUZQZ1VtBTN",
+      "class": "text",
+      "path": "步骤条 / 未进行 / content / title",
+      "frame": {
+        "height": 24,
+        "width": 48,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "未进行",
+      "runs": [
+        {
+          "location": 0,
+          "length": 3,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#B0BECB",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 24,
+            "minimumLineHeight": 24,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "oowHpZpOYMGWDTnUdiX-9",
+      "class": "text",
+      "path": "分页器 / Frame 427320391 /  分页 / totalContent",
+      "frame": {
+        "height": 22,
+        "width": 88,
+        "x": 0,
+        "y": 5
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "共 101 项数据",
+      "runs": [
+        {
+          "location": 0,
+          "length": 9,
+          "font": {
+            "name": "Helvetica",
+            "size": 14
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 22,
+            "minimumLineHeight": 22,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "4MOpauoTOXHt0Xwh_i6zS",
+      "class": "text",
+      "path": "分页器 / Frame 427320391 /  分页 / group / select / placeholder",
+      "frame": {
+        "height": 22,
+        "width": 72,
+        "x": 8,
+        "y": 5
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "10 条/页",
+      "runs": [
+        {
+          "location": 0,
+          "length": 6,
+          "font": {
+            "name": "Helvetica",
+            "size": 14
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 22,
+            "minimumLineHeight": 22,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "nF_vyUm-CC8UXkCf_hcZA",
+      "class": "text",
+      "path": "分页器 / Frame 427320391 /  分页 / group / jumper / 跳至",
+      "frame": {
+        "height": 22,
+        "width": 28,
+        "x": 8,
+        "y": 5
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "跳至",
+      "runs": [
+        {
+          "location": 0,
+          "length": 2,
+          "font": {
+            "name": "Helvetica",
+            "size": 14
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 22,
+            "minimumLineHeight": 22,
+            "alignment": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "gSE6ZoqgT3IA60VsYJB9w",
+      "class": "text",
+      "path": "锚点 / Frame 427320317 / Description",
+      "frame": {
+        "height": 30,
+        "width": 1900,
+        "x": 100,
+        "y": 217
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "页面内的超级链接，用于跳转到页面内指定位置",
+      "runs": [
+        {
+          "location": 0,
+          "length": 21,
+          "font": {
+            "name": "Helvetica",
+            "size": 20
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 30,
+            "minimumLineHeight": 30,
+            "alignment": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "TGg5YG0gJ-8pzdEGT-hPs",
+      "class": "text",
+      "path": "进度条 / Description",
+      "frame": {
+        "height": 32,
+        "width": 336,
+        "x": 712,
+        "y": 827
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "该样式的颜色修改未与开发同步",
+      "runs": [
+        {
+          "location": 0,
+          "length": 14,
+          "font": {
+            "name": "Helvetica",
+            "size": 24
+          },
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "maximumLineHeight": 32,
+            "minimumLineHeight": 32,
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ]
+    }
+  ],
+  "componentIndex": [
+    {
+      "category": "导航",
+      "id": "HLbQ4C3K3c76r9HBfkL8j",
+      "path": "顶部导航"
+    },
+    {
+      "category": "导航",
+      "id": "foZd9oS5lkXNlhDI5wSgR",
+      "path": "多任务流"
+    },
+    {
+      "category": "导航",
+      "id": "a3CeIlCkKc12oiBb_n0tg",
+      "path": "页签栏"
+    },
+    {
+      "category": "导航",
+      "id": "YMtrBWVqtfEEUJj7xlgbK",
+      "path": "锚点"
+    },
+    {
+      "category": "导航",
+      "id": "1vJj-dn_7mpQOxqCEMVie",
+      "path": "步骤条"
+    },
+    {
+      "category": "导航",
+      "id": "j9LjmYkKY0DiFFdHUmP2Q",
+      "path": "分页器"
+    },
+    {
+      "category": "入口/表单",
+      "id": "QLwvtxAFHgAbSwADSEDPm",
+      "path": "按钮"
+    },
+    {
+      "category": "入口/表单",
+      "id": "F3JSNCtsrNXXJsyGfPKxS",
+      "path": "选择器"
+    },
+    {
+      "category": "入口/表单",
+      "id": "RejBVjZVyV1Q79qkTakl1",
+      "path": "级联选择器"
+    },
+    {
+      "category": "入口/表单",
+      "id": "-Nq3qtQI234d1QkHsDWWm",
+      "path": "输入框"
+    },
+    {
+      "category": "入口/表单",
+      "id": "Qml9HAp2TWdAXcCMKxAKj",
+      "path": "表单"
+    },
+    {
+      "category": "入口/表单",
+      "id": "NIjNnijiHo80ZRE3qBFxH",
+      "path": "日期选择器"
+    },
+    {
+      "category": "选择控制",
+      "id": "LwJHFu2VfMb1lF2S2Jky9",
+      "path": "复选框"
+    },
+    {
+      "category": "选择控制",
+      "id": "re0bIQ7LDkAg1kcZy52p0",
+      "path": "单选框"
+    },
+    {
+      "category": "选择控制",
+      "id": "WifcN9_baFybJxs_2HRB8",
+      "path": "开关"
+    },
+    {
+      "category": "反馈",
+      "id": "yGd4Sj4fWnc84lyLU-cKS",
+      "path": "轻提示"
+    },
+    {
+      "category": "反馈",
+      "id": "4WrZ1abSQ-Z6gvy2xm6PA",
+      "path": "常驻提示"
+    },
+    {
+      "category": "反馈",
+      "id": "P8hIDaCQnuTUxGN5qqZmX",
+      "path": "文字提示"
+    },
+    {
+      "category": "数据展示",
+      "id": "FuH6zevraPJdwitkVMWFX",
+      "path": "树结构"
+    },
+    {
+      "category": "数据展示",
+      "id": "ufphuQQil2RiXR1_HcDf4",
+      "path": "折叠面板"
+    },
+    {
+      "category": "数据展示",
+      "id": "6zy8TBhDGk4GmOQizMmEu",
+      "path": "进度条"
+    },
+    {
+      "category": "数据展示",
+      "id": "IIBklkg06LAWnRmgjkP9X",
+      "path": "标签"
+    },
+    {
+      "category": "数据展示",
+      "id": "hvqqN5ieWgpkhp14As2GK",
+      "path": "徽标"
+    },
+    {
+      "category": "图标",
+      "id": "8NKREfHIsMWGYgxIK-Pk-",
+      "path": "描边图标"
+    },
+    {
+      "category": "图标",
+      "id": "hEAhubznSQkpHmVRfsaRm",
+      "path": "面性图标"
+    },
+    {
+      "category": "图标",
+      "id": "-H1JZXwPJJQFi_fZDaeAM",
+      "path": "Icons-filled"
+    }
+  ],
+  "artboards": [
+    {
+      "id": "l2EilwiTc98LFxqLDxVON",
+      "class": "artboard",
+      "path": "运行管理-缺陷单管理-缺陷单处理",
+      "frame": {
+        "height": 3782,
+        "width": 1920,
+        "x": -1560,
+        "y": 11079
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    {
+      "id": "E039uJVZtKAGTAIDO77bC",
+      "class": "artboard",
+      "path": "工作票",
+      "frame": {
+        "height": 5280,
+        "width": 1920,
+        "x": -3580,
+        "y": 11079
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    {
+      "id": "6871A789-8CE3-4740-B3D0-094000F15129",
+      "class": "artboard",
+      "path": "监盘总览",
+      "frame": {
+        "height": 1080,
+        "width": 1920,
+        "x": -1560,
+        "y": 9710
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    {
+      "id": "10B88356-E25A-4D81-89FA-C206670C3310",
+      "class": "artboard",
+      "path": "巡视点位",
+      "frame": {
+        "height": 1080,
+        "width": 1920,
+        "x": 460,
+        "y": 9710
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    {
+      "id": "94138765-605A-41A3-ACDE-C959A3232D6A",
+      "class": "artboard",
+      "path": "告警及检修建议1",
+      "frame": {
+        "height": 1080,
+        "width": 1920,
+        "x": -3580,
+        "y": 9710
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    {
+      "id": "B21F9F1F-13D9-41B5-B165-DCA03B8EE4AD",
+      "class": "artboard",
+      "path": "巡视报告",
+      "frame": {
+        "height": 1080,
+        "width": 1920,
+        "x": 4500,
+        "y": 9710
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    {
+      "id": "A356A790-D0E3-490E-8539-574C5CB58EB0",
+      "class": "artboard",
+      "path": "安全哨兵",
+      "frame": {
+        "height": 1080,
+        "width": 1920,
+        "x": 6520,
+        "y": 9710
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    },
+    {
+      "id": "57889E44-04D1-4D74-B94F-4C1C42F427E5",
+      "class": "artboard",
+      "path": "告警及检修建议（弹窗）",
+      "frame": {
+        "height": 1080,
+        "width": 1920,
+        "x": 2480,
+        "y": 9710
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": []
+    }
+  ],
+  "artboardStyleExamples": [
+    {
+      "id": "TVg_bJ9vbXlHa-43CXYQ-",
+      "class": "rectangle",
+      "path": "运行管理-缺陷单管理-缺陷单处理 / 路径",
+      "frame": {
+        "height": 3782,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#121E37",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "Jx8DTCDEAFqDItFW2nce4",
+      "class": "rectangle",
+      "path": "工作票 / 路径",
+      "frame": {
+        "height": 5280,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#121E37",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "gikbC3t8uxeoq7IyvXlGB",
+      "class": "rectangle",
+      "path": "运行管理-缺陷单管理-缺陷单处理 / Frame 48097355 / 路径",
+      "frame": {
+        "height": 560,
+        "width": 1896,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.12
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "EHtHjyvgeR6DccLMWeEWH",
+      "class": "rectangle",
+      "path": "工作票 / Frame 48097318 / Frame 48097342 / Frame 48097851 / Frame 48097341 / Frame 48097380 / 路径",
+      "frame": {
+        "height": 258,
+        "width": 1640,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.12
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "4BB08131-6AE7-4091-AC14-8E7CEA8FCE00",
+      "class": "rectangle",
+      "path": "监盘总览 / 内容 / 矩形备份 10",
+      "frame": {
+        "height": 316.0639332870046,
+        "width": 624.3646477683062,
+        "x": 1274.6353522317,
+        "y": 659.9360667129954
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#101F30",
+            "alpha": 0.2192963286713287
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "AE428F6E-D09A-4F46-97DC-E15D1D7C8D14",
+      "class": "rectangle",
+      "path": "巡视点位 / 矩形",
+      "frame": {
+        "height": 887,
+        "width": 1577,
+        "x": 325,
+        "y": 170
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.08
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#004C7C",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "42800F00-C77D-4A21-9981-4772D5011A09",
+      "class": "rectangle",
+      "path": "告警及检修建议1 / 矩形",
+      "frame": {
+        "height": 777,
+        "width": 1882,
+        "x": 20,
+        "y": 282
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.08
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#004C7C",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "2C1833A1-B7CD-4CC5-9A52-1CFE58DDB176",
+      "class": "rectangle",
+      "path": "巡视报告 / 矩形",
+      "frame": {
+        "height": 814,
+        "width": 1566,
+        "x": 324,
+        "y": 230
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.08
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#004C7C",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "9B0D61F7-0E79-408F-B4ED-E709CE5D0D35",
+      "class": "rectangle",
+      "path": "安全哨兵 / 典型故障特征 / 矩形备份 10",
+      "frame": {
+        "height": 379,
+        "width": 1425,
+        "x": 1,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#101F30",
+            "alpha": 0.2192963286713287
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "D5D553B1-BB66-4AC1-9D7F-991922AC37A9",
+      "class": "rectangle",
+      "path": "告警及检修建议（弹窗） / 弹窗 / 矩形备份 10",
+      "frame": {
+        "height": 520,
+        "width": 706,
+        "x": 0,
+        "y": 0
+      },
+      "visible": false,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#081B31",
+            "alpha": 0.4621121066433567
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#5ECBFF",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": false
+    },
+    {
+      "id": "Hj1V_VRexjuuE5xAiV8vl",
+      "class": "rectangle",
+      "path": "运行管理-缺陷单管理-缺陷单处理 / Frame 48097357 / 搜索 / Frame 48097360 / content / Upload 上传 / Frame 48097379 / Frame 48097368 / 表格组件 / 路径",
+      "frame": {
+        "height": 46,
+        "width": 308,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#25556F",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#274771",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "0UEYXZmdwPxCRahZvLKml",
+      "class": "rectangle",
+      "path": "运行管理-缺陷单管理-缺陷单处理 / Frame 48097357 / 搜索 / Frame 48097360 / content / Upload 上传 / Frame 48097379 / Frame 48097368 / 表格组件 / 路径",
+      "frame": {
+        "height": 46,
+        "width": 308,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#112345",
+            "alpha": 0.8
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#274771",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "io2TvU1b0DvLwDFvTvPlo",
+      "class": "rectangle",
+      "path": "工作票 / Frame 48097318 / Frame 48097342 / Frame 48097851 / Frame 48097341 / Frame 48097380 / 搜索 / Frame 48097379 / Frame 48097387 / 表格组件 / 路径",
+      "frame": {
+        "height": 46,
+        "width": 529,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#25556F",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#274771",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "GwOHOflr03kReDbIP3VpN",
+      "class": "rectangle",
+      "path": "工作票 / Frame 48097318 / Frame 48097342 / Frame 48097851 / Frame 48097341 / Frame 48097380 / 搜索 / Frame 48097379 / Frame 48097387 / 表格组件 / 路径",
+      "frame": {
+        "height": 46,
+        "width": 529,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#112345",
+            "alpha": 0.9
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#274771",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "vtlVFKvKZ4Sh3tlRTk-cz",
+      "class": "rectangle",
+      "path": "选择器 / 下拉菜单 / 路径",
+      "frame": {
+        "height": 100,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#2E6086",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "BNoE3V5mAf546mLJqI5bm",
+      "class": "rectangle",
+      "path": "选择器 / Component 58 / 下拉菜单 / 路径",
+      "frame": {
+        "height": 160,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#2E6086",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "text": null,
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "m8-yk1_KsogWnGbiD_tdD",
+      "class": "text",
+      "path": "颜色 / Frame 427320322 / Title",
+      "frame": {
+        "height": 56,
+        "width": 1900,
+        "x": 100,
+        "y": 121
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [],
+      "borders": [],
+      "text": "Color Tokens_Light Mode 色彩规则",
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "AD3EBC59-247B-4D9C-86E0-F0AC25A0692E",
+      "class": "rectangle",
+      "path": "告警及检修建议（弹窗） / 编组 13 / 矩形备份 10",
+      "frame": {
+        "height": 916,
+        "width": 1783,
+        "x": 8,
+        "y": 0
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#101F30",
+            "alpha": 0.3930015297202797
+          },
+          "opacity": 1
+        },
+        {
+          "type": 1,
+          "color": {
+            "hex": "#D8D8D8",
+            "alpha": 1
+          },
+          "opacity": 0.8,
+          "stops": [
+            {
+              "position": 0,
+              "hex": "#5ECBFF",
+              "alpha": 0.154611013986014
+            },
+            {
+              "position": 1,
+              "hex": "#5ECBFF",
+              "alpha": 0
+            }
+          ]
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#5ECBFF",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "effectiveVisibleByAncestorWalk": true
+    },
+    {
+      "id": "80ACE0FF-408D-40D3-B5C1-3630C85B306A",
+      "class": "rectangle",
+      "path": "告警及检修建议（弹窗） / 矩形",
+      "frame": {
+        "height": 885,
+        "width": 1218,
+        "x": 621,
+        "y": 96
+      },
+      "visible": true,
+      "opacity": 1,
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#50B1F9",
+            "alpha": 0.0821131993006993
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#004C7C",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "effectiveVisibleByAncestorWalk": true
+    }
+  ]
+}

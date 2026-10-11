@@ -1,0 +1,1064 @@
+{
+  "source": "D:/wx_chat/xwechat_files/wxid_x9ztlatrmfbm22_4b89/msg/file/2026-10/UI规范.sketch",
+  "notes": [
+    "Top-level component specification groups only; rectangle frames and enabled styles, not board containers.",
+    "Input state is assigned by matching sibling Default/Hover/Focus/Disable labels to vertical position. Raw Sketch confirmed normal input fills are disabled.",
+    "Checkbox actual outer shape and groups are 16x16, not just a transparent icon wrapper.",
+    "Tag 22px inner frame must not be confused with its 26px outer frame. One small 22px tag also exists."
+  ],
+  "evidence": {
+    "input_default": {
+      "id": "OO_JcofjMEpaejS9TiU6s",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "输入框",
+      "path": "输入框 / input输入框 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.35
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "input_hover": {
+      "id": "fyhpzVlnlv6Z-szUUqXTU",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "输入框",
+      "path": "输入框 / input输入框 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "input_focus": {
+      "id": "ii-3dhDcMuCP6O9_aM8eh",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "输入框",
+      "path": "输入框 / input输入框 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 2
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "input_disabled": {
+      "id": "NWroIm5TfgG_SZoHqW39N",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "输入框",
+      "path": "输入框 / input输入框 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#7FCEFA",
+            "alpha": 0.2
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.2
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "input_default_group": {
+      "id": "SswaGrwDPzUoCxrBDOyeS",
+      "class": "group",
+      "name": "input输入框",
+      "top": "输入框",
+      "path": "输入框 / input输入框",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 1816
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": []
+    },
+    "input_hover_group": {
+      "id": "TVLLGGcHJfWTBmXnhBrrE",
+      "class": "group",
+      "name": "input输入框",
+      "top": "输入框",
+      "path": "输入框 / input输入框",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 1888
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": []
+    },
+    "input_focus_group": {
+      "id": "WGBrOhCaGCODRVtmiSQnc",
+      "class": "group",
+      "name": "input输入框",
+      "top": "输入框",
+      "path": "输入框 / input输入框",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 1960
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": []
+    },
+    "input_disabled_group": {
+      "id": "cH8J6vGfWZzufnTmfDgAa",
+      "class": "group",
+      "name": "input输入框",
+      "top": "输入框",
+      "path": "输入框 / input输入框",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 300,
+        "x": 120,
+        "y": 2032
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": []
+    },
+    "input_default_label": {
+      "id": "cGaXaOyQvevEdOcT4gutp",
+      "class": "text",
+      "name": "Normal",
+      "top": "输入框",
+      "path": "输入框 / Normal",
+      "visible": true,
+      "frame": {
+        "height": 19,
+        "width": 51,
+        "x": 862,
+        "y": 1821
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "text": "Default",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "strikethroughStyle": 0,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 0.9999999403953552
+        },
+        "textStyleVerticalAlignmentKey": 0,
+        "MSAttributedStringTextTransformAttribute": 0,
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "Helvetica",
+            "size": 16
+          }
+        },
+        "kerning": 0,
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "underlineStyle": 0
+      }
+    },
+    "input_hover_label": {
+      "id": "LpnIWrA8_zIyy8O7GV0Iy",
+      "class": "text",
+      "name": "Normal",
+      "top": "输入框",
+      "path": "输入框 / Normal",
+      "visible": true,
+      "frame": {
+        "height": 19,
+        "width": 43,
+        "x": 862,
+        "y": 1893
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "text": "Hover",
+      "runs": [
+        {
+          "location": 0,
+          "length": 5,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "strikethroughStyle": 0,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 0.9999999403953552
+        },
+        "textStyleVerticalAlignmentKey": 0,
+        "MSAttributedStringTextTransformAttribute": 0,
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "Helvetica",
+            "size": 16
+          }
+        },
+        "kerning": 0,
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "underlineStyle": 0
+      }
+    },
+    "input_focus_label": {
+      "id": "l0rGuh25IdlovLhYTVivU",
+      "class": "text",
+      "name": "Normal",
+      "top": "输入框",
+      "path": "输入框 / Normal",
+      "visible": true,
+      "frame": {
+        "height": 19,
+        "width": 44,
+        "x": 862,
+        "y": 1965
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "text": "Focus",
+      "runs": [
+        {
+          "location": 0,
+          "length": 5,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "strikethroughStyle": 0,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 0.9999999403953552
+        },
+        "textStyleVerticalAlignmentKey": 0,
+        "MSAttributedStringTextTransformAttribute": 0,
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "Helvetica",
+            "size": 16
+          }
+        },
+        "kerning": 0,
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "underlineStyle": 0
+      }
+    },
+    "input_disabled_label": {
+      "id": "g9Iq1g1lRNF7gusNQnBCq",
+      "class": "text",
+      "name": "Normal",
+      "top": "输入框",
+      "path": "输入框 / Normal",
+      "visible": true,
+      "frame": {
+        "height": 19,
+        "width": 54,
+        "x": 862,
+        "y": 2037
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "text": "Disable",
+      "runs": [
+        {
+          "location": 0,
+          "length": 7,
+          "font": {
+            "name": "Helvetica",
+            "size": 16
+          },
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 1
+          },
+          "paragraph": {
+            "_class": "paragraphStyle",
+            "allowsDefaultTighteningForTruncation": 0,
+            "alignment": 0
+          }
+        }
+      ],
+      "textStyle": {
+        "strikethroughStyle": 0,
+        "MSAttributedStringColorAttribute": {
+          "_class": "color",
+          "alpha": 1,
+          "blue": 1,
+          "green": 1,
+          "red": 0.9999999403953552
+        },
+        "textStyleVerticalAlignmentKey": 0,
+        "MSAttributedStringTextTransformAttribute": 0,
+        "MSAttributedStringFontAttribute": {
+          "_class": "fontDescriptor",
+          "attributes": {
+            "name": "Helvetica",
+            "size": 16
+          }
+        },
+        "kerning": 0,
+        "paragraphStyle": {
+          "_class": "paragraphStyle",
+          "allowsDefaultTighteningForTruncation": 0,
+          "alignment": 0
+        },
+        "underlineStyle": 0
+      }
+    },
+    "checkbox_default": {
+      "id": "32EMICkB5gc53lKl3ovqh",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "复选框",
+      "path": "复选框 / Checkbox 多选 / Checkbox 多选 / Checkbox 多选 / checkbox / item/unit/checkbox / 路径",
+      "visible": true,
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": -2.571758278209442e-15,
+        "y": -1.714505518806294e-15
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    "checkbox_checked": {
+      "id": "Zb7zYWwChCrTirxpNeCbu",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "复选框",
+      "path": "复选框 / Checkbox 多选 / checkbox / item/unit/checkbox / 路径",
+      "visible": true,
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": -2.571758278209442e-15,
+        "y": -1.714505518806294e-15
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    "checkbox_hover": {
+      "id": "Hh-135H2P8kKAvbPcWcqC",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "复选框",
+      "path": "复选框 / Checkbox 多选 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": 0,
+        "y": 3
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    "checkbox_active": {
+      "id": "2MdottpuRVU78g4hftEFC",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "复选框",
+      "path": "复选框 / Checkbox 多选 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": 0,
+        "y": 3
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#FFFFFF",
+            "alpha": 0
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#5DCAD2",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    "radio_selected_outer": {
+      "id": "h-t4IViD_63gZ0EWVrdh2",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "单选框",
+      "path": "单选框 / Group 427320339 / Frame 427320390 / Radio 单选 / item/单选 / item/unit/radio / 路径",
+      "visible": true,
+      "frame": {
+        "height": 16,
+        "width": 16,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    "radio_selected_inner": {
+      "id": "Ult4uE8ZaeAL4tmb-ZpLm",
+      "class": "shapePath",
+      "name": "路径",
+      "top": "单选框",
+      "path": "单选框 / Group 427320339 / Frame 427320390 / Radio 单选 / item/单选 / item/unit/radio / 路径",
+      "visible": true,
+      "frame": {
+        "height": 8,
+        "width": 8,
+        "x": 4,
+        "y": 4
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    "switch_off": {
+      "id": "g__GhdR1d9dK-EQIOHb7m",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "开关",
+      "path": "开关 / Switch 开关 / bg / 路径",
+      "visible": true,
+      "frame": {
+        "height": 20,
+        "width": 32,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#83F6FD",
+            "alpha": 0.2
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        12
+      ]
+    },
+    "switch_on": {
+      "id": "i8ZDtnIG6HRxJI076cCjY",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "开关",
+      "path": "开关 / Switch 开关 / bg / 路径",
+      "visible": true,
+      "frame": {
+        "height": 20,
+        "width": 32,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#3B865C",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        12
+      ]
+    },
+    "switch_disabled": {
+      "id": "3k6gBRbiF_I2Ti3k5B7Nc",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "开关",
+      "path": "开关 / Switch 开关 / bg / 路径",
+      "visible": true,
+      "frame": {
+        "height": 20,
+        "width": 32,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#A2D8B5",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        12
+      ]
+    },
+    "button_primary_default": {
+      "id": "4HFYwkQ-FC6Gp4FBgQYsn",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "按钮",
+      "path": "按钮 / 主要按钮 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#4FAFF7",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "button_primary_hover": {
+      "id": "xXg75oJxJl_WGdmtTTFuN",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "按钮",
+      "path": "按钮 / 主要按钮 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#7FCEFA",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "button_primary_active": {
+      "id": "wFGy3DfrBzcg5MhEENjKM",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "按钮",
+      "path": "按钮 / 主要按钮 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#3C89F5",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "button_primary_disabled": {
+      "id": "A2OOwHqxrDM9sRhfmcp8W",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "按钮",
+      "path": "按钮 / 主要按钮 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 32,
+        "width": 60,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#193A60",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "button_small": {
+      "id": "CkstYJO3Hiokoedmyf64Z",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "按钮",
+      "path": "按钮 / 主要按钮 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 24,
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#4FAFF7",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "button_large": {
+      "id": "t4_AdXg-GSXV4b5IZwBEI",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "按钮",
+      "path": "按钮 / 主要按钮 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 40,
+        "width": 76,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#4FAFF7",
+            "alpha": 1
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        4
+      ]
+    },
+    "label_regular_outer": {
+      "id": "u5l8kj4z_2rvYWPo3EMKx",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "标签",
+      "path": "标签 / Tag 标签 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 26,
+        "width": 100,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 0.38
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        3
+      ]
+    },
+    "label_regular_inner": {
+      "id": "bqYiCzIfiJ8BtJX1-gDMY",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "标签",
+      "path": "标签 / Tag 标签 / Frame 427320407 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 22,
+        "width": 84,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [],
+      "borders": [],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        0
+      ]
+    },
+    "label_small_outer": {
+      "id": "LOi51u2qJoWht0skIr8BL",
+      "class": "rectangle",
+      "name": "路径",
+      "top": "标签",
+      "path": "标签 / Tag 标签 / 路径",
+      "visible": true,
+      "frame": {
+        "height": 22,
+        "width": 56,
+        "x": 0,
+        "y": 0
+      },
+      "fills": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 0.38
+          },
+          "opacity": 1
+        }
+      ],
+      "borders": [
+        {
+          "type": 0,
+          "color": {
+            "hex": "#DE554F",
+            "alpha": 1
+          },
+          "opacity": 1,
+          "thickness": 1
+        }
+      ],
+      "opacity": 1,
+      "shadows": [],
+      "radii": [
+        3
+      ]
+    }
+  }
+}

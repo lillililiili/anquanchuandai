@@ -1,0 +1,241 @@
+{
+  "checkedOn": "2026-10-10",
+  "quickValidate": {
+    "status": "passed",
+    "output": "Skill is valid!",
+    "python": "D:/Software/python311/python.exe",
+    "pyyaml": "6.0.3",
+    "note": "Process-only PYTHONUTF8=1; no dependency installation"
+  },
+  "originalCopies": [
+    {
+      "path": "personal-ui-framework/references/提示词原文-A.md",
+      "sha256": "ac718cb1262ae5fd74c373c173c82d75500217ba02997430d849b612af1583eb",
+      "unchanged": true
+    },
+    {
+      "path": "personal-ui-framework/references/提示词原文-B.md",
+      "sha256": "0295d060fa80575c90998af671641b05df3717c6446e8c84a44296073cae9e0c",
+      "unchanged": true
+    },
+    {
+      "path": "personal-ui-framework/references/来源文件/豆包-元提示词-喂给更强AI.md",
+      "sha256": "ac718cb1262ae5fd74c373c173c82d75500217ba02997430d849b612af1583eb",
+      "unchanged": true
+    },
+    {
+      "path": "personal-ui-framework/references/来源文件/持久项目与开发框架转换提示词-喂给顶级AI.md",
+      "sha256": "0295d060fa80575c90998af671641b05df3717c6446e8c84a44296073cae9e0c",
+      "unchanged": true
+    }
+  ],
+  "historicalMergeByteEqual": true,
+  "colorRowsCheckedAgainstNativeLayers": 53,
+  "uniqueEvidenceIdsVerified": 243,
+  "documentIdReferencesVerified": 166,
+  "relativeLinksVerified": 35,
+  "references": [
+    {
+      "file": "AGENTS.md",
+      "target": "personal-ui-framework/SKILL.md"
+    },
+    {
+      "file": "AGENTS.md",
+      "target": "personal-ui-framework/references/Sketch核实参数.md"
+    },
+    {
+      "file": "AGENTS.md",
+      "target": "personal-ui-framework/references/合并提示词.md"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/SKILL.md"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/references/合并提示词.md"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/references/Sketch核实参数.md"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/references/Sketch证据.json"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/references/合并提示词-历史未核实版.md"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/references/提示词原文-A.md"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/references/提示词原文-B.md"
+    },
+    {
+      "file": "使用说明.md",
+      "target": "personal-ui-framework/references/完整性核对.md"
+    },
+    {
+      "file": "personal-ui-framework\\SKILL.md",
+      "target": "references/合并提示词.md"
+    },
+    {
+      "file": "personal-ui-framework\\SKILL.md",
+      "target": "references/Sketch核实参数.md"
+    },
+    {
+      "file": "personal-ui-framework\\SKILL.md",
+      "target": "references/合并提示词-历史未核实版.md"
+    },
+    {
+      "file": "personal-ui-framework\\SKILL.md",
+      "target": "references/提示词原文-A.md"
+    },
+    {
+      "file": "personal-ui-framework\\SKILL.md",
+      "target": "references/提示词原文-B.md"
+    },
+    {
+      "file": "personal-ui-framework\\SKILL.md",
+      "target": "references/完整性核对.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\Sketch核实参数.md",
+      "target": "Sketch证据.json"
+    },
+    {
+      "file": "personal-ui-framework\\references\\Sketch核实参数.md",
+      "target": "合并提示词.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词-历史未核实版.md",
+      "target": "提示词原文-A.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词-历史未核实版.md",
+      "target": "提示词原文-B.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词-历史未核实版.md",
+      "target": "完整性核对.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "合并提示词-历史未核实版.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "Sketch核实参数.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "Sketch核实参数.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "Sketch证据.json"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "合并提示词-历史未核实版.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "提示词原文-A.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "提示词原文-B.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\合并提示词.md",
+      "target": "完整性核对.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\完整性核对.md",
+      "target": "合并提示词.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\完整性核对.md",
+      "target": "Sketch核实参数.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\完整性核对.md",
+      "target": "Sketch证据.json"
+    },
+    {
+      "file": "personal-ui-framework\\references\\完整性核对.md",
+      "target": "合并提示词-历史未核实版.md"
+    },
+    {
+      "file": "personal-ui-framework\\references\\完整性核对.md",
+      "target": "修订校验.json"
+    }
+  ],
+  "filesBeforeThisValidationRecord": [
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "sha256": "786a25cf3f59931350f0155b211e330ea94199173bf3d2fac4e0bb1f9b2d6bf7"
+    },
+    {
+      "path": "personal-ui-framework\\references\\Sketch核实参数.md",
+      "status": "added",
+      "sha256": "79970713381f7b2114ba61540338ea51a3436fe1eeba3adcbbf6646060e6f90f"
+    },
+    {
+      "path": "personal-ui-framework\\references\\Sketch证据.json",
+      "status": "added",
+      "sha256": "7e3bf0d4c726d326da439111368f54937db97b293a368a7ab56fb16e2dfbaa1b"
+    },
+    {
+      "path": "personal-ui-framework\\references\\合并提示词-历史未核实版.md",
+      "status": "added",
+      "sha256": "179209894fde631ddbc61fc9c4431563a22bfb3f1d25f3d1e466388674c27f7d"
+    },
+    {
+      "path": "personal-ui-framework\\references\\合并提示词.md",
+      "status": "modified",
+      "sha256": "314afd928954c3ff7ce301307895ac3cb8f5c1598de0e0dd365ebf8969e80e9a"
+    },
+    {
+      "path": "personal-ui-framework\\references\\完整性核对.md",
+      "status": "modified",
+      "sha256": "abe95006d58d080472454b0b1bc551c927a4d139e2f2aef9b6952ed65d316c1f"
+    },
+    {
+      "path": "personal-ui-framework\\references\\提示词原文-A.md",
+      "status": "unchanged",
+      "sha256": "ac718cb1262ae5fd74c373c173c82d75500217ba02997430d849b612af1583eb"
+    },
+    {
+      "path": "personal-ui-framework\\references\\提示词原文-B.md",
+      "status": "unchanged",
+      "sha256": "0295d060fa80575c90998af671641b05df3717c6446e8c84a44296073cae9e0c"
+    },
+    {
+      "path": "personal-ui-framework\\references\\来源文件\\持久项目与开发框架转换提示词-喂给顶级AI.md",
+      "status": "unchanged",
+      "sha256": "0295d060fa80575c90998af671641b05df3717c6446e8c84a44296073cae9e0c"
+    },
+    {
+      "path": "personal-ui-framework\\references\\来源文件\\豆包-元提示词-喂给更强AI.md",
+      "status": "unchanged",
+      "sha256": "ac718cb1262ae5fd74c373c173c82d75500217ba02997430d849b612af1583eb"
+    },
+    {
+      "path": "personal-ui-framework\\SKILL.md",
+      "status": "modified",
+      "sha256": "1617d9e7096f24964bf33b816643a6f27cbfafbfa1bfaaa02b53cc5fc24a80d9"
+    },
+    {
+      "path": "使用说明.md",
+      "status": "modified",
+      "sha256": "345506c20b973b5956ea98428b836056458e6f0fcc0d07bb050e767de63b7a8d"
+    }
+  ]
+}

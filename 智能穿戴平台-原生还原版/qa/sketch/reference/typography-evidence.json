@@ -1,0 +1,1337 @@
+{
+  "source": "D:/wx_chat/xwechat_files/wxid_x9ztlatrmfbm22_4b89/msg/file/2026-10/UI规范.sketch",
+  "basicTypography": [
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320322 / Title",
+      "id": "I01Lwfy6qzToDaOLnSTXJ",
+      "text": "Typography 字体",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 56
+      },
+      "lineHeight": 56
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320322 / Description",
+      "id": "_YotLSxU-7RctlAQT_5v9",
+      "text": "将字体大小规则应用到所有组件中，提升组件间的联系性。",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 20
+      },
+      "lineHeight": 30
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320547 / 默认字重：regular",
+      "id": "tqjSh5F6VLLY4t2uZA8ye",
+      "text": "默认字重：regular",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320547 / 加粗字重：bold",
+      "id": "Wh0kKVFAF4RRYTRSOC0lc",
+      "text": "加粗字重：bold",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / OS / 基础控件/表头/分割线 / Frame 43 / 项目名称",
+      "id": "XRHpgEENnvvsa_8R5YPOd",
+      "text": "操作系统",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / OS / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "KpfB8qmeCpbjt-M6s9vvu",
+      "text": "macOS",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / OS / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "NVKn3FM391T22Kwr--Rcn",
+      "text": "Windows",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/表头/分割线 / Frame 43 / 项目名称",
+      "id": "qGRQlY3qk5ngazk-dur6J",
+      "text": "语言",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "holF0GsBBEL1TYBZrdIxs",
+      "text": "中文",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "Wsm2W-w2dS0Zv3jWMbs51",
+      "text": "英文/数字",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "uDsF0nD7m1rPw6DPNAtD_",
+      "text": "中文",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / language / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "DecfQpI-iYSo1aEYwj_w3",
+      "text": "英文/数字",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/表头/分割线 / Frame 43 / 项目名称",
+      "id": "Uo91YRUW2bAmoJVMYHqhQ",
+      "text": "字体推荐",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "8KS5lKYgB2i1jgRqkXQ9u",
+      "text": "PingFang",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "KlMNTbOGHFsfeA1HEp3PA",
+      "text": "Arial",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "cyGRgXcTj5l0ofwuuqpd9",
+      "text": "思源黑体",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 删除",
+      "id": "LEl-qlhnDxkwTgMTnVZ7p",
+      "text": "删除",
+      "visible": false,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320545 / font / 基础控件/内容列/基础 / Frame 44 / Frame 45 / 管理",
+      "id": "RzpvbSxw1p3gOXd8gX8fT",
+      "text": "Arial",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题大/默认/24px",
+      "id": "u_pHZ-YUoNfr1q8ZsBBvx",
+      "text": "Ag 标题大/默认/24px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 24
+      },
+      "lineHeight": 32
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题大/加粗/24px",
+      "id": "h4Q_iAJbZ_47L9WZw86gP",
+      "text": "Ag 标题大/加粗/24px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 24
+      },
+      "lineHeight": 32
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题中/默认/18px",
+      "id": "QpTXHu-2-CK1sxIUZIjux",
+      "text": "Ag 标题中/默认/18px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题中/加粗/18px",
+      "id": "de_gcWw0DF1AMIvVbfwuj",
+      "text": "Ag 标题中/加粗/18px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 18
+      },
+      "lineHeight": 26
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题小/默认/16px",
+      "id": "1jWIgp6g8JYSVb25Kj4tP",
+      "text": "Ag 标题小/默认/16px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 16
+      },
+      "lineHeight": 24
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 标题小/加粗/16px",
+      "id": "c0SeQvmpeMfve5layGmWZ",
+      "text": "Ag 标题小/加粗/16px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 16
+      },
+      "lineHeight": 24
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 正文/默认/14px",
+      "id": "YwnDZRx9gfUX8P8kHjruI",
+      "text": "Ag 正文/默认/14px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 正文/加粗/14px",
+      "id": "JThgvRhqG5Wa44DCKLk_S",
+      "text": "Ag 正文/加粗/14px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 正文/加粗/14px",
+      "id": "ZwNrqGsO4utmG5r9UcD26",
+      "text": "Ag 正文/加粗/14px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 14
+      },
+      "lineHeight": 22
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 辅助文字/默认/12px",
+      "id": "PtZsI-tLvf8Ca3tWb4Vpg",
+      "text": "Ag 辅助文字/默认/12px",
+      "visible": true,
+      "font": {
+        "name": "Helvetica",
+        "size": 12
+      },
+      "lineHeight": 20
+    },
+    {
+      "top": "字体",
+      "path": "字体 / Frame 427320546 / Ag 辅助文字/加粗/14px",
+      "id": "cUUCWEs4EMlZJvKIzetWd",
+      "text": "Ag 辅助文字/加粗/14px",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 12
+      },
+      "lineHeight": 20
+    }
+  ],
+  "businessTextRunFontCounts": {
+    "Helvetica": 526,
+    "SourceHanSansCN-Medium": 421,
+    "SourceHanSansCN-Bold": 296,
+    "PingFangSC-Regular": 143,
+    "PingFangSC-Semibold": 47,
+    "PingFangSC-Medium": 21,
+    "SourceHanSansCN-Regular": 477,
+    "SourceHanSansCN-Heavy": 6,
+    "HYb1gj": 14
+  },
+  "businessTextRunSizeCounts": {
+    "8": 32,
+    "9": 1,
+    "10": 134,
+    "11": 5,
+    "12": 337,
+    "14": 1120,
+    "16": 160,
+    "18": 82,
+    "20": 48,
+    "21": 12,
+    "24": 14,
+    "30": 6
+  },
+  "allTextRunFontCounts": {
+    "SourceHanSansCN-Bold": 336,
+    "Helvetica": 3433,
+    "SourceHanSansCN-Medium": 490,
+    "PingFangSC-Semibold": 48,
+    "SourceHanSansCN-Heavy": 7,
+    "PingFangSC-Regular": 143,
+    "PingFangSC-Medium": 21,
+    "SourceHanSansCN-Regular": 477,
+    "HYb1gj": 14
+  },
+  "businessSizeExceptions": [
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 2 / 12 台",
+      "id": "4A074EA6-2803-405F-B7BA-EC775A3BD209",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 11
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 12 台",
+      "id": "DA2DA632-F68D-4797-B713-B92E6B045108",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 11
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 12 台",
+      "id": "35665DFD-045F-479E-A8CF-A5F316CC8591",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 11
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 12 台",
+      "id": "F2462D5C-9563-4061-B2C6-53B09783390D",
+      "text": "12  台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 11
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 12 台",
+      "id": "40C6D9E0-B364-4838-8B3C-9BDD6529B980",
+      "text": "12  台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 11
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / Frame 427319546 / 编组 11 / 123.45",
+      "id": "0418B125-CFA7-4EFB-B666-93D953D4A5EE",
+      "text": "123.45",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / Frame 427319546 / 编组 11 / 123.45",
+      "id": "1F9ED280-DAEC-417E-A31A-D9A92D8F8C21",
+      "text": "123.45",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 11 / 123.45",
+      "id": "BF0F6D4A-EE48-4EB3-B772-B5E9593297E5",
+      "text": "123.45",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 27 / 123.45",
+      "id": "E1B7AED0-9F6B-4650-A2D9-FE9BCFEFC50D",
+      "text": "123.45",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "F46BA73B-AD7C-46A4-90AB-6F9AD735AD0D",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 编组 26 / 3 / 安防管理",
+      "id": "355B0AE1-3F46-4673-A9E7-E60E25496CFA",
+      "text": "安防管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 编组 26 / 2 / 智慧监盘",
+      "id": "13BF2216-F0A3-4B92-92C8-62055EA55534",
+      "text": "智慧监盘",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 编组 26 / 1 / 首页",
+      "id": "F279671A-9011-4B9B-9FD3-A8CF8DB7918F",
+      "text": "首页",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 18
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 4 / 告警中心",
+      "id": "25676BF5-1D7D-4F06-B5ED-BB95F3871B5D",
+      "text": "告警中心",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 3 / 大模型决策",
+      "id": "5C3CD134-932A-4466-B525-EB0158741C25",
+      "text": "大模型决策",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 2 / 智能检修",
+      "id": "577E2705-3A69-4976-94A2-2D61549B7B3F",
+      "text": "智能检修",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 1 / 智能巡检",
+      "id": "2A1048A6-9759-4880-9E21-06E783C03D38",
+      "text": "智能巡检",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "7D1B84FD-6446-4834-8055-06EEE12D2CEE",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "E2EB823C-77BF-4368-98EF-96ECBB769EA5",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 编组 26 / 3 / 安防管理",
+      "id": "6339BA94-4699-459D-85C1-0ED389D1B61B",
+      "text": "安防管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 编组 26 / 2 / 智慧监盘",
+      "id": "DF38248A-B9FC-4FEF-A155-81D9F49432D0",
+      "text": "智慧监盘",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 编组 26 / 1 / 首页",
+      "id": "385197FC-5255-400D-B560-AA6884C360E7",
+      "text": "首页",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 20
+      },
+      "lineHeight": 18
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 4 / 告警中心",
+      "id": "C50C9F9E-1FCA-4423-8E90-27DAFA487C4A",
+      "text": "告警中心",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 3 / 大模型决策",
+      "id": "F14580A1-9E77-4363-9A00-3015B26D6E37",
+      "text": "大模型决策",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 2 / 智能检修",
+      "id": "A816E707-67E7-48A3-90C8-35D0C8A9E17F",
+      "text": "智能检修",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 1 / 智能巡检",
+      "id": "B255885E-080E-44B3-8295-EAFB37C366BF",
+      "text": "智能巡检",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视点位",
+      "path": "巡视点位 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "731CC002-80B3-4927-8426-1C79F167B5CB",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "17DBEA29-F6D4-490D-A1A8-7D54511AF236",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 编组 26 / 3 / 安防管理",
+      "id": "1ED18B6F-99DD-4F43-8370-5F25D39CCDF4",
+      "text": "安防管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 编组 26 / 2 / 智慧监盘",
+      "id": "662768CE-B644-4E3C-8D9E-A7AD638DA8EC",
+      "text": "智慧监盘",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 编组 26 / 1 / 首页",
+      "id": "FB4AC600-0534-4CD6-A2FD-655A6E7F589B",
+      "text": "首页",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 20
+      },
+      "lineHeight": 18
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 4 / 告警中心",
+      "id": "334904EB-5476-48F1-9FFB-413923EC14FE",
+      "text": "告警中心",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 3 / 大模型决策",
+      "id": "234D4C30-03F8-4AD8-99E2-7D3212DEDD38",
+      "text": "大模型决策",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 2 / 智能检修",
+      "id": "1B93D924-6998-4BF3-A547-8D0286CA1C3D",
+      "text": "智能检修",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 1 / 智能巡检",
+      "id": "0CBBA3B7-C233-43B3-9339-6D1A92904FB1",
+      "text": "智能巡检",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议1",
+      "path": "告警及检修建议1 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "5F9977EA-2942-4CDB-B60F-2E8FCC97A2D1",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "BCB7E618-A6D8-46D9-9043-829513F3EF21",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 编组 26 / 3 / 安防管理",
+      "id": "C262478A-1A65-4469-B97C-199CA675D648",
+      "text": "安防管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 编组 26 / 2 / 智慧监盘",
+      "id": "86AF5675-FF3B-46D9-87F9-CB6D91682D98",
+      "text": "智慧监盘",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 编组 26 / 1 / 首页",
+      "id": "DA5ED2C6-C646-462E-A4E1-1B9F2F8859D4",
+      "text": "首页",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 20
+      },
+      "lineHeight": 18
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 4 / 告警中心",
+      "id": "7B2B5F9E-159D-4EB7-A06C-5DF12C4BED55",
+      "text": "告警中心",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 3 / 大模型决策",
+      "id": "67F12D62-5390-4730-BFA7-96C5F66ADB3A",
+      "text": "大模型决策",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 2 / 智能检修",
+      "id": "9A5658D8-D464-4AB0-9588-98F037EFC5C3",
+      "text": "智能检修",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 1 / 智能巡检",
+      "id": "DF70259E-2271-4620-A160-59AEF626D442",
+      "text": "智能巡检",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "巡视报告",
+      "path": "巡视报告 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "44B37C4D-3C31-4150-8A13-3D7C4BDEDCC9",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 02号机组 / 编组 3 / 002号机组",
+      "id": "50832E79-1BAE-4818-BD75-A847A26CE8E4",
+      "text": "002号机组",
+      "visible": true,
+      "font": {
+        "name": "PingFangSC-Semibold",
+        "size": 21
+      },
+      "lineHeight": 16
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 01号机组 / 编组 3 / 001号机组",
+      "id": "5FB2563A-0EBE-4342-9338-EBCD7DE2920F",
+      "text": "001号机组",
+      "visible": true,
+      "font": {
+        "name": "PingFangSC-Semibold",
+        "size": 21
+      },
+      "lineHeight": 16
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 缺陷详情信息 / Message 全局提示 / 裂纹已达到亚临界级别，建议72小时内安排",
+      "id": "F8905358-E7C6-4919-8D4F-1C0735F627CF",
+      "text": "裂纹已达到亚临界级别，建议72小时内安排停机，使用超声检测仪进行深度检测，确认是否需要更换叶片。",
+      "visible": true,
+      "font": {
+        "name": "PingFangSC-Medium",
+        "size": 9
+      },
+      "lineHeight": 15
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 顶部条 / 05 / Frame 427319546 / 03",
+      "id": "A446E7DC-8FC5-4DAE-A4AB-5D75869A0AA1",
+      "text": "03",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 顶部条 / 05 / Frame 427319546 / 07",
+      "id": "9801CC1C-83EC-4205-A331-D550C780097F",
+      "text": "07",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 顶部条 / 01 / 01",
+      "id": "0F9BF131-E915-4456-9BAD-ACEF698C042F",
+      "text": "01",
+      "visible": false,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "64CF5BC8-A86F-4E80-B51A-C2F271291794",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 编组 26 / 3 / 安防管理",
+      "id": "4A7B686A-5151-4336-B0ED-DA19019CB904",
+      "text": "安防管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 编组 26 / 2 / 智慧监盘",
+      "id": "873F64D0-1D91-40D2-A874-2AF3D2306B64",
+      "text": "智慧监盘",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 编组 26 / 1 / 首页",
+      "id": "EFCD0ACB-27C5-4C31-9E74-804A0F1BCB07",
+      "text": "首页",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 18
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 4 / 告警中心",
+      "id": "6F287251-5C3A-4C0E-ADEB-8620D359CA0B",
+      "text": "告警中心",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 3 / 大模型决策",
+      "id": "592DB41C-2E30-45EA-9912-79F27E5F831F",
+      "text": "大模型决策",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 2 / 智能检修",
+      "id": "41566BE6-BCBF-4A90-B7C2-F555F3CFC0AC",
+      "text": "智能检修",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 1 / 智能巡检",
+      "id": "7C332DF0-5430-47C0-BCC8-B83F75E0A42E",
+      "text": "智能巡检",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "安全哨兵",
+      "path": "安全哨兵 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "4161A865-ED6A-476B-B8A0-91B8D3D37A6F",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "F61E0FC0-677C-4899-8824-8BFEFB7BD69F",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 编组 26 / 3 / 安防管理",
+      "id": "2D2DD2BB-1B6E-434B-B5FA-ED453331E6B0",
+      "text": "安防管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 编组 26 / 2 / 智慧监盘",
+      "id": "3D7D13D8-E70E-4E8B-8305-C39A8E7AE17E",
+      "text": "智慧监盘",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 编组 26 / 1 / 首页",
+      "id": "ECF00330-899B-4A70-AAE3-E16219AAF6C9",
+      "text": "首页",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 20
+      },
+      "lineHeight": 18
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 4 / 告警中心",
+      "id": "F74D7991-B5AF-4117-ADD1-E494849E40ED",
+      "text": "告警中心",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 3 / 大模型决策",
+      "id": "0B1A8FF1-01F9-48AC-869D-8FDC89854FAC",
+      "text": "大模型决策",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 2 / 智能检修",
+      "id": "2EACE315-DF67-4FA6-8219-1BD433410B5F",
+      "text": "智能检修",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 1 / 智能巡检",
+      "id": "DD15B965-BD71-4444-AB9D-BDBDECC63A56",
+      "text": "智能巡检",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 内容 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "1971A77A-D26D-4A4E-BE60-7FF546BD7D25",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 故障详情 / 故障详述",
+      "id": "E767001A-5AA9-4A07-AB13-BD13BA35B15B",
+      "text": "故障详述",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 故障概览 / 故障概览",
+      "id": "EC2394A9-23C8-425B-9BB5-FB874E1F983F",
+      "text": "故障概览",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": null
+    },
+    {
+      "top": "告警及检修建议（弹窗）",
+      "path": "告警及检修建议（弹窗） / 故障建议 / 故障建议",
+      "id": "CD89251F-509F-4A07-A5DC-B817289A9A1B",
+      "text": "故障建议",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": null
+    }
+  ],
+  "representativeExceptions": [
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 2 / 12 台",
+      "id": "4A074EA6-2803-405F-B7BA-EC775A3BD209",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 14
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 2 / 12 台",
+      "id": "4A074EA6-2803-405F-B7BA-EC775A3BD209",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 11
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / 编组 5 / 编组 10 / 2 / 12 台",
+      "id": "4A074EA6-2803-405F-B7BA-EC775A3BD209",
+      "text": "12 台",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 8
+      },
+      "lineHeight": 11
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 内容 / Frame 427319546 / 编组 11 / 123.45",
+      "id": "0418B125-CFA7-4EFB-B666-93D953D4A5EE",
+      "text": "123.45",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Bold",
+        "size": 21
+      },
+      "lineHeight": 21
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 编组 26 / 4 / 运行管理",
+      "id": "F46BA73B-AD7C-46A4-90AB-6F9AD735AD0D",
+      "text": "运行管理",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Medium",
+        "size": 20
+      },
+      "lineHeight": 23.4
+    },
+    {
+      "top": "监盘总览",
+      "path": "监盘总览 / 导航条 / 华能睿驭无人化管控系统",
+      "id": "7D1B84FD-6446-4834-8055-06EEE12D2CEE",
+      "text": "华能睿驭无人化管控系统",
+      "visible": true,
+      "font": {
+        "name": "SourceHanSansCN-Heavy",
+        "size": 30
+      },
+      "lineHeight": null
+    }
+  ],
+  "notes": [
+    "Counts represent text runs, not unique visible rendered nodes. Simplified visible is own-layer flag, not visibility accumulated through ancestors.",
+    "UI guideline explicit scale is 24/18/16/14/12, example business screens add 20 navigation, 21 metrics, 11 helper,30 brand title.",
+    "Both English/numeric recommendation rows in font table explicitly say Arial; table drawing layers use Helvetica as font metadata, distinguish table label content from actual font.",
+    "Default weight regular and bold. Actual bold examples SourceHanSansCN-Bold, one Medium14 duplicate. CSS400/600 exclusivity not written in source.",
+    "No Roboto used in any extracted text run.",
+    "tabular-nums may be engineering choice; absence of this CSS property in Sketch does not imply equal-width numbers prohibited."
+  ]
+}
