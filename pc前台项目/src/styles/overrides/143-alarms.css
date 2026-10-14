@@ -4,12 +4,12 @@
   padding: 10px 12px;
 }
 .alarm-detail .panel-body > h3 {
-  font-size: 17px;
+  font-size:16px;
   line-height: 1.4;
   margin-bottom: 6px;
 }
 .alarm-detail .info.compact {
-  font-size: 13px;
+  font-size:12px;
   line-height: 1.4;
   grid-template-columns: 105px 1fr;
 }
@@ -22,7 +22,7 @@
   padding: 9px;
 }
 .alarm-detail .warning-box small {
-  font-size: 12px;
+  font-size:12px;
   line-height: 1.5;
   display: block;
 }
@@ -31,7 +31,7 @@
   padding-top: 6px;
 }
 .alarm-detail .detail-section h3 {
-  font-size: 16px;
+  font-size:16px;
   line-height: 23px;
   margin-bottom: 6px;
 }
@@ -45,7 +45,7 @@
 }
 .alarm-detail .note {
   padding: 5px 0;
-  font-size: 11px;
+  font-size:12px;
   line-height: 1.5;
 }
 .alarm-detail .form-actions {

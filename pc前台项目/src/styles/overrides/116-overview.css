@@ -21,6 +21,6 @@
 .overview-bottom .video-unavailable small {
   display: none;
 }
-.overview-bottom .video-unavailable i {
-  font-size: 22px;
+.overview-bottom .video-unavailable :is(i,.ui-icon) {
+  font-size:24px;
 }

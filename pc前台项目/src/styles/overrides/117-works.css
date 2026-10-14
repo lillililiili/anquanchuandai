@@ -49,10 +49,10 @@
 }
 .works-page .work-list td {
   padding: 14px 8px;
-  font-size: 13px;
+  font-size:12px;
 }
 .works-page .work-list th {
-  font-size: 13px;
+  font-size:12px;
   padding: 12px 8px;
 }
 .works-page .work-timeline {
@@ -64,7 +64,7 @@
   margin: 20px 0;
 }
 .works-page .info {
-  font-size: 14px;
+  font-size:14px;
   line-height: 1.5;
   grid-template-columns: 105px 1fr;
 }

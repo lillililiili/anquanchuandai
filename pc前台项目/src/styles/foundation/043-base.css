@@ -7,8 +7,8 @@
 .timeline-item {
   position: relative;
   padding: 12px 0;
-  font-size: 14px;
-  border-left: 2px solid #175879;
+  font-size:14px;
+  border-left: 2px solid var(--theme-border);
   padding-left: 22px;
 }
 .timeline-item:before {
@@ -18,12 +18,12 @@
   top: 18px;
   width: 11px;
   height: 11px;
-  border: 2px solid #5dbfff;
-  background: #008fff;
+  border: 2px solid var(--theme-border);
+  background: var(--theme-card);
   border-radius: 50%;
 }
 .timeline-item time {
-  color: #b1cce2;
+  color: var(--theme-text);
   margin-right: 17px;
 }
 .timeline.horizontal {
@@ -33,7 +33,7 @@
 .timeline.horizontal .timeline-item {
   flex: 1;
   border-left: 0;
-  border-top: 2px solid #336078;
+  border-top: 2px solid var(--theme-border);
   padding: 20px 8px;
 }
 .timeline.horizontal .timeline-item:before {

@@ -7,12 +7,12 @@
   padding: 22px;
   margin-bottom: 14px;
 }
-.sos-banner > i {
+.sos-banner > :is(i,.ui-icon) {
   font-size: 49px;
-  color: #ff3754;
+  color: var(--theme-red);
 }
 .sos-banner p {
-  color: #bbd0e4;
+  color: var(--theme-text);
 }
 .sos-banner .heading-actions {
   margin-left: auto;
@@ -26,7 +26,7 @@
   aspect-ratio: auto;
 }
 .sos-layout .map-zone {
-  font-size: 13px;
+  font-size:12px;
 }
 .sos-layout .map-tools {
   display: none;

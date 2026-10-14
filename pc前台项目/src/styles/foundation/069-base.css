@@ -5,12 +5,12 @@
   z-index: 9;
   right: 38px;
   top: 195px;
-  background: #02243ce8;
-  border: 1px solid #2a6b8d;
+  background: var(--theme-card);
+  border: 1px solid var(--theme-border);
   padding: 10px 16px;
   display: flex;
   gap: 20px;
-  font-size: 14px;
+  font-size:14px;
 }
 .layer-controls label {
   display: flex;

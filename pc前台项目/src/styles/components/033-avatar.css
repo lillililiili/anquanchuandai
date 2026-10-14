@@ -8,12 +8,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #137bcd;
-  font-size: 24px;
+  background: var(--theme-card);
+  font-size:24px;
   color: white;
 }
 .avatar.photo {
   object-fit: cover;
-  background: #254c64;
-  border: 2px solid #4fb9ed;
+  background: var(--theme-card);
+  border: 2px solid var(--theme-border);
 }

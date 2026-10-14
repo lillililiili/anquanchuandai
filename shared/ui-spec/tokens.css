@@ -1,0 +1,176 @@
+/* UI规范.sketch: all 53 labeled color swatches, preserving alpha and distinct roles.
+ * Source IDs refer to enabled native swatch layers in the 颜色 specification board.
+ * Project mappings below compose these source colors; they do not add source claims.
+ */
+:root {
+  /* 主色一default — -wxo7UjqvqneQNTivHtc5 */
+  --theme-accent: #83f6fd;
+  /* 主色一hover — n7CkTUcdpqHP7UXB2RmbJ */
+  --theme-accent-hover: #a0f8fd;
+  /* 主色一active — UYUa-g11WkOm_jP1rEsGi */
+  --theme-accent-active: #5dcad2;
+  /* 主色一disabled — ZqNiVP01gnKu5b96oTQGJ */
+  --theme-accent-disabled: #c4fbfe;
+  /* 主色二default — qRBKuAXstQZQ-Adi1786E */
+  --theme-primary: #4faff7;
+  /* 主色二hover — RtqN3Tnmau-jJigZ5Ulgy */
+  --theme-primary-hover: #7fcefa;
+  /* 主色二active — 5HRorMkldRqfvl9vuwTiP */
+  --theme-primary-active: #3c89f5;
+  /* 主色二disabled — 0DqUfZvbn2Pe4RWtujfBL */
+  --theme-primary-disabled: #193a60;
+  /* 错误色 — bgx6_Z0f5bZSkU5MQnMpC */
+  --theme-red: #de554f;
+  /* 错误色hover — 7kIY4YA3JBjw8xrZ9Ti4i */
+  --theme-red-hover: #e57163;
+  /* 错误色active — iDyLw7sFKwPzxSPx-Oa-J */
+  --theme-red-active: #a03e35;
+  /* 错误色disabled — 8n0Bqat4ECiHiQZJn1zpV */
+  --theme-red-disabled: #f4bcb2;
+  /* 二级警告色 — pbsEu087YP8CGkPvrF3Fi */
+  --theme-orange: #f09840;
+  /* 二级警告色hover — jXBrWpcD3_ly-TCrrRuiF */
+  --theme-orange-hover: #ec9a5e;
+  /* 二级警告色active — g0wz-sZhLBPKg0wIycB8P */
+  --theme-orange-active: #b16022;
+  /* 二级警告色disabled — l_fCxcXcC0qGUklaJ2rfq */
+  --theme-orange-disabled: #f4bc93;
+  /* 三级警告色 — q4n21qokeoWg7KlzJmIqq */
+  --theme-yellow: #fef770;
+  /* 三级警告色hover — jKEY74xfLrVExmTSWQVK- */
+  --theme-yellow-hover: #fef886;
+  /* 三级警告色active — FPRBQemcDpuTP94FN4By8 */
+  --theme-yellow-active: #dad245;
+  /* 三级警告色disabled — 4Z0TPLR19NRHtu-yj452N */
+  --theme-yellow-disabled: #fefbaa;
+  /* 成功色 — T5RcUyQT5IghgzpSxeiO5 */
+  --theme-green: #71e96f;
+  /* 成功色hover — n5A0ADBRu3fBju5r-GP85 */
+  --theme-green-hover: #73be91;
+  /* 成功色active — bNvGuLBHdP6CBtLMKp0SV */
+  --theme-green-active: #3b865c;
+  /* 成功色disabled — q-NWfrwzf3JJdPWedMImW */
+  --theme-green-disabled: #a2d8b5;
+  /* 一级文字色 — jtSw0dSaOLMCbpJZ8r685 */
+  --theme-heading: #ffffff;
+  /* 二级文字色 — s8CDc_MMPf_T-I4Ansvub */
+  --theme-text: #d1dae5;
+  /* 三级文字色 — caLqFh68iaBHwJ0xAuBjN */
+  --theme-muted: #b0becb;
+  /* 禁用文字色 — iO7e00gReqiGS0Gu97Wc8 */
+  --theme-disabled: #677987;
+  /* 链接文字色 — DkqsLz4stLMaeLeapa9cq */
+  --theme-link: #83f6fd;
+  /* 默认页面底层背景色 — lmrmXOJDe_YhUu9GpxILn */
+  --theme-bg: #121e37;
+  /* 卡片背景色 — StgLM69wj7o-zvpT2mSnq */
+  --theme-card: rgba(80, 177, 249, 0.12);
+  /* 组件背景色1 — dahG5nevYHNrnmj2rTPxa */
+  --theme-component-bg-1: rgba(131, 246, 253, 0.2);
+  /* 组件背景色2 — g-wfUunFHDxHfl3kZ3Mjt */
+  --theme-component-bg-2: rgba(131, 246, 253, 0.5);
+  /* 组件背景色3 — FFge0hZ_AL7ZJ5RU1nL_e */
+  --theme-component-bg-3: rgba(37, 85, 111, 0.2);
+  /* 组件背景色4 — -8ZXFXlMTJL4LS69yUA9i */
+  --theme-component-bg-4: rgba(127, 206, 250, 0.15);
+  /* 组件背景色5 — MebGf0ilqOrAaDxYrVs6X */
+  --theme-component-bg-5: rgba(60, 137, 245, 0.2);
+  /* 组件背景色6 — 2oSUB8OPHFLejMvhOzGRK */
+  --theme-component-bg-6: #295f75;
+  /* 分割线色 — z-NLC-qMpg58iEm8Ytzlo */
+  --theme-divider: rgba(255, 255, 255, 0.1);
+  /* 边框色 — r9ta2IVBN-3LwYIyoc78h */
+  --theme-border: rgba(131, 246, 253, 0.5);
+  /* 边框禁用色 — Y3XSweGgWbZE1V23yPY0U */
+  --theme-border-disabled: rgba(131, 246, 253, 0.2);
+  /* 下拉背景色 — b2Z78PKjHnxv19CT7sopb */
+  --theme-dropdown: #2e6086;
+  /* 表头背景色 — kUxpaXQ5XGi1MBGFVI2Wv */
+  --theme-table-head: #25556f;
+  /* 表格选中色 — lkX-HL0rLIAlvX88PF1Hy */
+  --theme-selected: #254570;
+  /* 斑马格深色 — vmcXjlIatgc3wjlAqoipM */
+  --theme-row-odd: rgba(13, 29, 58, 0.9);
+  /* 斑马格浅色 — 0V6RIoqr2m-cKz-yIjeHV */
+  --theme-row-even: rgba(17, 35, 69, 0.8);
+  /* 按钮默认色 — _Kaa4yFm3ygT29qzrYYIw */
+  --theme-button: #4faff7;
+  /* 按钮悬浮色 — o15yTiYGHXHvRFsEbMD1g */
+  --theme-button-hover: #7fcefa;
+  /* 按钮点击色 — FfPHU5d9_LMRgFUEljC5m */
+  --theme-button-active: #3c89f5;
+  /* 按钮禁用色 — JPqAYwHovoaSR1oKvMgvs */
+  --theme-button-disabled: #193a60;
+  /* 标签色-红色 — FqibCYUea8NQMo3HtcgDm */
+  --theme-tag-red: rgba(222, 85, 79, 0.25);
+  /* 标签色-橙色 — SpboQ5AsOOj833lyUAm50 */
+  --theme-tag-orange: rgba(240, 152, 64, 0.2);
+  /* 标签色-绿色 — qFWSchYWZxE5vec3pbQve */
+  --theme-tag-green: rgba(113, 233, 111, 0.2);
+  /* 标签色-主题色 — 6AUJ747WSqISxpZIschKV */
+  --theme-tag-primary: rgba(79, 175, 247, 0.2);
+
+  /* Native component values: input radius 4, focus border 2, checkbox/radio 16. */
+  --theme-input-bg: transparent;
+  --theme-input-border: rgba(131, 246, 253, 0.35);
+  --theme-input-disabled-bg: rgba(127, 206, 250, 0.2);
+  --theme-radius: 4px;
+  --theme-radius-panel: 12px;
+  --theme-radius-tag: 3px;
+  --theme-control-height-small: 24px;
+  --theme-control-height: 32px;
+  --theme-control-height-large: 40px;
+  --theme-selection-size: 16px;
+  --theme-switch-width: 32px;
+  --theme-switch-height: 20px;
+  --theme-tag-height: 26px;
+  --theme-tag-height-small: 22px;
+  --theme-border-width: 1px;
+  --theme-focus-width: 2px;
+  --theme-font: Arial, "UI Source Han", sans-serif;
+  --theme-font-data: Arial, "UI Source Han", sans-serif;
+  --theme-font-size-page: 24px;
+  --theme-font-size-section: 18px;
+  --theme-font-size-component: 16px;
+  --theme-font-size-body: 14px;
+  --theme-font-size-caption: 12px;
+  --theme-font-size-micro: 10px;
+  --theme-font-weight-regular: 400;
+  --theme-font-weight-title: 700;
+
+  /* Project composition: preserve shell geometry; use source fills as layers. */
+  --theme-nav: var(--theme-component-bg-3);
+  --theme-nav-surface: linear-gradient(var(--theme-nav), var(--theme-nav)), var(--theme-bg);
+  --theme-panel: var(--theme-card);
+  --theme-link-default: var(--theme-link);
+  --theme-link-hover: var(--theme-accent-hover);
+  --theme-link-active: var(--theme-accent-active);
+  /* Native Link disabled text: TOfraQpjMEG6TL0yoxPbG, not the accent swatch. */
+  --theme-link-disabled: var(--theme-disabled);
+  --theme-table-hover: var(--theme-component-bg-3);
+  --theme-tag-yellow: rgba(254, 247, 112, 0.2);
+  --theme-tag-muted: var(--theme-component-bg-5);
+  --theme-tag-primary-border: var(--theme-accent);
+  --theme-overlay-surface: linear-gradient(var(--theme-card), var(--theme-card)), var(--theme-bg);
+  --theme-overlay-shade: rgba(18, 30, 55, 0.8);
+  --theme-shadow-soft: rgba(0, 0, 0, 0.15);
+  --theme-shadow-modal: rgba(0, 0, 0, 0.3);
+  --theme-marker-primary-ring: rgba(79, 175, 247, 0.15);
+  --theme-marker-warning-ring: rgba(240, 152, 64, 0.15);
+  --theme-marker-selected-ring: rgba(131, 246, 253, 0.22);
+
+  /* Compatibility aliases for existing component styles. */
+  --bg: var(--theme-bg);
+  --panel: var(--theme-panel);
+  --panel2: var(--theme-card);
+  --border: var(--theme-border);
+  --line: var(--theme-divider);
+  --blue: var(--theme-primary);
+  --cyan: var(--theme-accent);
+  --green: var(--theme-green);
+  --orange: var(--theme-orange);
+  --yellow: var(--theme-yellow);
+  --red: var(--theme-red);
+  --muted: var(--theme-muted);
+  --text: var(--theme-text);
+}

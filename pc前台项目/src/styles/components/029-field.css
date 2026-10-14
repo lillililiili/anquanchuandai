@@ -4,12 +4,12 @@
   position: relative;
   flex: 1;
 }
-.searchbox > i {
+.searchbox > :is(i,.ui-icon) {
   position: absolute;
   left: 12px;
   top: 12px;
-  font-size: 21px;
-  color: #9cbdd7;
+  font-size:18px;
+  color: var(--theme-text);
 }
 .searchbox input {
   width: 100%;

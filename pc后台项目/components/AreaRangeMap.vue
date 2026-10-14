@@ -87,8 +87,8 @@ onMounted(() => {
       new VectorLayer({
         source,
         style: (feature) => new Style(feature.getGeometry() instanceof Point
-          ? { image: new CircleStyle({ radius: 6, fill: new Fill({ color: '#168bff' }), stroke: new Stroke({ color: '#e7faff', width: 2 }) }) }
-          : { stroke: new Stroke({ color: '#00e9dd', width: 2.5, lineDash: [6, 4] }), fill: new Fill({ color: '#00dac033' }) }),
+          ? { image: new CircleStyle({ radius: 6, fill: new Fill({ color: '#4faff7' }), stroke: new Stroke({ color: '#ffffff', width: 2 }) }) }
+          : { stroke: new Stroke({ color: '#83f6fd', width: 2.5, lineDash: [6, 4] }), fill: new Fill({ color: '#83f6fd33' }) }),
       }),
     ],
     view: new View({ center: fromLonLat(PLANT_CENTER), zoom: PLANT_ZOOM }),
@@ -138,5 +138,5 @@ onUnmounted(() => { observer?.disconnect(); map?.setTarget(null); map = null })
 <style scoped>
 .area-range { margin-top: 12px; }
 .area-range-head { display: flex; gap: 8px; align-items: center; }
-.area-range-map { height: 320px; margin-top: 8px; border: 1px solid #d7e0ea; border-radius: 6px; overflow: hidden; }
+.area-range-map { height: 320px; margin-top: 8px; border: 1px solid var(--theme-border); border-radius: 6px; overflow: hidden; }
 </style>

@@ -356,7 +356,7 @@ function sendBroadcast() {
     </div>
     <div class="stack">
       <AppPanel title="最近会话">
-        <template #extra><AppButton tone="plain" @click="openRecords">更多 ›</AppButton></template>
+        <template #extra><AppButton tone="plain" @click="openRecords">更多 <UiIcon name="chevron-right" /></AppButton></template>
         <template v-if="recentCalls.length">
           <div v-for="call in recentCalls" :key="call.id" class="record-entry">
             <time>{{ call.time.slice(11, 16) }}</time>
@@ -367,7 +367,7 @@ function sendBroadcast() {
         <AppEmpty v-else text="暂无通信记录" />
       </AppPanel>
       <AppPanel title="广播记录">
-        <template #extra><AppButton tone="plain" @click="openBroadcasts">更多 ›</AppButton></template>
+        <template #extra><AppButton tone="plain" @click="openBroadcasts">更多 <UiIcon name="chevron-right" /></AppButton></template>
         <template v-if="recentBroadcasts.length">
           <div v-for="item in recentBroadcasts" :key="item.id" class="record-entry">
             <time>{{ item.time.slice(11, 16) }}</time>

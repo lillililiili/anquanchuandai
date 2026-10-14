@@ -9,10 +9,23 @@ const luminance = hex => {
   return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722
 }
 describe('admin visual foundation', () => {
-  it('keeps readable foreground palette on solid surfaces', () => {
-    for (const [fg, bg] of [['142b55','ffffff'], ['586b83','ffffff'], ['ffffff','2563eb'], ['08778c','e5f9fc'], ['7c3aed','f2ecff'], ['b42337','ffffff'], ['147a53','ffffff']]) {
+  it('keeps source text colors readable on the dark source canvas', () => {
+    for (const [fg, bg] of [['d1dae5','121e37'], ['b0becb','121e37'], ['ffffff','121e37'], ['83f6fd','121e37']]) {
       const values = [luminance(fg), luminance(bg)].sort((a,b) => b-a)
       expect((values[0]+0.05)/(values[1]+0.05), fg).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+  it('both applications load the exact same source theme after their base styles', () => {
+    const tokens=read('../shared/ui-spec/tokens.css')
+    expect(tokens).toContain('--theme-bg: #121e37')
+    expect(tokens).toContain('--theme-card: rgba(80, 177, 249, 0.12)')
+    const manifest=JSON.parse(read('../shared/ui-spec/source-manifest.json'))
+    expect(manifest.colors).toBe(53)
+    for(const file of ['main.js','../pc前台项目/src/main.js']){
+      const entry=read(file)
+      expect(entry).toContain('@ui-spec/tokens.css')
+      expect(entry).toContain('@ui-spec/controls.css')
+      expect(entry.indexOf('@ui-spec/tokens.css')).toBeGreaterThan(entry.indexOf('styles'))
     }
   })
   it('ships the nine local compressed illustrations', () => {

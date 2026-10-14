@@ -16,7 +16,7 @@
   padding-top: 9px;
 }
 .alarm-detail .detail-section h3 {
-  font-size: 17px;
+  font-size:16px;
   margin: 0 0 9px;
 }
 .alarm-detail .map {
@@ -34,7 +34,7 @@
   padding: 8px 0;
 }
 .alarm-detail .map-caption {
-  font-size: 11px;
+  font-size:12px;
   left: 7px;
   top: 5px;
 }
@@ -42,13 +42,13 @@
   margin-bottom: 14px;
 }
 .alarms-page .page-heading h1 {
-  font-size: 29px;
+  font-size:24px;
 }
 .alarms-page .stats.mini .stat {
   padding: 0 8px;
   gap: 8px;
 }
-.alarms-page .stats.mini .stat > i {
+.alarms-page .stats.mini .stat > :is(i,.ui-icon) {
   font-size: 28px;
 }
 .alarms-page .stats.mini {
@@ -57,27 +57,27 @@
 .alarms-page .filters {
   flex-wrap: nowrap;
   gap: 11px;
-  font-size: 13px;
+  font-size:12px;
 }
 .alarms-page .filters .field {
   gap: 6px;
 }
 .alarms-page .filters .field > span {
-  font-size: 13px;
+  font-size:12px;
 }
 .alarms-page .filters .field select {
   min-width: 75px;
   max-width: 104px;
-  font-size: 13px;
+  font-size:12px;
   padding: 8px;
 }
 .alarms-page .filters .field input {
   max-width: 139px;
-  font-size: 13px;
+  font-size:12px;
   padding: 8px;
 }
 .alarms-page .filters .btn {
-  font-size: 13px;
+  font-size:12px;
   padding: 7px 12px;
 }
 .alarms-table {

@@ -6,11 +6,11 @@
   gap: 17px;
   padding: 18px;
 }
-.event-banner > i {
+.event-banner > :is(i,.ui-icon) {
   font-size: 40px;
 }
 .event-banner h1 {
-  font-size: 25px;
+  font-size:24px;
 }
 .event-banner small {
   margin-left: auto;
@@ -35,5 +35,5 @@
   align-items: center;
 }
 .event-page .evidence .device-item small {
-  font-size: 14px;
+  font-size:14px;
 }

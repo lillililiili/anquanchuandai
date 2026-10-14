@@ -57,7 +57,7 @@ function eventIcon(item) {
     <div class="overview-map"><PlantMap popup /></div>
     <div class="stack">
       <AppPanel title="当前重点事件">
-        <template #extra><a class="text-link" href="#/alarms">查看全部 ›</a></template>
+        <template #extra><a class="text-link" href="#/alarms">查看全部 <UiIcon name="chevron-right" /></a></template>
         <AppTable :columns="['时间', '事件', '人员 / 装备', '状态']" table-class="compact" :empty="!openEvents.length">
           <tr v-for="item in openEvents" :key="item.id" @click="go('event/' + item.id)">
             <td>{{ item.time }}</td>
@@ -93,7 +93,7 @@ function eventIcon(item) {
       </AppTable>
     </AppPanel>
     <AppPanel title="现场视频预览">
-      <template #extra><a class="text-link" href="#/video">更多 ›</a></template>
+      <template #extra><a class="text-link" href="#/video">更多 <UiIcon name="chevron-right" /></a></template>
       <div v-if="focus" class="overview-videos">
         <a :href="'#/single/' + focus.id"><VideoFrame :person-id="focus.id" /></a>
         <div class="stack">

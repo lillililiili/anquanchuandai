@@ -3,10 +3,10 @@
 @media (max-width: 1500px) {
   html,
   body {
-    font-size: 14px;
+    font-size:14px;
   }
   .topbar > strong {
-    font-size: 20px;
+    font-size:18px;
   }
   .topbar {
     gap: 14px;
@@ -15,17 +15,17 @@
     gap: 6px;
   }
   .top-actions time {
-    font-size: 12px;
+    font-size:12px;
   }
   .top-actions select {
     width: 145px;
-    font-size: 15px;
+    font-size:14px;
   }
   .sidebar {
     width: 185px;
   }
   .sidebar a {
-    font-size: 17px;
+    font-size:16px;
     padding: 15px 16px;
     gap: 15px;
   }
@@ -41,12 +41,12 @@
     gap: 16px;
   }
   .stat strong {
-    font-size: 31px;
+    font-size:24px;
   }
   .stat span {
-    font-size: 16px;
+    font-size:16px;
   }
-  .stat > i {
+  .stat > :is(i,.ui-icon) {
     font-size: 40px;
   }
   .overview-map {
@@ -59,7 +59,7 @@
     grid-template-columns: 42px 99px 1fr 49px;
     gap: 7px;
     margin: 15px 0;
-    font-size: 13px;
+    font-size:12px;
   }
   .overview-layout .progress-row img {
     width: 36px;
@@ -83,10 +83,10 @@
     height: 40px;
     width: 40px;
     min-width: 40px;
-    font-size: 22px;
+    font-size:24px;
   }
   td strong {
-    font-size: 14px;
+    font-size:14px;
   }
   .split-detail {
     grid-template-columns: 1.9fr 1fr;
@@ -103,11 +103,11 @@
     padding: 10px 6px;
   }
   .device-strip.large b {
-    font-size: 15px;
+    font-size:14px;
   }
   .info {
     grid-template-columns: 105px 1fr;
-    font-size: 14px;
+    font-size:14px;
   }
   .video-controls .plain {
     padding: 0 8px;
@@ -116,7 +116,7 @@
     width: 70px;
   }
   .video-controls > span {
-    font-size: 10px;
+    font-size:12px;
   }
   .video-thumbs {
     gap: 8px;
@@ -125,7 +125,7 @@
     height: 95px;
   }
   .video-thumb strong {
-    font-size: 13px;
+    font-size:12px;
   }
   .video-wall > .video-frame {
     height: 386px;
@@ -152,7 +152,7 @@
     height: 640px;
   }
   .location-layout td {
-    font-size: 12px;
+    font-size:12px;
     padding: 15px 5px;
   }
   .fence-layout {
@@ -162,7 +162,7 @@
     height: 610px;
   }
   .fence-layout .map-editbar .btn {
-    font-size: 11px;
+    font-size:12px;
     padding: 4px 5px;
   }
   .fence-layout .form-stack > .field {
@@ -175,7 +175,7 @@
     padding: 7px 12px;
   }
   .panel-heading h2 {
-    font-size: 18px;
+    font-size:18px;
   }
   .login-card {
     width: 460px;
@@ -184,17 +184,17 @@
     top: 15%;
   }
   .login-copy h1 {
-    font-size: 39px;
+    font-size:24px;
   }
   .login-copy p {
-    font-size: 24px;
+    font-size:24px;
   }
   .login-copy {
     left: 6%;
     top: 37%;
   }
   .login-card h2 {
-    font-size: 28px;
+    font-size:24px;
   }
   .login-card .field {
     margin-top: 22px;
@@ -203,23 +203,23 @@
     margin-top: 32px;
   }
   .login-footer {
-    font-size: 16px;
+    font-size:16px;
   }
   .event-banner h1 {
-    font-size: 23px;
+    font-size:24px;
   }
   .event-banner {
     gap: 12px;
     padding: 16px;
   }
   .event-banner small {
-    font-size: 11px;
+    font-size:12px;
   }
   .event-page .evidence .device-item > div {
     gap: 7px;
   }
   .event-page .evidence .device-item small {
-    font-size: 12px;
+    font-size:12px;
   }
   .form-stack > .field {
     grid-template-columns: 84px 1fr;
@@ -229,7 +229,7 @@
     padding: 16px;
   }
   .sos-banner h2 {
-    font-size: 19px;
+    font-size:18px;
   }
   .sos-banner .heading-actions {
     gap: 8px;
@@ -239,7 +239,7 @@
     height: 320px;
   }
   .sos-layout .map-zone {
-    font-size: 11px;
+    font-size:12px;
   }
   .tracks-layout {
     grid-template-columns: 240px 1fr;
@@ -253,13 +253,13 @@
     display: none;
   }
   .topbar > strong {
-    font-size: 18px;
+    font-size:18px;
   }
   .sidebar {
     width: 165px;
   }
   .sidebar a {
-    font-size: 16px;
+    font-size:16px;
     padding: 14px 12px;
     gap: 12px;
   }
@@ -277,7 +277,7 @@
     width: 24px;
   }
   .table-scroll table {
-    font-size: 12px;
+    font-size:12px;
   }
   .personnel-list .avatar {
     display: none;
@@ -286,29 +286,29 @@
     height: 25px;
   }
   .personnel-list .device-item .status {
-    font-size: 10px;
+    font-size:12px;
   }
   .overview-layout {
     grid-template-columns: 1.6fr 1fr;
   }
   .overview-layout .progress-row {
     grid-template-columns: 30px 84px 1fr 42px;
-    font-size: 11px;
+    font-size:12px;
   }
   .stats.flat .stat {
     padding: 0 13px;
   }
-  .stat > i {
+  .stat > :is(i,.ui-icon) {
     font-size: 33px;
   }
   .stat span {
-    font-size: 14px;
+    font-size:14px;
   }
   .stat strong {
-    font-size: 28px;
+    font-size:24px;
   }
   .stat em {
-    font-size: 10px;
+    font-size:12px;
   }
   .stat {
     gap: 12px;
@@ -330,10 +330,10 @@
     grid-template-columns: 270px minmax(350px, 1fr) 260px;
   }
   .login-copy h1 {
-    font-size: 32px;
+    font-size:24px;
   }
   .login-copy p {
-    font-size: 20px;
+    font-size:18px;
   }
   .login-card {
     width: 410px;

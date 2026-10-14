@@ -1,4 +1,5 @@
 <script setup>
+import { iconMarkup } from "@ui-spec/icons";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import OlMap from "ol/Map";
@@ -25,6 +26,7 @@ import { session } from "@/stores/session";
 import { toast } from "@/stores/notify";
 import { helmetOf, people } from "@/lib/queries";
 import { areaOccupancy, displayedAreas, validPosition } from "./map-areas.js";
+import { placeAreaLabel } from "./map-labels.js";
 import {
   LABEL_TILES,
   MAX_ZOOM,
@@ -177,7 +179,7 @@ function renderShapes() {
   const shapes = [];
   if ((props.work || props.areaCounts || session.layers.areas) && props.mode !== "fence") {
     visibleAreas.value.forEach((area) => {
-      shapes.push(polygonFeature(area.points, "#09dce3", "rgba(9, 220, 227, 0.04)", [8, 6], 2));
+      shapes.push(polygonFeature(area.points, "#83f6fd", "rgba(131, 246, 253, 0.2)", [8, 6], 2));
     });
   }
   replaceFeatures(areaSource, shapes);
@@ -186,33 +188,39 @@ function renderShapes() {
   if (props.fences && (props.areaCounts || session.layers.fences) && props.mode !== "fence") {
     db.state.fences
       .filter((fence) => fence.station === session.station && fence.enabled && !fence.archived)
-      .forEach((fence) => fences.push(polygonFeature(fence.points, "#1ce3b1", "rgba(28, 227, 177, 0.22)")));
+      .forEach((fence) => fences.push(polygonFeature(fence.points, "#71e96f", "rgba(113, 233, 111, 0.2)")));
   }
   replaceFeatures(fenceSource, fences);
 
   const draft = [];
   if (props.mode === "fence" && session.fenceDraft) {
     if (session.fenceDraft.points.length) {
-      draft.push(polygonFeature(session.fenceDraft.points, "#20b9ff", "#1294fa44", [5, 4]));
+      draft.push(polygonFeature(session.fenceDraft.points, "#4faff7", "#4faff733", [5, 4]));
     }
-    session.fenceDraft.points.forEach((point) => draft.push(circleFeature(point, 7, "#168bff", "#e7faff")));
+    session.fenceDraft.points.forEach((point) => draft.push(circleFeature(point, 7, "#4faff7", "#ffffff")));
   }
   replaceFeatures(draftSource, draft);
 
   const tracks = [];
   if (props.mode === "tracks") {
     const points = session.trackPoints;
-    trackGroups(points).forEach((group) => tracks.push(lineFeature(group, "#09d9ff")));
+    trackGroups(points).forEach((group) => tracks.push(lineFeature(group, "#83f6fd")));
     points.forEach((point, index) => {
       const active = index === session.trackIndex;
-      tracks.push(circleFeature([point.x, point.y], active ? 8 : 5, active ? "#008fff" : "#def9ff", active ? "#ffffff" : "#00bfff"));
+      tracks.push(circleFeature([point.x, point.y], active ? 8 : 5, active ? "#4faff7" : "#d1dae5", active ? "#ffffff" : "#83f6fd"));
     });
   }
   replaceFeatures(trackSource, tracks);
 }
 
 function renderAreaLabels() {
+  const viewport = map?.getSize();
+  if (!viewport?.every(value => value > 0) || !map.getPixelFromCoordinate(map.getView().getCenter())) return;
   const areas = props.areaCounts && props.mode !== "fence" ? occupancy.value.areas : [];
+  const occupied = showMarkers.value ? visiblePeople.value.filter(person => validPosition(person.position)).map(person => {
+    const [x, y] = map.getPixelFromCoordinate(projected(person.position));
+    return [x - 24, y - 24, x + 24, y + 24];
+  }) : [];
   const ids = new Set(areas.map((area) => area.id));
   for (const [id, overlay] of areaOverlays) {
     if (ids.has(id)) continue;
@@ -230,9 +238,20 @@ function renderAreaLabels() {
     const element = overlay.getElement();
     element.className = "map-zone map-zone-count";
     element.dataset.areaId = area.id;
-    element.setAttribute("aria-label", `有效定位 ${area.personIds.length} 人`);
-    element.innerHTML = `<strong>${area.personIds.length}<small> 人</small></strong>`;
-    overlay.setPosition(new Polygon([ring(area.points)]).getInteriorPoint().getCoordinates());
+    element.setAttribute("aria-label", `${area.name}：有效定位 ${area.personIds.length} 人`);
+    element.innerHTML = `<span>${esc(area.name)}</span><strong>${area.personIds.length}<small> 人</small></strong>`;
+    const polygon = new Polygon([ring(area.points)]);
+    const center = polygon.getInteriorPoint().getCoordinates();
+    overlay.setPosition(center);
+    const pixels = ring(area.points).map(coordinate => map.getPixelFromCoordinate(coordinate));
+    const size = [element.offsetWidth || 90, element.offsetHeight || 64];
+    const point = placeAreaLabel({
+      center: map.getPixelFromCoordinate(center), bounds: boundingExtent(pixels), size,
+      viewport, occupied,
+      contains: pixel => polygon.intersectsCoordinate(map.getCoordinateFromPixel(pixel)),
+    });
+    overlay.setPosition(map.getCoordinateFromPixel(point));
+    occupied.push([point[0] - size[0] / 2, point[1] - size[1] / 2, point[0] + size[0] / 2, point[1] + size[1] / 2]);
   });
 }
 
@@ -275,7 +294,7 @@ function renderPopup() {
     `<b>${esc(person.name)}</b>　${esc(helmetOf(person.id)?.id || "未绑定")}` +
     `<p>作业：${esc(workName(person.id))}</p>` +
     `<p>位置：${esc(person.area)}　<span class="status ${valid ? "green" : "yellow"}"><b></b>${valid ? "位置有效" : "待核验"}</span></p>` +
-    `<div class="row"><a class="text-link" href="#/tracks/${esc(person.id)}">历史轨迹 →</a><a class="text-link" href="#/person/${esc(person.id)}">查看人员</a></div>`;
+    `<div class="row"><a class="text-link" href="#/tracks/${esc(person.id)}">历史轨迹 ${iconMarkup("arrow-right")}</a><a class="text-link" href="#/person/${esc(person.id)}">查看人员</a></div>`;
   popupOverlay.setPosition(projected(person.position));
 }
 
@@ -293,7 +312,7 @@ function renderPeople() {
     if (!overlay) {
       const button = document.createElement("button");
       button.type = "button";
-      button.innerHTML = '<i class="ri-user-fill" aria-hidden="true"></i>';
+      button.innerHTML = iconMarkup("user-fill");
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         choose(button.dataset.id);
@@ -501,9 +520,11 @@ onMounted(() => {
   map.on("pointermove", onPointerMove);
   map.on("pointerup", onPointerUp);
   map.on("moveend", updateScale);
+  map.on("moveend", renderAreaLabels);
   observer = new ResizeObserver(() => {
     map.updateSize();
     focusSelection();
+    renderAreaLabels();
   });
   observer.observe(mapEl.value);
   render();

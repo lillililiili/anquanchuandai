@@ -1,0 +1,495 @@
+/* Sketch source tokens; preserve the original 1672 × 941 canvas geometry and display-size metrics in screen.css. */
+html.screen-mode,
+html.screen-mode body,
+.screen-stage {
+  background: var(--theme-bg);
+}
+
+.screen {
+  --screen-bg: var(--theme-bg);
+  --screen-nav: var(--theme-nav);
+  --screen-panel: var(--theme-panel);
+  --screen-card: var(--theme-card);
+  --screen-border: var(--theme-border);
+  --screen-divider: var(--theme-divider);
+  --screen-primary: var(--theme-primary);
+  --screen-accent: var(--theme-accent);
+  --screen-heading: var(--theme-heading);
+  --screen-text: var(--theme-text);
+  --screen-muted: var(--theme-muted);
+  --screen-warning: var(--theme-orange);
+  --screen-yellow: var(--theme-yellow);
+  --screen-danger: var(--theme-red);
+  --screen-success: var(--theme-green);
+  color: var(--screen-text);
+  background: var(--screen-bg);
+  font-family: var(--theme-font);
+  font-weight: 400;
+}
+
+/* The map and worker remain visible inside their original panels. */
+.screen::before {
+  background: linear-gradient(rgba(18,30,55,.867),rgba(18,30,55,.98) 32%),url('/assets/screen-plant.png') center top/100% auto no-repeat;
+  opacity: .65;
+}
+
+.screen .screen-head {
+  background: var(--screen-nav);
+}
+
+.screen .screen-head h1 {
+  color: var(--screen-accent);
+  font-size:24px;
+  line-height:32px;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.screen .screen-brand {
+  color: var(--screen-heading);
+}
+
+.screen .screen-brand svg {
+  color: var(--screen-accent);
+}
+
+.screen .screen-brand svg path {
+  stroke: var(--screen-accent);
+}
+
+.screen .screen-brand svg circle {
+  fill: var(--screen-accent);
+}
+
+.screen .screen-head-decoration {
+  filter: none;
+}
+
+.screen .screen-head-decoration > path {
+  stroke: var(--screen-border);
+}
+
+.screen .screen-head-decoration > path:nth-last-child(2) {
+  stroke: var(--screen-accent);
+}
+
+.screen .screen-head-decoration > path:last-child {
+  stroke: none;
+}
+
+.screen .screen-head-decoration pattern circle {
+  fill: var(--screen-primary);
+}
+
+.screen .screen-station,
+.screen .screen-clock {
+  color: var(--screen-text);
+}
+
+.screen .screen-station > svg,
+.screen .screen-station :is(i,.ui-icon) {
+  color: var(--screen-primary);
+}
+
+.screen .screen-clock {
+  border-color: var(--screen-divider);
+}
+
+.screen .screen-clock small {
+  color: var(--screen-muted);
+}
+
+.screen .screen-stat::after {
+  background: var(--screen-divider);
+}
+
+.screen .screen-stat h2 {
+  color: var(--screen-text);
+  font-weight: 400;
+}
+
+.screen .screen-stat strong {
+  color: var(--screen-accent);
+}
+
+.screen .screen-stat .unit {
+  color: var(--screen-text);
+}
+
+.screen .screen-stat .detail {
+  color: var(--screen-muted);
+}
+
+.screen .screen-stat-icon,
+.screen .screen-stat-icon.cyan,
+.screen .screen-stat-icon.warn {
+  color: var(--screen-accent) !important;
+  filter: none;
+}
+
+.screen .screen-stat-icon .screen-hex path:first-child {
+  fill: var(--screen-card);
+  stroke: var(--screen-border);
+}
+
+.screen .screen-stat.warn strong,
+.screen .screen-stat.warn .unit,
+.screen .screen-stat.warn .screen-stat-icon {
+  color: var(--screen-warning) !important;
+}
+
+.screen .screen-panel {
+  background: var(--screen-panel);
+  border-color: var(--screen-border);
+  border-radius: var(--theme-radius);
+  box-shadow: none;
+}
+
+.screen .screen-panel-title {
+  background: transparent;
+  border-color: var(--screen-divider);
+}
+
+.screen .screen-panel-title::before {
+  background: var(--screen-accent);
+  box-shadow: none;
+}
+
+.screen .screen-panel-title h2,
+.screen .screen-trend .screen-panel-title h2,
+.screen .screen-videos .screen-panel-title h2 {
+  color: var(--screen-accent);
+  font-size: var(--theme-font-size-section);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.screen .screen-panel-title small,
+.screen .screen-trend-person {
+  color: var(--screen-muted);
+  font-weight: 400;
+}
+
+.screen .screen-ring svg {
+  filter: none;
+}
+
+.screen .screen-ring svg > circle:first-of-type {
+  stroke: var(--screen-card);
+}
+
+.screen .screen-ring svg > circle:nth-of-type(2) {
+  stroke: var(--screen-primary);
+}
+
+.screen .screen-ring svg > circle:last-of-type {
+  stroke: var(--screen-warning);
+}
+
+.screen .screen-ring strong,
+.screen .screen-legend strong {
+  color: var(--screen-accent);
+}
+
+.screen .screen-ring small,
+.screen .screen-legend .offline-count {
+  color: var(--screen-text);
+}
+
+.screen .screen-legend b {
+  background: var(--screen-primary);
+  box-shadow: none;
+}
+
+.screen .screen-legend .off {
+  background: var(--screen-warning);
+  box-shadow: none;
+}
+
+.screen .screen-equipment-list {
+  border-color: var(--screen-divider);
+}
+
+.screen .screen-device-label {
+  color: var(--screen-text);
+  font-size: var(--theme-font-size-component);
+}
+
+.screen .screen-device-label span {
+  color: var(--screen-muted);
+}
+
+.screen .screen-device-bar > div {
+  border-radius: var(--theme-radius);
+  background: var(--screen-card);
+}
+
+.screen .screen-device-bar b {
+  border-radius: var(--theme-radius);
+  background: var(--screen-primary);
+  box-shadow: none;
+}
+
+.screen .screen-vital-identity span,
+.screen .screen-person-meta {
+  color: var(--screen-muted);
+}
+
+.screen .screen-vital-identity .screen-person-name {
+  color: var(--screen-heading);
+}
+
+.screen .screen-person-meta .invalid {
+  color: var(--screen-warning);
+}
+
+.screen .screen-human-grid {
+  background-image: linear-gradient(var(--screen-divider) 1px, transparent 1px), linear-gradient(90deg, var(--screen-divider) 1px, transparent 1px);
+}
+
+.screen .screen-vital-lines > g:first-child {
+  stroke: var(--screen-border);
+}
+
+.screen .screen-vital-lines > g:last-child {
+  stroke: var(--screen-primary);
+  fill: var(--screen-accent);
+}
+
+.screen .screen-metric {
+  background: var(--screen-card);
+  border-color: var(--screen-border);
+}
+
+.screen .screen-metric svg {
+  color: var(--screen-accent);
+}
+
+.screen .screen-metric h3 {
+  color: var(--screen-text);
+  font-size: var(--theme-font-size-body);
+}
+
+.screen .screen-metric strong {
+  color: var(--screen-accent);
+}
+
+.screen .screen-metric span {
+  color: var(--screen-muted);
+  font-size: var(--theme-font-size-body);
+}
+
+.screen .screen-vital-footer {
+  border-color: var(--screen-divider);
+}
+
+.screen .screen-vital-footer small {
+  color: var(--screen-muted);
+}
+
+.screen .screen-map h2 {
+  color: var(--screen-heading);
+  font-size: var(--theme-font-size-section);
+  font-weight: 700;
+  text-shadow: 0 1px 2px var(--screen-bg);
+}
+
+.screen .screen-map::after {
+  box-shadow: none;
+}
+
+.screen .screen-pin-label {
+  border: 1px solid var(--screen-primary);
+  border-radius: var(--theme-radius);
+  background: var(--theme-overlay-surface);
+  color: var(--screen-heading);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.screen .screen-pin-label strong {
+  color: var(--screen-accent);
+}
+
+.screen .screen-pin-triangle {
+  background: var(--screen-primary);
+}
+
+.screen .screen-pin-dot {
+  background: var(--screen-heading);
+  border-color: var(--screen-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--screen-primary) 20%, transparent);
+}
+
+.screen .screen-map-empty {
+  background: var(--theme-overlay-shade);
+  color: var(--screen-muted);
+}
+
+.screen .screen-event {
+  border-color: var(--screen-divider);
+}
+
+.screen .screen-event::before {
+  background: var(--screen-warning);
+  box-shadow: none;
+}
+
+.screen .screen-event > :is(i,.ui-icon),
+.screen .screen-event-icon {
+  color: var(--screen-warning);
+}
+
+.screen .screen-event > :is(i,.ui-icon).location {
+  color: var(--screen-primary);
+}
+
+.screen .screen-event-icon svg path[fill]:not([fill="none"]) {
+  fill: var(--screen-primary);
+}
+
+.screen .screen-event-icon svg circle[fill] {
+  fill: var(--screen-card);
+  stroke: var(--screen-accent);
+}
+
+.screen .screen-event-main strong {
+  color: var(--screen-heading);
+  font-size: var(--theme-font-size-component);
+  font-weight: 400;
+}
+
+.screen .screen-event-main small,
+.screen .screen-event-state {
+  color: var(--screen-muted);
+  font-size: var(--theme-font-size-body);
+}
+
+.screen .screen-event-state {
+  border-color: var(--screen-divider);
+}
+
+.screen .screen-event-state strong,
+.screen .screen-event-summary strong {
+  color: var(--screen-warning);
+}
+
+.screen .screen-event-state strong {
+  font-size: var(--theme-font-size-component);
+}
+
+.screen .screen-event-summary {
+  color: var(--screen-text);
+  font-size: var(--theme-font-size-component);
+}
+
+.screen .screen-event-summary em {
+  color: var(--screen-muted);
+}
+
+.screen .screen-alert {
+  background: color-mix(in srgb, var(--screen-danger) 12%, var(--screen-bg));
+  border-color: var(--screen-danger);
+  border-radius: var(--theme-radius-tag);
+  color: var(--screen-danger);
+}
+
+.screen .screen-chart text {
+  font-family: inherit;
+  fill: var(--screen-muted);
+}
+
+.screen .screen-chart .value {
+  fill: var(--screen-heading);
+}
+
+.screen .screen-chart .grid {
+  stroke: var(--screen-divider);
+}
+
+.screen .screen-chart > path[stroke] {
+  stroke: var(--screen-primary);
+}
+
+.screen .screen-chart > path[fill]:not([fill="none"]) {
+  fill: var(--screen-card);
+}
+
+.screen .screen-chart > circle {
+  fill: var(--screen-accent);
+  stroke: var(--screen-primary);
+}
+
+.screen .screen-chart-empty,
+.screen .screen-video-meta,
+.screen .screen-no-data {
+  color: var(--screen-muted);
+}
+
+.screen .screen-video-tile {
+  border-color: var(--screen-border) !important;
+  border-radius: var(--theme-radius);
+  background: var(--screen-card) !important;
+}
+
+.screen .screen-video-label {
+  background: var(--theme-overlay-surface);
+  color: var(--screen-heading);
+  font-size: var(--theme-font-size-component);
+  text-shadow: none;
+}
+
+.screen .screen-video-label small {
+  color: var(--screen-muted);
+}
+
+.screen .screen-footer,
+.screen .screen-footer > span:first-child {
+  color: var(--screen-muted);
+}
+
+.screen .screen-footer::after {
+  background: var(--screen-divider);
+  box-shadow: none;
+}
+
+/* App navigation entry only; never resize dashboard markers or video tiles. */
+.screen-entry {
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--theme-accent);
+  border-radius: var(--theme-radius);
+  background: var(--theme-nav);
+  color: var(--theme-link-default);
+  font-size: var(--theme-font-size-body);
+}
+
+.screen-entry:hover {
+  background: var(--theme-card);
+  border-color: var(--theme-link-hover);
+  color: var(--theme-link-hover);
+}
+
+.screen-entry:active {
+  background: var(--theme-selected);
+  border-color: var(--theme-link-active);
+  color: var(--theme-link-active);
+}
+
+.screen-entry:focus-visible {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 2px;
+}
+
+.screen-entry :is(i,.ui-icon) {
+  font-size: var(--theme-font-size-section);
+}
+
+/* Only metric numerals retain the existing dashboard display sizes. */
+.screen .screen-station, .screen .screen-stat h2 { font-size:18px; }
+.screen .screen-person-meta, .screen .screen-alert, .screen .screen-video-label small,
+.screen .screen-footer, .screen .screen-footer > span:first-child,
+.screen .screen-gear-ring small, .screen .screen-gear-item > span { font-size:12px; }
+.screen .screen-legend, .screen .screen-gear-item > b,
+.screen .screen-chart-empty, .screen .screen-no-data { font-size:14px; }

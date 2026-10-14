@@ -10,7 +10,7 @@ defineProps({
 <template>
   <div :class="['stats', variant]">
     <div v-for="item in items" :key="item.label" class="stat">
-      <AppIcon :name="item.icon" :color="item.color" />
+      <AppIcon v-if="item.icon" :name="item.icon" :color="item.color" />
       <div>
         <span>{{ item.label }}</span>
         <strong>{{ item.value }} <small>{{ item.unit }}</small></strong>

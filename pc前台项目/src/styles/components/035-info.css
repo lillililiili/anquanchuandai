@@ -4,11 +4,11 @@
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr);
   margin: 0;
-  font-size: 15px;
+  font-size:14px;
   line-height: 1.7;
 }
 .info dt {
-  color: #b4cce1;
+  color: var(--theme-text);
   padding: 7px 0;
 }
 .info dd {
@@ -18,7 +18,7 @@
 }
 .info.compact {
   grid-template-columns: 98px 1fr;
-  font-size: 14px;
+  font-size:14px;
 }
 .info.compact dt,
 .info.compact dd {

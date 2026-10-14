@@ -17,10 +17,10 @@
 }
 .device-item small {
   display: block;
-  font-size: 12px;
+  font-size:12px;
 }
 .device-item .status {
-  font-size: 12px;
+  font-size:12px;
   gap: 5px;
 }
 .device-item .status b {
@@ -43,12 +43,12 @@
   object-fit: contain;
 }
 .device-strip.large small {
-  font-size: 14px;
+  font-size:14px;
   margin: 4px 0;
 }
 .device-strip.large b {
-  font-size: 17px;
+  font-size:16px;
 }
 .device-strip.large .status {
-  font-size: 17px;
+  font-size:16px;
 }

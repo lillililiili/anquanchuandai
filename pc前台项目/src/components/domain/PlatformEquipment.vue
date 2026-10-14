@@ -22,5 +22,5 @@ function date(value){return value?new Date(value).toLocaleString('zh-CN',{hour12
   </tbody></table></div>
 </section></template>
 <style scoped>
-.platform-equipment{padding:12px 16px;margin:0 0 14px;border:1px solid #126486;background:#002638;color:#d9f3ff}.platform-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.platform-heading small{color:#31dfbf;margin-left:8px;font-weight:400}.platform-equipment p{font-size:12px;color:#99bfce;margin:6px 0 0}.platform-table{overflow:auto;margin-top:12px}.platform-table table{width:100%;text-align:left;border-collapse:collapse}.platform-table td,.platform-table th{padding:9px;border-bottom:1px solid #164659;white-space:nowrap}
+.platform-equipment{padding:12px 16px;margin:0 0 14px;border:1px solid var(--theme-border);background:var(--theme-card);color:var(--theme-text)}.platform-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.platform-heading small{color:var(--theme-green);margin-left:8px;font-weight:400}.platform-equipment p{font-size:12px;color:var(--theme-muted);margin:6px 0 0}.platform-table{overflow:auto;margin-top:12px}.platform-table table{width:100%;text-align:left;border-collapse:collapse}.platform-table td,.platform-table th{padding:9px;border-bottom:1px solid var(--theme-divider);white-space:nowrap}
 </style>

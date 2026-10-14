@@ -23,10 +23,10 @@ const typeKeys = ["H", "B", "W"];
 const typeLabels = { H: "安全帽", B: "安全带", W: "手表" };
 const verifyStates = ["待现场核验", "待认领", "处理中", "已核验"];
 const segmentColors = {
-  待现场核验: "#f3b744",
-  待认领: "#ee786b",
-  处理中: "#318add",
-  已核验: "#27baa8",
+  待现场核验: "var(--theme-orange)",
+  待认领: "var(--theme-red)",
+  处理中: "var(--theme-primary)",
+  已核验: "var(--theme-green)",
 };
 const peopleColumns = ["人员", "班组", "所属区域", "当前作业", "已领用装备", "操作"];
 const deviceColumns = ["设备", "类型", "当前领用人", "电量", "状态"];
@@ -216,7 +216,7 @@ function exportStatistics() {
           <template v-if="segments.length">
             <span v-for="segment in segments" :key="segment.label" :style="'flex:' + segment.count + ';background:' + segment.color">{{ segment.count }}</span>
           </template>
-          <span v-else style="flex:1;background:#163e59">暂无事件</span>
+          <span v-else style="flex:1;background:var(--theme-component-bg-1)">暂无事件</span>
         </div>
         <div class="row space-between">
           <div v-for="label in verifyStates" :key="label">

@@ -5,9 +5,9 @@
   overflow: hidden;
   min-height: 230px;
   height: 100%;
-  border: 1px solid #20506c;
+  border: 1px solid var(--theme-border);
   border-radius: 5px;
-  background: #0c293a;
+  background: var(--theme-card);
   touch-action: none;
 }
 .map-world {
@@ -33,19 +33,19 @@
   left: 14px;
   top: 13px;
   padding: 3px 9px;
-  background: #00253fea;
+  background: var(--theme-card);
   letter-spacing: 1px;
 }
 .map-zone {
   position: absolute;
   transform: translate(-50%, -50%);
   padding: 7px 13px;
-  border: 1px solid #49c8f2;
+  border: 1px solid var(--theme-border);
   border-radius: 4px;
-  background: #00243eee;
-  box-shadow: 0 1px 5px #0007;
+  background: var(--theme-card);
+  box-shadow: 0 1px 5px var(--theme-shadow-modal);
   white-space: nowrap;
-  font-size: 16px;
+  font-size:16px;
   pointer-events: none;
 }
 .map-person {
@@ -53,45 +53,45 @@
   transform: translate(-50%, -50%);
   height: 33px;
   width: 33px;
-  border: 2px solid #caefff;
+  border: 2px solid var(--theme-border);
   border-radius: 50%;
   color: white;
-  background: #008cfa;
+  background: var(--theme-card);
   box-shadow:
-    0 0 0 5px #00aaff26,
-    0 0 15px #008eff;
+    0 0 0 5px var(--theme-shadow-soft),
+    0 0 15px var(--theme-shadow-modal);
   padding: 2px;
   z-index: 3;
 }
-.map-person i {
-  font-size: 24px;
+.map-person :is(i,.ui-icon) {
+  font-size:24px;
 }
 .map-person.warning {
-  background: #b07b05;
-  border-color: #ffdc50;
-  box-shadow: 0 0 14px #ffca3577;
+  background: var(--theme-tag-orange);
+  border-color: var(--theme-yellow);
+  box-shadow: 0 0 14px var(--theme-shadow-modal);
 }
 .map-person.selected {
   height: 39px;
   width: 39px;
   box-shadow:
-    0 0 0 7px #008cff38,
-    0 0 20px #00bfff;
+    0 0 0 7px var(--theme-shadow-soft),
+    0 0 20px var(--theme-shadow-modal);
 }
 .map-popup {
   position: absolute;
   z-index: 7;
   min-width: 245px;
-  background: #00243cf5;
-  border: 1px solid #48d3fd;
+  background: var(--theme-card);
+  border: 1px solid var(--theme-border);
   border-radius: 5px;
   padding: 14px;
-  font-size: 14px;
-  box-shadow: 0 5px 20px #00101d88;
+  font-size:14px;
+  box-shadow: 0 5px 20px var(--theme-shadow-modal);
   cursor: default;
 }
 .map-popup p {
-  font-size: 13px;
+  font-size:12px;
   line-height: 1.9;
 }
 .map-popup .row {
@@ -102,27 +102,27 @@
   left: 13px;
   bottom: 12px;
   padding: 7px 12px;
-  background: #01233aeb;
-  border: 1px solid #24546e;
+  background: var(--theme-card);
+  border: 1px solid var(--theme-border);
   border-radius: 4px;
   line-height: 1.9;
-  font-size: 12px;
+  font-size:12px;
   pointer-events: none;
 }
-.map-legend i {
+.map-legend :is(i,.ui-icon) {
   margin-right: 8px;
-  font-size: 17px;
+  font-size:16px;
 }
 .map-scale {
   position: absolute;
   right: 24px;
   bottom: 13px;
-  font-size: 10px;
-  color: #ddedf6;
-  text-shadow: 1px 1px #000;
+  font-size:12px;
+  color: var(--theme-accent);
+  text-shadow: 1px 1px var(--theme-shadow-modal);
 }
 .map-scale hr {
-  border-color: #d6e9f9;
+  border-color: var(--theme-border);
   margin: 3px 0;
   border-width: 2px;
 }
@@ -131,12 +131,12 @@
   right: 21px;
   top: 17px;
   text-align: center;
-  font-size: 12px;
-  color: #c1dcee;
+  font-size:12px;
+  color: var(--theme-accent);
 }
-.map-compass i {
+.map-compass :is(i,.ui-icon) {
   font-size: 29px;
-  color: #77caff;
+  color: var(--theme-accent);
 }
 .map-tools {
   position: absolute;
@@ -147,7 +147,7 @@
   gap: 2px;
 }
 .map-tools .btn {
-  background: #022a45e8;
+  background: var(--theme-card);
 }
 .map-editbar {
   position: absolute;
@@ -155,21 +155,21 @@
   right: 60px;
   display: flex;
   gap: 2px;
-  background: #012038e8;
-  border: 1px solid #1c597d;
+  background: var(--theme-card);
+  border: 1px solid var(--theme-border);
   padding: 5px;
   border-radius: 4px;
 }
 .map-editbar .btn {
-  font-size: 13px;
+  font-size:12px;
   padding: 5px 9px;
 }
 .map-instruction {
   position: absolute;
   bottom: 14px;
   left: 180px;
-  color: #d6eaff;
-  background: #00243bdd;
+  color: var(--theme-text);
+  background: var(--theme-card);
   padding: 6px;
-  font-size: 12px;
+  font-size:12px;
 }

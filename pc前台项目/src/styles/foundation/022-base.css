@@ -5,10 +5,10 @@ select {
   padding-right: 24px;
 }
 select option {
-  background: #082c46;
+  background: var(--theme-card);
 }
 input[type="checkbox"] {
-  accent-color: #008bff;
+  accent-color: var(--theme-primary);
   width: 19px;
   height: 19px;
   min-height: 19px;
@@ -16,7 +16,7 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 input[type="range"] {
-  accent-color: #0799ff;
+  accent-color: var(--theme-accent);
   padding: 0;
   border: 0;
   min-height: 20px;

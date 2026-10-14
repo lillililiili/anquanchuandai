@@ -3,35 +3,35 @@
 .tag {
   display: inline-block;
   padding: 2px 12px;
-  font-size: 13px;
+  font-size:12px;
   line-height: 1.6;
-  border: 1px solid #187aaf;
-  background: #08518650;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-card);
   border-radius: 3px;
   white-space: nowrap;
 }
 .tag.yellow {
-  border-color: #aa873c;
-  background: #ae81251c;
+  border-color: var(--theme-orange);
+  background: var(--theme-tag-orange);
 }
 .tag.green {
-  border-color: #107d72;
-  background: #126d6622;
+  border-color: var(--theme-border);
+  background: var(--theme-card);
 }
 .tag.red {
-  border-color: #bd4552;
-  background: #a82c3822;
+  border-color: var(--theme-red);
+  background: var(--theme-tag-red);
 }
 .tag.muted {
-  border-color: #426581;
-  background: #22486355;
+  border-color: var(--theme-border);
+  background: var(--theme-card);
 }
 .status {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   white-space: nowrap;
-  font-size: 14px;
+  font-size:14px;
 }
 .status b {
   width: 11px;

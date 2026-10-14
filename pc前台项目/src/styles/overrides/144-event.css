@@ -18,12 +18,12 @@
 .event-page .evidence .detail-section .note {
   padding: 5px 0;
   line-height: 1.5;
-  font-size: 12px;
+  font-size:12px;
 }
 .event-page .timeline-item {
   padding: 6px 0 6px 20px;
   line-height: 1.5;
-  font-size: 13px;
+  font-size:12px;
 }
 .event-page .timeline-item:before {
   top: 10px;

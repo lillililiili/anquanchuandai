@@ -1,8 +1,8 @@
 /* app.css 2401-2416 */
 
 .count-label {
-  color: #8babc6;
-  font-size: 13px;
+  color: var(--theme-muted);
+  font-size:12px;
   margin-top: 13px;
 }
 .inline-buttons {

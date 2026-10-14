@@ -1,8 +1,8 @@
 /* app.css 2886-2892 */
 
-.stat:has(> i.ri-) {
+.stat:has(> :is(i,.ui-icon).ri-) {
   gap: 0;
 }
-.stat > i.ri- {
+.stat > :is(i,.ui-icon).ri- {
   display: none;
 }

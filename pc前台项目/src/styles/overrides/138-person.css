@@ -13,11 +13,11 @@
   height: 88px;
 }
 .person-page .person-summary h1 {
-  font-size: 27px;
+  font-size:24px;
   line-height: 1.3;
 }
 .person-page .person-summary p {
-  font-size: 15px;
+  font-size:14px;
   line-height: 1.6;
 }
 .person-page .device-strip.large {
@@ -32,15 +32,15 @@
   width: 74px;
 }
 .person-page .device-strip.large small {
-  font-size: 12px;
+  font-size:12px;
   line-height: 1.5;
   margin: 3px 0;
 }
 .person-page .device-strip.large b {
-  font-size: 16px;
+  font-size:16px;
 }
 .person-page .device-strip.large .status {
-  font-size: 15px;
+  font-size:14px;
 }
 .person-page .person-map {
   height: 197px;
@@ -50,16 +50,16 @@
 }
 .person-page .compact th {
   padding: 8px 6px;
-  font-size: 12px;
+  font-size:12px;
   white-space: nowrap;
 }
 .person-page .compact td {
   padding: 7px 6px;
-  font-size: 12px;
+  font-size:12px;
   white-space: nowrap;
 }
 .person-page .info {
-  font-size: 14px;
+  font-size:14px;
   line-height: 1.5;
 }
 .person-page .info dt,
@@ -76,7 +76,7 @@
   grid-template-columns: 1.9fr 1fr;
 }
 .person-page .side-video .btn {
-  font-size: 14px;
+  font-size:14px;
   min-height: 43px;
 }
 .person-page .side-video .stack {

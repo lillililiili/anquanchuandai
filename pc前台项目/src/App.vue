@@ -35,6 +35,6 @@ const bare = computed(() => route.name === "login" || route.name === "screen");
 </template>
 
 <style scoped>
-.connection-notice { position: fixed; top: 0; left: 0; right: 0; z-index: 10000; padding: 10px 16px; color: #fff; background: #8a3a09; text-align: center; }
+.connection-notice { position: fixed; top: 0; left: 0; right: 0; z-index: 10000; padding: 10px 16px; color: var(--theme-heading); background: var(--theme-red); text-align: center; }
 .connection-notice button { margin-left: 12px; color: inherit; background: transparent; border: 1px solid currentColor; padding: 4px 10px; cursor: pointer; }
 </style>

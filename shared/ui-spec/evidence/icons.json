@@ -1,0 +1,452 @@
+{
+  "add": {
+    "id": "nlvobCFZze5YcuN1vCLwo",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/add",
+    "geometrySha256": "f689c6aabd2c5af81dfe1aab7e8eca7712903ae9cf1bd44e20dac167b605ea5c"
+  },
+  "arrow-left": {
+    "id": "KSuelKEEFV4N_ZyZKGFXi",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/arrow-left",
+    "geometrySha256": "c6426e97fc97503999a441517af9b6c8071b533810d5b8097914620864d7d714"
+  },
+  "arrow-right": {
+    "id": "Y8F3OdE47YvVs5IJCJVrn",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/arrow-right",
+    "geometrySha256": "6ee6248e9f3d18cdaead041289aab9cc49b338332f194f2b6937fd2e37bf3310"
+  },
+  "arrow-right-up": {
+    "id": "ZfgNnixCg553oebPJOotd",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/arrow-right-up",
+    "geometrySha256": "143916e84a72361ff54f0152fcf18cd0a92fabcbb6bc67159223d867c8ec62fe"
+  },
+  "battery": {
+    "id": "ouyU0c7pghVa6wb2qph-r",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320421/battery",
+    "geometrySha256": "d4f9e4c166c84cb01da846aecd53647c7e4ab79863964528f2cd7cacd15e0396"
+  },
+  "battery-low": {
+    "id": "IVjsjvQRlP2zF1YJM_gVO",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320421/battery-low",
+    "geometrySha256": "ccfd654fe76631fecb9b749021ee07453bfb5c882e18cb1ab2ff746ec5b3cc7a"
+  },
+  "browse": {
+    "id": "nPCXOpKJoXL1J4TAzNXRL",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/browse",
+    "geometrySha256": "689a267a00d1e9d205599a271a67dfc346f89ce4ffbe6883a5a87172a0d1aaa1"
+  },
+  "browse-off": {
+    "id": "EgyU4gxKLdUQkolEcorBw",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/browse-off",
+    "geometrySha256": "636cb7d948b8ee61d790366b415257bd28811eee98250b29d20181639902f001"
+  },
+  "building": {
+    "id": "cFCMaAVyruZWBOzgSgIAP",
+    "path": "/描边图标/Frame 427320442/Frame 427320469/Frame 427320465/building",
+    "geometrySha256": "790ad950e2bedf78a351aabc2e72e770174f43709b5e8977872222c9eed4cc12"
+  },
+  "calendar": {
+    "id": "xS156lBNzoyO4XjFs0Hto",
+    "path": "/描边图标/Frame 427320442/Frame 427320480/Frame 427320479/calendar",
+    "geometrySha256": "f6d8d3ec6a2802772510031ac1113964ec6d6498266af254bbee7b5fca682516"
+  },
+  "call": {
+    "id": "MBifYGqx78kITjpRXsh-T",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320420/call",
+    "geometrySha256": "806bcd6ea430d775c6c9aeac930ef6f2f14d0688330c448abfda48c22cd2629c"
+  },
+  "call-filled": {
+    "id": "AT2O749Z3r3tca6vp_pnq",
+    "path": "/面性图标/Frame 427320442/Frame 427320504/Frame 427320501/call-filled",
+    "geometrySha256": "ee2be8507b3b66d785521797d1a1a6c2289da4154944d030876c7d2f8e2d8e8a"
+  },
+  "camera": {
+    "id": "Vrpe5JCBmShNM0BMO0ZFv",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320420/camera",
+    "geometrySha256": "2c6a0a48c8574a6337f7995a4f5e3da4b496b6ffcc6a0b54edb42f363d5fcc49"
+  },
+  "camera-filled": {
+    "id": "7HFB-rfD9uj9Xtzr0O7sg",
+    "path": "/面性图标/Frame 427320442/Frame 427320504/Frame 427320501/camera-filled",
+    "geometrySha256": "0975202f1de18ae15a7bd3f9146634ac4353310c7c7c97a5ad63b60196d70438"
+  },
+  "celsius": {
+    "id": "Y7UugB_g3wmRNDJS87CZF",
+    "path": "/描边图标/Frame 427320442/Frame 427320464/Frame 427320463/celsius",
+    "geometrySha256": "7cc2593a064da07c39cbaa09b1d13802a02a06fac13e033db0f514a38248d3f9"
+  },
+  "chart-bar": {
+    "id": "s-Debps0pX7xYbFYAZ98R",
+    "path": "/描边图标/Frame 427320442/Frame 427320434/Frame 427320418/chart-bar",
+    "geometrySha256": "81709e4f036369db5a28719d6115762756c6c2a927f0202d0769200c581d65f7"
+  },
+  "chart-line": {
+    "id": "ok3xcdZSnbEZhtk7o_GFF",
+    "path": "/描边图标/Frame 427320442/Frame 427320434/Frame 427320418/chart-line",
+    "geometrySha256": "a4c35172204129d5c6687f115426a26fa3cff90ba2bc14ab6357673905aaf8db"
+  },
+  "chart-ring": {
+    "id": "_vWwVf0ZtjfTzTF2nFIkk",
+    "path": "/描边图标/Frame 427320442/Frame 427320434/Frame 427320418/chart-ring",
+    "geometrySha256": "f27a5c5aa79d0985b6245f38224f94f91e2a447fd5a59c1ff6eccb58629a53a9"
+  },
+  "check": {
+    "id": "64Vblqkki5oUXqKXETmYO",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/check",
+    "geometrySha256": "928908c50dddfd66b6fa9e581f57cd7432e28dedbb77f7fe60ab39af8239b75d"
+  },
+  "check-circle": {
+    "id": "ydNjnn6T3kbyKYelukFoG",
+    "path": "/描边图标/Frame 427320442/Frame 427320431/Group 427320342/check-circle",
+    "geometrySha256": "e812b8fbede857c9da7cc2895e24e3425d0c94cbab7ce2d4bec4bdeac0bf51ff"
+  },
+  "check-circle-filled": {
+    "id": "fzxCemNzKmxQdFvZf9Z9S",
+    "path": "/面性图标/Frame 427320442/Frame 427320464/Frame 427320488/check-circle-filled",
+    "geometrySha256": "e983365e2020262a7f46d8309a868c99c7e6c13f1164318acecf963bf8a8fcac"
+  },
+  "chevron-down": {
+    "id": "DXISSSysHXpcG4WMDmjkT",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-down",
+    "geometrySha256": "1c0a69cab7d350e8f25d7219c4a9a2a2af7ea48d6d56ce43a2a0c50d9a8f9e80"
+  },
+  "chevron-down-double": {
+    "id": "EZKLCLwLdwVwgVB3ztpPB",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-down-double",
+    "geometrySha256": "7d17b486058df08b573abb1ef10f3e0b601d155bcc6b9f1a73e7bbd9ab2f51db"
+  },
+  "chevron-left": {
+    "id": "Z0IgPc7I5Nb-_KyEkqaI7",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-left",
+    "geometrySha256": "fb08e1bcd7aad3df1605d59f81041994b7807bbac80b0eb035f5efb181915aa3"
+  },
+  "chevron-right": {
+    "id": "9TmlQrW2hvw9rtqnjeNNF",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-right",
+    "geometrySha256": "1c4d8b30b92fe6a34ac6b2efdb96beab2f9ac21e9c64809c659b3260a031e3e0"
+  },
+  "chevron-up": {
+    "id": "U6huq_G6jpNExdzxF4x-t",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-up",
+    "geometrySha256": "b3db14d434998daa8bbe3fc2a93a306d7ef8b35212a23f498c8067ceee659732"
+  },
+  "chevron-up-double": {
+    "id": "dFEtzyjQwlcOaAyIxb7eR",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-up-double",
+    "geometrySha256": "af4f836315824939518d8a514fcc6df18ed190f9cb85ef4943857e09866cc5fa"
+  },
+  "circle": {
+    "id": "AHnkB8tfSCT1YanGT4fIg",
+    "path": "/描边图标/Frame 427320442/Frame 427320438/Frame 427320428/circle",
+    "geometrySha256": "079d6485a03b14bd47a521774426b9d120a45f6b195319f45ef61d09787eb238"
+  },
+  "circle-filled": {
+    "id": "WVS9c8w3d6C9OQJIcqPKZ",
+    "path": "/面性图标/Frame 427320442/Frame 427320508/Frame 427320505/circle-filled",
+    "geometrySha256": "6f74aea45c1c04ff56728e442e0b47df427661e336a2cf1b5c0f7bba432cf130"
+  },
+  "close": {
+    "id": "CjoaD-8PmFFuHIa6ilXU_",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/close",
+    "geometrySha256": "cef3b56fd669e1f500eef84287ab5e54771ed2f7dba351cc2f8558eab4ef04d3"
+  },
+  "control-platform": {
+    "id": "IbAUZWWQ6GdsOWE97z6zK",
+    "path": "/描边图标/Frame 427320442/Frame 427320452/Frame 427320450/control-platform",
+    "geometrySha256": "0a788405918a96442c006458f968d76bdb5c0ad2e36bec9c5dc08eb470b6da2f"
+  },
+  "cursor": {
+    "id": "xa2p7ZT0-5_kCB3_rfViL",
+    "path": "/描边图标/Frame 427320442/Frame 427320433/Group 427320344/cursor",
+    "geometrySha256": "bb91f418d6165b97f77f10858a35de948693ad8807adf05e6a571a05130f214f"
+  },
+  "dashboard": {
+    "id": "lcWg00vll5j9H5NO1RMxU",
+    "path": "/描边图标/Frame 427320442/Frame 427320452/Frame 427320449/dashboard",
+    "geometrySha256": "c28f78fd462eed70e4038a0cdddf63d6fea530a2d66bc26ade7d7e38b79ec3d2"
+  },
+  "delete": {
+    "id": "XWl59BWhsqVKzDw9cFAdS",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/delete",
+    "geometrySha256": "d13fea5eb0611141c31ac97fa54dfa6ea03464c01203b80c115013937eb31811"
+  },
+  "desktop": {
+    "id": "crFonfDhPfFXSPpDjl7AK",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320420/desktop",
+    "geometrySha256": "5e65b779998fffed9de4b2f167c6bb96173fb5c8701226e8cc4b00e1b2f6b380"
+  },
+  "download": {
+    "id": "F5xX4QbAzIPepNhAm3Hb4",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/download",
+    "geometrySha256": "6f0d84d39c321401dad7efe7fbb2d2b35f2e58107a4d89ad194df8ee7c9bcd54"
+  },
+  "edit": {
+    "id": "XdhPSOEBkn1MnbVeYGGxM",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/edit",
+    "geometrySha256": "f3374b36f7e60564d5e922ac46f655bcd05e8c91c699847c2ce42e401ec22d19"
+  },
+  "error-circle": {
+    "id": "WLpzovCqSOEK9q_0mN0nW",
+    "path": "/描边图标/Frame 427320442/Frame 427320431/Group 427320342/error-circle",
+    "geometrySha256": "1f6034a25e5add5649937ed711ffce333cae0bb49a02f140fc3487a4d9f94c99"
+  },
+  "error-circle-filled": {
+    "id": "5siAX_NMlTxz52m2ADNM6",
+    "path": "/面性图标/Frame 427320442/Frame 427320464/Frame 427320488/error-circle-filled",
+    "geometrySha256": "70f3dc0e2a89fc39c96b2991afbddde75bebaa34cb4184daef49f7e970aeebb7"
+  },
+  "file": {
+    "id": "ItO_g_O4qivALMpWeGWsO",
+    "path": "/描边图标/Frame 427320442/Frame 427320437/Frame 427320423/file",
+    "geometrySha256": "44a187252edeca5e2c2426419a4f140e2c484b2ef43a05ab65e85c2e4ee62afb"
+  },
+  "focus": {
+    "id": "73M0uxirdvQBiv_fKGzyM",
+    "path": "/描边图标/Frame 427320442/Frame 427320472/Frame 427320470/focus",
+    "geometrySha256": "b5a882eeba251ea42ee19b56e81fe685a32ed928543e33a034ffea169e885ce7"
+  },
+  "folder": {
+    "id": "fbVVV6B9Har2uZfyHkJ9X",
+    "path": "/描边图标/Frame 427320442/Frame 427320437/Frame 427320423/Frame 427320426/folder",
+    "geometrySha256": "957344c0fd9930b17b107b91a97ba5bbb9801cf16b7e0d92085d45cf90def527"
+  },
+  "fullscreen": {
+    "id": "7bWwps6m6isxfCH-2ZHNz",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/fullscreen",
+    "geometrySha256": "229aac854ca0a5a910ba8480b5070986927b12cb0efcede9fe907a1431de4289"
+  },
+  "heart": {
+    "id": "rZN5FB3pXRVGJQBf65NUz",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/heart",
+    "geometrySha256": "4bae322659410afaef3b3e85fb4c6754dcb87f76b8a58b054de952b6f918bb96"
+  },
+  "heart-filled": {
+    "id": "JsHyitAn-Y2OvrxmIDFSL",
+    "path": "/面性图标/Frame 427320442/Frame 427320469/Frame 427320485/heart-filled",
+    "geometrySha256": "60c4e2b6a2cdce23cd8b0f0131a8502a0d7a8c36f1f23806d45373d71632bbe5"
+  },
+  "history": {
+    "id": "PzvXaCHfPt6WyIK1Tndiz",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/history",
+    "geometrySha256": "14cd73c00eadc99c024a6dbe49f54191e9752db4a1a9b42d85c71a65ec98b116"
+  },
+  "home": {
+    "id": "88OodAFM_gfY1jwuv111d",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/home",
+    "geometrySha256": "dac445780b4e6383c14286f52a07ac735936d5b952c35148eb0c9f38b33cf6da"
+  },
+  "image": {
+    "id": "eFkWCMeHPQ59usviqUdlq",
+    "path": "/描边图标/Frame 427320442/Frame 427320438/Frame 427320427/image",
+    "geometrySha256": "6dd0a3835872fd917d5bf7be01cd41ed31d2d40bd46e6a15aba46a91fb973430"
+  },
+  "info-circle": {
+    "id": "piAn_jmx0oZ27MVcZQjiQ",
+    "path": "/描边图标/Frame 427320442/Frame 427320431/Group 427320342/info-circle",
+    "geometrySha256": "af14d078fee20e715a7d0d32f0aeed8c20eea4185f9e70fbb8c15617d0a3db00"
+  },
+  "key": {
+    "id": "GxGtdUQWxOnFa85NCIhHV",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/key",
+    "geometrySha256": "622a9b61e5c7e11a5b788013be32e338b219d2674895dc889eb7ef8eda61d48b"
+  },
+  "link": {
+    "id": "8WkdLzugXuoNZoF2mG1te",
+    "path": "/描边图标/Frame 427320442/Frame 427320480/Frame 427320479/link",
+    "geometrySha256": "c2f35715855280c23fa5b94b9ecb662c5b375859eef8100a2d8137e2ca29bc89"
+  },
+  "link-unlink": {
+    "id": "93TcpKR0yOW2JEs9NMUUX",
+    "path": "/描边图标/Frame 427320442/Frame 427320480/Frame 427320479/link-unlink",
+    "geometrySha256": "daee503ac4c7d4c8604052e362d2d0a13af5a2ff820e17008d7adf87acad3066"
+  },
+  "loading": {
+    "id": "yfiD4gn_1lFwOmDJ_6LoF",
+    "path": "/面性图标/Frame 427320442/Frame 427320544/Frame 427320543/loading",
+    "geometrySha256": "82dc632c33c4cefcd41ead7157bc4de0d2c7ec1198ecc6eeebe97f38a36c6674"
+  },
+  "location": {
+    "id": "VxS9XJnlVu3iBxDBe57Rq",
+    "path": "/描边图标/Frame 427320442/Frame 427320441/Frame 427320440/location",
+    "geometrySha256": "13ace592c016ccee8ecb83a08bfc3f46ab228b8a989bd0278187ba219cfb5c50"
+  },
+  "location-filled": {
+    "id": "FI9nDvRj8vtrNepqgo6gl",
+    "path": "/面性图标/Frame 427320442/Frame 427320511/Frame 427320510/location-filled",
+    "geometrySha256": "31f1c07e75e6edaeee3458655bffb6e331e1390061b897a6e8594728c8cf212b"
+  },
+  "lock-on": {
+    "id": "9wAeR1G0o6q_6K99AnxKq",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/lock-on",
+    "geometrySha256": "ae1e63434c1aa932f84e44cb5fe7e9e0f0ce2c19dc09a7d33acaafd744b3a720"
+  },
+  "lock-on-filled": {
+    "id": "cqsPA_-tfds3403UPImI3",
+    "path": "/面性图标/Frame 427320442/Frame 427320469/Frame 427320482/lock-on-filled",
+    "geometrySha256": "78f3fd148f4b49705a2c5e694df201e3c9426db5b8b76e07381c54c21f551eea"
+  },
+  "microphone": {
+    "id": "c33cqIJmFCz0g7Cco2yNP",
+    "path": "/描边图标/Frame 427320442/Frame 427320462/Frame 427320460/microphone",
+    "geometrySha256": "a4eb4ae8b6971d90b8d8ee23f8480698a91f1e786980b62922b772e94efbb0ff"
+  },
+  "minus": {
+    "id": "3l8Xs073EvxgYxR8OL6dB",
+    "path": "/描边图标/Frame 427320442/Frame 427320451/Frame 427320448/minus",
+    "geometrySha256": "56d119a308afc616da030ec9879b73dd203846058345c8a4f39e9f21e644d926"
+  },
+  "navigation-arrow-filled": {
+    "id": "r1nYwVRcpM7zxy060X_q9",
+    "path": "/面性图标/Frame 427320442/Frame 427320511/Frame 427320509/navigation-arrow-filled",
+    "geometrySha256": "754a39a9aa9d3eeac43b78572c80b16973859ce8f28345b84b007116cf41c61c"
+  },
+  "notification": {
+    "id": "YFBclK3wIehQ1enV7wb7F",
+    "path": "/描边图标/Frame 427320442/Frame 427320431/Group 427320342/notification",
+    "geometrySha256": "23a4b295b9d0a224e741c6e787f6b1f3e3180dc114c5ba7397c8d1529b00b1c1"
+  },
+  "pause-circle": {
+    "id": "LeP6BdooeOCAS6nENw38Y",
+    "path": "/描边图标/Frame 427320442/Frame 427320462/Frame 427320461/pause-circle",
+    "geometrySha256": "17692967bb38742208c08a32348d3908bafafce51e4875bf0a756d93cc535c22"
+  },
+  "pause-circle-filled": {
+    "id": "U-2odJTiXdwZndoed_8ig",
+    "path": "/面性图标/Frame 427320442/Frame 427320530/Frame 427320529/pause-circle-filled",
+    "geometrySha256": "30cecc1f7c6f16529ef8130bc81bef02699f7af109634a34530829a35a3127ce"
+  },
+  "phone-search": {
+    "id": "VhYyyBrDvE1_zHdvvzgCS",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320420/phone-search",
+    "geometrySha256": "05f40bd3745ae219b53e037da4d92b90ce4d9b1ce3bc949120b3d3298be6e878"
+  },
+  "play": {
+    "id": "xglRWp4ALAu1kQOmfdb4V",
+    "path": "/描边图标/Frame 427320442/Frame 427320462/Frame 427320461/play",
+    "geometrySha256": "8594f58404b4cfc3b52eb4f917274a385f3c3e0386252f3096a4c75af2c2cf02"
+  },
+  "play-circle-filled": {
+    "id": "jynEOPA1NtkcazcgyOIXy",
+    "path": "/面性图标/Frame 427320442/Frame 427320530/Frame 427320529/play-circle-filled",
+    "geometrySha256": "8c656b6e82c32a82d9b2465e96a214e4cdfbba82ff72a0367eec1cfd4a11b2e6"
+  },
+  "rectangle": {
+    "id": "LO7OtQXVOCKS8lSIqEL1M",
+    "path": "/描边图标/Frame 427320442/Frame 427320438/Frame 427320428/rectangle",
+    "geometrySha256": "4fd88ffeaf48a9289adf366f9814330fefaeeb466f0bffc4de8622fc4216ffa0"
+  },
+  "refresh": {
+    "id": "MAJqdLw-rIL8Zn4oLSnmi",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/refresh",
+    "geometrySha256": "96ac1124e2cab5ffc67d221275bcb98c298f211023a823461aac1e798a76fe10"
+  },
+  "rollback": {
+    "id": "kGb2Eh0kovraGBMH5JGWF",
+    "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/rollback",
+    "geometrySha256": "027bd76e978b368a3ee70eac414c5aa6931274453e1cfd9dfbfeb9ce434a26a3"
+  },
+  "search": {
+    "id": "1oj0F33D72aTeV3sk-cdh",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/search",
+    "geometrySha256": "805cea2161a8cd1989d1741b24c5302f5814d39f1a137c253b42e2aaec34b456"
+  },
+  "send-filled": {
+    "id": "cStf1qjm5GbYD-CTasL1l",
+    "path": "/面性图标/Frame 427320442/Frame 427320469/Frame 427320485/send-filled",
+    "geometrySha256": "2495bc4463e2240b9cbb73d306767b54b4d7916be429cff7b568b8415bf3f537"
+  },
+  "setting": {
+    "id": "leHK5-Sk_Nrz_Cyk9pfhw",
+    "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/setting",
+    "geometrySha256": "2abdb2635004efbc2ab2f8049582dcc296ebc1c4056998a06dfbf9ac9aeeac52"
+  },
+  "sound": {
+    "id": "oNZxuZWItRs01oO-ezht0",
+    "path": "/描边图标/Frame 427320442/Frame 427320462/Frame 427320460/sound",
+    "geometrySha256": "d4edc70702b9b7a915e548a3456ee5ed08321f9d0dac064ce531fcbe003b6b06"
+  },
+  "sound-filled": {
+    "id": "yGHk5v-fTick7jKxf4BFH",
+    "path": "/面性图标/Frame 427320442/Frame 427320530/Frame 427320528/sound-filled",
+    "geometrySha256": "db89ac97564464f3b212c0dd626e70435c99d36938142cd7b99d52973e562025"
+  },
+  "sound-mute": {
+    "id": "mW3t_SAbr2fzeiEeMIZi4",
+    "path": "/描边图标/Frame 427320442/Frame 427320462/Frame 427320460/sound-mute",
+    "geometrySha256": "cdfaf3d6a6cf0f3daa6904c151e1d72bfb111580560cc4d748bbc95a5f204b7d"
+  },
+  "stop-circle-filled": {
+    "id": "SMNKq64KBWeGpfRQJhA-X",
+    "path": "/面性图标/Frame 427320442/Frame 427320530/Frame 427320529/stop-circle-filled",
+    "geometrySha256": "7efdcdb4914e5ab9893a1f159d9d23b9afc41ae77a392dda52afe298e1fba9fc"
+  },
+  "task": {
+    "id": "vRG_HW1CNvf8lDAOQ5Y8O",
+    "path": "/描边图标/Frame 427320442/Frame 427320437/Frame 427320424/task",
+    "geometrySha256": "c1ebc8910d5025d7baf88d6296751c9f1f689c85b6f920ffc8ebdb6a9e5b27bf"
+  },
+  "time": {
+    "id": "EJNu36ag0hD_RWaZp-c45",
+    "path": "/描边图标/Frame 427320442/Frame 427320431/Group 427320342/time",
+    "geometrySha256": "e181dbc0eb33b04d9a2db48b96fd17da2c405398b4861cf838fbb8408edcd481"
+  },
+  "tree-square-dot": {
+    "id": "Zpom5l9FcEI7IWL-cPm10",
+    "path": "/描边图标/Frame 427320442/Frame 427320434/Frame 427320418/tree-square-dot",
+    "geometrySha256": "3353cc4943c047a1497b7a02bb85ddfac4e47f5662bd8adb8a62ba4911314952"
+  },
+  "user": {
+    "id": "pvMxwPPtqi4S-U9VfvUhT",
+    "path": "/描边图标/Frame 427320442/Frame 427320455/Frame 427320453/user",
+    "geometrySha256": "14ff2d08c62f0f9fed6804de8d88b5e0079777d5768bde3aea603d08109f2edd"
+  },
+  "user-add": {
+    "id": "cveS-CF_fAPtU4Nrdzb4P",
+    "path": "/描边图标/Frame 427320442/Frame 427320455/Frame 427320453/user-add",
+    "geometrySha256": "7464c61e31a96532955690b37f3b367f956f008f82bf9ed720dbfd90fbde39cc"
+  },
+  "user-checked": {
+    "id": "CJ4x16rbYJOg_OiYFFywy",
+    "path": "/描边图标/Frame 427320442/Frame 427320455/Frame 427320453/user-checked",
+    "geometrySha256": "b3ea24f3dd8a940c55b255fb8c212391c51081d5bb5f2e4c8c8f4465ecee8e3e"
+  },
+  "user-filled": {
+    "id": "enTGAGAcPoM0-hH18xeBX",
+    "path": "/面性图标/Frame 427320442/Frame 427320524/Frame 427320522/user-filled",
+    "geometrySha256": "8459de74f7372eb9df7f4311f9b14d6328b3872880d03f5f74679dc5c38b973a"
+  },
+  "user-talk": {
+    "id": "pPWXfA_szaz6hneuphxMU",
+    "path": "/描边图标/Frame 427320442/Frame 427320455/Frame 427320453/user-talk",
+    "geometrySha256": "2be1778b0155c08d5ae0d989b0a14934cab84606a032ebd9927775b71273dd94"
+  },
+  "usergroup": {
+    "id": "zuwW6fAbN-9AE9OYaT_ek",
+    "path": "/描边图标/Frame 427320442/Frame 427320455/Frame 427320453/usergroup",
+    "geometrySha256": "f9cf77678e5b9a473ec9edfbe6a00dbd7e85a1a5c8c4ea5cf6a9c5717f623fd0"
+  },
+  "video-camera": {
+    "id": "0MNXSbDzmo9h3jXq_BF1W",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320421/video-camera",
+    "geometrySha256": "54465791be436c14bae7989c0a8e704338d8cd2e6f7331d228ec8758f0590bfe"
+  },
+  "video-camera-filled": {
+    "id": "Hekvc9cgH7px5tg5Ffoiy",
+    "path": "/面性图标/Frame 427320442/Frame 427320504/Frame 427320502/Frame 427320503/video-camera-filled",
+    "geometrySha256": "d1a70c3e24724f4ec619461132df0183ff7d2b01193b82085c0c898799749b3a"
+  },
+  "video-camera-off": {
+    "id": "EhlsVNrmgjAxEtgApGlGk",
+    "path": "/描边图标/Frame 427320442/Frame 427320462/Frame 427320461/video-camera-off",
+    "geometrySha256": "e817bdb4f5ec410a9f1a044193bf58ab6fe37c318804704ddd226aef2a830b0c"
+  },
+  "view-module": {
+    "id": "-0S4UQsDj8ODDAExao2H8",
+    "path": "/描边图标/Frame 427320442/Frame 427320452/Frame 427320449/view-module",
+    "geometrySha256": "753c281ce10f27e176da27b66b2777c65d202061f132bea70c50b68e240ba9f9"
+  },
+  "wifi": {
+    "id": "4-byr54-VIOEt16ZE7fiK",
+    "path": "/描边图标/Frame 427320442/Frame 427320435/Frame 427320421/wifi",
+    "geometrySha256": "b00bb0dc2b2bf91acb9dcde990b5aa9fdaab0bf44b933be98e3207153a9fff77"
+  }
+}

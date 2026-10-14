@@ -3,13 +3,13 @@
     <div class="overview-hero"><div><span class="eyebrow">管理中心 / 管理工作台</span><h1>管理工作台</h1><p>从资产概况进入明细，先核对事实，再办理业务。</p><span class="hero-site"><Location aria-hidden="true" /><strong>{{ store.sites.find(s => s.id === store.siteId)?.name }}</strong> · 当前授权范围</span></div><button class="button" @click="refresh">刷新概况</button><span class="hero-caption">装备示意 · 数据日期 2026-09-15 · 非实时设备数据</span></div>
     <QueryState :data="overview.data.value" :error="overview.error.value" :loading="overview.loading.value" @retry="loadOverview">
       <div v-if="overview.data.value?.counts" class="metrics">
-        <button v-for="(metric, index) in METRICS.slice(0, 3)" :key="metric.key" class="metric-card" @click="openDetails(metric)"><span class="metric-title"><component :is="metricIcons[index]" aria-hidden="true" />{{ metric.label }}</span><strong>{{ overview.data.value.counts[metric.key] }}<small>台</small></strong><p>{{ metric.note }}</p><span class="metric-link">查看明细 <span aria-hidden="true">↗</span></span></button>
+        <button v-for="(metric, index) in METRICS.slice(0, 3)" :key="metric.key" class="metric-card" @click="openDetails(metric)"><span class="metric-title"><component :is="metricIcons[index]" aria-hidden="true" />{{ metric.label }}</span><strong>{{ overview.data.value.counts[metric.key] }}<small>台</small></strong><p>{{ metric.note }}</p><span class="metric-link">查看明细 <UiIcon name="arrow-top-right" /></span></button>
       </div>
       <div v-if="overview.data.value?.counts" class="attention"><WarningFilled class="attention-icon" aria-hidden="true" /><div><strong>待核实的领用关系</strong><p>领用记录不完整或有矛盾，请核实后再办理。</p></div><button v-for="metric in METRICS.slice(3)" :key="metric.key" class="button" @click="openDetails(metric)">{{ metric.label }} <b>{{ overview.data.value.counts[metric.key] }}</b> 台</button></div>
     </QueryState>
     <div class="overview-grid">
       <section class="panel"><div class="section-heading"><h2>管理工作入口</h2><span class="muted small">选择需要办理的事项</span></div>
-        <div class="entry-list"><router-link v-for="(item, index) in MENU.slice(1)" :key="item.path" :to="{ path: item.path, query: { siteId: store.siteId } }"><span class="entry-stage"><component :is="entryIcons[index]" aria-hidden="true" /></span><span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span><span aria-hidden="true">→</span></router-link></div>
+        <div class="entry-list"><router-link v-for="(item, index) in MENU.slice(1)" :key="item.path" :to="{ path: item.path, query: { siteId: store.siteId } }"><span class="entry-stage"><component :is="entryIcons[index]" aria-hidden="true" /></span><span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span><UiIcon name="arrow-right" /></router-link></div>
       </section>
       <section class="panel"><div class="section-heading"><h2>最近管理变更</h2><span class="badge">最近记录</span></div>
         <QueryState :data="audit.data.value" :error="audit.error.value" :loading="audit.loading.value" @retry="loadAudit">
@@ -35,7 +35,7 @@
 <script setup>
 import { beijingTime } from '../tablePresentation'
 import { ref, watch } from 'vue'
-import { Box, Tickets, User, Location, WarningFilled, Key, Connection, Document } from '@element-plus/icons-vue'
+import { Box, Tickets, User, Location, WarningFilled, Key, Connection, Document } from '@ui-spec/element-icons'
 import stateArt from '../assets/visual/state-empty.webp'
 import { useAdminStore } from '../store'
 import { useQuery } from '../useQuery'

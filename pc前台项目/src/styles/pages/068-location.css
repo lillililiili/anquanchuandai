@@ -34,7 +34,7 @@
   scrollbar-gutter: stable;
 }
 .location-layout .table-scroll::-webkit-scrollbar-thumb {
-  background: #397fa5;
+  background: var(--theme-card);
 }
 .location-layout .table-scroll th {
   position: sticky;
@@ -44,5 +44,5 @@
 }
 .location-layout td {
   padding: 15px 9px;
-  font-size: 14px;
+  font-size:14px;
 }

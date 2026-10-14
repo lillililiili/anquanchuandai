@@ -1,0 +1,3012 @@
+[
+  {
+    "file": "pc前台项目\\src\\styles\\components\\016-panel.css",
+    "selector": "/* app.css 318-349 */\n\n.panel",
+    "property": "background",
+    "before": "#03253d99",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\016-panel.css",
+    "selector": ".panel-heading > div",
+    "property": "color",
+    "before": "#c2d5e8",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": "/* app.css 359-422 */\n\n.btn",
+    "property": "border",
+    "before": "#1979b1",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": "/* app.css 359-422 */\n\n.btn",
+    "property": "background",
+    "before": "#072b46",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": "/* app.css 359-422 */\n\n.btn",
+    "property": "color",
+    "before": "#d7edff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn:hover",
+    "property": "background",
+    "before": "#0d4266",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn:hover",
+    "property": "border-color",
+    "before": "#25c2ff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.primary",
+    "property": "background",
+    "before": "#0089fa",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.primary",
+    "property": "border-color",
+    "before": "#049bff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.primary:hover",
+    "property": "background",
+    "before": "#199bff",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.danger",
+    "property": "border-color",
+    "before": "#d14c5d",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.danger",
+    "property": "color",
+    "before": "#ff6871",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.danger",
+    "property": "background",
+    "before": "#57223270",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.danger:hover",
+    "property": "background",
+    "before": "#712b37",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.active",
+    "property": "background",
+    "before": "#005098",
+    "after": "var(--theme-selected)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".btn.active",
+    "property": "border-color",
+    "before": "#1aacff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".text-link",
+    "property": "color",
+    "before": "#34b6ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\019-button.css",
+    "selector": ".text-link:hover",
+    "property": "color",
+    "before": "#6fe6ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": "/* app.css 422-463 */\n\n.tag",
+    "property": "border",
+    "before": "#187aaf",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": "/* app.css 422-463 */\n\n.tag",
+    "property": "background",
+    "before": "#08518650",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.yellow",
+    "property": "border-color",
+    "before": "#aa873c",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.yellow",
+    "property": "background",
+    "before": "#ae81251c",
+    "after": "var(--theme-tag-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.green",
+    "property": "border-color",
+    "before": "#107d72",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.green",
+    "property": "background",
+    "before": "#126d6622",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.red",
+    "property": "border-color",
+    "before": "#bd4552",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.red",
+    "property": "background",
+    "before": "#a82c3822",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.muted",
+    "property": "border-color",
+    "before": "#426581",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\020-tag.css",
+    "selector": ".tag.muted",
+    "property": "background",
+    "before": "#22486355",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\021-field.css",
+    "selector": "/* app.css 463-499 */\n\n.field",
+    "property": "color",
+    "before": "#bed2e6",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\021-field.css",
+    "selector": "input,\nselect,\ntextarea",
+    "property": "color",
+    "before": "#e5f0ff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\021-field.css",
+    "selector": "input,\nselect,\ntextarea",
+    "property": "background",
+    "before": "#06263d",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\021-field.css",
+    "selector": "input,\nselect,\ntextarea",
+    "property": "border",
+    "before": "#24506c",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\021-field.css",
+    "selector": "input::placeholder,\ntextarea::placeholder",
+    "property": "color",
+    "before": "#6e96b3",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\021-field.css",
+    "selector": "input:focus,\nselect:focus,\ntextarea:focus",
+    "property": "outline",
+    "before": "#0eafff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\021-field.css",
+    "selector": "input:focus,\nselect:focus,\ntextarea:focus",
+    "property": "border-color",
+    "before": "#0eafff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\029-field.css",
+    "selector": ".searchbox > i",
+    "property": "color",
+    "before": "#9cbdd7",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\033-avatar.css",
+    "selector": "/* app.css 668-685 */\n\n.avatar",
+    "property": "background",
+    "before": "#137bcd",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\033-avatar.css",
+    "selector": ".avatar.photo",
+    "property": "background",
+    "before": "#254c64",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\033-avatar.css",
+    "selector": ".avatar.photo",
+    "property": "border",
+    "before": "#4fb9ed",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\034-stat.css",
+    "selector": ".stat",
+    "property": "background",
+    "before": "#03284055",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\034-stat.css",
+    "selector": ".stat strong small",
+    "property": "color",
+    "before": "#e0edf8",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\034-stat.css",
+    "selector": ".stat em",
+    "property": "color",
+    "before": "#b1c9df",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\035-info.css",
+    "selector": ".info dt",
+    "property": "color",
+    "before": "#b4cce1",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\037-tabs.css",
+    "selector": "/* app.css 843-881 */\n\n.tabs",
+    "property": "border-bottom",
+    "before": "#145079",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\037-tabs.css",
+    "selector": ".tabs .active",
+    "property": "border-bottom-color",
+    "before": "#04c4ff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\037-tabs.css",
+    "selector": ".tabs .active",
+    "property": "background",
+    "before": "#073e6b",
+    "after": "var(--theme-selected)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\037-tabs.css",
+    "selector": ".tabs.box",
+    "property": "border",
+    "before": "#123f5c",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\037-tabs.css",
+    "selector": ".tabs.box .btn.active",
+    "property": "background",
+    "before": "#087ef7",
+    "after": "var(--theme-selected)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\038-empty.css",
+    "selector": "/* app.css 881-896 */\n\n.empty",
+    "property": "color",
+    "before": "#82a5bf",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\038-empty.css",
+    "selector": ".empty i",
+    "property": "color",
+    "before": "#2e6b94",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\039-layout-bits.css",
+    "selector": "/* app.css 896-922 */\n\n.note",
+    "property": "color",
+    "before": "#9ebbd2",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\039-layout-bits.css",
+    "selector": ".note i",
+    "property": "color",
+    "before": "#33b9ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\039-layout-bits.css",
+    "selector": ".warning-box",
+    "property": "border",
+    "before": "#9f7f31",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\039-layout-bits.css",
+    "selector": ".warning-box",
+    "property": "background",
+    "before": "#5b482021",
+    "after": "var(--theme-tag-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\039-layout-bits.css",
+    "selector": ".warning-box",
+    "property": "color",
+    "before": "#edcc71",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\039-layout-bits.css",
+    "selector": ".warning-box h3",
+    "property": "color",
+    "before": "#ffcd43",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": "/* app.css 922-1095 */\n\n.map",
+    "property": "border",
+    "before": "#20506c",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": "/* app.css 922-1095 */\n\n.map",
+    "property": "background",
+    "before": "#0c293a",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-caption",
+    "property": "background",
+    "before": "#00253fea",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-zone",
+    "property": "border",
+    "before": "#49c8f2",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-zone",
+    "property": "background",
+    "before": "#00243eee",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-zone",
+    "property": "box-shadow",
+    "before": "#0007",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person",
+    "property": "border",
+    "before": "#caefff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person",
+    "property": "background",
+    "before": "#008cfa",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person",
+    "property": "box-shadow",
+    "before": "#00aaff26",
+    "after": "var(--theme-shadow-soft)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person",
+    "property": "box-shadow",
+    "before": "#008eff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person.warning",
+    "property": "background",
+    "before": "#b07b05",
+    "after": "var(--theme-tag-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person.warning",
+    "property": "border-color",
+    "before": "#ffdc50",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person.warning",
+    "property": "box-shadow",
+    "before": "#ffca3577",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person.selected",
+    "property": "box-shadow",
+    "before": "#008cff38",
+    "after": "var(--theme-shadow-soft)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-person.selected",
+    "property": "box-shadow",
+    "before": "#00bfff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-popup",
+    "property": "background",
+    "before": "#00243cf5",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-popup",
+    "property": "border",
+    "before": "#48d3fd",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-popup",
+    "property": "box-shadow",
+    "before": "#00101d88",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-legend",
+    "property": "background",
+    "before": "#01233aeb",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-legend",
+    "property": "border",
+    "before": "#24546e",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-scale",
+    "property": "color",
+    "before": "#ddedf6",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-scale",
+    "property": "text-shadow",
+    "before": "#000",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-scale hr",
+    "property": "border-color",
+    "before": "#d6e9f9",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-compass",
+    "property": "color",
+    "before": "#c1dcee",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-compass i",
+    "property": "color",
+    "before": "#77caff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-tools .btn",
+    "property": "background",
+    "before": "#022a45e8",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-editbar",
+    "property": "background",
+    "before": "#012038e8",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-editbar",
+    "property": "border",
+    "before": "#1c597d",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-instruction",
+    "property": "color",
+    "before": "#d6eaff",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\040-map.css",
+    "selector": ".map-instruction",
+    "property": "background",
+    "before": "#00243bdd",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": "/* app.css 1095-1195 */\n\n.video-frame",
+    "property": "border",
+    "before": "#18648d",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": "/* app.css 1095-1195 */\n\n.video-frame",
+    "property": "background",
+    "before": "#031825",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-label",
+    "property": "background",
+    "before": "#071e2cd9",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-name",
+    "property": "background",
+    "before": "#07233799",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-name small",
+    "property": "color",
+    "before": "#f0f7fc",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-time",
+    "property": "text-shadow",
+    "before": "#000",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-controls",
+    "property": "background",
+    "before": "#002034ee",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-controls",
+    "property": "border-top",
+    "before": "#067eae",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-controls .plain",
+    "property": "border-left",
+    "before": "#194460",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-unavailable",
+    "property": "background",
+    "before": "#00172e9c",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\041-video.css",
+    "selector": ".video-unavailable i",
+    "property": "color",
+    "before": "#9ebbd5",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\044-stat.css",
+    "selector": ".progress-row .bar",
+    "property": "background",
+    "before": "#365373",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\044-stat.css",
+    "selector": ".progress-row .bar > span",
+    "property": "background",
+    "before": "#009dff",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\053-info.css",
+    "selector": ".detail-section h3",
+    "property": "border-left",
+    "before": "#009bff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\064-avatar.css",
+    "selector": "/* app.css 1752-1756 */\n\n.participant .avatar",
+    "property": "background",
+    "before": "#124d74",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\073-pagination.css",
+    "selector": "/* app.css 1941-1950 */\n\n.pagination",
+    "property": "color",
+    "before": "#b0cade",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\083-field.css",
+    "selector": "/* app.css 2301-2307 */\n\n.form-error",
+    "property": "color",
+    "before": "#ff7880",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\084-modal.css",
+    "selector": "/* app.css 2307-2367 */\n\n.modal-backdrop",
+    "property": "background",
+    "before": "#000f1dc9",
+    "after": "var(--theme-overlay-shade)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\084-modal.css",
+    "selector": ".modal",
+    "property": "background",
+    "before": "#04283f",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\084-modal.css",
+    "selector": ".modal",
+    "property": "border",
+    "before": "#28739e",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\084-modal.css",
+    "selector": ".modal",
+    "property": "box-shadow",
+    "before": "#000a",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": "/* app.css 2367-2401 */\n\n.toast",
+    "property": "background",
+    "before": "#083a52f5",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": "/* app.css 2367-2401 */\n\n.toast",
+    "property": "border",
+    "before": "#178b92",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": "/* app.css 2367-2401 */\n\n.toast",
+    "property": "color",
+    "before": "#e7ffff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": "/* app.css 2367-2401 */\n\n.toast",
+    "property": "box-shadow",
+    "before": "#0007",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": ".toast i",
+    "property": "color",
+    "before": "#20e1be",
+    "after": "var(--theme-green)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": ".toast.error",
+    "property": "border-color",
+    "before": "#b54651",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": ".toast.error",
+    "property": "background",
+    "before": "#4b2130",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\085-toast.css",
+    "selector": ".toast.error i",
+    "property": "color",
+    "before": "#ff8893",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\087-layout-bits.css",
+    "selector": ".check-grid label",
+    "property": "background",
+    "before": "#0b334c",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\map-ol.css",
+    "selector": ".map-zone-count > strong",
+    "property": "color",
+    "before": "#6ceaf4",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\map-ol.css",
+    "selector": ".map-zone-count small",
+    "property": "color",
+    "before": "#d8edf7",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\map-ol.css",
+    "selector": ".map-area-summary",
+    "property": "border",
+    "before": "#24546e",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\map-ol.css",
+    "selector": ".map-area-summary",
+    "property": "background",
+    "before": "#01233aeb",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\map-ol.css",
+    "selector": ".map-area-summary",
+    "property": "color",
+    "before": "#d8edf7",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\map-ol.css",
+    "selector": ".map-area-summary b",
+    "property": "color",
+    "before": "#6ceaf4",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\components\\map-ol.css",
+    "selector": ".map-area-summary .map-count-unverified b",
+    "property": "color",
+    "before": "#ffdc50",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\004-base.css",
+    "selector": "body",
+    "property": "background",
+    "before": "#042b47",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\004-base.css",
+    "selector": "body",
+    "property": "background",
+    "before": "#001a2f",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\006-base.css",
+    "selector": "/* app.css 48-69 */\n\nbutton:focus-visible,\na:focus-visible",
+    "property": "outline",
+    "before": "#57e7ff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\008-base.css",
+    "selector": ".blue",
+    "property": "color",
+    "before": "#36b1ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": "/* app.css 126-267 */\n\n.topbar",
+    "property": "background",
+    "before": "#001c32",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".brand-divider,\n.top-divider",
+    "property": "background",
+    "before": "#175072",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".top-actions time",
+    "property": "color",
+    "before": "#c3d3e7",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".notification-count",
+    "property": "background",
+    "before": "#f25661",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".sidebar",
+    "property": "border-right",
+    "before": "#104464",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".sidebar",
+    "property": "background",
+    "before": "#001e35",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".sidebar a:hover",
+    "property": "background",
+    "before": "#063650",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".sidebar a.active",
+    "property": "background",
+    "before": "#063a70",
+    "after": "var(--theme-selected)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".sidebar a.active",
+    "property": "border-left-color",
+    "before": "#00cfff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".sidebar a.active i",
+    "property": "color",
+    "before": "#23c6ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".sidebar-bottom a",
+    "property": "border-top",
+    "before": "#1b4b69",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\009-shell.css",
+    "selector": ".page-foot",
+    "property": "color",
+    "before": "#7898b4",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\014-shell.css",
+    "selector": ".page-heading p",
+    "property": "color",
+    "before": "#b6ccdf",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\022-base.css",
+    "selector": "select option",
+    "property": "background",
+    "before": "#082c46",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\022-base.css",
+    "selector": "input[type=\"checkbox\"]",
+    "property": "accent-color",
+    "before": "#008bff",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\022-base.css",
+    "selector": "input[type=\"range\"]",
+    "property": "accent-color",
+    "before": "#0799ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\031-base.css",
+    "selector": "thead",
+    "property": "color",
+    "before": "#b7ccdf",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\031-base.css",
+    "selector": "tr.selected",
+    "property": "background",
+    "before": "#06487e",
+    "after": "var(--theme-selected)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\031-base.css",
+    "selector": "tr[data-action]:hover",
+    "property": "background",
+    "before": "#0a3654",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\043-base.css",
+    "selector": ".timeline-item",
+    "property": "border-left",
+    "before": "#175879",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\043-base.css",
+    "selector": ".timeline-item:before",
+    "property": "border",
+    "before": "#5dbfff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\043-base.css",
+    "selector": ".timeline-item:before",
+    "property": "background",
+    "before": "#008fff",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\043-base.css",
+    "selector": ".timeline-item time",
+    "property": "color",
+    "before": "#b1cce2",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\043-base.css",
+    "selector": ".timeline.horizontal .timeline-item",
+    "property": "border-top",
+    "before": "#336078",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\046-base.css",
+    "selector": "/* app.css 1355-1383 */\n\n.axis",
+    "property": "color",
+    "before": "#a6bed2",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\046-base.css",
+    "selector": "/* app.css 1355-1383 */\n\n.axis",
+    "property": "border-top",
+    "before": "#4e718b",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\046-base.css",
+    "selector": ".legend b",
+    "property": "background",
+    "before": "#008dff",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\046-base.css",
+    "selector": ".legend .cyan b",
+    "property": "background",
+    "before": "#0ad1d8",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\058-base.css",
+    "selector": "/* app.css 1585-1596 */\n\n.time-axis",
+    "property": "color",
+    "before": "#a3bdd5",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\063-base.css",
+    "selector": "/* app.css 1727-1752 */\n\n.remote-box",
+    "property": "background",
+    "before": "#092d47",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\063-base.css",
+    "selector": "/* app.css 1727-1752 */\n\n.remote-box",
+    "property": "border",
+    "before": "#174665",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\063-base.css",
+    "selector": ".remote-box > i",
+    "property": "color",
+    "before": "#62839f",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\063-base.css",
+    "selector": ".remote-box p",
+    "property": "color",
+    "before": "#aec4d8",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\069-base.css",
+    "selector": "/* app.css 1830-1847 */\n\n.layer-controls",
+    "property": "background",
+    "before": "#02243ce8",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\069-base.css",
+    "selector": "/* app.css 1830-1847 */\n\n.layer-controls",
+    "property": "border",
+    "before": "#2a6b8d",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\076-base.css",
+    "selector": "/* app.css 2009-2039 */\n\n.upload-area",
+    "property": "border",
+    "before": "#4e7492",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\076-base.css",
+    "selector": ".char-count",
+    "property": "color",
+    "before": "#7d9eb8",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\078-base.css",
+    "selector": ".record-entry p",
+    "property": "color",
+    "before": "#a1bcd3",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\078-base.css",
+    "selector": ".record-entry time",
+    "property": "color",
+    "before": "#719ab8",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\086-base.css",
+    "selector": "/* app.css 2401-2416 */\n\n.count-label",
+    "property": "color",
+    "before": "#8babc6",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\089-base.css",
+    "selector": "/* app.css 2436-2443 */\n\n.session-badge",
+    "property": "background",
+    "before": "#8b102c",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\089-base.css",
+    "selector": "/* app.css 2436-2443 */\n\n.session-badge",
+    "property": "color",
+    "before": "#ffe9ed",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\094-base.css",
+    "selector": "::-webkit-scrollbar-track",
+    "property": "background",
+    "before": "#042035",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\foundation\\094-base.css",
+    "selector": "::-webkit-scrollbar-thumb",
+    "property": "background",
+    "before": "#205071",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\124-location.css",
+    "selector": ".location-page > .note",
+    "property": "background",
+    "before": "#03243d",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\132-dispatch.css",
+    "selector": ".call-video-tile",
+    "property": "background",
+    "before": "#031825",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\132-dispatch.css",
+    "selector": ".call-video-frame",
+    "property": "background",
+    "before": "#031825",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\132-dispatch.css",
+    "selector": ".call-video-badge",
+    "property": "background",
+    "before": "#001b30dd",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\132-dispatch.css",
+    "selector": ".call-video-unavailable,\n.call-video-error:not([hidden])",
+    "property": "background",
+    "before": "#001b30cc",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\154-person.css",
+    "selector": ".person-vitals",
+    "property": "background",
+    "before": "#08405b88",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\154-person.css",
+    "selector": ".person-vitals",
+    "property": "background",
+    "before": "#032438",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": "/* app.css 4420-4437 */\n\n.vitals-meta",
+    "property": "color",
+    "before": "#b4d4e6",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vitals-human > span",
+    "property": "color",
+    "before": "#84aec7",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vital-card",
+    "property": "border",
+    "before": "#20516b",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vital-card",
+    "property": "background",
+    "before": "#15445b80",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vital-card",
+    "property": "background",
+    "before": "#082e4260",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vital-card h3",
+    "property": "color",
+    "before": "#d6edfc",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vital-card p span, .vital-card small",
+    "property": "color",
+    "before": "#99bad1",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vitals-footer",
+    "property": "border-top",
+    "before": "#17465e",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\155-shared.css",
+    "selector": ".vitals-footer",
+    "property": "color",
+    "before": "#a7c2d5",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\159-personnel.css",
+    "selector": ".personnel-page aside.person-detail-focused .detail-section:has(> .device-strip) .device-item",
+    "property": "border",
+    "before": "#20516b",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\159-personnel.css",
+    "selector": ".personnel-page aside.person-detail-focused .detail-section:has(> .device-strip) .device-item",
+    "property": "background",
+    "before": "#0b344b80",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\159-personnel.css",
+    "selector": ".personnel-page aside.person-detail-focused .detail-call",
+    "property": "border-top",
+    "before": "#20516b",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\159-personnel.css",
+    "selector": ".personnel-page aside.person-detail-focused .detail-call > small",
+    "property": "color",
+    "before": "#a7c2d5",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\160-works.css",
+    "selector": ".works-page .works-actions",
+    "property": "border-left",
+    "before": "#24506c",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "/* Alarm urgency. Loaded last so these cues stay above the prototype density rules. */\n\n.sos-call",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "/* Alarm urgency. Loaded last so these cues stay above the prototype density rules. */\n\n.sos-call",
+    "property": "border",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "/* Alarm urgency. Loaded last so these cues stay above the prototype density rules. */\n\n.sos-call",
+    "property": "background",
+    "before": "#6d1222",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "/* Alarm urgency. Loaded last so these cues stay above the prototype density rules. */\n\n.sos-call",
+    "property": "background",
+    "before": "#3a1830",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "/* Alarm urgency. Loaded last so these cues stay above the prototype density rules. */\n\n.sos-call",
+    "property": "background",
+    "before": "#241628",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "/* Alarm urgency. Loaded last so these cues stay above the prototype density rules. */\n\n.sos-call",
+    "property": "box-shadow",
+    "before": "#ff304088",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "/* Alarm urgency. Loaded last so these cues stay above the prototype density rules. */\n\n.sos-call",
+    "property": "box-shadow",
+    "before": "#ff2a3a66",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".sos-call-mark",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".sos-call-mark",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".sos-call-copy small",
+    "property": "color",
+    "before": "#ffd5d8",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".sos-call-go",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".sos-call-go",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".sos-call:hover .sos-call-go",
+    "property": "background",
+    "before": "#ff4d5a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-hot td:first-child,\n.alarms-page tr.is-live td:first-child,\n.alarms-page tr.is-sos td:first-child",
+    "property": "box-shadow",
+    "before": "#ffb020",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-live td:first-child",
+    "property": "box-shadow",
+    "before": "#2e9bff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-hot",
+    "property": "background",
+    "before": "#10283d",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-hot:hover,\n.alarms-page tr.is-live:hover",
+    "property": "background",
+    "before": "#16344d",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-sos",
+    "property": "background",
+    "before": "#3a1422",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-sos td",
+    "property": "color",
+    "before": "#ffe8ea",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-sos td:first-child",
+    "property": "box-shadow",
+    "before": "#ff2d3a",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-sos .tag.red",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-sos .tag.red",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-sos .tag.red",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page tr.is-sos.selected",
+    "property": "background",
+    "before": "#5a1828",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page .sos-row-go",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page .sos-row-go",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page .sos-row-go",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarms-page .sos-row-go:hover",
+    "property": "background",
+    "before": "#ff4d5a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos",
+    "property": "box-shadow",
+    "before": "#ff2a3a44",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos .sos-now",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos .sos-now",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos .panel-body > h3",
+    "property": "color",
+    "before": "#ff8d96",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos .sos-action",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos .sos-action",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos .sos-action",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".alarm-detail.is-sos .sos-action:hover",
+    "property": "background",
+    "before": "#ff4d5a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "0%,\n  100%",
+    "property": "box-shadow",
+    "before": "#ff304088",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "0%,\n  100%",
+    "property": "box-shadow",
+    "before": "#ff2a3a55",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "50%",
+    "property": "box-shadow",
+    "before": "#ff8a93",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": "50%",
+    "property": "box-shadow",
+    "before": "#ff2a3aaa",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".topbar .notification.has-sos",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".topbar .notification.has-sos",
+    "property": "background",
+    "before": "#5a1828",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".topbar .notification.has-sos i",
+    "property": "color",
+    "before": "#ff4d5a",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".topbar .notification.has-sos .notification-count",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".topbar .notification.has-sos .notification-count",
+    "property": "box-shadow",
+    "before": "#ffb3b8",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal.is-sos",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal.is-sos",
+    "property": "box-shadow",
+    "before": "#ff2a3a55",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal.is-sos > header h2",
+    "property": "color",
+    "before": "#ff8d96",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal tr.is-sos",
+    "property": "background",
+    "before": "#3a1422",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal tr.is-sos td",
+    "property": "color",
+    "before": "#ffe8ea",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal tr.is-sos td",
+    "property": "box-shadow",
+    "before": "#ff2d3a",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal tr.is-sos .tag.red",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal tr.is-sos .tag.red",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal tr.is-sos .tag.red",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal .sos-row-go",
+    "property": "background",
+    "before": "#ff2d3a",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal .sos-row-go",
+    "property": "border-color",
+    "before": "#ff5a66",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\overrides\\161-alarm-urgency.css",
+    "selector": ".modal .sos-row-go",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\042-materials.css",
+    "selector": "/* app.css 1195-1260 */\n\n.media-card",
+    "property": "background",
+    "before": "#03273f",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\042-materials.css",
+    "selector": ".media-card:hover,\n.media-card.selected",
+    "property": "border-color",
+    "before": "#069fff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\042-materials.css",
+    "selector": ".media-card:hover,\n.media-card.selected",
+    "property": "box-shadow",
+    "before": "#069fff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\042-materials.css",
+    "selector": ".media-card .play-overlay",
+    "property": "background",
+    "before": "#001d3288",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\042-materials.css",
+    "selector": ".media-card p",
+    "property": "color",
+    "before": "#b1cbe0",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\042-materials.css",
+    "selector": ".media-preview",
+    "property": "background",
+    "before": "#001627",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\045-statistics.css",
+    "selector": ".chart-bars div",
+    "property": "background",
+    "before": "#168cfc",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\045-statistics.css",
+    "selector": ".chart-bars div:nth-child(2)",
+    "property": "background",
+    "before": "#19c9d8",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\045-statistics.css",
+    "selector": ".chart-bars span",
+    "property": "color",
+    "before": "#dbeaff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\047-statistics.css",
+    "selector": ".segmented-bar > span:first-child",
+    "property": "background",
+    "before": "#ffcb46",
+    "after": "var(--theme-tag-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\047-statistics.css",
+    "selector": ".segmented-bar > span:first-child",
+    "property": "color",
+    "before": "#172430",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\047-statistics.css",
+    "selector": ".segmented-bar > span:nth-child(2)",
+    "property": "background",
+    "before": "#359ef8",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\047-statistics.css",
+    "selector": ".segmented-bar > span:nth-child(3)",
+    "property": "background",
+    "before": "#0564d1",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\047-statistics.css",
+    "selector": ".segmented-bar > span:nth-child(4)",
+    "property": "background",
+    "before": "#16bba6",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\056-person.css",
+    "selector": ".person-summary p",
+    "property": "color",
+    "before": "#c0d5e6",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\059-works.css",
+    "selector": ".work-time-track",
+    "property": "background",
+    "before": "#264a6660",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\059-works.css",
+    "selector": ".work-time-track a",
+    "property": "background",
+    "before": "#038bfa",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\061-video.css",
+    "selector": ".video-thumb.selected > .video-frame",
+    "property": "border",
+    "before": "#0ea9ff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\068-location.css",
+    "selector": ".location-layout .table-scroll::-webkit-scrollbar-thumb",
+    "property": "background",
+    "before": "#397fa5",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\070-tracks.css",
+    "selector": ".track-segment b",
+    "property": "color",
+    "before": "#d9e9f5",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\070-tracks.css",
+    "selector": ".track-labels",
+    "property": "color",
+    "before": "#aec5db",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\071-fences.css",
+    "selector": ".fence-row.selected",
+    "property": "background",
+    "before": "#034675",
+    "after": "var(--theme-selected)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\071-fences.css",
+    "selector": ".fence-row.selected",
+    "property": "border-left",
+    "before": "#02b6fb",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\071-fences.css",
+    "selector": ".fence-row p",
+    "property": "color",
+    "before": "#9bbcd4",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\077-dispatch.css",
+    "selector": ".group-row.selected",
+    "property": "background",
+    "before": "#054579",
+    "after": "var(--theme-selected)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\077-dispatch.css",
+    "selector": ".group-row.selected",
+    "property": "border-left",
+    "before": "#00baf8",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\077-dispatch.css",
+    "selector": ".group-row > i",
+    "property": "color",
+    "before": "#1bb0e6",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\077-dispatch.css",
+    "selector": ".call-status",
+    "property": "color",
+    "before": "#ffcd40",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\077-dispatch.css",
+    "selector": ".call-member > i",
+    "property": "color",
+    "before": "#16badd",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\079-sos.css",
+    "selector": ".sos-banner > i",
+    "property": "color",
+    "before": "#ff3754",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\079-sos.css",
+    "selector": ".sos-banner p",
+    "property": "color",
+    "before": "#bbd0e4",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": "/* app.css 2161-2301 */\n\n.login-page",
+    "property": "background",
+    "before": "#00182b40",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": "/* app.css 2161-2301 */\n\n.login-page",
+    "property": "background",
+    "before": "#00172c55",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-copy p",
+    "property": "color",
+    "before": "#b7d3e7",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-copy p",
+    "property": "border-left",
+    "before": "#00bce9",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card",
+    "property": "background",
+    "before": "#052236ef",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card",
+    "property": "border",
+    "before": "#31566a",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card",
+    "property": "box-shadow",
+    "before": "#00132022",
+    "after": "var(--theme-shadow-soft)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card .field > span",
+    "property": "color",
+    "before": "#e4f3ff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card input",
+    "property": "background",
+    "before": "#102e42",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card input",
+    "property": "border-color",
+    "before": "#2a536b",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card .input-icon > i",
+    "property": "color",
+    "before": "#c4d9e7",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card .input-icon .btn",
+    "property": "color",
+    "before": "#84a8c2",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-card > small",
+    "property": "color",
+    "before": "#7da2bf",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\082-login.css",
+    "selector": ".login-footer",
+    "property": "border-left",
+    "before": "#467da5",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\092-statistics.css",
+    "selector": "/* app.css 2450-2454 */\n\n.stats-notice",
+    "property": "color",
+    "before": "#aac5dc",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": "﻿/* Reference canvas: 1672 x 941; all dashboard rules are scoped. */\n.screen-entry",
+    "property": "border",
+    "before": "#078ac2",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": "﻿/* Reference canvas: 1672 x 941; all dashboard rules are scoped. */\n.screen-entry",
+    "property": "color",
+    "before": "#7eeaff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": "﻿/* Reference canvas: 1672 x 941; all dashboard rules are scoped. */\n.screen-entry",
+    "property": "background",
+    "before": "#053d58",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-entry:hover",
+    "property": "background",
+    "before": "#075a79",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-entry:hover",
+    "property": "border-color",
+    "before": "#02d9ff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": "html.screen-mode,html.screen-mode body,html.screen-mode #app",
+    "property": "background",
+    "before": "#001226",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-stage",
+    "property": "background",
+    "before": "#001226",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen",
+    "property": "color",
+    "before": "#f0f5ff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen",
+    "property": "background",
+    "before": "#004c8550",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen",
+    "property": "background",
+    "before": "#00458080",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen",
+    "property": "background",
+    "before": "#00182e",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen::before",
+    "property": "background",
+    "before": "#00172bdd",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen::before",
+    "property": "background",
+    "before": "#001e3afa",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-head",
+    "property": "background",
+    "before": "#000a1b99",
+    "after": "var(--theme-overlay-shade)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-head",
+    "property": "background",
+    "before": "#000c1bb0",
+    "after": "var(--theme-overlay-shade)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-head h1",
+    "property": "text-shadow",
+    "before": "#50a1fa",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-head h1",
+    "property": "text-shadow",
+    "before": "#008fff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-station i",
+    "property": "color",
+    "before": "#00bfea",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-clock",
+    "property": "border-left",
+    "before": "#0879b4",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-clock small",
+    "property": "color",
+    "before": "#dce1f6",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-stat::after",
+    "property": "background",
+    "before": "#007adb",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-stat::after",
+    "property": "background",
+    "before": "#00e1ef",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-stat-icon",
+    "property": "color",
+    "before": "#d7f6ff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-stat .detail",
+    "property": "color",
+    "before": "#d1d5ed",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-stat.warn strong,.screen-stat.warn .unit,.screen-stat.warn .screen-stat-icon",
+    "property": "color",
+    "before": "#ffc338",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel",
+    "property": "border",
+    "before": "#0079b5",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel",
+    "property": "background",
+    "before": "#002039ee",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel",
+    "property": "background",
+    "before": "#00233ee0",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel",
+    "property": "box-shadow",
+    "before": "#00152b",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel",
+    "property": "box-shadow",
+    "before": "#001321",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel-title",
+    "property": "border-bottom",
+    "before": "#07517a",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel-title",
+    "property": "background",
+    "before": "#00274550",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel-title::before",
+    "property": "background",
+    "before": "#00e4ff",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel-title::before",
+    "property": "box-shadow",
+    "before": "#00d9ff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-panel-title small",
+    "property": "color",
+    "before": "#7dbed8",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-ring strong",
+    "property": "color",
+    "before": "#66e6ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-ring small",
+    "property": "color",
+    "before": "#a4d9ef",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-legend b",
+    "property": "background",
+    "before": "#00d3ec",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-legend b",
+    "property": "box-shadow",
+    "before": "#00dfff44",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-legend .off",
+    "property": "background",
+    "before": "#ffb52f",
+    "after": "var(--theme-tag-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-legend .off",
+    "property": "box-shadow",
+    "before": "#ffc12c55",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-legend strong",
+    "property": "color",
+    "before": "#71e5ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-legend .offline-count",
+    "property": "color",
+    "before": "#edf2ff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-equipment-list",
+    "property": "border-top",
+    "before": "#027caf",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-device-bar>div",
+    "property": "background",
+    "before": "#294860",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-device-bar b",
+    "property": "background",
+    "before": "#00afee",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-device-bar b",
+    "property": "background",
+    "before": "#00ddf0",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-device-bar b",
+    "property": "box-shadow",
+    "before": "#00c6ff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-vital-identity span",
+    "property": "color",
+    "before": "#89cce7",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-person-meta",
+    "property": "color",
+    "before": "#90bfd5",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-person-meta .invalid",
+    "property": "color",
+    "before": "#ffbd44",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-human-grid",
+    "property": "background-image",
+    "before": "#007ac32b",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-human-grid",
+    "property": "background-image",
+    "before": "#007ac32b",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-metric",
+    "property": "border",
+    "before": "#005c8a",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-metric",
+    "property": "background",
+    "before": "#00253e66",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-metric svg",
+    "property": "color",
+    "before": "#eef3ff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-metric strong",
+    "property": "color",
+    "before": "#66e5fa",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-vital-footer",
+    "property": "border-top",
+    "before": "#074467",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-vital-footer small",
+    "property": "color",
+    "before": "#8eb7cd",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-map",
+    "property": "background",
+    "before": "#00182e",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event",
+    "property": "border-bottom",
+    "before": "#07517b",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event::before",
+    "property": "background",
+    "before": "#ffc72e",
+    "after": "var(--theme-tag-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event::before",
+    "property": "box-shadow",
+    "before": "#ffcc3677",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event>i",
+    "property": "color",
+    "before": "#ffbf36",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event>i.location",
+    "property": "color",
+    "before": "#03cef5",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event-main small",
+    "property": "color",
+    "before": "#c3c5e4",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event-state",
+    "property": "border-left",
+    "before": "#064466",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event-state",
+    "property": "color",
+    "before": "#cacbe3",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event-state strong",
+    "property": "color",
+    "before": "#ffc32d",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event-summary strong",
+    "property": "color",
+    "before": "#ffc338",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event-summary em",
+    "property": "color",
+    "before": "#97afc6",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-alert",
+    "property": "background",
+    "before": "#543921",
+    "after": "var(--theme-tag-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-alert",
+    "property": "border",
+    "before": "#a7742e",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-alert",
+    "property": "color",
+    "before": "#ffd674",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-trend-person",
+    "property": "color",
+    "before": "#92c5e0",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-chart text",
+    "property": "fill",
+    "before": "#c2c9e6",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-chart .value",
+    "property": "fill",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-chart .grid",
+    "property": "stroke",
+    "before": "#155679",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-chart-empty",
+    "property": "color",
+    "before": "#8fbad1",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-video-meta",
+    "property": "color",
+    "before": "#a8c6dc",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-video-tile",
+    "property": "border",
+    "before": "#04c0ff",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-video-tile",
+    "property": "background",
+    "before": "#001b2e",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-video-label",
+    "property": "background",
+    "before": "#00152cee",
+    "after": "var(--theme-bg)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-video-label",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-video-label",
+    "property": "text-shadow",
+    "before": "#001226",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-video-label small",
+    "property": "color",
+    "before": "#c8deeb",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-no-data",
+    "property": "color",
+    "before": "#8ebdd3",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-footer",
+    "property": "color",
+    "before": "#b9c9e2",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-footer>span:first-child",
+    "property": "color",
+    "before": "#6c94b1",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-footer::after",
+    "property": "background",
+    "before": "#00bffc",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-footer::after",
+    "property": "box-shadow",
+    "before": "#00aaff",
+    "after": "var(--theme-shadow-modal)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-stat-icon.cyan",
+    "property": "color",
+    "before": "#b9fbff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-event-icon",
+    "property": "color",
+    "before": "#ffbd39",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-station>svg",
+    "property": "color",
+    "before": "#00bfea",
+    "after": "var(--theme-primary)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-vital-identity .screen-person-name",
+    "property": "color",
+    "before": "#eef5ff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-ring strong",
+    "property": "color",
+    "before": "#e9fbff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-ring small",
+    "property": "color",
+    "before": "#9fd4ea",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-item>span",
+    "property": "color",
+    "before": "#b7d3e4",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-item em",
+    "property": "color",
+    "before": "#6fe7ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-item em.warn,.screen-gear-item i",
+    "property": "color",
+    "before": "#ffb020",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table th",
+    "property": "color",
+    "before": "#7eb0c8",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table th:first-child,.screen-gear-table td:first-child",
+    "property": "color",
+    "before": "#d5e8f4",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table td",
+    "property": "border-top",
+    "before": "#0a4668",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table .ok",
+    "property": "color",
+    "before": "#7ee7ff",
+    "after": "var(--theme-accent)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table .warn",
+    "property": "color",
+    "before": "#ffb020",
+    "after": "var(--theme-orange)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table .muted",
+    "property": "color",
+    "before": "#6d8ea3",
+    "after": "var(--theme-muted)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table .good",
+    "property": "color",
+    "before": "#3ddea0",
+    "after": "var(--theme-green)"
+  },
+  {
+    "file": "pc前台项目\\src\\styles\\pages\\screen.css",
+    "selector": ".screen-gear-table .bad",
+    "property": "color",
+    "before": "#ff5d6a",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc后台项目\\styles\\base.css",
+    "selector": "input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled)",
+    "property": "border-color",
+    "before": "#abb8ca",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".button.danger",
+    "property": "border-color",
+    "before": "#efc4cd",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".button.danger",
+    "property": "background",
+    "before": "#fff2f4",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".badge.warning",
+    "property": "border-color",
+    "before": "#efd9a4",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".notice.error",
+    "property": "background",
+    "before": "#fff2f4",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".notice.error",
+    "property": "border-color",
+    "before": "#efc4cd",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".notice.warning",
+    "property": "border-color",
+    "before": "#efd9a4",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".modal-panel",
+    "property": "box-shadow",
+    "before": "#162a4526",
+    "after": "var(--theme-shadow-soft)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".modal-panel::backdrop",
+    "property": "background",
+    "before": "#172b4659",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".reset-confirm",
+    "property": "background",
+    "before": "#fff2f4",
+    "after": "var(--theme-tag-red)"
+  },
+  {
+    "file": "pc后台项目\\styles\\components.css",
+    "selector": ".reset-confirm",
+    "property": "border",
+    "before": "#efc4cd",
+    "after": "var(--theme-red)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro",
+    "property": "background",
+    "before": "#e7eef4",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro::before",
+    "property": "background",
+    "before": "rgba(239,245,250,.86)",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro::before",
+    "property": "background",
+    "before": "rgba(239,245,250,.66)",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro::before",
+    "property": "background",
+    "before": "rgba(239,245,250,0)",
+    "after": "transparent"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro::before",
+    "property": "background",
+    "before": "rgba(20,39,59,.45)",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro .brand-product",
+    "property": "border-color",
+    "before": "#b9c9d8",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro-copy .eyebrow",
+    "property": "color",
+    "before": "#49637c",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro h1",
+    "property": "color",
+    "before": "#1d3852",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro-copy p",
+    "property": "color",
+    "before": "#4d6377",
+    "after": "var(--theme-text)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-foot",
+    "property": "color",
+    "before": "#fff",
+    "after": "var(--theme-heading)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".login-intro::before",
+    "property": "background",
+    "before": "rgba(238,245,250,.82)",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc后台项目\\styles\\pages.css",
+    "selector": ".attention",
+    "property": "border",
+    "before": "#efd9a4",
+    "after": "var(--theme-yellow)"
+  },
+  {
+    "file": "pc后台项目\\components\\AreaRangeMap.vue",
+    "selector": ".area-range-map",
+    "property": "border",
+    "before": "#d7e0ea",
+    "after": "var(--theme-border)"
+  },
+  {
+    "file": "pc后台项目\\views\\Audit.vue",
+    "selector": ".audit-snapshot",
+    "property": "background",
+    "before": "#f5f7fa",
+    "after": "var(--theme-card)"
+  },
+  {
+    "file": "pc后台项目\\views\\Login.vue",
+    "selector": ".login-field .login-input input",
+    "property": "border-color",
+    "before": "#d7dee8",
+    "after": "var(--theme-border)"
+  }
+]

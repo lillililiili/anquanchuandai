@@ -33,20 +33,20 @@
   cursor: pointer;
 }
 .fence-row.selected {
-  background: #034675;
-  border-left: 3px solid #02b6fb;
+  background: var(--theme-selected);
+  border-left: 3px solid var(--theme-border);
 }
 .fence-row p {
-  font-size: 13px;
-  color: #9bbcd4;
+  font-size:12px;
+  color: var(--theme-text);
   margin-top: 8px;
 }
 .fence-row h3 {
-  font-size: 18px;
+  font-size:18px;
 }
 .fence-layout .form-stack > .field {
   grid-template-columns: 82px 1fr;
-  font-size: 14px;
+  font-size:14px;
 }
 .fence-layout .form-stack {
   gap: 21px;

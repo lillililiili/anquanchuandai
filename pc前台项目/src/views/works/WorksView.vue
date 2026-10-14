@@ -169,7 +169,7 @@ function barStyle(work) {
     </div>
     <AppPanel title="作业详情">
       <template v-if="selected" #extra>
-        <a class="btn primary" :href="'#/work/' + selected.id">进入作业监护　›</a>
+        <a class="btn primary" :href="'#/work/' + selected.id">进入作业监护　<UiIcon name="chevron-right" /></a>
       </template>
       <template v-if="selected">
         <h3>{{ selected.name }}　<AppTag>{{ selected.status }}</AppTag></h3>

@@ -2,7 +2,7 @@
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid #145079;
+  border-bottom: 1px solid var(--theme-border);
   gap: 6px;
   margin-bottom: 14px;
 }
@@ -13,16 +13,16 @@
   border-bottom: 3px solid transparent;
   border-radius: 0;
   padding: 12px 25px;
-  font-size: 17px;
+  font-size:16px;
   display: block;
   text-align: center;
 }
 .tabs .active {
-  border-bottom-color: #04c4ff;
-  background: #073e6b;
+  border-bottom-color: var(--theme-border);
+  background: var(--theme-selected);
 }
 .tabs.box {
-  border: 1px solid #123f5c;
+  border: 1px solid var(--theme-border);
   border-radius: 5px;
   width: max-content;
   max-width: 100%;
@@ -35,6 +35,6 @@
   padding: 9px 20px;
 }
 .tabs.box .btn.active {
-  background: #087ef7;
+  background: var(--theme-selected);
   color: white;
 }

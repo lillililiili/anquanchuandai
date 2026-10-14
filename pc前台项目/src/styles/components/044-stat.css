@@ -6,16 +6,16 @@
   align-items: center;
   gap: 12px;
   margin: 20px 8px;
-  font-size: 15px;
+  font-size:14px;
 }
 .progress-row .bar {
   height: 9px;
-  background: #365373;
+  background: var(--theme-card);
   border-radius: 10px;
   overflow: hidden;
 }
 .progress-row .bar > span {
   height: 100%;
   display: block;
-  background: #009dff;
+  background: var(--theme-card);
 }

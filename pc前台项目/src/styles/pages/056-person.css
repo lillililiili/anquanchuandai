@@ -12,13 +12,13 @@
   margin-right: 8px;
 }
 .person-summary h1 {
-  font-size: 29px;
+  font-size:24px;
 }
 .person-summary p {
-  color: #c0d5e6;
+  color: var(--theme-text);
 }
 .person-summary .status {
-  font-size: 17px;
+  font-size:16px;
 }
 .person-map {
   height: 240px;

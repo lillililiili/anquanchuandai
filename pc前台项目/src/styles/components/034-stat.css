@@ -13,10 +13,10 @@
   padding: 20px 28px;
   border: 1px solid var(--border);
   border-radius: 5px;
-  background: #03284055;
+  background: var(--theme-card);
   min-width: 0;
 }
-.stat > i {
+.stat > :is(i,.ui-icon) {
   font-size: 50px;
   flex-shrink: 0;
 }
@@ -24,25 +24,25 @@
   position: relative;
 }
 .stat span {
-  font-size: 18px;
+  font-size:18px;
   display: block;
   white-space: nowrap;
 }
 .stat strong {
-  font-size: 36px;
+  font-size:24px;
   font-weight: 600;
   display: block;
   line-height: 1.35;
   white-space: nowrap;
 }
 .stat strong small {
-  font-size: 20px;
-  color: #e0edf8;
+  font-size:18px;
+  color: var(--theme-heading);
   font-weight: 400;
 }
 .stat em {
-  font-size: 13px;
-  color: #b1c9df;
+  font-size:12px;
+  color: var(--theme-text);
   font-style: normal;
 }
 .stats.flat .stat {
@@ -70,15 +70,15 @@
   background: none;
   gap: 10px;
 }
-.stats.mini .stat > i {
+.stats.mini .stat > :is(i,.ui-icon) {
   font-size: 25px;
 }
 .stats.mini .stat strong {
-  font-size: 26px;
+  font-size:24px;
 }
 .stats.mini .stat span {
-  font-size: 13px;
+  font-size:12px;
 }
 .stats.mini .stat small {
-  font-size: 13px;
+  font-size:12px;
 }

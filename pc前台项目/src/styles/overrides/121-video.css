@@ -27,7 +27,7 @@
 }
 .video-wall .detail-section h3 {
   margin: 0 0 10px;
-  font-size: 17px;
+  font-size:16px;
 }
 .video-wall .form-actions {
   margin-top: 20px !important;
@@ -51,5 +51,5 @@
   gap: 15px;
 }
 .video-page .device-item small {
-  font-size: 12px;
+  font-size:12px;
 }

@@ -26,10 +26,10 @@
 }
 .statistics-page .equal .panel-heading .legend {
   gap: 12px;
-  font-size: 12px;
+  font-size:12px;
 }
 .statistics-page .equal .panel-heading small {
-  font-size: 12px;
+  font-size:12px;
   white-space: nowrap;
 }
 .statistics-page .chart-line {
@@ -48,7 +48,7 @@
   padding: 5px 0;
 }
 .statistics-page .equal > .panel:nth-child(2) .status {
-  font-size: 12px;
+  font-size:12px;
 }
 .statistics-page .equal > .panel:nth-child(2) h3 {
   margin: 4px 0 !important;
@@ -63,5 +63,5 @@
   padding: 8px 0;
 }
 .statistics-page .stats-notice {
-  font-size: 11px;
+  font-size:12px;
 }

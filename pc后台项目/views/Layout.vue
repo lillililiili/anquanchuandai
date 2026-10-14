@@ -2,9 +2,9 @@
   <div class="admin-shell" :class="{ compact }" :data-section="visualSection">
     <a class="skip-link" href="#main-content">跳到正文</a>
     <header class="topbar">
-      <div class="brand"><span class="rl-brand" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></span><span class="brand-product">智能穿戴设备平台<small>管理中心</small></span></div>
+      <div class="brand"><span class="rl-brand rl-brand-light" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></span><span class="brand-product">智能穿戴设备平台<small>管理中心</small></span></div>
       <div class="top-actions">
-        <label class="site-picker">当前厂站<select :disabled="!store.sites.length" :value="store.siteId" @change="selectSite($event.target.value)"><option v-if="!store.sites.length" value="">无授权厂站</option><option v-for="site in store.sites" :key="site.id" :value="site.id">{{ site.name }}</option></select></label>
+        <label class="site-picker">当前厂站<UiSelect :disabled="!store.sites.length" :value="store.siteId" @change="selectSite($event.target.value)"><option v-if="!store.sites.length" value="">无授权厂站</option><option v-for="site in store.sites" :key="site.id" :value="site.id">{{ site.name }}</option></UiSelect></label>
         <span class="identity-name"><User aria-hidden="true" />{{ store.identity?.name }}</span>
         <button class="button text-button" @click="logout">退出登录</button>
       </div>
@@ -28,7 +28,7 @@
 <script setup>
 import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, Box, User, Key, Document } from '@element-plus/icons-vue'
+import { House, Box, User, Key, Document } from '@ui-spec/element-icons'
 import { getAdminProvider } from '@admin-provider'
 import { useAdminStore } from '../store'
 import { MENU, trustedPortal, safeTarget, menuPath } from '../navigation'

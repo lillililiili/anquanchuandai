@@ -221,7 +221,7 @@ async function saveMedia(id) {
           <AppButton icon="download-line" @click="saveMedia(selectedMedia.id)">下载资料</AppButton>
         </div>
         <p v-if="selectedMedia.eventId" style="margin-top:16px">
-          <a class="text-link" :href="'#/event/' + selectedMedia.eventId">查看关联事件 ›</a>
+          <a class="text-link" :href="'#/event/' + selectedMedia.eventId">查看关联事件 <UiIcon name="chevron-right" /></a>
         </p>
       </template>
       <AppEmpty v-else />

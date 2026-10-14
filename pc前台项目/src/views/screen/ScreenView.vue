@@ -22,6 +22,6 @@ onUnmounted(() => {
 <template>
   <div ref="root"></div>
   <Teleport v-if="mapTarget" :to="mapTarget">
-    <PlantMap area-counts :markers="false" :fences="false" map-class="screen-plant-map" />
+    <PlantMap area-counts popup :fences="false" map-class="screen-plant-map" />
   </Teleport>
 </template>

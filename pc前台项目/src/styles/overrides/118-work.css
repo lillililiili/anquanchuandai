@@ -9,7 +9,7 @@
   height: 430px;
 }
 .work-page > .row {
-  font-size: 13px;
+  font-size:12px;
 }
 .work-page .cols-2 {
   grid-template-columns: 1.7fr 1fr;
@@ -23,13 +23,13 @@
   padding: 0 200px;
 }
 .work-page .cols-2 > .stack > .row > .btn {
-  font-size: 10px;
+  font-size:12px;
   min-height: 29px;
   padding: 3px 5px;
   pointer-events: auto;
 }
 .work-page .video-controls .plain {
-  font-size: 11px;
+  font-size:12px;
   padding: 0 6px;
 }
 .work-page .video-controls > span {
@@ -51,7 +51,7 @@
 }
 .work-page .timeline-item {
   padding: 6px 0 6px 20px;
-  font-size: 12px;
+  font-size:12px;
 }
 .work-page .timeline-item:before {
   top: 10px;
@@ -61,23 +61,23 @@
   margin-top: 6px;
 }
 .work-page .cols-2 > .stack > .panel .detail-section h3 {
-  font-size: 15px;
+  font-size:14px;
   margin-bottom: 3px;
 }
 .work-page .cols-2 > .stack > .panel .detail-section .note {
   padding: 3px;
-  font-size: 12px;
+  font-size:12px;
 }
 .work-page .cols-2 > .stack > .panel .detail-section > .btn {
   min-height: 24px;
   padding: 2px 3px;
-  font-size: 12px;
+  font-size:12px;
 }
 .work-page td {
   padding: 9px 6px;
-  font-size: 13px;
+  font-size:12px;
 }
 .work-page th {
   padding: 9px 6px;
-  font-size: 13px;
+  font-size:12px;
 }

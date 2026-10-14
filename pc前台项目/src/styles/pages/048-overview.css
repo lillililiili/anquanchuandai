@@ -31,11 +31,11 @@
   min-height: 0;
 }
 .overview-videos .video-label {
-  font-size: 9px;
+  font-size:12px;
   padding: 2px;
 }
 .overview-videos .video-time {
-  font-size: 10px;
+  font-size:12px;
 }
 .overview-bottom .panel-heading {
   min-height: 38px;

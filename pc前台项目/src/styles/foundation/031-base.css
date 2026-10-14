@@ -3,11 +3,11 @@
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size:14px;
   text-align: left;
 }
 thead {
-  color: #b7ccdf;
+  color: var(--theme-text);
   font-weight: 400;
 }
 th {
@@ -25,16 +25,16 @@ td small {
   display: block;
 }
 td strong {
-  font-size: 16px;
+  font-size:16px;
 }
 tr.selected {
-  background: #06487e;
+  background: var(--theme-selected);
 }
 tr[data-action] {
   cursor: pointer;
 }
 tr[data-action]:hover {
-  background: #0a3654;
+  background: var(--theme-card);
 }
 tbody tr:last-child td {
   border-bottom: 0;

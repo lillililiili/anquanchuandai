@@ -62,14 +62,14 @@ watch(() => store.revision, load)
 .device-summary { display: grid; grid-template-columns: 140px minmax(0, 1fr) minmax(320px, 380px); align-items: center; gap: 28px; padding: 24px; margin-bottom: 20px; }
 .device-summary :deep(.device-mark) { width: 140px; min-width: 0; margin: 0; border-radius: 8px; }
 .device-summary :deep(.device-mark img) { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
-.device-summary :deep(.device-mark figcaption) { padding: 7px 4px; font-size: 12px; color: var(--muted); background: var(--canvas); }
+.device-summary :deep(.device-mark figcaption) { padding: 7px 4px; font-size:12px; color: var(--muted); background: var(--canvas); }
 .device-summary-info { min-width: 0; }
-.device-summary-source { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+.device-summary-source { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size:12px; margin: 0 0 8px; }
 .device-summary-source > span { color: var(--line); }
-.device-summary-info h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.35; overflow-wrap: anywhere; }
+.device-summary-info h2 { margin: 0 0 12px; font-size:24px; line-height: 1.35; overflow-wrap: anywhere; }
 .device-summary-code { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
-.device-summary-code > span, .device-summary-meta { color: var(--muted); font-size: 13px; }
-.device-summary-code strong { font-family: var(--font-number); font-size: 16px; font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
+.device-summary-code > span, .device-summary-meta { color: var(--muted); font-size:12px; }
+.device-summary-code strong { font-family: var(--font-number); font-size:16px; font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
 .device-summary-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .device-summary-meta b { font-weight: 400; color: var(--ink); margin-left: 8px; overflow-wrap: anywhere; }
 .device-summary-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
@@ -78,11 +78,11 @@ watch(() => store.revision, load)
 .communication-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .device-summary-status .communication-badge.is-online { color: var(--success); background: var(--soft-cyan); }
 .device-summary-operations { align-self: stretch; border-left: 1px solid var(--line); padding-left: 24px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
-.device-summary-operations-title { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.device-summary-operations-title { margin: 0 0 12px; color: var(--muted); font-size:12px; }
 .device-summary-buttons { display: grid; grid-template-columns: 1fr 1fr 1.2fr; align-items: start; gap: 12px; }
 .device-summary-buttons :deep(.assignment-entry), .device-summary-buttons :deep(.device-edit-entry) { width: 100%; max-width: none; gap: 8px; }
 .device-summary-buttons :deep(.button) { width: 100%; min-height: 40px; padding: 8px 10px; white-space: nowrap; }
-.device-summary-buttons :deep(.disabled-reason) { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.device-summary-buttons :deep(.disabled-reason) { color: var(--muted); font-size:12px; line-height: 1.6; }
 .device-summary-buttons :deep(.assignment-entry:first-child > .button:not(:disabled)) { color: var(--card); background: var(--blue); border-color: var(--blue); }
 .device-summary-buttons :deep(.assignment-entry:first-child > .button:not(:disabled):hover) { background: var(--blue-dark); border-color: var(--blue-dark); }
 @media (max-width: 1200px) {
@@ -94,7 +94,7 @@ watch(() => store.revision, load)
 @media (max-width: 600px) {
   .device-summary { grid-template-columns: 88px minmax(0, 1fr); gap: 16px; padding: 16px; align-items: start; }
   .device-summary :deep(.device-mark) { width: 88px; }
-  .device-summary-info h2 { font-size: 20px; }
+  .device-summary-info h2 { font-size:18px; }
   .device-summary-meta { gap: 6px; flex-direction: column; }
   .device-summary-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

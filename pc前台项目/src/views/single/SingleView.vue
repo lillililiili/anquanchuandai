@@ -71,7 +71,7 @@ async function fullscreen(event) {
 <template>
   <MissingRecord v-if="!person" />
   <template v-else>
-    <p class="muted" style="margin:4px 0 20px"><a href="#/video">视频监看</a>　›　{{ person.name }} · 单路监看</p>
+    <p class="muted" style="margin:4px 0 20px"><a href="#/video">视频监看</a>　<UiIcon name="chevron-right" />　{{ person.name }} · 单路监看</p>
     <div class="grid cols-2">
       <AppPanel extra-class="flush">
         <template #title>{{ person.name }} · 单路监看　 <small>{{ helmetOf(person.id)?.id || "未绑定" }}　|　{{ person.area }}</small></template>
@@ -99,7 +99,7 @@ async function fullscreen(event) {
           <AppStatus :color="joined ? 'green' : 'yellow'">{{ joined ? "已接入" : "待接入" }}</AppStatus>
         </div>
         <div v-if="related" class="warning-box" style="margin-top:15px">
-          <a :href="'#/event/' + related.id"><AppIcon name="error-warning-fill" />　{{ related.title }}　›</a>
+          <a :href="'#/event/' + related.id"><AppIcon name="error-warning-fill" />　{{ related.title }}　<UiIcon name="chevron-right" /></a>
           <small style="display:block;margin-top:8px">{{ related.time }} 发生，{{ related.status }}</small>
         </div>
         <div class="detail-section">
@@ -119,7 +119,7 @@ async function fullscreen(event) {
               <small>{{ item.source }}</small>
             </div>
           </div>
-          <a class="text-link" href="#/materials">查看全部 ›</a>
+          <a class="text-link" href="#/materials">查看全部 <UiIcon name="chevron-right" /></a>
         </div>
       </AppPanel>
     </div>

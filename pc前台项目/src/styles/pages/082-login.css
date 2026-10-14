@@ -4,7 +4,7 @@
   height: 100vh;
   min-height: 700px;
   background:
-    linear-gradient(#00182b40, #00172c55),
+    linear-gradient(rgba(18,30,55,.25), rgba(18,30,55,.333333)),
     url("/assets/login-plant.png") center/cover;
   position: relative;
   overflow: auto;
@@ -20,13 +20,13 @@
   top: 35.5%;
 }
 .login-copy h1 {
-  font-size: 48px;
+  font-size:24px;
   letter-spacing: 1px;
 }
 .login-copy p {
-  font-size: 29px;
-  color: #b7d3e7;
-  border-left: 5px solid #00bce9;
+  font-size:24px;
+  color: var(--theme-text);
+  border-left: 5px solid var(--theme-border);
   padding-left: 18px;
   line-height: 1.2;
   margin-top: 27px;
@@ -37,14 +37,14 @@
   right: 7.8%;
   top: 17.3%;
   width: 530px;
-  background: #052236ef;
-  border: 1px solid #31566a;
+  background: var(--theme-card);
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   padding: 42px 45px 50px;
-  box-shadow: 0 10px 40px #00132022;
+  box-shadow: 0 10px 40px var(--theme-shadow-soft);
 }
 .login-card h2 {
-  font-size: 32px;
+  font-size:24px;
   margin: 0 0 31px;
 }
 .login-card .field {
@@ -55,37 +55,37 @@
   margin: 25px 0 0;
 }
 .login-card .field > span {
-  font-size: 19px;
-  color: #e4f3ff;
+  font-size:18px;
+  color: var(--theme-heading);
 }
 .login-card input {
   width: 100%;
-  font-size: 18px;
+  font-size:18px;
   min-height: 51px;
-  background: #102e42;
-  border-color: #2a536b;
+  background: var(--theme-card);
+  border-color: var(--theme-border);
   padding-left: 53px;
 }
 .login-card .input-icon {
   position: relative;
 }
-.login-card .input-icon > i {
+.login-card .input-icon > :is(i,.ui-icon) {
   position: absolute;
   left: 15px;
   top: 13px;
   font-size: 26px;
-  color: #c4d9e7;
+  color: var(--theme-text);
 }
 .login-card .input-icon .btn {
   position: absolute;
   right: 4px;
   top: 6px;
-  color: #84a8c2;
+  color: var(--theme-muted);
 }
 .login-card button[type="submit"] {
   margin-top: 43px;
   height: 52px;
-  font-size: 23px;
+  font-size:24px;
   width: 100%;
   font-weight: 600;
 }
@@ -93,21 +93,21 @@
   display: block;
   text-align: center;
   margin-top: 16px;
-  font-size: 15px;
-  color: #7da2bf;
+  font-size:14px;
+  color: var(--theme-muted);
 }
 .login-footer {
   position: absolute;
   bottom: 31px;
   left: 32px;
-  border-left: 4px solid #467da5;
+  border-left: 4px solid var(--theme-border);
   padding-left: 19px;
-  font-size: 19px;
+  font-size:18px;
 }
 .login-footer small {
   display: block;
   margin-top: 8px;
   letter-spacing: 3px;
-  font-size: 15px;
+  font-size:14px;
 }
 

@@ -1,0 +1,276 @@
+{
+  "source": "UI规范.sketch",
+  "sha256": "20ee13bff161045011c20cb5c4fda6d8128a6e74c97d8dec7c61f378d137c36f",
+  "pageCount": 1,
+  "layerCount": 52179,
+  "groups": [
+    {
+      "name": "顶部导航",
+      "id": "HLbQ4C3K3c76r9HBfkL8j",
+      "layers": 120
+    },
+    {
+      "name": "多任务流",
+      "id": "foZd9oS5lkXNlhDI5wSgR",
+      "layers": 251
+    },
+    {
+      "name": "按钮",
+      "id": "QLwvtxAFHgAbSwADSEDPm",
+      "layers": 377
+    },
+    {
+      "name": "描边图标",
+      "id": "8NKREfHIsMWGYgxIK-Pk-",
+      "layers": 8474
+    },
+    {
+      "name": "面性图标",
+      "id": "hEAhubznSQkpHmVRfsaRm",
+      "layers": 6629
+    },
+    {
+      "name": "选择器",
+      "id": "F3JSNCtsrNXXJsyGfPKxS",
+      "layers": 997
+    },
+    {
+      "name": "级联选择器",
+      "id": "RejBVjZVyV1Q79qkTakl1",
+      "layers": 2384
+    },
+    {
+      "name": "输入框",
+      "id": "-Nq3qtQI234d1QkHsDWWm",
+      "layers": 920
+    },
+    {
+      "name": "表单",
+      "id": "Qml9HAp2TWdAXcCMKxAKj",
+      "layers": 328
+    },
+    {
+      "name": "日期选择器",
+      "id": "NIjNnijiHo80ZRE3qBFxH",
+      "layers": 5757
+    },
+    {
+      "name": "页签栏",
+      "id": "a3CeIlCkKc12oiBb_n0tg",
+      "layers": 99
+    },
+    {
+      "name": "锚点",
+      "id": "YMtrBWVqtfEEUJj7xlgbK",
+      "layers": 631
+    },
+    {
+      "name": "步骤条",
+      "id": "1vJj-dn_7mpQOxqCEMVie",
+      "layers": 296
+    },
+    {
+      "name": "轻提示",
+      "id": "yGd4Sj4fWnc84lyLU-cKS",
+      "layers": 215
+    },
+    {
+      "name": "常驻提示",
+      "id": "4WrZ1abSQ-Z6gvy2xm6PA",
+      "layers": 250
+    },
+    {
+      "name": "分页器",
+      "id": "j9LjmYkKY0DiFFdHUmP2Q",
+      "layers": 188
+    },
+    {
+      "name": "文字提示",
+      "id": "P8hIDaCQnuTUxGN5qqZmX",
+      "layers": 163
+    },
+    {
+      "name": "树结构",
+      "id": "FuH6zevraPJdwitkVMWFX",
+      "layers": 1040
+    },
+    {
+      "name": "折叠面板",
+      "id": "ufphuQQil2RiXR1_HcDf4",
+      "layers": 951
+    },
+    {
+      "name": "进度条",
+      "id": "6zy8TBhDGk4GmOQizMmEu",
+      "layers": 176
+    },
+    {
+      "name": "标签",
+      "id": "IIBklkg06LAWnRmgjkP9X",
+      "layers": 677
+    },
+    {
+      "name": "复选框",
+      "id": "LwJHFu2VfMb1lF2S2Jky9",
+      "layers": 132
+    },
+    {
+      "name": "字体",
+      "id": "lXRWk8hYVktBzwOUJWl1r",
+      "layers": 155
+    },
+    {
+      "name": "颜色",
+      "id": "fL-xS0jagWhLLRmFxwnce",
+      "layers": 456
+    },
+    {
+      "name": "单选框",
+      "id": "re0bIQ7LDkAg1kcZy52p0",
+      "layers": 61
+    },
+    {
+      "name": "开关",
+      "id": "WifcN9_baFybJxs_2HRB8",
+      "layers": 26
+    },
+    {
+      "name": "徽标",
+      "id": "hvqqN5ieWgpkhp14As2GK",
+      "layers": 65
+    },
+    {
+      "name": "Icons-filled",
+      "id": "-H1JZXwPJJQFi_fZDaeAM",
+      "layers": 6477
+    }
+  ],
+  "artboards": [
+    {
+      "name": "运行管理-缺陷单管理-缺陷单处理",
+      "id": "l2EilwiTc98LFxqLDxVON",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 3782,
+        "width": 1920,
+        "x": -1560,
+        "y": 11079
+      }
+    },
+    {
+      "name": "工作票",
+      "id": "E039uJVZtKAGTAIDO77bC",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 5280,
+        "width": 1920,
+        "x": -3580,
+        "y": 11079
+      }
+    },
+    {
+      "name": "监盘总览",
+      "id": "6871A789-8CE3-4740-B3D0-094000F15129",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1080,
+        "width": 1920,
+        "x": -1560,
+        "y": 9710
+      }
+    },
+    {
+      "name": "巡视点位",
+      "id": "10B88356-E25A-4D81-89FA-C206670C3310",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1080,
+        "width": 1920,
+        "x": 460,
+        "y": 9710
+      }
+    },
+    {
+      "name": "告警及检修建议1",
+      "id": "94138765-605A-41A3-ACDE-C959A3232D6A",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1080,
+        "width": 1920,
+        "x": -3580,
+        "y": 9710
+      }
+    },
+    {
+      "name": "巡视报告",
+      "id": "B21F9F1F-13D9-41B5-B165-DCA03B8EE4AD",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1080,
+        "width": 1920,
+        "x": 4500,
+        "y": 9710
+      }
+    },
+    {
+      "name": "安全哨兵",
+      "id": "A356A790-D0E3-490E-8539-574C5CB58EB0",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1080,
+        "width": 1920,
+        "x": 6520,
+        "y": 9710
+      }
+    },
+    {
+      "name": "告警及检修建议（弹窗）",
+      "id": "57889E44-04D1-4D74-B94F-4C1C42F427E5",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1080,
+        "width": 1920,
+        "x": 2480,
+        "y": 9710
+      }
+    }
+  ],
+  "colors": 53,
+  "fonts": [
+    {
+      "file": "SourceHanSansCN-Medium.otf",
+      "sourceRef": "fonts/b066e68353fa4d6df58ba08d1fb84a7f1374c34a",
+      "sha256": "f748b45d0253b2a9b80315a287daca65874f297122683c9e9eaf2ca16cbc283f"
+    },
+    {
+      "file": "SourceHanSansCN-Bold.otf",
+      "sourceRef": "fonts/d7955cb3bdf793096a7f3bb2afc13db50e6a55b7",
+      "sha256": "97e5eff6dd208ccb814726458c8c7ab4b59327c62b9ee8df3440e7e835209ab9"
+    },
+    {
+      "file": "SourceHanSansCN-Regular.otf",
+      "sourceRef": "fonts/832a08b35a114151806607970a2ca25055167fed",
+      "sha256": "14ec9d09dad83098938370be17170a747d63084022b05710e3d34b4ddb359091"
+    },
+    {
+      "file": "SourceHanSansCN-Heavy.otf",
+      "sourceRef": "fonts/b043af7a8f769098da01c54116c40ce2ac95dcc0",
+      "sha256": "f178cae1188a31e7f5bdb268da9253b32c893aec56e0977118371aaf4cfc90f6"
+    }
+  ],
+  "iconCount": 90,
+  "inventoryCount": 5015,
+  "adaptations": [
+    "原稿缺少直接对应项时使用同库语义近似图标，见 icon-aliases.json",
+    "大屏指标字号和画布比例保留现状",
+    "品牌与业务图片保留现有资源"
+  ]
+}

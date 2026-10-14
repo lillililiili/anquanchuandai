@@ -10,7 +10,7 @@
   <slot v-else />
 </template>
 <script setup>
-import { Loading } from '@element-plus/icons-vue'
+import { Loading } from '@ui-spec/element-icons'
 import stateArt from '../assets/visual/state-empty.webp'
 defineProps({ loading: Boolean, error: Object, data: Object })
 defineEmits(['retry'])

@@ -1,21 +1,21 @@
 /* app.css 1727-1752 */
 
 .remote-box {
-  background: #092d47;
+  background: var(--theme-card);
   padding: 24px 15px;
-  border: 1px solid #174665;
+  border: 1px solid var(--theme-border);
   border-radius: 4px;
   margin-bottom: 17px;
 }
-.remote-box > i {
+.remote-box > :is(i,.ui-icon) {
   font-size: 58px;
-  color: #62839f;
+  color: var(--theme-muted);
   float: left;
   margin-right: 13px;
 }
 .remote-box p {
-  font-size: 14px;
-  color: #aec4d8;
+  font-size:14px;
+  color: var(--theme-text);
   margin: 6px 0 19px;
 }
 .participant {

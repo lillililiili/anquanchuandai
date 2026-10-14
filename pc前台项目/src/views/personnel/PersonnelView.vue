@@ -193,7 +193,7 @@ function talk() {
           <div v-if="session.personTab === '人员信息' || session.personTab === '装备信息'" class="detail-section">
             <h3>装备状态 <small>（以领用记录为准）</small></h3>
             <DeviceStrip :person-id="current.person.id" />
-            <a class="text-link" :href="'#/person/' + current.person.id">查看领用记录 ›</a>
+            <a class="text-link" :href="'#/person/' + current.person.id">查看领用记录 <UiIcon name="chevron-right" /></a>
           </div>
           <div v-if="session.personTab === '人员信息' || session.personTab === '作业信息'" class="detail-section">
             <h3>关联作业</h3>
@@ -202,7 +202,7 @@ function talk() {
               <p><small>{{ current.work.id }}</small></p>
               <p>作业区域　{{ current.work.area }}</p>
               <p>监护人　{{ personName(current.work.supervisor) }}</p>
-              <a class="text-link" :href="'#/work/' + current.work.id">查看作业详情 ›</a>
+              <a class="text-link" :href="'#/work/' + current.work.id">查看作业详情 <UiIcon name="chevron-right" /></a>
             </template>
             <AppEmpty v-else text="待分配作业" />
           </div>

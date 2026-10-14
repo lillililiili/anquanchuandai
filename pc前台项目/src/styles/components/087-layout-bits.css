@@ -10,8 +10,8 @@
   align-items: center;
   gap: 8px;
   padding: 9px;
-  background: #0b334c;
+  background: var(--theme-card);
   border: 1px solid var(--border);
   border-radius: 3px;
-  font-size: 14px;
+  font-size:14px;
 }

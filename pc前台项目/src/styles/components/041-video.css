@@ -3,9 +3,9 @@
 .video-frame {
   position: relative;
   overflow: hidden;
-  border: 1px solid #18648d;
+  border: 1px solid var(--theme-border);
   border-radius: 4px;
-  background: #031825;
+  background: var(--theme-bg);
   min-height: 130px;
   aspect-ratio: 16/9;
 }
@@ -19,8 +19,8 @@
   position: absolute;
   top: 9px;
   right: 9px;
-  font-size: 13px;
-  background: #071e2cd9;
+  font-size:12px;
+  background: var(--theme-card);
   padding: 5px 9px;
   border-radius: 3px;
 }
@@ -28,20 +28,20 @@
   position: absolute;
   top: 12px;
   left: 16px;
-  background: #07233799;
+  background: var(--theme-card);
   padding: 3px 8px;
-  font-size: 17px;
+  font-size:16px;
 }
 .video-name small {
   display: block;
-  color: #f0f7fc;
+  color: var(--theme-heading);
 }
 .video-time {
   position: absolute;
   bottom: 10px;
   left: 13px;
-  font-size: 13px;
-  text-shadow: 1px 1px 3px #000;
+  font-size:12px;
+  text-shadow: 1px 1px 3px var(--theme-shadow-modal);
 }
 .video-frame:has(.video-controls) .video-time {
   bottom: 94px;
@@ -54,46 +54,46 @@
   display: flex;
   gap: 7px;
   align-items: center;
-  background: #002034ee;
+  background: var(--theme-card);
   padding: 11px 12px;
-  border-top: 2px solid #067eae;
+  border-top: 2px solid var(--theme-border);
   height: 84px;
 }
 .video-controls .plain {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size:12px;
   padding: 0 12px;
-  border-left: 1px solid #194460;
+  border-left: 1px solid var(--theme-border);
   border-radius: 0;
 }
-.video-controls .plain i {
+.video-controls .plain :is(i,.ui-icon) {
   font-size: 25px;
 }
 .video-controls input {
   width: 100px;
 }
 .video-controls > span {
-  font-size: 12px;
+  font-size:12px;
   white-space: nowrap;
 }
 .video-unavailable {
   position: absolute;
   inset: 0;
-  background: #00172e9c;
+  background: var(--theme-bg);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 12px;
 }
-.video-unavailable i {
+.video-unavailable :is(i,.ui-icon) {
   font-size: 50px;
-  color: #9ebbd5;
+  color: var(--theme-text);
 }
 .video-unavailable strong {
-  font-size: 22px;
+  font-size:24px;
 }
 .video-frame:fullscreen {
   aspect-ratio: auto;

@@ -6,12 +6,12 @@
   gap: 14px;
   margin: 0 0 12px;
   padding: 12px 14px;
-  color: #fff;
+  color: var(--theme-heading);
   text-decoration: none;
-  border: 1px solid #ff5a66;
+  border: 1px solid var(--theme-red);
   border-radius: 6px;
-  background: linear-gradient(90deg, #6d1222 0%, #3a1830 58%, #241628 100%);
-  box-shadow: 0 0 0 1px #ff304088, 0 0 18px #ff2a3a66;
+  background: linear-gradient(90deg, var(--theme-tag-red) 0%, var(--theme-card) 58%, var(--theme-card) 100%);
+  box-shadow: 0 0 0 1px var(--theme-shadow-modal), 0 0 18px var(--theme-shadow-modal);
   animation: sos-glow 1.35s ease-in-out infinite;
 }
 .sos-call:hover {
@@ -23,9 +23,9 @@
   width: 72px;
   height: 48px;
   border-radius: 4px;
-  background: #ff2d3a;
-  color: #fff;
-  font-size: 22px;
+  background: var(--theme-tag-red);
+  color: var(--theme-heading);
+  font-size:24px;
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -35,77 +35,77 @@
 }
 .sos-call-copy strong {
   display: block;
-  font-size: 20px;
+  font-size:18px;
   line-height: 1.3;
 }
 .sos-call-copy small {
-  color: #ffd5d8;
-  font-size: 14px;
+  color: var(--theme-red);
+  font-size:14px;
 }
 .sos-call-go {
   padding: 10px 18px;
   border-radius: 4px;
-  background: #ff2d3a;
-  color: #fff;
-  font-size: 16px;
+  background: var(--theme-tag-red);
+  color: var(--theme-heading);
+  font-size:16px;
   font-weight: 700;
   white-space: nowrap;
 }
 .sos-call:hover .sos-call-go {
-  background: #ff4d5a;
+  background: var(--theme-tag-red);
 }
 
 .alarms-page tr.is-hot td:first-child,
 .alarms-page tr.is-live td:first-child,
 .alarms-page tr.is-sos td:first-child {
-  box-shadow: inset 4px 0 0 #ffb020;
+  box-shadow: inset 4px 0 0 var(--theme-shadow-modal);
 }
 .alarms-page tr.is-live td:first-child {
-  box-shadow: inset 4px 0 0 #2e9bff;
+  box-shadow: inset 4px 0 0 var(--theme-shadow-modal);
 }
 .alarms-page tr.is-hot {
-  background: #10283d;
+  background: var(--theme-card);
 }
 .alarms-page tr.is-hot:hover,
 .alarms-page tr.is-live:hover {
-  background: #16344d;
+  background: var(--theme-card);
 }
 .alarms-page tr.is-sos {
-  background: #3a1422;
+  background: var(--theme-card);
 }
 .alarms-page tr.is-sos td {
-  color: #ffe8ea;
+  color: var(--theme-red);
   font-weight: 600;
 }
 .alarms-page tr.is-sos td:first-child {
-  box-shadow: inset 4px 0 0 #ff2d3a;
+  box-shadow: inset 4px 0 0 var(--theme-shadow-modal);
 }
 .alarms-page tr.is-sos .tag.red {
   margin-right: 6px;
-  border-color: #ff5a66;
-  background: #ff2d3a;
-  color: #fff;
+  border-color: var(--theme-red);
+  background: var(--theme-tag-red);
+  color: var(--theme-heading);
   font-weight: 700;
 }
 .alarms-page tr.is-sos.selected {
-  background: #5a1828;
+  background: var(--theme-tag-red);
 }
 .alarms-page tr.is-done {
   opacity: 0.72;
 }
 .alarms-page .sos-row-go {
-  background: #ff2d3a;
-  border-color: #ff5a66;
-  color: #fff;
+  background: var(--theme-tag-red);
+  border-color: var(--theme-red);
+  color: var(--theme-heading);
   font-weight: 700;
 }
 .alarms-page .sos-row-go:hover {
-  background: #ff4d5a;
+  background: var(--theme-tag-red);
 }
 
 .alarm-detail.is-sos {
-  border-color: #ff5a66;
-  box-shadow: 0 0 18px #ff2a3a44;
+  border-color: var(--theme-red);
+  box-shadow: 0 0 18px var(--theme-shadow-modal);
 }
 .alarm-detail.is-sos .sos-now {
   display: flex;
@@ -114,84 +114,84 @@
   margin-bottom: 10px;
   padding: 8px 10px;
   border-radius: 4px;
-  background: #ff2d3a;
-  color: #fff;
+  background: var(--theme-tag-red);
+  color: var(--theme-heading);
 }
 .alarm-detail.is-sos .sos-now b {
-  font-size: 18px;
+  font-size:18px;
   letter-spacing: 1px;
 }
 .alarm-detail.is-sos .panel-body > h3 {
-  color: #ff8d96;
+  color: var(--theme-red);
 }
 .alarm-detail.is-sos .sos-action {
-  background: #ff2d3a;
-  border-color: #ff5a66;
-  color: #fff;
-  font-size: 18px;
+  background: var(--theme-tag-red);
+  border-color: var(--theme-red);
+  color: var(--theme-heading);
+  font-size:18px;
   font-weight: 700;
   min-height: 46px;
 }
 .alarm-detail.is-sos .sos-action:hover {
-  background: #ff4d5a;
+  background: var(--theme-tag-red);
 }
 
 @keyframes sos-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 1px #ff304088, 0 0 12px #ff2a3a55;
+    box-shadow: 0 0 0 1px var(--theme-shadow-modal), 0 0 12px var(--theme-shadow-modal);
   }
   50% {
-    box-shadow: 0 0 0 1px #ff8a93, 0 0 26px #ff2a3aaa;
+    box-shadow: 0 0 0 1px var(--theme-shadow-modal), 0 0 26px var(--theme-shadow-modal);
   }
 }
 
 .topbar .notification.has-sos {
-  border-color: #ff5a66;
-  background: #5a1828;
+  border-color: var(--theme-red);
+  background: var(--theme-tag-red);
   animation: sos-glow 1.35s ease-in-out infinite;
 }
-.topbar .notification.has-sos i {
-  color: #ff4d5a;
+.topbar .notification.has-sos :is(i,.ui-icon) {
+  color: var(--theme-red);
 }
 .topbar .notification.has-sos .notification-count {
-  background: #ff2d3a;
-  box-shadow: 0 0 0 2px #ffb3b8;
+  background: var(--theme-tag-red);
+  box-shadow: 0 0 0 2px var(--theme-shadow-modal);
   font-weight: 700;
 }
 
 .modal.is-sos {
-  border-color: #ff5a66;
-  box-shadow: 0 0 22px #ff2a3a55;
+  border-color: var(--theme-red);
+  box-shadow: 0 0 22px var(--theme-shadow-modal);
 }
 .modal.is-sos > header h2 {
-  color: #ff8d96;
+  color: var(--theme-red);
 }
 .modal .notice-sos {
   margin-bottom: 12px;
 }
 .modal tr.is-sos {
-  background: #3a1422;
+  background: var(--theme-card);
 }
 .modal tr.is-sos td {
-  color: #ffe8ea;
+  color: var(--theme-red);
   font-weight: 600;
-  box-shadow: inset 4px 0 0 #ff2d3a;
+  box-shadow: inset 4px 0 0 var(--theme-shadow-modal);
 }
 .modal tr.is-sos td:not(:first-child) {
   box-shadow: none;
 }
 .modal tr.is-sos .tag.red {
   margin-right: 6px;
-  border-color: #ff5a66;
-  background: #ff2d3a;
-  color: #fff;
+  border-color: var(--theme-red);
+  background: var(--theme-tag-red);
+  color: var(--theme-heading);
   font-weight: 700;
 }
 .modal .sos-row-go {
-  background: #ff2d3a;
-  border-color: #ff5a66;
-  color: #fff;
+  background: var(--theme-tag-red);
+  border-color: var(--theme-red);
+  color: var(--theme-heading);
   font-weight: 700;
 }
 

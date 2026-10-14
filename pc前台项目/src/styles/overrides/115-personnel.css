@@ -6,7 +6,7 @@
   }
   .overview-layout .progress-row {
     grid-template-columns: 40px 99px 1fr 44px;
-    font-size: 12px;
+    font-size:12px;
     height: 35px;
     margin: 6px 0;
   }
@@ -16,10 +16,10 @@
   .overview-layout .compact td {
     height: 48px;
     padding: 7px 5px;
-    font-size: 12px;
+    font-size:12px;
   }
   .stats.flat .stat em {
-    font-size: 10px;
+    font-size:12px;
     display: block;
     margin: 0;
     position: absolute;
@@ -27,30 +27,30 @@
     left: 0;
   }
   .stats.flat .stat strong {
-    font-size: 30px;
+    font-size:24px;
   }
   .personnel-page .page-heading > div:first-child {
     gap: 9px;
   }
   .personnel-page .page-heading p {
-    font-size: 12px;
+    font-size:12px;
   }
   .personnel-page aside .tabs .btn {
     padding: 8px;
-    font-size: 13px;
+    font-size:12px;
   }
   .personnel-list td {
     height: 71px;
     padding: 8px 6px;
   }
   .personnel-page aside .detail-section h3 {
-    font-size: 15px;
+    font-size:14px;
   }
   .personnel-page aside .detail-section .device-item > div {
     gap: 6px;
   }
   .personnel-page aside .detail-section .device-item small {
-    font-size: 12px;
+    font-size:12px;
   }
 }
 
@@ -67,7 +67,7 @@
   position: absolute;
   right: 0;
   top: 8px;
-  font-size: 12px;
+  font-size:12px;
 }
 .personnel-page aside .detail-section p {
   line-height: 1.45;

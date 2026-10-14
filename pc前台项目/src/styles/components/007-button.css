@@ -1,6 +1,6 @@
 /* app.css 69-73 */
 
-button i,
-.btn i {
-  font-size: 22px;
+button :is(i,.ui-icon),
+.btn :is(i,.ui-icon) {
+  font-size:24px;
 }

@@ -1,0 +1,43 @@
+/* Vue portal adapters: structure stays in existing page styles. */
+:root { color-scheme:dark; }
+.main, .modal, .login-page, .topbar, .sidebar, #toasts { font-family:var(--theme-font); }
+.main .ui-select, .main .ui-date, .modal .ui-select, .modal .ui-date { vertical-align:middle; }
+.filters .ui-select, .filters .ui-date, .field .ui-select, .field .ui-date, .form-stack .ui-select, .form-stack .ui-date { width:100%; }
+.filters .ui-select { min-width:110px; }
+.main .ui-icon, .modal .ui-icon, .topbar .ui-icon, .sidebar .ui-icon { font-style:normal; vertical-align:-.125em; }
+.sidebar a .ui-icon { font-size:20px; }
+.btn .ui-icon { font-size:16px; }
+.btn.small { height:24px; min-height:24px; padding:0 8px; line-height:22px; }
+.topbar .btn.small { height:32px; }
+.main .tag.red, .modal .tag.red { background:rgba(222,85,79,.38); }
+.main .tag { color:var(--theme-accent); }
+.main .tag.green { color:var(--theme-green); }
+.main .tag.red { color:var(--theme-red); }
+.main .tag.yellow { color:var(--theme-yellow); }
+.main .tag.orange { color:var(--theme-orange); }
+.main .tag.muted { color:var(--theme-disabled); }
+.modal { background:var(--theme-overlay-surface); }
+.main .table-scroll tr:hover { background:var(--theme-component-bg-3); }
+.main .table-scroll tr.selected { background:var(--theme-selected); }
+.login-page .login-card { color:var(--theme-text); background:var(--theme-overlay-surface); border:1px solid var(--theme-border); border-radius:12px; }
+.login-page .login-card h2 { font-size:24px; color:var(--theme-heading); }
+.login-page .login-card .field > span { font-size:14px; }
+.login-page .login-card .btn.primary { height:40px; min-height:40px; font-size:16px; }
+.login-page .login-card .ui-icon { font-size:16px; }
+.login-page .login-card .login-input-icon { top:8px; }
+.login-page .login-card .input-icon > .ui-icon { position:absolute; left:12px; top:8px; pointer-events:none; }
+.login-page .login-card .input-icon input { padding-left:36px; padding-right:36px; }
+.login-page .login-card .input-icon input:focus { padding-left:35px; padding-right:35px; }
+.main :is(.info,.record-entry,.table-scroll,.filters,.form-stack) { font-size:14px; }
+.main :is(.muted,.note,.count-label,.char-count) { color:var(--theme-muted); }
+.main a:not(.btn):not(.video-thumb):not(.brand):hover { color:var(--theme-accent-hover); }
+.main .map .map-tools .btn { background:var(--theme-overlay-surface); }
+.main .map .map-person .ui-icon { width:18px; height:18px; }
+.main .map .map-compass .ui-icon { width:20px; height:20px; }
+.main :is(.map-popup,.map-caption,.map-legend,.map-editbar,.layer-controls) { background:var(--theme-overlay-surface); }
+.screen .screen-event-icon .ui-icon { width:32px; height:32px; }
+.screen .screen-metric > .ui-icon { width:32px; height:32px; }
+.screen .screen-stat-icon > .ui-icon { width:44px; height:44px; }
+.screen .screen-hex { color:var(--theme-accent); }
+.screen :is(.screen-chart text,.screen-footer,.screen-metric span) { font-family:var(--theme-font-data); }
+#toasts .toast, .toasts .toast { background:var(--theme-overlay-surface); color:var(--theme-text); border:1px solid var(--theme-border); border-radius:4px; font-size:14px; }

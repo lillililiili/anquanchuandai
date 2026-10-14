@@ -6,8 +6,8 @@
 @media (max-width: 1400px) {
   .vitals-body { grid-template-columns: minmax(0,1fr) 120px minmax(0,1fr); gap: 8px; }
   .vital-card { padding: 9px; }
-  .vital-card strong { font-size: 26px; }
-  .vital-pressure strong { font-size: 22px; }
+  .vital-card strong { font-size:24px; }
+  .vital-pressure strong { font-size:24px; }
   .vitals-human img { width: 120px; height: 212px; }
   .person-lower { grid-template-columns: minmax(0,1fr) minmax(0,1.7fr); }
 }

@@ -8,8 +8,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: PingFang, "Microsoft YaHei", sans-serif;
-  font-size: 16px;
+  font-size:16px;
 }
 body {
-  background: radial-gradient(ellipse at 48% 45%, #042b47 0%, #001a2f 75%);
+  background: radial-gradient(ellipse at 48% 45%, var(--theme-card) 0%, var(--theme-bg) 75%);
 }

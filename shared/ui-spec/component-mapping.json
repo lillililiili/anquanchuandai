@@ -1,0 +1,1249 @@
+[
+  {
+    "component": "主按钮",
+    "states": "默认/悬停/按下/禁用",
+    "implementation": ".btn.primary / .button.primary",
+    "decision": "32px / 14px / 22px；四态独立颜色",
+    "sourceLayers": [
+      {
+        "id": "4HFYwkQ-FC6Gp4FBgQYsn",
+        "path": "/Page 1/按钮/主要按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 60,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#4FAFF7",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "xXg75oJxJl_WGdmtTTFuN",
+        "path": "/Page 1/按钮/主要按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 60,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#7FCEFA",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "wFGy3DfrBzcg5MhEENjKM",
+        "path": "/Page 1/按钮/主要按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 60,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#3C89F5",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "A2OOwHqxrDM9sRhfmcp8W",
+        "path": "/Page 1/按钮/主要按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 60,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#193A60",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "按钮规格",
+    "states": "紧凑/常规/大",
+    "implementation": "按钮 small / 默认 / 登录主操作",
+    "decision": "24/32/40px；紧凑文字12px，常规及大按钮14px",
+    "sourceLayers": [
+      {
+        "id": "CkstYJO3Hiokoedmyf64Z",
+        "path": "/Page 1/按钮/主要按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 24,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#4FAFF7",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "4HFYwkQ-FC6Gp4FBgQYsn",
+        "path": "/Page 1/按钮/主要按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 60,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#4FAFF7",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "t4_AdXg-GSXV4b5IZwBEI",
+        "path": "/Page 1/按钮/主要按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 40,
+          "width": 76,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#4FAFF7",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "输入框",
+    "states": "默认",
+    "implementation": "AppInput / 原生 input / UiDatePicker",
+    "decision": "32px高，4px圆角；透明底；边框#83F6FD alpha .35",
+    "sourceLayers": [
+      {
+        "id": "WH_CO_Ryr9t91AmzsRExp",
+        "path": "/Page 1/输入框/input输入框/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 300,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.35
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "下拉选项",
+    "states": "默认/悬停/选中",
+    "implementation": "UiSelect",
+    "decision": "28px行；6px容器内边距；2px行距；4px圆角",
+    "sourceLayers": [
+      {
+        "id": "vtlVFKvKZ4Sh3tlRTk-cz",
+        "path": "/Page 1/选择器/下拉菜单/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 100,
+          "width": 300,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#2E6086",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "I0Y7nDcT1zSenZWCzO4cL",
+        "path": "/Page 1/选择器/下拉菜单/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 100,
+          "width": 300,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#2E6086",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "VThA-ge8SrGF2fZV7JafD",
+        "path": "/Page 1/选择器/下拉菜单/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 100,
+          "width": 300,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#2E6086",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "日期面板",
+    "states": "展开",
+    "implementation": "UiDatePicker",
+    "decision": "312px日历；日期时间504px；单元32px高；16px内边距",
+    "sourceLayers": [
+      {
+        "id": "YkUSGQ69TR712LBDSGBvs",
+        "path": "/Page 1/日期选择器/_menu/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 284,
+          "width": 312,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#2E6086",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.35
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          4
+        ],
+        "shadows": [
+          {
+            "_class": "shadow",
+            "isEnabled": false,
+            "blurRadius": 10,
+            "offsetX": 0,
+            "offsetY": 8,
+            "spread": -5,
+            "color": {
+              "_class": "color",
+              "alpha": 0.1,
+              "blue": 0,
+              "green": 0,
+              "red": 0
+            },
+            "contextSettings": {
+              "_class": "graphicsContextSettings",
+              "blendMode": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "_class": "shadow",
+            "isEnabled": false,
+            "blurRadius": 24,
+            "offsetX": 0,
+            "offsetY": 16,
+            "spread": 2,
+            "color": {
+              "_class": "color",
+              "alpha": 0.08,
+              "blue": 0,
+              "green": 0,
+              "red": 0
+            },
+            "contextSettings": {
+              "_class": "graphicsContextSettings",
+              "blendMode": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "_class": "shadow",
+            "isEnabled": true,
+            "blurRadius": 22.9,
+            "offsetX": 0,
+            "offsetY": 3,
+            "spread": 0,
+            "color": {
+              "_class": "color",
+              "alpha": 0.1,
+              "blue": 0,
+              "green": 0,
+              "red": 0
+            },
+            "contextSettings": {
+              "_class": "graphicsContextSettings",
+              "blendMode": 0,
+              "opacity": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "component": "文字提示",
+    "states": "展开",
+    "implementation": "tooltip.js",
+    "decision": ".9黑色；4px圆角；4px 8px内边距；14/22px",
+    "sourceLayers": [
+      {
+        "id": "D1Y8tE-ndrB_DsfKhfE7C",
+        "path": "/Page 1/文字提示/Component 100/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 30,
+          "width": 170,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#000000",
+              "alpha": 0.9
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          4
+        ],
+        "shadows": [
+          {
+            "_class": "shadow",
+            "isEnabled": false,
+            "blurRadius": 10,
+            "offsetX": 0,
+            "offsetY": 8,
+            "spread": -5,
+            "color": {
+              "_class": "color",
+              "alpha": 0.1,
+              "blue": 0,
+              "green": 0,
+              "red": 0
+            },
+            "contextSettings": {
+              "_class": "graphicsContextSettings",
+              "blendMode": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "_class": "shadow",
+            "isEnabled": false,
+            "blurRadius": 24,
+            "offsetX": 0,
+            "offsetY": 16,
+            "spread": 2,
+            "color": {
+              "_class": "color",
+              "alpha": 0.08,
+              "blue": 0,
+              "green": 0,
+              "red": 0
+            },
+            "contextSettings": {
+              "_class": "graphicsContextSettings",
+              "blendMode": 0,
+              "opacity": 1
+            }
+          },
+          {
+            "_class": "shadow",
+            "isEnabled": true,
+            "blurRadius": 22.9,
+            "offsetX": 0,
+            "offsetY": 3,
+            "spread": 0,
+            "color": {
+              "_class": "color",
+              "alpha": 0.1,
+              "blue": 0,
+              "green": 0,
+              "red": 0
+            },
+            "contextSettings": {
+              "_class": "graphicsContextSettings",
+              "blendMode": 0,
+              "opacity": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "component": "复选框",
+    "states": "选中/未选中",
+    "implementation": "input[type=checkbox]",
+    "decision": "16px正方形；1px边框；原稿勾选矢量",
+    "sourceLayers": [
+      {
+        "id": "Zb7zYWwChCrTirxpNeCbu",
+        "path": "/Page 1/复选框/Checkbox 多选/checkbox/item/unit/checkbox/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 16,
+          "width": 16,
+          "x": -2.571758278209442e-15,
+          "y": -1.714505518806294e-15
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          0
+        ],
+        "shadows": []
+      },
+      {
+        "id": "7u3yvNPyer5rrFwTvhwHX",
+        "path": "/Page 1/树结构/tree树结构/normal/item/item/Checkbox 多选/Checkbox 多选/checkbox/item/unit/checkbox/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 16,
+          "width": 16,
+          "x": -2.571758278209442e-15,
+          "y": -1.714505518806294e-15
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FFFFFF",
+              "alpha": 0
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          0
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "单选框",
+    "states": "未选中/选中",
+    "implementation": "input[type=radio]",
+    "decision": "16px圆形；8px内圆",
+    "sourceLayers": [
+      {
+        "id": "VgJEMc5_0dxx6uZbIw0AP",
+        "path": "/Page 1/单选框/Group 427320339/Frame 427320390/Radio 单选/item/单选/item/unit/radio/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 16,
+          "width": 16,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          0
+        ],
+        "shadows": []
+      },
+      {
+        "id": "Ult4uE8ZaeAL4tmb-ZpLm",
+        "path": "/Page 1/单选框/Group 427320339/Frame 427320390/Radio 单选/item/单选/item/unit/radio/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 8,
+          "width": 8,
+          "x": 4,
+          "y": 4
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          0
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "开关",
+    "states": "关/开/禁用",
+    "implementation": "UiSwitch",
+    "decision": "32×20px；16px滑块；2px边距",
+    "sourceLayers": [
+      {
+        "id": "g__GhdR1d9dK-EQIOHb7m",
+        "path": "/Page 1/开关/Switch 开关/bg/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 20,
+          "width": 32,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          12
+        ],
+        "shadows": []
+      },
+      {
+        "id": "i8ZDtnIG6HRxJI076cCjY",
+        "path": "/Page 1/开关/Switch 开关/bg/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 20,
+          "width": 32,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#3B865C",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          12
+        ],
+        "shadows": []
+      },
+      {
+        "id": "3k6gBRbiF_I2Ti3k5B7Nc",
+        "path": "/Page 1/开关/Switch 开关/bg/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 20,
+          "width": 32,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#A2D8B5",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          12
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "标签",
+    "states": "常规/紧凑",
+    "implementation": "tag / badge",
+    "decision": "26/22px，3px圆角；红色组件底透明度.38优先于色板.25",
+    "sourceLayers": [
+      {
+        "id": "u5l8kj4z_2rvYWPo3EMKx",
+        "path": "/Page 1/标签/Tag 标签/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 26,
+          "width": 100,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#DE554F",
+              "alpha": 0.38
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#DE554F",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          3
+        ],
+        "shadows": []
+      },
+      {
+        "id": "LOi51u2qJoWht0skIr8BL",
+        "path": "/Page 1/标签/Tag 标签/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 22,
+          "width": 56,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#DE554F",
+              "alpha": 0.38
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#DE554F",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          3
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "页签",
+    "states": "选中/默认",
+    "implementation": "AppTabs / workspace-tabs",
+    "decision": "分别保留面板页签和下划线页签规格",
+    "sourceLayers": [
+      {
+        "id": "UXsXflFbJ-yR1M6B338yu",
+        "path": "/Page 1/页签栏/Group 427320098/tab/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 48,
+          "width": 96,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#25556F",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          0,
+          10
+        ],
+        "shadows": []
+      },
+      {
+        "id": "BUcZpmTAf5eb9NRwjPINo",
+        "path": "/Page 1/页签栏/Group 427320098/tab/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 48,
+          "width": 96,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#25556F",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          0,
+          10
+        ],
+        "shadows": []
+      },
+      {
+        "id": "Ttmhf3aXtHv0A79QXBwan",
+        "path": "/Page 1/页签栏/tab切换/Frame 48097332/Frame 427319248/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 40,
+          "width": 64,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          0
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "分页",
+    "states": "常规",
+    "implementation": "pagination / UiSelect",
+    "decision": "32px高；选择器4px圆角；沿用现有翻页行为",
+    "sourceLayers": [
+      {
+        "id": "d8SUk0URGgv8LkX31aPFB",
+        "path": "/Page 1/分页器/Frame 427320391/ 分页/group/select/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 112,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.35
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      },
+      {
+        "id": "Hstb7oae8Z0KvRQFj_wp2",
+        "path": "/Page 1/分页器/Frame 427320391/ 分页/group/page btn/Button 按钮/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 32,
+          "width": 32,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          4
+        ],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "树",
+    "states": "默认/选中",
+    "implementation": "tree-branch / 原生权限复选框",
+    "decision": "保留树层级，复选框16px，选中使用规范强调色",
+    "sourceLayers": [
+      {
+        "id": "7u3yvNPyer5rrFwTvhwHX",
+        "path": "/Page 1/树结构/tree树结构/normal/item/item/Checkbox 多选/Checkbox 多选/checkbox/item/unit/checkbox/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 16,
+          "width": 16,
+          "x": -2.571758278209442e-15,
+          "y": -1.714505518806294e-15
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FFFFFF",
+              "alpha": 0
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1,
+            "width": 1,
+            "position": 1
+          }
+        ],
+        "radii": [
+          0
+        ],
+        "shadows": []
+      },
+      {
+        "id": "VBXfZnPfUAK0sWGJfSe0s",
+        "path": "/Page 1/树结构/tree树结构/normal/item/caret-down-small/Union",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 3.666666746139526,
+          "width": 7.333333492279053,
+          "x": 4.331732711791992,
+          "y": 6.333490409851074
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FFFFFF",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "表格",
+    "states": "表头/内容分隔线",
+    "implementation": "admin-table / table-scroll",
+    "decision": "规范色板表头/奇偶行/选中态；固定列叠加背景防透出",
+    "sourceLayers": [
+      {
+        "id": "voEls8l2RIhT3k4tQk1V6",
+        "path": "/Page 1/字体/Frame 427320545/OS/基础控件/表头/分割线/下分割线",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 1,
+          "width": 410,
+          "x": 0,
+          "y": 41
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FFFFFF",
+              "alpha": 0.1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [],
+        "shadows": []
+      },
+      {
+        "id": "1vXkt5jIielgtR4ipvzy8",
+        "path": "/Page 1/字体/Frame 427320545/OS/基础控件/内容列/基础/分割线",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 1,
+          "width": 410,
+          "x": 0,
+          "y": 126
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FFFFFF",
+              "alpha": 0.1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [],
+        "shadows": []
+      }
+    ]
+  },
+  {
+    "component": "卡片",
+    "states": "业务画板补充",
+    "implementation": "panel / card",
+    "decision": "rgba(80,177,249,.12)，12px圆角；不作为控件通用圆角",
+    "sourceLayers": [
+      {
+        "id": "gikbC3t8uxeoq7IyvXlGB",
+        "path": "/Page 1/运行管理-缺陷单管理-缺陷单处理/Frame 48097355/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 560,
+          "width": 1896,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#50B1F9",
+              "alpha": 0.12
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          12
+        ],
+        "shadows": []
+      },
+      {
+        "id": "1Q6Q1uJi3mAamRMsUqtGu",
+        "path": "/Page 1/运行管理-缺陷单管理-缺陷单处理/Frame 48097356/路径",
+        "frame": {
+          "_class": "rect",
+          "constrainProportions": false,
+          "height": 136,
+          "width": 1896,
+          "x": 0,
+          "y": 0
+        },
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#50B1F9",
+              "alpha": 0.12
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "radii": [
+          12
+        ],
+        "shadows": []
+      }
+    ]
+  }
+]

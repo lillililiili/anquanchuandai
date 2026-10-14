@@ -1,0 +1,3578 @@
+[
+  {
+    "label": "主色一default",
+    "labelLayerId": "Q2aq1SmCKl_nvm47WuviS",
+    "swatches": [
+      {
+        "id": "-wxo7UjqvqneQNTivHtc5",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "u5d9FkAsd23pHpG82M-8N",
+            "name": "Frame 419",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "WyUo4aaNVwKtFwWcAzp73",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "主色一hover",
+    "labelLayerId": "TJvIc3zl_t0iI2Az_tMT_",
+    "swatches": [
+      {
+        "id": "n7CkTUcdpqHP7UXB2RmbJ",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#A0F8FD",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "IZyZtcSzbMCyza1D_1cvq",
+            "name": "Frame 420",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "82UiKDdIpV5DoaZOzZx5h",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "主色一active",
+    "labelLayerId": "V3Wrfc0jxPjxssIT76jLF",
+    "swatches": [
+      {
+        "id": "UYUa-g11WkOm_jP1rEsGi",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#5DCAD2",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "PYH-FlPJ3tcBCioiMNYwy",
+            "name": "Frame 421",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "b1IzeitSv0sHhgh4-O50F",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "主色一disabled",
+    "labelLayerId": "xTqqW19KpdhC8gauvxem6",
+    "swatches": [
+      {
+        "id": "ZqNiVP01gnKu5b96oTQGJ",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#C4FBFE",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "iWclK8Ea_VLZavCasZCKZ",
+            "name": "Frame 422",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "sFG8p4r6gSesjVMwUZAtR",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "主色二default",
+    "labelLayerId": "6Vtna7yimI8H57ToQ41H0",
+    "swatches": [
+      {
+        "id": "qRBKuAXstQZQ-Adi1786E",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 443 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#4FAFF7",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "W1d6qsZKjbiXbFZORoHSo",
+            "name": "Frame 443",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "vvDxxWufoHkvXKoonZiks",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "主色二hover",
+    "labelLayerId": "elsf8zxb3msHeyEtP9VOa",
+    "swatches": [
+      {
+        "id": "RtqN3Tnmau-jJigZ5Ulgy",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 444 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#7FCEFA",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "wnAgovfPKWVC14KFEnZg8",
+            "name": "Frame 444",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "v1_1AnyQXQP_1Ff5O8ktA",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "主色二active",
+    "labelLayerId": "01l9U5_pOjeXy3MtH-Ca2",
+    "swatches": [
+      {
+        "id": "5HRorMkldRqfvl9vuwTiP",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 445 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#3C89F5",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "4LvZbg-BklZ161BjvSyVs",
+            "name": "Frame 445",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "COt6pWZ2K1jM8_laahJTU",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "主色二disabled",
+    "labelLayerId": "7kjcthAkLuI_WnJjDTraS",
+    "swatches": [
+      {
+        "id": "0DqUfZvbn2Pe4RWtujfBL",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 446 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#193A60",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "4qdMoBuM5rcXjPD9qRGZL",
+            "name": "Frame 446",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "_6S4D7o1dTIFmidCmQwmv",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "错误色",
+    "labelLayerId": "QhleHQ5vF1He3M272VUh0",
+    "swatches": [
+      {
+        "id": "bgx6_Z0f5bZSkU5MQnMpC",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 424 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#DE554F",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7bGzfX1uMaBboXJMDqpMA",
+            "name": "Frame 424",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Hdl7DSPTlLUMe68_C0vVw",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "错误色hover",
+    "labelLayerId": "n_DIHAdmRCo2Bgo7jguFV",
+    "swatches": [
+      {
+        "id": "7kIY4YA3JBjw8xrZ9Ti4i",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 425 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#E57163",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "GXRtcIjBjTAQh6d3AdrqT",
+            "name": "Frame 425",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "92MPykzH_qu4Q6jL2gjBd",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "错误色active",
+    "labelLayerId": "XIcwLYkzHShZdjNV7lJbd",
+    "swatches": [
+      {
+        "id": "iDyLw7sFKwPzxSPx-Oa-J",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 426 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#A03E35",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "jvhDedxy3-P26XHTii9vy",
+            "name": "Frame 426",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "8vhUX1K99avvJz4R64SIz",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "错误色disabled",
+    "labelLayerId": "QAGxp3uB1A3zFdMOxODff",
+    "swatches": [
+      {
+        "id": "8n0Bqat4ECiHiQZJn1zpV",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 427 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#F4BCB2",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "o1dWAugrNMJV-tPH1Xe-5",
+            "name": "Frame 427",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7v7RiKtSfxRMbFupmG3fY",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "二级警告色",
+    "labelLayerId": "53ZlNASfYVbF5xdMLM6Pv",
+    "swatches": [
+      {
+        "id": "pbsEu087YP8CGkPvrF3Fi",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 429 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#F09840",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7fWHjm4z1oMqaF3E4c9Nz",
+            "name": "Frame 429",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "TtjQQmwJqvxZLN1zGa_FL",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "二级警告色hover",
+    "labelLayerId": "ln6phcyIxvBmmi-IbVZ5M",
+    "swatches": [
+      {
+        "id": "jXBrWpcD3_ly-TCrrRuiF",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 430 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#EC9A5E",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "tb9ICuqxBkjK1UccF6e0o",
+            "name": "Frame 430",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VEBEYKKAGDianvXZuEnaD",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "二级警告色active",
+    "labelLayerId": "E8wN6y_4sjL0IGYHh5Gly",
+    "swatches": [
+      {
+        "id": "g0wz-sZhLBPKg0wIycB8P",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 431 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#B16022",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "q-qnLm8GSfTIngKPdkfjl",
+            "name": "Frame 431",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "0SqkdeOZEH_vEP3HIXwF5",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "二级警告色disabled",
+    "labelLayerId": "1XFQiCbNkv-kBQLTLqAqm",
+    "swatches": [
+      {
+        "id": "l_fCxcXcC0qGUklaJ2rfq",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 432 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#F4BC93",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "oz3DhpO_p4P4nmh823pHs",
+            "name": "Frame 432",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "GMmHeE5le6JW1aeXS8db3",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "三级警告色",
+    "labelLayerId": "Xe_yK-PyiPi2eDpvjuj2C",
+    "swatches": [
+      {
+        "id": "q4n21qokeoWg7KlzJmIqq",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 434 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FEF770",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "aPMJOk69mF2M-qctHN0Sx",
+            "name": "Frame 434",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "L3fABGcD95ve9VjJBxaJL",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "三级警告色hover",
+    "labelLayerId": "97fZSGmEdNWQZR2V1VE3i",
+    "swatches": [
+      {
+        "id": "jKEY74xfLrVExmTSWQVK-",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 435 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FEF886",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "6EQHryyFLaqw2Fbkz6Az5",
+            "name": "Frame 435",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "1zU_6j2OddQaP55FU-M6T",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "三级警告色active",
+    "labelLayerId": "cP_636QZsw54GQ-nGNv-a",
+    "swatches": [
+      {
+        "id": "FPRBQemcDpuTP94FN4By8",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 436 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#DAD245",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "wt9mOuhkvG5LnPCwZF-g7",
+            "name": "Frame 436",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "cgb99WxLf_E9X2Xwzdlh1",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "三级警告色disabled",
+    "labelLayerId": "EJZKV-se1JrkO2o4PkfpJ",
+    "swatches": [
+      {
+        "id": "4Z0TPLR19NRHtu-yj452N",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 437 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FEFBAA",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "tGjQNF05vpHKIOg0wxlzX",
+            "name": "Frame 437",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Trs1f5rwA8u7dTk8gnc8H",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "成功色",
+    "labelLayerId": "RxEtEZiAagJkOSdSt60k-",
+    "swatches": [
+      {
+        "id": "T5RcUyQT5IghgzpSxeiO5",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 439 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#71E96F",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Z65bAAiStCEipXBEiJjhy",
+            "name": "Frame 439",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Yi1VdLFDlNwHAvkxQmJL6",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "成功色hover",
+    "labelLayerId": "pWj1Wj9_jhCM7GGpmgNns",
+    "swatches": [
+      {
+        "id": "n5A0ADBRu3fBju5r-GP85",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 440 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#73BE91",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "FVmYrrNRfSOnfLSxnS2SZ",
+            "name": "Frame 440",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "l0dOsKDOqfzMw4pni97KK",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "成功色active",
+    "labelLayerId": "VgKt7OXD44HHDwLUWzJNO",
+    "swatches": [
+      {
+        "id": "bNvGuLBHdP6CBtLMKp0SV",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 441 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#3B865C",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "mDL88NkRuIIo3VvHgcRcK",
+            "name": "Frame 441",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VTJqmaaSxHO8bOQjReyFp",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "成功色disabled",
+    "labelLayerId": "SjIQNfFnT2ftw-NNzTDOM",
+    "swatches": [
+      {
+        "id": "q-NWfrwzf3JJdPWedMImW",
+        "class": "shapePath",
+        "path": "颜色 / Frame 48097498 / 主题色&功能色 / Frame 442 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#A2D8B5",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "w50sr6fJCuYUN8CgnR6S1",
+            "name": "Frame 48097498",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "K5Thd_UspxQbv4HOvY6zp",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "SoISRXZnqvitqvdZBV5hm",
+            "name": "Frame 442",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "wyr7Bd4mHqroaL4210Y3q",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "一级文字色",
+    "labelLayerId": "uNLoozJZ0shvYXFwDyoLN",
+    "swatches": [
+      {
+        "id": "jtSw0dSaOLMCbpJZ8r685",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FFFFFF",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "fda2pc6aYJC_e4RNd2rfz",
+            "name": "Frame 48097499",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "XOCssJwjGbhv-XIN6vqAi",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "lpYwK4c-fzgaKM01MwC7T",
+            "name": "Frame 419",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "PtRZdrkLM3pJcwPc5cY1K",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "二级文字色",
+    "labelLayerId": "g8NO4M7wSzAVmMU0uormG",
+    "swatches": [
+      {
+        "id": "s8CDc_MMPf_T-I4Ansvub",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#D1DAE5",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "fda2pc6aYJC_e4RNd2rfz",
+            "name": "Frame 48097499",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "XOCssJwjGbhv-XIN6vqAi",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "j4FKPQ6KUeWL2SJEwGze0",
+            "name": "Frame 420",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Z9nHIpeAC4k8rzFdeCGgH",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "三级文字色",
+    "labelLayerId": "vLIXv3vmRrrQamGXkUSQb",
+    "swatches": [
+      {
+        "id": "caLqFh68iaBHwJ0xAuBjN",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#B0BECB",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "fda2pc6aYJC_e4RNd2rfz",
+            "name": "Frame 48097499",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "XOCssJwjGbhv-XIN6vqAi",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "mi61G8s7Rhh_4IAhdSGoN",
+            "name": "Frame 421",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "OU4HoeYfoKjgSJlEXE07J",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "禁用文字色",
+    "labelLayerId": "nY21BEusuMDKDYW0BmJ27",
+    "swatches": [
+      {
+        "id": "iO7e00gReqiGS0Gu97Wc8",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#677987",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "fda2pc6aYJC_e4RNd2rfz",
+            "name": "Frame 48097499",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "XOCssJwjGbhv-XIN6vqAi",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "-6LcZ_kWlNEGHldBCmtXy",
+            "name": "Frame 422",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Uvlvtx-j5-6-XHzVPT3_H",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "链接文字色",
+    "labelLayerId": "V8ssVRBU9hUbvWMzgUQ3V",
+    "swatches": [
+      {
+        "id": "DkqsLz4stLMaeLeapa9cq",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097499 / 主题色&功能色 / Frame 443 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "fda2pc6aYJC_e4RNd2rfz",
+            "name": "Frame 48097499",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "XOCssJwjGbhv-XIN6vqAi",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "N6cdws_iNPe1Tiz2Z3Otl",
+            "name": "Frame 443",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "L_KXyjpN_plfVPTNEenDY",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "默认页面底层背景色",
+    "labelLayerId": "JxalXT4Qli1yfxdRiu2MQ",
+    "swatches": [
+      {
+        "id": "lmrmXOJDe_YhUu9GpxILn",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#121E37",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "4O_OZsTden88ZodTdWloQ",
+            "name": "Frame 419",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "pQOBWWCcPGlCrg_Z0IGZB",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "卡片背景色",
+    "labelLayerId": "R5S8suWAuJf3DR3P6q7Bc",
+    "swatches": [
+      {
+        "id": "StgLM69wj7o-zvpT2mSnq",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#50B1F9",
+              "alpha": 0.12
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "hgSAqTPIujf225FM4KMAs",
+            "name": "Frame 420",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "ulT64XWJVnh14diS2TRFB",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "组件背景色1",
+    "labelLayerId": "1zaPb1ukB4i2HY92Y06YE",
+    "swatches": [
+      {
+        "id": "dahG5nevYHNrnmj2rTPxa",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 444 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "vT2x9IUPBV0LK8jd932ly",
+            "name": "Frame 444",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "2dhsGKAHJL8w0k74I0Bdp",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "组件背景色2",
+    "labelLayerId": "y9P0zPIY2Dpp2hxCpq2WZ",
+    "swatches": [
+      {
+        "id": "g-wfUunFHDxHfl3kZ3Mjt",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 445 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.5
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "9481hcx9FfAroxpwfT77Z",
+            "name": "Frame 445",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "JN2LjBWOWMxB0JqpvOwVh",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "组件背景色3",
+    "labelLayerId": "5LJsk7MD_vWU5FgSk5V0C",
+    "swatches": [
+      {
+        "id": "FFge0hZ_AL7ZJ5RU1nL_e",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 446 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#25556F",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "AIP_fzPoc_3JJ5fb4CxWl",
+            "name": "Frame 446",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "x_tHs-3N2GxJ6npHQ3Egt",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "组件背景色4",
+    "labelLayerId": "yeeW864psnR8tLWdbKm6i",
+    "swatches": [
+      {
+        "id": "-8ZXFXlMTJL4LS69yUA9i",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 447 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#7FCEFA",
+              "alpha": 0.15
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "JMCISyAYs7vxx9c8BhMlR",
+            "name": "Frame 447",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "vJkixfDlOMo0WEfdkqCqC",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "组件背景色5",
+    "labelLayerId": "fQg7U04WigQxU_uX0fbVF",
+    "swatches": [
+      {
+        "id": "MebGf0ilqOrAaDxYrVs6X",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 448 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#3C89F5",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.35
+            },
+            "opacity": 1,
+            "thickness": 1
+          }
+        ],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "ooCM1FZQv50g9qnV5gY_i",
+            "name": "Frame 448",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "CKh119MgFS-7663R78AY_",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "组件背景色6",
+    "labelLayerId": "gRdLDDkNroOyFuaUmYxBs",
+    "swatches": [
+      {
+        "id": "2oSUB8OPHFLejMvhOzGRK",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 449 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#295F75",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "hCSJ_f4yWvwqblk8RtqwX",
+            "name": "Frame 449",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "OGeaTPgmy3TNP0M2J7vf-",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "分割线色",
+    "labelLayerId": "1Iq2VeLwUHi5kCtxUrPCe",
+    "swatches": [
+      {
+        "id": "z-NLC-qMpg58iEm8Ytzlo",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#FFFFFF",
+              "alpha": 0.1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7YGvfl2r8--g0MVKCwudX",
+            "name": "Frame 421",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "vFBjBxUkEie-tU3_QkFhZ",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "边框色",
+    "labelLayerId": "l1A-xog-QDC_ODH_c6D-i",
+    "swatches": [
+      {
+        "id": "r9ta2IVBN-3LwYIyoc78h",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.5
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "c1Ms69xhyw41GNDkmhWfA",
+            "name": "Frame 422",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "2Qwat0QPI3jzEgg9tQHI8",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "边框禁用色",
+    "labelLayerId": "kyvF2_y8KYS7NT6O69fOJ",
+    "swatches": [
+      {
+        "id": "Y3XSweGgWbZE1V23yPY0U",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 443 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#83F6FD",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "niS6S25To8EGr-g0OH1oy",
+            "name": "Frame 443",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Yo0jUb-7Ez-Fwcx8k9gA5",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "下拉背景色",
+    "labelLayerId": "E5uJD-74T_qCTubUzUSif",
+    "swatches": [
+      {
+        "id": "b2Z78PKjHnxv19CT7sopb",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097500 / 主题色&功能色 / Frame 450 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#2E6086",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "linwuzNk18gWZvprBzKZP",
+            "name": "Frame 48097500",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "VlGNGtjndBPK04g09nqd7",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "aD4F7XHfUaj_taJTtxpgC",
+            "name": "Frame 450",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "AMX0YHEbmhA0eOG5VbI2h",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "表头背景色",
+    "labelLayerId": "pSNWM6a2EM-asTh9JGEak",
+    "swatches": [
+      {
+        "id": "kUxpaXQ5XGi1MBGFVI2Wv",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#25556F",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "z0l587fnvermEN92CWTNy",
+            "name": "Frame 48097501",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "njekLjJH5s_FKxCL7vf-I",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "92cUkdV6aJ05LXZgefStf",
+            "name": "Frame 419",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "rJRn5TumxvjnZfPuOzlcM",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "表格选中色",
+    "labelLayerId": "Y5eATyzlYOQJ1qs_J-F9z",
+    "swatches": [
+      {
+        "id": "lkX-HL0rLIAlvX88PF1Hy",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#254570",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "z0l587fnvermEN92CWTNy",
+            "name": "Frame 48097501",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "njekLjJH5s_FKxCL7vf-I",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Op7igKUJmH6faCChBs067",
+            "name": "Frame 420",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "DEZMjQkTkPPkXUxybiBBO",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "斑马格深色",
+    "labelLayerId": "ighn4eFu6Ecj_mZ38Ubzn",
+    "swatches": [
+      {
+        "id": "vmcXjlIatgc3wjlAqoipM",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#0D1D3A",
+              "alpha": 0.9
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "z0l587fnvermEN92CWTNy",
+            "name": "Frame 48097501",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "njekLjJH5s_FKxCL7vf-I",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "vCzRj0bp159top1Tmp7_x",
+            "name": "Frame 421",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "_ENlgEZL2dyMKxYOC4bsM",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "斑马格浅色",
+    "labelLayerId": "Z4qVlDXVG_jr558zB_kc5",
+    "swatches": [
+      {
+        "id": "0V6RIoqr2m-cKz-yIjeHV",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097501 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#112345",
+              "alpha": 0.8
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "z0l587fnvermEN92CWTNy",
+            "name": "Frame 48097501",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "njekLjJH5s_FKxCL7vf-I",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "KcCHc5syFwGRB3I8W5VXG",
+            "name": "Frame 422",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Zt_HDOQPCsSFDNose6K6b",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "按钮默认色",
+    "labelLayerId": "ytOBgp-QdQmsZD8ZNB-_r",
+    "swatches": [
+      {
+        "id": "_Kaa4yFm3ygT29qzrYYIw",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#4FAFF7",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "DPIoAexfNKaLJ2JzGOwRA",
+            "name": "Frame 48097502",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "o1_AsJ1VUvQNH-eIYvqtj",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "OBCxipvzQuJyJGE_ulWdi",
+            "name": "Frame 419",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "D9IukKLJqa4pUnbUsci76",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "按钮悬浮色",
+    "labelLayerId": "N6Stz2XSvvq_BT5d5ATYA",
+    "swatches": [
+      {
+        "id": "o15yTiYGHXHvRFsEbMD1g",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#7FCEFA",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "DPIoAexfNKaLJ2JzGOwRA",
+            "name": "Frame 48097502",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "o1_AsJ1VUvQNH-eIYvqtj",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "DhKLMtK4ItMu9jRyPVJNE",
+            "name": "Frame 420",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "g4SF8fmNq96D7NmncRWhn",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "按钮点击色",
+    "labelLayerId": "y1FBSKXtF7wR9y12Wi5Rn",
+    "swatches": [
+      {
+        "id": "FfPHU5d9_LMRgFUEljC5m",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#3C89F5",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "DPIoAexfNKaLJ2JzGOwRA",
+            "name": "Frame 48097502",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "o1_AsJ1VUvQNH-eIYvqtj",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "_tggDh6CNws51Kq0LNqKi",
+            "name": "Frame 421",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "zG3inPD8lF78aJKT0gbLv",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "按钮禁用色",
+    "labelLayerId": "k_ekOIRcuBvuG_Rv25qHt",
+    "swatches": [
+      {
+        "id": "JPqAYwHovoaSR1oKvMgvs",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097502 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#193A60",
+              "alpha": 1
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "DPIoAexfNKaLJ2JzGOwRA",
+            "name": "Frame 48097502",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "o1_AsJ1VUvQNH-eIYvqtj",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "RheyneDzCrMcTTIYBUYqS",
+            "name": "Frame 422",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "Mc4R_BQW8amb_NX-9C93N",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "标签色-红色",
+    "labelLayerId": "uHRhtFHlq6v_q9N1cW-LK",
+    "swatches": [
+      {
+        "id": "FqibCYUea8NQMo3HtcgDm",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 419 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#DE554F",
+              "alpha": 0.25
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "trpQcB4roEUPBm-Hm90c8",
+            "name": "Frame 48097503",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "IKrpT3gTHN4uDZ78zn0jX",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "B9emV7PtyAtWZGQOWnQYx",
+            "name": "Frame 419",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "JxN-opwzfS6wHmA6lrJwL",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "标签色-橙色",
+    "labelLayerId": "8cfKG_jjdgcAh1Lb11Vlo",
+    "swatches": [
+      {
+        "id": "SpboQ5AsOOj833lyUAm50",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 420 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#F09840",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "trpQcB4roEUPBm-Hm90c8",
+            "name": "Frame 48097503",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "IKrpT3gTHN4uDZ78zn0jX",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "lbSjgyPtUsGSRh4imMIDz",
+            "name": "Frame 420",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "38NZ5kAzv4r_JDa9q_RKa",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "标签色-绿色",
+    "labelLayerId": "qoaC6fuTocFqlEzUFIOzc",
+    "swatches": [
+      {
+        "id": "qFWSchYWZxE5vec3pbQve",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 421 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#71E96F",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "trpQcB4roEUPBm-Hm90c8",
+            "name": "Frame 48097503",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "IKrpT3gTHN4uDZ78zn0jX",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7LUo6Ycwnv2sQVPr4dxH-",
+            "name": "Frame 421",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "oQSUty4jDhejQPgW_j7qU",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "标签色-主题色",
+    "labelLayerId": "_d43nc-I3NPYx_KgpOJ56",
+    "swatches": [
+      {
+        "id": "6AUJ747WSqISxpZIschKV",
+        "class": "shapePath",
+        "path": "颜色 / Frame 427320548 / Frame 48097503 / 主题色&功能色 / Frame 422 / Token/color / 路径",
+        "frame": {
+          "height": 40,
+          "width": 40,
+          "x": 0,
+          "y": 0
+        },
+        "visible": true,
+        "opacity": 1,
+        "fills": [
+          {
+            "type": 0,
+            "color": {
+              "hex": "#4FAFF7",
+              "alpha": 0.2
+            },
+            "opacity": 1
+          }
+        ],
+        "borders": [],
+        "text": null,
+        "effectiveVisibleByAncestorWalk": true,
+        "ancestors": [
+          {
+            "id": "fL-xS0jagWhLLRmFxwnce",
+            "name": "颜色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "7hCjxagacOGy0LzJ297FX",
+            "name": "Frame 427320548",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "trpQcB4roEUPBm-Hm90c8",
+            "name": "Frame 48097503",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "IKrpT3gTHN4uDZ78zn0jX",
+            "name": "主题色&功能色",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "4wZYJoDbAepS7oYF0iLrO",
+            "name": "Frame 422",
+            "visible": true,
+            "opacity": 1
+          },
+          {
+            "id": "HtGKGkfwQ2KakdkVWNgp0",
+            "name": "Token/color",
+            "visible": true,
+            "opacity": 1
+          }
+        ]
+      }
+    ]
+  }
+]

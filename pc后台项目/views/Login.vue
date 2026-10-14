@@ -2,7 +2,7 @@
   <main class="login-page">
     <section class="login-intro" aria-labelledby="login-platform-title">
       <img class="login-background" :src="loginBackground" alt="" fetchpriority="high" />
-      <div class="brand"><span class="rl-brand" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></span><span class="brand-product">智能穿戴设备平台<small>管理中心</small></span></div>
+      <div class="brand"><span class="rl-brand rl-brand-light" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></span><span class="brand-product">智能穿戴设备平台<small>管理中心</small></span></div>
       <div class="login-intro-copy">
         <span class="eyebrow">智能穿戴 · 安全管理</span>
         <h1 id="login-platform-title">让装备管理有序<br>让作业安全可依</h1>
@@ -26,7 +26,7 @@
 </template>
 <script setup>
 import { ref } from 'vue'
-import { View, Hide, User, Lock, Right } from '@element-plus/icons-vue'
+import { View, Hide, User, Lock, Right } from '@ui-spec/element-icons'
 import loginBackground from '../assets/visual/login-industrial.webp'
 import { useRoute, useRouter } from 'vue-router'
 import { getAdminProvider } from '@admin-provider'
@@ -51,7 +51,7 @@ async function enter() {
 </script>
 <style scoped>
 .login-field { display: grid; gap: 10px; margin: 0 0 24px; font-weight: 500; }
-.login-field .login-input input { width: 100%; min-width: 0; height: 48px; box-sizing: border-box; padding-left: 42px; font-weight: 400; border-color: #d7dee8; }
+.login-field .login-input input { width: 100%; min-width: 0; height: 48px; box-sizing: border-box; padding-left: 42px; font-weight: 400; border-color: var(--theme-border); }
 .login-input { position: relative; display: block; }
 .login-input > svg { position: absolute; top: 15px; left: 14px; width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
 .password-field { position: relative; display: block; }

@@ -9,14 +9,14 @@
 .work-time-track {
   height: 25px;
   position: relative;
-  background: #264a6660;
+  background: var(--theme-card);
 }
 .work-time-track a {
   position: absolute;
   height: 25px;
-  background: #038bfa;
+  background: var(--theme-card);
   border-radius: 3px;
-  font-size: 13px;
+  font-size:12px;
   text-align: center;
   line-height: 25px;
 }

@@ -1,27 +1,27 @@
 /* app.css 2367-2401 */
 
 .toast {
-  background: #083a52f5;
-  border: 1px solid #178b92;
+  background: var(--theme-card);
+  border: 1px solid var(--theme-border);
   border-radius: 6px;
   padding: 13px 22px;
-  color: #e7ffff;
-  box-shadow: 0 6px 22px #0007;
+  color: var(--theme-heading);
+  box-shadow: 0 6px 22px var(--theme-shadow-modal);
   display: flex;
   gap: 10px;
   align-items: center;
-  font-size: 15px;
+  font-size:14px;
 }
-.toast i {
-  color: #20e1be;
-  font-size: 23px;
+.toast :is(i,.ui-icon) {
+  color: var(--theme-green);
+  font-size:24px;
 }
 .toast.error {
-  border-color: #b54651;
-  background: #4b2130;
+  border-color: var(--theme-red);
+  background: var(--theme-card);
 }
-.toast.error i {
-  color: #ff8893;
+.toast.error :is(i,.ui-icon) {
+  color: var(--theme-red);
 }
 #toasts {
   position: fixed;

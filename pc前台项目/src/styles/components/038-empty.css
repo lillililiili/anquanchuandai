@@ -6,12 +6,12 @@
   flex-direction: column;
   gap: 13px;
   align-items: center;
-  color: #82a5bf;
+  color: var(--theme-muted);
 }
-.empty i {
+.empty :is(i,.ui-icon) {
   font-size: 42px;
-  color: #2e6b94;
+  color: var(--theme-primary);
 }
 .empty span {
-  font-size: 15px;
+  font-size:14px;
 }

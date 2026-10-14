@@ -3,7 +3,7 @@
 .panel {
   border: 1px solid var(--border);
   border-radius: 5px;
-  background: #03253d99;
+  background: var(--theme-card);
   min-width: 0;
   overflow: hidden;
 }
@@ -22,8 +22,8 @@
   line-height: 24px;
 }
 .panel-heading > div {
-  font-size: 14px;
-  color: #c2d5e8;
+  font-size:14px;
+  color: var(--theme-text);
   display: flex;
   gap: 10px;
   align-items: center;

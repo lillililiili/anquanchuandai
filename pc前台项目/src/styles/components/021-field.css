@@ -4,11 +4,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #bed2e6;
+  color: var(--theme-text);
   white-space: nowrap;
 }
 .field > span {
-  font-size: 15px;
+  font-size:14px;
 }
 .field.vertical {
   flex-direction: column;
@@ -18,9 +18,9 @@
 input,
 select,
 textarea {
-  color: #e5f0ff;
-  background: #06263d;
-  border: 1px solid #24506c;
+  color: var(--theme-heading);
+  background: var(--theme-card);
+  border: 1px solid var(--theme-border);
   border-radius: 4px;
   padding: 10px 13px;
   min-height: 39px;
@@ -28,11 +28,11 @@ textarea {
 }
 input::placeholder,
 textarea::placeholder {
-  color: #6e96b3;
+  color: var(--theme-muted);
 }
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 1px solid #0eafff;
-  border-color: #0eafff;
+  outline: 1px solid var(--theme-border);
+  border-color: var(--theme-border);
 }

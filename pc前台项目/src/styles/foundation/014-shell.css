@@ -9,6 +9,6 @@
   min-height: 58px;
 }
 .page-heading p {
-  color: #b6ccdf;
-  font-size: 17px;
+  color: var(--theme-text);
+  font-size:16px;
 }

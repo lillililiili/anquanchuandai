@@ -7,30 +7,30 @@
 }
 .materials-page .filters .field {
   gap: 7px;
-  font-size: 13px;
+  font-size:12px;
 }
 .materials-page .filters .field > span {
-  font-size: 13px;
+  font-size:12px;
 }
 .materials-page .filters select {
   min-width: 90px;
   max-width: 120px;
-  font-size: 13px;
+  font-size:12px;
   padding: 9px;
 }
 .materials-page .filters input {
   width: 140px;
-  font-size: 13px;
+  font-size:12px;
 }
 .materials-page .filters .btn {
   padding: 6px 10px;
-  font-size: 13px;
+  font-size:12px;
 }
 .materials-page .media-grid .preview {
   height: 200px;
 }
 .materials-page .media-card h3 {
-  font-size: 17px;
+  font-size:16px;
   padding: 8px;
 }
 .materials-page .media-card p {

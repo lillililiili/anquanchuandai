@@ -1,4 +1,5 @@
 <script setup>
+import UiDatePicker from "@ui-spec/UiDatePicker.vue";
 defineProps({
   modelValue: { type: [String, Number], default: "" },
   type: { type: String, default: "text" },
@@ -16,7 +17,8 @@ defineEmits(["update:modelValue"]);
 </script>
 
 <template>
-  <input
+  <UiDatePicker v-if="type === 'date' || type === 'datetime-local'" v-bind="$props" @update:model-value="$emit('update:modelValue', $event)" />
+  <input v-else
     :type="type"
     :name="name || undefined"
     :value="modelValue"
