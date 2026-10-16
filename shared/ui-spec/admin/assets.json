@@ -1,0 +1,90 @@
+{
+  "sourceSha256": "20ee13bff161045011c20cb5c4fda6d8128a6e74c97d8dec7c61f378d137c36f",
+  "assets": [
+    {
+      "file": "business-background.svg",
+      "id": "3197994C-12B8-437E-855E-893B62166CA5",
+      "name": "背景",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1082,
+        "width": 1922,
+        "x": -1,
+        "y": -1
+      },
+      "sha256": "de2c4bb2be19264f5fdf0710dcd652cae18d5bc861670f36f1c5001bb0057469"
+    },
+    {
+      "file": "filter-action.svg",
+      "id": "6B237A78-EF80-44D0-964B-971401C13790",
+      "name": "查询",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 35,
+        "width": 96,
+        "x": 1096,
+        "y": 103
+      },
+      "sha256": "32cd4c3f598ea8978f83fec32172191df1a0e007461ffe413320d16a18f1a1a4"
+    },
+    {
+      "file": "navigation-active.svg",
+      "id": "C1D0DF6F-AE5D-4719-87FE-97AF923579FA",
+      "name": "2",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 42.00000000000001,
+        "width": 136.6998748779297,
+        "x": 130,
+        "y": 0
+      },
+      "sha256": "14421afa13e9efa6e56f1d6dec92d6370bf0651b5111e58df3a142c105f92fb2"
+    },
+    {
+      "file": "navigation-idle.svg",
+      "id": "DC0AD3AC-99E6-4224-9EA8-1122A066FD38",
+      "name": "4",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 42.00000000000001,
+        "width": 136.6998748779297,
+        "x": 388,
+        "y": 0
+      },
+      "sha256": "d3c1c0e8f29a930d0b02bb131ef715f8de341145e1c77d1d2734a1391cba660f"
+    },
+    {
+      "file": "navigation-title.svg",
+      "id": "41C718E0-27EF-48AB-9240-CBCF77F2041D",
+      "name": "导航条",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 70,
+        "width": 522,
+        "x": 101,
+        "y": 562
+      },
+      "sha256": "c52d3514d132d453335877c9f2f5e390427fa4c4ec5e053715c6ccc4d3e72fad",
+      "adaptation": "Merged mirrored halves into continuous outlines to remove the center seam; original gradients, opacity and outer silhouette preserved."
+    },
+    {
+      "file": "section-heading.svg",
+      "id": "67A52F67-DEAE-4ACB-9801-70CE6BB99902",
+      "name": "编组 3",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 25,
+        "width": 216,
+        "x": 12.00000000000728,
+        "y": 14
+      },
+      "sha256": "92f959c493e28ffae56f77de26987d597aa05c6c59525de7eb3f934f7b8a5f7c"
+    }
+  ]
+}

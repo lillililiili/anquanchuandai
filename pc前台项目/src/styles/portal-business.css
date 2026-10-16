@@ -1,0 +1,328 @@
+/* Business artboard variants. Source IDs/paints: shared/ui-spec/portal/business-layers.json.
+ * Every rule is route-scoped; login and the administration app keep their existing styles.
+ */
+html[data-portal-theme] {
+  --portal-background-image:url('/assets/sketch/business-background.svg?v=20261014-continuous');
+  --portal-list-fill:rgba(80.40707499,177.28612930,248.56881469,.08);
+  --portal-list-border:rgb(0,75.50417253,124.20855978);
+  --portal-monitor-shadow:inset 0 0 49px -2px rgba(94,203,255,.152808129370629);
+  --portal-panel:var(--portal-list-fill);
+  --portal-panel-shadow:inset 0 0 0 1px var(--portal-list-border);
+  --portal-panel-radius:6px;
+  --portal-heading:#32c5ff;
+  --theme-panel:var(--portal-panel);
+  --theme-radius-panel:var(--portal-panel-radius);
+}
+/* Monitor DA54D277; Sentinel FB97B87B — the enabled fill, not the palette annotation. */
+html[data-portal-family='monitor'],html[data-portal-family='sentinel'] {
+  --portal-panel:rgba(15.936373,30.65213,48.043478,.2192963287);
+  --portal-panel-radius:5px;
+  --portal-panel-shadow:var(--portal-monitor-shadow);
+}
+/* Long-form cards use their own 12px rounding and 12% blue fill. */
+html[data-portal-family='detail'] { --portal-panel:rgba(80,177,249,.12); --portal-panel-radius:12px; --portal-panel-shadow:none; }
+/* 巡视点位 B331553C / 0B88237F and 巡视报告 1BE3A946 / 01DD6653.
+ * These business tables intentionally differ from the generic #25556F table. */
+html[data-portal-family='list'],html[data-portal-family='monitor'] {
+  /* fillType=1: the retained solid-color property is inactive. */
+  --theme-table-head:linear-gradient(180deg,rgba(94,203,255,.1) 0%,rgba(94,203,255,.3) 99.6175699300699%);
+  --theme-row-odd:transparent;
+  --theme-row-even:rgba(204,222,255,.05);
+}
+html[data-portal-theme='business'] {
+  /* A single viewport-anchored backdrop also covers the header and long pages. */
+  min-height:100%;
+  background:var(--theme-bg) var(--portal-background-image) center top / cover fixed no-repeat;
+}
+html[data-portal-theme='business'] body {
+  display:flow-root;
+  min-height:100vh;
+  background:transparent;
+}
+html[data-portal-theme] :is(.main,.modal,.ui-popup) { font-family:var(--theme-font); font-size:14px; line-height:22px; }
+html[data-portal-theme] .main .page-heading { min-height:40px; margin:0 0 12px; gap:16px; }
+html[data-portal-theme] .main .page-heading h1 { font-size:24px; line-height:32px; font-weight:700; margin:0; letter-spacing:0; }
+html[data-portal-theme] .main .page-heading p { font-size:14px; line-height:22px; margin:0; }
+html[data-portal-theme] .main :is(.panel,.stat,.media-card,.person-vitals) {
+  background:var(--portal-panel); border:0; border-radius:var(--portal-panel-radius); box-shadow:none;
+}
+/* Enabled inside border on AE428F6E / C48A4D03; enabled inner shadow on
+ * DA54D277 / FB97B87B. Inset paint preserves the existing content geometry. */
+html[data-portal-theme] .main :is(.panel,.person-vitals) { box-shadow:var(--portal-panel-shadow); }
+html[data-portal-theme] .main .panel-heading {
+  min-height:46px; padding:10px 12px; border:0; background:transparent; gap:12px;
+}
+html[data-portal-theme] .main .panel-heading h2 {
+  min-height:25px; padding:2px 8px 1px 5px; border:0;
+  font-size:16px; line-height:22px; font-weight:700; color:var(--portal-heading);
+  background:url('/assets/sketch/section-heading.svg') left center / 216px 25px no-repeat;
+  min-width:0; width:216px; max-width:100%; flex:0 1 216px;
+}
+html[data-portal-theme] .main .panel-heading > div { font-size:12px; }
+html[data-portal-theme] .main .panel-body { padding:12px; }
+html[data-portal-theme] .main .panel.flush .panel-body { padding:0; }
+html[data-portal-family='detail'] .main .panel-heading { padding:16px 20px 8px; }
+html[data-portal-family='detail'] .main .panel-heading h2 {
+  padding:0; background:none; color:var(--theme-heading); font-size:18px; line-height:26px;
+  width:auto; flex:0 1 auto;
+}
+/* Business titles can include counts/device metadata beyond the source's short label. */
+html[data-portal-theme] .main.single-page .panel-heading h2:has(small) { width:auto; flex:0 1 auto; }
+html[data-portal-family='detail'] .main .panel-body { padding:12px 20px 20px; }
+html[data-portal-theme] .main .detail-section { border-color:var(--theme-divider); }
+html[data-portal-theme] .main .detail-section h3 { border:0; padding-left:0; font-size:16px; line-height:24px; color:var(--theme-heading); }
+html[data-portal-theme] .main :is(.info,.record-entry,.filters,.form-stack,.table-scroll) { font-size:14px; line-height:22px; }
+html[data-portal-theme] .main .info dt { color:var(--theme-muted); }
+html[data-portal-theme] .main .info dd { color:var(--theme-text); overflow-wrap:anywhere; }
+html[data-portal-theme] .main :is(.grid,.overview-top,.overview-bottom,.person-layout,.work-layout,.video-layout,.materials-layout,.location-layout,.track-layout,.fence-layout,.alarms-layout,.event-layout,.dispatch-layout,.sos-layout,.statistics-layout) { gap:12px; }
+html[data-portal-family='detail'] .main :is(.person-layout,.work-layout,.event-layout) { gap:16px; }
+
+/* List filter/action controls: source 巡视点位 96x35 (41194020 etc.).
+ * Other forms retain the component library's 32px; small inline actions retain 24px.
+ */
+html[data-portal-theme] .main :is(.filters,.works-toolbar,.page-heading) { --theme-control-height:35px; }
+html[data-portal-theme] .main :is(.filters,.works-toolbar,.page-heading) :is(.ui-select,.ui-date,.ui-select-trigger,.ui-date-input) { height:35px; min-height:35px; }
+html[data-portal-theme] .main .filters input:not([type='checkbox']):not([type='radio']):not(.ui-native-proxy) { height:35px; min-height:35px; }
+html[data-portal-theme] .main :is(.filters,.works-toolbar,.page-heading) :is(.ui-select-trigger,.ui-date-input) { padding-block:5.5px; }
+html[data-portal-theme] .main :is(.filters,.works-toolbar,.page-heading) :is(.ui-select-trigger:focus-visible,.ui-select-trigger[aria-expanded='true'],.ui-date-input:focus) { padding-block:4.5px; }
+html[data-portal-theme] .main .filters { padding:16px 20px; margin-bottom:10px; gap:12px; background:var(--portal-list-fill); border:0; border-radius:6px; box-shadow:inset 0 0 0 1px var(--portal-list-border); }
+html[data-portal-theme] .main .panel .filters { margin:0 12px 12px; padding:12px; }
+html[data-portal-theme] .main .filter-actions { display:flex; align-items:center; flex:0 0 auto; gap:8px; }
+html[data-portal-theme] .main .filters .field > span { font-size:14px; line-height:22px; }
+html[data-portal-theme] :is(.main,.modal) .btn.small { height:24px; min-height:24px; padding:0 8px; font-size:12px; line-height:22px; }
+html[data-portal-theme] .main .filters .btn:not(.icon-only) { min-width:96px; }
+/* The artboard query/reset action is 96x35, 16px, with two original border layers.
+ * Hover/pressed/disabled states keep the shared component's explicit states. */
+html[data-portal-theme] .main .filters .btn:not(.icon-only):not(.small) { font-size:16px; font-weight:400; }
+html[data-portal-theme] .main .filters .btn:not(.icon-only):not(.small):not(.filter-export):not(:hover):not(:active):not(:disabled) {
+  border-color:transparent;
+  color:rgb(207.503335,236.693994,255);
+  background:transparent url('/assets/sketch/filter-action.svg') center / 100% 100% no-repeat;
+  background-origin:border-box;
+}
+/* The source 96x35 SVG preserves its aspect ratio. Long export labels need a
+ * fluid frame; retain its 4px corners and paints without scaling the artwork. */
+html[data-portal-theme] .main .filters .btn.filter-export {
+  flex:0 0 auto; width:max-content; padding-inline:15px; gap:8px;
+  border-radius:4px; white-space:nowrap;
+}
+html[data-portal-theme] .main .filters .btn.filter-export:not(:hover):not(:active):not(:disabled) {
+  color:rgb(207.503335,236.693994,255);
+  border-color:rgba(63,181,255,.75);
+  background:rgba(63,181,255,.0981479);
+}
+html[data-portal-theme] .main .filters .searchbox > .ui-icon { top:9px; }
+html[data-portal-theme] .main :is(.filters,.form-stack) > * { min-width:0; }
+
+/* Tables use the matched source row palette; structure and column sizing stay local. */
+html[data-portal-theme] :is(.main,.modal) table { font-size:14px; line-height:22px; border-spacing:0; }
+html[data-portal-theme] :is(.main,.modal) thead { background:var(--theme-table-head); }
+html[data-portal-theme] :is(.main,.modal) th { font-weight:500; padding:12px; background:transparent; }
+html[data-portal-theme] :is(.main,.modal) th:first-child { border-top-left-radius:2px; }
+html[data-portal-theme] :is(.main,.modal) th:last-child { border-top-right-radius:2px; }
+html[data-portal-family='list'] .main table,html[data-portal-family='monitor'] .main table { color:#fff; }
+html[data-portal-family='list'] .main th,html[data-portal-family='monitor'] .main th { color:#fff; font-weight:700; }
+html[data-portal-theme] :is(.main,.modal) td { padding:10px 12px; border-color:var(--theme-divider); font-size:14px; line-height:22px; }
+html[data-portal-theme] .main .compact :is(th,td) { padding:6px 10px; }
+html[data-portal-family='list'] .main table tr { height:54.702995px; }
+html[data-portal-theme] .main .overview-bottom .compact td { padding-block:3px; }
+html[data-portal-theme] .main .table-scroll { border-radius:4px; scrollbar-width:thin; scrollbar-color:var(--theme-border) transparent; }
+html[data-portal-theme] .main tbody tr:hover { background:var(--theme-table-hover); }
+html[data-portal-theme] .main tbody tr.selected { background:var(--theme-selected); }
+/* Keep pagination outside the scrolling data region, including fixed-height panels. */
+html[data-portal-theme] .app-table {
+  --table-height:clamp(240px, calc(100dvh - 340px), 640px);
+  display:flex; flex-direction:column; min-width:0; min-height:0;
+  max-height:var(--table-height);
+}
+html[data-portal-theme] .app-table.is-paginated { height:var(--table-height); }
+html[data-portal-theme] .app-table > .table-scroll {
+  flex:1 1 auto; min-height:0; max-height:none; overflow:auto; scrollbar-gutter:stable;
+}
+html[data-portal-theme] .app-table thead {
+  position:sticky; top:0; z-index:2; background-color:var(--theme-bg);
+}
+html[data-portal-theme] .app-table > .table-scroll:focus-visible { outline:2px solid var(--theme-accent); outline-offset:-2px; }
+html[data-portal-theme] .panel:has(> .panel-body > .app-table),
+html[data-portal-theme] .panel-body:has(> .app-table) { display:flex; flex-direction:column; min-height:0; }
+html[data-portal-theme] .panel-body:has(> .app-table) { flex:1; }
+html[data-portal-theme] .panel-body:has(> .app-table) > :not(.app-table) { flex-shrink:0; }
+html[data-portal-theme] .panel-body > .app-table { flex:1 1 auto; }
+html[data-portal-theme] .modal .app-table { --table-height:clamp(200px, calc(100dvh - 320px), 560px); }
+html[data-portal-theme] .main .alarms-table { min-height:0; }
+/* Selection/tab content must never size the workspace. Both columns use the
+ * available viewport; lists and details scroll independently within that row. */
+html[data-portal-theme='business'] .main:has(> .bounded-split) {
+  display:flex; flex-direction:column; height:calc(100dvh - var(--portal-header-height)); min-height:0;
+}
+html[data-portal-theme='business'] .main:has(> .bounded-split) > :not(.bounded-split) { flex-shrink:0; }
+html[data-portal-theme='business'] .bounded-split {
+  flex:1 1 0; min-height:0; grid-template-rows:minmax(0,1fr); align-items:stretch;
+}
+html[data-portal-theme='business'] .bounded-split > .list-detail-column {
+  display:flex; flex-direction:column; min-width:0; min-height:0;
+}
+html[data-portal-theme='business'] .bounded-split > .list-detail-column > :not(.list-detail-table):not(.media-grid):not(.work-timeline-panel) { flex-shrink:0; }
+html[data-portal-theme='business'] .bounded-split .list-detail-table {
+  display:flex; flex-direction:column; flex:1 1 0; height:auto; min-height:0;
+}
+html[data-portal-theme='business'] .bounded-split .list-detail-table .app-table {
+  flex:1 1 0; height:0; min-height:0; max-height:none;
+}
+html[data-portal-theme='business'] .bounded-split > .panel {
+  display:flex; flex-direction:column; min-width:0; min-height:0; align-self:stretch;
+}
+html[data-portal-theme='business'] .bounded-split > .panel > .panel-heading { flex-shrink:0; }
+html[data-portal-theme='business'] .bounded-split > .panel > .panel-body {
+  flex:1 1 0; min-height:0; overflow:auto; scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .personnel-page .bounded-split > aside > .panel-body {
+  display:flex; flex-direction:column; overflow:hidden; scrollbar-gutter:auto;
+}
+html[data-portal-theme='business'] .personnel-page .detail-heading,
+html[data-portal-theme='business'] .personnel-page aside .tabs { flex-shrink:0; }
+html[data-portal-theme='business'] .personnel-page .detail-scroll {
+  flex:1 1 0; min-height:0; overflow:auto; scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .personnel-page aside.person-detail-focused .detail-scroll {
+  display:flex; flex-direction:column;
+}
+html[data-portal-theme='business'] .personnel-page .detail-scroll > * { flex-shrink:0; }
+html[data-portal-theme='business'] .materials-page .media-grid {
+  flex:1 1 0; min-height:0; overflow:auto; align-content:start; scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .works-page .work-timeline-panel {
+  display:flex; flex-direction:column; flex:0 1 30%; min-height:120px; max-height:220px;
+}
+html[data-portal-theme='business'] .works-page .work-timeline-panel .panel-heading { flex-shrink:0; }
+html[data-portal-theme='business'] .works-page .work-timeline-panel .panel-body {
+  flex:1 1 0; min-height:0; overflow:auto;
+}
+html[data-portal-theme='business'] .works-page .work-timeline { height:auto; }
+html[data-portal-theme='business'] .main :is(.detail-scroll,.media-grid):focus-visible {
+  outline:2px solid var(--theme-accent); outline-offset:-2px;
+}
+/* Video selection and fence editing also keep their surrounding canvas stable. */
+html[data-portal-theme='business'] .video-page .video-wall {
+  height:clamp(380px, calc(100dvh - 420px), 560px); grid-template-rows:minmax(0,1fr);
+}
+html[data-portal-theme='business'] :is(.video-wall,.fence-layout) > .panel {
+  display:flex; flex-direction:column; min-height:0;
+}
+html[data-portal-theme='business'] :is(.video-wall,.fence-layout) > .panel > .panel-heading { flex-shrink:0; }
+html[data-portal-theme='business'] :is(.video-wall,.fence-layout) > .panel > .panel-body {
+  flex:1 1 0; min-height:0; overflow:auto; scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .fence-layout { height:650px; min-height:0; grid-template-rows:minmax(0,1fr); }
+/* Track segments and communication records may grow while their canvases stay put. */
+html[data-portal-theme='business'] .tracks-layout > .panel {
+  contain:size; display:flex; flex-direction:column; min-height:0;
+}
+html[data-portal-theme='business'] .tracks-layout > .panel > .panel-heading { flex-shrink:0; }
+html[data-portal-theme='business'] .tracks-layout > .panel > .panel-body {
+  flex:1 1 0; min-height:0; overflow:auto; scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .dispatch-layout {
+  height:max(650px, calc(100dvh - 210px)); grid-template-rows:minmax(0,1fr);
+}
+html[data-portal-theme='business'] .dispatch-layout > .stack,
+html[data-portal-theme='business'] .dispatch-layout .panel { min-height:0; }
+html[data-portal-theme='business'] .dispatch-layout > .stack > .panel { flex:1 1 0; }
+html[data-portal-theme='business'] .dispatch-layout .panel-body {
+  min-height:0; overflow:auto; scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .dispatch-layout .panel-body > * { flex-shrink:0; }
+html[data-portal-theme='business'] .dispatch-layout .panel-body > .member-list { flex:1 1 120px; min-height:120px; }
+html[data-portal-theme] .app-table .pagination {
+  flex:0 0 auto; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center;
+  gap:8px 16px; padding:10px 0 0; min-height:42px; margin:0;
+  border:0; color:var(--theme-muted); font-family:var(--theme-font); font-size:12px; line-height:22px;
+}
+html[data-portal-theme] .app-table .pagination-summary,
+html[data-portal-theme] .app-table .pagination-pages { display:flex; align-items:center; gap:4px; white-space:nowrap; }
+html[data-portal-theme] .app-table .pagination-summary { gap:12px; }
+html[data-portal-theme] .app-table .pagination-pages { margin-left:auto; }
+html[data-portal-theme] .app-table .pagination .ui-select { width:120px; min-width:120px; }
+html[data-portal-theme] .panel > .app-table > .pagination { padding:10px 12px; }
+html[data-portal-theme] .app-table .pagination .btn {
+  display:inline-flex; align-items:center; justify-content:center; flex:0 0 28px;
+  width:28px; min-width:28px; height:32px; min-height:32px; padding:0; font-size:14px; line-height:22px;
+}
+html[data-portal-theme] .app-table .pagination-gap { width:12px; text-align:center; }
+html[data-portal-theme] .main .tabs { margin:0 0 12px; min-height:40px; border:0; border-radius:8px; padding:0 8px; background:rgba(80,177,249,.12); align-items:center; }
+html[data-portal-theme] .main :is(.tabs,.tabs.box) :is(a,button) { min-height:32px; padding:5px 16px; font-size:14px; line-height:22px; border:0; border-radius:4px; }
+html[data-portal-theme] .main :is(.tabs,.tabs.box) :is(a,button).active { background:var(--theme-bg); color:var(--theme-accent); box-shadow:none; }
+html[data-portal-theme] .main :is(.personnel-tabs,.materials-tabs) { gap:8px; }
+html[data-portal-theme] .main :is(.stats,.stats-row) { gap:12px; }
+html[data-portal-theme] .main .stat { padding:12px 16px; }
+html[data-portal-theme] .main .stat strong { color:var(--theme-heading); }
+html[data-portal-theme] .main .stat :is(span,em) { font-size:14px; line-height:22px; }
+html[data-portal-theme] .main .stats.flat .stat,html[data-portal-theme] .main .stats.mini .stat { background:transparent; }
+
+/* Floating surfaces stay opaque, including controls teleported outside the page. */
+html[data-portal-theme] .modal-backdrop { z-index:110; }
+html[data-portal-theme] .modal { background:var(--theme-overlay-surface); border:1px solid var(--theme-border); border-radius:8px; }
+html[data-portal-theme] .modal header { min-height:56px; padding:12px 20px; }
+html[data-portal-theme] .modal header h2 { font-size:18px; line-height:26px; }
+html[data-portal-theme] .modal .modal-body { padding:20px; }
+html[data-portal-theme] .modal footer { padding:12px 20px; min-height:56px; }
+html[data-portal-theme] :is(.ui-popup,.map-popup) { background:var(--theme-dropdown); }
+/* Selected fill is #83F6FD at 20% (DWy8t7mnGQVDKRWwbjGpe).
+ * Keep it when the keyboard cursor starts on the current value. The source's
+ * white-on-cyan hover text is adapted to the source page ink for readability. */
+html[data-portal-theme] .ui-option.active:not(.disabled),
+html[data-portal-theme] .ui-option:hover:not(.disabled) { color:var(--theme-bg); }
+html[data-portal-theme] .ui-option.selected:not(.disabled) { background:var(--theme-component-bg-1); color:var(--theme-accent); }
+html[data-portal-theme] .ui-option.selected.active:not(.disabled) { box-shadow:inset 0 0 0 1px var(--theme-accent); }
+html[data-portal-theme] :is(.ui-popup,.modal) :is(button,a):focus-visible { outline:2px solid var(--theme-accent); outline-offset:2px; }
+html[data-portal-theme] .main :is(.map,.video-stage,.video-thumb,.video-tile) { border-radius:5px; }
+html[data-portal-theme] .main :is(.map-caption,.map-legend,.layer-controls,.map-editbar) { font-size:12px; line-height:20px; }
+html[data-portal-theme] .main .video-controls { background:var(--theme-overlay-surface); }
+html[data-portal-theme] .main :is(.empty,.empty-state) { color:var(--theme-muted); font-size:14px; }
+html[data-portal-theme] .main .page-foot { background:var(--theme-bg); }
+
+/* Keep selected media and keyboard focus visible above the plain card paint. */
+html[data-portal-theme] .main .media-card:hover { box-shadow:inset 0 0 0 1px var(--theme-primary-hover); }
+html[data-portal-theme] .main .media-card.selected { box-shadow:inset 0 0 0 1px var(--theme-primary); }
+html[data-portal-theme] .main [tabindex]:focus-visible { outline:2px solid var(--theme-accent); outline-offset:2px; }
+
+/* Source alert tables use white body text, with severity carried by the icon/tag.
+ * Keep the urgent action and status color without coloring every cell red. */
+html[data-portal-theme] :is(.main,.modal) tr.is-sos td { color:var(--theme-heading); font-weight:400; }
+html[data-portal-theme] .main tr.is-sos td:first-child { box-shadow:inset 3px 0 0 var(--theme-red); }
+html[data-portal-theme] .main .segmented-bar > span { color:var(--theme-bg); font-weight:700; }
+
+/* Local density adaptations: the same filters stay together when space shrinks. */
+html[data-portal-theme] .main:is(.materials-page,.alarms-page) .filters { flex-wrap:wrap; align-items:flex-end; }
+html[data-portal-theme] .main:is(.materials-page,.alarms-page) .filters > .field { flex:1 1 160px; display:flex; flex-direction:column; align-items:stretch; gap:6px; }
+html[data-portal-theme] .main:is(.materials-page,.alarms-page) .filters .field :is(input,.ui-date,.ui-select) { width:100%; max-width:none; }
+html[data-portal-theme] .main:is(.materials-page,.alarms-page) .filters > .filter-actions { margin-left:auto; }
+/* The work filters occupy one full-width surface with aligned field groups. */
+html[data-portal-theme] .main .works-toolbar { display:block; }
+html[data-portal-theme] .main .works-toolbar .filters {
+  display:grid; width:100%; margin:0; gap:16px; align-items:end;
+  grid-template-columns:minmax(260px,2fr) minmax(140px,1fr) minmax(220px,1.2fr) minmax(140px,1fr) auto;
+}
+html[data-portal-theme] .main .works-toolbar .field { min-width:0; gap:8px; }
+html[data-portal-theme] .main .works-toolbar .field :is(input,.ui-select,.ui-date) { width:100%; max-width:none; }
+html[data-portal-theme] .main .works-toolbar .filter-actions { align-self:end; justify-content:flex-end; }
+html[data-portal-theme] .main .location-layout { grid-template-columns:365px minmax(0,1fr); }
+html[data-portal-theme] .main .location-layout :is(th,td) { padding-inline:8px; }
+html[data-portal-theme] .main .location-layout th { background:var(--theme-table-head); }
+html[data-portal-theme] .main .location-layout .panel .filters { margin-inline:0; }
+html[data-portal-theme] .main.work-page :is(th,td) { padding-inline:8px; }
+html[data-portal-theme] .main.work-page .person-cell { white-space:nowrap; }
+html[data-portal-theme] .main .vital-card strong { font-size:24px; line-height:32px; font-weight:700; }
+
+/* Existing media/detail column proportions are retained; children may now use the
+ * width released by the removed 202px sidebar rather than create page overflow. */
+html[data-portal-theme='business'] .main > *,html[data-portal-theme='business'] .main :is(.panel,.panel-body,.table-scroll,.page-heading > div) { min-width:0; }
+html[data-portal-theme='business'] .main .page-heading > div:first-child { min-width:0; }
+@media (max-width:1440px) {
+  html[data-portal-theme='business'] .main { padding-inline:12px; }
+  html[data-portal-theme] .main .filters { padding:12px; gap:8px; }
+}
+@media (max-width:1100px) {
+  html[data-portal-theme] .main .works-toolbar .filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  html[data-portal-theme] .main .works-toolbar .field:first-child { grid-column:1 / -1; }
+}

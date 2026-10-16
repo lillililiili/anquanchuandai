@@ -5,7 +5,6 @@ import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppField from "@/components/ui/AppField.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import AppInput from "@/components/ui/AppInput.vue";
-import AppPagination from "@/components/ui/AppPagination.vue";
 import AppPanel from "@/components/ui/AppPanel.vue";
 import AppSelect from "@/components/ui/AppSelect.vue";
 import AppStatCards from "@/components/ui/AppStatCards.vue";
@@ -146,8 +145,8 @@ function rowClass(item) {
 </script>
 
 <template>
-  <div class="split-detail">
-    <div>
+  <div class="split-detail bounded-split">
+    <div class="list-detail-column">
       <PageHeading title="告警与核验" subtitle="设备异常与现场核验协同">
         <template #actions>
           <AppStatCards :items="summaryCards" variant="mini" />
@@ -175,10 +174,10 @@ function rowClass(item) {
           <AppSelect v-model="draft.status" name="status" :options="statusOptions" />
         </AppField>
       </FilterBar>
-      <div class="panel alarms-table">
-        <AppTable :columns="columns" :empty="!alarms.length">
+      <div class="panel alarms-table list-detail-table">
+        <AppTable :rows="alarms" :reset-key="[session.station, session.filters.alarms]" v-slot="{ rows: pageRows }" :columns="columns" :empty="!alarms.length">
           <tr
-            v-for="item in alarms"
+            v-for="item in pageRows"
             :key="item.id"
             data-action="select-event"
             :data-id="item.id"
@@ -204,7 +203,6 @@ function rowClass(item) {
           </tr>
         </AppTable>
       </div>
-      <AppPagination :total="alarms.length" />
     </div>
     <AppPanel title="事件摘要" :extra-class="sosSelected ? 'alarm-detail is-sos' : 'alarm-detail'">
       <template v-if="selectedAlarm">

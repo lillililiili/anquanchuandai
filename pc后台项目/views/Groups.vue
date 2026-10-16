@@ -21,6 +21,8 @@
   </section>
 </template>
 <script setup>
+import { useConfirmation } from '../confirmation'
+const confirmDiscard = useConfirmation()
 import { utcTime } from '../tablePresentation'
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -63,14 +65,12 @@ async function save(form) { await commit(`groups.${editing.value ? 'update' : 'c
 async function prepareStatus() { saveController?.abort(); saveController = new AbortController(); saveError.value = null; try { candidates.value = await getCandidates(); operationId = crypto.randomUUID(); statusOpen.value = true } catch (e) { if (e.name !== 'AbortError') notice.value = e.message } }
 async function setStatus() { await commit('groups.status', { id: data.value.id, expectedVersion: data.value.version, enabled: !data.value.enabled, relatedVersions: relatedVersions() }) }
 async function commit(type, payload) { busy.value = true; saveError.value = null; saveController = new AbortController(); try { await provider.execute(type, { ...payload, siteId: store.siteId, operationId }, { signal: saveController.signal }); dirty.value = false; editorOpen.value = false; statusOpen.value = false; notice.value = '本地配置已保存，未发送任何通知。'; await load() } catch (e) { if (e.name !== 'AbortError') { saveError.value = e; if (e.code === 401) provider.invalidate() } } finally { busy.value = false } }
-function allowLeave() { if (busy.value) return false; if (dirty.value && !window.confirm('尚有未保存的协助组修改，确定放弃吗？')) return false; clearForm(); return true }
+async function allowLeave() { if (busy.value) return false; if (dirty.value && !await confirmDiscard({ message: '协助组修改尚未保存，放弃后将无法恢复。' })) return false; clearForm(); return true }
 function closeEditor() { allowLeave() }
 function clearForm() { saveController?.abort(); editorOpen.value = false; statusOpen.value = false; dirty.value = false; editing.value = null }
 store.leaveGuard = allowLeave
 const unsubscribe = provider.subscribe(({ kind }) => { if (['authorization', 'identity', 'expired', 'reset'].includes(kind)) { clearForm(); terminals.value = null; history.value = null; data.value = null; controller?.abort(); terminalController?.abort(); historyController?.abort() } })
 watch(() => [route.fullPath, store.siteId, store.revision], () => { keyword.value = query.value.keyword || ''; status.value = query.value.status || ''; load() }, { immediate: true })
 watch(() => store.siteId, () => { clearForm(); terminals.value = null; history.value = null; historyPage.value = 1; terminalController?.abort(); historyController?.abort(); terminalRun++; historyRun++ })
-const beforeUnload = event => { if (dirty.value) { event.preventDefault(); event.returnValue = '' } }
-window.addEventListener('beforeunload', beforeUnload)
-onBeforeUnmount(() => { run++; terminalRun++; historyRun++; clearForm(); controller?.abort(); terminalController?.abort(); historyController?.abort(); unsubscribe(); if (store.leaveGuard === allowLeave) store.leaveGuard = null; window.removeEventListener('beforeunload', beforeUnload) })
+onBeforeUnmount(() => { run++; terminalRun++; historyRun++; clearForm(); controller?.abort(); terminalController?.abort(); historyController?.abort(); unsubscribe(); if (store.leaveGuard === allowLeave) store.leaveGuard = null })
 </script>

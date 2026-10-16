@@ -63,6 +63,7 @@ function keydown(e) {
   }
 }
 watch(() => props.disabled, v => { if (v) close() })
+watch(selected, () => { invalid.value = false }, { deep: true })
 defineExpose({ focus: () => trigger.value?.focus(), checkValidity: () => native.value?.checkValidity(), reportValidity: () => native.value?.reportValidity() })
 </script>
 <template>
@@ -70,9 +71,10 @@ defineExpose({ focus: () => trigger.value?.focus(), checkValidity: () => native.
     <select ref="native" class="ui-native-proxy" :name="name" :multiple="multiple" :disabled="disabled" :required="required" tabindex="-1" aria-hidden="true" @focus="trigger?.focus()" @invalid.prevent="invalid = true; trigger?.focus()" @change="emit('change', $event)">
       <option v-for="(item, index) in items" :key="index" :value="item.value" :disabled="item.disabled" :selected="chosen(item)">{{ item.label }}</option>
     </select>
-    <button ref="trigger" class="ui-select-trigger" type="button" role="combobox" :id="attrs.id" :disabled="disabled" :aria-label="attrs['aria-label'] || controlLabel || undefined" :aria-labelledby="labelledBy" :aria-describedby="attrs['aria-describedby']" :aria-required="required || undefined" :aria-invalid="invalid || attrs['aria-invalid']" aria-haspopup="listbox" :aria-controls="uid" :aria-expanded="open" :aria-activedescendant="open && active >= 0 ? `${uid}-${active}` : undefined" @click="open ? close() : expand()" @keydown="keydown" @blur="emit('blur', $event)" @focus="emit('focus', $event)">
-      <span class="ui-select-value">{{ label }}</span><UiIcon name="chevron-down" />
+    <button ref="trigger" class="ui-select-trigger" type="button" role="combobox" :id="attrs.id" :disabled="disabled" :aria-label="attrs['aria-label'] || controlLabel || undefined" :aria-labelledby="labelledBy" :aria-describedby="[attrs['aria-describedby'], invalid ? uid + '-error' : ''].filter(Boolean).join(' ') || undefined" :aria-required="required || undefined" :aria-invalid="invalid || attrs['aria-invalid']" aria-haspopup="listbox" :aria-controls="uid" :aria-expanded="open" :aria-activedescendant="open && active >= 0 ? `${uid}-${active}` : undefined" @click="open ? close() : expand()" @keydown="keydown" @blur="emit('blur', $event)" @focus="emit('focus', $event)">
+      <slot name="trigger" :label="label" :open="open"><span class="ui-select-value">{{ label }}</span><UiIcon name="chevron-down" /></slot>
     </button>
+    <small v-if="invalid" :id="uid + '-error'" class="ui-control-error" aria-live="polite">请选择{{ attrs['aria-label'] || controlLabel || '选项' }}</small>
     <Teleport :to="target"><div v-if="open" :id="uid" ref="panel" class="ui-popup ui-select-popup" :style="position" role="listbox" :aria-label="attrs['aria-label'] || '选项'" :aria-multiselectable="multiple || undefined" @pointerdown.prevent>
       <div v-for="(item,index) in items" :key="index" :id="`${uid}-${index}`" class="ui-option" :class="{ selected: chosen(item), active: active === index, disabled: item.disabled }" :data-option="index" role="option" :aria-selected="chosen(item)" :aria-disabled="item.disabled || undefined" @pointermove="!item.disabled && (active = index)" @click="change(item)"><span>{{ item.label }}</span><UiIcon v-if="chosen(item)" name="check" /></div>
       <div v-if="!items.length" class="ui-option disabled">暂无选项</div>

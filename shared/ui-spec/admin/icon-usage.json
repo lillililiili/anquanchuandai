@@ -1,0 +1,176 @@
+{
+  "note": "UiIcon names and compatibility component imports used by active admin views and shared components. All source paths are unchanged.",
+  "icons": [
+    {
+      "applicationName": "Box",
+      "sourceName": "control-platform",
+      "id": "IbAUZWWQ6GdsOWE97z6zK",
+      "path": "/描边图标/Frame 427320442/Frame 427320452/Frame 427320450/control-platform",
+      "geometrySha256": "0a788405918a96442c006458f968d76bdb5c0ad2e36bec9c5dc08eb470b6da2f",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "Connection",
+      "sourceName": "link",
+      "id": "8WkdLzugXuoNZoF2mG1te",
+      "path": "/描边图标/Frame 427320442/Frame 427320480/Frame 427320479/link",
+      "geometrySha256": "c2f35715855280c23fa5b94b9ecb662c5b375859eef8100a2d8137e2ca29bc89",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "Document",
+      "sourceName": "file",
+      "id": "ItO_g_O4qivALMpWeGWsO",
+      "path": "/描边图标/Frame 427320442/Frame 427320437/Frame 427320423/file",
+      "geometrySha256": "44a187252edeca5e2c2426419a4f140e2c484b2ef43a05ab65e85c2e4ee62afb",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "Key",
+      "sourceName": "key",
+      "id": "GxGtdUQWxOnFa85NCIhHV",
+      "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/key",
+      "geometrySha256": "622a9b61e5c7e11a5b788013be32e338b219d2674895dc889eb7ef8eda61d48b",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "Loading",
+      "sourceName": "loading",
+      "id": "yfiD4gn_1lFwOmDJ_6LoF",
+      "path": "/面性图标/Frame 427320442/Frame 427320544/Frame 427320543/loading",
+      "geometrySha256": "82dc632c33c4cefcd41ead7157bc4de0d2c7ec1198ecc6eeebe97f38a36c6674",
+      "files": [
+        "pc后台项目/components/QueryState.vue"
+      ]
+    },
+    {
+      "applicationName": "Location",
+      "sourceName": "location",
+      "id": "VxS9XJnlVu3iBxDBe57Rq",
+      "path": "/描边图标/Frame 427320442/Frame 427320441/Frame 427320440/location",
+      "geometrySha256": "13ace592c016ccee8ecb83a08bfc3f46ab228b8a989bd0278187ba219cfb5c50",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "Tickets",
+      "sourceName": "task",
+      "id": "vRG_HW1CNvf8lDAOQ5Y8O",
+      "path": "/描边图标/Frame 427320442/Frame 427320437/Frame 427320424/task",
+      "geometrySha256": "c1ebc8910d5025d7baf88d6296751c9f1f689c85b6f920ffc8ebdb6a9e5b27bf",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "User",
+      "sourceName": "user",
+      "id": "pvMxwPPtqi4S-U9VfvUhT",
+      "path": "/描边图标/Frame 427320442/Frame 427320455/Frame 427320453/user",
+      "geometrySha256": "14ff2d08c62f0f9fed6804de8d88b5e0079777d5768bde3aea603d08109f2edd",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "WarningFilled",
+      "sourceName": "error-circle-filled",
+      "id": "5siAX_NMlTxz52m2ADNM6",
+      "path": "/面性图标/Frame 427320442/Frame 427320464/Frame 427320488/error-circle-filled",
+      "geometrySha256": "70f3dc0e2a89fc39c96b2991afbddde75bebaa34cb4184daef49f7e970aeebb7",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "arrow-right",
+      "sourceName": "arrow-right",
+      "id": "Y8F3OdE47YvVs5IJCJVrn",
+      "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/arrow-right",
+      "geometrySha256": "6ee6248e9f3d18cdaead041289aab9cc49b338332f194f2b6937fd2e37bf3310",
+      "files": [
+        "pc后台项目/components/AdminNavigation.vue",
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "arrow-top-right",
+      "sourceName": "arrow-right-up",
+      "id": "ZfgNnixCg553oebPJOotd",
+      "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/arrow-right-up",
+      "geometrySha256": "143916e84a72361ff54f0152fcf18cd0a92fabcbb6bc67159223d867c8ec62fe",
+      "files": [
+        "pc后台项目/views/Overview.vue"
+      ]
+    },
+    {
+      "applicationName": "building",
+      "sourceName": "building",
+      "id": "cFCMaAVyruZWBOzgSgIAP",
+      "path": "/描边图标/Frame 427320442/Frame 427320469/Frame 427320465/building",
+      "geometrySha256": "790ad950e2bedf78a351aabc2e72e770174f43709b5e8977872222c9eed4cc12",
+      "files": [
+        "pc后台项目/components/AdminNavigation.vue"
+      ]
+    },
+    {
+      "applicationName": "chevron-down",
+      "sourceName": "chevron-down",
+      "id": "DXISSSysHXpcG4WMDmjkT",
+      "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-down",
+      "geometrySha256": "1c0a69cab7d350e8f25d7219c4a9a2a2af7ea48d6d56ce43a2a0c50d9a8f9e80",
+      "files": [
+        "pc后台项目/components/AdminNavigation.vue"
+      ]
+    },
+    {
+      "applicationName": "chevron-left",
+      "sourceName": "chevron-left",
+      "id": "Z0IgPc7I5Nb-_KyEkqaI7",
+      "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-left",
+      "geometrySha256": "fb08e1bcd7aad3df1605d59f81041994b7807bbac80b0eb035f5efb181915aa3",
+      "files": [
+        "pc后台项目/components/AdminPagination.vue"
+      ]
+    },
+    {
+      "applicationName": "chevron-right",
+      "sourceName": "chevron-right",
+      "id": "9TmlQrW2hvw9rtqnjeNNF",
+      "path": "/描边图标/Frame 427320442/Frame 427320429/Group 427320340/chevron-right",
+      "geometrySha256": "1c4d8b30b92fe6a34ac6b2efdb96beab2f9ac21e9c64809c659b3260a031e3e0",
+      "files": [
+        "pc后台项目/components/AdminPagination.vue"
+      ]
+    },
+    {
+      "applicationName": "dashboard",
+      "sourceName": "dashboard",
+      "id": "lcWg00vll5j9H5NO1RMxU",
+      "path": "/描边图标/Frame 427320442/Frame 427320452/Frame 427320449/dashboard",
+      "geometrySha256": "c28f78fd462eed70e4038a0cdddf63d6fea530a2d66bc26ade7d7e38b79ec3d2",
+      "files": [
+        "pc后台项目/components/AdminNavigation.vue"
+      ]
+    },
+    {
+      "applicationName": "search",
+      "sourceName": "search",
+      "id": "1oj0F33D72aTeV3sk-cdh",
+      "path": "/描边图标/Frame 427320442/Frame 427320430/Group 427320341/search",
+      "geometrySha256": "805cea2161a8cd1989d1741b24c5302f5814d39f1a137c253b42e2aaec34b456",
+      "files": [
+        "pc后台项目/components/AdminShowcase.vue"
+      ]
+    }
+  ]
+}

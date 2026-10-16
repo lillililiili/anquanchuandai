@@ -13,9 +13,9 @@
     <div class="login-side"><section class="login-card" aria-labelledby="login-heading">
       <span class="login-kicker">管理中心</span>
       <h2 id="login-heading">欢迎登录</h2><p class="muted">请使用您的管理账号进入平台</p>
-      <form :aria-busy="busy" @submit.prevent="enter">
-        <label class="login-field" for="admin-username">账号<span class="login-input"><User aria-hidden="true" /><input id="admin-username" v-model="username" name="username" autocomplete="username" placeholder="请输入管理账号" required :disabled="busy" :aria-describedby="error ? 'login-error' : undefined" /></span></label>
-        <div class="login-field"><label for="admin-password">密码</label><span class="password-field login-input"><Lock aria-hidden="true" /><input id="admin-password" v-model="password" name="password" autocomplete="current-password" :type="visible ? 'text' : 'password'" placeholder="请输入密码" required :disabled="busy" :aria-describedby="error ? 'login-error' : undefined" /><button class="password-toggle" type="button" :aria-label="visible ? '隐藏密码' : '显示密码'" :title="visible ? '隐藏密码' : '显示密码'" :aria-pressed="visible" :disabled="busy" @click="visible = !visible"><component :is="visible ? View : Hide" aria-hidden="true" /></button></span></div>
+      <form ref="formRef" novalidate :aria-busy="busy" @submit.prevent="enter">
+        <label class="login-field" for="admin-username">账号<div class="field-control"><span class="login-input"><User aria-hidden="true" /><input id="admin-username" data-field="username" :aria-invalid="!!errors.username" v-model="username" name="username" autocomplete="username" placeholder="请输入管理账号" required :disabled="busy" :aria-describedby="errors.username ? 'admin-username-error' : error ? 'login-error' : undefined" /></span><small v-if="errors.username" id="admin-username-error" class="field-error" aria-live="polite">{{ errors.username }}</small></div></label>
+        <div class="login-field"><label for="admin-password">密码</label><div class="field-control"><span class="password-field login-input"><Lock aria-hidden="true" /><input id="admin-password" data-field="password" :aria-invalid="!!errors.password" v-model="password" name="password" autocomplete="current-password" :type="visible ? 'text' : 'password'" placeholder="请输入密码" required :disabled="busy" :aria-describedby="errors.password ? 'admin-password-error' : error ? 'login-error' : undefined" /><button class="password-toggle" type="button" :aria-label="visible ? '隐藏密码' : '显示密码'" :title="visible ? '隐藏密码' : '显示密码'" :aria-pressed="visible" :disabled="busy" @click="visible = !visible"><component :is="visible ? View : Hide" aria-hidden="true" /></button></span><small v-if="errors.password" id="admin-password-error" class="field-error" aria-live="polite">{{ errors.password }}</small></div></div>
         <p v-if="error" id="login-error" class="notice error" role="alert">{{ error }}</p>
         <p v-if="store.notice" class="notice" role="status">{{ store.notice }}</p>
         <button class="button primary enter" :disabled="busy" type="submit">{{ busy ? '正在登录…' : '登录' }}<Right v-if="!busy" aria-hidden="true" /></button>
@@ -25,7 +25,8 @@
   </main>
 </template>
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useFieldErrors } from '@ui-spec/useFieldErrors'
 import { View, Hide, User, Lock, Right } from '@ui-spec/element-icons'
 import loginBackground from '../assets/visual/login-industrial.webp'
 import { useRoute, useRouter } from 'vue-router'
@@ -34,9 +35,12 @@ import { useAdminStore } from '../store'
 import { safeTarget } from '../navigation'
 const provider = getAdminProvider(), store = useAdminStore(), route = useRoute(), router = useRouter()
 const username = ref(''), password = ref(''), visible = ref(false), busy = ref(false), error = ref('')
+const { formRef, errors, validate } = useFieldErrors(() => ({ username: username.value, password: password.value }))
+watch([username, password], () => { error.value = '' })
 async function enter() {
   if (busy.value) return
-  if (!username.value.trim() || !password.value) { error.value = '请输入账号和密码'; return }
+  error.value = ''
+  if (!validate({ username: !username.value.trim() && '请输入管理账号', password: !password.value && '请输入密码' })) return
   busy.value = true; error.value = ''
   try {
     provider.login(username.value.trim(), password.value); store.clear(); store.notice = ''; password.value = ''

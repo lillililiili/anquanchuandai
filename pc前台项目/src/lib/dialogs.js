@@ -9,6 +9,7 @@ import { toast } from "@/stores/notify";
 export function confirm(title, text, onConfirm) {
   openModal({
     title,
+    size: "confirm",
     view: ConfirmText,
     props: { text, onConfirm },
     footer: ConfirmActions,

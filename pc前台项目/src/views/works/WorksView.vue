@@ -119,20 +119,18 @@ function barStyle(work) {
       <AppField label="监护状态">
         <AppSelect v-model="draft.status" name="status" :options="statusOptions" />
       </AppField>
-
     </FilterBar>
-    <p class="note">示例数据，待对接两票系统。作业票信息只读，由两票系统维护。</p>
   </div>
-  <div class="grid cols-2">
-    <div class="stack">
-      <AppPanel extra-class="work-list">
+  <div class="grid cols-2 bounded-split">
+    <div class="stack list-detail-column">
+      <AppPanel extra-class="work-list list-detail-table">
         <template #title>作业列表 <small>（共 {{ list.length }} 条）</small></template>
-        <AppTable
+        <AppTable :rows="list" :reset-key="[session.station, session.filters.works]" v-slot="{ rows: pageRows }"
           :columns="['作业名称', '来源编号', '监护人', '区域', '人员数', '装备在线', '待核验数', '来源状态', '操作']"
           :empty="!list.length"
         >
           <tr
-            v-for="work in list"
+            v-for="work in pageRows"
             :key="work.id"
             data-action="select-work"
             :data-id="work.id"
@@ -151,7 +149,7 @@ function barStyle(work) {
           </tr>
         </AppTable>
       </AppPanel>
-      <AppPanel>
+      <AppPanel extra-class="work-timeline-panel">
         <template #title>当日作业时间窗 <small>{{ windowDate }}</small></template>
         <div class="work-timeline">
           <div class="time-axis">

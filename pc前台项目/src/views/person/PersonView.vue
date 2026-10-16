@@ -217,9 +217,9 @@ function openEvents() {
         </div>
       </AppPanel>
       <AppPanel title="领用绑定历史">
-        <AppTable table-class="compact" :columns="historyColumns" :empty="!history.length">
-          <tr v-for="(item, index) in history" :key="item.id">
-            <td>{{ index + 1 }}</td>
+        <AppTable :rows="history" :reset-key="person.id" v-slot="{ rows: pageRows, offset }" table-class="compact" :columns="historyColumns" :empty="!history.length">
+          <tr v-for="(item, index) in pageRows" :key="item.id">
+            <td>{{ offset + index + 1 }}</td>
             <td>领取</td>
             <td>{{ item.typeName }}</td>
             <td>{{ item.deviceId }}</td>

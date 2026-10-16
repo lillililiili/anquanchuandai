@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
+import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import { session } from "@/stores/session";
@@ -10,9 +11,15 @@ import { db, refreshSnapshot } from "@/mock/runtime";
 const account = ref("");
 const password = ref("");
 const error = ref("");
+const busy = ref(false);
+const { formRef, errors, validate } = useFieldErrors(() => ({ account: account.value, password: password.value }));
+watch([account, password], () => { error.value = ""; });
 
 async function submit() {
+  if (busy.value) return;
   error.value = "";
+  if (!validate({ account: !account.value.trim() && "请输入工作账号", password: !password.value && "请输入密码" })) return;
+  busy.value = true;
   try {
     const response = await fetch("/api/guardian/v1/login", {
       method: "POST",
@@ -41,7 +48,7 @@ async function submit() {
   } catch {
     error.value = "后端未连接，修改未保存";
     return;
-  }
+  } finally { busy.value = false; }
   go("overview");
 }
 </script>
@@ -53,24 +60,26 @@ async function submit() {
       <h1>智能穿戴安全监护平台</h1>
       <p>现场人员 · 智能装备 · 作业监护</p>
     </div>
-    <form class="login-card" @submit.prevent="submit">
+    <form ref="formRef" class="login-card" novalidate :aria-busy="busy" @submit.prevent="submit">
       <h2>工作账号登录</h2>
       <label class="field">
         <span>账号</span>
-        <div class="input-icon">
+        <div class="field-control"><div class="input-icon">
           <AppIcon name="user-line" />
-          <input v-model="account" name="account" type="text" placeholder="请输入工作账号" autocomplete="username" required />
+          <input v-model="account" data-field="account" name="account" type="text" placeholder="请输入工作账号" autocomplete="username" required :disabled="busy" :aria-invalid="!!errors.account" :aria-describedby="errors.account ? 'portal-account-error' : undefined" />
         </div>
+        <small v-if="errors.account" id="portal-account-error" class="field-error" aria-live="polite">{{ errors.account }}</small></div>
       </label>
       <label class="field">
         <span>密码</span>
-        <div class="input-icon">
+        <div class="field-control"><div class="input-icon">
           <AppIcon name="lock-line" />
-          <input v-model="password" name="password" :type="session.showPassword ? 'text' : 'password'" placeholder="请输入密码" autocomplete="current-password" required />
+          <input v-model="password" data-field="password" name="password" :type="session.showPassword ? 'text' : 'password'" placeholder="请输入密码" autocomplete="current-password" required :disabled="busy" :aria-invalid="!!errors.password" :aria-describedby="errors.password ? 'portal-password-error' : undefined" />
           <AppButton tone="icon-only plain" :icon="session.showPassword ? 'eye-line' : 'eye-off-line'" aria-label="显示或隐藏密码" @click="session.showPassword = !session.showPassword" />
         </div>
+        <small v-if="errors.password" id="portal-password-error" class="field-error" aria-live="polite">{{ errors.password }}</small></div>
       </label>
-      <button class="btn primary" type="submit">登录</button>
+      <button class="btn primary" type="submit" :disabled="busy">{{ busy ? '正在登录…' : '登录' }}</button>
       <small>账号由管理员授权</small>
       <div class="form-error" role="alert">{{ error }}</div>
     </form>

@@ -23,7 +23,7 @@ const typeKeys = ["H", "B", "W"];
 const typeLabels = { H: "安全帽", B: "安全带", W: "手表" };
 const verifyStates = ["待现场核验", "待认领", "处理中", "已核验"];
 const segmentColors = {
-  待现场核验: "var(--theme-orange)",
+  待现场核验: "var(--theme-yellow)",
   待认领: "var(--theme-red)",
   处理中: "var(--theme-primary)",
   已核验: "var(--theme-green)",
@@ -178,7 +178,7 @@ function exportStatistics() {
           <AppSelect v-model="draft.workId" name="workId" :options="workOptions" />
         </AppField>
         <AppButton type="submit" tone="primary">查询</AppButton>
-        <AppButton type="button" tone="primary" icon="download-line" @click="exportStatistics">导出详细记录</AppButton>
+        <AppButton class="filter-export" type="button" tone="primary" icon="download-line" @click="exportStatistics">导出详细记录</AppButton>
       </form>
     </template>
   </PageHeading>
@@ -230,8 +230,8 @@ function exportStatistics() {
   </div>
   <div style="margin-top:14px">
     <AppPanel title="详细追溯记录">
-      <AppTable v-if="detailKind === '人员'" :columns="peopleColumns" :empty="!stats.people.length">
-        <tr v-for="person in stats.people" :key="person.id">
+      <AppTable :rows="stats.people" :reset-key="[session.station, session.filters.statistics]" v-slot="{ rows: pageRows }" v-if="detailKind === '人员'" :columns="peopleColumns" :empty="!stats.people.length">
+        <tr v-for="person in pageRows" :key="person.id">
           <td>{{ personName(person.id) }}</td>
           <td>{{ person.team }}</td>
           <td>{{ person.area }}</td>
@@ -240,8 +240,8 @@ function exportStatistics() {
           <td><a class="btn small" :href="'#/person/' + person.id">查看</a></td>
         </tr>
       </AppTable>
-      <AppTable v-else-if="detailKind === '装备'" :columns="deviceColumns" :empty="!stats.devices.length">
-        <tr v-for="device in stats.devices" :key="device.id">
+      <AppTable :rows="stats.devices" :reset-key="[session.station, session.filters.statistics]" v-slot="{ rows: pageRows }" v-else-if="detailKind === '装备'" :columns="deviceColumns" :empty="!stats.devices.length">
+        <tr v-for="device in pageRows" :key="device.id">
           <td>{{ device.id }}</td>
           <td>{{ typeNames[device.type] }}</td>
           <td>{{ personName(db.owner(device.id)?.id) }}</td>
@@ -249,8 +249,8 @@ function exportStatistics() {
           <td><AppStatus :color="device.online ? 'green' : 'red'">{{ device.online ? "在线" : "连接中断" }}</AppStatus></td>
         </tr>
       </AppTable>
-      <AppTable v-else-if="detailKind === '任务'" :columns="workColumns" :empty="!stats.works.length">
-        <tr v-for="work in stats.works" :key="work.id">
+      <AppTable :rows="stats.works" :reset-key="[session.station, session.filters.statistics]" v-slot="{ rows: pageRows }" v-else-if="detailKind === '任务'" :columns="workColumns" :empty="!stats.works.length">
+        <tr v-for="work in pageRows" :key="work.id">
           <td>{{ work.name }}</td>
           <td>{{ work.id }}</td>
           <td>{{ personName(work.supervisor) }}</td>
@@ -259,8 +259,8 @@ function exportStatistics() {
           <td><a class="btn small" :href="'#/work/' + work.id">查看</a></td>
         </tr>
       </AppTable>
-      <AppTable v-else :columns="eventColumns" table-class="compact" :empty="!stats.events.length">
-        <tr v-for="item in stats.events" :key="item.id">
+      <AppTable :rows="stats.events" :reset-key="[session.station, session.filters.statistics]" v-slot="{ rows: pageRows }" v-else :columns="eventColumns" table-class="compact" :empty="!stats.events.length">
+        <tr v-for="item in pageRows" :key="item.id">
           <td>{{ item.snapshot.personName }}</td>
           <td>{{ item.deviceId }}</td>
           <td>{{ item.snapshot.workName }}</td>

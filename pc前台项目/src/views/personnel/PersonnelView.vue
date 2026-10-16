@@ -109,8 +109,8 @@ function talk() {
 </script>
 
 <template>
-  <div class="split-detail" :style="session.hidePerson ? 'grid-template-columns:1fr' : null">
-    <div>
+  <div class="split-detail bounded-split" :style="session.hidePerson ? 'grid-template-columns:1fr' : null">
+    <div class="list-detail-column">
       <PageHeading title="当班人员与装备" subtitle="以人员查看三类装备与当前作业" />
       <FilterBar @submit="applyFilters" @reset="resetFilters">
         <div class="searchbox">
@@ -124,8 +124,8 @@ function talk() {
           <AppSelect v-model="draft.workStatus" name="workStatus" :options="workStatusOptions" />
         </AppField>
       </FilterBar>
-      <div class="panel">
-        <AppTable table-class="personnel-list" :columns="columns" :empty="!rows.length">
+      <div class="panel list-detail-table">
+        <AppTable :rows="rows" :reset-key="[session.station, session.filters.personnel]" table-class="personnel-list" :columns="columns" :empty="!rows.length">
           <template #head>
             <th>序号</th>
             <th>人员信息</th>
@@ -135,32 +135,34 @@ function talk() {
             <th>最近更新时间</th>
             <th>操作</th>
           </template>
-          <tr
-            v-for="(row, index) in rows"
-            :key="row.person.id"
-            data-action="select-person"
-            :data-id="row.person.id"
-            :class="{ selected: current && row.person.id === current.person.id }"
-            @click="selectPerson(row.person.id)"
-          >
-            <td>{{ index + 1 }}</td>
-            <td>
-              <div class="person-cell">
-                <PersonAvatar :person="row.person" />
-                <div>
-                  <strong>{{ row.person.name }}</strong>
-                  <small>{{ row.helmet?.id || "未绑定" }} | {{ row.person.team }}</small>
+          <template #default="{ rows: pageRows, offset }">
+            <tr
+              v-for="(row, index) in pageRows"
+              :key="row.person.id"
+              data-action="select-person"
+              :data-id="row.person.id"
+              :class="{ selected: current && row.person.id === current.person.id }"
+              @click="selectPerson(row.person.id)"
+            >
+              <td>{{ offset + index + 1 }}</td>
+              <td>
+                <div class="person-cell">
+                  <PersonAvatar :person="row.person" />
+                  <div>
+                    <strong>{{ row.person.name }}</strong>
+                    <small>{{ row.helmet?.id || "未绑定" }} | {{ row.person.team }}</small>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td>{{ row.person.area }}</td>
-            <td>
-              {{ row.work?.name || "待分配" }}<small>{{ row.work ? "（监护人：" + personName(row.work.supervisor) + "）" : "" }}</small>
-            </td>
-            <td><DeviceStrip :person-id="row.person.id" /></td>
-            <td>{{ row.person.updated }}</td>
-            <td><a class="btn small" :href="'#/person/' + row.person.id" @click.stop>查看详情</a></td>
-          </tr>
+              </td>
+              <td>{{ row.person.area }}</td>
+              <td>
+                {{ row.work?.name || "待分配" }}<small>{{ row.work ? "（监护人：" + personName(row.work.supervisor) + "）" : "" }}</small>
+              </td>
+              <td><DeviceStrip :person-id="row.person.id" /></td>
+              <td>{{ row.person.updated }}</td>
+              <td><a class="btn small" :href="'#/person/' + row.person.id" @click.stop>查看详情</a></td>
+            </tr>
+          </template>
         </AppTable>
       </div>
     </div>
@@ -180,50 +182,52 @@ function talk() {
             <AppButton tone="icon-only" icon="close-line" aria-label="关闭人员详情" @click="session.hidePerson = true" />
           </div>
           <AppTabs v-model="session.personTab" :tabs="detailTabs" />
-          <dl v-if="session.personTab === '人员信息'" class="info compact">
-            <dt>所属区域</dt>
-            <dd>{{ current.person.area }}</dd>
-            <dt>当前作业</dt>
-            <dd>{{ current.work?.name || "待分配" }}</dd>
-            <dt>当前监护人</dt>
-            <dd>{{ personName(current.work?.supervisor) }}</dd>
-            <dt>当前负责人</dt>
-            <dd>{{ personName(current.work?.leader) }}</dd>
-          </dl>
-          <div v-if="session.personTab === '人员信息' || session.personTab === '装备信息'" class="detail-section">
-            <h3>装备状态 <small>（以领用记录为准）</small></h3>
-            <DeviceStrip :person-id="current.person.id" />
-            <a class="text-link" :href="'#/person/' + current.person.id">查看领用记录 <UiIcon name="chevron-right" /></a>
-          </div>
-          <div v-if="session.personTab === '人员信息' || session.personTab === '作业信息'" class="detail-section">
-            <h3>关联作业</h3>
-            <template v-if="current.work">
-              <b>{{ current.work.name }}</b>
-              <p><small>{{ current.work.id }}</small></p>
-              <p>作业区域　{{ current.work.area }}</p>
-              <p>监护人　{{ personName(current.work.supervisor) }}</p>
-              <a class="text-link" :href="'#/work/' + current.work.id">查看作业详情 <UiIcon name="chevron-right" /></a>
-            </template>
-            <AppEmpty v-else text="待分配作业" />
-          </div>
-          <div v-if="session.personTab === '人员信息' || session.personTab === '事件信息'" class="detail-section">
-            <h3>待核验事件（{{ pending.length }}）</h3>
-            <template v-if="related">
-              <a :href="'#/event/' + related.id"><AppIcon name="error-warning-fill" color="yellow" />　{{ related.title }}</a>
-              <p><AppTag :color="statusColor(related.status)">{{ related.status }}</AppTag></p>
-            </template>
-            <AppStatus v-else>暂无待核验事件</AppStatus>
-          </div>
-          <div class="detail-section detail-media">
-            <div class="grid equal">
-              <div class="detail-video">
-                <h3>现场视频</h3>
-                <a :href="'#/single/' + current.person.id"><VideoFrame :person-id="current.person.id" /></a>
-              </div>
-              <div class="detail-call">
-                <h3>语音对讲</h3>
-                <AppButton tone="primary wide" icon="mic-line" @click="talk">发起对讲</AppButton>
-                <small>与 {{ current.person.name }} 进行通话</small>
+          <div class="detail-scroll" tabindex="0" role="region" :aria-label="session.personTab + '，可滚动'">
+            <dl v-if="session.personTab === '人员信息'" class="info compact">
+              <dt>所属区域</dt>
+              <dd>{{ current.person.area }}</dd>
+              <dt>当前作业</dt>
+              <dd>{{ current.work?.name || "待分配" }}</dd>
+              <dt>当前监护人</dt>
+              <dd>{{ personName(current.work?.supervisor) }}</dd>
+              <dt>当前负责人</dt>
+              <dd>{{ personName(current.work?.leader) }}</dd>
+            </dl>
+            <div v-if="session.personTab === '人员信息' || session.personTab === '装备信息'" class="detail-section">
+              <h3>装备状态 <small>（以领用记录为准）</small></h3>
+              <DeviceStrip :person-id="current.person.id" />
+              <a class="text-link" :href="'#/person/' + current.person.id">查看领用记录 <UiIcon name="chevron-right" /></a>
+            </div>
+            <div v-if="session.personTab === '人员信息' || session.personTab === '作业信息'" class="detail-section">
+              <h3>关联作业</h3>
+              <template v-if="current.work">
+                <b>{{ current.work.name }}</b>
+                <p><small>{{ current.work.id }}</small></p>
+                <p>作业区域　{{ current.work.area }}</p>
+                <p>监护人　{{ personName(current.work.supervisor) }}</p>
+                <a class="text-link" :href="'#/work/' + current.work.id">查看作业详情 <UiIcon name="chevron-right" /></a>
+              </template>
+              <AppEmpty v-else text="待分配作业" />
+            </div>
+            <div v-if="session.personTab === '人员信息' || session.personTab === '事件信息'" class="detail-section">
+              <h3>待核验事件（{{ pending.length }}）</h3>
+              <template v-if="related">
+                <a :href="'#/event/' + related.id"><AppIcon name="error-warning-fill" color="yellow" />　{{ related.title }}</a>
+                <p><AppTag :color="statusColor(related.status)">{{ related.status }}</AppTag></p>
+              </template>
+              <AppStatus v-else>暂无待核验事件</AppStatus>
+            </div>
+            <div class="detail-section detail-media">
+              <div class="grid equal">
+                <div class="detail-video">
+                  <h3>现场视频</h3>
+                  <a :href="'#/single/' + current.person.id"><VideoFrame :person-id="current.person.id" /></a>
+                </div>
+                <div class="detail-call">
+                  <h3>语音对讲</h3>
+                  <AppButton tone="primary wide" icon="mic-line" @click="talk">发起对讲</AppButton>
+                  <small>与 {{ current.person.name }} 进行通话</small>
+                </div>
               </div>
             </div>
           </div>

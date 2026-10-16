@@ -58,8 +58,8 @@ function eventIcon(item) {
     <div class="stack">
       <AppPanel title="当前重点事件">
         <template #extra><a class="text-link" href="#/alarms">查看全部 <UiIcon name="chevron-right" /></a></template>
-        <AppTable :columns="['时间', '事件', '人员 / 装备', '状态']" table-class="compact" :empty="!openEvents.length">
-          <tr v-for="item in openEvents" :key="item.id" @click="go('event/' + item.id)">
+        <AppTable :reset-key="session.station" :rows="openEvents" v-slot="{ rows: pageRows }" :columns="['时间', '事件', '人员 / 装备', '状态']" table-class="compact" :empty="!openEvents.length">
+          <tr v-for="item in pageRows" :key="item.id" @click="go('event/' + item.id)">
             <td>{{ item.time }}</td>
             <td><AppIcon :name="eventIcon(item)[0]" :color="eventIcon(item)[1]" />　{{ item.title }}</td>
             <td>{{ personName(item.personId) }} · {{ item.deviceId }}</td>
@@ -81,8 +81,8 @@ function eventIcon(item) {
   </div>
   <div class="overview-bottom">
     <AppPanel title="当班作业">
-      <AppTable :columns="['作业名称', '人数', '负责人', '来源', '同步状态', '操作']" table-class="compact" :empty="!jobList.length">
-        <tr v-for="work in jobList" :key="work.id">
+      <AppTable :reset-key="session.station" :rows="jobList" v-slot="{ rows: pageRows }" :columns="['作业名称', '人数', '负责人', '来源', '同步状态', '操作']" table-class="compact" :empty="!jobList.length">
+        <tr v-for="work in pageRows" :key="work.id">
           <td>{{ work.name }}</td>
           <td>{{ work.members.length }} 人</td>
           <td>{{ personName(work.leader) }}</td>

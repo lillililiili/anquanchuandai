@@ -2,7 +2,6 @@
 import { onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import Topbar from "./Topbar.vue";
-import Sidebar from "./Sidebar.vue";
 import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { people } from "@/lib/queries";
@@ -49,7 +48,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Topbar />
-  <Sidebar />
+  <header class="portal-header">
+    <Topbar />
+  </header>
   <main id="main" :class="['main', route.name + '-page']"><slot /></main>
 </template>

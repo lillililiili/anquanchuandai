@@ -10,6 +10,7 @@ const emit = defineEmits(['update:modelValue','input','change','blur','focus'])
 const attrs = useAttrs(), uid = useId(), trigger = ref(null), native = ref(null), invalid = ref(false)
 const controlLabel = useControlLabel(trigger)
 const selected = computed(() => props.modelValue !== undefined ? props.modelValue : props.value || '')
+const validationMessage = computed(() => !display.value && props.required ? '请选择日期' : '请输入有效日期，并检查日期范围')
 const display = ref(selected.value)
 watch(selected,value=>{display.value=value;invalid.value=false})
 const isTime = computed(() => props.type === 'datetime-local'), seconds = computed(() => Number(props.step) < 60 || /:\d\d:\d\d$/.test(selected.value))
@@ -53,16 +54,17 @@ function timeKey(e, value, count, field) {
 }
 function typed(e) { const v=e.target.value; if(!v||parseLocal(v))commit(v);else invalid.value=true }
 watch(()=>props.disabled,v=>{if(v)close()})
-watch(invalid,v=>native.value?.setCustomValidity(v?'请输入有效日期':''))
+watch(invalid,v=>native.value?.setCustomValidity(v?validationMessage.value:''), { flush: 'sync' })
 watch(()=>[days.value.length,mode.value],()=>nextTick(place))
 defineExpose({focus:()=>trigger.value?.focus()})
 </script>
 <template>
   <span class="ui-date" :class="[attrs.class,{'is-invalid':invalid,'is-disabled':disabled}]" :style="attrs.style">
     <input ref="native" class="ui-native-proxy" :type="type" :name="name" :value="selected" :required="required" :disabled="disabled" :min="min" :max="max" :step="step" tabindex="-1" aria-hidden="true" @focus="trigger?.focus()" @invalid.prevent="invalid=true;trigger?.focus()" @input="emit('input',$event)" @change="emit('change',$event)" />
-    <input ref="trigger" class="ui-date-input" type="text" :id="attrs.id" :value="display" :disabled="disabled" :readonly="readonly" :placeholder="placeholder || (isTime ? 'YYYY-MM-DDTHH:mm' : 'YYYY-MM-DD')" :aria-label="attrs['aria-label'] || attrs.ariaLabel || controlLabel || undefined" :aria-describedby="attrs['aria-describedby']" :aria-invalid="invalid || attrs['aria-invalid']" :aria-required="required || undefined" aria-haspopup="dialog" :aria-expanded="open" :aria-controls="uid" @input="display=$event.target.value" @click="expand" @keydown.down.prevent="expand" @keydown.enter.prevent="typed" @change="typed" @blur="emit('blur',$event)" @focus="emit('focus',$event)" />
+    <input ref="trigger" class="ui-date-input" type="text" :id="attrs.id" :value="display" :disabled="disabled" :readonly="readonly" :placeholder="placeholder || (isTime ? 'YYYY-MM-DDTHH:mm' : 'YYYY-MM-DD')" :aria-label="attrs['aria-label'] || attrs.ariaLabel || controlLabel || undefined" :aria-describedby="[attrs['aria-describedby'], invalid ? uid + '-error' : ''].filter(Boolean).join(' ') || undefined" :aria-invalid="invalid || attrs['aria-invalid']" :aria-required="required || undefined" aria-haspopup="dialog" :aria-expanded="open" :aria-controls="uid" @input="display=$event.target.value" @click="expand" @keydown.down.prevent="expand" @keydown.enter.prevent="typed" @change="typed" @blur="emit('blur',$event)" @focus="emit('focus',$event)" />
     <button v-if="selected && !disabled && !readonly" type="button" class="ui-date-clear" aria-label="清空日期" @click="commit('')"><UiIcon name="close" /></button>
     <button type="button" class="ui-date-open" :disabled="disabled || readonly" aria-label="打开日期选择器" @click="open ? close(true) : expand()"><UiIcon name="calendar" /></button>
+    <small v-if="invalid" :id="uid + '-error'" class="ui-control-error" aria-live="polite">{{ validationMessage }}</small>
     <Teleport :to="target"><section v-if="open" :id="uid" ref="panel" class="ui-popup ui-calendar" :class="{'with-time':isTime}" :style="position" role="dialog" aria-label="日期选择器">
       <div class="ui-calendar-board">
       <header class="ui-calendar-header"><button type="button" aria-label="上一年" @click="year--;place()"><UiIcon name="chevron-left-double" style="transform:rotate(-90deg)" /></button><button type="button" aria-label="上一页日期" @click="shift(-1)"><UiIcon name="chevron-left" /></button><span class="ui-calendar-caption"><button type="button" @click="mode=mode==='years'?'days':'years'">{{ year }}年</button><button type="button" @click="mode=mode==='months'?'days':'months'">{{ month }}月</button></span><button type="button" aria-label="下一页日期" @click="shift(1)"><UiIcon name="chevron-right" /></button><button type="button" aria-label="下一年" @click="year++;place()"><UiIcon name="chevron-right-double" style="transform:rotate(-90deg)" /></button></header>

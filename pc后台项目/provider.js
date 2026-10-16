@@ -20,19 +20,47 @@ function request(method, url, body) {
   if (xhr.status === 0) throw Error('后端未连接，修改未保存')
   let payload = {}
   try { payload = JSON.parse(xhr.responseText || '{}') } catch { payload = {} }
-  if (xhr.status >= 400) {
-    if (xhr.status === 401) {
+  return responsePayload(xhr.status, payload)
+}
+
+function responsePayload(status, payload) {
+  if (status >= 400) {
+    if (status === 401) {
       window.sessionStorage.removeItem(AUTH_KEY)
       window.sessionStorage.removeItem(TOKEN_KEY)
       window.sessionStorage.removeItem(SESSION_VERSION_KEY)
       provider?.invalidate()
     }
     const error = Error(payload.message || '保存失败')
-    error.code = payload.code || xhr.status
+    error.code = payload.code || status
     error.errorCode = payload.errorCode
+    error.fields = payload.fields || {}
+    error.impacts = payload.impacts || []
+    error.requestId = payload.requestId
     throw error
   }
   return payload
+}
+
+// Page reads must yield to rendering and allow navigation to cancel the request.
+async function queryRequest(body, signal) {
+  const token = window.sessionStorage.getItem(AUTH_KEY) || ''
+  let response
+  try {
+    response = await fetch('/api/admin/v1/query', {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'X-Wearable-Token': token },
+      body: JSON.stringify(body),
+    })
+  } catch (error) {
+    if (error.name === 'AbortError') throw error
+    throw Error('后端未连接，请稍后重试')
+  }
+  let payload = {}
+  try { payload = await response.json() } catch (error) { if (error.name === 'AbortError') throw error }
+  // A response from an earlier login must not clear or populate the new session.
+  if (signal?.aborted || token !== (window.sessionStorage.getItem(AUTH_KEY) || '')) throw new DOMException('请求已取消', 'AbortError')
+  return responsePayload(response.status, payload)
 }
 
 function remoteKind(kind, input) {
@@ -80,7 +108,7 @@ export function getAdminProvider() {
       if (['repairAssignees', 'deviceLifecycleHistory'].includes(kind) || kind.startsWith('maintenance')) throw Error('维修与退役功能已移除')
       if (!remoteKind(kind, input)) return localQuery(kind, input, options)
       const accountId = window.sessionStorage.getItem(TOKEN_KEY)
-      return Promise.resolve(request('POST', '/api/admin/v1/query', { kind, accountId, input }))
+      return queryRequest({ kind, accountId, input }, options?.signal)
     }
   }
   return provider

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -7,14 +7,13 @@ import AppSelect from "@/components/ui/AppSelect.vue";
 import NoticeList from "@/components/layout/NoticeList.vue";
 import UserCard from "@/components/layout/UserCard.vue";
 import UserActions from "@/components/layout/UserActions.vue";
+import TopNavigation from "./TopNavigation.vue";
 import { db, tick } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { closeModal, openModal } from "@/stores/modal";
 import { events, people, scope } from "@/lib/queries";
 
 const route = useRoute();
-const now = ref(new Date());
-let timer;
 const operatorName = computed(() => {
   tick.value;
   return db.state.operator?.name || db.state.operator?.loginName || "当前账号";
@@ -24,6 +23,8 @@ const stations = computed(() => {
   tick.value;
   return db.state.stations.map((item) => [item.id, item.name]);
 });
+const stationName = computed(() => stations.value.find(([id]) => id === session.station)?.[1] || "未选择厂站");
+const operatorInitial = computed(() => Array.from(operatorName.value.trim())[0] || "用");
 const unresolved = computed(() => {
   tick.value;
   return db.stats(scope()).unresolved;
@@ -31,11 +32,6 @@ const unresolved = computed(() => {
 const openSos = computed(() => {
   tick.value;
   return events().filter((item) => item.type === "人员求助" && item.status !== "已核验").length;
-});
-const clock = computed(() => {
-  const value = now.value;
-  const pad = (part) => String(part).padStart(2, "0");
-  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`;
 });
 
 function changeStation(value) {
@@ -64,34 +60,29 @@ function openUser() {
   openModal({ title: operatorName.value, view: UserCard, footer: UserActions });
 }
 
-onMounted(() => {
-  timer = setInterval(() => {
-    now.value = new Date();
-  }, 1000);
-});
-onUnmounted(() => clearInterval(timer));
 </script>
 
 <template>
-  <header class="topbar">
-    <a class="brand rl-brand rl-brand-light" href="#/overview" aria-label="融瓴 ROLLING，返回综合总览"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></a>
-    <span class="brand-divider"></span>
-    <strong>智能穿戴安全监护平台</strong>
-    <div class="top-actions">
-      <a class="screen-entry" href="#/screen" @click="openScreen"><AppIcon name="dashboard-3-line" />数据大屏</a>
-      <AppIcon name="building-2-line" color="blue" />
-      <AppSelect :model-value="session.station" :options="stations" aria-label="选择厂站" @update:model-value="changeStation" />
-      <span class="top-divider"></span>
+  <TopNavigation>
+    <template #left-tools>
+      <a class="portal-tool screen-entry" href="#/screen" aria-label="数据大屏" data-tooltip="数据大屏" @click="openScreen"><AppIcon name="dashboard-3-line" /></a>
+      <span class="portal-station-tool" :data-tooltip="'切换厂站：' + stationName">
+        <AppSelect :model-value="session.station" :options="stations" :aria-label="'选择厂站，当前：' + stationName" @update:model-value="changeStation">
+          <template #trigger><AppIcon name="building-2-line" /><AppIcon class="portal-tool-caret" name="arrow-down-s-line" /></template>
+        </AppSelect>
+      </span>
+    </template>
+    <template #right-tools>
       <AppButton
-        :tone="openSos ? 'icon-only notification has-sos' : 'icon-only notification'"
+        :tone="openSos ? 'portal-tool icon-only notification has-sos' : 'portal-tool icon-only notification'"
         icon="notification-3-line"
+        data-tooltip="待处理通知"
         :ariaLabel="openSos ? `有 ${openSos} 起 SOS 求助，共 ${unresolved} 条待处理` : `待处理通知 ${unresolved} 条`"
         @click="openNotices"
       >
         <span class="notification-count">{{ unresolved }}</span>
       </AppButton>
-      <AppButton tone="plain" icon="user-fill" @click="openUser">{{ operatorName }} <AppIcon name="arrow-down-s-line" /></AppButton>
-      <time :datetime="now.toISOString()" aria-label="当前时间">{{ clock }}</time>
-    </div>
-  </header>
+      <AppButton tone="portal-tool portal-account" :aria-label="'账号：' + operatorName" :data-tooltip="operatorName + ' · 账号信息'" @click="openUser">{{ operatorInitial }}</AppButton>
+    </template>
+  </TopNavigation>
 </template>

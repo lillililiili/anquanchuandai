@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch, watchEffect } from "vue";
+import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import { useRoute } from "vue-router";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppField from "@/components/ui/AppField.vue";
@@ -28,6 +29,8 @@ const route = useRoute();
 const formError = ref("");
 const busy = ref(false);
 const observation = ref("");
+const observationError = ref(''), photoError = ref('');
+watch(observation, () => { observationError.value = ''; });
 const conclusionOptions = [["", "请选择"], "设备通信异常", "需现场处理", "暂无法确认"];
 const emptyForm = { conclusion: "", situation: "", measures: "" };
 
@@ -78,20 +81,32 @@ const form = computed(() => {
   if (!item) return emptyForm;
   return item.verification || session.formDrafts[item.id] || emptyForm;
 });
+const { formRef, errors, validate } = useFieldErrors(() => ({ ...form.value }));
+function validateVerification(submit) {
+  return validate({
+    conclusion: submit && !form.value.conclusion ? '请选择核验结论' : '',
+    situation: submit && !String(form.value.situation || '').trim() ? '请填写现场情况' : String(form.value.situation || '').length > 500 ? '现场情况最多500字' : '',
+    measures: String(form.value.measures || '').length > 500 ? '采取措施最多500字' : '',
+  });
+}
 
 watch(
   () => route.params.id,
   () => {
     formError.value = "";
+    errors.value = {}; photoError.value = ''; observationError.value = '';
   },
 );
 
 function loadLatestDraft() { if (eventRecord.value) { delete session.formDrafts[eventRecord.value.id]; formError.value = ""; } }
 
 async function appendObservation() {
-  if (busy.value) return; busy.value = true;
+  if (busy.value) return;
+  observationError.value = '';
+  if (!observation.value.trim()) { observationError.value = '请填写现场补充情况'; return; }
+  busy.value = true;
   try { await db.observe(eventRecord.value.id, { situation: observation.value }); observation.value = ""; toast("现场补充已保存"); }
-  catch (error) { toast(error.message, true); } finally { busy.value = false; }
+  catch (error) { observationError.value = error.message; } finally { busy.value = false; }
 }
 
 function formValues() {
@@ -107,6 +122,8 @@ function formValues() {
 async function submitVerify() {
   const item = eventRecord.value;
   if (!item || item.verification || busy.value) return;
+  formError.value = '';
+  if (!validateVerification(true)) return;
   busy.value = true;
   try {
     await db.verify(item.id, formValues(), true);
@@ -121,6 +138,8 @@ async function submitVerify() {
 async function saveDraft() {
   const item = eventRecord.value;
   if (!item || item.verification || busy.value) return;
+  formError.value = '';
+  if (!validateVerification(false)) return;
   busy.value = true;
   try {
     const values = formValues();
@@ -129,7 +148,7 @@ async function saveDraft() {
     formError.value = "";
     toast("核验草稿已保存");
   } catch (error) {
-    toast(error.message || "操作失败", true);
+    formError.value = error.message || "操作失败";
   } finally { busy.value = false; }
 }
 
@@ -138,6 +157,7 @@ async function uploadPhoto(event) {
   const file = input.files && input.files[0];
   const eventId = eventRecord.value?.id;
   if (!file || !eventId || busy.value) return;
+  photoError.value = '';
   const version = eventRecord.value.version;
   busy.value = true;
   try {
@@ -149,7 +169,7 @@ async function uploadPhoto(event) {
     if (session.formDrafts[eventId]?.expectedVersion === version) session.formDrafts[eventId].expectedVersion = saved.version;
     toast("核验照片已保存");
   } catch (error) {
-    toast(error.message || "操作失败", true);
+    photoError.value = error.message || "操作失败";
   } finally {
     input.value = "";
     busy.value = false;
@@ -257,29 +277,25 @@ function openMaterials() {
             <div class="grid equal"><template v-for="photoId in record.photoIds || []" :key="photoId"><MediaImage v-if="eventMedia.find(m => m.blobId === photoId)" :media="eventMedia.find(m => m.blobId === photoId)" /></template></div>
           </div>
           <AppStatus v-if="!eventRecord.observations?.length">暂无现场补充</AppStatus>
-          <div v-if="!verified && eventRecord.permissions?.['events:observe']" class="form-stack"><AppTextarea v-model="observation" maxlength="500" placeholder="补充现场情况，独立留痕，不代替最终核验" /><AppButton :disabled="busy || !observation.trim()" @click="appendObservation">保存现场补充</AppButton></div>
+          <div v-if="!verified && eventRecord.permissions?.['events:observe']" class="form-stack"><AppField label="现场补充" :error="observationError"><AppTextarea v-model="observation" maxlength="500" placeholder="补充现场情况，独立留痕，不代替最终核验" /></AppField><AppButton :disabled="busy || !observation.trim()" @click="appendObservation">保存现场补充</AppButton></div>
         </AppPanel>
         <AppPanel :title="verified ? '已提交核验结果' : '填写核验结果'">
-          <form class="form-stack" data-form="verify" :data-id="eventRecord.id" @submit.prevent="submitVerify">
-            <AppField>
+          <form ref="formRef" novalidate class="form-stack" data-form="verify" :data-id="eventRecord.id" @submit.prevent="submitVerify">
+            <AppField data-field="conclusion" :error="errors.conclusion">
               <template #label>核验结论 <span class="red">*</span></template>
               <AppSelect v-model="form.conclusion" name="conclusion" :options="conclusionOptions" :disabled="verified || busy || !eventRecord.permissions?.['events:verify']" />
             </AppField>
-            <AppField>
+            <AppField data-field="situation" :error="errors.situation">
               <template #label>现场情况 <span class="red">*</span></template>
-              <div>
-                <AppTextarea v-model="form.situation" name="situation" maxlength="500" placeholder="请描述现场核验情况" :readonly="verified || busy || !eventRecord.permissions?.['events:verify']" />
-                <div class="char-count">{{ String(form.situation || "").length }}/500</div>
-              </div>
+              <AppTextarea v-model="form.situation" name="situation" maxlength="500" placeholder="请描述现场核验情况" :readonly="verified || busy || !eventRecord.permissions?.['events:verify']" />
+              <template #hint><span class="char-count">{{ String(form.situation || "").length }}/500</span></template>
             </AppField>
-            <AppField label="采取措施">
-              <div>
-                <AppTextarea v-model="form.measures" name="measures" maxlength="500" placeholder="填写安排与责任人" :readonly="verified || busy || !eventRecord.permissions?.['events:verify']" />
-                <div class="char-count">{{ String(form.measures || "").length }}/500</div>
-              </div>
+            <AppField label="采取措施" data-field="measures" :error="errors.measures">
+              <AppTextarea v-model="form.measures" name="measures" maxlength="500" placeholder="填写安排与责任人" :readonly="verified || busy || !eventRecord.permissions?.['events:verify']" />
+              <template #hint><span class="char-count">{{ String(form.measures || "").length }}/500</span></template>
             </AppField>
             <template v-if="!verified && eventRecord.permissions?.['events:verify']">
-              <AppField label="核验照片">
+              <AppField label="核验照片" :error="photoError">
                 <label class="upload-area">
                   <AppIcon name="camera-fill" />添加现场照片<small>支持 JPG、PNG，单张不超过 10MB</small>
                   <input type="file" accept="image/png,image/jpeg" :data-upload-event="eventRecord.id" aria-label="添加现场照片" @change="uploadPhoto" />

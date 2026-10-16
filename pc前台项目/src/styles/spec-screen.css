@@ -29,20 +29,27 @@ html.screen-mode body,
 
 /* The map and worker remain visible inside their original panels. */
 .screen::before {
-  background: linear-gradient(rgba(18,30,55,.867),rgba(18,30,55,.98) 32%),url('/assets/screen-plant.png') center top/100% auto no-repeat;
-  opacity: .65;
+  inset:0;
+  background:var(--portal-background-image) center / cover no-repeat;
+  opacity:1;
 }
 
 .screen .screen-head {
-  background: var(--screen-nav);
+  height:70px;
+  padding-top:14px;
+  background:transparent;
 }
 
 .screen .screen-head h1 {
-  color: var(--screen-accent);
-  font-size:24px;
-  line-height:32px;
-  font-weight: 700;
-  text-shadow: none;
+  background:linear-gradient(180deg,#fff 32.781915%,#a3e4ff 85.094658%);
+  background-clip:text;
+  -webkit-background-clip:text;
+  color:transparent;
+  font:900 30px/36px 'Portal Source Han Heavy',sans-serif;
+  letter-spacing:3.72px;
+  margin:0;
+  text-shadow:none;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.6565232));
 }
 
 .screen .screen-brand {
@@ -62,7 +69,10 @@ html.screen-mode body,
 }
 
 .screen .screen-head-decoration {
-  filter: none;
+  inset:0;
+  width:100%;
+  height:70px;
+  filter:none;
 }
 
 .screen .screen-head-decoration > path {
@@ -139,27 +149,31 @@ html.screen-mode body,
 }
 
 .screen .screen-panel {
-  background: var(--screen-panel);
-  border-color: var(--screen-border);
-  border-radius: var(--theme-radius);
-  box-shadow: none;
+  background:rgba(15.936373,30.65213,48.043478,.2192963287);
+  border:0;
+  border-radius:5px;
+  box-shadow: var(--portal-monitor-shadow);
 }
 
 .screen .screen-panel-title {
   background: transparent;
-  border-color: var(--screen-divider);
+  border:0;
+  padding:6px 12px;
 }
 
 .screen .screen-panel-title::before {
-  background: var(--screen-accent);
-  box-shadow: none;
+  display:none;
 }
 
 .screen .screen-panel-title h2,
 .screen .screen-trend .screen-panel-title h2,
 .screen .screen-videos .screen-panel-title h2 {
-  color: var(--screen-accent);
-  font-size: var(--theme-font-size-section);
+  color:#32c5ff;
+  font-size:16px;
+  line-height:22px;
+  padding:2px 5px 1px;
+  min-height:25px;
+  background:url('/assets/sketch/section-heading.svg') left center / 216px 25px no-repeat;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -257,8 +271,8 @@ html.screen-mode body,
 }
 
 .screen .screen-metric {
-  background: var(--screen-card);
-  border-color: var(--screen-border);
+  background:rgba(80,177,249,.08);
+  border-color:rgba(80,177,249,.2);
 }
 
 .screen .screen-metric svg {
@@ -427,9 +441,9 @@ html.screen-mode body,
 }
 
 .screen .screen-video-tile {
-  border-color: var(--screen-border) !important;
-  border-radius: var(--theme-radius);
-  background: var(--screen-card) !important;
+  border:0 !important;
+  border-radius:5px;
+  background:rgba(80,177,249,.08) !important;
 }
 
 .screen .screen-video-label {

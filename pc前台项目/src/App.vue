@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onUnmounted, watchEffect } from "vue";
+import { pageFamily } from "@/components/layout/navigation";
 import { useRoute } from "vue-router";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import AppModal from "@/components/ui/AppModal.vue";
@@ -10,6 +11,19 @@ import { connection, refreshSnapshot } from "@/mock/runtime";
 
 const route = useRoute();
 const bare = computed(() => route.name === "login" || route.name === "screen");
+watchEffect(() => {
+  if (!route.name || route.name === 'login') {
+    delete document.documentElement.dataset.portalTheme;
+    delete document.documentElement.dataset.portalFamily;
+  } else {
+    document.documentElement.dataset.portalTheme = route.name === 'screen' ? 'screen' : 'business';
+    document.documentElement.dataset.portalFamily = pageFamily(route.name);
+  }
+});
+onUnmounted(() => {
+  delete document.documentElement.dataset.portalTheme;
+  delete document.documentElement.dataset.portalFamily;
+});
 </script>
 
 <template>
@@ -20,7 +34,7 @@ const bare = computed(() => route.name === "login" || route.name === "screen");
   <AppShell v-else>
     <RouterView />
   </AppShell>
-  <AppModal v-if="modal.open" :title="modal.title" :wide="modal.wide" :tone="modal.tone">
+  <AppModal v-if="modal.open" :title="modal.title" :wide="modal.wide" :size="modal.size" :layout="modal.layout" :tone="modal.tone">
     <component :is="modalView" v-bind="modalProps" />
     <template v-if="modalFooter" #footer>
       <component :is="modalFooter" v-bind="modalProps" />

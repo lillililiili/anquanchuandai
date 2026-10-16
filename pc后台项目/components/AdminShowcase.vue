@@ -1,0 +1,23 @@
+<script setup>
+import { ref } from 'vue'
+import ModalPanel from './ModalPanel.vue'
+import { useTablePagination } from '../pagination'
+const modalSize=ref('regular'),modal=ref(false),date=ref('2026-10-15'),selection=ref('site-1'),members=ref(['one']),enabled=ref(true)
+const options=[['site-1','临江示范电厂'],['site-2','北山能源站']], memberOptions=[['one','张工'],['two','李工'],['three','王工']]
+const rows=ref(Array.from({length:37},(_,i)=>({id:i+1,code:`QA-${String(i+1).padStart(3,'0')}`,name:`验收记录 ${i+1}`})))
+const {page,pageSize,visibleRows,changePage,changePageSize}=useTablePagination(rows)
+</script>
+<template>
+  <div class="admin-shell admin-showcase"><main>
+    <header class="page-heading"><div><h1>后台业务组件验收</h1><p>本页只使用内存数据，不访问业务接口。原稿参数与适配说明见 shared/ui-spec/admin。</p></div><a class="button" href="/ui-spec.html">公共状态全集</a></header>
+    <section class="panel"><h2>普通控件 · 32px</h2><div class="showcase-row">
+      <button class="button primary">主要操作</button><button class="button">普通操作</button><button class="button danger">危险操作</button><button class="button" disabled>禁用状态</button><button class="button primary" disabled aria-busy="true">正在保存…</button><button v-for="(label,size) in {confirm:'确认 440px',compact:'简短表单 650px',regular:'常规表单 880px',wide:'复杂表单 1000px'}" :key="size" class="button" @click="modalSize=size;modal=true">{{ label }}</button>
+    </div><div class="showcase-grid"><label>输入与焦点<input placeholder="点击检查 2px 聚焦边框" /></label><label>错误状态<div class="field-control"><input value="错误示例" aria-invalid="true" aria-describedby="spec-error" /><small id="spec-error" class="error">请填写有效内容</small></div></label><label>单选<UiSelect v-model="selection" :options="options" /></label><label>日期<UiDatePicker v-model="date" /></label><label>多选<UiSelect v-model="members" multiple :options="memberOptions" /></label><label>禁用<UiSelect :model-value="'site-1'" :options="options" disabled /></label></div><div class="showcase-row"><label class="inline-check"><input type="checkbox" checked />选中</label><label class="inline-check"><input type="checkbox" disabled />禁用</label><label class="inline-check"><input type="radio" checked />单选</label><UiSwitch v-model="enabled" aria-label="启用状态" /><span class="badge">已启用</span><span class="badge warning">待补充</span></div></section>
+    <section class="panel"><h2>业务筛选 · 35px</h2><div class="list-filters"><label>关键词<input placeholder="输入设备名称" /></label><label>厂站<UiSelect v-model="selection" :options="options" /></label><label>日期<UiDatePicker v-model="date" /></label><div class="filter-actions"><button class="button primary"><UiIcon name="search" />查询</button><button class="button">重置</button></div></div></section>
+    <section class="panel"><h2>表格 · 表头固定、内部滚动、行内 24px、统一分页</h2><div class="table-scroll"><table class="admin-table"><thead><tr><th>编号</th><th>名称</th><th>状态</th><th>操作</th></tr></thead><tbody><tr v-for="row in visibleRows" :key="row.id"><td>{{row.code}}</td><td>{{row.name}}</td><td><span class="badge">可用</span></td><td><button class="button" @click="modal=true">查看</button></td></tr></tbody></table></div><AdminPagination :total="rows.length" :model-value="page" :page-size="pageSize" @update:model-value="changePage" @update:page-size="changePageSize" /></section>
+    <section class="panel"><h2>反馈状态</h2><div class="notice" role="status">加载中…</div><div class="query-state">没有符合条件的数据</div><div class="notice error" role="alert">加载失败，请重试</div></section>
+  </main><ModalPanel :open="modal" :size="modalSize" layout="form" title="统一弹窗与内部浮层验收" @close="modal=false"><form class="master-form dialog-form" @submit.prevent="modal=false"><div class="dialog-form-body"><div class="form-grid"><label>厂站<UiSelect v-model="selection" :options="options" /></label><label>日期<UiDatePicker v-model="date" /></label><label class="wide">成员<UiSelect v-model="members" multiple :options="memberOptions" /></label><label v-for="n in (modalSize === 'wide' ? 14 : 2)" :key="n">验收字段 {{ n }}<input :placeholder="'字段 ' + n" /></label><label class="wide">备注<textarea rows="3" placeholder="整行备注" /></label></div></div><div class="dialog-form-footer"><span>检查 Escape、焦点返回及底部固定</span><button type="button" class="button" @click="modal=false">取消</button><button type="submit" class="button primary">确认验收</button></div></form></ModalPanel></div>
+</template>
+<style scoped>
+.admin-showcase main{max-width:1500px;margin:0 auto;padding:24px}.showcase-row{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:16px 0}.showcase-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin:20px 0}.showcase-grid label{display:grid;gap:6px}.table-scroll{max-height:330px}.list-filters{margin-top:16px}
+</style>

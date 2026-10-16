@@ -114,9 +114,9 @@ function choose(id) {
           <AppSelect v-model="draft.workId" name="workId" :options="workOptions" />
         </AppField>
       </FilterBar>
-      <AppTable :columns="['姓名', '安全帽编号', '作业区域', '状态']" :empty="!locatedPeople.length">
+      <AppTable :rows="locatedPeople" :reset-key="[session.station, session.filters.location]" v-slot="{ rows: pageRows }" :columns="['姓名', '安全帽编号', '作业区域', '状态']" :empty="!locatedPeople.length">
         <tr
-          v-for="person in locatedPeople"
+          v-for="person in pageRows"
           :key="person.id"
           :class="{ selected: person.id === session.person }"
           @click="choose(person.id)"
@@ -139,5 +139,4 @@ function choose(id) {
       <input v-model="session.layers[layer.key]" type="checkbox" />{{ layer.label }}
     </label>
   </div>
-  <p class="note"><AppIcon name="information-line" />人员位置由关联安全帽提供；位置滞后或缺失需现场核验，不表示室内精度。</p>
 </template>

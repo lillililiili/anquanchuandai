@@ -19,7 +19,7 @@
         <div class="boundary-note"><strong>说明</strong><p>发放、回收和人员装备变更会写入监护前台。账号和台账保存在后台服务。</p></div>
       </section>
     </div>
-    <ModalPanel side :open="!!selected" :title="selected ? selected.label + ' · 只读明细' : ''" @close="closeDetails">
+    <ModalPanel size="wide" :open="!!selected" :title="selected ? selected.label + ' · 只读明细' : ''" @close="closeDetails">
       <p class="notice">{{ selected?.note }}。不代表设备已接入。</p>
       <form class="detail-filter" @submit.prevent="search"><label>编号 / 人员关键词<input v-model="keyword" maxlength="100" placeholder="请输入设备编号或人员" /></label><div class="filter-actions"><button class="button primary" type="submit">查询</button><button class="button" type="button" @click="clearSearch">重置</button></div></form>
       <QueryState :data="details.data.value" :error="details.error.value" :loading="details.loading.value" @retry="loadDetails">
@@ -27,7 +27,7 @@
           <thead><tr><th data-width="160">设备编号</th><th data-width="180">设备名称</th><th data-width="230">设备标识</th><th data-width="260">连接说明</th><th data-width="140" class="status-cell">领用关系</th><th data-width="220">领用人员</th><th data-width="160">连接状态</th><th data-width="160">更新情况</th><th data-width="210">上报时间</th></tr></thead><tbody><tr v-for="row in details.data.value.rows" :key="row.id"><td>{{ row.code }}</td><td>{{ row.name }}</td><td>{{ row.id }}</td><td>{{ row.type !== 'HELMET' ? '设备档案 · 连接方式待厂家确认' : '—' }}</td><td>{{ relationNames[row.relation] }}</td><td>{{ row.personName || '人员归属未知 / 无当前领用人' }}</td><td>{{ communicationNames[row.communication] || row.communication || '—' }}</td><td>{{ row.freshness === 'STALE' ? '已过期' : '更新时间不明' }}</td><td>{{ beijingTime(row.sourceTime) }}</td></tr></tbody>
         </table></div>
         <div v-else class="query-state"><strong>无匹配记录</strong><p>该厂站或筛选范围没有记录。</p></div>
-        <div v-if="details.data.value?.total !== undefined" class="pagination"><span>共 {{ details.data.value.total }} 条 · 每页20条 · 第 {{ pageNum }} 页</span><button class="button" :disabled="pageNum <= 1" @click="changePage(-1)">上一页</button><button class="button" :disabled="pageNum * 20 >= details.data.value.total" @click="changePage(1)">下一页</button></div>
+        <AdminPagination v-if="details.data.value?.total !== undefined" :total="details.data.value.total" :model-value="pageNum" :page-size="pageSize" :disabled="details.loading.value" @update:model-value="pageNum=$event; loadDetails()" @update:page-size="pageSize=$event; pageNum=1; loadDetails()" />
       </QueryState>
     </ModalPanel>
   </section>
@@ -45,18 +45,20 @@ import ModalPanel from '../components/ModalPanel.vue'
 const store = useAdminStore(), overview = useQuery(), audit = useQuery(), details = useQuery()
 const metricIcons = [Box, Tickets, User]
 const entryIcons = [Box, User, Key, Connection, Document]
-const selected = ref(null), pageNum = ref(1), keyword = ref(''), submittedKeyword = ref('')
+const selected = ref(null), pageNum = ref(1), pageSize = ref(10), keyword = ref(''), submittedKeyword = ref('')
 const relationNames = { ASSIGNED: '已领用', UNASSIGNED: '未领用', UNKNOWN: '领用情况不明', CONFLICT: '领用记录有矛盾' }
 const communicationNames = { ONLINE: '在线', OFFLINE: '离线', UNKNOWN: '连接状态不明' }
 function loadOverview() { overview.run('overview', { siteId: store.siteId }) }
 function loadAudit() { audit.run('audit', { siteId: store.siteId, pageSize: 5 }) }
-function loadDetails() { if (selected.value) details.run('details', { siteId: store.siteId, metric: selected.value.key, pageNum: pageNum.value, keyword: submittedKeyword.value }) }
+async function loadDetails() { if (!selected.value) return; await details.run('details', { siteId: store.siteId, metric: selected.value.key, pageNum: pageNum.value, pageSize: pageSize.value, keyword: submittedKeyword.value }); const total=details.data.value?.total; if (total != null && pageNum.value > Math.max(1,Math.ceil(total/pageSize.value))) { pageNum.value=Math.max(1,Math.ceil(total/pageSize.value)); loadDetails() } }
 function refresh() { loadOverview(); loadAudit(); loadDetails() }
 function openDetails(metric) { selected.value = metric; pageNum.value = 1; keyword.value = ''; submittedKeyword.value = ''; loadDetails() }
 function closeDetails() { selected.value = null; details.cancel() }
 function search() { submittedKeyword.value = keyword.value; pageNum.value = 1; loadDetails() }
 function clearSearch() { keyword.value = ''; search() }
-function changePage(delta) { pageNum.value += delta; loadDetails() }
-watch(() => store.siteId, () => { closeDetails(); refresh() }, { immediate: true })
-watch(() => store.revision, refresh)
+
+watch(() => [store.siteId, store.revision], ([siteId], previous) => {
+  if (!previous || siteId !== previous[0]) closeDetails()
+  refresh()
+}, { immediate: true })
 </script>

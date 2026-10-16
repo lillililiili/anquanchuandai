@@ -1,0 +1,106 @@
+[
+  {
+    "name": "运行管理-缺陷单管理-缺陷单处理",
+    "id": "l2EilwiTc98LFxqLDxVON",
+    "file": "reference-1.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 3782,
+      "width": 1920,
+      "x": -1560,
+      "y": 11079
+    }
+  },
+  {
+    "name": "工作票",
+    "id": "E039uJVZtKAGTAIDO77bC",
+    "file": "reference-2.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 5280,
+      "width": 1920,
+      "x": -3580,
+      "y": 11079
+    }
+  },
+  {
+    "name": "监盘总览",
+    "id": "6871A789-8CE3-4740-B3D0-094000F15129",
+    "file": "reference-3.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 1080,
+      "width": 1920,
+      "x": -1560,
+      "y": 9710
+    }
+  },
+  {
+    "name": "巡视点位",
+    "id": "10B88356-E25A-4D81-89FA-C206670C3310",
+    "file": "reference-4.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 1080,
+      "width": 1920,
+      "x": 460,
+      "y": 9710
+    }
+  },
+  {
+    "name": "告警及检修建议1",
+    "id": "94138765-605A-41A3-ACDE-C959A3232D6A",
+    "file": "reference-5.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 1080,
+      "width": 1920,
+      "x": -3580,
+      "y": 9710
+    }
+  },
+  {
+    "name": "巡视报告",
+    "id": "B21F9F1F-13D9-41B5-B165-DCA03B8EE4AD",
+    "file": "reference-6.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 1080,
+      "width": 1920,
+      "x": 4500,
+      "y": 9710
+    }
+  },
+  {
+    "name": "安全哨兵",
+    "id": "A356A790-D0E3-490E-8539-574C5CB58EB0",
+    "file": "reference-7.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 1080,
+      "width": 1920,
+      "x": 6520,
+      "y": 9710
+    }
+  },
+  {
+    "name": "告警及检修建议（弹窗）",
+    "id": "57889E44-04D1-4D74-B94F-4C1C42F427E5",
+    "file": "reference-8.html",
+    "frame": {
+      "_class": "rect",
+      "constrainProportions": false,
+      "height": 1080,
+      "width": 1920,
+      "x": 2480,
+      "y": 9710
+    }
+  }
+]

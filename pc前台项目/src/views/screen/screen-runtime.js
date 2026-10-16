@@ -19,7 +19,7 @@ function frame() {
   return `<div class="screen-stage"><main class="screen" aria-label="数据大屏">
       <header class="screen-head"><div class="screen-brand rl-brand rl-brand-light" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></div>
         <h1>融瓴智能穿戴安全监护中心</h1>
-        <svg class="screen-head-decoration" viewBox="0 0 1672 33" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="screen-line"><stop stop-color="#4faff7"/><stop offset=".5" stop-color="#83f6fd"/><stop offset="1" stop-color="#4faff7"/></linearGradient><pattern id="screen-dots" width="8" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#4faff7"/></pattern></defs><path d="M0 1H487L515 23H556L568 30H1104L1117 23H1156L1183 1H1672" fill="none" stroke="#83f6fd"/><path d="M0 30H505L489 14H252M1672 30H1173L1189 14H1290" fill="none" stroke="#4faff7"/><path d="M0 30H507L489 8H247M1672 30H1165L1186 8H1290" fill="none" stroke="#83f6fd" stroke-dasharray="3 7"/><path d="M0 30H568L561 22H520L493 2M1672 30H1104L1112 22H1152L1179 2" fill="none" stroke="url(#screen-line)"/><path d="M560 30H1107" stroke="#83f6fd" stroke-width="2"/><path d="M245 5H487V23H245ZM1188 5H1300V23H1188Z" fill="url(#screen-dots)"/></svg>
+        <img class="screen-head-decoration" src="/assets/sketch/navigation-artwork.svg" alt="" aria-hidden="true">
         <div class="screen-station">${symbols.factory}<span>${esc(station)}</span></div><div class="screen-clock"><time data-screen-clock></time><small>白班 08:00 — 16:00</small></div>
       </header>
       <section class="screen-stats" aria-label="当班概况"></section>
@@ -130,7 +130,7 @@ export function mountScreen(root) {
     ]
       .map(
         ([icon, label, value, tone]) =>
-          `<div class="screen-stat ${tone.includes("warn") ? "warn" : ""}"><div class="screen-stat-icon ${tone}">${tone.includes("hex") ? '<svg class="screen-hex" viewBox="0 0 72 80" aria-hidden="true"><path d="M36 2 67 20V60L36 78 5 60V20Z" fill="#121e37" stroke="#121e37" stroke-width="3"/><path d="M36 6 64 22V58L36 74 8 58V22Z" fill="none" stroke="currentColor" stroke-opacity=".25"/></svg>' : ""}${icon}</div><div><h2>${label}</h2><p><strong>${value}</strong></p></div></div>`,
+          `<div class="screen-stat ${tone.includes("warn") ? "warn" : ""}"><div class="screen-stat-icon ${tone}">${icon}</div><div><h2>${label}</h2><p><strong>${value}</strong></p></div></div>`,
       )
       .join("");
     equipmentPanel(stats);

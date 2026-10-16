@@ -139,8 +139,8 @@ async function saveMedia(id) {
 
 <template>
   <PageHeading title="现场影像资料" subtitle="设备回传照片与录像的检索、查看和归档" />
-  <div class="split-detail">
-    <div>
+  <div class="split-detail bounded-split">
+    <div class="list-detail-column">
       <FilterBar @submit="applyFilters" @reset="resetFilters">
         <span v-if="applied.eventId" class="tag">事件 {{ applied.eventId }}</span>
         <input v-if="applied.eventId" type="hidden" name="eventId" :value="applied.eventId" />
@@ -158,7 +158,7 @@ async function saveMedia(id) {
         </AppField>
       </FilterBar>
       <AppTabs v-model="session.mediaTab" :tabs="tabs" />
-      <div class="media-grid">
+      <div class="media-grid" tabindex="0" role="region" aria-label="资料列表，可滚动">
         <article
           v-for="item in mediaList"
           :key="item.id"

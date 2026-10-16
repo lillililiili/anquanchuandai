@@ -31,7 +31,7 @@ async function act(action) {
   try { if (action === "claim") await db.claim(id); else await db.sos(action, id); toast(action === "claim" ? "已接警" : "已加入此事件协助"); }
   catch (error) { toast(error.message, true); } finally { busy.value = false; }
 }
-function endSos() { openModal({ title: "结束前确认", view: ConfirmText, props: { eventId: linkedEvent.value.id, text: "结束本条事件的协助并保留记录，不会自动提交最终核验，也不会结束其他求助。" }, footer: SosEndActions }); }
+function endSos() { openModal({ title: "结束前确认", size: "confirm", view: ConfirmText, props: { eventId: linkedEvent.value.id, text: "结束本条事件的协助并保留记录，不会自动提交最终核验，也不会结束其他求助。" }, footer: SosEndActions }); }
 function memberName(id) { if (id === operatorId.value) return db.state.operator?.name; return alarm.value?.timeline?.find(t => t.actorId === id)?.actorName || (id === "operator" ? "历史值守人员" : personName(id)); }
 </script>
 <template>

@@ -1,0 +1,5 @@
+/* Dev-only Sketch reference viewer. These are the embedded original fonts. */
+@font-face {font-family:'UI Source Han';src:url('../../shared/ui-spec/fonts/SourceHanSansCN-Regular.otf') format('opentype');font-weight:400;font-display:swap}
+@font-face {font-family:'UI Source Han';src:url('../../shared/ui-spec/fonts/SourceHanSansCN-Medium.otf') format('opentype');font-weight:500;font-display:swap}
+@font-face {font-family:'UI Source Han';src:url('../../shared/ui-spec/fonts/SourceHanSansCN-Bold.otf') format('opentype');font-weight:700;font-display:swap}
+@font-face {font-family:'UI Source Han';src:url('../../shared/ui-spec/fonts/SourceHanSansCN-Heavy.otf') format('opentype');font-weight:900;font-display:swap}

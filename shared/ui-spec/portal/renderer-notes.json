@@ -1,0 +1,8 @@
+{
+  "warnings": [],
+  "limitations": [
+    "SVG reconstruction, not a native Sketch render",
+    "Text line breaking and radial blur rasterization require visual comparison",
+    "Artwork uses original paths, enabled fills, opacity, transforms and clipping"
+  ]
+}

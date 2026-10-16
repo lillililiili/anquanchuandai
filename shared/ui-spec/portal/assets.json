@@ -1,0 +1,147 @@
+{
+  "sourceSha256": "20ee13bff161045011c20cb5c4fda6d8128a6e74c97d8dec7c61f378d137c36f",
+  "assets": [
+    {
+      "file": "business-background.svg",
+      "id": "3197994C-12B8-437E-855E-893B62166CA5",
+      "name": "背景",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 1082,
+        "width": 1922,
+        "x": -1,
+        "y": -1
+      },
+      "sha256": "de2c4bb2be19264f5fdf0710dcd652cae18d5bc861670f36f1c5001bb0057469"
+    },
+    {
+      "file": "navigation-title.svg",
+      "id": "41C718E0-27EF-48AB-9240-CBCF77F2041D",
+      "name": "导航条",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 70,
+        "width": 522,
+        "x": 101,
+        "y": 562
+      },
+      "sha256": "c52d3514d132d453335877c9f2f5e390427fa4c4ec5e053715c6ccc4d3e72fad",
+      "adaptation": "Merged mirrored halves into continuous outlines to remove the center seam; original gradients, opacity and outer silhouette preserved."
+    },
+    {
+      "file": "navigation-active.svg",
+      "id": "C1D0DF6F-AE5D-4719-87FE-97AF923579FA",
+      "name": "2",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 42.00000000000001,
+        "width": 136.6998748779297,
+        "x": 130,
+        "y": 0
+      },
+      "sha256": "14421afa13e9efa6e56f1d6dec92d6370bf0651b5111e58df3a142c105f92fb2"
+    },
+    {
+      "file": "navigation-idle.svg",
+      "id": "DC0AD3AC-99E6-4224-9EA8-1122A066FD38",
+      "name": "4",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 42.00000000000001,
+        "width": 136.6998748779297,
+        "x": 388,
+        "y": 0
+      },
+      "sha256": "d3c1c0e8f29a930d0b02bb131ef715f8de341145e1c77d1d2734a1391cba660f"
+    },
+    {
+      "file": "section-heading.svg",
+      "id": "67A52F67-DEAE-4ACB-9801-70CE6BB99902",
+      "name": "编组 3",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 25,
+        "width": 216,
+        "x": 12.00000000000728,
+        "y": 14
+      },
+      "sha256": "92f959c493e28ffae56f77de26987d597aa05c6c59525de7eb3f934f7b8a5f7c"
+    },
+    {
+      "file": "filter-action.svg",
+      "id": "6B237A78-EF80-44D0-964B-971401C13790",
+      "name": "查询",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 35,
+        "width": 96,
+        "x": 1096,
+        "y": 103
+      },
+      "sha256": "32cd4c3f598ea8978f83fec32172191df1a0e007461ffe413320d16a18f1a1a4"
+    },
+    {
+      "file": "navigation-artwork.svg",
+      "id": "41C718E0-27EF-48AB-9240-CBCF77F2041D",
+      "name": "导航条",
+      "frame": {
+        "_class": "rect",
+        "constrainProportions": false,
+        "height": 70,
+        "width": 1920,
+        "x": 101,
+        "y": 562
+      },
+      "sha256": "a47d652d50b4e1f32653518b6b6ea98628154700e18e39065df8d4af937fe27c"
+    }
+  ],
+  "images": {
+    "images/0805e776e53671b4166cde006285584afdbcea34.png": {
+      "sha256": "ceb225b5ee9eedebf8849af9dbf26235f505703d5e3a134baa9d56790535ff44",
+      "bytes": 1538547,
+      "transport": {
+        "format": "webp-lossless",
+        "bytes": 794774,
+        "sha256": "980b778d1ee2f346bb7b57818127ccb28f64b65453a29139d30334d73eae7555",
+        "rgbaExact": true
+      }
+    },
+    "images/3cea02f9f0d2befa8b4917a29e172531e1e94159.png": {
+      "sha256": "02c47129feba9b277dd10c70bba2f82d47c5cb4d6608ba4a561da77e8029d276",
+      "bytes": 787775,
+      "transport": {
+        "format": "webp-lossless",
+        "bytes": 386350,
+        "sha256": "c799bddf6e48f5988f806ead3169edd7d8f193da61d7f3df10452ffc46c8c6e6",
+        "rgbaExact": true
+      }
+    },
+    "images/02f2cabdca979ee1cab7e2a1713c6c3a5f1f7633.png": {
+      "sha256": "2ec00950522dfecee1b2165a17db65c870043ef8f4c32d651bba4d4e17cea69b",
+      "bytes": 11244531,
+      "transport": {
+        "format": "webp-lossless",
+        "bytes": 6712642,
+        "sha256": "cc935cd343b9ae94273d6909ddbb12b5c47b9b9854f0195fffc3f72eeff69be5",
+        "rgbaExact": true
+      }
+    },
+    "images/0d40f350bbc46187766be1af1eaac21610509d0b.png": {
+      "sha256": "a45322ee45a08b0e536e37cb0c995a6607f4bf4e292685657ed6ab28284a1691",
+      "bytes": 7264842,
+      "transport": {
+        "format": "webp-lossless",
+        "bytes": 4839446,
+        "sha256": "68e107e975f42f5281fc24fb6cc20ce0d129ac138f84d9771ef4fdd8a24937d1",
+        "rgbaExact": true
+      }
+    }
+  },
+  "rendererWarnings": []
+}

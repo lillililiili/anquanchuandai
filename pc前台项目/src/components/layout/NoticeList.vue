@@ -40,8 +40,8 @@ function open(id) {
     </span>
     <span class="sos-call-go">立即响应</span>
   </a>
-  <AppTable :columns="['事件', '人员', '状态', '操作']" :empty="!rows.length">
-    <tr v-for="item in rows" :key="item.id" :class="item.type === '人员求助' ? 'is-sos' : ''">
+  <AppTable :rows="rows" v-slot="{ rows: pageRows }" :columns="['事件', '人员', '状态', '操作']" :empty="!rows.length">
+    <tr v-for="item in pageRows" :key="item.id" :class="item.type === '人员求助' ? 'is-sos' : ''">
       <td>
         <AppTag v-if="item.type === '人员求助'" color="red">SOS</AppTag>
         {{ item.title }}

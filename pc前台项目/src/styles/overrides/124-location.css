@@ -1,8 +1,8 @@
 /* app.css 3524-3575 */
 
 .location-page .page-heading {
-  min-height: 49px;
-  height: 49px;
+  min-height: 48px;
+  height: 48px;
   margin-bottom: 10px;
 }
 .location-page .tabs {
@@ -19,16 +19,6 @@
 }
 .location-layout > .map {
   height: 678px;
-}
-.location-page > .note {
-  position: absolute;
-  bottom: 48px;
-  left: 415px;
-  right: 23px;
-  background: var(--theme-card);
-  border: 1px solid var(--border);
-  margin: 0;
-  height: 42px;
 }
 .location-page .layer-controls {
   top: 204px;

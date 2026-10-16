@@ -95,3 +95,17 @@
 @media (prefers-reduced-motion:reduce) { .ui-icon { animation:none !important; } }
 
 .ui-spec-loaded .login-page .login-card .btn.primary {font-size:14px; font-weight:500;}
+.ui-spec-loaded :is(.field-error, .ui-control-error, small.error) { display: block; color: var(--theme-red, #f36b6b); font-size: 12px; font-weight: 400; line-height: 1.5; margin: 4px 0 0; text-align: left; white-space: normal; }
+/* Keep label/field spacing outside this group so it cannot add to the feedback gap. */
+.field-control { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-width: 0; }
+.field > .field-control { flex: 1; }
+.field-feedback { display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; min-width: 0; }
+.ui-spec-loaded .field-feedback > .field-error { flex: 1; min-width: 0; margin: 0; }
+.field-hint { flex-shrink: 0; margin-left: auto; font-size: 12px; line-height: 18px; }
+.field-control > small:not(.error):not(.field-error) { margin-top: 4px; }
+.field-control > small:first-child { margin-top: 0; }
+.ui-spec-loaded small.error:empty { display: none; }
+.ui-spec-loaded :is(.ui-date, .ui-select):has(> .ui-control-error) { height: auto; flex-wrap: wrap; }
+.ui-control-error { flex-basis: 100%; }
+.ui-spec-loaded .ui-date:has(> .ui-control-error) :is(.ui-date-open, .ui-date-clear) { bottom: auto; height: 30px; }
+.ui-spec-loaded .login-page .field-error { text-align: left; margin: 4px 0 0; color: var(--theme-red); font-size: 12px; }

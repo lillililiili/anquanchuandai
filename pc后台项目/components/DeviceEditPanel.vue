@@ -1,5 +1,5 @@
 <template><div class="device-edit-entry"><button class="button" :class="{ primary: !device }" :disabled="disabled" :aria-busy="loading" @click="openEditor">{{ device ? '编辑设备资料' : '新建设备' }}</button><small v-if="loading" role="status">正在读取型号与区域…</small><small v-if="disabled" class="disabled-reason">{{ reason || '当前身份无资产维护权限' }}</small><p v-if="openError" role="alert" class="error">{{ openError.message }}</p><p v-if="notice" role="status" class="notice">{{ notice }}</p></div>
-  <ModalPanel :open="open" side :title="device ? '编辑设备档案' : '新建设备档案'" heading-id="device-editor-heading" @close="close"><DeviceEditor v-if="open && options" :key="editorKey" :row="snapshot" :options="options" :busy="busy" :error="error" @save="save" @dirty="dirty = true" @close="close" /></ModalPanel>
+  <ModalPanel :open="open" layout="form" :title="device ? '编辑设备档案' : '新建设备档案'" heading-id="device-editor-heading" @close="close"><DeviceEditor v-if="open && options" :key="editorKey" :row="snapshot" :options="options" :busy="busy" :error="error" @save="save" @dirty="dirty = true" @close="close" /></ModalPanel>
 </template>
 <script setup>
 import { ref, onBeforeUnmount } from 'vue'
@@ -7,11 +7,13 @@ import { getAdminProvider } from '@admin-provider'
 import { useAdminStore } from '../store'
 import ModalPanel from './ModalPanel.vue'
 import DeviceEditor from './DeviceEditor.vue'
+import { useConfirmation } from '../confirmation'
+const confirmDiscard = useConfirmation()
 const props = defineProps({ device: Object, disabled: Boolean, reason: String })
 const provider = getAdminProvider(), store = useAdminStore()
 const open = ref(false), busy = ref(false), loading = ref(false), dirty = ref(false), options = ref(null), snapshot = ref(null), error = ref(null), openError = ref(null), notice = ref(''), editorKey = ref(0)
 let controller, operationId, run = 0
-function close() { if (busy.value || (dirty.value && !window.confirm('尚有未保存的设备资料，确定放弃吗？'))) return false; dirty.value = false; open.value = false; return true }
+async function close() { if (busy.value || (dirty.value && !await confirmDiscard({ message: '设备资料尚未保存，放弃后将无法恢复。' }))) return false; dirty.value = false; open.value = false; return true }
 const guard = () => close()
 async function openEditor() {
   if (loading.value || props.disabled) return

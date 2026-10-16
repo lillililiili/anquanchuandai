@@ -7,7 +7,9 @@ defineEmits(["submit", "reset"]);
 <template>
   <form class="filters" @submit.prevent="$emit('submit')">
     <slot />
-    <AppButton type="submit" tone="primary" icon="search-line">查询</AppButton>
-    <AppButton icon="refresh-line" @click="$emit('reset')">重置</AppButton>
+    <div class="filter-actions">
+      <AppButton type="submit" tone="primary" icon="search-line">查询</AppButton>
+      <AppButton icon="refresh-line" @click="$emit('reset')">重置</AppButton>
+    </div>
   </form>
 </template>

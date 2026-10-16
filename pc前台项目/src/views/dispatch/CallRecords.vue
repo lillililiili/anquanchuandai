@@ -29,8 +29,8 @@ function openDetail(id) {
 </script>
 
 <template>
-  <AppTable :columns="['时间', '类型', '参与人员', '状态', '操作']" :empty="!rows.length">
-    <tr v-for="call in rows" :key="call.id">
+  <AppTable :rows="rows" v-slot="{ rows: pageRows }" :columns="['时间', '类型', '参与人员', '状态', '操作']" :empty="!rows.length">
+    <tr v-for="call in pageRows" :key="call.id">
       <td>{{ call.time }}</td>
       <td>{{ call.kind }}</td>
       <td>{{ names(call) }}</td>

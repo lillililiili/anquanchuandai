@@ -23,13 +23,13 @@ export const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: '/admin/people/:personId', component: PersonDetail, meta: { title: '人员详情' } },
     { path: '/admin/integrations/:pathMatch(.*)*', redirect: '/admin/overview' },
     { path: '/admin/access/groups/:pathMatch(.*)*', redirect: '/admin/overview' },
-    { path: '/admin/401', component: Placeholder, meta: { title: '无权限访问', description: '当前身份没有此工作区权限，请返回工作台或重新登录。', stage: '401' } },
-    { path: '/:pathMatch(.*)*', component: Placeholder, meta: { title: '页面不存在', description: '链接不存在或页面尚未开放，请返回管理工作台。', stage: '404' } }
+    { path: '/admin/401', component: Placeholder, meta: { title: '无权限访问', description: '当前身份没有此工作区权限，请返回工作台或重新登录。', stage: '401', errorState: 'forbidden' } },
+    { path: '/:pathMatch(.*)*', component: Placeholder, meta: { title: '页面不存在', description: '链接不存在或页面尚未开放，请返回管理工作台。', stage: '404', errorState: 'not-found' } }
   ] }
 ] })
-router.beforeEach((to, from) => {
+router.beforeEach(async (to, from) => {
   const identity = getAdminProvider().identity()
-  if (identity && to.fullPath !== from.fullPath && !useAdminStore().confirmLeave()) return false
+  if (identity && to.fullPath !== from.fullPath && !await useAdminStore().confirmLeave()) return false
   if (to.path !== '/admin/login' && !identity) return { path: '/admin/login', query: { redirect: safeTarget(to.fullPath) } }
   if (to.path === '/admin/login' && identity) return safeTarget(to.query.redirect)
 })

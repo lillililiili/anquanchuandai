@@ -2,10 +2,13 @@
 import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import AppButton from "./AppButton.vue";
 import { closeModal } from "@/stores/modal";
+import { dialogSize, shouldCloseDialog } from '@ui-spec/dialog';
 
 const props = defineProps({
   title: { type: String, default: "" },
   wide: Boolean,
+  size: String,
+  layout: { type: String, default: 'content' },
   tone: { type: String, default: "" },
 });
 
@@ -19,7 +22,7 @@ function focusable() {
 }
 
 function onKeydown(event) {
-  if (event.key === "Escape") {
+  if (shouldCloseDialog(event)) {
     event.preventDefault();
     closeModal();
     return;
@@ -55,13 +58,13 @@ watch(() => props.title, focusFirst);
 
 <template>
   <div class="modal-backdrop" @click.self="closeModal">
-    <section ref="dialog" :class="['modal', wide ? 'wide' : '', tone]" role="dialog" aria-modal="true" :aria-label="title">
+    <section ref="dialog" :class="['modal', 'ui-dialog', tone]" :data-dialog-size="dialogSize(size, wide)" :data-dialog-layout="layout" role="dialog" aria-modal="true" :aria-label="title">
       <header>
         <h2>{{ title }}</h2>
         <AppButton tone="icon-only" icon="close-line" aria-label="关闭弹窗" @click="closeModal" />
       </header>
       <div class="modal-body"><slot /></div>
-      <footer v-if="$slots.footer"><slot name="footer" /></footer>
+      <footer v-if="$slots.footer" class="dialog-footer"><slot name="footer" /></footer>
     </section>
   </div>
 </template>

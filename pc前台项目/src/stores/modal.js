@@ -1,9 +1,12 @@
 import { reactive, shallowRef } from "vue";
+import { restoreDialogFocus } from "@ui-spec/dialog";
 
 export const modal = reactive({
   open: false,
   title: "",
   wide: false,
+  size: undefined,
+  layout: "content",
   tone: "",
 });
 
@@ -13,10 +16,12 @@ export const modalFooter = shallowRef(null);
 
 let returnFocus = null;
 
-export function openModal({ title, wide = false, tone = "", view, props = {}, footer = null }) {
-  returnFocus = document.activeElement;
+export function openModal({ title, wide = false, size, layout = "content", tone = "", view, props = {}, footer = null }) {
+  if (!modal.open) returnFocus = document.activeElement;
   modal.title = title;
   modal.wide = !!wide;
+  modal.size = size;
+  modal.layout = layout;
   modal.tone = tone;
   modalView.value = view;
   modalProps.value = props;
@@ -30,6 +35,6 @@ export function closeModal() {
   modalView.value = null;
   modalFooter.value = null;
   modalProps.value = {};
-  returnFocus?.focus?.();
+  restoreDialogFocus(returnFocus);
   returnFocus = null;
 }

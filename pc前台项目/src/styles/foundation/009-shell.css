@@ -1,20 +1,5 @@
 /* app.css 126-267 */
 
-.topbar {
-  height: 64px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 22px;
-  border-bottom: 1px solid var(--border);
-  background: var(--theme-bg);
-  z-index: 30;
-  gap: 20px;
-  white-space: nowrap;
-}
 .brand {
   flex: none;
   display: flex;
@@ -71,61 +56,7 @@
   height: 17px;
   line-height: 17px;
 }
-.sidebar {
-  position: fixed;
-  top: 64px;
-  bottom: 0;
-  left: 0;
-  width: 202px;
-  border-right: 1px solid var(--theme-border);
-  display: flex;
-  flex-direction: column;
-  z-index: 20;
-  background: var(--theme-card);
-}
-.sidebar nav {
-  padding-top: 18px;
-}
-.sidebar a {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 17px 20px;
-  font-size:18px;
-  border-left: 4px solid transparent;
-  white-space: nowrap;
-}
-.sidebar a :is(i,.ui-icon) {
-  font-size: 27px;
-}
-.sidebar a:hover {
-  background: var(--theme-card);
-}
-.sidebar a.active {
-  background: var(--theme-selected);
-  border-left-color: var(--theme-border);
-  color: white;
-}
-.sidebar a.active :is(i,.ui-icon) {
-  color: var(--theme-accent);
-}
-.sidebar-bottom {
-  margin-top: auto;
-  padding: 0 10px 15px;
-}
-.sidebar-bottom a {
-  padding-left: 10px;
-  border-top: 1px solid var(--theme-border);
-}
-.sidebar-bottom small {
-  display: block;
-  padding-left: 18px;
-  margin-top: 15px;
-}
 .main {
-  margin: 64px 0 0 202px;
-  padding: 20px 22px 28px;
-  min-height: calc(100vh - 64px);
   position: relative;
 }
 .page-foot {

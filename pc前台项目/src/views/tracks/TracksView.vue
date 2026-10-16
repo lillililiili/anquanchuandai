@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
+import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import { useRoute } from "vue-router";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
@@ -33,6 +34,7 @@ const draft = reactive({
   end: "10:42",
 });
 const trackError = ref("");
+const { formRef, errors, validate } = useFieldErrors(() => ({ ...draft }));
 
 const deviceOptions = computed(() => {
   revision();
@@ -101,11 +103,7 @@ watch(() => [route.params.id, session.station], loadFromContext, { immediate: tr
 
 function submitTracks() {
   trackError.value = "";
-  if (draft.start >= draft.end) {
-    trackError.value = "结束时间必须晚于开始时间";
-    toast(trackError.value, true);
-    return;
-  }
+  if (!validate({ personId: !draft.personId && '请选择设备或人员', end: (draft.start || '09:00') >= (draft.end || '10:42') && '结束时间必须晚于开始时间' })) return;
   const date = draft.date || DATE;
   const start = draft.start || "09:00";
   const end = draft.end || "10:42";
@@ -126,7 +124,6 @@ function submitTracks() {
     if (route.params.id) go("tracks/" + draft.personId);
   } catch (error) {
     trackError.value = error.message || "结束时间必须晚于开始时间";
-    toast(trackError.value, true);
   }
 }
 
@@ -173,8 +170,8 @@ function exportTracks() {
 <template>
   <PageHeading title="历史轨迹" />
   <LocationTabs />
-  <form class="filters" @submit.prevent="submitTracks">
-    <AppField label="设备">
+  <form ref="formRef" novalidate class="filters" @submit.prevent="submitTracks">
+    <AppField label="设备" vertical data-field="personId" :error="errors.personId">
       <AppSelect v-model="draft.personId" name="personId" :options="deviceOptions" />
     </AppField>
     <AppField label="日期">
@@ -184,9 +181,9 @@ function exportTracks() {
       <AppInput v-model="draft.start" name="start" type="time" />
     </AppField>
     <span>—</span>
-    <AppInput v-model="draft.end" name="end" type="time" />
+    <AppField label="结束时间" vertical data-field="end" :error="errors.end"><AppInput v-model="draft.end" name="end" type="time" /></AppField>
     <AppButton type="submit" tone="primary">查询轨迹</AppButton>
-    <AppButton icon="download-line" @click="exportTracks">导出轨迹</AppButton>
+    <AppButton class="filter-export" icon="download-line" @click="exportTracks">导出轨迹</AppButton>
     <span class="spacer"></span>
     <small><AppIcon name="information-line" />位置来源：关联安全帽</small>
     <p v-if="trackError" class="form-error" role="alert">{{ trackError }}</p>

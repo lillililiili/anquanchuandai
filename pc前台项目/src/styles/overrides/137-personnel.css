@@ -29,19 +29,12 @@
   .alarms-page .filters {
     flex-wrap: wrap;
   }
-  .location-page > .note {
-    position: static;
-    height: auto;
-  }
   .location-layout > .panel,
   .location-layout > .map {
     height: 640px;
   }
   .location-page .layer-controls {
     top: 188px;
-  }
-  .tracks-page > .tabs {
-    left: 170px;
   }
   .track-map {
     height: 470px;

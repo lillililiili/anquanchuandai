@@ -22,8 +22,8 @@ function openEvent(id) {
 </script>
 
 <template>
-  <AppTable :columns="['时间', '人员', '事件', '操作']" :empty="!rows.length">
-    <tr v-for="item in rows" :key="item.id">
+  <AppTable :rows="rows" v-slot="{ rows: pageRows }" :columns="['时间', '人员', '事件', '操作']" :empty="!rows.length">
+    <tr v-for="item in pageRows" :key="item.id">
       <td>{{ item.date }} {{ item.time }}</td>
       <td>{{ personName(item.personId) }}</td>
       <td>{{ item.title }}</td>

@@ -42,7 +42,15 @@ public class AdminQueryService {
     private Map<String, Object> overview(JSONObject state, JSONObject actor, JSONObject input) {
         String siteId = requiredSite(state, actor, input, "assets:read");
         Map<String, Object> counts = new LinkedHashMap<String, Object>();
-        for (String metric : Arrays.asList("assets", "available", "assigned", "unknown", "conflict")) counts.put(metric, rowsFor(state, actor, siteId, metric).size());
+        for (String metric : Arrays.asList("assets", "available", "assigned", "unknown", "conflict")) counts.put(metric, 0);
+        // Counts depend on ledger relationships, not telemetry or rendered device rows.
+        for (JSONObject device : array(state, "devices")) {
+            if (!siteId.equals(device.getString("siteId")) || !can(state, actor, "assets:read", siteId, device.getString("areaId"))) continue;
+            counts.put("assets", (Integer) counts.get("assets") + 1);
+            if (available(state, device)) counts.put("available", (Integer) counts.get("available") + 1);
+            String relation = relationship(state, device).getString("state").toLowerCase(java.util.Locale.ROOT);
+            if (counts.containsKey(relation)) counts.put(relation, (Integer) counts.get(relation) + 1);
+        }
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("availability", "AVAILABLE");
         body.put("counts", counts);
@@ -61,6 +69,7 @@ public class AdminQueryService {
 
     private Map<String, Object> devices(JSONObject state, JSONObject actor, String kind, JSONObject input) {
         String siteId = requiredSite(state, actor, input, "assets:read");
+        Telemetry telemetry = new Telemetry();
         if ("deviceOptions".equals(kind)) {
             Map<String, Object> body = new LinkedHashMap<String, Object>();
             body.put("availability", "AVAILABLE");
@@ -83,7 +92,7 @@ public class AdminQueryService {
             List<JSONObject> rows = new ArrayList<JSONObject>();
             String needle = keyword == null ? "" : keyword.trim().toLowerCase();
             for (JSONObject device : visible) {
-                JSONObject row = project(state, actor, device);
+                JSONObject row = project(state, actor, device, telemetry);
                 if("PLATFORM".equals(input.getString("source")) && !"PLATFORM".equals(row.getString("source")))continue;
                 if (!matches(input, row)) continue;
                 String areaId = input.getString("areaId");
@@ -106,7 +115,7 @@ public class AdminQueryService {
         JSONObject device = null;
         for (JSONObject item : visible) if (input.getString("id") != null && input.getString("id").equals(item.getString("id"))) device = item;
         if (device == null) throw fail(404, "OBJECT_NOT_FOUND", "设备不存在或不可见");
-        if ("device".equals(kind)) return project(state, actor, device);
+        if ("device".equals(kind)) return project(state, actor, device, telemetry);
         if ("deviceChanges".equals(kind)) {
             if (!can(state, actor, "audit:read", device.getString("siteId"), device.getString("areaId"))) throw fail(403, "SECTION_DENIED", "没有资料变更审计权限");
             List<JSONObject> rows = new ArrayList<JSONObject>();
@@ -214,10 +223,11 @@ public class AdminQueryService {
     private List<JSONObject> rowsFor(JSONObject state, JSONObject actor, String siteId, String metric) {
         if (!Arrays.asList("assets", "available", "assigned", "unknown", "conflict").contains(metric)) throw fail(400, "INVALID_METRIC", "不支持的明细类型");
         List<JSONObject> rows = new ArrayList<JSONObject>();
+        Telemetry telemetry = new Telemetry();
         for (JSONObject device : array(state, "devices")) {
             if (!siteId.equals(device.getString("siteId")) || !can(state, actor, "assets:read", device.getString("siteId"), device.getString("areaId"))) continue;
             JSONObject relation = relationship(state, device);
-            JSONObject row = project(state, actor, device);
+            JSONObject row = project(state, actor, device, telemetry);
             if ("assets".equals(metric)) rows.add(row);
             else if ("maintenance".equals(metric)) {
                 for (JSONObject order : array(state, "maintenanceOrders")) {
@@ -229,7 +239,7 @@ public class AdminQueryService {
         return rows;
     }
 
-    private JSONObject project(JSONObject state, JSONObject actor, JSONObject device) {
+    private JSONObject project(JSONObject state, JSONObject actor, JSONObject device, Telemetry telemetry) {
         JSONObject copy = JSONObject.parseObject(device.toJSONString());
         JSONObject relation = relationship(state, device);
         JSONObject person = relation.getJSONObject("person");
@@ -245,19 +255,19 @@ public class AdminQueryService {
 
 
         copy.put("writable", !"SCRAPPED".equals(device.getString("lifecycle")));
-        applyTelemetry(copy);
+        applyTelemetry(copy, telemetry);
         return copy;
     }
 
-    private void applyTelemetry(JSONObject device) {
+    private void applyTelemetry(JSONObject device, Telemetry telemetry) {
         if ("PLATFORM".equals(device.getString("source"))) {
             try { if(java.time.Instant.parse(device.getString("sourceTime")).isBefore(java.time.Instant.now().minusSeconds(300))) {
                 device.put("communication","UNKNOWN");device.put("freshness","STALE");
             }} catch(Exception error) { device.put("communication","UNKNOWN"); }
             return;
         }
-        JSONObject remote = snapshotDevice(device.getString("portalDeviceId") != null ? device.getString("portalDeviceId") : device.getString("code"));
-        if (remote == null) remote = snapshotDevice(device.getString("id"));
+        JSONObject remote = telemetry.find(device.getString("portalDeviceId") != null ? device.getString("portalDeviceId") : device.getString("code"));
+        if (remote == null) remote = telemetry.find(device.getString("id"));
         if (remote == null || !remote.containsKey("online")) return;
         device.put("communication", remote.getBooleanValue("online") ? "ONLINE" : "OFFLINE");
         device.put("battery", remote.get("battery"));
@@ -265,12 +275,18 @@ public class AdminQueryService {
         if (remote.getString("updated") != null) device.put("sourceTime", remote.getString("updated"));
     }
 
-    private JSONObject snapshotDevice(String id) {
-        if (id == null) return null;
-        JSONObject snapshot = guardian.snapshot();
-        if (snapshot == null) return null;
-        for (JSONObject device : array(snapshot, "devices")) if (id.equals(device.getString("id"))) return device;
-        return null;
+    /** One lazy snapshot per query; never reuse telemetry across requests or users. */
+    private final class Telemetry {
+        private Map<String, JSONObject> devices;
+        JSONObject find(String id) {
+            if (id == null) return null;
+            if (devices == null) {
+                devices = new LinkedHashMap<String, JSONObject>();
+                JSONObject snapshot = guardian.snapshot();
+                if (snapshot != null) for (JSONObject device : array(snapshot, "devices")) devices.putIfAbsent(device.getString("id"), device);
+            }
+            return devices.get(id);
+        }
     }
 
     private JSONObject relationship(JSONObject state, JSONObject device) {
@@ -305,12 +321,13 @@ public class AdminQueryService {
 
     private List<JSONObject> equipment(JSONObject state, JSONObject actor, JSONObject person) {
         List<JSONObject> rows = new ArrayList<JSONObject>();
+        Telemetry telemetry = new Telemetry();
         for (JSONObject device : array(state, "devices")) {
             boolean open = false;
             for (JSONObject assignment : array(state, "assignments")) {
                 if (assignment.getBooleanValue("active") && person.getString("id").equals(assignment.getString("personId")) && device.getString("id").equals(assignment.getString("deviceId"))) open = true;
             }
-            if (open) rows.add(project(state, actor, device));
+            if (open) rows.add(project(state, actor, device, telemetry));
         }
         return rows;
     }

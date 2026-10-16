@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
+import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppField from "@/components/ui/AppField.vue";
@@ -27,6 +28,7 @@ const statusOptions = [
 ];
 const statusDraft = ref(filtersOf("fences").status || "");
 const fenceError = ref("");
+const { formRef, errors, validate } = useFieldErrors(() => ({ name: session.fenceDraft?.name, points: session.fenceDraft?.points }));
 
 const stationOptions = computed(() => {
   revision();
@@ -124,6 +126,7 @@ function submitFence() {
   if (!draft) return;
   fenceError.value = "";
   try {
+    if (!validate({ name: !String(draft.name || '').trim() && '请填写围栏名称', points: (!draft.points || draft.points.length < 3) && '请在地图上绘制至少3个节点' })) return;
     const id = db.saveFence(draft.id, {
       name: String(draft.name || "").trim(),
       points: draft.points,
@@ -142,7 +145,8 @@ function submitFence() {
     ensureFenceDraft();
     toast("围栏已保存");
   } catch (error) {
-    fenceError.value = error.message || "操作失败";
+    if (['围栏区域过小', '围栏边界不能交叉'].includes(error.message)) validate({ points: error.message });
+    else fenceError.value = error.message || "操作失败";
   }
 }
 
@@ -186,11 +190,11 @@ function openMembers() {
     toast("请先新建或选择围栏", true);
     return;
   }
-  openModal({ title: "选择围栏适用人员", view: FenceMembersModal });
+  openModal({ title: "选择围栏适用人员", layout: "form", view: FenceMembersModal });
 }
 
 function openRecords() {
-  openModal({ title: "围栏进出记录", wide: true, view: FenceRecordsModal });
+  openModal({ title: "围栏进出记录", wide: true, layout: "form", view: FenceRecordsModal });
 }
 </script>
 
@@ -231,10 +235,11 @@ function openRecords() {
     </AppPanel>
     <PlantMap mode="fence" :markers="false" />
     <AppPanel :title="session.fenceDraft?.id ? '编辑围栏' : '新建围栏'">
-      <form v-if="session.fenceDraft" class="form-stack" @submit.prevent="submitFence">
-        <AppField label="围栏名称">
+      <form v-if="session.fenceDraft" ref="formRef" novalidate class="form-stack" @submit.prevent="submitFence">
+        <AppField label="围栏名称" data-field="name" :error="errors.name">
           <AppInput v-model="session.fenceDraft.name" name="name" placeholder="请输入名称" maxlength="40" required />
         </AppField>
+        <AppField label="围栏范围" data-field="points" :error="errors.points"><small>已绘制 {{ session.fenceDraft.points?.length || 0 }} 个节点</small></AppField>
         <AppField label="关联厂站">
           <AppSelect :model-value="session.station" name="station" :options="stationOptions" disabled />
         </AppField>

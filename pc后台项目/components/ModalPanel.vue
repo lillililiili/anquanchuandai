@@ -1,12 +1,14 @@
 <template>
-  <dialog ref="dialog" :aria-labelledby="headingId" class="modal-panel" :class="{ 'side-panel': side }" @cancel.prevent="close" @click="backdrop">
-    <header><div><span class="eyebrow">管理中心</span><h2 :id="headingId">{{ title }}</h2></div><button aria-label="关闭面板" class="button" @click="close">关闭</button></header>
+  <dialog ref="dialog" :aria-labelledby="headingId" class="modal-panel ui-dialog" :data-dialog-size="dialogSize(size)" :data-dialog-layout="layout" @cancel.prevent="close" @click="backdrop">
+    <header><h2 :id="headingId">{{ title }}</h2><button type="button" aria-label="关闭弹窗" class="button" @click="close">关闭</button></header>
     <div class="modal-content"><slot /></div>
+    <footer v-if="$slots.footer" class="dialog-footer"><slot name="footer" /></footer>
   </dialog>
 </template>
 <script setup>
 import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
-const props = defineProps({ open: Boolean, side: Boolean, title: String, headingId: { type: String, default: 'panel-heading' } })
+import { dialogSize, restoreDialogFocus } from '@ui-spec/dialog'
+const props = defineProps({ open: Boolean, size: String, layout: { type: String, default: 'content' }, title: String, headingId: { type: String, default: 'panel-heading' } })
 const emit = defineEmits(['close'])
 const dialog = ref(null)
 let previousFocus
@@ -16,7 +18,7 @@ watch(() => props.open, async value => {
   await nextTick()
   if (!dialog.value) return
   if (value) { previousFocus = document.activeElement; if (!dialog.value.open) dialog.value.showModal() }
-  else if (dialog.value?.open) { dialog.value.close(); previousFocus?.focus?.() }
+  else if (dialog.value?.open) { dialog.value.close(); restoreDialogFocus(previousFocus) }
 }, { immediate: true })
 onBeforeUnmount(() => dialog.value?.close())
 </script>

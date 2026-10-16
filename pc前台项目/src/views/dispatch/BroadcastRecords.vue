@@ -18,8 +18,8 @@ function names(item) {
 </script>
 
 <template>
-  <AppTable :columns="['时间', '分组', '内容', '接收人员', '状态']" :empty="!rows.length">
-    <tr v-for="item in rows" :key="item.id">
+  <AppTable :rows="rows" v-slot="{ rows: pageRows }" :columns="['时间', '分组', '内容', '接收人员', '状态']" :empty="!rows.length">
+    <tr v-for="item in pageRows" :key="item.id">
       <td>{{ item.time }}</td>
       <td>{{ item.groupName }}</td>
       <td>{{ item.text }}</td>

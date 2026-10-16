@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
+import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppField from "@/components/ui/AppField.vue";
@@ -37,6 +38,7 @@ const broadcastText = ref(storedDraft || BROADCAST_DEFAULT);
 const charCount = ref("最多 200 字");
 const broadcastError = ref("");
 const broadcastGroupId = ref("");
+const { formRef: broadcastFormRef, errors: broadcastErrors, validate: validateBroadcast } = useFieldErrors(() => ({ groupId: broadcastGroupId.value, text: broadcastText.value }));
 const queryDraft = ref(filtersOf("dispatch").q || "");
 let lastBroadcast = 0;
 
@@ -169,6 +171,7 @@ function openGroup(id = "") {
   openModal({
     title: groupId ? "编辑协助分组" : "新建协助分组",
     view: GroupForm,
+    layout: "form",
     props: { groupId },
   });
 }
@@ -177,6 +180,8 @@ function openInvite(id) {
   openModal({
     title: "邀请成员",
     view: InviteForm,
+    size: "compact",
+    layout: "form",
     props: { callId: id },
   });
 }
@@ -225,10 +230,7 @@ function setBroadcast(value) {
 
 function previewBroadcast() {
   const text = broadcastText.value.trim();
-  if (!text) {
-    toast("请输入广播内容", true);
-    return;
-  }
+  if (!validateBroadcast({ text: !text ? '请输入广播内容' : text.length > 200 ? '广播内容最多200字' : '' })) return;
   const synth = window.speechSynthesis;
   if (!synth || typeof synth.speak !== "function") {
     openModal({ title: "广播试听", view: BroadcastPreview, props: { text } });
@@ -251,6 +253,7 @@ function previewBroadcast() {
 }
 
 function sendBroadcast() {
+  if (!validateBroadcast({ groupId: !broadcastGroupId.value && '请选择广播对象', text: !broadcastText.value.trim() ? '请输入广播内容' : broadcastText.value.length > 200 ? '广播内容最多200字' : '' })) return;
   const now = Date.now();
   if (now - lastBroadcast < 1000) return;
   lastBroadcast = now;
@@ -340,11 +343,11 @@ function sendBroadcast() {
         </template>
       </AppPanel>
       <AppPanel title="文字广播">
-        <form class="broadcast-box" data-form="broadcast" @submit.prevent="sendBroadcast">
-          <AppField label="广播对象">
+        <form ref="broadcastFormRef" novalidate class="broadcast-box" data-form="broadcast" @submit.prevent="sendBroadcast">
+          <AppField label="广播对象" vertical data-field="groupId" :error="broadcastErrors.groupId">
             <AppSelect v-model="broadcastGroupId" name="groupId" :options="groupOptions" />
           </AppField>
-          <AppTextarea name="text" maxlength="200" placeholder="请输入广播内容" :model-value="broadcastText" @update:model-value="setBroadcast" />
+          <AppField label="广播内容" vertical data-field="text" :error="broadcastErrors.text"><AppTextarea name="text" maxlength="200" placeholder="请输入广播内容" :model-value="broadcastText" @update:model-value="setBroadcast" /></AppField>
           <div class="char-count">{{ charCount }}</div>
           <div class="form-actions">
             <AppButton type="button" icon="play-fill" @click="previewBroadcast">试听</AppButton>

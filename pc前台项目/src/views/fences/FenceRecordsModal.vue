@@ -7,6 +7,7 @@ import AppTable from "@/components/ui/AppTable.vue";
 import AppTag from "@/components/ui/AppTag.vue";
 import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
+import { closeModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
 import { people, revision } from "@/lib/queries";
 
@@ -41,8 +42,9 @@ function submit() {
 </script>
 
 <template>
-  <AppTable :columns="['时间', '围栏', '人员', '方向']" :empty="!records.length">
-    <tr v-for="item in records" :key="item.id">
+  <form class="dialog-form" @submit.prevent="submit"><div class="dialog-form-body">
+  <AppTable :rows="records" v-slot="{ rows: pageRows }" :columns="['时间', '围栏', '人员', '方向']" :empty="!records.length">
+    <tr v-for="item in pageRows" :key="item.id">
       <td>{{ item.time }}</td>
       <td>{{ item.fenceName }}</td>
       <td>{{ item.personName }}</td>
@@ -52,15 +54,13 @@ function submit() {
   <div class="detail-section">
     <h3>位置变化</h3>
     <p class="note">仅对已启用围栏及其适用人员生成记录。</p>
-    <form class="form-stack" @submit.prevent="submit">
+    <div class="dialog-grid">
       <AppField label="人员">
         <AppSelect v-model="personId" name="personId" :options="roster" />
       </AppField>
       <AppField label="目标位置">
         <AppSelect v-model="target" name="target" :options="targets" />
       </AppField>
-      <AppButton type="submit" tone="primary">模拟位置变化</AppButton>
-      <p class="form-error" role="alert">{{ error }}</p>
-    </form>
-  </div>
+    </div><p v-if="error" class="form-error" role="alert">{{ error }}</p>
+  </div></div><div class="dialog-form-footer"><AppButton @click="closeModal">关闭</AppButton><AppButton type="submit" tone="primary">模拟位置变化</AppButton></div></form>
 </template>

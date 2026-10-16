@@ -37,12 +37,12 @@ function submit() {
 </script>
 
 <template>
-  <form v-if="options.length" class="form-stack" data-form="invite" :data-id="callId" @submit.prevent="submit">
-    <AppField label="人员">
+  <form v-if="options.length" class="form-stack dialog-form" data-form="invite" :data-id="callId" @submit.prevent="submit">
+    <div class="dialog-form-body"><AppField label="人员">
       <AppSelect v-model="personId" name="personId" :options="options" />
     </AppField>
-    <AppButton type="submit" tone="primary">邀请加入</AppButton>
-    <p class="form-error" role="alert">{{ error }}</p>
+    <p v-if="error" class="form-error" role="alert">{{ error }}</p></div>
+    <div class="dialog-form-footer"><AppButton :disabled="saving" @click="closeModal">取消</AppButton><AppButton type="submit" tone="primary" :disabled="saving">邀请加入</AppButton></div>
   </form>
   <AppEmpty v-else text="当前厂站人员均已在通话中" />
 </template>

@@ -10,7 +10,7 @@ body {
 }
 
 /* Ordinary UI is scoped separately from the data-screen presentation. */
-:is(.main, .topbar, .sidebar, .login-page, .modal, #toasts) {
+:is(.main, .topbar, .login-page, .modal, #toasts) {
   color: var(--theme-text);
   font-family: var(--theme-font);
 }
@@ -54,7 +54,7 @@ body {
   font-size: var(--theme-font-size-body);
 }
 
-:is(.main, .modal, .login-page, .topbar, .sidebar) small,
+:is(.main, .modal, .login-page, .topbar) small,
 .main .note,
 .main .count-label,
 .main .stats-notice,
@@ -67,7 +67,7 @@ body {
   font-size: var(--theme-font-size-caption);
 }
 
-:is(.main, .topbar, .sidebar, .login-page, .modal, #toasts) .blue {
+:is(.main, .topbar, .login-page, .modal, #toasts) .blue {
   color: var(--theme-primary) !important;
 }
 
@@ -89,56 +89,8 @@ body {
   cursor: not-allowed;
 }
 
-/* Shell sizes and their original responsive breakpoints are untouched. */
-.topbar,
-.sidebar {
-  background: var(--theme-nav-surface);
-  border-color: var(--theme-border);
-}
-
-.topbar > strong {
-  color: var(--theme-heading);
-  font-size: var(--theme-font-size-section);
-  letter-spacing: 0;
-}
-
-.brand-divider,
-.top-divider {
-  background: var(--theme-border);
-}
-
-.top-actions time,
-.sidebar-bottom small {
-  color: var(--theme-muted);
-}
-
-.sidebar a {
-  color: var(--theme-text);
-  font-size: var(--theme-font-size-component);
-}
-
-.sidebar a :is(i,.ui-icon) {
-  font-size: 22px;
-}
-
-.sidebar a:hover {
-  background: var(--theme-card);
-  color: var(--theme-accent);
-}
-
-.sidebar a.active {
-  background: var(--theme-selected);
-  border-left-color: var(--theme-primary);
-  color: var(--theme-accent);
-}
-
-.sidebar a.active :is(i,.ui-icon) {
-  color: var(--theme-accent);
-}
-
-.sidebar-bottom a {
-  border-top-color: var(--theme-border);
-}
+.top-divider { background:var(--theme-border); }
+.top-actions time { color:var(--theme-muted); }
 
 .notification-count {
   background: var(--theme-red);
@@ -335,7 +287,7 @@ body {
   cursor: not-allowed;
 }
 
-:is(.main, .topbar, .sidebar, .login-page, .modal) :is(button, a):focus-visible {
+:is(.main, .topbar, .login-page, .modal) :is(button, a):focus-visible {
   outline: 2px solid var(--theme-accent);
   outline-offset: 2px;
 }
@@ -667,10 +619,6 @@ body {
 
 .main .map-compass :is(i,.ui-icon) {
   color: var(--theme-accent);
-}
-
-.main.location-page > .note {
-  background: var(--theme-panel);
 }
 
 .main :is(.fence-row, .group-row) {

@@ -122,8 +122,8 @@ function openRecords() {
           >镜头 {{ index + 1 }} · {{ memberOf(pid)?.name }}</AppButton>
         </div>
         <AppPanel :title="'作业人员与装备状态（' + record.members.length + ' 人）'">
-          <AppTable :columns="['姓名', '岗位', '三类装备状态（安全帽 / 安全带 / 智能手表）', '位置', '最后上报', '操作']" :empty="!record.members.length">
-            <tr v-for="pid in record.members" :key="pid">
+          <AppTable :rows="record.members" :reset-key="record.id" v-slot="{ rows: pageRows }" :columns="['姓名', '岗位', '三类装备状态（安全帽 / 安全带 / 智能手表）', '位置', '最后上报', '操作']" :empty="!record.members.length">
+            <tr v-for="pid in pageRows" :key="pid">
               <td>
                 <div class="person-cell"><PersonAvatar :person="memberOf(pid)" photo />{{ personName(pid) }}</div>
               </td>

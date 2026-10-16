@@ -21,18 +21,6 @@
     width: 145px;
     font-size:14px;
   }
-  .sidebar {
-    width: 185px;
-  }
-  .sidebar a {
-    font-size:16px;
-    padding: 15px 16px;
-    gap: 15px;
-  }
-  .main {
-    margin-left: 185px;
-    padding: 17px 17px 25px;
-  }
   .topbar .brand-divider {
     margin-left: 0;
   }
@@ -254,18 +242,6 @@
   }
   .topbar > strong {
     font-size:18px;
-  }
-  .sidebar {
-    width: 165px;
-  }
-  .sidebar a {
-    font-size:16px;
-    padding: 14px 12px;
-    gap: 12px;
-  }
-  .main {
-    margin-left: 165px;
-    padding: 14px;
   }
   .split-detail {
     grid-template-columns: 1.7fr 1fr;

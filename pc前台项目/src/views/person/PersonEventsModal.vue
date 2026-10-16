@@ -25,8 +25,8 @@ function openEvent(id) {
 </script>
 
 <template>
-  <AppTable :columns="columns" :empty="!rows.length">
-    <tr v-for="item in rows" :key="item.id">
+  <AppTable :rows="rows" v-slot="{ rows: pageRows }" :columns="columns" :empty="!rows.length">
+    <tr v-for="item in pageRows" :key="item.id">
       <td>{{ item.title }}</td>
       <td><AppTag>{{ item.status }}</AppTag></td>
       <td><AppButton tone="small" @click="openEvent(item.id)">查看</AppButton></td>

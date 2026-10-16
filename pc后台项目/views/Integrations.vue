@@ -23,6 +23,8 @@
   </section>
 </template>
 <script setup>
+import { useConfirmation } from '../confirmation'
+const confirmDiscard = useConfirmation()
 import { utcTime } from '../tablePresentation'
 import { computed, reactive, ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
@@ -47,7 +49,7 @@ function hydrate() { const c = current.value; if (!isDetail.value || !c?.id) ret
 async function load() { const token = generation; await record.run(isJob.value ? 'integrationJob' : isDetail.value ? 'integration' : 'integrations', { ...query.value, siteId: store.siteId, id: route.params.jobId || route.params.connectorId, pageNum: pageNum.value, pageSize: pageSize.value }); if (token !== generation) return; if (!dirty.value) hydrate(); if (isDetail.value && current.value?.id) loadJobs(); if (isJob.value && current.value?.connectorId) jobConnector.run('integration', { siteId: store.siteId, id: current.value.connectorId }); if (!isDetail.value && !isJob.value && current.value?.total > 0 && !current.value.rows.length) navigate({ pageNum: String(Math.ceil(current.value.total / pageSize.value)) }) }
 async function loadJobs() { if (!isSync.value) return; await jobs.run('integrationJobs', { siteId: store.siteId, connectorId: route.params.connectorId, pageNum: jobsPage.value, pageSize: 20 }); if (jobs.data.value?.total > 0 && !jobs.data.value.rows.length && jobsPage.value > 1) { jobsPage.value = Math.ceil(jobs.data.value.total / 20); loadJobs() } }
 function changeJobsPage(step) { jobsPage.value += step; router.replace({ query: { ...route.query, pageNum: String(jobsPage.value) } }) }
-async function refresh() { if (!allowLeave()) return; actionError.value = null; baseline.value = ''; await load() }
+async function refresh() { if (!await allowLeave()) return; actionError.value = null; baseline.value = ''; await load() }
 function resultLabel(result, test = false) { return result.result === 'SUCCESS' ? test ? '模拟测试通过' : '模拟回执成功' : result.result === 'TIMEOUT' ? '模拟超时' : '模拟字段不匹配' }
 async function act(action) {
   if (!writable.value || busy.value || !current.value?.id || (action === 'preview' && !canSync.value) || (['confirm', 'retry'].includes(action) && !canContinue.value)) return
@@ -59,7 +61,7 @@ async function act(action) {
   finally { if (token === generation) busy.value = false }
 }
 function clear() { generation++; saveController?.abort(); record.cancel(); jobs.cancel(); jobConnector.cancel(); busy.value = false; baseline.value = ''; Object.assign(form, { endpointKey: 'SAMPLE_A', mappedSiteId: '', areaId: '', scenario: '' }); operation = null; confirmOpen.value = false; notice.value = ''; actionError.value = null }
-function allowLeave() { if (busy.value) return false; if (dirty.value && !window.confirm('尚有未保存的接入配置，确定放弃吗？')) return false; baseline.value = ''; return true }
+async function allowLeave() { if (busy.value) return false; if (dirty.value && !await confirmDiscard({ message: '接入配置尚未保存，放弃后将无法恢复。' })) return false; baseline.value = ''; return true }
 onBeforeRouteLeave(allowLeave)
 onBeforeRouteUpdate((to, from) => to.params.connectorId === from.params.connectorId && to.params.jobId === from.params.jobId ? true : allowLeave())
 store.leaveGuard = allowLeave
@@ -68,9 +70,7 @@ const unsubscribe = provider.subscribe(({ kind }) => { if (['authorization', 'id
 watch(() => store.siteId, clear, { flush: 'sync' })
 watch(() => [route.params.connectorId, route.params.jobId], clear, { flush: 'sync' })
 watch(() => [route.fullPath, store.siteId, store.revision], () => { keyword.value = query.value.keyword || ''; jobsPage.value = pageNum.value; load() }, { immediate: true })
-const beforeUnload = event => { if (dirty.value) { event.preventDefault(); event.returnValue = '' } }
-window.addEventListener('beforeunload', beforeUnload)
-onBeforeUnmount(() => { clear(); unsubscribe(); if (store.leaveGuard === allowLeave) store.leaveGuard = null; window.removeEventListener('beforeunload', beforeUnload) })
+onBeforeUnmount(() => { clear(); unsubscribe(); if (store.leaveGuard === allowLeave) store.leaveGuard = null })
 </script>
 <style scoped>
 .integration-form fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;border:0;padding:12px 0}.integration-form label{display:grid;gap:6px}.integration-form input,.integration-form select{width:100%;min-height:38px}.integration-form .button{justify-self:start}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}td{overflow-wrap:anywhere}table{width:100%}@media(max-width:700px){.integration-form fieldset{grid-template-columns:1fr}}

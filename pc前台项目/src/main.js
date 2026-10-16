@@ -11,6 +11,8 @@ import "./styles/spec-screen.css";
 import "./styles/spec-adapter.css";
 import "@ui-spec/controls.css";
 import "@ui-spec/icon-masks.css";
+import "./styles/portal-shell.css";
+import "./styles/portal-business.css";
 
 
 const app = createApp(App);
@@ -20,3 +22,5 @@ Promise.all([router.isReady(), guardianReady]).then(() => {
   app.mount("#app");
   if (db.loadError) toast(db.loadError, true);
 });
+
+import '@ui-spec/dialog.css';

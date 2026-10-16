@@ -19,8 +19,8 @@ const rows = computed(() => {
 
 <template>
   <p class="note">预置观测，非实时测量；手表能力待确认。历史记录保留观测时的人员和设备归属。</p>
-  <AppTable v-if="rows.length" table-class="compact" :columns="columns">
-    <tr v-for="item in rows" :key="item.id">
+  <AppTable :rows="rows" v-slot="{ rows: pageRows }" v-if="rows.length" table-class="compact" :columns="columns">
+    <tr v-for="item in pageRows" :key="item.id">
       <td>{{ item.personName }}<small>{{ item.deviceId }}</small></td>
       <td>{{ item.observedAt }}<small>{{ item.receivedAt }}</small></td>
       <td>{{ item.heartRate }} bpm</td>

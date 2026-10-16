@@ -14,11 +14,12 @@ function submit() {
 </script>
 
 <template>
-  <form @submit.prevent="submit">
-    <MembersPicker v-model="members" />
-    <div class="form-actions">
-      <AppButton type="submit" tone="primary">确认成员</AppButton>
+  <form class="dialog-form" @submit.prevent="submit">
+    <div class="dialog-form-body"><MembersPicker v-model="members" /></div>
+    <div class="dialog-form-footer">
+      <span>已选 {{ members.length }} 人</span>
       <AppButton @click="closeModal">取消</AppButton>
+      <AppButton type="submit" tone="primary">确认成员</AppButton>
     </div>
   </form>
 </template>

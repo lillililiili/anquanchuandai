@@ -1,0 +1,65 @@
+/* Opt-in geometry shared by both applications; page forms remain untouched. */
+html:root .ui-dialog.ui-dialog {
+  --dialog-width: 880px;
+  box-sizing: border-box; width: min(var(--dialog-width), calc(100vw - 48px));
+  max-width: calc(100vw - 48px); max-height: calc(100dvh - 48px);
+  height: fit-content; margin: auto; padding: 0; overflow: hidden;
+  border: 1px solid var(--theme-border, var(--line)); border-radius: 8px;
+  background: var(--theme-overlay-surface); color: var(--theme-heading);
+  font-size: 14px; line-height: 22px;
+}
+html:root .ui-dialog[data-dialog-size="confirm"] { --dialog-width: 440px; }
+html:root .ui-dialog[data-dialog-size="compact"] { --dialog-width: 650px; }
+html:root .ui-dialog[data-dialog-size="wide"] { --dialog-width: 1000px; }
+html:root .ui-dialog:is([open], section) { display: flex; flex-direction: column; }
+html:root .ui-dialog.ui-dialog > header {
+  flex: none; position: relative; min-height: 56px; box-sizing: border-box;
+  padding: 12px 20px; gap: 16px; display: flex; align-items: center;
+  justify-content: space-between; background: var(--theme-overlay-surface);
+}
+html:root .ui-dialog > header h2 { margin: 0; font-size: 18px; line-height: 26px; overflow-wrap: anywhere; }
+html:root .ui-dialog > header > button { flex: none; }
+html:root .ui-dialog > :is(.modal-content, .modal-body) {
+  flex: 1 1 auto; min-height: 0; padding: 20px; overflow: auto;
+  overscroll-behavior: contain; overflow-wrap: anywhere;
+}
+html:root .ui-dialog[data-dialog-layout="form"] > :is(.modal-content, .modal-body) {
+  display: flex; flex-direction: column; overflow: hidden; padding: 0;
+}
+html:root .ui-dialog .dialog-form {
+  display: flex; flex-direction: column; flex: 1 1 auto;
+  min-height: 0; min-width: 0; margin: 0; gap: 0; overflow: hidden;
+}
+html:root .ui-dialog .dialog-form-body {
+  flex: 1 1 auto; min-height: 0; min-width: 0; overflow: auto;
+  overscroll-behavior: contain; padding: 20px; container: dialog-content / inline-size;
+}
+html:root .ui-dialog :is(.dialog-form-footer, .dialog-footer) {
+  flex: none; position: static; bottom: auto; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap;
+  min-height: 56px; margin: 0; padding: 12px 20px; gap: 12px;
+  border-top: 1px solid var(--line, var(--theme-border)); background: var(--theme-overlay-surface);
+}
+html:root .ui-dialog .dialog-form-footer > :is(span, small) { margin-right: auto; }
+html:root .ui-dialog .dialog-form-footer > .actions { display: flex; gap: 12px; margin: 0; }
+html:root .ui-dialog .dialog-form :is(.form-grid, .dialog-grid) {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px 20px; margin: 0 0 16px;
+}
+html:root .ui-dialog .dialog-form label:not(.inline-check):not(:has(> input:is([type="checkbox"], [type="radio"]))) {
+  display: grid; align-content: start; gap: 8px; min-width: 0; font-size: 14px; line-height: 22px;
+}
+html:root .ui-dialog .dialog-form :is(.field-control, .ui-select, .ui-date) { min-width: 0; width: 100%; }
+html:root .ui-dialog .dialog-form .wide { grid-column: 1 / -1; }
+html:root .ui-dialog .dialog-form :is(fieldset, .binding-card) { min-width: 0; margin: 0 0 16px; }
+html:root .ui-dialog .dialog-form-body > :is(label, .field-control, .notice) { margin: 0 0 16px; }
+html:root .ui-dialog .dialog-form-body > :last-child { margin-bottom: 0; }
+html:root .ui-dialog .dialog-form :is(.inline-check, .choice-grid label, .check-grid label) { display: flex; align-items: flex-start; gap: 8px; }
+html:root .ui-dialog :is(.choice-grid, .check-grid) { max-height: 300px; overflow: auto; overscroll-behavior: contain; }
+html:root .ui-dialog .record-fields dd { min-width: 0; overflow-wrap: anywhere; }
+html:root .ui-dialog .dialog-form .form-submit-error { margin: 16px 0 0; }
+html:root .ui-dialog .dialog-form-body .field > span { width: auto; }
+@container dialog-content (min-width: 640px) {
+  html:root .ui-dialog .dialog-form :is(.form-grid, .dialog-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+html:root .modal-backdrop:has(> .ui-dialog) { padding: 24px; box-sizing: border-box; overflow: hidden; }
+html:has(.ui-dialog[open], .modal-backdrop > .ui-dialog) { overflow: hidden; }

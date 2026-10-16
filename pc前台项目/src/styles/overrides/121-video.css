@@ -1,7 +1,7 @@
 /* app.css 3401-3454 */
 
 .video-wall {
-  /* Let the selected device's details determine the shared row height. */
+  /* Keep the main video and selected-device panel aligned. */
   align-items: stretch;
 }
 .video-wall > .video-frame {
