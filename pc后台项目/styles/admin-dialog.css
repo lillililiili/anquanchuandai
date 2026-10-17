@@ -1,0 +1,123 @@
+/* Sketch artboard 57889E44-04D1-4D74-B94F-4C1C42F427E5.
+ * Exact source paints/geometry: shared/ui-spec/admin/dialog-reference.json.
+ * Isolated from portal dialogs and login. Widths remain content-specific.
+ */
+html:root .modal-panel.ui-dialog.admin-sketch-dialog {
+  --dialog-frame: #5ecbff;
+  --dialog-surface: rgba(80.4070749879,177.2861292958,248.5688146949,.0821131993006993);
+  --dialog-surface-border: rgb(0,75.5041725283,124.2085597826);
+  --dialog-block: rgba(34.253095018,194.9366775347,208.9992357337,.05181927447552447);
+  --dialog-block-border: rgba(255,255,255,.297694493006993);
+  --dialog-input-fill: rgba(25,70,135,.09697333916083917);
+  position: fixed; inset: 0; padding: 16px; isolation: isolate;
+  border: 1px solid var(--dialog-frame); border-radius: 20px;
+  background: linear-gradient(180deg,rgba(94,203,255,.1236888111888112),rgba(94,203,255,0) 126.2920568009px),rgba(15.9363732768,30.6521297278,48.0434782609,.3930015297202797);
+  box-shadow: 0 0 6px 3px rgba(94,203,255,.6109866695804196),0 2px 4px rgba(0,0,0,.5),4px 9px 24px 26px rgba(3.4170280448,23.7880149738,33.5062839674,.2117395693);
+  color: #fff; font: 400 14px/22px var(--theme-font);
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog::backdrop {
+  background: rgba(0,0,0,.2147071678321678); backdrop-filter: blur(6px);
+}
+/* Inset translucent surface from 80ACE0FF; do not replace it with opaque navy. */
+html:root .modal-panel.ui-dialog.admin-sketch-dialog::before {
+  content: ''; position: absolute; inset: 16px; z-index: -1; pointer-events: none;
+  border: 1px solid var(--dialog-surface-border); border-radius: 16px; background: var(--dialog-surface);
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog > header {
+  min-height: 60px; padding: 14px 22px 16px; gap: 37px;
+  border: 0; background: transparent; border-radius: 16px 16px 0 0;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog > header h2 {
+  position: relative; flex: 1; min-width: 0; min-height: 26.1127596439px;
+  box-sizing: border-box; margin: 0; padding: 2px 70px 3px 29.8572207084px;
+  font: 700 21px/21px var(--theme-font); background: none; border: 0;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog > header h2 span {
+  position: relative; z-index: 1; display: inline;
+  background: linear-gradient(180deg,#fff,rgb(76.7915396341,203.4428353659,255));
+  background-clip: text; -webkit-background-clip: text; color: transparent;
+}
+/* Responsive middle keeps the source's 15.946px end cuts and original marks. */
+html:root .modal-panel.ui-dialog.admin-sketch-dialog > header h2::before {
+  content: ''; position: absolute; inset: auto 0 0; height: 15.9463794268px;
+  background: linear-gradient(90deg,rgba(0,182,255,.3),rgba(0,182,255,.1393684440559441));
+  clip-path: polygon(15.9463794268px 0,100% 0,calc(100% - 15.9463794268px) 100%,0 100%);
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog > header h2::after {
+  content: ''; position: absolute; top: 0; right: 10px; width: 59.2183935846px; height: 15.9463794268px;
+  background: url('/assets/sketch/dialog-heading-marks.svg') center / contain no-repeat;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog > header .modal-close {
+  display: grid; place-items: center; width: 30px; height: 30px; min-height: 30px;
+  margin: 0; padding: 0; border: 0; border-radius: 5px; background: transparent; box-shadow: none;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .modal-close span {
+  width: 30px; height: 30px; background: url('/assets/sketch/dialog-close.svg') center / contain no-repeat;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .modal-close:hover { background: var(--theme-component-bg-1); }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .modal-close:active { background: var(--theme-component-bg-3); }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .modal-close:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 3px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog > .modal-content,
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form-body { padding: 14px 22px 22px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog[data-dialog-layout='form'] > .modal-content { padding: 0; }
+/* Record-only dialogs reserve space for filters and pagination; only rows scroll. */
+html:root .modal-panel.ui-dialog.admin-sketch-dialog[data-dialog-layout='table'] > .modal-content {
+  display: flex; flex-direction: column; overflow: hidden;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog[data-dialog-layout='table'] > .modal-content > :not(.table-scroll) { flex: none; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog[data-dialog-layout='table'] .table-scroll {
+  flex: 1 1 auto; min-height: 0; max-height: 550px; overflow: auto;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(.dialog-form-footer,.dialog-footer) {
+  min-height: 32px; padding: 0; margin: 0 22px 22px; gap: 12px;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(.dialog-form-footer,.dialog-footer) > :is(span,small) {
+  margin-right: auto; flex: 1 1 120px; min-width: 0; font: 400 12px/20px var(--theme-font);
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form-footer > .actions { gap: 12px; flex-wrap: wrap; }
+/* Action buttons use the same Sketch component rules as page buttons in
+ * spec-adapter.css / controls.css, including every interactive state. */
+/* Business modal input example CD166CDC: 35px, 4px radius, .5px border. */
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(.ui-select,.ui-date) { height: 35px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(input:not([type='checkbox']):not([type='radio']):not(.ui-native-proxy),.ui-select-trigger,textarea) {
+  box-sizing: border-box; border: .5px solid #3db3ff; border-radius: 4px;
+  background: var(--dialog-input-fill); color: #fff; padding: 7px 16px;
+  font: 500 14px/14px var(--theme-font); letter-spacing: 1px;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(input:not([type='checkbox']):not([type='radio']):not(.ui-native-proxy),.ui-select-trigger) { height: 35px; min-height: 35px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog textarea { min-height: 80px; line-height: 20px; resize: vertical; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(input:not([type='checkbox']):not([type='radio']):not(.ui-native-proxy),.ui-select-trigger,textarea):hover:not(:disabled) { border-color: var(--theme-accent); }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(input:not([type='checkbox']):not([type='radio']):not(.ui-native-proxy),.ui-select-trigger,textarea):is(:focus-visible,[aria-expanded='true']) {
+  outline: none; border: 2px solid var(--theme-accent); padding: 5.5px 14.5px;
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(input:not([type='checkbox']):not([type='radio']):not(.ui-native-proxy),.ui-select-trigger,textarea):disabled {
+  background: var(--theme-input-disabled-bg); color: var(--theme-disabled); border-color: var(--theme-border-disabled);
+}
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(input,textarea)[aria-invalid='true'],
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .is-invalid :is(.ui-select-trigger,.ui-date-input) { border-color: var(--theme-red); }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .ui-date-input { padding-right: 36px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .ui-date:has(.ui-date-clear) .ui-date-input { padding-right: 60px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .ui-date-input:focus { padding-right: 34.5px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .ui-date:has(.ui-date-clear) .ui-date-input:focus { padding-right: 58.5px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form label:not(.inline-check):not(:has(> input:is([type='checkbox'],[type='radio']))) { color: #fff; font: 400 14px/12px var(--theme-font); gap: 9px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form :is(.form-grid,.dialog-grid) { gap: 14px 14.8498789346px; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form :is(small,.error,.muted) { font: 400 12px/20px var(--theme-font); letter-spacing: 0; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form :is(fieldset,.binding-card) {
+  border: .5px solid var(--dialog-block-border); border-radius: 4px; background: var(--dialog-block);
+}
+/* Keep one inset surface, rather than double-framing the entire field grid. */
+html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form .dialog-form-body > fieldset:not(:has(> legend)) { border: 0; padding: 0; background: none; }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(.record-fields,.audit-snapshot) { font: 400 14px/22px var(--theme-font); }
+html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(.modal-content,.dialog-form-body,.table-scroll,.device-table-wrap) {
+  scrollbar-width: thin; scrollbar-color: rgba(0,182,255,.6) rgba(0,182,255,.12);
+}
+@media (max-width: 650px) {
+  html:root .modal-panel.ui-dialog.admin-sketch-dialog > header { gap: 12px; padding-inline: 16px; }
+  html:root .modal-panel.ui-dialog.admin-sketch-dialog > header h2 { padding-right: 8px; }
+  html:root .modal-panel.ui-dialog.admin-sketch-dialog > header h2::after { display: none; }
+  html:root .modal-panel.ui-dialog.admin-sketch-dialog :is(.dialog-form-footer,.dialog-footer) { margin-inline: 16px; }
+  html:root .modal-panel.ui-dialog.admin-sketch-dialog > .modal-content,
+  html:root .modal-panel.ui-dialog.admin-sketch-dialog .dialog-form-body { padding-inline: 16px; }
+  html:root .modal-panel.ui-dialog.admin-sketch-dialog[data-dialog-layout='form'] > .modal-content { padding: 0; }
+}

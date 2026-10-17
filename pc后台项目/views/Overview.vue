@@ -19,7 +19,7 @@
         <div class="boundary-note"><strong>说明</strong><p>发放、回收和人员装备变更会写入监护前台。账号和台账保存在后台服务。</p></div>
       </section>
     </div>
-    <ModalPanel size="wide" :open="!!selected" :title="selected ? selected.label + ' · 只读明细' : ''" @close="closeDetails">
+    <ModalPanel size="wide" layout="table" :open="!!selected" :title="selected ? selected.label + ' · 只读明细' : ''" @close="closeDetails">
       <p class="notice">{{ selected?.note }}。不代表设备已接入。</p>
       <form class="detail-filter" @submit.prevent="search"><label>编号 / 人员关键词<input v-model="keyword" maxlength="100" placeholder="请输入设备编号或人员" /></label><div class="filter-actions"><button class="button primary" type="submit">查询</button><button class="button" type="button" @click="clearSearch">重置</button></div></form>
       <QueryState :data="details.data.value" :error="details.error.value" :loading="details.loading.value" @retry="loadDetails">
