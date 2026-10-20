@@ -1,5 +1,5 @@
 # Real shared backend by default; -Mock is an explicit offline preview.
-param([string]$DeviceId, [switch]$Attach, [switch]$Mock, [string]$BackendUrl = 'http://127.0.0.1:18084', [string]$ProxyUrl = $env:HTTPS_PROXY)
+param([string]$DeviceId, [switch]$Attach, [switch]$Watch, [switch]$Mock, [string]$BackendUrl = 'http://127.0.0.1:18084', [string]$ProxyUrl = $env:HTTPS_PROXY)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $devRoot = if ($env:ANDROID_DEV_HOME) { $env:ANDROID_DEV_HOME } else { 'D:/AndroidDev' }
@@ -53,14 +53,20 @@ $runArgs = if ($Attach) { @('attach', '-d', $DeviceId) } else { @('run', '--debu
 if (-not $Attach) {
     $runArgs += "--dart-define=WEAR_MOCK=$($Mock.IsPresent.ToString().ToLowerInvariant())"
     $runArgs += "--dart-define=WEAR_BACKEND_URL=$BackendUrl"
-    if (-not $Mock -and ([Uri]$BackendUrl).Host -in @('localhost','127.0.0.1')) {
-        $port = ([Uri]$BackendUrl).Port
-        & $adb -s $DeviceId reverse "tcp:$port" "tcp:$port"
-        if ($LASTEXITCODE -ne 0) { throw 'ADB reverse failed; backend connection is not ready.' }
-    }
+}
+if (-not $Mock -and ([Uri]$BackendUrl).Host -in @('localhost','127.0.0.1')) {
+    $port = ([Uri]$BackendUrl).Port
+    & $adb -s $DeviceId reverse "tcp:$port" "tcp:$port"
+    if ($LASTEXITCODE -ne 0) { throw 'ADB reverse failed; backend connection is not ready.' }
 }
 Push-Location $buildRoot
 try {
-    & $flutter @runArgs
+    if ($Watch) {
+        $node = Get-Command node.exe -ErrorAction SilentlyContinue
+        if (-not $node) { throw 'Node.js is required for save-to-reload mode.' }
+        & $node.Source (Join-Path $PSScriptRoot 'watch-ldplayer.mjs') $flutter @runArgs
+    } else {
+        & $flutter @runArgs
+    }
     if ($LASTEXITCODE -ne 0) { throw 'Flutter run failed.' }
 } finally { Pop-Location }
