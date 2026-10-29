@@ -60,7 +60,7 @@ export function recordReturn(value, fallback) {
 }
 export function cleanDeviceQuery(query = {}) {
   const common = cleanQuery(query), result = Object.fromEntries(['siteId', 'areaId', 'selectedId', 'keyword', 'pageNum', 'pageSize'].filter(k => common[k] !== undefined).map(k => [k, common[k]]))
-  const enums = { type: ['HELMET', 'BELT', 'WATCH'], lifecycle: ['STOCK', 'IN_USE', 'MAINTENANCE', 'DISABLED', 'SCRAPPED'], relation: ['ASSIGNED', 'UNASSIGNED', 'UNKNOWN', 'CONFLICT'], communication: ['NOT_CONNECTED', 'ONLINE', 'OFFLINE', 'UNKNOWN'] }
+  const enums = { type: ['HELMET', 'BELT', 'WATCH'], relation: ['ASSIGNED', 'UNASSIGNED', 'UNKNOWN', 'CONFLICT'], communication: ['NOT_CONNECTED', 'ONLINE', 'OFFLINE', 'UNKNOWN'] }
   for (const [key, values] of Object.entries(enums)) if (values.includes(query[key])) result[key] = query[key]
   if(query.source === 'PLATFORM') result.source = 'PLATFORM'
   return result
