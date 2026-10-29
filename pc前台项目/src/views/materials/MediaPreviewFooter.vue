@@ -6,11 +6,12 @@ import { downloadMedia } from "./media";
 
 const props = defineProps({
   mediaId: { type: String, default: "" },
+  file: { type: Object, default: null },
 });
 
 async function save() {
   try {
-    await downloadMedia(props.mediaId);
+    await downloadMedia(props.file || props.mediaId);
   } catch (error) {
     toast(error.message || "操作失败", true);
   }

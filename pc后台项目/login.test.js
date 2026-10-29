@@ -43,8 +43,8 @@ describe('account login and business wording', () => {
     }
     walk(new URL('./views/', import.meta.url))
     walk(new URL('./components/', import.meta.url))
-    expect(readFileSync(new URL('./views/Integrations.vue', import.meta.url), 'utf8')).toContain('确认导入模拟样本')
+    expect(readdirSync(new URL('./views/', import.meta.url))).not.toContain('Integrations.vue')
     expect(readFileSync(new URL('./auditData.js', import.meta.url), 'utf8')).toContain('模拟数据')
-    expect(readFileSync(new URL('./views/Overview.vue', import.meta.url), 'utf8')).toContain('查看明细')
+    expect(readdirSync(new URL('./views/', import.meta.url))).not.toContain('Overview.vue')
   })
 })

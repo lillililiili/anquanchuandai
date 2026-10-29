@@ -86,6 +86,31 @@ class SafetyHatInfoServiceImplDemoModeTest {
         return service;
     }
 
+    @Test
+    void directHelmetsNeverNeedCloudCredentialsOrCachedOnlineFlags() {
+        for (boolean demo : new boolean[]{false, true}) {
+            HeadbandService cloud = mock(HeadbandService.class);
+            SafetyHatInfoServiceImpl service = service(cloud, demo);
+            com.ruoyi.helmet.service.DirectHelmetAccess direct = mock(com.ruoyi.helmet.service.DirectHelmetAccess.class);
+            org.springframework.beans.factory.ObjectProvider<com.ruoyi.helmet.service.DirectHelmetAccess> provider =
+                    mock(org.springframework.beans.factory.ObjectProvider.class);
+            when(provider.getIfAvailable()).thenReturn(direct);
+            when(direct.isEnabled()).thenReturn(true);
+            when(direct.isOnline("DIRECT-1")).thenReturn(true);
+            when(direct.status("DIRECT-1")).thenReturn(com.alibaba.fastjson2.JSONObject.parseObject("{\"battery\":71}"));
+            ReflectionTestUtils.setField(service, "directAccess", provider);
+            SafetyHatInfo live = hat("DIRECT-1", "0", null); live.setCreateBy("direct-helmet");
+            SafetyHatInfo disabled = hat("DIRECT-2", "1", null); disabled.setCreateBy("direct-helmet-disabled");
+            Page<SafetyHatInfo> page = new Page<>();
+            page.setRecords(Arrays.asList(live, disabled));
+            ReflectionTestUtils.invokeMethod(service, "getStatusInfo", page);
+            assertEquals("1", live.getStatus());
+            assertEquals(new java.math.BigDecimal("71"), live.getElectricityUsage());
+            assertEquals("0", disabled.getStatus());
+            verifyNoInteractions(cloud);
+        }
+    }
+
     private SafetyHatInfo hat(String number, String status, String uid) {
         SafetyHatInfo hat = new SafetyHatInfo();
         hat.setHatNumber(number);

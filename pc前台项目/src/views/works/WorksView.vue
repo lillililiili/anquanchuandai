@@ -15,29 +15,25 @@ import PageHeading from "@/components/layout/PageHeading.vue";
 import PlantMap from "@/components/domain/PlantMap.vue";
 import WorkInfo from "@/components/domain/WorkInfo.vue";
 import { DATE } from "@/mock/data";
+import { beijingDate } from "@/lib/location";
 import { db } from "@/mock/runtime";
 import { filtersOf, session } from "@/stores/session";
 import { events, personName, revision, search, works } from "@/lib/queries";
+import { externalStatusPresentation } from '@/lib/external-status';
+import { isRealDevice, isCurrentDevice } from '@/lib/device-telemetry';
 
 const hours = ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"];
-const areaOptions = computed(() => {
-  revision();
-  const names = Array.isArray(db.state.mapAreas)
-    ? db.state.mapAreas.filter((area) => area.station === session.station).map((area) => area.name)
-    : ["锅炉区", "汽机厂房", "配电区", "循环水区"];
-  return [["", "全部区域"], ...names];
-});
 const statusOptions = [["", "全部"], "监护中", "已结束"];
 
-const draft = reactive({ q: "", area: "", date: DATE, status: "" });
+const today = () => db.demoMode ? DATE : beijingDate();
+const draft = reactive({ q: "", date: today(), status: "" });
 
 watch(
   () => session.filters.works,
   (value) => {
     const query = value || {};
     draft.q = query.q || "";
-    draft.area = query.area || "";
-    draft.date = query.date || DATE;
+    draft.date = query.date || today();
     draft.status = query.status || "";
   },
   { immediate: true },
@@ -49,13 +45,12 @@ const list = computed(() => {
   return works().filter(
     (work) =>
       search(work.name + " " + work.id, query.q) &&
-      (!query.area || work.area === query.area) &&
-      (!query.date || work.date === query.date) &&
+      work.date === (query.date || today()) &&
       (!query.status || work.status === query.status),
   );
 });
 const selected = computed(() => list.value.find((work) => work.id === session.work) || list.value[0] || null);
-const windowDate = computed(() => session.filters.works?.date || DATE);
+const windowDate = computed(() => session.filters.works?.date || today());
 
 watch(
   selected,
@@ -68,7 +63,6 @@ watch(
 function applyFilters() {
   session.filters.works = {
     q: draft.q,
-    area: draft.area,
     date: draft.date,
     status: draft.status,
   };
@@ -83,8 +77,8 @@ function pendingCount(workId) {
 }
 
 function deviceSummary(members) {
-  const devices = members.flatMap((id) => db.currentDevices(id));
-  return devices.filter((item) => item.online).length + " / " + devices.length;
+  const devices = members.flatMap(id => db.currentDevices(id)).filter(device => device.active !== false && isRealDevice(device));
+  return devices.filter(item => item.online === true && isCurrentDevice(item)).length + " / " + devices.length;
 }
 
 function minutes(value) {
@@ -110,9 +104,6 @@ function barStyle(work) {
       <AppField label="作业名 / 工作票号">
         <AppInput v-model="draft.q" name="q" placeholder="请输入作业名或工作票号" />
       </AppField>
-      <AppField label="区域">
-        <AppSelect v-model="draft.area" name="area" :options="areaOptions" />
-      </AppField>
       <AppField label="日期">
         <AppInput v-model="draft.date" name="date" type="date" />
       </AppField>
@@ -126,7 +117,7 @@ function barStyle(work) {
       <AppPanel extra-class="work-list list-detail-table">
         <template #title>作业列表 <small>（共 {{ list.length }} 条）</small></template>
         <AppTable :rows="list" :reset-key="[session.station, session.filters.works]" v-slot="{ rows: pageRows }"
-          :columns="['作业名称', '来源编号', '监护人', '区域', '人员数', '装备在线', '待核验数', '来源状态', '操作']"
+          :columns="['作业名称', '来源编号', '监护人', '作业地点', '人员数', '装备在线', '待核验数', '来源状态', '操作']"
           :empty="!list.length"
         >
           <tr
@@ -144,7 +135,7 @@ function barStyle(work) {
             <td>{{ work.members.length }} 人</td>
             <td>{{ deviceSummary(work.members) }}</td>
             <td><b class="yellow">{{ pendingCount(work.id) }}</b></td>
-            <td><AppStatus color="yellow">示例 · 待对接</AppStatus></td>
+            <td><AppStatus :color="externalStatusPresentation(work).color">{{ externalStatusPresentation(work).label }}</AppStatus></td>
             <td><a class="btn small" :href="'#/work/' + work.id" @click.stop>查看</a></td>
           </tr>
         </AppTable>
@@ -173,7 +164,7 @@ function barStyle(work) {
         <h3>{{ selected.name }}　<AppTag>{{ selected.status }}</AppTag></h3>
         <WorkInfo :work="selected" />
         <div class="detail-section">
-          <h3>作业区域示意图</h3>
+          <h3>作业人员位置</h3>
           <div style="height:220px"><PlantMap :work="selected" :person="selected.members[0] || ''" :legend="false" :fences="false" /></div>
         </div>
         <p class="note"><AppIcon name="information-line" />许可及摘要以原工作票系统为准。</p>

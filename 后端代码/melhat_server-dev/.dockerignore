@@ -1,0 +1,14 @@
+**/.git
+**/node_modules
+**/.local
+**/.private
+**/.env
+**/.env.local
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*backup*
+**/*.log
+**/target/**
+!ruoyi-admin/target/fdc-admin.jar

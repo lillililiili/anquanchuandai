@@ -23,6 +23,7 @@ public class AdminAssignmentService {
     private final AdminLedgerStore ledger;
     private final GuardianStore guardian;
     private final AdminQueryService queries;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableBusinessPolicy businessPolicy;
 
     public AdminAssignmentService(AdminLedgerStore ledger, GuardianStore guardian, AdminQueryService queries) {
         this.ledger = ledger;
@@ -35,6 +36,7 @@ public class AdminAssignmentService {
     public Map<String, Object> query(String accountId, String kind, JSONObject input) {
         JSONObject state = ledger.read();
         if (state == null) throw AdminQueryService.fail(503, "SOURCE_FAILURE", "后台台账尚未保存");
+        if(businessPolicy!=null)businessPolicy.decorate(state,true);
         JSONObject actor = account(state, accountId);
         if (actor == null) throw AdminQueryService.fail(401, "IDENTITY_INVALID", "请先登录");
         if (input == null) input = new JSONObject();
@@ -58,6 +60,12 @@ public class AdminAssignmentService {
         if (actor == null) throw AdminQueryService.fail(401, "IDENTITY_INVALID", "请先登录");
         if (input == null) input = new JSONObject();
         String operationId = input.getString("operationId");
+        if(businessPolicy!=null&&!businessPolicy.config().getBooleanValue("simulatedWatchVisible")&&input.getJSONArray("items")!=null) {
+            for(Object raw:input.getJSONArray("items")) {
+                JSONObject device=find(state,"devices",((JSONObject)raw).getString("deviceId"));
+                if(device!=null&&"DEMO_WATCH".equals(device.getString("source")))throw AdminQueryService.fail(409,"SIMULATION_HIDDEN","模拟手表当前已隐藏");
+            }
+        }
         if (operationId == null || operationId.trim().isEmpty() || operationId.length() > 100) throw AdminQueryService.fail(400, "OPERATION_REQUIRED", "操作标识无效");
         String key = accountId + "\n" + type + "\n" + operationId;
         JSONObject memory = state.getJSONObject("idempotency");
@@ -191,7 +199,9 @@ public class AdminAssignmentService {
                 }
             }
             device.put("version", device.getIntValue("version") + 1);
-            if (device.getString("code") != null && !device.getString("code").isEmpty()) device.put("portalDeviceId", device.getString("code"));
+            if ("DIRECT_HELMET".equals(device.getString("source")) || "DIRECT_BELT".equals(device.getString("source")))
+                device.put("portalDeviceId", device.getString("deviceNumber"));
+            else if (device.getString("code") != null && !device.getString("code").isEmpty()) device.put("portalDeviceId", device.getString("code"));
             JSONObject record = new JSONObject();
             record.put("id", "history-" + (++next));
             record.put("siteId", device.getString("siteId"));
@@ -487,7 +497,11 @@ public class AdminAssignmentService {
         String manufacturer = device.getString("manufacturer");
         String sn = device.getString("sn");
         String modelId = device.getString("modelId");
-        if (manufacturer == null || manufacturer.isEmpty() || sn == null || sn.isEmpty() || (modelId != null && modelId.startsWith("unknown-"))) list.add("资料或型号待补充");
+        String modelName = device.getString("modelName");
+        boolean missingModel = device.containsKey("modelName")
+                ? modelName == null || modelName.trim().isEmpty()
+                : modelId != null && modelId.startsWith("unknown-");
+        if (manufacturer == null || manufacturer.isEmpty() || sn == null || sn.isEmpty() || missingModel) list.add("资料或型号待补充");
         if (!"VERIFIED".equals(device.getString("verification"))) list.add("能力未经过真实验证");
         return list;
     }
@@ -520,8 +534,8 @@ public class AdminAssignmentService {
                 if (hay.toLowerCase().contains(needle)) filtered.add(row);
             }
         }
-        int from = (pageNum - 1) * pageSize;
-        List<JSONObject> slice = from >= filtered.size() ? new ArrayList<JSONObject>() : new ArrayList<JSONObject>(filtered.subList(from, Math.min(from + pageSize, filtered.size())));
+        long from = (long) (pageNum - 1) * pageSize;
+        List<JSONObject> slice = from >= filtered.size() ? new ArrayList<JSONObject>() : new ArrayList<JSONObject>(filtered.subList((int) from, (int) Math.min(from + pageSize, filtered.size())));
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("availability", "AVAILABLE");
         body.put("rows", slice);

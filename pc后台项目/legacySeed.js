@@ -1,4 +1,3 @@
-import { extendIntegrations } from './integrationData'
 import { emptyEvidence } from './relations'
 
 const TYPE_NAMES = { HELMET: '安全帽', BELT: '安全带', WATCH: '手表' }
@@ -64,7 +63,6 @@ export function createLegacySeed() {
       if (lifecycle === 'MAINTENANCE') state.maintenanceOrders.push({ id: `repair-${id}`, deviceId: id, siteId, areaId, status: 'OPEN', reason: '预置检修样例，非真实工单', version: 1 })
     }
     state.groups.push({ id: `group-${station}`, siteId, areaId, code: `EQ-G${station}`, name: '协助组', personIds: [`person-${station}-0`], leaderId: null, sos: null, remark: '', enabled: true, version: 1 })
-    state.integrations.push({ id: `connector-${station}`, siteId, status: 'NOT_CONNECTED', name: '安全帽连接器' })
   }
-  return extendIntegrations(extendDevices(extendSeed(state)))
+  return extendDevices(extendSeed(state))
 }

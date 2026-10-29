@@ -10,8 +10,14 @@ import static com.ruoyi.guardian.WearableModel.*;
 public class GuardianAccess {
     private final AdminLedgerStore ledger;
     private final AdminQueryService queries;
+    @org.springframework.beans.factory.annotation.Value("${melhat.demo-mode:false}") private boolean demoMode;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableBusinessPolicy businessPolicy;
     public GuardianAccess(AdminLedgerStore ledger,AdminQueryService queries) { this.ledger=ledger;this.queries=queries; }
-    public Context context(JSONObject actor) { return new Context(ledger.read(),actor==null?null:actor.getString("id")); }
+    public Context context(JSONObject actor) {
+        JSONObject view=GuardianDemoData.operationalLedger(ledger.read(),demoMode);
+        if(businessPolicy!=null)businessPolicy.decorate(view,true);
+        return new Context(view,actor==null?null:actor.getString("id"));
+    }
     public final class Context {
         final JSONObject data;
         final JSONObject actor;
@@ -31,13 +37,9 @@ public class GuardianAccess {
             if("demo-system".equals(id())) return true;
             for(Object raw:rows(data,"roles")) { JSONObject role=(JSONObject)raw;
                 if(!role.getBooleanValue("enabled") || !has(actor.getJSONArray("roleIds"),role.getString("id"))) continue;
-                JSONObject scopes=actor.getJSONObject("roleScopes"), scope=scopes==null?null:scopes.getJSONObject(role.getString("id"));
                 for(Object value:rows(role,"grants")) { JSONObject grant=(JSONObject)value;
                     if(!has(grant.getJSONArray("siteIds"),site) || !(has(grant.getJSONArray("operations"),op)||has(grant.getJSONArray("operations"),"*"))) continue;
-                    if(scope!=null && scope.getJSONArray("siteIds")!=null && !has(scope.getJSONArray("siteIds"),site)) continue;
-                    boolean allowed="*".equals(grant.get("areaIds")) || area!=null && has(grant.getJSONArray("areaIds"),area);
-                    if(scope!=null && scope.get("areaIds")!=null && !"*".equals(scope.get("areaIds"))) allowed=allowed && area!=null && has(scope.getJSONArray("areaIds"),area);
-                    if(allowed) return true;
+                    return true;
                 }
             }
             return false;
@@ -48,18 +50,15 @@ public class GuardianAccess {
             if("demo-system".equals(id())) return true;
             for(Object raw:rows(data,"roles")) { JSONObject role=(JSONObject)raw;
                 if(!has(actor.getJSONArray("roleIds"),role.getString("id")) || !role.getBooleanValue("enabled")) continue;
-                JSONObject scopes=actor.getJSONObject("roleScopes"); JSONObject scope=scopes==null?null:scopes.getJSONObject(role.getString("id"));
                 for(Object g:rows(role,"grants")) {
                     JSONObject grant=(JSONObject)g;
-                    if(has(grant.getJSONArray("siteIds"),id) && (scope==null || scope.getJSONArray("siteIds")==null || has(scope.getJSONArray("siteIds"),id))) return true;
+                    if(has(grant.getJSONArray("siteIds"),id)) return true;
                 }
             }
             return false;
         }
         public boolean anyArea(String operation,String site) {
-            if(can(operation,site,null)) return true;
-            for(Object raw:rows(data,"areas")) {JSONObject area=(JSONObject)raw;if(site.equals(area.getString("siteId"))&&area.getBooleanValue("enabled")&&can(operation,site,area.getString("id")))return true;}
-            return false;
+            return can(operation,site,null);
         }
         String eventSite(JSONObject event) { String s=event.getString("siteId");return s==null?siteId(data,event.getString("station")):s; }
         String eventArea(JSONObject event) {
@@ -101,16 +100,19 @@ public class GuardianAccess {
             for(String op:Arrays.asList("events:claim","events:observe","events:verify","sos:assist")) result.put(op,event(event) && can(op,eventSite(event),eventArea(event)));
             return result;
         }
+        public boolean operational(JSONObject row) { return demoMode || !GuardianDemoData.confirmed(row); }
         public JSONObject snapshot(JSONObject source) {
             JSONObject out=safe(source);
+            out.put("demoMode",demoMode);
             JSONArray events=new JSONArray(); Set<String> ids=new HashSet<>();
-            for(Object raw:rows(out,"events")) { JSONObject e=(JSONObject)raw; if(event(e)) { e.put("permissions",permissions(e));events.add(e);ids.add(e.getString("id")); } }
+            for(Object raw:rows(out,"events")) { JSONObject e=(JSONObject)raw; if(operational(e) && event(e)) { e.put("permissions",permissions(e));events.add(e);ids.add(e.getString("id")); } }
             out.put("events",events);
             filter(out,"stations",p->site(siteId(data,p.getString("id"))));
             filter(out,"people",p->person(WearableModel.person(data,p.getString("id"))));
-            filter(out,"works",this::work);
+            filter(out,"works",w->operational(w) && work(w));
             Set<String> peopleIds=new HashSet<>(); for(Object raw:rows(out,"people")) peopleIds.add(((JSONObject)raw).getString("id"));
             filter(out,"devices",d->{
+                if (!demoMode && GuardianDemoData.demoDevice(d)) return false;
                 String site=siteId(data,d.getString("station"));
                 JSONObject master=null;for(Object raw:rows(data,"devices")) if(Objects.equals(((JSONObject)raw).getString("portalDeviceId"),d.getString("id"))) master=(JSONObject)raw;
                 if(master!=null && can("assets:read",site,master.getString("areaId"))) return true;
@@ -120,9 +122,22 @@ public class GuardianAccess {
             });
             Set<String> devices=new HashSet<>();for(Object raw:rows(out,"devices")) devices.add(((JSONObject)raw).getString("id"));
             filter(out,"bindings",b->peopleIds.contains(b.getString("personId")) && devices.contains(b.getString("deviceId")));
-            filter(out,"media",m->m.getString("eventId")!=null&&!m.getString("eventId").isEmpty()?ids.contains(m.getString("eventId")):peopleIds.contains(m.getString("personId")));
-            for(String key:Arrays.asList("locations","fenceRecords","vitals")) filter(out,key,p->peopleIds.contains(p.getString("personId")));
-            for(String key:Arrays.asList("fences","groups","calls","broadcasts","mapAreas")) filter(out,key,p->can("events:read",siteId(data,p.getString("station")),null));
+            filter(out,"media",m->operational(m) && (m.getString("eventId")!=null&&!m.getString("eventId").isEmpty()?ids.contains(m.getString("eventId")):peopleIds.contains(m.getString("personId"))));
+            for(String key:Arrays.asList("locations","fenceRecords")) filter(out,key,p->operational(p) && peopleIds.contains(p.getString("personId")));
+            filter(out,"vitals",v->{
+                if (!peopleIds.contains(v.getString("personId"))) return false;
+                if (demoMode || !GuardianDemoData.simulatedVital(v)) return true;
+                if (!devices.contains(v.getString("deviceId"))) return false;
+                for (Object raw : rows(out,"bindings")) {
+                    JSONObject binding=(JSONObject)raw;
+                    if (binding.get("end")==null && Objects.equals(v.getString("deviceId"),binding.getString("deviceId"))
+                            && Objects.equals(v.getString("personId"),binding.getString("personId"))) return true;
+                }
+                return false;
+            });
+            for(String key:Arrays.asList("fences","groups","calls","broadcasts")) filter(out,key,p->operational(p) && can("events:read",siteId(data,p.getString("station")),null));
+            out.remove("mapAreas");
+            for(Object raw:rows(out,"people")) ((JSONObject)raw).remove("area");
             JSONObject assist=out.getJSONObject("assistance"); if(assist!=null) for(String id:new ArrayList<>(assist.keySet())) if(!ids.contains(id)) assist.remove(id);
             JSONObject legacy=out.getJSONObject("sos");if(legacy!=null && !ids.contains(legacy.getString("eventId"))) out.put("sos",null);
             out.put("audit",new JSONArray());
@@ -130,6 +145,7 @@ public class GuardianAccess {
             JSONArray communications=new JSONArray();
             for(Object raw:rows(source,"sharedCommunications")){JSONObject row=(JSONObject)raw;if(GuardianMobileCommunications.visible(this,row))communications.add(GuardianMobileCommunications.publicRow(row));}
             out.put("communicationRecords",communications);
+            if(businessPolicy!=null)businessPolicy.decorate(out,false);
             return out;
         }
     }

@@ -1,3 +1,5 @@
+import { normalizePersonDutyStatus } from '../shared/person-duty.mjs'
+
 const SITE = { 'site-1': 'S1', 'site-2': 'S2' }
 const TYPE = { HELMET: 'H', BELT: 'B', WATCH: 'W' }
 const KNOWN_PEOPLE = {
@@ -22,6 +24,7 @@ export function projectPortal(adminState, snapshot) {
   }
   for (const person of adminState.people || []) ensurePerson(adminState, snapshot, person)
   for (const device of adminState.devices || []) syncDevice(adminState, snapshot, device)
+  snapshot.mapAreas = []
   applyTelemetry(adminState, snapshot)
   return snapshot
 }
@@ -31,10 +34,24 @@ export function applyTelemetry(adminState, snapshot) {
   for (const device of adminState.devices || []) {
     const remote = byId.get(device.portalDeviceId || device.code || device.id)
     if (!remote || !Object.hasOwn(remote, 'online')) continue
-    device.communication = remote.online ? 'ONLINE' : 'OFFLINE'
-    device.battery = remote.battery == null ? null : Number(remote.battery)
-    device.freshness = 'CURRENT'
-    device.sourceTime = remote.updated || null
+    if (['PLATFORM', 'DIRECT_HELMET', 'DIRECT_BELT'].includes(remote.source)) {
+      const sourceTime = remote.sourceTime || remote.updated || null
+      const observed = Date.parse(sourceTime)
+      const age = Date.now() - observed
+      const current = String(remote.freshness).toUpperCase() === 'CURRENT' && Number.isFinite(observed) && age >= 0 && age <= 300000
+      device.communication = remote.online === false ? 'OFFLINE' : !current || remote.online !== true ? 'UNKNOWN' : 'ONLINE'
+      const battery = remote.battery == null || remote.battery === '' ? NaN : Number(remote.battery)
+      device.battery = current && Number.isFinite(battery) && battery >= 0 && battery <= 100 ? battery : null
+      device.freshness = current ? 'CURRENT' : age > 300000 || String(remote.freshness).toUpperCase() === 'STALE' ? 'STALE' : 'UNKNOWN'
+      device.sourceTime = sourceTime
+      continue
+    }
+    if (remote.type === 'W' && remote.source === 'DEMO_WATCH') {
+      Object.assign(device, { source: 'DEMO_WATCH', demo: true, communication: 'UNKNOWN', battery: null, freshness: 'UNKNOWN', sourceTime: null })
+      continue
+    }
+    // Local or legacy example rows are asset records, not evidence of a report.
+    Object.assign(device, { communication: 'NOT_CONNECTED', battery: null, freshness: 'UNKNOWN', sourceTime: null })
   }
 }
 
@@ -82,13 +99,18 @@ function ensurePerson(adminState, snapshot, person) {
     name: person.name,
     team: organizationName(adminState, person),
     station,
-    area: areaName(adminState, person.areaId),
     active: person.enabled !== false,
+    dutyStatus: normalizePersonDutyStatus(person.dutyStatus),
+    dutyStatusUpdatedAt: person.dutyStatusUpdatedAt || null,
+    dutyStatusUpdatedBy: person.dutyStatusUpdatedBy || null,
+    dutyStatusSource: person.dutyStatusSource || null,
   }
   if (!existing) {
-    snapshot.people.push({ id, phone: '', position: [50, 50], locationValid: true, updated: stamp(new Date()), ...next })
+    snapshot.people.push({ id, phone: '', position: null, locationValid: false, updated: null, ...next })
     return
   }
+  delete existing.area
+  delete existing.areaId
   Object.assign(existing, next)
 }
 
@@ -100,13 +122,14 @@ function syncDevice(adminState, snapshot, device) {
   const active = device.lifecycle !== 'DISABLED' && device.lifecycle !== 'SCRAPPED'
   let remote = snapshot.devices.find(item => item.id === id)
   if (!remote) {
-    remote = { id, type, station, active, online: false, battery: null, video: type === 'H' ? 'available' : null, updated: stamp(new Date()) }
+    remote = { id, type, station, active, online: null, battery: null, video: 'unavailable', updated: null }
     snapshot.devices.push(remote)
   } else {
     remote.type = type
     remote.station = station
     remote.active = active
   }
+  delete remote.areaId
   const assignment = (adminState.assignments || []).find(item => item.active && item.deviceId === device.id)
   const person = assignment && (adminState.people || []).find(item => item.id === assignment.personId && item.enabled !== false)
   const hold = active && device.lifecycle === 'IN_USE' && person ? portalPersonId(snapshot, person) : null
@@ -147,10 +170,6 @@ function portalPersonId(snapshot, person) {
 
 function organizationName(adminState, person) {
   return (adminState.organizations || []).find(item => item.id === person.organizationId)?.name || person.team || ''
-}
-
-function areaName(adminState, areaId) {
-  return (adminState.areas || []).find(item => item.id === areaId)?.name || ''
 }
 
 function stamp(value) {

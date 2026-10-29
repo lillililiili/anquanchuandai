@@ -10,6 +10,10 @@ public final class GuardianValidator {
     private GuardianValidator() {}
 
     public static void check(JSONObject state) {
+        check(state, false);
+    }
+
+    public static void check(JSONObject state, boolean demoMode) {
         if (state == null || state.getIntValue("version") != 1) {
             throw new IllegalArgumentException("版本不匹配");
         }
@@ -36,7 +40,7 @@ public final class GuardianValidator {
                 }
             }
         }
-        checkWorks(state.getJSONArray("works"), people);
+        checkWorks(state.getJSONArray("works"), people, demoMode);
         checkFences(state.getJSONArray("fences"));
         checkEvents(state.getJSONArray("events"), state.getJSONArray("media"));
         checkCapturedMedia(state);
@@ -278,7 +282,19 @@ public final class GuardianValidator {
             if (name == null || name.trim().isEmpty()) throw new IllegalArgumentException("请填写围栏名称");
             JSONArray points = fence.getJSONArray("points");
             if (points == null || points.size() < 3) throw new IllegalArgumentException("围栏至少需要 3 个节点");
-            if (polygonArea(points) < 1) throw new IllegalArgumentException("围栏区域过小");
+            if(points.size()>200) throw new IllegalArgumentException("围栏最多200个节点");
+            String coordinateSystem=fence.getString("coordinateSystem");
+            boolean geographic="GCJ02".equals(coordinateSystem)||"WGS84".equals(coordinateSystem);
+            if(coordinateSystem!=null && !geographic && !"PERCENT".equals(coordinateSystem)) throw new IllegalArgumentException("围栏坐标系尚未确认");
+            for(int p=0;p<points.size();p++) {
+                double x=coord(points,p,0),y=coord(points,p,1);
+                if(!Double.isFinite(x)||!Double.isFinite(y)
+                        || geographic&&(Math.abs(x)>180||Math.abs(y)>90)
+                        || !geographic&&(x<0||x>100||y<0||y>100)) throw new IllegalArgumentException("围栏坐标范围无效");
+            }
+            double area=polygonArea(points);
+            if(geographic) area*=111320d*111320d*Math.abs(Math.cos(Math.toRadians(coord(points,0,1))));
+            if (area < 1) throw new IllegalArgumentException("围栏区域过小");
             if (selfIntersects(points)) throw new IllegalArgumentException("围栏边界不能交叉");
         }
     }
@@ -330,12 +346,12 @@ public final class GuardianValidator {
         return point.getDoubleValue(axis);
     }
 
-    private static void checkWorks(JSONArray works, JSONArray people) {
+    private static void checkWorks(JSONArray works, JSONArray people, boolean demoMode) {
         if (works == null) return;
         Set<String> assigned = new HashSet<String>();
         for (int i = 0; i < works.size(); i++) {
             JSONObject work = works.getJSONObject(i);
-            if (work == null) continue;
+            if (work == null || !demoMode && GuardianDemoData.confirmed(work)) continue;
             String start = work.getString("start");
             String end = work.getString("end");
             if (start != null && !start.isEmpty() && end != null && !end.isEmpty() && start.compareTo(end) >= 0) {

@@ -1,0 +1,1 @@
+{"name":"wear-public-api-gateway","version":"1.0.0","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"start":"node gateway.mjs","test":"node --test test/*.test.mjs"}}

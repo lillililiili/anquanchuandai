@@ -80,7 +80,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('欢迎登录'), findsOneWidget);
-    expect(find.text('临江示范电厂'), findsOneWidget);
+    expect(find.text('统一账号登录'), findsOneWidget);
+    expect(find.text('临江示范电厂'), findsNothing);
     expect(find.text('图形验证码'), findsNothing);
     expect(find.textContaining('联系管理员'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(0), 'operator');

@@ -12,12 +12,14 @@ import AppTable from "@/components/ui/AppTable.vue";
 import AppTag from "@/components/ui/AppTag.vue";
 import FilterBar from "@/components/layout/FilterBar.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
-import PlantMap from "@/components/domain/PlantMap.vue";
+import EventLocation from "@/components/domain/EventLocation.vue";
 import VideoFrame from "@/components/domain/VideoFrame.vue";
 import { db } from "@/mock/runtime";
 import { session, filtersOf } from "@/stores/session";
 import { events, personName, revision, search, statusColor } from "@/lib/queries";
 import { toast } from "@/stores/notify";
+import { externalStatusPresentation } from '@/lib/external-status';
+import { personFeature } from '@/lib/person-equipment';
 
 const typeOptions = [["", "全部"], "人员求助", "电子围栏", "设备通信", "低电量", "位置异常", "安全带挂接", "生命体征"];
 const statusOptions = [["", "全部"], "待现场核验", "待认领", "处理中", "已核验"];
@@ -155,8 +157,8 @@ function rowClass(item) {
       <a v-if="leadSos" class="sos-call" :href="'#/event/' + leadSos.id">
         <span class="sos-call-mark">SOS</span>
         <span class="sos-call-copy">
-          <strong>{{ leadSos.snapshot.personName }} 正在求助</strong>
-          <small>{{ leadSos.title }} · {{ leadSos.deviceId }} · {{ leadSos.time }}<template v-if="openSos.length > 1"> · 另有 {{ openSos.length - 1 }} 起 SOS</template></small>
+          <strong>{{ leadSos.snapshot?.personName || '未关联人员设备' }} 正在求助</strong>
+          <small>{{ leadSos.title }} · {{ leadSos.deviceId }} · {{ leadSos.date }} {{ leadSos.time }}<template v-if="openSos.length > 1"> · 另有 {{ openSos.length - 1 }} 起 SOS</template></small>
         </span>
         <span class="sos-call-go">立即响应</span>
       </a>
@@ -190,9 +192,9 @@ function rowClass(item) {
               <AppTag v-if="item.type === '人员求助'" color="red">SOS</AppTag>
               {{ item.title }}
             </td>
-            <td>{{ item.snapshot.personName }}</td>
+            <td>{{ item.snapshot?.personName || '未关联人员' }}</td>
             <td>{{ item.deviceId }}</td>
-            <td>{{ item.time }}</td>
+            <td>{{ item.date }} {{ item.time }}</td>
             <td><AppTag :color="statusColor(item.status)">{{ item.status }}</AppTag></td>
             <td>
               <a v-if="item.type === '人员求助' && item.status !== '已核验'" class="btn small danger sos-row-go" :href="'#/event/' + item.id" @click.stop>立即响应</a>
@@ -206,11 +208,11 @@ function rowClass(item) {
     </div>
     <AppPanel title="事件摘要" :extra-class="sosSelected ? 'alarm-detail is-sos' : 'alarm-detail'">
       <template v-if="selectedAlarm">
-        <div v-if="sosSelected" class="sos-now"><b>SOS</b><span>{{ selectedAlarm.snapshot.personName }} 正在求助，请立即响应</span></div>
+        <div v-if="sosSelected" class="sos-now"><b>SOS</b><span>{{ selectedAlarm.snapshot?.personName || '未关联人员设备' }} 正在求助，请立即响应</span></div>
         <h3><AppIcon :name="sosSelected ? 'alarm-warning-fill' : 'alarm-warning-line'" :color="sosSelected ? 'red' : 'yellow'" />　{{ selectedAlarm.title }}</h3>
         <dl class="info compact">
           <dt>人员 · 设备</dt>
-          <dd>{{ selectedAlarm.snapshot.personName }} · {{ selectedAlarm.deviceId }}</dd>
+          <dd>{{ selectedAlarm.snapshot?.personName || '未关联人员' }} · {{ selectedAlarm.deviceId }}</dd>
           <dt>作业名称</dt>
           <dd>{{ selectedAlarm.snapshot.workName }}</dd>
           <dt>作业编号</dt>
@@ -228,23 +230,23 @@ function rowClass(item) {
           <h3>事件来源</h3>
           <dl class="info compact">
             <dt>原安监事件</dt>
-            <dd>{{ selectedAlarm.externalId }}</dd>
+            <dd>{{ selectedAlarm.externalId || '未关联外部记录' }}</dd>
             <dt>当前状态</dt>
-            <dd class="blue">{{ selectedAlarm.externalStatus }}</dd>
+            <dd :class="externalStatusPresentation(selectedAlarm).color">{{ externalStatusPresentation(selectedAlarm).label }}</dd>
           </dl>
         </div>
         <div class="detail-section">
-          <h3>现场位置</h3>
-          <PlantMap :person="selectedAlarm.personId" focus-person :focus-key="selectedAlarm.id" :legend="false" />
+          <h3>事件发生时位置</h3>
+          <EventLocation :event="selectedAlarm" />
         </div>
-        <div class="detail-section">
+        <div v-if="personFeature(db, selectedAlarm.personId, 'video').supported" class="detail-section">
           <h3>现场视频</h3>
-          <a :href="'#/single/' + selectedAlarm.personId"><VideoFrame :person-id="selectedAlarm.personId" /></a>
+          <VideoFrame :person-id="selectedAlarm.personId" preview /><a class="text-link" :href="'#/single/' + selectedAlarm.personId">单路监看</a>
         </div>
         <div class="form-actions">
           <a :class="['btn', 'wide', sosSelected ? 'danger sos-action' : 'primary']" :href="'#/event/' + selectedAlarm.id">{{ sosSelected ? "立即响应 SOS" : "进入现场核验" }}</a>
         </div>
-        <p class="note cyan"><AppIcon name="checkbox-circle-fill" />摘要回传 · {{ selectedAlarm.verification ? "核验记录已提交" : "核验记录未提交" }}</p>
+        <p class="note"><AppIcon :name="selectedAlarm.verification ? 'checkbox-circle-fill' : 'information-line'" />本平台核验 · {{ selectedAlarm.verification ? "核验记录已提交" : "核验记录未提交" }}</p>
       </template>
       <AppEmpty v-else />
     </AppPanel>

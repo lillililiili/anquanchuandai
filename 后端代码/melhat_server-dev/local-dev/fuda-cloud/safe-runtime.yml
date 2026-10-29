@@ -1,0 +1,26 @@
+# No real endpoints, device identities, keys or production state.
+melhat:
+  direct:
+    enabled: false
+    public-base-url: ""
+    api-url: ""
+    ws-url: ""
+  belt:
+    enabled: false
+    public-base-url: ""
+    api-url: ""
+    ws-url: ""
+  helmet-media:
+    enabled: false
+    control-url: ""
+    shared-key: ""
+fuda:
+  gb:
+    internal-enabled: false
+    internal-secret: ""
+    allowed-devices: ""
+headband:
+  server: https://disabled.invalid
+  token:
+    username: ""
+    password: ""

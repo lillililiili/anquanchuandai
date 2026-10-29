@@ -48,6 +48,9 @@ class _WearAppState extends State<WearApp> {
         final path = state.uri.path;
         if (_session.me == null) return path == '/login' ? null : '/login';
         if (_session.siteId == null) return path == '/sites' ? null : '/sites';
+        if (path == '/sites' && _session.siteSelectionLocked) {
+          return '/workbench';
+        }
         if (path == '/sites' && _session.callActive.value) {
           return '/communications';
         }

@@ -8,6 +8,19 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val splitApks = project.findProperty("split-per-abi")?.toString() == "true"
+val requestedDebugAbis =
+    (project.findProperty("target-platform")?.toString() ?: "android-arm64,android-x64")
+        .split(",")
+        .mapNotNull {
+            when (it) {
+                "android-arm" -> "armeabi-v7a"
+                "android-arm64" -> "arm64-v8a"
+                "android-x64" -> "x86_64"
+                else -> null
+            }
+        }
+
 android {
     namespace = "com.rolling.intelligence_headband"
     compileSdk = flutter.compileSdkVersion
@@ -31,6 +44,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Flutter's default includes 32-bit libraries even when its engine was
+        // built only for 64-bit targets. Filter the same ABIs as the engine.
+        ndk { abiFilters.clear() }
         val push = Properties().apply {
             val file = rootProject.file("push.properties")
             if (file.exists()) file.inputStream().use { load(it) }
@@ -70,7 +86,7 @@ android {
             signingConfig = signingConfigs.findByName("release")
             ndk {
                 abiFilters.clear()
-                abiFilters.add("arm64-v8a")
+                if (!splitApks) abiFilters.add("arm64-v8a")
             }
             // 修复 R8 跨盘符路径警告
             androidResources {
@@ -81,8 +97,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             ndk {
                 abiFilters.clear()
-                abiFilters.add("arm64-v8a")
-                abiFilters.add("x86_64")
+                if (!splitApks) abiFilters.addAll(requestedDebugAbis)
             }
         }
     }

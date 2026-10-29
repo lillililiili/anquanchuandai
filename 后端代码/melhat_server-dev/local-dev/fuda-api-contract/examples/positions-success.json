@@ -1,0 +1,31 @@
+{
+  "code": 0,
+  "message": "success",
+  "requestId": "00000000-0000-4000-8000-000000000002",
+  "serverTime": "2026-10-27T08:00:00.000Z",
+  "data": {
+    "items": [
+      {
+        "sourcePlatform": "wearable-example",
+        "deviceType": "HELMET",
+        "deviceId": "DEMO-HELMET-01",
+        "deviceModel": null,
+        "position": {
+          "longitude": 119.2,
+          "latitude": 26.1,
+          "coordinateSystem": "GCJ02",
+          "altitude": null,
+          "relativeHeight": null,
+          "heightReference": "UNKNOWN",
+          "speed": null,
+          "direction": null,
+          "positionTime": "2026-10-27T07:59:50.000Z",
+          "timeSource": "PLATFORM",
+          "positionMethod": "GNSS",
+          "historical": false
+        },
+        "validity": "VALID"
+      }
+    ]
+  }
+}

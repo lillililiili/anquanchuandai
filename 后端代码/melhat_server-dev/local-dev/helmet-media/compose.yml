@@ -1,0 +1,59 @@
+name: helmet-media
+services:
+  control:
+    build: .
+    image: helmet-media-control:1
+    network_mode: host
+    restart: unless-stopped
+    env_file: .local/media.env
+    volumes:
+      - ./.local/data:/data
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 256m
+  freeswitch:
+    build: ./freeswitch
+    image: helmet-media-freeswitch:1.10.12
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./.local/freeswitch:/helmet-conf:ro
+      - ./.local/fs-logs:/var/log/freeswitch
+      - ./.local/fs-db:/var/lib/freeswitch/db
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+  srs:
+    image: ossrs/srs:6
+    network_mode: host
+    restart: unless-stopped
+    command: [./objs/srs, -c, /etc/helmet-srs.conf]
+    volumes:
+      - ./.local/srs.conf:/etc/helmet-srs.conf:ro
+      - ./.local/srs-data:/usr/local/srs/objs/nginx/html
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 256m
+  turn:
+    image: coturn/coturn:4.6.3
+    # The private 0600 config belongs to root. Official turnserver needs its bind-port file capability.
+    user: "0:0"
+    network_mode: host
+    restart: unless-stopped
+    command: [-c, /etc/helmet-turn.conf]
+    volumes:
+      - ./.local/turn.conf:/etc/helmet-turn.conf:ro
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    mem_limit: 128m
+  tts:
+    build: ./tts
+    image: helmet-media-tts:1
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./.local/models:/models:ro
+      - ./.local/data:/data
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 1g

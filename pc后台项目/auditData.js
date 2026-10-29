@@ -78,7 +78,7 @@ export function queryAudit(state, actor, kind, input, { fail, page, now, redact 
   }).sort((a, b) => String(b.occurredAt).localeCompare(String(a.occurredAt)) || String(b.id).localeCompare(String(a.id)))
   if (kind === 'audit') return { availability: 'AVAILABLE', ...page(rows, { ...input, keyword: '' }) }
   const exportedAt = typeof now === 'function' ? now() : now || new Date().toISOString()
-  const columns = ['id', 'siteId', 'areaId', 'actorName', 'action', 'objectId', 'occurredAt', 'result', 'requestId', 'operationId', 'before', 'after', 'source']
+  const columns = ['id', 'siteId', 'actorName', 'action', 'objectId', 'occurredAt', 'result', 'requestId', 'operationId', 'before', 'after', 'source']
   const csvRows = [
     ['模拟数据', '前端内存本地操作日志；非生产日志'], ['厂站', safe(input.siteId)],
     ['筛选条件', safe(filters)], ['导出时间（UTC）', safe(exportedAt)], ['记录数', rows.length], columns,

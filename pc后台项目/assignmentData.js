@@ -9,7 +9,8 @@ const writeBoth = (state, actor, p, d) => can(state, actor, 'assets:write', p) &
 export const availableForIssue = (state, d) => d.lifecycle === 'STOCK' && relationship(state, d).state === 'UNASSIGNED' && !state.assignments.some(a => a.active && a.deviceId === d.id) && !state.maintenanceOrders.some(o => o.deviceId === d.id && activeMaintenance(o))
 const available = availableForIssue
 export function assignmentWarnings(d) {
-  return [d.communication !== 'ONLINE' ? '通信离线、未知或未接入' : '', d.freshness === 'STALE' ? '设备数据过期' : '', !d.manufacturer || !d.sn || d.modelId?.startsWith('unknown-') ? '资料或型号待补充' : '', d.verification !== 'VERIFIED' ? '能力未经过真实验证' : ''].filter(Boolean)
+  const missingModel = Object.hasOwn(d, 'modelName') ? !String(d.modelName || '').trim() : d.modelId?.startsWith('unknown-')
+  return [d.communication !== 'ONLINE' ? '通信离线、未知或未接入' : '', d.freshness === 'STALE' ? '设备数据过期' : '', !d.manufacturer || !d.sn || missingModel ? '资料或型号待补充' : '', d.verification !== 'VERIFIED' ? '能力未经过真实验证' : ''].filter(Boolean)
 }
 function person(state, actor, siteId, id, fail) {
   const p = state.people.find(p => p.id === id && p.siteId === siteId)
@@ -33,8 +34,8 @@ function currentRows(state, actor, siteId) {
 export function historyRows(state, actor, input) {
   return state.history.filter(h => h.siteId === input.siteId && (!input.personId || h.personId === input.personId) && (!input.deviceId || h.deviceId === input.deviceId)).flatMap(h => {
     const d = state.devices.find(d => d.id === h.deviceId), p = state.people.find(p => p.id === h.personId)
-    if (!readDevice(state, actor, d) || !can(state, actor, 'assets:read', { siteId: h.siteId, areaId: h.areaId ?? d.areaId })) return []
-    const visiblePerson = readPerson(state, actor, p) && can(state, actor, 'people:read', { siteId: h.siteId, areaId: h.personAreaId ?? p.areaId })
+    if (!readDevice(state, actor, d) || !can(state, actor, 'assets:read', { siteId: h.siteId })) return []
+    const visiblePerson = readPerson(state, actor, p) && can(state, actor, 'people:read', { siteId: h.siteId })
     if (input.personId && !visiblePerson) return []
     return [{ ...h, personId: visiblePerson ? h.personId : null, personName: visiblePerson ? h.personName || null : null, personCode: visiblePerson ? h.personCode || null : null, personAreaId: visiblePerson ? h.personAreaId : null }]
   }).reverse()
@@ -123,13 +124,13 @@ export function applyAssignment(state, actor, type, input, { fail, now }) {
     } else {
       assignment.active = false; assignment.endedAt = now; assignment.version++; d.relation = 'UNASSIGNED'; d.lifecycle = item.condition === 'GOOD' ? 'STOCK' : 'MAINTENANCE'
       if (handler) {
-        order = { id: `repair-${state.nextId++}`, deviceId: d.id, siteId: d.siteId, areaId: d.areaId, status: 'OPEN', reason: item.reason.trim(), handlerId: handler.id, handlerName: handler.name, createdAt: now, batchId, assignmentId: assignment.id, version: 1, source: 'MOCK_RETURN' }
+        order = { id: `repair-${state.nextId++}`, deviceId: d.id, siteId: d.siteId, status: 'OPEN', reason: item.reason.trim(), handlerId: handler.id, handlerName: handler.name, createdAt: now, batchId, assignmentId: assignment.id, version: 1, source: 'MOCK_RETURN' }
         state.maintenanceOrders.push(order); orders.push(order.id)
         recordRepairCreation(state, order, d, actor, now, true)
       }
     }
     d.version++
-    const record = { id: `history-${state.nextId++}`, siteId: d.siteId, areaId: d.areaId, personAreaId: p.areaId, batchId, assignmentId: assignment.id, action: issue ? 'ISSUE' : 'RETURN', deviceId: d.id, deviceCode: d.code, deviceName: d.name, type: d.type, personId: p.id, personName: p.name, personCode: p.code, actorId: actor.id, actorName: actor.name, occurredAt: now, startedAt: assignment.startedAt, condition: issue ? null : item.condition, maintenanceOrderId: order?.id || null, source: '前端内存本地' }
+    const record = { id: `history-${state.nextId++}`, siteId: d.siteId, batchId, assignmentId: assignment.id, action: issue ? 'ISSUE' : 'RETURN', deviceId: d.id, deviceCode: d.code, deviceName: d.name, type: d.type, personId: p.id, personName: p.name, personCode: p.code, actorId: actor.id, actorName: actor.name, occurredAt: now, startedAt: assignment.startedAt, condition: issue ? null : item.condition, maintenanceOrderId: order?.id || null, source: '前端内存本地' }
     state.history.push(record); history.push(record)
   }
   p.version++

@@ -1,3 +1,8 @@
 /* app.css 4471-4472 */
 
-.person-page .device-strip.large { height: 150px; }
+.person-page .device-strip.large { height: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); align-items: stretch; }
+.person-page .device-strip.large .device-item { height: auto; min-width: 0; padding: 12px; gap: 12px; overflow: visible; }
+.person-page .device-strip.large img { width: 42px; height: 48px; }
+@media (max-width: 560px) {
+  .person-page .device-strip.large { grid-template-columns: minmax(0, 1fr); }
+}

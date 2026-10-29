@@ -15,9 +15,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AdminLedgerStoreTest {
+    @Test void emptyProductionLedgerDoesNotImportSamplesAndRemainsEmptyOnRestart() {
+        JdbcTemplate jdbc=database("empty-"+java.util.UUID.randomUUID());
+        JSONObject first=new AdminLedgerStore(jdbc).read();
+        assertTrue(first.getJSONArray("sites").isEmpty());assertTrue(first.getJSONArray("devices").isEmpty());
+        assertTrue(new AdminLedgerStore(jdbc).read().getJSONArray("devices").isEmpty());
+        assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));
+    }
+
+    @Test void editingOnePersonDoesNotDeleteUnchangedReferencedRows() {
+        JdbcTemplate jdbc=database("incremental-"+java.util.UUID.randomUUID());
+        AdminLedgerStore store=new AdminLedgerStore(jdbc,true);JSONObject state=store.read();
+        jdbc.execute("CREATE TABLE person_reference (id INT PRIMARY KEY,person_id VARCHAR(128), FOREIGN KEY(person_id) REFERENCES wearable_person(id))");
+        jdbc.update("INSERT INTO person_reference (id,person_id) VALUES (1,'person-1-0')");
+        person(state,"person-1-1").put("name","增量修改");store.write(state);
+        assertEquals("增量修改",person(store.read(),"person-1-1").getString("name"));
+        assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM person_reference",Integer.class));
+    }
     @Test void seedRoundTripStoresPeopleInTables() throws Exception {
         JdbcTemplate jdbc = database("seed");
-        AdminLedgerStore store = new AdminLedgerStore(jdbc);
+        AdminLedgerStore store = new AdminLedgerStore(jdbc, true);
         JSONObject seed = seed();
         JSONObject loaded = store.read();
         assertEquals("临江示范电厂", loaded.getJSONArray("sites").getJSONObject(0).getString("name"));
@@ -50,6 +67,22 @@ class AdminLedgerStoreTest {
         assertEquals("表内人员", person(store.read(), "person-1-0").getString("name"));
         assertEquals("表内人员", jdbc.queryForObject("SELECT name FROM wearable_person WHERE id = 'person-1-0'", String.class));
         assertTrue(jdbc.queryForObject("SELECT body FROM admin_ledger WHERE id = 1", String.class).contains("历史人员"));
+    }
+
+    @Test void ledgerWriteDoesNotImplicitlyCommitAnEnclosingRegistrationTransaction() {
+        JdbcTemplate jdbc = database("registration-rollback");
+        AdminLedgerStore store = new AdminLedgerStore(jdbc);
+        JSONObject state = store.read();
+        jdbc.execute("CREATE TABLE registration_probe (id INT PRIMARY KEY)");
+        org.springframework.transaction.support.TransactionTemplate transaction =
+                new org.springframework.transaction.support.TransactionTemplate(
+                        new org.springframework.jdbc.datasource.DataSourceTransactionManager(jdbc.getDataSource()));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> transaction.execute(status -> {
+            jdbc.update("INSERT INTO registration_probe (id) VALUES (1)");
+            store.write(state);
+            throw new IllegalStateException("later registration step failed");
+        }));
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM registration_probe", Integer.class));
     }
 
     private static JSONObject person(JSONObject state, String id) {

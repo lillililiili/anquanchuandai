@@ -14,13 +14,18 @@ import static org.mockito.ArgumentMatchers.*;
 class AdminPlatformServiceTest {
     JSONObject seed(String path)throws Exception{return JSON.parseObject(StreamUtils.copyToString(new ClassPathResource(path).getInputStream(),StandardCharsets.UTF_8));}
     HeadbandVO hat(String sn,String online){HeadbandVO h=new HeadbandVO();h.setHelmetSn(sn);h.setOnline(online);h.setUid_device("uid-"+sn);return h;}
-    @Test void importRepeatAndStatusChangePreserveLifecycleAndProjectUnassigned()throws Exception {
+    JSONObject registered(String sn){return WearableModel.object("id","registered-"+sn,"code",sn,"sn",sn,"portalDeviceId",sn,"source","PLATFORM","name","已登记安全帽","type","HELMET","siteId","site-1","portalStation","S1","lifecycle","STOCK","version",1);}
+    @Test void refreshRegisteredDevicesNeverCreatesVendorAssetsAndPreservesLifecycle()throws Exception {
         JSONObject state=seed("admin-seed.json");AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(i->JSON.parseObject(state.toJSONString()));
         doAnswer(i->{JSONObject saved=i.getArgument(0);state.clear();state.putAll(saved);return null;}).when(ledger).write(any());
         AdminQueryService query=mock(AdminQueryService.class);when(query.allows(any(),any(),eq("assets:write"),eq("site-1"),isNull())).thenReturn(true);
         PlatformDeviceSyncService platform=mock(PlatformDeviceSyncService.class);when(platform.preview()).thenReturn(Arrays.asList(hat("SIMQA-H-1","0"),hat("SIMQA-H-2","1")));
         AdminPlatformService service=new AdminPlatformService(ledger,query,platform);
-        assertEquals(2,service.sync("demo-system","site-1").getIntValue("added"));
+        int initial=state.getJSONArray("devices").size();
+        assertEquals(0,service.sync("demo-system","site-1").getIntValue("added"));
+        assertEquals(initial,state.getJSONArray("devices").size());
+        state.getJSONArray("devices").add(registered("SIMQA-H-1"));state.getJSONArray("devices").add(registered("SIMQA-H-2"));
+        assertEquals(2,service.sync("demo-system","site-1").getIntValue("updated"));
         JSONObject d=AdminPlatformService.find(state.getJSONArray("devices"),"code","SIMQA-H-1");d.put("lifecycle","MAINTENANCE");d.put("areaId","area-1");
         JSONObject snapshot=seed("guardian-seed.json");assertTrue(PlatformProjection.apply(snapshot,state));assertFalse(PlatformProjection.apply(snapshot,state));
         JSONObject remote=AdminPlatformService.find(snapshot.getJSONArray("devices"),"id","SIMQA-H-1");assertFalse(remote.getBooleanValue("online"));assertNull(remote.get("battery"));assertFalse(remote.containsKey("position"));
@@ -54,7 +59,7 @@ class AdminPlatformServiceTest {
         AdminQueryService query=mock(AdminQueryService.class);when(query.allows(any(),any(),anyString(),anyString(),isNull())).thenReturn(true);
         PlatformDeviceSyncService platform=mock(PlatformDeviceSyncService.class);when(platform.preview()).thenReturn(Arrays.asList(hat("SIMQA-H-1","0")));
         AdminPlatformService service=new AdminPlatformService(ledger,query,platform);assertEquals(0,service.sync("demo-system","site-1",true).getIntValue("added"));
-        service.sync("demo-system","site-1");assertEquals(1,service.sync("demo-system","site-2").getIntValue("skippedOtherSite"));
+        state.getJSONArray("devices").add(registered("SIMQA-H-1"));service.sync("demo-system","site-1");assertEquals(1,service.sync("demo-system","site-2").getIntValue("skippedOtherSite"));
         when(platform.preview()).thenReturn(Collections.emptyList());service.sync("demo-system","site-1");
         assertEquals("UNKNOWN",AdminPlatformService.find(state.getJSONArray("devices"),"code","SIMQA-H-1").getString("freshness"));
     }

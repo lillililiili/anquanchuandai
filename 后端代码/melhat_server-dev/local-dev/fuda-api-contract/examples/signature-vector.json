@@ -1,0 +1,17 @@
+{
+  "warning": "PUBLIC SYNTHETIC TEST KEY ONLY. Never enable this key or these device IDs in deployment. Fixed timestamp is not a live request.",
+  "secretBase64": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "decodedKeyHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "method": "POST",
+  "path": "/openapi/wearables/v2/positions/query",
+  "bodyUtf8": "{\"devices\":[{\"deviceType\":\"HELMET\",\"deviceId\":\"DEMO-HELMET-01\"}]}",
+  "bodySha256": "0d35e198f6f8dbe3f43179d683eccd4426e374dd1f521f6d88b7d2f56b077ab1",
+  "canonicalUtf8": "POST\n/openapi/wearables/v2/positions/query\nfuda-public-test\n1793088000\n00000000-0000-4000-8000-000000000001\n0d35e198f6f8dbe3f43179d683eccd4426e374dd1f521f6d88b7d2f56b077ab1",
+  "headers": {
+    "X-App-Id": "fuda-public-test",
+    "X-Timestamp": "1793088000",
+    "X-Nonce": "00000000-0000-4000-8000-000000000001",
+    "X-Signature": "ccb3b8436b45026ee3b4568cca0d86f4e06736937b02f702e5ddf21bf88abdc6"
+  },
+  "expectedSignature": "ccb3b8436b45026ee3b4568cca0d86f4e06736937b02f702e5ddf21bf88abdc6"
+}

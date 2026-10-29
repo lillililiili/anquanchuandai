@@ -10,12 +10,15 @@ class CommunicationsPolicy {
   bool get canSubmitTts => permissions.contains('wear:command:tts');
 
   bool canStartVoice(CommunicationDevice device) =>
-      canStartCalls && device.supports('intercom');
+      canStartCalls && device.available('intercom');
 
-  bool canStartVideo(CommunicationDevice device) => false;
+  bool canStartVideo(CommunicationDevice device) =>
+      canStartCalls &&
+      device.available('video_call') &&
+      device.available('intercom');
 
   bool canSendTts(CommunicationDevice device) =>
-      canSubmitTts && device.supports('tts');
+      canSubmitTts && device.available('tts');
 
   bool owns(CallSession session) =>
       userId.isNotEmpty && userId == session.requesterUserId;

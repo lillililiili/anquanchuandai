@@ -4,6 +4,7 @@ import { db } from "@/mock/runtime";
 import { closeModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
 import { blobGet, download, imageBlob } from "@/lib/files";
+import { downloadMedia } from '../materials/media';
 
 const props = defineProps({
   media: { type: Object, required: true },
@@ -17,6 +18,7 @@ async function save() {
   try {
     const media = db.state.media.find((item) => item.id === props.media.id);
     if (!media) throw Error("资料不存在");
+    if(media.url){await downloadMedia(media);return;}
     if (media.kind === "video") {
       download(
         media.id + "-模拟录像记录.json",

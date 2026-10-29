@@ -42,7 +42,9 @@ final class WearableModel {
         if(value instanceof JSONObject) {
             JSONObject object=(JSONObject)value;
             for(String key:new ArrayList<>(object.keySet())) {
-                if(key.equals("passwordHash") || key.equals("password") || key.equals("idempotency") || key.equals("eventOperations") || key.equals("uploads") || key.equals("voiceSessions") || key.equals("sharedCommunications")) object.remove(key);
+                if(key.equals("passwordHash") || key.equals("password") || key.equals("idempotency") || key.equals("eventOperations") || key.equals("businessOperations") || key.equals("uploads") || key.equals("voiceSessions") || key.equals("sharedCommunications")
+                        || key.equals("areaId") || key.equals("areaIds") || key.equals("areaName") || key.equals("personAreaId")
+                        || key.equals("areas") || key.equals("scopeAreas") || key.equals("writableAreas") || key.equals("mapAreas")) object.remove(key);
                 else object.put(key,sanitize(object.get(key)));
             }
         } else if(value instanceof JSONArray) { JSONArray list=(JSONArray)value; for(int i=0;i<list.size();i++) list.set(i,sanitize(list.get(i))); }
@@ -73,7 +75,7 @@ final class WearableModel {
             if(find(state,"roles","mobile-user")==null) {
                 JSONArray sites=new JSONArray(); for(Object raw:rows(state,"sites")) sites.add(((JSONObject)raw).getString("id"));
                 JSONArray ops=new JSONArray(); ops.addAll(Arrays.asList("self:read","events:observe","sos:create","works:read"));
-                JSONArray grants=new JSONArray(); grants.add(object("operations",ops,"siteIds",sites,"areaIds","*"));
+                JSONArray grants=new JSONArray(); grants.add(object("operations",ops,"siteIds",sites));
                 rows(state,"roles").add(object("id","mobile-user","name","普通用户（本人业务）","enabled",true,"builtin",true,"version",1,"grants",grants));
             }
             state.put("sharedBusinessV2",true);

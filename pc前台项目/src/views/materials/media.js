@@ -1,6 +1,7 @@
 import { db } from "@/mock/runtime";
 import { toast } from "@/stores/notify";
 import { blobGet, download, imageBlob } from "@/lib/files";
+import { mediaUrl } from '@/lib/helmet-media';
 
 export function durationText(value) {
   const total = Number(value) || 0;
@@ -32,7 +33,7 @@ async function fileBlob(media) {
       /* 读取失败时继续尝试资源文件。 */
     }
   }
-  if (!media.asset) return null;
+  if (!db.demoMode || !media.asset) return null;
   try {
     return await imageBlob(media.asset);
   } catch {
@@ -41,12 +42,20 @@ async function fileBlob(media) {
 }
 
 export async function downloadMedia(id) {
-  const media = db.state.media.find((item) => item.id === id);
+  const media = typeof id === 'object' ? id : db.state.media.find((item) => item.id === id);
   if (!media) {
     toast("资料不存在", true);
     return;
   }
+  if (media.url) {
+    const url=mediaUrl(media.url);
+    if(!url)throw Error('原始文件地址无效');
+    if(media.expiresAt && Date.parse(media.expiresAt)<=Date.now())throw Error('文件授权已过期，请刷新设备资料');
+    const link=document.createElement('a');link.href=url;link.download=media.name||media.id;link.target='_blank';link.rel='noopener noreferrer';link.click();
+    toast('已打开设备原始文件，可在浏览器中保存');return;
+  }
   const blob = await fileBlob(media);
+  if (!db.demoMode && (media.kind === 'video' || !blob)) throw Error('暂无可下载的原始文件，台账记录仍保留');
   if (media.kind === "video") {
     download(media.id + "-模拟录像记录.json", recordBody(media), "application/json;charset=utf-8");
     if (blob) download(media.id + "-封面." + (blob.type === "image/webp" ? "webp" : "png"), blob);

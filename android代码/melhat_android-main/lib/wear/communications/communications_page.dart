@@ -15,6 +15,7 @@ import '../inline_filters.dart';
 import 'lab_calls.dart';
 import 'models.dart' hide JsonMap;
 import 'rtc_engine.dart';
+import 'sip_rtc_engine.dart';
 
 class CommunicationsPage extends StatefulWidget {
   const CommunicationsPage({
@@ -130,7 +131,9 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       _gateway = WearCommunicationsGateway(session.api);
       _controller = CommunicationsController(
         gateway: _gateway!,
-        rtc: session.api.isMock ? OfflineWearRtcEngine() : AgoraWearRtcEngine(),
+        rtc: session.api.isMock
+            ? OfflineWearRtcEngine()
+            : ProtocolWearRtcEngine(),
         userId: session.userId,
         permissions: session.permissions,
       )..addListener(_onControllerChanged);
@@ -564,10 +567,19 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 _loadError == null &&
                 controller?.activeCall == null)
               ContactActionBar(
+                showVoice: _supportsAction('intercom'),
+                showVideo: _supportsAction('video'),
+                showBroadcast: _supportsAction('tts'),
+                voicePending: _pendingAction('intercom'),
+                voicePendingLabel: _voicePendingLabel,
+                videoPending: _pendingAction('video'),
+                broadcastPending: _pendingAction('tts'),
                 onVoice: _canUseActions && _hasSelectedCapability('intercom')
                     ? () => unawaited(_startCallForSelection())
                     : null,
-                onVideo: null,
+                onVideo: _canUseActions && _hasSelectedCapability('video')
+                    ? () => unawaited(_startCallForSelection(video: true))
+                    : null,
                 onBroadcast: _canUseActions && _hasSelectedCapability('tts')
                     ? _showBroadcast
                     : null,
@@ -587,10 +599,32 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       _session?.callActive.value == false;
 
   bool _hasSelectedCapability(String action) => _batchDevices().any(
-    (d) => action == 'intercom'
+    (d) => action == 'video'
+        ? _controller?.policy.canStartVideo(d) == true
+        : action == 'intercom'
         ? _controller?.policy.canStartVoice(d) == true
         : _controller?.policy.canSendTts(d) == true,
   );
+
+  Iterable<CommunicationDevice> get _actionDevices =>
+      _selectedKeys.isEmpty ? [..._devices, ..._equipment] : _batchDevices();
+  bool _supportsAction(String action) => _actionDevices.any(
+    (d) => d.supports(action == 'video' ? 'video_call' : action),
+  );
+  bool _pendingAction(String action) =>
+      _supportsAction(action) &&
+      !_actionDevices.any(
+        (d) => d.feature(action == 'video' ? 'video_call' : action).verified,
+      );
+  String get _voicePendingLabel {
+    final voices = _actionDevices
+        .map((device) => device.feature('intercom'))
+        .where((feature) => feature.supported);
+    return voices.isNotEmpty &&
+            voices.every((feature) => feature.reason == '待接入')
+        ? '待接入'
+        : '待联调';
+  }
 
   String? get _capabilityNotice {
     final policy = _controller?.policy;
@@ -963,6 +997,9 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         if (supported.isNotEmpty) {
           final results = await _gateway!.sendTts(
             deviceIds: supported.map((d) => d.id).toList(),
+            recipients: supported
+                .map((d) => {...d.equipmentContext, 'deviceId': d.id})
+                .toList(),
             text: text,
             idempotencyKey: 'tts-${DateTime.now().microsecondsSinceEpoch}',
             eventId: _clean(widget.eventId),
@@ -1044,6 +1081,13 @@ class _CommunicationsPageState extends State<CommunicationsPage>
 
   Widget _contactTile(_CommsContact contact) {
     final selected = _selectedKeys.contains(contact.key);
+    final voiceDevices = [
+      ..._devices,
+      ..._equipment,
+    ].where((d) => d.personId == contact.person.id && d.supports('intercom'));
+    final voicePending =
+        voiceDevices.isNotEmpty &&
+        !voiceDevices.any((d) => d.feature('intercom').verified);
     final canCall =
         _refreshWarning == null &&
         !_batchBusy &&
@@ -1149,17 +1193,22 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                     color: WearColors.brand,
                   ),
                 ),
-                IconButton(
-                  key: ValueKey('contact-call-${contact.key}'),
-                  tooltip: canCall ? '呼叫' : '暂无可用设备语音或权限',
-                  onPressed: canCall
-                      ? () => unawaited(_callContact(contact))
-                      : null,
-                  icon: Icon(
-                    Icons.call_outlined,
-                    color: canCall ? WearColors.brand : WearColors.muted,
+                if (voiceDevices.isNotEmpty)
+                  IconButton(
+                    key: ValueKey('contact-call-${contact.key}'),
+                    tooltip: voicePending
+                        ? '设备语音 · ${voiceDevices.every((device) => device.feature('intercom').reason == '待接入') ? '待接入' : '待联调'}'
+                        : canCall
+                        ? '呼叫'
+                        : '暂无可用设备语音或权限',
+                    onPressed: canCall
+                        ? () => unawaited(_callContact(contact))
+                        : null,
+                    icon: Icon(
+                      Icons.call_outlined,
+                      color: canCall ? WearColors.brand : WearColors.muted,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -1230,6 +1279,13 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                       ? WearColors.danger
                       : WearColors.ink,
                 ),
+              ),
+            ),
+          if (call.video && controller.rtc is ProtocolWearRtcEngine)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: SipRemoteVideo(
+                engine: controller.rtc as ProtocolWearRtcEngine,
               ),
             ),
           if (!controller.policy.owns(call))
@@ -1576,6 +1632,28 @@ class _CommunicationsPageState extends State<CommunicationsPage>
     }
     final eventId = _clean(widget.eventId);
     final kind = eventId != null && _eventType == 'sos' ? 'sos' : 'single';
+    if (video) {
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('发起视频通话'),
+          content: const Text(
+            '视频通话将开启本机麦克风和摄像头，与安全帽交换音视频。只观看安全帽画面，请到设备详情选择实时观看。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('开启视频通话'),
+            ),
+          ],
+        ),
+      );
+      if (accepted != true || !mounted || scope != _session?.scopeKey) return;
+    }
     await controller.startCall(video: video, eventId: eventId, kind: kind);
   }
 

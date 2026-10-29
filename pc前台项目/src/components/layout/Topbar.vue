@@ -12,6 +12,7 @@ import { db, tick } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { closeModal, openModal } from "@/stores/modal";
 import { events, people, scope } from "@/lib/queries";
+import { TEST_SITE_MODE, TEST_SITE, testSiteChoices } from '../../../../shared/test-site.mjs';
 
 const route = useRoute();
 const operatorName = computed(() => {
@@ -21,7 +22,7 @@ const operatorName = computed(() => {
 
 const stations = computed(() => {
   tick.value;
-  return db.state.stations.map((item) => [item.id, item.name]);
+  return testSiteChoices(db.state.stations, 'station').map((item) => [item.id, item.name]);
 });
 const stationName = computed(() => stations.value.find(([id]) => id === session.station)?.[1] || "未选择厂站");
 const operatorInitial = computed(() => Array.from(operatorName.value.trim())[0] || "用");
@@ -35,6 +36,7 @@ const openSos = computed(() => {
 });
 
 function changeStation(value) {
+  if (TEST_SITE_MODE && value !== TEST_SITE.stationId) return;
   session.station = value;
   localStorage.setItem("rolling-station", value);
   session.fenceDraft = null;
@@ -66,7 +68,8 @@ function openUser() {
   <TopNavigation>
     <template #left-tools>
       <a class="portal-tool screen-entry" href="#/screen" aria-label="数据大屏" data-tooltip="数据大屏" @click="openScreen"><AppIcon name="dashboard-3-line" /></a>
-      <span class="portal-station-tool" :data-tooltip="'切换厂站：' + stationName">
+      <span v-if="TEST_SITE_MODE" class="portal-test-site" :aria-label="'当前厂区：' + stationName">{{ TEST_SITE.name }}</span>
+      <span v-else class="portal-station-tool" :data-tooltip="'切换厂站：' + stationName">
         <AppSelect :model-value="session.station" :options="stations" :aria-label="'选择厂站，当前：' + stationName" @update:model-value="changeStation">
           <template #trigger><AppIcon name="building-2-line" /><AppIcon class="portal-tool-caret" name="arrow-down-s-line" /></template>
         </AppSelect>
@@ -86,3 +89,7 @@ function openUser() {
     </template>
   </TopNavigation>
 </template>
+
+<style scoped>
+.portal-test-site { flex: 0 0 36px; width: 36px; text-align: center; font-size: 13px; line-height: 16px; }
+</style>

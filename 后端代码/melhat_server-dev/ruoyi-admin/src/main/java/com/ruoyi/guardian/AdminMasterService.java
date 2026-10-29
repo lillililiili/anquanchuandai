@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class AdminMasterService {
-    private static final List<String> ENTITIES = Arrays.asList("people", "organizations", "areas", "sites", "dutyShifts");
+    private static final List<String> ENTITIES = Arrays.asList("people", "organizations", "sites", "dutyShifts");
     private static final List<String> ACTIONS = Arrays.asList("create", "update", "status", "delete");
     private static final Pattern CJK = Pattern.compile("[\\u4e00-\\u9fff]");
     private final AdminLedgerStore ledger;
@@ -34,15 +34,18 @@ public class AdminMasterService {
         if (type == null || !type.contains(".")) return false;
         String entity = type.substring(0, type.indexOf('.'));
         String action = type.substring(type.indexOf('.') + 1);
-        return ENTITIES.contains(entity) && ACTIONS.contains(action);
+        return ENTITIES.contains(entity) && (ACTIONS.contains(action) || "people".equals(entity) && "dutyStatus".equals(action)) && !("organizations".equals(entity) && "status".equals(action));
     }
 
     public JSONObject execute(String accountId, String type, JSONObject input) {
+        if (type != null && type.startsWith("areas.")) throw AdminQueryService.fail(410, "FEATURE_REMOVED", "行政区域功能已取消");
         if (!handles(type)) throw AdminQueryService.fail(400, "UNKNOWN_COMMAND", "未开放此操作");
         JSONObject state = ledger.read();
         if (state == null) throw AdminQueryService.fail(503, "SOURCE_FAILURE", "后台台账尚未保存");
         JSONObject actor = account(state, accountId);
         if (input == null) input = new JSONObject();
+        // Replays must still be authorized against the current person and grants.
+        if ("people.dutyStatus".equals(type)) requireDutyStatusAccess(state, actor, input);
         String operationId = input.getString("operationId");
         if (operationId == null || operationId.trim().isEmpty() || operationId.length() > 100) throw AdminQueryService.fail(400, "OPERATION_REQUIRED", "操作标识无效");
         String key = accountId + "\n" + type + "\n" + operationId;
@@ -52,6 +55,11 @@ public class AdminMasterService {
         String fingerprint = input.toJSONString();
         if (previous != null) {
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
+            if ("people.delete".equals(type)) {
+                JSONObject deleted = previous.getJSONObject("result").getJSONObject("data");
+                if (!java.util.Objects.equals(input.getString("siteId"), deleted.getString("siteId"))) throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "对象不存在或不可见");
+                if (!queries.allows(state, actor, "people:read", deleted.getString("siteId"), deleted.getString("areaId")) || !queries.allows(state, actor, "people:write", deleted.getString("siteId"), deleted.getString("areaId"))) throw AdminQueryService.fail(403, "PERMISSION_DENIED", "当前身份无此操作或数据范围权限");
+            }
             return previous.getJSONObject("result");
         }
         String entity = type.substring(0, type.indexOf('.'));
@@ -61,7 +69,7 @@ public class AdminMasterService {
         if (!"create".equals(action)) before = output.getJSONObject("_before");
         output.remove("_before");
         try {
-            publish(state);
+            publish(state, "people".equals(entity) && "delete".equals(action) ? output : null);
         } catch (AdminQueryService.QueryFailed error) {
             throw error;
         } catch (RuntimeException error) {
@@ -91,11 +99,40 @@ public class AdminMasterService {
         if (!"create".equals(action) && input.getIntValue("expectedVersion") != row.getIntValue("version")) throw AdminQueryService.fail(409, "VERSION_CONFLICT", "对象已变化，请重新读取");
         if ("delete".equals(action)) return remove(state, entity, row);
         if ("status".equals(action)) return status(state, actor, entity, row, input);
+        if ("dutyStatus".equals(action)) return dutyStatus(actor, row, input);
         return save(state, actor, entity, action, row, input, siteId);
     }
 
+    private void requireDutyStatusAccess(JSONObject state, JSONObject actor, JSONObject input) {
+        JSONObject row = find(state, "people", input.getString("id"));
+        if (row == null || !java.util.Objects.equals(input.getString("siteId"), row.getString("siteId")))
+            throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "对象不存在或不可见");
+        for (String permission : Arrays.asList("people:read", "people:write"))
+            if (!queries.allows(state, actor, permission, row.getString("siteId"), row.getString("areaId")))
+                throw AdminQueryService.fail(403, "PERMISSION_DENIED", "当前身份无此操作或数据范围权限");
+        if (!siteEnabled(state, row.getString("siteId"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择启用的厂站");
+    }
+
+    private JSONObject dutyStatus(JSONObject actor, JSONObject row, JSONObject input) {
+        for (String key : input.keySet())
+            if (!Arrays.asList("siteId", "id", "expectedVersion", "operationId", "dutyStatus").contains(key))
+                throw AdminQueryService.fail(400, "VALIDATION_ERROR", "不支持的在岗状态字段");
+        Object status = input.get("dutyStatus");
+        if (!(status instanceof String) || !Arrays.asList("ON_DUTY", "OFF_DUTY").contains(status))
+            throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择在岗或离岗");
+        JSONObject before = JSONObject.parseObject(row.toJSONString());
+        before.put("dutyStatus", PersonDutyStatus.value(row));
+        row.put("dutyStatus", status);
+        row.put("dutyStatusUpdatedAt", Instant.now().toString());
+        row.put("dutyStatusUpdatedBy", actor.getString("name"));
+        row.put("dutyStatusSource", "MANUAL");
+        row.put("version", row.getIntValue("version") + 1);
+        row.put("_before", before);
+        return row;
+    }
+
     private JSONObject remove(JSONObject state, String entity, JSONObject row) {
-        if (!"organizations".equals(entity) && !"areas".equals(entity)) throw AdminQueryService.fail(400, "DELETE_DISABLED", "该资料仅支持启停，不允许删除");
+        if (!"people".equals(entity) && !"organizations".equals(entity) && !"areas".equals(entity)) throw AdminQueryService.fail(400, "DELETE_DISABLED", "该资料仅支持启停，不允许删除");
         if (referenced(state, entity, row, true)) throw AdminQueryService.fail(409, "REFERENCED", "仍有引用，不能删除");
         JSONArray list = state.getJSONArray(entity);
         for (int i = 0; i < list.size(); i++) if (row.getString("id").equals(list.getJSONObject(i).getString("id"))) list.remove(i);
@@ -115,7 +152,6 @@ public class AdminMasterService {
         if (!enabled && referenced(state, entity, row, false)) throw AdminQueryService.fail(409, "REFERENCED", "存在活动引用，请先处理影响清单");
         if (enabled && row.getString("parentId") != null) requireEnabled(state, actor, entity, row.getString("parentId"), row.getString("siteId"), input);
         if (enabled && "people".equals(entity)) {
-            requireEnabled(state, actor, "areas", row.getString("areaId"), row.getString("siteId"), input);
             requireEnabled(state, actor, "organizations", row.getString("organizationId"), row.getString("siteId"), input);
         }
         JSONObject before = JSONObject.parseObject(row.toJSONString());
@@ -145,18 +181,15 @@ public class AdminMasterService {
                 if (other.getString("code") != null && other.getString("code").equalsIgnoreCase(record.getString("code"))) throw AdminQueryService.fail(409, "RELATION_CONFLICT", "编号已存在，请使用其他编号");
             }
         }
-        if ("organizations".equals(entity) || "areas".equals(entity)) {
+        if ("organizations".equals(entity)) {
+            record.remove("enabled");
             String parentId = blank(data.getString("parentId"));
             record.put("parentId", parentId);
             if (parentId != null) requireEnabled(state, actor, entity, parentId, siteId, input);
             if (cycle(state, entity, record.getString("id"), parentId)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "上级不能是自身或后代");
             if ("organizations".equals(entity)) {
-                String area = blank(data.getString("areaId"));
-                record.put("areaId", area);
-                if (area != null) requireEnabled(state, actor, "areas", area, siteId, input);
-                if (!queries.allows(state, actor, "organization:write", siteId, area)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "目标区域不在可维护范围");
+                if (!queries.allows(state, actor, "organization:write", siteId, null)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "目标厂站不在可维护范围");
             }
-            if ("areas".equals(entity)) record.put("points", areaPoints(data));
         }
         if ("sites".equals(entity)) {
             record.remove("siteId");
@@ -170,13 +203,11 @@ public class AdminMasterService {
             }
         }
         if ("people".equals(entity)) {
+            record.put("dutyStatus", creating ? "UNKNOWN" : PersonDutyStatus.value(row));
             String organizationId = blank(data.getString("organizationId"));
-            String area = blank(data.getString("areaId"));
             record.put("organizationId", organizationId);
-            record.put("areaId", area);
             if (organizationId != null) requireEnabled(state, actor, "organizations", organizationId, siteId, input);
-            if (area != null) requireEnabled(state, actor, "areas", area, siteId, input);
-            if (!queries.allows(state, actor, "people:write", siteId, area)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "目标区域不在可维护范围");
+            if (!queries.allows(state, actor, "people:write", siteId, null)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "目标厂站不在可维护范围");
             String remark = data.getString("remark");
             remark = remark == null ? "" : remark.trim();
             if (remark.length() > 500) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "备注最多500字");
@@ -236,10 +267,15 @@ public class AdminMasterService {
                 Instant end = parseInstant(shift.getString("endsAt"));
                 if (all || (end != null && end.isAfter(Instant.now()))) return true;
             }
+            if (all) {
+                for (JSONObject group : rows(state, "groups")) if ((group.getJSONArray("personIds") != null && group.getJSONArray("personIds").contains(row.getString("id"))) || row.getString("id").equals(group.getString("leaderId"))) return true;
+                for (JSONObject account : rows(state, "accounts")) if (row.getString("id").equals(account.getString("personId")) || account.getString("id").equals(row.getString("accountId"))) return true;
+                for (JSONObject device : rows(state, "devices")) if (row.getString("id").equals(device.getString("personId"))) return true;
+            }
             return openWork(row);
         }
         if ("organizations".equals(entity) || "areas".equals(entity)) {
-            for (JSONObject child : rows(state, entity)) if (row.getString("id").equals(child.getString("parentId")) && (all || child.getBooleanValue("enabled"))) return true;
+            for (JSONObject child : rows(state, entity)) if (row.getString("id").equals(child.getString("parentId")) && ("organizations".equals(entity) || all || child.getBooleanValue("enabled"))) return true;
             String key = "areas".equals(entity) ? "areaId" : "organizationId";
             for (JSONObject person : rows(state, "people")) if (row.getString("id").equals(person.getString(key)) && (all || person.getBooleanValue("enabled"))) return true;
             if ("areas".equals(entity)) {
@@ -248,8 +284,8 @@ public class AdminMasterService {
             }
         }
         if ("sites".equals(entity)) {
-            for (String key : Arrays.asList("organizations", "areas", "people", "devices", "accounts")) {
-                for (JSONObject item : rows(state, key)) if (row.getString("id").equals(item.getString("siteId")) && (all || item.getBooleanValue("enabled"))) return true;
+            for (String key : Arrays.asList("organizations", "people", "devices", "accounts")) {
+                for (JSONObject item : rows(state, key)) if (row.getString("id").equals(item.getString("siteId")) && ("organizations".equals(key) || all || item.getBooleanValue("enabled"))) return true;
             }
         }
         return false;
@@ -262,44 +298,27 @@ public class AdminMasterService {
         if (portalId == null || portalId.isEmpty()) portalId = person.getString("id");
         if (portalId == null) return false;
         for (JSONObject work : rows(snapshot, "works")) {
-            if ("已结束".equals(work.getString("status"))) continue;
+            if (!guardian.isOperational(work) || "已结束".equals(work.getString("status"))) continue;
             JSONArray members = work.getJSONArray("members");
             if (members != null && members.contains(portalId)) return true;
         }
         return false;
     }
 
-    private JSONArray areaPoints(JSONObject data) {
-        if (data.get("points") == null) return new JSONArray();
-        JSONArray raw = data.getJSONArray("points");
-        if (raw == null || raw.isEmpty()) return new JSONArray();
-        if (raw.size() < 3) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "地图范围至少需要 3 个点，或清空后只保存名称");
-        JSONArray clean = new JSONArray();
-        for (int i = 0; i < raw.size(); i++) {
-            JSONArray pair = raw.getJSONArray(i);
-            if (pair == null || pair.size() < 2) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "地图范围的节点无效");
-            double x = pair.getDoubleValue(0);
-            double y = pair.getDoubleValue(1);
-            if (x < 0 || x > 100 || y < 0 || y > 100) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "地图范围需要落在厂区地图内");
-            JSONArray point = new JSONArray();
-            point.add(x);
-            point.add(y);
-            clean.add(point);
-        }
-        return clean;
-    }
-
-    private void publish(JSONObject admin) {
+    private void publish(JSONObject admin, JSONObject deletedPerson) {
         WearableModel.migrate(admin);
         guardian.update(snapshot -> {
             GuardianMasterProjection.apply(snapshot, admin);
-            JSONArray mapAreas = new JSONArray();
-            for (JSONObject area : rows(admin, "areas")) {
-                if (!area.getBooleanValue("enabled") || area.getJSONArray("points") == null || area.getJSONArray("points").size() < 3) continue;
-                JSONObject site = find(admin, "sites", area.getString("siteId"));
-                if (site != null) mapAreas.add(WearableModel.object("id",area.getString("id"),"name",area.getString("name"),"station",site.getString("portalStation"),"points",area.get("points")));
+            if (deletedPerson != null) {
+                String portalId = deletedPerson.getString("portalId");
+                if (portalId == null || portalId.isEmpty()) portalId = deletedPerson.getString("id");
+                JSONArray people = snapshot.getJSONArray("people");
+                if (people != null) for (int i = people.size() - 1; i >= 0; i--) {
+                    JSONObject person = people.getJSONObject(i);
+                    if (portalId.equals(person.getString("id")) || deletedPerson.getString("id").equals(person.getString("ledgerId"))) people.remove(i);
+                }
             }
-            snapshot.put("mapAreas",mapAreas);
+            snapshot.remove("mapAreas");
             snapshot.put("seq", snapshot.getIntValue("seq") + 1);
             return true;
         });
@@ -308,7 +327,7 @@ public class AdminMasterService {
     private JSONObject requireEnabled(JSONObject state, JSONObject actor, String key, String id, String siteId, JSONObject input) {
         if (id == null || id.isEmpty()) return null;
         JSONObject ref = find(state, key, id);
-        if (ref == null || !ref.getBooleanValue("enabled") || ("sites".equals(key) ? false : !siteId.equals(ref.getString("siteId")))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "关联对象未启用、不同厂站或不在授权范围");
+        if (ref == null || (!"organizations".equals(key) && !ref.getBooleanValue("enabled")) || ("sites".equals(key) ? false : !siteId.equals(ref.getString("siteId")))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "关联对象未启用、不同厂站或不在授权范围");
         String operation = "people".equals(key) ? "people:read" : "areas".equals(key) ? "organization:read" : "organizations".equals(key) ? "organization:read" : "sites:read";
         String areaId = "areas".equals(key) ? ref.getString("id") : ref.getString("areaId");
         if (!queries.allows(state, actor, operation, "sites".equals(key) ? ref.getString("id") : ref.getString("siteId"), areaId)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "关联对象未启用、不同厂站或不在授权范围");
@@ -341,7 +360,7 @@ public class AdminMasterService {
     private static JSONObject brief(JSONObject row) {
         if (row == null) return null;
         JSONObject brief = new JSONObject();
-        for (String key : Arrays.asList("id", "name", "code", "enabled", "areaId", "organizationId", "remark")) if (row.containsKey(key)) brief.put(key, row.get(key));
+        for (String key : Arrays.asList("id", "name", "code", "enabled", "areaId", "organizationId", "remark", "dutyStatus", "dutyStatusUpdatedAt", "dutyStatusUpdatedBy", "dutyStatusSource")) if (row.containsKey(key)) brief.put(key, row.get(key));
         return brief;
     }
 

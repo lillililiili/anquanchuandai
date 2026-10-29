@@ -67,6 +67,7 @@ String eventStatusLabel(Object? value) => switch (value?.toString()) {
 };
 
 String connectionLabel(JsonMap item) {
+  if (item['demo'] == true) return '模拟数据';
   return switch (item['connectionQuality']?.toString()) {
     'ok' => switch (devicePresence(item)) {
       'online' => '在线',

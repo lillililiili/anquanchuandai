@@ -46,6 +46,25 @@ class GuardianSharedBusinessTest {
         assertEquals("manual_sos",first.getString("source"));assertEquals("",first.getString("deviceId"));assertEquals("",first.getString("workId"));assertEquals("waiting",first.getJSONObject("assistance").getString("status"));
         assertEquals(409,assertThrows(AdminQueryService.QueryFailed.class,()->service.createSos(member,object("siteId","site-1","requestId","same-request-001","description","changed"))).code);
     }
+    @Test void samePersonNewAssignmentBetweenSnapshotsReplacesTheBindingIdentity() {
+        JSONObject device=null;
+        for(Object raw:rows(master,"devices")) if("RL-H001".equals(((JSONObject)raw).getString("portalDeviceId"))) device=(JSONObject)raw;
+        assertNotNull(device);JSONObject assignment=null;
+        for(Object raw:rows(master,"assignments")) {
+            JSONObject candidate=(JSONObject)raw;
+            if(candidate.getBooleanValue("active")&&device.getString("id").equals(candidate.getString("deviceId"))) assignment=candidate;
+        }
+        assertNotNull(assignment);String previous="BIND-"+assignment.getString("id")+"-"+assignment.getIntValue("version");
+        JSONObject prior=find(store.snapshot(),"bindings",previous);assertNotNull(prior);assertNull(prior.get("end"));
+        JSONObject next=copy(assignment);assignment.put("active",false);
+        next.put("id","same-person-new-assignment");next.put("version",1);next.put("startedAt","2026-10-23T00:02:00Z");rows(master,"assignments").add(next);
+        // Neither the returned nor temporary unassigned state was projected in between.
+        store.update(state->{GuardianMasterProjection.apply(state,master);return true;});
+        JSONObject current=store.snapshot(),binding=find(current,"bindings","BIND-same-person-new-assignment-1");
+        assertNotNull(binding);assertEquals(prior.getString("personId"),binding.getString("personId"));
+        assertNull(binding.get("end"));assertNotNull(find(current,"bindings",previous).get("end"));
+        assertEquals(1,rows(current,"bindings").stream().filter(raw->{JSONObject b=(JSONObject)raw;return "RL-H001".equals(b.getString("deviceId"))&&b.get("end")==null;}).count());
+    }
     @Test void employeeCannotReadOtherPeopleOrOtherSites() {
         JSONObject mine=sos(member,"my-request-001"),theirs=sos(other,"other-request-001");
         assertEquals(404,assertThrows(AdminQueryService.QueryFailed.class,()->service.detail(member,theirs.getString("id"))).code);
@@ -69,6 +88,35 @@ class GuardianSharedBusinessTest {
         Callable<Boolean> action=()->{start.await();try{command(admin,event,"claim");return true;}catch(AdminQueryService.QueryFailed e){assertEquals(409,e.code);return false;}};
         try {Future<Boolean> first=pool.submit(action),second=pool.submit(action);start.countDown();assertNotEquals(first.get(5,TimeUnit.SECONDS),second.get(5,TimeUnit.SECONDS));assertEquals(2,service.detail(admin,event.getString("id")).getIntValue("version"));}finally{pool.shutdownNow();}
     }
+    @Test void verifiedFileStateIsReconciledBeforeTheNextDeviceAlarmAfterDatabaseSyncFailure() {
+        JSONObject event=sos(member,"helmet-sync-001");String id=event.getString("id");
+        store.update(state->{find(state,"events",id).put("protocol","direct-helmet");return true;});
+        org.springframework.jdbc.core.JdbcTemplate jdbc=new org.springframework.jdbc.core.JdbcTemplate(
+                new org.springframework.jdbc.datasource.DriverManagerDataSource("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1","sa",""));
+        jdbc.execute("CREATE TABLE real_time_alarm (id BIGINT PRIMARY KEY,is_handled INT,handle_time TIMESTAMP,update_by VARCHAR(64),update_time TIMESTAMP,create_by VARCHAR(64),del_flag VARCHAR(1))");
+        jdbc.execute("INSERT INTO real_time_alarm (id,is_handled,create_by,del_flag) VALUES (1,0,'direct-helmet','0'),(2,0,'direct-helmet','0')");
+        HelmetBusinessJournal journal=spy(new HelmetBusinessJournal(jdbc));
+        JSONObject first=object("eventId",id,"sourceRecordType","real_time_alarm","sourceRecordId",1,"deviceId","RL-H001","act","ca_sos","rawType","77","receivedMillis",1);
+        journal.event(first);
+        GuardianIngest ingest=mock(GuardianIngest.class);
+        HelmetEventDelivery delivery=new HelmetEventDelivery(journal,ingest,store);
+        ReflectionTestUtils.setField(service,"helmetDelivery",delivery);
+        doThrow(new IllegalStateException("temporary SQL failure")).doCallRealMethod().when(journal).close(any());
+        JSONObject closed=command(admin,event,"verification","conclusion","需现场处理","situation","已处理");
+        assertEquals("已核验",closed.getString("status"));assertTrue(journal.openEventIds().contains(id));
+        com.ruoyi.melhat.direct.DirectHelmetPersistence persistence=mock(com.ruoyi.melhat.direct.DirectHelmetPersistence.class);
+        JSONObject next=copy(first);next.put("sourceRecordId",2);next.put("eventId","HE-after-verification");
+        when(ingest.captureDirect("RL-H001")).thenReturn(new JSONObject());
+        when(persistence.receive(any(),any(),any())).thenAnswer(call->{journal.event(next);return next;});
+        com.ruoyi.melhat.direct.DirectHelmetTelemetryService telemetry=new com.ruoyi.melhat.direct.DirectHelmetTelemetryService(
+                mock(com.ruoyi.helmet.mapper.SafetyHatInfoMapper.class),persistence,ingest);
+        ReflectionTestUtils.setField(telemetry,"eventDelivery",delivery);ReflectionTestUtils.setField(telemetry,"journal",journal);
+        com.ruoyi.helmet.pojo.po.SafetyHatInfo hat=new com.ruoyi.helmet.pojo.po.SafetyHatInfo();hat.setHatNumber("RL-H001");
+        telemetry.receive(hat,com.ruoyi.melhat.direct.DirectHelmetMessage.parse("{\"act\":\"ca_sos\",\"type\":\"77\"}"));
+        assertNotEquals(id,next.getString("eventId"));
+        assertEquals(1,jdbc.queryForObject("SELECT is_handled FROM real_time_alarm WHERE id=1",Integer.class));
+        assertEquals(0,jdbc.queryForObject("SELECT is_handled FROM real_time_alarm WHERE id=2",Integer.class));
+    }
     @Test void repeatedActionSurvivesRestartAndPermissionIsCheckedBeforeReplay() {
         JSONObject e=sos(member,"durable-sos-001"),input=object("expectedVersion",1,"requestId","claim-retry-001");JSONObject claimed=service.command(admin,e.getString("id"),"claim",input);
         GuardianStore loaded=new GuardianStore(mock(GuardianHatArchive.class));ReflectionTestUtils.setField(loaded,"file",directory.resolve("guardian-state.json"));GuardianEvents second=new GuardianEvents(loaded,access,files);
@@ -80,16 +128,17 @@ class GuardianSharedBusinessTest {
         find(visible,"events",e.getString("id")).put("status","已核验");assertEquals(409,assertThrows(AdminQueryService.QueryFailed.class,()->store.replaceScoped(visible,seq,access.context(admin))).code);
         assertEquals("待认领",service.detail(admin,e.getString("id")).getString("status"));
     }
-    @Test void roleScopeChangesImmediatelyLimitMobileReadsAndWrites() {
+    @Test void roleSiteChangesImmediatelyLimitMobileReadsAndWrites() {
         JSONObject duty=find(master,"accounts","demo-duty");assertNotNull(duty);
         JSONObject event=sos(member,"scope-sos-001");assertNotNull(service.detail(duty,event.getString("id")));
-        JSONObject scopes=object("duty",object("siteIds",JSONArray.parseArray("[\"site-2\"]"),"areaIds","*"));duty.put("roleScopes",scopes);
+        for(Object raw:rows(find(master,"roles","duty"),"grants")) ((JSONObject)raw).put("siteIds",JSONArray.of("site-2"));
         assertEquals(404,assertThrows(AdminQueryService.QueryFailed.class,()->service.detail(duty,event.getString("id"))).code);
         assertEquals(404,assertThrows(AdminQueryService.QueryFailed.class,()->command(duty,event,"claim")).code);
     }
-    @Test void areaRestrictionDoesNotLeakThroughAnUnknownArea() {
+    @Test void retiredAreaScopeUsesSiteBoundaryAndOperationPermissions() {
         JSONObject duty=find(master,"accounts","demo-duty");duty.put("roleScopes",object("duty",object("siteIds",JSONArray.parseArray("[\"site-1\"]"),"areaIds",JSONArray.parseArray("[\"area-boiler\"]"))));
-        GuardianAccess.Context ctx=access.context(duty);assertTrue(ctx.can("events:read","site-1","area-boiler"));assertFalse(ctx.can("events:read","site-1",null));assertFalse(ctx.can("events:read","site-1","another-area"));
+        GuardianAccess.Context ctx=access.context(duty);assertTrue(ctx.can("events:read","site-1","area-boiler"));assertTrue(ctx.can("events:read","site-1",null));assertTrue(ctx.can("events:read","site-1","another-area"));
+        assertFalse(ctx.can("events:read","site-2",null));assertFalse(ctx.can("roles:write","site-1",null));
     }
     @Test void photoOwnershipTypeSizeAndFinalReadonlyAreEnforced() {
         JSONObject e=sos(member,"photo-sos-001");String id="upload-"+UUID.randomUUID();byte[] png={(byte)137,80,78,71,13,10,26,10};
@@ -139,22 +188,26 @@ class GuardianSharedBusinessTest {
         org.springframework.mock.web.MockHttpServletRequest r=new org.springframework.mock.web.MockHttpServletRequest();r.setAttribute("wearable.actor",actor);return r;
     }
     @Test void mobileContextHasAuthoritativeVersionsWithoutExpandingEmployeeScope(){
-        member.put("roleScopes",object("mobile-user",object("siteIds",JSONArray.parseArray("[\"site-1\"]"),"areaIds","*")));
+        for(Object raw:rows(find(master,"roles","mobile-user"),"grants")) ((JSONObject)raw).put("siteIds",JSONArray.of("site-1"));
+        store.update(state->{rows(state,"works").add(object("id","WORK-shared-real","name","现场检修作业","date","2026-10-23",
+                "station","S1","members",JSONArray.parseArray("[\"P1\",\"P2\"]"),"leader","P2","supervisor","P2",
+                "start","08:00","end","12:00","status","监护中","source","工作票"));return true;});
         GuardianMobileController mobile=new GuardianMobileController(mock(WearableCredentials.class),mock(WearableSessions.class),access,service,mock(AdminAssignmentService.class),ledger);
         JSONObject context=mobile.context("site-1",request(member));
         assertEquals(1,rows(context,"people").size());assertEquals("person-1-0",rows(context,"people").getJSONObject(0).getString("ledgerId"));
         assertTrue(rows(context,"people").getJSONObject(0).getIntValue("version")>0);
         assertTrue(rows(context,"devices").stream().allMatch(d->((JSONObject)d).getIntValue("version")>0));
-        assertFalse(rows(context,"works").getJSONObject(0).getJSONObject("participantNames").isEmpty());
+        assertEquals(1,rows(context,"works").size());
+        assertFalse(find(context,"works","WORK-shared-real").getJSONObject("participantNames").isEmpty());
         assertNull(find(context,"people","P2"));
         assertEquals(403,assertThrows(AdminQueryService.QueryFailed.class,()->mobile.context("site-2",request(member))).code);
     }
     @Test void mobileCallRetriesDoNotCallDeviceTwiceAndCredentialsStayPrivate(){
         find(master,"devices","RL-H001").put("source","PLATFORM");GuardianVoiceService voice=mock(GuardianVoiceService.class);
-        when(voice.call(any())).thenReturn(new HashMap<String,Object>(){{put("appId","test-app");put("channel","test-channel");put("uid","73");put("token","private-rtc-token");}});
-        GuardianMobileCommunications controller=new GuardianMobileCommunications(store,access,voice);
+        when(voice.call(any(),anyString(),anyBoolean())).thenReturn(new HashMap<String,Object>(){{put("appId","test-app");put("channel","test-channel");put("uid","73");put("token","private-rtc-token");}});
+        GuardianMobileCommunications controller=communications(voice);
         JSONObject input=object("deviceId","RL-H001","idempotencyKey","call-retry-001");
-        JSONObject started=controller.start(input,request(admin));assertEquals(started.getString("id"),controller.start(input,request(admin)).getString("id"));verify(voice,times(1)).call(any());
+        JSONObject started=controller.start(input,request(admin));assertEquals(started.getString("id"),controller.start(input,request(admin)).getString("id"));verify(voice,times(1)).call(any(),eq("demo-system"),eq(false));
         assertFalse(service.snapshot(admin).toJSONString().contains("private-rtc-token"));
         assertEquals(404,assertThrows(AdminQueryService.QueryFailed.class,()->controller.credentials(started.getString("id"),request(member))).code);
         JSONObject joined=controller.joined(started.getString("id"),object("agoraUid","73"),request(admin));assertEquals("local_joined",joined.getString("connectionQuality"));
@@ -173,17 +226,25 @@ class GuardianSharedBusinessTest {
     @Test void uncertainBroadcastResultCannotBecomeSuccessOrReplayOnRetry(){
         find(master,"devices","RL-H001").put("source","PLATFORM");GuardianVoiceService voice=mock(GuardianVoiceService.class);
         doThrow(new GuardianRejected("platform unavailable")).when(voice).broadcast(any(),anyString(),anyString(),anyString());
-        GuardianMobileCommunications controller=new GuardianMobileCommunications(store,access,voice);
-        JSONObject input=object("deviceIds",JSONArray.parseArray("[\"RL-H001\"]"),"text","现场确认","idempotencyKey","tts-retry-001");
+        GuardianMobileCommunications controller=communications(voice);
+        JSONObject input=object("recipients",JSONArray.of(object("deviceId","RL-H001","personId","P1","assignmentId","a-test","assignmentVersion",1)),"text","现场确认","idempotencyKey","tts-retry-001");
         assertEquals(502,assertThrows(AdminQueryService.QueryFailed.class,()->controller.broadcast(input,request(admin))).code);
         assertEquals(409,assertThrows(AdminQueryService.QueryFailed.class,()->controller.broadcast(input,request(admin))).code);
         verify(voice,times(1)).broadcast(any(),anyString(),anyString(),anyString());
         assertEquals("unknown",rows(store.snapshot(),"sharedCommunications").getJSONObject(0).getString("status"));
     }
     @Test void exampleHelmetAndUnprivilegedEmployeeCannotInvokeRealVoice(){
-        GuardianVoiceService voice=mock(GuardianVoiceService.class);GuardianMobileCommunications controller=new GuardianMobileCommunications(store,access,voice);
+        GuardianVoiceService voice=mock(GuardianVoiceService.class);GuardianMobileCommunications controller=communications(voice);
         JSONObject input=object("deviceId","RL-H001","idempotencyKey","call-denied-001");
-        assertEquals(409,assertThrows(AdminQueryService.QueryFailed.class,()->controller.start(input,request(admin))).code);
+        assertEquals(404,assertThrows(AdminQueryService.QueryFailed.class,()->controller.start(input,request(admin))).code);
+        // A real registered helmet is visible, but ordinary employees still lack voice permission.
+        find(master,"devices","RL-H001").put("source","PLATFORM");
         assertEquals(403,assertThrows(AdminQueryService.QueryFailed.class,()->controller.start(input,request(member))).code);verifyNoInteractions(voice);
+    }
+    @SuppressWarnings("unchecked") private GuardianMobileCommunications communications(GuardianVoiceService voice){
+        GuardianMobileCommunications controller=new GuardianMobileCommunications(store,access,voice);PersonEquipmentContext equipment=mock(PersonEquipmentContext.class);
+        when(equipment.execute(any(),any())).thenAnswer(i->((java.util.function.Function<GuardianAccess.Context,Object>)i.getArgument(1)).apply(access.context(i.getArgument(0))));
+        when(equipment.require(any(),anyString(),any(),anyString(),anyString())).thenAnswer(i->object("personId","P1","deviceId",i.getArgument(1),"assignmentId","a-test","assignmentVersion",1,"siteId","site-1"));
+        ReflectionTestUtils.setField(controller,"equipment",equipment);return controller;
     }
 }

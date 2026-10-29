@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../config/backend_config.dart';
 
 import '../core.dart';
 import 'query_utils.dart';
@@ -301,7 +302,7 @@ class _TaskPageState extends State<TaskPage> {
   }
 
   Future<void> _load() async {
-    if (widget.id == 'ui-preview') {
+    if (BackendConfig.mock && widget.id == 'ui-preview') {
       await _showPreview();
       return;
     }
@@ -388,6 +389,7 @@ class _TaskPageState extends State<TaskPage> {
   }
 
   Future<void> _showPreview() async {
+    if (!BackendConfig.mock) return;
     final task = await workReferencePreview();
     if (!mounted) return;
     setState(() {
@@ -435,7 +437,7 @@ class _TaskPageState extends State<TaskPage> {
                 child: const SizedBox.shrink(),
               ),
             ),
-            if (unavailable)
+            if (unavailable && BackendConfig.mock)
               TextButton(onPressed: _showPreview, child: const Text('查看界面示例')),
           ],
         ),

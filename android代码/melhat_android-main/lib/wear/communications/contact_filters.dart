@@ -153,8 +153,22 @@ class ContactRoster {
       CommunicationDevice(
         id: d.id,
         sn: d.sn,
-        actions: const {},
+        actions: d.actions,
+        featureStates: {
+          for (final action in ['intercom', 'video', 'video_call', 'tts'])
+            const {
+              'intercom': 'voice',
+              'video': 'video',
+              'video_call': 'videoCall',
+              'tts': 'broadcast',
+            }[action]!: {
+              ...d.feature(action).toJson(),
+              'available': false,
+              'reason': '数据陈旧，请刷新',
+            },
+        },
         personId: d.personId,
+        equipmentContext: d.equipmentContext,
         personName: d.personName,
         typeCode: d.typeCode,
         modelName: d.modelName,
@@ -193,6 +207,20 @@ class ContactRoster {
                 'online': 'unknown',
                 'connectionQuality': 'unknown',
                 'capabilities': <String, dynamic>{},
+                'featureStates': {
+                  for (final action in ['intercom', 'video', 'tts'])
+                    const {
+                      'intercom': 'voice',
+                      'video': 'video',
+                      'tts': 'broadcast',
+                    }[action]!: {
+                      ...CommunicationDevice.fromJson(
+                        d,
+                      ).feature(action).toJson(),
+                      'available': false,
+                      'reason': '设备详情读取失败，请刷新',
+                    },
+                },
                 if (old != null)
                   'currentAssignment': {
                     'personId': old.personId,

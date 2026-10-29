@@ -13,6 +13,7 @@ abstract interface class CommunicationsGateway {
     required String kind,
     required bool video,
     required String idempotencyKey,
+    Map<String, dynamic> recipient = const {},
     String? eventId,
   });
   Future<CallSession> callDetails(String callId);
@@ -23,6 +24,7 @@ abstract interface class CommunicationsGateway {
     required List<String> deviceIds,
     required String text,
     required String idempotencyKey,
+    List<Map<String, dynamic>> recipients = const [],
     String? eventId,
   });
 }
@@ -111,7 +113,9 @@ class CommunicationsController extends ChangeNotifier {
       return;
     }
     if (video ? !policy.canStartVideo(device) : !policy.canStartVoice(device)) {
-      statusMessage = video ? '该设备不支持视频通话或当前账号无权限' : '该设备不支持通话或当前账号无权限';
+      statusMessage = !policy.canStartCalls
+          ? '当前账号无通话权限'
+          : device.feature(video ? 'video_call' : 'intercom').reason;
       _notify();
       return;
     }
@@ -120,6 +124,7 @@ class CommunicationsController extends ChangeNotifier {
     try {
       final started = await gateway.startCall(
         deviceId: device.id,
+        recipient: device.equipmentContext,
         eventId: eventId,
         kind: kind,
         video: video,
@@ -512,7 +517,11 @@ class CommunicationsController extends ChangeNotifier {
     final device = selectedDevice;
     final text = ttsText.trim();
     if (device == null || !policy.canSendTts(device)) {
-      ttsMessage = '该设备不支持播报或当前账号无权限';
+      ttsMessage = device == null
+          ? '请先选择人员装备'
+          : !policy.canSubmitTts
+          ? '当前账号无播报权限'
+          : device.feature('tts').reason;
       _notify();
       return;
     }
@@ -529,6 +538,9 @@ class CommunicationsController extends ChangeNotifier {
     try {
       final commands = await gateway.sendTts(
         deviceIds: [device.id],
+        recipients: [
+          {...device.equipmentContext, 'deviceId': device.id},
+        ],
         text: text,
         eventId: eventId,
         idempotencyKey: _idempotencyKey('tts'),
@@ -575,9 +587,10 @@ class CommunicationsController extends ChangeNotifier {
     WearCallStatus.requesting => 0,
     WearCallStatus.offered => 1,
     WearCallStatus.connected => 2,
+    WearCallStatus.ending => 3,
     WearCallStatus.ended ||
     WearCallStatus.failed ||
-    WearCallStatus.timedOut => 3,
+    WearCallStatus.timedOut => 4,
   };
 
   void _syncConnectionMessage() {

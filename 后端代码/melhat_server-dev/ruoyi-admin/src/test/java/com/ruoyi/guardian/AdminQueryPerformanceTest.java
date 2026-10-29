@@ -10,7 +10,6 @@ import org.springframework.util.StreamUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -31,18 +30,20 @@ class AdminQueryPerformanceTest {
         guardian = mock(GuardianStore.class);
         when(guardian.snapshot()).thenAnswer(i -> JSON.parseObject(snapshot.toJSONString()));
         service = new AdminQueryService(ledger, guardian, mock(ObjectProvider.class));
+        // These performance/telemetry fixtures intentionally exercise all seeded device rows.
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "demoMode", true);
     }
 
-    @Test void overviewDoesNotReadTelemetryAndMatchesEachDetailTotal() {
+    @Test void removedWorkspaceQueriesAreRejectedWithoutReadingTelemetry() {
         for (String actor : Arrays.asList("demo-system", "demo-asset", "demo-audit")) {
             clearInvocations(guardian);
-            Map<String, Object> counts = (Map<String, Object>) service.query(actor, "overview", input()).get("counts");
-            verifyNoInteractions(guardian);
-            assertEquals(32, counts.get("assets")); assertEquals(4, counts.get("available")); assertEquals(24, counts.get("assigned"));
-            for (String metric : counts.keySet()) {
-                JSONObject query = input(); query.put("metric", metric);
-                assertEquals(counts.get(metric), service.query(actor, "details", query).get("total"), metric);
+            for (String kind : Arrays.asList("overview", "details")) {
+                AdminQueryService.QueryFailed error = assertThrows(AdminQueryService.QueryFailed.class,
+                        () -> service.query(actor, kind, input()));
+                assertEquals(400, error.code);
+                assertEquals("UNKNOWN_QUERY", error.errorCode);
             }
+            verifyNoInteractions(guardian);
         }
     }
 
@@ -65,7 +66,7 @@ class AdminQueryPerformanceTest {
 
     @Test void deniedScopeStillFailsBeforeTelemetry() {
         JSONObject query = input(); query.put("siteId", "unassigned-site");
-        assertEquals(403, assertThrows(AdminQueryService.QueryFailed.class, () -> service.query("demo-asset", "overview", query)).code);
+        assertEquals(403, assertThrows(AdminQueryService.QueryFailed.class, () -> service.query("demo-asset", "devices", query)).code);
         verifyNoInteractions(guardian);
     }
 }

@@ -6,6 +6,7 @@ import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppTag from "@/components/ui/AppTag.vue";
 import { db } from "@/mock/runtime";
 import { personName, revision } from "@/lib/queries";
+import { formatBeijingDateTime } from '@/lib/date-time';
 
 const props = defineProps({
   callId: { type: String, default: "" },
@@ -28,12 +29,13 @@ const names = computed(() => {
       <dt>会话编号</dt>
       <dd>{{ call.id }}</dd>
       <dt>参与人员</dt>
-      <dd>{{ names }}</dd>
+      <dd>{{ names || '未关联人员' }}</dd>
+      <template v-if="call.deviceId"><dt>来源设备</dt><dd>{{ call.deviceId }}</dd></template>
       <dt>状态</dt>
-      <dd><AppTag>{{ call.status }}</AppTag></dd>
+      <dd><AppTag>{{ call.status === '已结束' ? call.status : call.statusLabel || (call.rtc ? '设备接通待确认' : call.status) }}</AppTag></dd>
     </dl>
     <div class="timeline">
-      <div v-for="(item, index) in call.history || []" :key="index" class="timeline-item"><time>{{ item.time }}</time>{{ item.text }}</div>
+      <div v-for="(item, index) in call.history || []" :key="index" class="timeline-item"><time>{{ formatBeijingDateTime(item.time) }}</time>{{ item.text }}</div>
     </div>
   </template>
   <AppEmpty v-else text="暂无符合条件的记录" />

@@ -71,6 +71,8 @@ class WearApi {
     Map<String, dynamic>? query,
     String? contentType,
   }) async {
+    if (Uri.tryParse(path)?.hasScheme == true) throw const WearApiException(400, '接口地址不合法');
+    // Dio concatenates baseUrl + path, preserving deployment prefixes.
     final captured = epoch();
     final response = await dio.request<dynamic>(
       path,

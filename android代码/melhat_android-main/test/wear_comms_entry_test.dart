@@ -230,6 +230,18 @@ Future<GoRouter> openDevice(
     'typeCode': 'helmet',
     'modelName': '现场安全帽',
     'capabilities': {'actions': actions},
+    'featureStates': {
+      for (final entry in const {
+        'intercom': 'voice',
+        'video': 'video',
+        'tts': 'broadcast',
+      }.entries)
+        entry.value: {
+          'supported': actions.contains(entry.key),
+          'verified': actions.contains(entry.key),
+          'available': actions.contains(entry.key),
+        },
+    },
     'currentAssignment': {'personId': '7'},
   };
   var callVideo = false;

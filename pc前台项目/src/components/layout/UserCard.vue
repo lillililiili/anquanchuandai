@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { db, tick } from "@/mock/runtime";
 import { session } from "@/stores/session";
+import { testSiteName } from '../../../../shared/test-site.mjs';
 
 const profile = computed(() => {
   tick.value;
@@ -11,7 +12,7 @@ const profile = computed(() => {
 });
 const stationName = computed(() => {
   tick.value;
-  return db.state.stations.find((item) => item.id === session.station)?.name;
+  return testSiteName(db.state.stations.find((item) => item.id === session.station));
 });
 
 </script>

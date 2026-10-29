@@ -82,7 +82,7 @@ export function authorizeMaintenance(state, actor, type, input, fail) {
 }
 function append(state, key, d, actor, now, fields) {
   state[key] ||= []
-  const record = { id: `${key}-${state.nextId++}`, siteId: d.siteId, areaId: d.areaId, deviceId: d.id, deviceCode: d.code, deviceName: d.name, type: d.type, actorId: actor.id, actorName: actor.name, occurredAt: now, source: '前端内存本地', ...fields }
+  const record = { id: `${key}-${state.nextId++}`, siteId: d.siteId, deviceId: d.id, deviceCode: d.code, deviceName: d.name, type: d.type, actorId: actor.id, actorName: actor.name, occurredAt: now, source: '前端内存本地', ...fields }
   state[key].push(record); return record
 }
 export function recordRepairCreation(state, order, d, actor, now, fromReturn = false) {
@@ -112,7 +112,7 @@ export function applyMaintenance(state, actor, type, input, { fail, now }) {
     if (o) { o.status = 'CLOSED'; o.phase = 'CLOSED'; o.outcome = 'UNREPAIRABLE_SCRAPPED'; o.closedAt = now; append(state, 'maintenanceRecords', d, actor, now, { orderId: o.id, action: 'UNREPAIRABLE', description, inspection, handlerName: o.handlerName || null }) }
   } else if (type === 'maintenance.create') {
     description = text('reason'); const h = handler()
-    order = { id: `repair-${state.nextId++}`, siteId: d.siteId, areaId: d.areaId, deviceId: d.id, status: 'OPEN', phase: 'WAITING', reason: description, handlerId: h.id, handlerName: h.name, version: 1, createdAt: now, source: 'MOCK_STOCK', batchId: null }
+    order = { id: `repair-${state.nextId++}`, siteId: d.siteId, deviceId: d.id, status: 'OPEN', phase: 'WAITING', reason: description, handlerId: h.id, handlerName: h.name, version: 1, createdAt: now, source: 'MOCK_STOCK', batchId: null }
     d.lifecycle = 'MAINTENANCE'; state.maintenanceOrders.push(order); recordRepairCreation(state, order, d, actor, now)
   } else if (type === 'maintenance.assign') {
     description = text('reason'); const h = handler(), oldHandlerName = o.handlerName || null

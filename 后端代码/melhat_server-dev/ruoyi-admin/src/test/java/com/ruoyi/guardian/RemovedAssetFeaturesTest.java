@@ -35,7 +35,6 @@ class RemovedAssetFeaturesTest {
     @Test void removedQueriesAndRepairFieldsAreRejectedWhileNormalFlowsRemainAllowed() {
         for(String kind:new String[]{"maintenanceOrders","maintenanceOrder","maintenanceSummary","maintenanceRecords","repairAssignees","deviceLifecycleHistory"})
             assertEquals(410,assertThrows(AdminQueryService.QueryFailed.class,()->RemovedAssetFeatures.requireQuery(kind,null)).code);
-        assertThrows(AdminQueryService.QueryFailed.class,()->RemovedAssetFeatures.requireQuery("details",JSONObject.parseObject("{\"metric\":\"maintenance\"}")));
         assertThrows(AdminQueryService.QueryFailed.class,()->RemovedAssetFeatures.requireCommand("assignments.return",JSONObject.parseObject("{\"items\":[{\"condition\":\"GOOD\",\"handlerId\":\"old-handler\"}]}")));
         for(String type:new String[]{"devices.create","devices.update","devices.configure","assignments.issue","assignments.return"})
             assertDoesNotThrow(()->RemovedAssetFeatures.requireCommand(type,JSONObject.parseObject("{\"items\":[{\"condition\":\"GOOD\"}]}")));

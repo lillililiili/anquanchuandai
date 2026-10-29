@@ -21,6 +21,10 @@ import java.util.Map;
 public class GuardianVoiceService {
     private final HeadbandService headband;
     private final ITtsTextSynthesisBroadcastService broadcasts;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.beans.factory.ObjectProvider<com.ruoyi.helmet.service.DirectHelmetAccess> directAccess;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private org.springframework.beans.factory.ObjectProvider<com.ruoyi.melhat.direct.HelmetMediaService> helmetMedia;
 
     public GuardianVoiceService(HeadbandService headband, ITtsTextSynthesisBroadcastService broadcasts) {
         this.headband = headband;
@@ -36,8 +40,20 @@ public class GuardianVoiceService {
         List<String> numbers = new ArrayList<String>();
         List<String> names = new ArrayList<String>();
         readHats(hats, numbers, names);
+        List<String> platform = new ArrayList<>();
+        for(String number:numbers) {
+            if(isDirect(number)) {
+                com.ruoyi.melhat.direct.HelmetMediaService media=directMedia();
+                JSONObject command=com.ruoyi.melhat.direct.HelmetMediaService.obj("action","broadcast","idempotencyKey",java.util.UUID.randomUUID().toString(),"parameters",com.ruoyi.melhat.direct.HelmetMediaService.obj("text",text));
+                for(Object raw:hats){JSONObject recipient=(JSONObject)raw;if(number.equals(recipient.getString("hatNumber"))){
+                    for(String field:new String[]{"siteId","areaId","personId","assignmentId","assignmentVersion","ledgerDeviceId"})command.put(field,recipient.get(field));break;
+                }}
+                JSONObject result=media.command(actorId,number,command);
+                if(!"sent".equals(result.getString("status")))throw new GuardianRejected("设备广播结果未确认，请查看指令记录");
+            } else platform.add(number);
+        }
         try {
-            headband.groupBroadcast(new TtsBroadcastParam(numbers, text));
+            if(!platform.isEmpty())headband.groupBroadcast(new TtsBroadcastParam(platform, text));
         } catch (ServiceException error) {
             throw rejected(error);
         } catch (Exception error) {
@@ -60,8 +76,16 @@ public class GuardianVoiceService {
     }
 
     public Map<String, Object> call(JSONArray hats) {
+        return call(hats,"legacy",false);
+    }
+    public Map<String, Object> call(JSONArray hats,String actorId,boolean video) {
         List<String> numbers = new ArrayList<String>();
         readHats(hats, numbers, new ArrayList<String>());
+        boolean direct=false,other=false;
+        for(String number:numbers){if(isDirect(number))direct=true;else other=true;}
+        if(direct&&other)throw new GuardianRejected("SIP安全帽与Agora设备请分别发起通话");
+        if(direct)return new LinkedHashMap<String,Object>(directMedia().call(actorId,numbers,video,hats));
+        if(video)throw new GuardianRejected("此设备当前仅支持语音通话");
         Map<String, Object> param = new HashMap<String, Object>();
         param.put("helmetSnList", numbers);
         ResponseVO response;
@@ -88,6 +112,7 @@ public class GuardianVoiceService {
 
     public void end(String channel) {
         if (channel == null || channel.trim().isEmpty()) return;
+        if(channel.startsWith("SIP-")){directMedia().endCall(channel);return;}
         try {
             headband.agoraEnd(channel.trim());
         } catch (ServiceException error) {
@@ -95,6 +120,15 @@ public class GuardianVoiceService {
         } catch (Exception error) {
             throw new GuardianRejected("请求安全帽异常");
         }
+    }
+
+    public boolean isDirect(String number) {
+        com.ruoyi.helmet.service.DirectHelmetAccess direct = directAccess == null ? null : directAccess.getIfAvailable();
+        return direct!=null&&direct.supports(number);
+    }
+    public com.ruoyi.melhat.direct.HelmetMediaService directMedia(){
+        com.ruoyi.melhat.direct.HelmetMediaService media=helmetMedia==null?null:helmetMedia.getIfAvailable();
+        if(media==null||!media.available())throw new GuardianRejected("一体式安全帽媒体服务尚未配置或未就绪");return media;
     }
 
     private static void readHats(JSONArray hats, List<String> numbers, List<String> names) {

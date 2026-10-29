@@ -84,6 +84,7 @@ public class GuardianMobileController {
         GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));String id=WearableModel.siteId(ctx.data,requested);if(!ctx.site(id))throw AdminQueryService.fail(403,"PERMISSION_DENIED","厂站不在授权范围");
         String station=find(ctx.data,"sites",id).getString("portalStation");JSONObject state=events.snapshot(WearableSessions.actor(r));
         for(String key:Arrays.asList("people","devices","works","events")){JSONArray list=new JSONArray();for(Object raw:rows(state,key))if(station.equals(((JSONObject)raw).getString("station")))list.add(raw);state.put(key,list);}
+        JSONObject equipment=state.getJSONObject("personEquipmentContext");if(equipment!=null){Set<String> visible=new HashSet<>();for(Object raw:rows(state,"people"))visible.add(((JSONObject)raw).getString("id"));equipment.keySet().retainAll(visible);}
         return state;
     }
 }

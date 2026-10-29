@@ -16,11 +16,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class AdminLedgerStore {
-    private static final Pattern CJK = Pattern.compile("[\\u4e00-\\u9fff]");
     private static final List<String> ARRAY_KEYS = Arrays.asList(
             "sites", "organizations", "areas", "people", "dutyShifts",
             "accounts", "roles", "devices", "assignments", "history", "audit");
@@ -29,9 +29,17 @@ public class AdminLedgerStore {
     private final JdbcTemplate jdbc;
     private final Object lock = new Object();
     private TransactionTemplate transactions;
+    private final boolean demoMode;
 
     public AdminLedgerStore(JdbcTemplate jdbc) {
+        this(jdbc, false);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminLedgerStore(JdbcTemplate jdbc,
+            @org.springframework.beans.factory.annotation.Value("${melhat.demo-mode:false}") boolean demoMode) {
         this.jdbc = jdbc;
+        this.demoMode = demoMode;
         ensureSchema();
     }
 
@@ -61,9 +69,21 @@ public class AdminLedgerStore {
     }
 
     private void importInitial() {
+        for (String table : TABLES.values()) {
+            Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Integer.class);
+            if (count != null && count > 0) throw new IllegalStateException("台账迁移标记缺失但业务表已有数据，请先核对；禁止回填或清空");
+        }
         JSONObject initial = legacy();
-        if (!readable(initial)) initial = seed();
+        if (!readable(initial)) initial = demoMode ? seed() : empty();
         write(initial);
+    }
+
+    private static JSONObject empty() {
+        JSONObject state = new JSONObject();
+        state.put("revision", 0); state.put("nextId", 1);
+        for (String key : ARRAY_KEYS) state.put(key, new JSONArray());
+        state.put("idempotency", new JSONObject());
+        return state;
     }
 
     private JSONObject legacy() {
@@ -130,8 +150,7 @@ public class AdminLedgerStore {
     }
 
     private void replace(JSONObject state) {
-        jdbc.update("DELETE FROM wearable_meta");
-        jdbc.update("INSERT INTO wearable_meta (id, revision, next_id) VALUES (1, ?, ?)", number(state, "revision"), number(state, "nextId"));
+        jdbc.update("INSERT INTO wearable_meta (id, revision, next_id) VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE revision=VALUES(revision), next_id=VALUES(next_id)", number(state, "revision"), number(state, "nextId"));
         replaceRows("wearable_site", "INSERT INTO wearable_site (id, code, name, time_zone, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?)", state.getJSONArray("sites"), new SiteBinder());
         replaceRows("wearable_organization", "INSERT INTO wearable_organization (id, site_id, code, name, area_id, parent_id, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?,?)", state.getJSONArray("organizations"), new OrganizationBinder());
         replaceRows("wearable_area", "INSERT INTO wearable_area (id, site_id, code, name, parent_id, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?)", state.getJSONArray("areas"), new AreaBinder());
@@ -143,37 +162,59 @@ public class AdminLedgerStore {
         replaceRows("wearable_assignment", "INSERT INTO wearable_assignment (id, site_id, device_id, person_id, active, started_at, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?)", state.getJSONArray("assignments"), new AssignmentBinder());
         replaceRows("wearable_assignment_history", "INSERT INTO wearable_assignment_history (id, site_id, person_id, device_id, action, occurred_at, sort_order, body) VALUES (?,?,?,?,?,?,?,?)", state.getJSONArray("history"), new HistoryBinder());
         replaceRows("wearable_audit", "INSERT INTO wearable_audit (id, site_id, area_id, actor_id, object_id, action, result, occurred_at, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?,?)", state.getJSONArray("audit"), new AuditBinder());
-        jdbc.update("DELETE FROM wearable_idempotency");
         JSONObject memory = state.getJSONObject("idempotency");
-        if (memory != null) {
-            for (String key : memory.keySet()) {
-                jdbc.update("INSERT INTO wearable_idempotency (idem_key, body) VALUES (?, ?)", key, JSON.toJSONString(memory.get(key)));
-            }
-        }
-        jdbc.update("DELETE FROM wearable_document");
+        replaceDocuments("wearable_idempotency", "idem_key", memory == null ? new JSONObject() : memory);
+        JSONObject documents = new JSONObject();
         for (String key : state.keySet()) {
             if (ARRAY_KEYS.contains(key) || "revision".equals(key) || "nextId".equals(key) || "idempotency".equals(key)) continue;
-            jdbc.update("INSERT INTO wearable_document (doc_key, body) VALUES (?, ?)", key, JSON.toJSONString(state.get(key)));
+            documents.put(key, state.get(key));
         }
+        replaceDocuments("wearable_document", "doc_key", documents);
     }
 
     private void replaceRows(String table, String sql, JSONArray rows, RowBinder binder) {
-        jdbc.update("DELETE FROM " + table);
-        if (rows == null) return;
-        for (int i = 0; i < rows.size(); i++) {
+        Map<String, String> old = new LinkedHashMap<String, String>();
+        Map<String, Integer> order = new LinkedHashMap<String, Integer>();
+        jdbc.query("SELECT id, body, sort_order FROM " + table, rs -> {
+            old.put(rs.getString("id"), rs.getString("body"));
+            order.put(rs.getString("id"), rs.getInt("sort_order"));
+        });
+        Set<String> kept = new HashSet<String>();
+        String columns = sql.substring(sql.indexOf('(') + 1, sql.indexOf(')'));
+        StringBuilder update = new StringBuilder(sql).append(" ON DUPLICATE KEY UPDATE ");
+        for (String column : columns.split(",")) {
+            column = column.trim(); if ("id".equals(column)) continue;
+            if (update.charAt(update.length() - 1) != ' ') update.append(',');
+            update.append(column).append("=VALUES(").append(column).append(')');
+        }
+        for (int i = 0; rows != null && i < rows.size(); i++) {
             JSONObject row = rows.getJSONObject(i);
             if (row == null || text(row, "id") == null) throw new GuardianRejected("后台台账无法保存");
+            String id = row.getString("id");
+            if (!kept.add(id)) throw new GuardianRejected("后台台账存在重复编号");
+            if (row.toJSONString().equals(old.get(id)) && Integer.valueOf(i).equals(order.get(id))) continue;
             List<Object> args = new ArrayList<Object>();
             binder.bind(args, row);
             args.add(i);
             args.add(row.toJSONString());
-            jdbc.update(sql, args.toArray());
+            jdbc.update(update.toString(), args.toArray());
         }
+        for (String id : old.keySet()) if (!kept.contains(id)) jdbc.update("DELETE FROM " + table + " WHERE id=?", id);
+    }
+
+    private void replaceDocuments(String table, String column, JSONObject next) {
+        Map<String, String> previous = new LinkedHashMap<String, String>();
+        jdbc.query("SELECT " + column + ", body FROM " + table, rs -> { previous.put(rs.getString(1), rs.getString(2)); });
+        for (String key : next.keySet()) {
+            String body = JSON.toJSONString(next.get(key));
+            if (!body.equals(previous.get(key))) jdbc.update("INSERT INTO " + table + " (" + column + ", body) VALUES (?, ?) ON DUPLICATE KEY UPDATE body=VALUES(body)", key, body);
+        }
+        for (String key : previous.keySet()) if (!next.containsKey(key)) jdbc.update("DELETE FROM " + table + " WHERE " + column + "=?", key);
     }
 
     private void ensureSchema() {
-        jdbc.execute("CREATE TABLE IF NOT EXISTS admin_ledger (id TINYINT NOT NULL PRIMARY KEY, body LONGTEXT NOT NULL, updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)");
         if (transactions != null) return;
+        jdbc.execute("CREATE TABLE IF NOT EXISTS admin_ledger (id TINYINT NOT NULL PRIMARY KEY, body LONGTEXT NOT NULL, updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)");
         try {
             String sql = StreamUtils.copyToString(new ClassPathResource("db/20261003_wearable_master.sql").getInputStream(), StandardCharsets.UTF_8);
             for (String part : sql.split(";")) {
@@ -227,9 +268,7 @@ public class AdminLedgerStore {
     private static boolean readable(JSONObject state) {
         if (state == null) return false;
         JSONArray sites = state.getJSONArray("sites");
-        if (sites == null || sites.isEmpty()) return false;
-        JSONObject site = sites.getJSONObject(0);
-        return site != null && site.getString("name") != null && CJK.matcher(site.getString("name")).find();
+        return sites != null;
     }
 
     private static String text(JSONObject row, String key) {

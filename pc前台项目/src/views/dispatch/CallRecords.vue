@@ -9,14 +9,15 @@ import { session } from "@/stores/session";
 import { openModal } from "@/stores/modal";
 import { personName, revision } from "@/lib/queries";
 import { sharedCalls } from '@/lib/shared-communications';
+import { formatBeijingDateTime } from '@/lib/date-time';
 
 const rows = computed(() => {
   revision();
-  return [...sharedCalls(session.station), ...db.state.calls.filter((call) => call.station === session.station)];
+  return [...sharedCalls(session.station), ...db.state.calls.filter((call) => call.station === session.station)].sort((a, b) => String(b.time).localeCompare(String(a.time)));
 });
 
 function names(call) {
-  return (call.members || []).map((id) => personName(id)).join("、");
+  return (call.members || []).map((id) => personName(id)).join("、") || '未关联人员';
 }
 
 function openDetail(id) {
@@ -31,10 +32,10 @@ function openDetail(id) {
 <template>
   <AppTable :rows="rows" v-slot="{ rows: pageRows }" :columns="['时间', '类型', '参与人员', '状态', '操作']" :empty="!rows.length">
     <tr v-for="call in pageRows" :key="call.id">
-      <td>{{ call.time }}</td>
+      <td>{{ formatBeijingDateTime(call.time) }}</td>
       <td>{{ call.kind }}</td>
       <td>{{ names(call) }}</td>
-      <td><AppTag>{{ call.status }}</AppTag></td>
+      <td><AppTag>{{ call.status === '已结束' ? call.status : call.statusLabel || (call.rtc ? '设备接通待确认' : call.status) }}</AppTag></td>
       <td><AppButton tone="small" @click="openDetail(call.id)">详情</AppButton></td>
     </tr>
   </AppTable>

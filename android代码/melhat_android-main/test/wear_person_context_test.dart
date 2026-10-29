@@ -14,7 +14,7 @@ void main() {
       final router = await _mount(tester, location: _location);
       expect(find.text('现场信息'), findsOneWidget);
       expect(find.text('31.230400, 121.473700'), findsOneWidget);
-      expect(find.text('定位正常'), findsOneWidget);
+      expect(find.text('近期有效定位'), findsOneWidget);
       expect(find.text('暂无进行中的作业'), findsOneWidget);
       expect(find.text('P-007'), findsOneWidget);
       expect(find.text('巡检一班'), findsOneWidget);
@@ -55,7 +55,7 @@ void main() {
     expect(find.text('未知'), findsWidgets);
     expect(find.text('当前作业'), findsOneWidget);
     expect(find.text('暂无进行中的作业'), findsOneWidget);
-    expect(find.text('定位正常'), findsNothing);
+    expect(find.text('近期有效定位'), findsNothing);
   });
 
   testWidgets('stale and demo samples remain explicitly qualified', (
@@ -67,7 +67,7 @@ void main() {
     );
     expect(find.text('定位已陈旧'), findsOneWidget);
     expect(find.text('示例数据'), findsOneWidget);
-    expect(find.text('定位正常'), findsNothing);
+    expect(find.text('近期有效定位'), findsNothing);
   });
 
   testWidgets('optional location failure does not hide person or contact', (
@@ -97,16 +97,16 @@ void main() {
       await _mount(tester, location: {..._location, 'personId': '8'});
       expect(find.text('31.230400, 121.473700'), findsNothing);
       expect(find.text('未知'), findsOneWidget);
-      expect(find.text('定位正常'), findsNothing);
+      expect(find.text('近期有效定位'), findsNothing);
     },
   );
 
   testWidgets('invalid coordinates cannot be marked as a normal location', (
     tester,
   ) async {
-    await _mount(tester, location: {..._location, 'lat': 1000});
+    await _mount(tester, location: {..._location, 'latitude': 1000});
     expect(find.text('未知'), findsOneWidget);
-    expect(find.text('定位正常'), findsNothing);
+    expect(find.text('近期有效定位'), findsNothing);
   });
 
   testWidgets(
@@ -123,16 +123,20 @@ void main() {
   );
 }
 
-const _location = <String, dynamic>{
+final _location = <String, dynamic>{
   'personId': '7',
   'personCode': 'P-007',
   'personName': '张三',
   'deviceId': '42',
   'sn': 'HELMET-42',
-  'lat': 31.2304,
-  'lng': 121.4737,
-  'occurredAt': '2026-09-18T10:20:00+08:00',
-  'locationQuality': 'ok',
+  'latitude': 31.2304,
+  'longitude': 121.4737,
+  'locationReportedAt': DateTime.now()
+      .subtract(const Duration(seconds: 1))
+      .toIso8601String(),
+  'locationQuality': 'valid',
+  'coordinateSystem': 'GCJ02',
+  'locationFreshness': 'CURRENT',
   'connectionQuality': 'ok',
   'source': 'helmet',
   'floor': null,
@@ -212,10 +216,15 @@ Future<GoRouter> _mount(
       },
     ),
   );
-  final session = WearSession(dio: dio, credentials: _MemoryCredentials())
-    ..token = 'token'
-    ..siteId = '1'
-    ..me = {'userId': '99', 'roles': ['wear_platform_admin']};
+  // This fixture implements the Android view API, not the shared Spring API.
+  final session =
+      WearSession(dio: dio, credentials: _MemoryCredentials(), mock: true)
+        ..token = 'token'
+        ..siteId = '1'
+        ..me = {
+          'userId': '99',
+          'roles': ['wear_platform_admin'],
+        };
   addTearDown(session.dispose);
   final router = GoRouter(
     initialLocation: '/people/7',

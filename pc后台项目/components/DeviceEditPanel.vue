@@ -1,4 +1,4 @@
-<template><div class="device-edit-entry"><button class="button" :class="{ primary: !device }" :disabled="disabled" :aria-busy="loading" @click="openEditor">{{ device ? '编辑设备资料' : '新建设备' }}</button><small v-if="loading" role="status">正在读取型号与区域…</small><small v-if="disabled" class="disabled-reason">{{ reason || '当前身份无资产维护权限' }}</small><p v-if="openError" role="alert" class="error">{{ openError.message }}</p><p v-if="notice" role="status" class="notice">{{ notice }}</p></div>
+<template><div class="device-edit-entry"><button class="button" :class="{ primary: !device }" :disabled="disabled" :aria-busy="loading" @click="openEditor">{{ device ? '编辑设备资料' : '新建设备' }}</button><small v-if="loading" role="status">正在加载…</small><small v-if="disabled" class="disabled-reason">{{ reason || '当前身份无资产维护权限' }}</small><p v-if="openError" role="alert" class="error">{{ openError.message }}</p><p v-if="notice" role="status" class="notice">{{ notice }}</p></div>
   <ModalPanel :open="open" layout="form" :title="device ? '编辑设备档案' : '新建设备档案'" heading-id="device-editor-heading" @close="close"><DeviceEditor v-if="open && options" :key="editorKey" :row="snapshot" :options="options" :busy="busy" :error="error" @save="save" @dirty="dirty = true" @close="close" /></ModalPanel>
 </template>
 <script setup>
@@ -28,8 +28,8 @@ async function openEditor() {
 async function save(data) {
   busy.value = true; error.value = null; controller = new AbortController()
   try {
-    await provider.execute(`devices.${snapshot.value ? 'update' : 'create'}`, { siteId: store.siteId, id: snapshot.value?.id, expectedVersion: snapshot.value?.version, operationId, relatedVersions: Object.fromEntries(options.value.areas.map(a => [a.id, a.version])), data }, { signal: controller.signal })
-    busy.value = false; dirty.value = false; open.value = false; notice.value = '设备资料已保存到当前页面。通信与真实验证状态未改变。'
+    await provider.execute(`devices.${snapshot.value ? 'update' : 'create'}`, { siteId: store.siteId, id: snapshot.value?.id, expectedVersion: snapshot.value?.version, operationId, data }, { signal: controller.signal })
+    busy.value = false; dirty.value = false; open.value = false; notice.value = '设备资料已保存。'
   } catch (e) { if (e.name !== 'AbortError') { error.value = e; if (e.code === 401) provider.invalidate() } } finally { busy.value = false }
 }
 const unsubscribe = provider.subscribe(e => { if (['identity', 'expired', 'reset', 'context', 'authorization'].includes(e.kind)) { run++; controller?.abort(); dirty.value = false; busy.value = false; loading.value = false; open.value = false; notice.value = '' } })

@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core.dart';
+import '../location_map.dart';
+import 'location_history.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
 
@@ -225,6 +228,25 @@ class _PersonPageState extends State<PersonPage> {
   bool _loading = true;
   Object? _error;
   int _request = 0;
+  Timer? _locationTimer;
+  @override
+  void initState() {
+    super.initState();
+    _locationTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      final session = _session;
+      if (mounted &&
+          session != null &&
+          WidgetsBinding.instance.lifecycleState != AppLifecycleState.paused) {
+        _loadLocation(session, _request, session.scopeKey);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -469,8 +491,8 @@ class _PersonSiteContext extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lat = double.tryParse(location?['lat']?.toString() ?? '');
-    final lng = double.tryParse(location?['lng']?.toString() ?? '');
+    final lat = double.tryParse(location?['latitude']?.toString() ?? '');
+    final lng = double.tryParse(location?['longitude']?.toString() ?? '');
     final hasPosition =
         lat != null &&
         lng != null &&
@@ -479,9 +501,13 @@ class _PersonSiteContext extends StatelessWidget {
         lat.abs() <= 90 &&
         lng.abs() <= 180;
     final quality = switch (location?['locationQuality']) {
-      'ok' when hasPosition => '定位正常',
+      'valid' ||
+      'ok' when hasPosition && isCurrentLocation(location ?? {}) => '近期有效定位',
       'stale' => '定位已陈旧',
-      _ => '定位状态未知',
+      _ =>
+        location?['coordinateSystem'] == 'UNKNOWN'
+            ? '坐标系尚未确认，保留原始坐标'
+            : '定位状态未知或已过期',
     };
     return WearCard(
       child: Column(
@@ -518,9 +544,29 @@ class _PersonSiteContext extends StatelessWidget {
           ),
           if (hasPosition)
             DetailField(
-              label: '定位时间',
-              value: formatTime(location?['occurredAt']),
+              label: location?['locationTimeBasis'] == 'DEVICE_COLLECTED_AT'
+                  ? '设备采集时间'
+                  : '位置接收时间',
+              value: formatTime(location?['locationReportedAt']),
             ),
+          if (!failed &&
+              location != null &&
+              isCurrentLocation(location ?? {}) &&
+              verifiedLocation(location!) != null)
+            VerifiedLocationMap(
+              interactive: false,
+              rows: [location!],
+              system: idOf(location!['coordinateSystem']),
+            ),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => LocationHistoryPage(personId: personId),
+              ),
+            ),
+            icon: const Icon(Icons.route_outlined),
+            label: const Text('查看历史轨迹'),
+          ),
           DetailField(
             label: '当前作业',
             value: tasksLoading

@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "message": "success",
+  "requestId": "00000000-0000-4000-8000-000000000002",
+  "serverTime": "2026-10-27T08:00:00.000Z",
+  "data": {
+    "items": [],
+    "nextCursor": "MnwxfDdlYTUxZmJhYjE2MWNkMTA4ZmM3MWUxYTc5Mjk0NzNjMjA3MDk3NWQ4Y2I2ZDRmMzFlNGU3MGI0ZTRjMTQ4OGM.b5cf1108f90229af30d302c059054c600552352b64ae4336b2767756ce84c855",
+    "hasMore": false
+  }
+}

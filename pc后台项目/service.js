@@ -3,11 +3,10 @@ import { can, hasSite, system } from './access'
 import { ENTITIES, queryMaster, authorizeMaster, applyMaster } from './masterData'
 import { DEVICE_QUERIES, queryDevices, authorizeDevice, applyDevice } from './deviceData'
 import { relationship } from './relations'
-import { ASSIGNMENT_QUERIES, queryAssignments, authorizeAssignment, applyAssignment, availableForIssue } from './assignmentData'
-import { MAINTENANCE_QUERIES, MAINTENANCE_COMMANDS, queryMaintenance, authorizeMaintenance, applyMaintenance, activeMaintenance } from './maintenanceData'
+import { ASSIGNMENT_QUERIES, queryAssignments, authorizeAssignment, applyAssignment } from './assignmentData'
+import { MAINTENANCE_QUERIES, MAINTENANCE_COMMANDS, queryMaintenance, authorizeMaintenance, applyMaintenance } from './maintenanceData'
 import { GROUP_QUERIES, GROUP_COMMANDS, queryCollaboration, authorizeCollaboration, applyCollaboration } from './collaborationData'
 import { authorizationDiff, needsAuthorizationPreview } from './authorizationPreview'
-import { INTEGRATION_QUERIES, INTEGRATION_COMMANDS, queryIntegrations, authorizeIntegration, applyIntegration } from './integrationData'
 import { queryAudit } from './auditData'
 import { portalEnabled, publishPortal, readTelemetry } from './portalSync'
 export { relationship } from './relations'
@@ -46,7 +45,7 @@ function clearAdminState() { browserStore()?.removeItem(ADMIN_STATE_KEY) }
 export function createAdminService({ storage, delay = 200, seed = createSeed, commands = {}, now = () => new Date().toISOString(), initialState = null } = {}) {
   let state = initialState || loadAdminState(seed), epoch = 0, sequence = 0, contextGeneration = 0
   let remoteSave = null, remoteLogin = null
-  let scenario = { target: 'overview', mode: 'normal', delayNext: false }
+  let scenario = { target: 'devices', mode: 'normal', delayNext: false }
   const listeners = new Set()
   const previews = new Map()
   const clearSession = () => { storage?.removeItem(TOKEN_KEY); storage?.removeItem(SESSION_VERSION_KEY); previews.clear() }
@@ -78,17 +77,6 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       signal?.addEventListener('abort', abort, { once: true })
     })
   }
-  function rowsFor(user, siteId, metric) {
-    if (!['assets', 'available', 'assigned', 'maintenance', 'unknown', 'conflict'].includes(metric)) throw fail(400, 'INVALID_METRIC', '不支持的明细类型')
-    return state.devices.filter(d => d.siteId === siteId && can(state, user, 'assets:read', d)).flatMap(d => {
-      const r = relationship(state, d)
-      const row = { ...d, relation: r.state, personName: r.person && can(state, user, 'people:read', r.person) ? r.person.name : null }
-      if (metric === 'assets') return [row]
-      if (metric === 'maintenance') return state.maintenanceOrders.filter(o => o.deviceId === d.id && o.siteId === siteId && activeMaintenance(o)).map(o => ({ ...row, id: o.id, deviceId: d.id, reason: o.reason }))
-      if (metric === 'available') return availableForIssue(state, d) ? [row] : []
-      return r.state === metric.toUpperCase() ? [row] : []
-    })
-  }
   function page(rows, input) {
     const pageNum = input.pageNum ?? 1, pageSize = input.pageSize ?? 20
     if (!Number.isInteger(pageNum) || pageNum < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) throw fail(400, 'INVALID_PAGE', '分页参数无效')
@@ -109,14 +97,13 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     if (kind === 'context') return response({ sites: state.sites.filter(s => hasSite(state, current, s.id)), identity: current })
     checkSite(current, input.siteId)
     const master = ['master', 'record', 'person', 'options', 'impacts'].includes(kind)
-    const permission = INTEGRATION_QUERIES.includes(kind) ? 'integrations:read' : GROUP_QUERIES.includes(kind) || kind === 'authorizationPreview' ? 'access:read' : ['audit', 'auditDetail', 'auditExport'].includes(kind) ? 'audit:read' : kind === 'overview' ? 'overview:read' : 'assets:read'
+    const permission = GROUP_QUERIES.includes(kind) || kind === 'authorizationPreview' ? 'access:read' : ['audit', 'auditDetail', 'auditExport'].includes(kind) ? 'audit:read' : 'assets:read'
     if (!master && !hasSite(state, current, input.siteId, permission)) throw fail(403, 'PERMISSION_DENIED', '当前身份无此查询权限')
     if ((captured.target === kind || (master && captured.target === input.entity)) && captured.mode !== 'normal') {
       if (captured.mode === 'unavailable') return response({ availability: 'NOT_CONNECTED', reason: '当前查询来源未接入（预置场景）' })
       throw fail(captured.mode === 'forbidden' ? 403 : 503, captured.mode === 'forbidden' ? 'SECTION_DENIED' : 'SOURCE_FAILURE', captured.mode === 'forbidden' ? '当前分区无权限（预置场景）' : '数据请求失败，请恢复场景后重试')
     }
     if (master) return response(queryMaster(state, current, kind, input, { fail, page, now: now(), relationship }))
-    if (INTEGRATION_QUERIES.includes(kind)) return response(queryIntegrations(state, current, kind, input, { fail, page, now: now() }))
     if (['audit', 'auditDetail', 'auditExport'].includes(kind)) return response(queryAudit(state, current, kind, input, { fail, page, now: now(), redact }))
     if (kind === 'authorizationPreview') {
       const { type, command } = input
@@ -135,11 +122,6 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     if (MAINTENANCE_QUERIES.includes(kind)) return response(queryMaintenance(state, current, kind, input, { fail, page }))
     if (ASSIGNMENT_QUERIES.includes(kind)) return response(queryAssignments(state, current, kind, input, { fail, page }))
     if (DEVICE_QUERIES.includes(kind)) return response(queryDevices(state, current, kind, input, { fail, page, relationship }))
-    if (kind === 'overview') {
-      if (!hasSite(state, current, input.siteId, 'assets:read')) throw fail(403, 'SECTION_DENIED', '当前身份无权查看资产指标，不能以零值代替')
-      return response({ availability: 'AVAILABLE', counts: Object.fromEntries(['assets', 'available', 'assigned', 'maintenance', 'unknown', 'conflict'].map(m => [m, rowsFor(current, input.siteId, m).length])) })
-    }
-    if (kind === 'details') return response({ availability: 'AVAILABLE', ...page(rowsFor(current, input.siteId, input.metric ?? 'assets'), input) })
     throw fail(400, 'UNKNOWN_QUERY', '未实现此查询')
   }
   function response(data) { return copy({ code: 200, requestId: `admin-mock-${++sequence}`, data }) }
@@ -165,34 +147,6 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     await wait(signal)
     if (epoch !== startEpoch || actor().id !== user.id) throw fail(401, 'SESSION_CHANGED', '身份已变化，操作未提交')
     if (generation !== contextGeneration) throw new DOMException('上下文已变化', 'AbortError')
-    if (INTEGRATION_COMMANDS.includes(type)) {
-      checkSite(actor(), input.siteId)
-      const row = authorizeIntegration(state, actor(), type, input, fail)
-      if (typeof input.operationId !== 'string' || !input.operationId || input.operationId.length > 100) throw fail(400, 'OPERATION_REQUIRED', '操作标识无效')
-      const key = JSON.stringify([user.id, type, input.operationId]), fingerprint = JSON.stringify(stable(input)), previous = state.idempotency[key]
-      if (previous) { if (previous.fingerprint !== fingerprint) throw fail(409, 'IDEMPOTENCY_CONFLICT', '相同操作标识不能用于不同内容'); return copy(previous.result) }
-      const draft = copy(state), occurredAt = now()
-      const output = applyIntegration(draft, actor(), type, copy(input), { fail, now: occurredAt })
-      if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
-      const result = response(output)
-      draft.revision++
-      const attempt = type === 'integrations.test' ? output.lastTest : type === 'integrations.receipt' ? output.lastReceipt : null
-      const auditResult = output.status === 'FAILED' || (attempt && attempt.result !== 'SUCCESS') ? 'SOURCE_FAILURE' : output.status === 'CONFLICT' ? 'BUSINESS_REJECTED' : 'SUCCESS'
-      draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: null, actorName: user.name, actorId: user.id, action: type, objectId: output.id, objectName: output.name || row?.name || '模拟接入任务', occurredAt, result: auditResult, requestId: result.requestId, operationId: input.operationId, before: row ? redact(copy(row)) : null, after: redact(copy(output)), source: '本后台合成样本；未访问外部系统，未改变真实接入状态' })
-      if (type === 'integrations.confirm') {
-        const connector = draft.integrations.find(c => c.id === output.connectorId)
-        const collection = connector.kind === 'DEVICE' ? 'devices' : 'people'
-        for (const item of output.rows.filter(r => ['CREATE', 'UPDATE'].includes(r.action))) {
-          const before = state[collection].find(r => r.id === item.targetId)
-          const after = draft[collection].find(r => r.id === item.targetId)
-          draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: after.areaId, actorName: user.name, actorId: user.id, action: `integrations.${item.action.toLowerCase()}`, objectId: after.id, objectName: after.name, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, jobId: output.id, before: before ? redact(copy(before)) : null, after: redact(copy(after)), source: '本后台合成样本；仅来源白名单字段，未改变领用关系' })
-        }
-      }
-      draft.idempotency[key] = { fingerprint, result }
-      remember(draft)
-      emit('revision')
-      return copy(result)
-    }
     if (GROUP_COMMANDS.includes(type)) {
       checkSite(actor(), input.siteId)
       const row = authorizeCollaboration(state, actor(), type, input, fail)
@@ -202,7 +156,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       const draft = copy(state), occurredAt = now(), output = applyCollaboration(draft, actor(), type, copy(input), { fail, now: occurredAt })
       if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
       const result = response(output); draft.revision++
-      draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: output.areaId || null, actorName: user.name, action: type, objectId: output.id, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before: row ? redact(copy(row)) : null, after: redact(copy(output)), source: '前端内存本地；未修改真实凭据、未发送通知' })
+      draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, actorName: user.name, action: type, objectId: output.id, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before: row ? redact(copy(row)) : null, after: redact(copy(output)), source: '前端内存本地；未修改真实凭据、未发送通知' })
       draft.idempotency[key] = { fingerprint, result }; remember(draft); emit('revision'); return copy(result)
     }
     if (MAINTENANCE_COMMANDS.includes(type)) {
@@ -214,7 +168,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       const draft = copy(state), occurredAt = now(), output = applyMaintenance(draft, actor(), type, copy(input), { fail, now: occurredAt })
       if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
       const result = response(output); draft.revision++
-      draft.audit.push({ id: `audit-${++sequence}`, siteId: device.siteId, areaId: device.areaId, actorName: user.name, action: type, objectId: device.id, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, after: redact(output), source: '前端内存本地；非正式审批或设备安全认证' })
+      draft.audit.push({ id: `audit-${++sequence}`, siteId: device.siteId, actorName: user.name, action: type, objectId: device.id, occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, after: redact(output), source: '前端内存本地；非正式审批或设备安全认证' })
       draft.idempotency[key] = { fingerprint, result }; await rememberPublished(draft, type); emit('revision'); return copy(result)
     }
     if (type.startsWith('assignments.')) {
@@ -226,12 +180,22 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       const draft = copy(state), output = applyAssignment(draft, actor(), type, copy(input), { fail, now: now() })
       if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
       const result = response(output); draft.revision++
-      for (const h of output.history) draft.audit.push({ id: `audit-${++sequence}`, siteId: h.siteId, areaId: h.areaId, actorName: user.name, action: type, objectId: h.deviceId, batchId: output.batchId, occurredAt: h.occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, after: { historyId: h.id, batchId: h.batchId, action: h.action, condition: h.condition, maintenanceOrderId: h.maintenanceOrderId }, source: '前端内存本地；人员及设备快照通过领用历史授权查询' })
+      for (const h of output.history) draft.audit.push({ id: `audit-${++sequence}`, siteId: h.siteId, actorName: user.name, action: type, objectId: h.deviceId, batchId: output.batchId, occurredAt: h.occurredAt, result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, after: { historyId: h.id, batchId: h.batchId, action: h.action, condition: h.condition, maintenanceOrderId: h.maintenanceOrderId }, source: '前端内存本地；人员及设备快照通过领用历史授权查询' })
       draft.idempotency[key] = { fingerprint, result }; await rememberPublished(draft, type); emit('revision'); return copy(result)
     }
     if (ENTITIES[type.split('.')[0]] || type.startsWith('devices.')) {
       const deviceCommand = type.startsWith('devices.')
       if (!system(actor()) || type.split('.')[0] !== 'sites') checkSite(actor(), input.siteId)
+      if (['people.delete', 'accounts.delete', 'roles.delete'].includes(type) && typeof input.operationId === 'string' && input.operationId.length > 0 && input.operationId.length <= 100) {
+        const previous = state.idempotency[JSON.stringify([user.id, type, input.operationId])]
+        if (previous) {
+          if (previous.fingerprint !== JSON.stringify(stable(input))) throw fail(409, 'IDEMPOTENCY_CONFLICT', '相同操作标识不能用于不同内容')
+          // Recheck current permissions against the deleted snapshot before replaying.
+          const entity = type.split('.')[0]
+          authorizeMaster({ ...state, [entity]: [...state[entity], previous.result.data] }, actor(), type, input, fail)
+          return copy(previous.result)
+        }
+      }
       const meta = deviceCommand ? authorizeDevice(state, actor(), type, input, fail) : authorizeMaster(state, actor(), type, input, fail)
       if (!input.operationId || typeof input.operationId !== 'string' || input.operationId.length > 100) throw fail(400, 'OPERATION_REQUIRED', '操作标识无效')
       const key = JSON.stringify([user.id, type, input.operationId]), fingerprint = JSON.stringify(stable(input)), previous = state.idempotency[key]
@@ -246,9 +210,9 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
       const result = response(output)
       draft.revision++
-      draft.audit.push({ id: `audit-${++sequence}`, siteId: meta.entity === 'sites' ? output.id : input.siteId, areaId: output.areaId || null, actorName: user.name, action: type, objectId: output.id, occurredAt: now(), result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before, after: redact(copy(output)), source: '前端内存本地' })
+      draft.audit.push({ id: `audit-${++sequence}`, siteId: meta.entity === 'sites' ? output.id : input.siteId, actorName: user.name, action: type, objectId: output.id, occurredAt: now(), result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before, after: redact(copy(output)), source: '前端内存本地' })
       draft.idempotency[key] = { fingerprint, result }; await rememberPublished(draft, type)
-      const authorizationChanged = ['accounts', 'roles', 'sites', 'areas'].includes(meta.entity)
+      const authorizationChanged = ['accounts', 'roles', 'sites'].includes(meta.entity)
       if (authorizationChanged) contextGeneration++
       if (!state.accounts.some(a => a.id === user.id && a.enabled)) { clearSession(); epoch++; emit('expired') }
       else emit(authorizationChanged ? 'authorization' : 'revision')
@@ -274,7 +238,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     if (signal?.aborted || epoch !== startEpoch || generation !== contextGeneration) throw new DOMException('提交前已取消', 'AbortError')
     const result = response(output)
     draft.revision++
-    draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, areaId: object.areaId, actorName: user.name, action: type, objectId: object.id, occurredAt: new Date().toISOString(), result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before, after: redact(copy(command.locate(draft, input))), source: '前端内存本地' })
+    draft.audit.push({ id: `audit-${++sequence}`, siteId: input.siteId, actorName: user.name, action: type, objectId: object.id, occurredAt: new Date().toISOString(), result: 'SUCCESS', requestId: result.requestId, operationId: input.operationId, before, after: redact(copy(command.locate(draft, input))), source: '前端内存本地' })
     draft.idempotency[key] = { fingerprint, result }
     remember(draft)
     emit('revision')
@@ -299,11 +263,11 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     changeContext() { contextGeneration++; emit('context') },
     scenario: () => copy(scenario),
     setScenario(next) {
-      if (!['overview', 'details', 'audit', 'auditDetail', 'auditExport', 'authorizationPreview', ...INTEGRATION_QUERIES, ...GROUP_QUERIES, ...DEVICE_QUERIES, ...ASSIGNMENT_QUERIES, ...MAINTENANCE_QUERIES, ...Object.keys(ENTITIES)].includes(next.target) || !['normal', 'unavailable', 'failure', 'forbidden'].includes(next.mode)) throw fail(400, 'INVALID_SCENARIO', '场景参数无效')
+      if (!['audit', 'auditDetail', 'auditExport', 'authorizationPreview', ...GROUP_QUERIES, ...DEVICE_QUERIES, ...ASSIGNMENT_QUERIES, ...MAINTENANCE_QUERIES, ...Object.keys(ENTITIES)].includes(next.target) || !['normal', 'unavailable', 'failure', 'forbidden'].includes(next.mode)) throw fail(400, 'INVALID_SCENARIO', '场景参数无效')
       scenario = { ...next, delayNext: next.delayNext === true }; contextGeneration++; emit('scenario')
     },
-    restoreScenario() { scenario = { target: 'overview', mode: 'normal', delayNext: false }; contextGeneration++; emit('scenario') },
-    reset() { clearAdminState(); const previous = state; state = seed(); try { persist() } catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') } scenario = { target: 'overview', mode: 'normal', delayNext: false }; epoch++; contextGeneration++; clearSession(); emit('reset') },
+    restoreScenario() { scenario = { target: 'devices', mode: 'normal', delayNext: false }; contextGeneration++; emit('scenario') },
+    reset() { clearAdminState(); const previous = state; state = seed(); try { persist() } catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') } scenario = { target: 'devices', mode: 'normal', delayNext: false }; epoch++; contextGeneration++; clearSession(); emit('reset') },
     hydrate: async () => { if (!portalEnabled() || !await readTelemetry(state)) return false; try { persist() } catch { /* 电量已在内存，台账保存失败不阻断页面 */ } emit('revision'); return true },
     exportState: () => copy(state),
     replaceState(next) { if (!next) return; state = next; emit('revision') },

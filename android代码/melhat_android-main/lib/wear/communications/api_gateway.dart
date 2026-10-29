@@ -13,6 +13,7 @@ class WearCommunicationsGateway implements CommunicationsGateway {
     required String kind,
     required bool video,
     required String idempotencyKey,
+    Map<String, dynamic> recipient = const {},
     String? eventId,
   }) async {
     final data = jsonMap(
@@ -20,6 +21,9 @@ class WearCommunicationsGateway implements CommunicationsGateway {
         '/api/v1/calls',
         data: {
           'deviceId': deviceId,
+          'personId': recipient['personId'],
+          'assignmentId': recipient['assignmentId'],
+          'assignmentVersion': recipient['assignmentVersion'],
           if (eventId != null && eventId.isNotEmpty) 'eventId': eventId,
           'kind': kind,
           'video': video,
@@ -67,12 +71,23 @@ class WearCommunicationsGateway implements CommunicationsGateway {
     required List<String> deviceIds,
     required String text,
     required String idempotencyKey,
+    List<Map<String, dynamic>> recipients = const [],
     String? eventId,
   }) async => jsonList(
     await api.post(
       '/api/v1/commands/tts',
       data: {
         'deviceIds': deviceIds,
+        'recipients': recipients
+            .map(
+              (r) => {
+                'deviceId': r['deviceId'],
+                'personId': r['personId'],
+                'assignmentId': r['assignmentId'],
+                'assignmentVersion': r['assignmentVersion'],
+              },
+            )
+            .toList(),
         'text': text,
         if (eventId != null && eventId.isNotEmpty) 'eventId': eventId,
         'idempotencyKey': idempotencyKey,

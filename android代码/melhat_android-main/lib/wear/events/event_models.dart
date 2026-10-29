@@ -63,6 +63,8 @@ class WearEvent {
     this.alarmName = '',
     this.alarmDescription = '',
     this.locationDescription = '',
+    this.coordinateSystem = 'UNKNOWN',
+    this.locationReportedAt = '',
     this.observations = const [],
     this.verification = const {},
     this.verificationDraft = const {},
@@ -89,6 +91,10 @@ class WearEvent {
       alarmName: _text(json['alarmName']),
       alarmDescription: _text(json['alarmDescription']),
       locationDescription: _text(json['location']),
+      coordinateSystem: _text(json['coordinateSystem']).isEmpty
+          ? 'UNKNOWN'
+          : _text(json['coordinateSystem']),
+      locationReportedAt: _text(json['locationReportedAt']),
       observations: (json['observations'] as List? ?? [])
           .whereType<Map>()
           .map((v) => Map<String, dynamic>.from(v))
@@ -146,6 +152,7 @@ class WearEvent {
   final String alarmName;
   final String alarmDescription;
   final String locationDescription;
+  final String coordinateSystem, locationReportedAt;
   final List<EventJson> observations;
   final EventJson verification, verificationDraft, assistance;
   final EventJson? permissions;

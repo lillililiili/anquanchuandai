@@ -55,6 +55,7 @@ public class AdminAccessService {
         String fingerprint = org.apache.commons.codec.digest.DigestUtils.sha256Hex(input.toJSONString());
         if (previous != null) {
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
+            if ("accounts.delete".equals(type) || "roles.delete".equals(type)) authorize(state, actor, type.startsWith("roles.") ? "roles" : "accounts", "delete", previous.getJSONObject("result").getJSONObject("data"), input);
             return previous.getJSONObject("result");
         }
         if (needsPreview(state, actor, type, input)) checkPreview(state, actor, type, input);
@@ -122,8 +123,10 @@ public class AdminAccessService {
         JSONObject row = "create".equals(action) ? null : find(state, entity, input.getString("id"));
         authorize(state, actor, entity, action, row, input);
         if (!"create".equals(action) && input.getIntValue("expectedVersion") != row.getIntValue("version")) throw AdminQueryService.fail(409, "VERSION_CONFLICT", "对象已变化，请重新读取");
-        if ("delete".equals(action)) throw AdminQueryService.fail(400, "DELETE_DISABLED", "该资料仅支持启停，不允许删除");
-        if ("status".equals(action)) return status(row, input);
+        if ("delete".equals(action)) {
+            return "accounts".equals(entity) ? deleteAccount(state, row) : deleteRole(state, row);
+        }
+        if ("status".equals(action)) return status(entity, row, input);
         return "accounts".equals(entity) ? saveAccount(state, actor, action, row, input) : saveRole(state, action, row, input);
     }
 
@@ -137,16 +140,52 @@ public class AdminAccessService {
         if ("accounts".equals(entity) && row != null && !manageable(state, actor, row)) throw AdminQueryService.fail(403, "DELEGATION_DENIED", "不能管理自身、上级权限或超出自身范围的账号");
     }
 
-    private JSONObject status(JSONObject row, JSONObject input) {
+    private JSONObject status(String entity, JSONObject row, JSONObject input) {
         if (!(input.get("enabled") instanceof Boolean)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "启停状态无效");
         row.put("enabled", input.getBooleanValue("enabled"));
         row.put("version", row.getIntValue("version") + 1);
+        if ("roles".equals(entity)) row.put("updatedAt", Instant.now().toString());
         return row;
     }
 
+    private JSONObject deleteRole(JSONObject state, JSONObject row) {
+        String id = row.getString("id");
+        for (JSONObject account : rows(state, "accounts")) {
+            JSONArray roleIds = account.getJSONArray("roleIds");
+            if (roleIds != null && roleIds.contains(id)) throw AdminQueryService.fail(409, "REFERENCED", "该角色仍有关联账号，请先为这些账号改绑角色或删除账号");
+        }
+        JSONArray roles = state.getJSONArray("roles");
+        for (int i = roles.size() - 1; i >= 0; i--) if (id.equals(roles.getJSONObject(i).getString("id"))) roles.remove(i);
+        JSONObject output = copy(row);
+        output.put("deleted", true);
+        return output;
+    }
+
+    private JSONObject deleteAccount(JSONObject state, JSONObject row) {
+        String id = row.getString("id");
+        for (JSONObject order : rows(state, "maintenanceOrders")) {
+            if (id.equals(order.getString("handlerId")) && "OPEN".equals(order.getString("status"))) {
+                throw AdminQueryService.fail(409, "REFERENCED", "该账号仍有未完成维修工单，请先重新指派或完成工单");
+            }
+        }
+        for (JSONObject person : rows(state, "people")) {
+            if (id.equals(person.getString("accountId"))) clearPerson(state, person.getString("id"));
+        }
+        JSONArray accounts = state.getJSONArray("accounts");
+        for (int i = accounts.size() - 1; i >= 0; i--) {
+            if (id.equals(accounts.getJSONObject(i).getString("id"))) accounts.remove(i);
+        }
+        JSONObject output = copy(row);
+        output.put("deleted", true);
+        return output;
+    }
+
     private JSONObject saveAccount(JSONObject state, JSONObject actor, String action, JSONObject row, JSONObject input) {
+        if (input.containsKey("data") && input.get("data") != null && !(input.get("data") instanceof Map)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "账号资料格式无效");
         JSONObject data = input.getJSONObject("data");
         if (data == null) data = new JSONObject();
+        JSONArray bindings = accountBindings(data);
+        if (input.containsKey("relatedVersions") && input.get("relatedVersions") != null && !(input.get("relatedVersions") instanceof Map)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "关联资料版本格式无效");
         boolean creating = "create".equals(action);
         JSONObject record = creating ? new JSONObject() : copy(row);
         if (creating) {
@@ -176,51 +215,37 @@ public class AdminAccessService {
             person.put("version", person.getIntValue("version") + 1);
         } else if (row != null && row.getString("personId") != null) clearPerson(state, row.getString("personId"));
         record.put("personId", personId);
-        JSONArray bindings = data.getJSONArray("bindings");
-        if (bindings == null) bindings = new JSONArray();
-        if (creating && !bindings.isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "新账号先以无授权状态创建，再编辑分配角色");
         record.put("roleIds", new JSONArray());
-        record.put("roleScopes", new JSONObject());
-        List<String> seen = new ArrayList<String>();
+        record.remove("roleScopes");
         for (int i = 0; i < bindings.size(); i++) {
             JSONObject binding = bindings.getJSONObject(i);
             String roleId = binding.getString("roleId");
-            if (roleId == null || seen.contains(roleId)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "角色不能重复");
-            seen.add(roleId);
             JSONObject role = find(state, "roles", roleId);
             if (role == null || !role.getBooleanValue("enabled") || "system".equals(roleId) || (!"demo-system".equals(actor.getString("id")) && !DELEGATE.contains(roleId))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "此角色不可委派");
             JSONObject versions = input.getJSONObject("relatedVersions");
             if (versions != null && versions.containsKey(roleId) && versions.getIntValue(roleId) != role.getIntValue("version")) throw AdminQueryService.fail(409, "VERSION_CONFLICT", "角色已变化，请重新读取");
-            JSONArray siteIds = binding.getJSONArray("siteIds");
-            Object areas = binding.get("areaIds");
-            if (siteIds == null || siteIds.isEmpty() || (!"*".equals(areas) && !(areas instanceof JSONArray && !((JSONArray) areas).isEmpty()))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择角色的厂站和区域范围");
-            for (int s = 0; s < siteIds.size(); s++) {
-                String siteId = siteIds.getString(s);
-                if (find(state, "sites", siteId) == null || !find(state, "sites", siteId).getBooleanValue("enabled")) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "授权厂站未启用");
-                if (!covers(role, siteId)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "账号范围不能超过角色模板");
-                if ("*".equals(areas) && !grantAllowsAllAreas(role, siteId)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "区域角色不能扩大为全厂");
-                if (areas instanceof JSONArray) {
-                    JSONArray areaIds = (JSONArray) areas;
-                    boolean any = false;
-                    for (int a = 0; a < areaIds.size(); a++) {
-                        JSONObject area = find(state, "areas", areaIds.getString(a));
-                        if (area == null || !area.getBooleanValue("enabled") || !siteId.equals(area.getString("siteId"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "区域不属于选定厂站");
-                        if (!grantAllowsArea(role, siteId, area.getString("id"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "区域超出角色模板");
-                        if (!"demo-system".equals(actor.getString("id")) && !operationsCovered(state, actor, role, siteId, area.getString("id"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "不得委派超出自身的操作或范围");
-                        any = true;
-                    }
-                    if (!any) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "每个选定厂站至少需要一个授权区域");
-                }
-            }
+            if (!roleCovered(state, actor, role)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "角色完整权限或厂站范围超出可委派范围，或授权厂站未启用");
             record.getJSONArray("roleIds").add(roleId);
-            JSONObject scope = new JSONObject();
-            scope.put("siteIds", siteIds);
-            scope.put("areaIds", "*".equals(areas) ? "*" : areas);
-            record.getJSONObject("roleScopes").put(roleId, scope);
         }
-        record.put("description", record.getJSONArray("roleIds").isEmpty() ? "自定义本地账号 · 尚未分配授权" : "自定义本地账号 · 按角色范围访问");
+        record.put("description", record.getJSONArray("roleIds").isEmpty() ? "自定义用户账号 · 尚未分配授权" : "自定义用户账号 · 按角色范围访问");
         put(state, "accounts", record, creating);
         return record;
+    }
+
+    private JSONArray accountBindings(JSONObject data) {
+        if (!data.containsKey("bindings")) return new JSONArray();
+        Object raw = data.get("bindings");
+        if (!(raw instanceof List)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "角色绑定必须为数组");
+        List<?> values = (List<?>) raw;
+        if (values.size() > 1) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "一个用户只能绑定一个角色");
+        JSONArray bindings = new JSONArray();
+        bindings.addAll(values);
+        for (int i = 0; i < bindings.size(); i++) {
+            if (!(bindings.get(i) instanceof Map)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "角色绑定格式无效");
+            JSONObject binding = bindings.getJSONObject(i);
+            if (!(binding.get("roleId") instanceof String) || binding.getString("roleId").trim().isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择一个角色");
+        }
+        return bindings;
     }
 
     private JSONObject saveRole(JSONObject state, String action, JSONObject row, JSONObject input) {
@@ -228,34 +253,28 @@ public class AdminAccessService {
         if (data == null) data = new JSONObject();
         boolean creating = "create".equals(action);
         JSONObject record = creating ? new JSONObject() : copy(row);
+        String savedAt = Instant.now().toString();
         if (creating) {
             record.put("id", "roles-19007199254740993-" + nextId(state));
             record.put("enabled", true);
             record.put("builtin", false);
+            record.put("createdAt", savedAt);
         }
+        record.put("updatedAt", savedAt);
         record.put("name", required(data, "name", 100, "名称"));
         record.put("version", (row == null ? 0 : row.getIntValue("version")) + 1);
         JSONArray operations = data.getJSONArray("operations");
         JSONArray siteIds = data.getJSONArray("siteIds");
-        Object areas = data.get("areaIds");
         if (operations == null || operations.isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择已开放的操作，不允许通配权限");
         for (int i = 0; i < operations.size(); i++) if (!OPERATIONS.contains(operations.getString(i)) || "*".equals(operations.getString(i))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择已开放的操作，不允许通配权限");
         if (siteIds == null || siteIds.isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择启用的厂站");
         for (int i = 0; i < siteIds.size(); i++) if (find(state, "sites", siteIds.getString(i)) == null || !find(state, "sites", siteIds.getString(i)).getBooleanValue("enabled")) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择启用的厂站");
-        if (!"*".equals(areas)) {
-            if (!(areas instanceof JSONArray) || ((JSONArray) areas).isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择这些厂站内的区域");
-            for (int i = 0; i < ((JSONArray) areas).size(); i++) {
-                JSONObject area = find(state, "areas", ((JSONArray) areas).getString(i));
-                if (area == null || !area.getBooleanValue("enabled") || !siteIds.contains(area.getString("siteId"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择这些厂站内的区域");
-            }
-        }
         JSONArray ops = new JSONArray();
         ops.add("overview:read");
         for (int i = 0; i < operations.size(); i++) if (!ops.contains(operations.getString(i))) ops.add(operations.getString(i));
         JSONObject grant = new JSONObject();
         grant.put("operations", ops);
         grant.put("siteIds", siteIds);
-        grant.put("areaIds", "*".equals(areas) ? "*" : areas);
         JSONArray grants = new JSONArray();
         grants.add(grant);
         record.put("grants", grants);
@@ -293,7 +312,7 @@ public class AdminAccessService {
         JSONObject right = find(after, entity, input.getString("id"));
         if (left == null || right == null) return true;
         if ("roles".equals(entity)) return !String.valueOf(left.get("grants")).equals(String.valueOf(right.get("grants")));
-        return !String.valueOf(left.get("roleIds")).equals(String.valueOf(right.get("roleIds"))) || !String.valueOf(left.get("roleScopes")).equals(String.valueOf(right.get("roleScopes")));
+        return !String.valueOf(left.get("roleIds")).equals(String.valueOf(right.get("roleIds")));
     }
 
     private List<Map<String, Object>> diff(JSONObject before, JSONObject after, String type, JSONObject input) {
@@ -330,20 +349,12 @@ public class AdminAccessService {
     private List<JSONObject> effects(JSONObject state, JSONObject account) {
         List<JSONObject> effects = new ArrayList<JSONObject>();
         for (JSONObject site : rows(state, "sites")) {
-            List<JSONObject> areas = new ArrayList<JSONObject>();
-            JSONObject whole = new JSONObject();
-            whole.put("id", null);
-            whole.put("name", "全厂及未指定区域");
-            areas.add(whole);
-            for (JSONObject area : rows(state, "areas")) if (site.getString("id").equals(area.getString("siteId"))) areas.add(area);
-            for (JSONObject area : areas) for (String operation : OPERATIONS) if (can(state, account, operation, site.getString("id"), area.getString("id"))) {
+            for (String operation : OPERATIONS) if (can(state, account, operation, site.getString("id"), null)) {
                 JSONObject effect = new JSONObject();
-                effect.put("key", operation + "|" + site.getString("id") + "|" + area.getString("id"));
+                effect.put("key", operation + "|" + site.getString("id"));
                 effect.put("operation", operation);
                 effect.put("siteId", site.getString("id"));
                 effect.put("siteName", site.getString("name"));
-                effect.put("areaId", area.getString("id"));
-                effect.put("areaName", area.getString("name"));
                 effects.add(effect);
             }
         }
@@ -398,7 +409,7 @@ public class AdminAccessService {
         });
         if ("audit".equals(kind)) return page(rows, input);
         String exportedAt = Instant.now().toString();
-        List<String> columns = Arrays.asList("id", "siteId", "areaId", "actorName", "action", "objectId", "occurredAt", "result", "requestId", "operationId", "before", "after", "source");
+        List<String> columns = Arrays.asList("id", "siteId", "actorName", "action", "objectId", "occurredAt", "result", "requestId", "operationId", "before", "after", "source");
         StringBuilder csv = new StringBuilder().append('\uFEFF');
         csv.append(cell("模拟数据")).append(',').append(cell("后台操作日志")).append("\r\n");
         csv.append(cell("厂站")).append(',').append(cell(input.getString("siteId"))).append("\r\n");
@@ -444,7 +455,11 @@ public class AdminAccessService {
         if (account.getBooleanValue("builtin") || actor.getString("id").equals(account.getString("id")) || !can(state, actor, "accounts:write", account.getString("siteId"), account.getString("areaId"))) return false;
         JSONArray roles = account.getJSONArray("roleIds");
         if (roles == null) return true;
-        for (int i = 0; i < roles.size(); i++) if (!DELEGATE.contains(roles.getString(i))) return false;
+        for (int i = 0; i < roles.size(); i++) {
+            if (!DELEGATE.contains(roles.getString(i))) return false;
+            JSONObject role = find(state, "roles", roles.getString(i));
+            if (role != null && role.getBooleanValue("enabled") && !roleCovered(state, actor, role)) return false;
+        }
         return true;
     }
 
@@ -458,7 +473,6 @@ public class AdminAccessService {
         for (int i = 0; i < roleIds.size(); i++) {
             JSONObject role = find(state, "roles", roleIds.getString(i));
             if (role == null || !role.getBooleanValue("enabled")) continue;
-            JSONObject scope = scopes(actor).getJSONObject(role.getString("id"));
             JSONArray grants = role.getJSONArray("grants");
             if (grants == null) continue;
             for (int g = 0; g < grants.size(); g++) {
@@ -466,9 +480,7 @@ public class AdminAccessService {
                 JSONArray operations = grant.getJSONArray("operations");
                 JSONArray sites = grant.getJSONArray("siteIds");
                 if (operations == null || sites == null || !(operations.contains("*") || operations.contains(operation)) || !sites.contains(siteId)) continue;
-                if (scope != null && scope.getJSONArray("siteIds") != null && !scope.getJSONArray("siteIds").contains(siteId)) continue;
-                Object areas = limitedAreas(grant, scope);
-                if ("*".equals(areas) || (areaId != null && areas instanceof JSONArray && ((JSONArray) areas).contains(areaId))) return true;
+                return true;
             }
         }
         return false;
@@ -497,57 +509,20 @@ public class AdminAccessService {
         return false;
     }
 
-    private static Object limitedAreas(JSONObject grant, JSONObject scope) {
-        Object areas = grant.get("areaIds");
-        if (scope == null || scope.get("areaIds") == null || "*".equals(scope.get("areaIds"))) return areas;
-        if ("*".equals(areas)) return scope.get("areaIds");
-        if (areas instanceof JSONArray && scope.get("areaIds") instanceof JSONArray) {
-            JSONArray limited = new JSONArray();
-            JSONArray wanted = (JSONArray) areas;
-            JSONArray allowed = scope.getJSONArray("areaIds");
-            for (int i = 0; i < wanted.size(); i++) if (allowed.contains(wanted.getString(i))) limited.add(wanted.getString(i));
-            return limited;
-        }
-        return areas;
-    }
-
-    private static boolean covers(JSONObject role, String siteId) {
+    private boolean roleCovered(JSONObject state, JSONObject actor, JSONObject role) {
         JSONArray grants = role.getJSONArray("grants");
-        if (grants == null) return false;
-        for (int i = 0; i < grants.size(); i++) if (grants.getJSONObject(i).getJSONArray("siteIds") != null && grants.getJSONObject(i).getJSONArray("siteIds").contains(siteId)) return true;
-        return false;
-    }
-
-    private static boolean grantAllowsAllAreas(JSONObject role, String siteId) {
-        JSONArray grants = role.getJSONArray("grants");
-        if (grants == null) return false;
-        for (int i = 0; i < grants.size(); i++) {
-            JSONObject grant = grants.getJSONObject(i);
-            if (grant.getJSONArray("siteIds") != null && grant.getJSONArray("siteIds").contains(siteId) && "*".equals(grant.get("areaIds"))) return true;
-        }
-        return false;
-    }
-
-    private static boolean grantAllowsArea(JSONObject role, String siteId, String areaId) {
-        JSONArray grants = role.getJSONArray("grants");
-        if (grants == null) return false;
-        for (int i = 0; i < grants.size(); i++) {
-            JSONObject grant = grants.getJSONObject(i);
-            if (grant.getJSONArray("siteIds") == null || !grant.getJSONArray("siteIds").contains(siteId)) continue;
-            Object areas = grant.get("areaIds");
-            if ("*".equals(areas) || (areas instanceof JSONArray && ((JSONArray) areas).contains(areaId))) return true;
-        }
-        return false;
-    }
-
-    private boolean operationsCovered(JSONObject state, JSONObject actor, JSONObject role, String siteId, String areaId) {
-        JSONArray grants = role.getJSONArray("grants");
-        if (grants == null) return false;
+        if (grants == null || grants.isEmpty()) return false;
         for (int i = 0; i < grants.size(); i++) {
             JSONObject grant = grants.getJSONObject(i);
             JSONArray operations = grant.getJSONArray("operations");
-            if (operations == null) continue;
-            for (int o = 0; o < operations.size(); o++) if (!can(state, actor, operations.getString(o), siteId, areaId)) return false;
+            JSONArray sites = grant.getJSONArray("siteIds");
+            if (operations == null || operations.isEmpty() || sites == null || sites.isEmpty()) return false;
+            for (int s = 0; s < sites.size(); s++) {
+                String siteId = sites.getString(s);
+                JSONObject site = find(state, "sites", siteId);
+                if (site == null || !site.getBooleanValue("enabled")) return false;
+                for (int o = 0; o < operations.size(); o++) if (!can(state, actor, operations.getString(o), siteId, null)) return false;
+            }
         }
         return true;
     }
@@ -557,11 +532,6 @@ public class AdminAccessService {
         if (person == null) return;
         person.put("accountId", null);
         person.put("version", person.getIntValue("version") + 1);
-    }
-
-    private static JSONObject scopes(JSONObject actor) {
-        JSONObject scopes = actor.getJSONObject("roleScopes");
-        return scopes == null ? new JSONObject() : scopes;
     }
 
     private JSONObject read() {

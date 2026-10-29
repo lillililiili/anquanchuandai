@@ -7,8 +7,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = {GuardianController.class, GuardianMobileController.class, GuardianMobileCommunications.class})
+@RestControllerAdvice(assignableTypes = {GuardianController.class, GuardianMobileController.class, GuardianMobileCommunications.class, GuardianLocationController.class, GuardianHelmetMediaController.class,WearableBusinessController.class,WearableMaintenanceController.class})
 public class GuardianError {
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String,String>> unavailable(IllegalStateException error) {
+        Map<String,String> body=new LinkedHashMap<>();body.put("errorCode","SERVICE_UNAVAILABLE");body.put("message","服务暂不可用，请稍后重试");
+        return ResponseEntity.status(503).body(body);
+    }
     @ExceptionHandler(AdminQueryService.QueryFailed.class)
     public ResponseEntity<Map<String,Object>> business(AdminQueryService.QueryFailed error) {
         Map<String,Object> body=new LinkedHashMap<>();body.put("code",error.code);body.put("errorCode",error.errorCode);body.put("message",error.getMessage());

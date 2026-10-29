@@ -17,6 +17,7 @@ import com.ruoyi.helmet.mapper.SafetyHatInfoMapper;
 import com.ruoyi.helmet.pojo.po.SafetyHatInfo;
 import com.ruoyi.helmet.pojo.po.SafetyHatLocationRecord;
 import com.ruoyi.helmet.service.IGroupInfoService;
+import com.ruoyi.helmet.service.DirectHelmetAccess;
 import com.ruoyi.helmet.service.ISafetyHatInfoService;
 import com.ruoyi.helmet.service.ISafetyHatLocationRecordService;
 import com.ruoyi.helmet.vo.SafetyHatListVO;
@@ -51,6 +52,8 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
     private ISafetyHatLocationRecordService safetyHatLocationRecordService;
     @Value("${melhat.demo-mode:false}")
     private boolean demoMode;
+    @Autowired(required = false)
+    private org.springframework.beans.factory.ObjectProvider<DirectHelmetAccess> directAccess;
 
     @Override
     public Page<SafetyHatListVO> pageQuery(SafetyHatQueryVO queryVO, int current, int size) {
@@ -109,15 +112,24 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
     }
 
     IPage<SafetyHatInfo> getStatusInfo(IPage<SafetyHatInfo> page) {
-        if (demoMode) {
-            return page;
-        }
         if (CollectionUtils.isEmpty(page.getRecords())) {
             return page;
         }
         List<String> hatNumbers = page.getRecords().stream()
+                .filter(hat -> !directOwned(hat))
                 .map(SafetyHatInfo::getHatNumber)
                 .collect(Collectors.toList());
+
+        DirectHelmetAccess direct = directAccess == null ? null : directAccess.getIfAvailable();
+        for (SafetyHatInfo hat : page.getRecords()) {
+            if (!directOwned(hat)) continue;
+            hat.setStatus(direct != null && direct.isEnabled() && direct.isOnline(hat.getHatNumber()) ? "1" : "0");
+            if (direct != null) {
+                JSONObject status = direct.status(hat.getHatNumber());
+                if (status != null) hat.setElectricityUsage(status.getBigDecimal("battery"));
+            }
+        }
+        if (demoMode || hatNumbers.isEmpty()) return page;
 
         Map<String, Object> param = new HashMap<>();
         param.put("helmetSnList", hatNumbers);
@@ -128,6 +140,7 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
                 throw new ServiceException("平台未返回有效设备列表，无法确认实时状态");
             }
                 page.getRecords().forEach(hat -> {
+                    if (directOwned(hat)) return;
                     HeadbandVO headbandVO = headBandList.stream().filter(g -> g != null && Objects.equals(g.getHelmetSn(), hat.getHatNumber())).findFirst().orElse(null);
                     if (headbandVO != null) {
                         hat.setStatus("1".equals(headbandVO.getOnline()) ? "1" : "0".equals(headbandVO.getOnline()) ? "0" : "-1");
@@ -147,6 +160,10 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         }
         return page;
 
+    }
+
+    private static boolean directOwned(SafetyHatInfo hat) {
+        return "direct-helmet".equals(hat.getCreateBy()) || "direct-helmet-disabled".equals(hat.getCreateBy());
     }
 
     @Override

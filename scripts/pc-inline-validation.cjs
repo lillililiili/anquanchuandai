@@ -74,16 +74,16 @@ async function fieldError(page, selector, text) {
       await wait(async () => !page.url().includes('login'), 'Valid login did not complete');
       steps.push(`${prefix}: empty/space/Enter validation inline, no request until valid login`);
       if (prefix === 'admin') {
-        await page.evaluate(() => document.querySelector('#app').__vue_app__.config.globalProperties.$router.push('/admin/people'));
+        await page.evaluate(() => document.querySelector('#app').__vue_app__.config.globalProperties.$router.push('/people'));
         await page.getByRole('button', { name: '新增人员', exact: true }).click();
         const modal = page.locator('dialog[open]').filter({ has: page.locator('#field-code') });
-        await modal.getByRole('button', { name: '保存本地记录' }).click();
+        await modal.getByRole('button', { name: '保存' }).click();
         assert((await page.locator('#error-code').textContent()).includes('请填写编号'));
         assert((await page.locator('#error-name').textContent()).includes('请填写名称'));
         await fieldError(page, 'label:has(#field-code)', '请填写编号');
         await fieldError(page, 'label:has(#field-name)', '请填写名称');
         await modal.getByRole('button', { name: '取消', exact: true }).click();
-        await page.evaluate(() => document.querySelector('#app').__vue_app__.config.globalProperties.$router.push('/admin/audit'));
+        await page.evaluate(() => document.querySelector('#app').__vue_app__.config.globalProperties.$router.push('/audit'));
         const dates = page.locator('.ui-date-input');
         await dates.nth(0).fill('2026-10-15'); await dates.nth(0).press('Tab');
         await dates.nth(1).fill('2026-10-14'); await dates.nth(1).press('Tab');

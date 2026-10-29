@@ -1,35 +1,45 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { getAdminProvider } from '@admin-provider'
-import { MENU, WORKSPACES, safeTarget } from './navigation'
+import { WORKSPACES, safeTarget, cleanQuery, canonicalAdminPath, DEFAULT_ADMIN_PATH } from './navigation'
 import { useAdminStore } from './store'
 import MasterWorkspace from './views/MasterWorkspace.vue'
 import PersonDetail from './views/PersonDetail.vue'
 import Login from './views/Login.vue'
 import Layout from './views/Layout.vue'
-import Overview from './views/Overview.vue'
 import Placeholder from './views/Placeholder.vue'
 
+// Explicit query prevents Vue Router from inheriting unsafe parameters on a bare redirect.
+const inventoryRedirect = to => ({ path: DEFAULT_ADMIN_PATH, query: cleanQuery({ siteId: to.query.siteId }) })
+const legacyRedirect = to => {
+  if (canonicalAdminPath(to.path) === '/login') return { path: '/login', query: to.query.redirect ? { redirect: safeTarget(to.query.redirect) } : {} }
+  const target = new URL(safeTarget(to.fullPath), 'http://admin.local')
+  return { path: target.pathname, query: Object.fromEntries(target.searchParams) }
+}
+
 export const router = createRouter({ history: createWebHashHistory(), routes: [
-  { path: '/', redirect: '/admin/overview' },
-  { path: '/admin/login', component: Login },
-  { path: '/admin', component: Layout, children: [
-    ...MENU.filter(m => !['/admin/assets/devices', '/admin/audit'].includes(m.path) && !WORKSPACES.some(w => w.path === m.path)).map(m => ({ path: m.path, component: m.path === '/admin/overview' ? Overview : Placeholder, meta: m })),
-    { path: '/admin/audit', component: () => import('./views/Audit.vue') },
-    { path: '/admin/assets/devices', component: () => import('./views/Devices.vue') },
-    { path: '/admin/assets/devices/:deviceId', component: () => import('./views/DeviceDetail.vue') },
-    { path: '/admin/assets/maintenance/:pathMatch(.*)*', redirect: to => ({ path: '/admin/assets/devices', query: to.query.siteId ? { siteId: to.query.siteId } : {} }) },
-    { path: '/admin/assets/assignments', component: () => import('./views/Assignments.vue') },
+  { path: '/login', component: Login },
+  { path: '/admin', redirect: inventoryRedirect },
+  { path: '/admin/:pathMatch(.*)*', redirect: legacyRedirect },
+  { path: '/', component: Layout, meta: { adminTheme: 'business' }, children: [
+    { path: '', redirect: inventoryRedirect },
+    { path: '/overview/:pathMatch(.*)*', redirect: inventoryRedirect },
+    { path: '/audit', component: () => import('./views/Audit.vue') },
+    { path: '/devices', component: () => import('./views/Devices.vue') },
+    { path: '/devices/:deviceId', component: () => import('./views/DeviceDetail.vue'), meta: { adminFamily: 'detail' } },
+    { path: '/maintenance/:pathMatch(.*)*', redirect: inventoryRedirect },
+    { path: '/assignments', component: () => import('./views/Assignments.vue') },
+    { path: '/organization', redirect: legacyRedirect },
     ...WORKSPACES.map(w => ({ path: w.path, component: MasterWorkspace, meta: w })),
-    { path: '/admin/people/:personId', component: PersonDetail, meta: { title: '人员详情' } },
-    { path: '/admin/integrations/:pathMatch(.*)*', redirect: '/admin/overview' },
-    { path: '/admin/access/groups/:pathMatch(.*)*', redirect: '/admin/overview' },
-    { path: '/admin/401', component: Placeholder, meta: { title: '无权限访问', description: '当前身份没有此工作区权限，请返回工作台或重新登录。', stage: '401', errorState: 'forbidden' } },
-    { path: '/:pathMatch(.*)*', component: Placeholder, meta: { title: '页面不存在', description: '链接不存在或页面尚未开放，请返回管理工作台。', stage: '404', errorState: 'not-found' } }
+    { path: '/people/:personId', component: PersonDetail, meta: { title: '人员详情', adminFamily: 'detail' } },
+    { path: '/integrations/:pathMatch(.*)*', redirect: inventoryRedirect },
+    { path: '/groups/:pathMatch(.*)*', redirect: inventoryRedirect },
+    { path: '/401', component: Placeholder, meta: { title: '无权限访问', description: '当前身份没有此工作区权限，请返回设备台账或重新登录。', stage: '401', errorState: 'forbidden' } },
+    { path: '/:pathMatch(.*)*', component: Placeholder, meta: { title: '页面不存在', description: '链接不存在或页面尚未开放，请返回设备台账。', stage: '404', errorState: 'not-found' } }
   ] }
 ] })
 router.beforeEach(async (to, from) => {
   const identity = getAdminProvider().identity()
   if (identity && to.fullPath !== from.fullPath && !await useAdminStore().confirmLeave()) return false
-  if (to.path !== '/admin/login' && !identity) return { path: '/admin/login', query: { redirect: safeTarget(to.fullPath) } }
-  if (to.path === '/admin/login' && identity) return safeTarget(to.query.redirect)
+  if (to.path !== '/login' && !identity) return { path: '/login', query: { redirect: safeTarget(to.fullPath) } }
+  if (to.path === '/login' && identity) return safeTarget(to.query.redirect)
 })

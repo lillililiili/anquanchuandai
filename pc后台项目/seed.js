@@ -1,6 +1,5 @@
 import { extendSeed } from './a1seed'
 import { extendDevices } from './deviceData'
-import { extendIntegrations } from './integrationData'
 export const TOKEN_KEY = 'Wearable-Admin-Mock-Token'
 export const SESSION_VERSION_KEY = 'Wearable-Admin-Mock-Session-Version'
 export const BASE_TIME = '2026-09-15T00:00:00Z'
@@ -87,5 +86,5 @@ export function createSeed() {
   for (const [code, type] of [['RL-H201', 'HELMET'], ['RL-B201', 'BELT'], ['RL-W201', 'WATCH']]) {
     state.devices.push({ id: code, siteId: 'site-2', areaId: 'area-bei', code, name: TYPE_NAMES[type], type, lifecycle: 'STOCK', relation: 'UNASSIGNED', communication: 'NOT_CONNECTED', freshness: 'UNKNOWN', sourceTime: null, capability: 'UNCONFIRMED', version: 1 })
   }
-  return extendIntegrations(extendDevices(extendSeed(state)))
+  return extendDevices(extendSeed(state))
 }

@@ -1,0 +1,10 @@
+{
+  "warning": "PUBLIC SYNTHETIC TEST ONLY",
+  "appId": "fuda-public-test",
+  "authorizedKeys": [
+    "HELMET:DEMO-HELMET-01"
+  ],
+  "after": 1,
+  "secretBase64": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "cursor": "MnwxfDdlYTUxZmJhYjE2MWNkMTA4ZmM3MWUxYTc5Mjk0NzNjMjA3MDk3NWQ4Y2I2ZDRmMzFlNGU3MGI0ZTRjMTQ4OGM.b5cf1108f90229af30d302c059054c600552352b64ae4336b2767756ce84c855"
+}

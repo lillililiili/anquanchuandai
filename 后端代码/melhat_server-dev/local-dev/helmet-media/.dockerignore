@@ -1,0 +1,6 @@
+.local
+.git
+node_modules
+test
+cloud
+*.tar.gz

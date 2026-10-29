@@ -1,0 +1,25 @@
+    # BEGIN HELMET MEDIA AND WEAR API
+    @helmet_sip path /helmet-media/sip
+    handle @helmet_sip {
+        reverse_proxy 10.255.1.1:5066
+    }
+    @helmet_media path /helmet-media/control/v1/* /helmet-media/files/* /helmet-media/whep/* /helmet-media/hls/*
+    handle @helmet_media {
+        request_body {
+            max_size 256MB
+        }
+        reverse_proxy 10.255.1.1:18190
+    }
+    @wear_business path /wear-api/api/guardian/v1/*
+    handle @wear_business {
+        uri strip_prefix /wear-api
+        request_body {
+            max_size 10MB
+        }
+        reverse_proxy 10.255.1.1:28088 {
+            header_up X-Real-IP {remote_host}
+            header_up -Authorization
+            header_up -Cookie
+        }
+    }
+    # END HELMET MEDIA AND WEAR API

@@ -18,9 +18,10 @@ import VideoFrame from "@/components/domain/VideoFrame.vue";
 import { db } from "@/mock/runtime";
 import { filtersOf, session } from "@/stores/session";
 import { events, people, personName, revision, search, statusColor } from "@/lib/queries";
+import { personFeature } from '@/lib/person-equipment';
 import { callPerson, runGuarded } from "@/lib/actions";
 
-const columns = ["序号", "人员信息", "所属区域", "当前作业", "装备状态", "最近更新时间", "操作"];
+const columns = ["序号", "人员信息", "当前作业", "装备状态", "最近更新时间", "操作"];
 const workStatusOptions = [
   ["", "全部"],
   ["assigned", "作业中"],
@@ -63,6 +64,8 @@ const rows = computed(() => {
 });
 
 const current = computed(() => rows.value.find((row) => row.person.id === session.person) || rows.value[0] || null);
+const videoFeature = computed(() => { revision(); return personFeature(db, current.value?.person.id, 'video'); });
+const voiceFeature = computed(() => { revision(); return personFeature(db, current.value?.person.id, 'voice'); });
 
 const pending = computed(() => {
   revision();
@@ -111,7 +114,7 @@ function talk() {
 <template>
   <div class="split-detail bounded-split" :style="session.hidePerson ? 'grid-template-columns:1fr' : null">
     <div class="list-detail-column">
-      <PageHeading title="当班人员与装备" subtitle="以人员查看三类装备与当前作业" />
+      <PageHeading title="在册人员与装备" subtitle="以人员查看三类装备与当前作业" />
       <FilterBar @submit="applyFilters" @reset="resetFilters">
         <div class="searchbox">
           <AppIcon name="search-line" />
@@ -129,7 +132,6 @@ function talk() {
           <template #head>
             <th>序号</th>
             <th>人员信息</th>
-            <th>所属区域</th>
             <th>当前作业</th>
             <th>装备状态<br /><small>（安全帽 / 安全带 / 智能手表）</small></th>
             <th>最近更新时间</th>
@@ -154,7 +156,6 @@ function talk() {
                   </div>
                 </div>
               </td>
-              <td>{{ row.person.area }}</td>
               <td>
                 {{ row.work?.name || "待分配" }}<small>{{ row.work ? "（监护人：" + personName(row.work.supervisor) + "）" : "" }}</small>
               </td>
@@ -184,8 +185,6 @@ function talk() {
           <AppTabs v-model="session.personTab" :tabs="detailTabs" />
           <div class="detail-scroll" tabindex="0" role="region" :aria-label="session.personTab + '，可滚动'">
             <dl v-if="session.personTab === '人员信息'" class="info compact">
-              <dt>所属区域</dt>
-              <dd>{{ current.person.area }}</dd>
               <dt>当前作业</dt>
               <dd>{{ current.work?.name || "待分配" }}</dd>
               <dt>当前监护人</dt>
@@ -195,7 +194,7 @@ function talk() {
             </dl>
             <div v-if="session.personTab === '人员信息' || session.personTab === '装备信息'" class="detail-section">
               <h3>装备状态 <small>（以领用记录为准）</small></h3>
-              <DeviceStrip :person-id="current.person.id" />
+              <DeviceStrip :person-id="current.person.id" large />
               <a class="text-link" :href="'#/person/' + current.person.id">查看领用记录 <UiIcon name="chevron-right" /></a>
             </div>
             <div v-if="session.personTab === '人员信息' || session.personTab === '作业信息'" class="detail-section">
@@ -203,7 +202,7 @@ function talk() {
               <template v-if="current.work">
                 <b>{{ current.work.name }}</b>
                 <p><small>{{ current.work.id }}</small></p>
-                <p>作业区域　{{ current.work.area }}</p>
+                <p>作业地点　{{ current.work.area }}</p>
                 <p>监护人　{{ personName(current.work.supervisor) }}</p>
                 <a class="text-link" :href="'#/work/' + current.work.id">查看作业详情 <UiIcon name="chevron-right" /></a>
               </template>
@@ -217,16 +216,16 @@ function talk() {
               </template>
               <AppStatus v-else>暂无待核验事件</AppStatus>
             </div>
-            <div class="detail-section detail-media">
+            <div v-if="videoFeature.supported || voiceFeature.supported" class="detail-section detail-media">
               <div class="grid equal">
-                <div class="detail-video">
+                <div v-if="videoFeature.supported" class="detail-video">
                   <h3>现场视频</h3>
-                  <a :href="'#/single/' + current.person.id"><VideoFrame :person-id="current.person.id" /></a>
+                  <VideoFrame :person-id="current.person.id" preview /><a class="text-link" :href="'#/single/' + current.person.id">单路监看</a>
                 </div>
-                <div class="detail-call">
+                <div v-if="voiceFeature.supported" class="detail-call">
                   <h3>语音对讲</h3>
-                  <AppButton tone="primary wide" icon="mic-line" @click="talk">发起对讲</AppButton>
-                  <small>与 {{ current.person.name }} 进行通话</small>
+                  <AppButton :disabled="!voiceFeature.available" :title="voiceFeature.reason" tone="primary wide" icon="mic-line" @click="talk">{{ voiceFeature.verified ? '前往语音调度' : '对讲 · 待联调' }}</AppButton>
+                  <small>{{ voiceFeature.reason || ('联系 ' + current.person.name) }}</small>
                 </div>
               </div>
             </div>

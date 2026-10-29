@@ -11,7 +11,8 @@ const get = async id => (await service.query('device', { siteId, id })).data
 const update = (row, data, extra = {}) => service.execute('devices.update', { siteId, id: row.id, expectedVersion: row.version, operationId: `test-${++sequence}`, relatedVersions: { 'area-1': 1 }, data, ...extra })
 describe('A2 device inventory', () => {
   it('retains A0 baseline and supports long IDs, pagination and filters', async () => {
-    expect((await service.query('overview', { siteId })).data.counts).toMatchObject({ assets: 36, available: 17, assigned: 12, maintenance: 3 })
+    expect((await service.query('devices', { siteId })).data.total).toBe(36)
+    expect((await service.query('devices', { siteId, relation: 'ASSIGNED' })).data.total).toBe(12)
     const list = (await service.query('devices', { siteId, pageNum: 2 })).data
     expect(list.rows.length).toBe(16); expect(typeof list.rows[0].id).toBe('string')
     expect((await service.query('devices', { siteId, keyword: 'sn-eq-1-001' })).data.total).toBe(1)
@@ -22,7 +23,8 @@ describe('A2 device inventory', () => {
     expect(d).toMatchObject({ lifecycle: 'STOCK', relation: 'UNASSIGNED', communication: 'NOT_CONNECTED', sourceTime: null, verification: 'UNCONFIRMED' })
     expect((await get(d.id)).identityComplete).toBe(false)
     expect((await service.query('deviceHistory', { siteId, id: d.id })).data.total).toBe(0)
-    expect((await service.query('overview', { siteId })).data.counts).toMatchObject({ assets: 37, available: 18, assigned: 12 })
+    expect((await service.query('devices', { siteId })).data.total).toBe(37)
+    expect((await service.query('devices', { siteId, lifecycle: 'STOCK', relation: 'UNASSIGNED' })).data.total).toBe(18)
   })
   it('rejects case-insensitive global code and manufacturer/SN duplicates without leaking objects', async () => {
     await create({ code: ' UNIQUE ', manufacturer: ' Vendor ', sn: ' Serial ' })
@@ -38,10 +40,9 @@ describe('A2 device inventory', () => {
     await expect(update(d, { type: 'WATCH' })).rejects.toMatchObject({ errorCode: 'FIELD_NOT_ALLOWED' })
     await expect(service.execute('devices.delete', { siteId, id: d.id })).rejects.toMatchObject({ code: 400 })
   })
-  it('requires area version and same-site enabled reference', async () => {
-    await expect(create({ areaId: 'area-1' })).rejects.toMatchObject({ code: 409 })
-    await expect(create({ areaId: 'area-2' }, { relatedVersions: { 'area-2': 1 } })).rejects.toMatchObject({ code: 400 })
-    await create({ areaId: 'area-1' }, { relatedVersions: { 'area-1': 1 } })
+  it('creates devices without area references and ignores obsolete area inputs', async () => {
+    expect((await create()).data).not.toHaveProperty('areaId')
+    expect((await create({ areaId: 'area-2' }, { relatedVersions: { 'area-2': 99 } })).data).not.toHaveProperty('areaId')
   })
   it('locks identity in use but allows descriptive edits without changing history or source time', async () => {
     const d = await get('19007199254740993000')
@@ -64,6 +65,42 @@ describe('A2 device inventory', () => {
     expect(result.assemblies).toEqual({}); expect(result.verification).toBe('UNCONFIRMED')
     await expect(update(result, { assemblies: { position: 'INSTALLED' } })).rejects.toMatchObject({ code: 400 })
   })
+  it('saves free-text model names and returns them in device lists and details', async () => {
+    const d = (await create({ modelName: '  HNRW-AQD1 / 2026  ' })).data
+    expect(d).toMatchObject({ modelName: 'HNRW-AQD1 / 2026', modelId: 'unknown-HELMET', verification: 'UNCONFIRMED' })
+    expect((await get(d.id)).modelName).toBe('HNRW-AQD1 / 2026')
+    expect((await service.query('devices', { siteId, keyword: d.code })).data.rows[0].modelName).toBe('HNRW-AQD1 / 2026')
+    const updated = (await update(d, { modelName: 'RD-D1+' })).data
+    expect(updated.modelId).toBe(d.modelId)
+    expect((await get(d.id)).modelName).toBe('RD-D1+')
+    await update(updated, { modelName: '  ' })
+    expect((await get(d.id)).modelName).toBe('')
+    expect((await service.query('devices', { siteId, keyword: d.code })).data.rows[0].modelName).toBe('')
+  })
+  it('preserves legacy model fallback while keeping explicitly empty model names empty', async () => {
+    const legacy = (await create({ modelId: 'demo-helmet-basic' })).data
+    expect(legacy).not.toHaveProperty('modelName')
+    expect((await get(legacy.id)).modelName).toBe('安全帽')
+    const unchanged = (await update(legacy, { name: '仅改名称' })).data
+    expect(unchanged).not.toHaveProperty('modelName')
+    const empty = (await create({ modelId: 'demo-helmet-basic', modelName: '' })).data
+    expect((await get(empty.id)).modelName).toBe('')
+  })
+  it('validates model text without changing stored devices on failure', async () => {
+    const d = (await create({ modelName: 'A'.repeat(100) })).data
+    for (const modelName of ['A'.repeat(101), null, 42, {}]) {
+      await expect(update(d, { modelName })).rejects.toMatchObject({ code: 400, fields: { modelName: expect.any(String) } })
+    }
+    expect((await get(d.id))).toMatchObject({ version: d.version, modelName: 'A'.repeat(100) })
+  })
+  it('locks real model changes in use while accepting unchanged legacy display values', async () => {
+    const d = await get('19007199254740993000')
+    await expect(update(d, { modelName: '新的型号' })).rejects.toMatchObject({ errorCode: 'KEY_FIELDS_LOCKED' })
+    const saved = (await update(d, { name: '仅改描述', modelName: d.modelName })).data
+    expect(saved.name).toBe('仅改描述')
+    expect((await get(d.id)).modelName).toBe(d.modelName)
+    await expect(update(saved, { modelName: '' })).rejects.toMatchObject({ errorCode: 'KEY_FIELDS_LOCKED' })
+  })
   it('does not permit model/type mismatch or arbitrary watch sensors', async () => {
     await expect(create({ type: 'WATCH', modelId: 'demo-helmet-plus' })).rejects.toMatchObject({ code: 400 })
     await expect(create({ type: 'WATCH', assemblies: { heartRate: 'INSTALLED' } })).rejects.toMatchObject({ code: 400 })
@@ -76,30 +113,31 @@ describe('A2 device inventory', () => {
     await update(a.data, { name: 'updated' })
     await expect(update(a.data, { name: 'stale' })).rejects.toMatchObject({ errorCode: 'VERSION_CONFLICT' })
     expect((await service.query('deviceChanges', { siteId, id: a.data.id })).data.total).toBe(2)
-    expect((await service.query('overview', { siteId })).data.counts.assets).toBe(37)
+    expect((await service.query('devices', { siteId })).data.total).toBe(37)
   })
   it('read-only and cross-site direct calls reject', async () => {
     service.login('demo-audit', 'Admin@2026'); await expect(create()).rejects.toMatchObject({ code: 403 })
     await expect(service.query('devices', { siteId: 'site-2' })).rejects.toMatchObject({ code: 403 })
     await expect(service.query('device', { siteId, id: '29007199254740993000' })).rejects.toMatchObject({ code: 404 })
   })
-  it('area scope covers lists, details, options, metric and target edit; hides person and audit', async () => {
+  it('legacy area scope no longer limits inventory but operation and site permissions remain', async () => {
     setup(() => { const s = createSeed(); s.areas.push({ id: 'private', siteId, name: 'private', enabled: true, version: 1 }); s.devices[0].areaId = 'private'; s.roles.push({ id: 'limited', enabled: true, grants: [{ operations: ['overview:read', 'assets:read', 'assets:write'], siteIds: [siteId], areaIds: ['area-1'] }] }); s.accounts.push({ id: 'limited', name: 'limited', enabled: true, roleIds: ['limited'] }); return s })
     service.login('limited', 'Admin@2026')
-    expect((await service.query('devices', { siteId })).data.total).toBe(35)
-    expect((await service.query('overview', { siteId })).data.counts.assets).toBe(35)
+    expect((await service.query('devices', { siteId })).data.total).toBe(36)
+    expect((await service.query('devices', { siteId })).data.total).toBe(36)
     const d = await get('19007199254740993001'); expect(d.person).toBeNull()
-    await expect(get('19007199254740993000')).rejects.toMatchObject({ code: 404 })
+    expect((await get('19007199254740993000')).id).toBe('19007199254740993000')
     await expect(service.query('deviceChanges', { siteId, id: d.id })).rejects.toMatchObject({ code: 403 })
-    const stock = await get('19007199254740993012'); await expect(update(stock, { areaId: 'private' }, { relatedVersions: { private: 1 } })).rejects.toMatchObject({ code: 403 })
-    await expect(create()).rejects.toMatchObject({ code: 403 })
-    expect((await service.query('deviceOptions', { siteId })).data.areas.map(a => a.id)).toEqual(['area-1'])
+    const stock = await get('19007199254740993012'); expect((await update(stock, { name: '已改名' })).data.name).toBe('已改名')
+    expect((await create()).data.siteId).toBe(siteId)
+    expect((await service.query('deviceOptions', { siteId })).data).not.toHaveProperty('areas')
+    await expect(service.query('devices', { siteId: 'site-2' })).rejects.toMatchObject({ code: 403 })
   })
   it('cancellation and identity changes before commit leave no device', async () => {
     const controller = new AbortController(); const promise = create({}, { operationId: 'cancel' })
     service.logout(); await expect(promise).rejects.toMatchObject({ code: 401 }); service.login('demo-system', 'Admin@2026')
     controller.abort(); await expect(service.execute('devices.create', { siteId }, { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' })
-    expect((await service.query('overview', { siteId })).data.counts.assets).toBe(36)
+    expect((await service.query('devices', { siteId })).data.total).toBe(36)
   })
   it('rejects unsupported filters and preserves explicit source states', async () => {
     await expect(service.query('devices', { siteId, type: 'OTHER' })).rejects.toMatchObject({ code: 400 })
@@ -108,10 +146,10 @@ describe('A2 device inventory', () => {
   })
   it('safe return and login preserve legal equipment filters only', () => {
     expect(cleanDeviceQuery({ type: 'WATCH', lifecycle: 'OTHER', pageSize: 101 })).toEqual({ type: 'WATCH' })
-    expect(deviceReturn('https://evil.example')).toBe('/admin/assets/devices')
-    expect(deviceReturn('/admin/assets/devices/x')).toBe('/admin/assets/devices')
-    expect(safeTarget('/admin/assets/devices/9007199254740993?siteId=new-site&returnTo=%2Fadmin%2Fassets%2Fdevices%3Ftype%3DWATCH')).toContain('returnTo=')
-    expect(menuPath('/admin/assets/devices/x')).toBe('/admin/assets/devices')
+    expect(deviceReturn('https://evil.example')).toBe('/devices')
+    expect(deviceReturn('/devices/x')).toBe('/devices')
+    expect(safeTarget('/devices/9007199254740993?siteId=new-site&returnTo=%2Fadmin%2Fassets%2Fdevices%3Ftype%3DWATCH')).toContain('returnTo=')
+    expect(menuPath('/devices/x')).toBe('/devices')
   })
   it('idempotent retry rechecks permission after role revocation', async () => {
     setup(() => { const s = createSeed(); s.roles.push({ id: 'temporary', name: 'temporary', enabled: true, version: 1, grants: [{ operations: ['overview:read', 'assets:read', 'assets:write'], siteIds: [siteId], areaIds: '*' }] }); s.accounts.push({ id: 'temporary', name: 'temporary', enabled: true, roleIds: ['temporary'] }); return s })
@@ -131,8 +169,8 @@ describe('A2 device inventory', () => {
     expect((await service.query('deviceChanges', { siteId, id: d.id, pageNum: 2 })).data.rows).toHaveLength(1)
     expect((await service.query('deviceHistory', { siteId, id: d.id })).data.rows[0].personName).toBe('预置历史名称')
   })
-  it('does not combine read/write rights from different role areas', async () => {
-    setup(() => { const s = createSeed(); s.roles.push({ id: 'read-area', enabled: true, grants: [{ operations: ['overview:read', 'assets:read'], siteIds: [siteId], areaIds: ['area-1'] }] }, { id: 'write-other', enabled: true, grants: [{ operations: ['assets:write'], siteIds: [siteId], areaIds: ['other'] }] }); s.accounts.push({ id: 'split', enabled: true, roleIds: ['read-area', 'write-other'] }); return s })
+  it('does not combine read/write rights from different role sites', async () => {
+    setup(() => { const s = createSeed(); s.roles.push({ id: 'read-area', enabled: true, grants: [{ operations: ['overview:read', 'assets:read'], siteIds: [siteId], areaIds: ['area-1'] }] }, { id: 'write-other', enabled: true, grants: [{ operations: ['assets:write'], siteIds: ['site-2'], areaIds: ['other'] }] }); s.accounts.push({ id: 'split', enabled: true, roleIds: ['read-area', 'write-other'] }); return s })
     service.login('split', 'Admin@2026'); const d = await get('19007199254740993012'); await expect(update(d, { name: '不应成功' })).rejects.toMatchObject({ code: 403 })
   })
 })

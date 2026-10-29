@@ -2,6 +2,7 @@
 import { onUnmounted, ref } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
+import { mediaUrl } from '@/lib/helmet-media';
 
 const props = defineProps({
   media: { type: Object, required: true },
@@ -49,9 +50,10 @@ onUnmounted(() => clearInterval(timer));
 
 <template>
   <div class="media-preview-wrap">
-    <MediaImage :media="media" />
+    <video v-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" aria-label="设备原始录像" style="width:100%;max-height:65vh" />
+    <MediaImage v-else :media="media" />
   </div>
-  <template v-if="media.kind === 'video'">
+  <template v-if="media.kind === 'video' && !media.url">
     <div class="note">图片模拟回放 · 记录时长 {{ media.duration }} 秒</div>
     <div class="row">
       <AppButton tone="primary" :icon="playing ? 'pause-fill' : 'play-fill'" @click="toggle">{{ playing ? "暂停" : ended ? "重播" : "播放" }}</AppButton>

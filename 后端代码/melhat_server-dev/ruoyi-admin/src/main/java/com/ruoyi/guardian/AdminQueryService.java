@@ -7,17 +7,21 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class AdminQueryService {
-    private static final List<String> READ_ENTITIES = Arrays.asList("people", "organizations", "areas", "sites", "dutyShifts", "accounts", "roles");
+    private static final List<String> READ_ENTITIES = Arrays.asList("people", "organizations", "sites", "dutyShifts", "accounts", "roles");
     private static final List<String> DELEGATE_ROLES = Arrays.asList("viewer", "people-editor", "asset-operator", "mobile-user");
     private final AdminLedgerStore ledger;
     private final GuardianStore guardian;
     private final ObjectProvider<AdminMaintenanceService> maintenance;
+    @org.springframework.beans.factory.annotation.Value("${melhat.demo-mode:false}") private boolean demoMode;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableBusinessPolicy businessPolicy;
 
     public AdminQueryService(AdminLedgerStore ledger, GuardianStore guardian, ObjectProvider<AdminMaintenanceService> maintenance) {
         this.ledger = ledger;
@@ -26,45 +30,16 @@ public class AdminQueryService {
     }
 
     public Map<String, Object> query(String accountId, String kind, JSONObject input) {
-        JSONObject state = ledger.read();
+        JSONObject state = GuardianDemoData.operationalLedger(ledger.read(), demoMode);
         if (state == null) throw fail(503, "SOURCE_FAILURE", "后台台账尚未保存");
+        if(businessPolicy!=null)businessPolicy.decorate(state,true);
         JSONObject actor = account(state, accountId);
         if (actor == null) throw fail(401, "IDENTITY_INVALID", "请先登录");
         if (input == null) input = new JSONObject();
         if ("context".equals(kind)) return context(state, actor);
-        if ("overview".equals(kind)) return overview(state, actor, input);
-        if ("details".equals(kind)) return details(state, actor, input);
-        if ("devices".equals(kind) || "device".equals(kind) || "deviceOptions".equals(kind) || "deviceHistory".equals(kind) || "deviceChanges".equals(kind)) return devices(state, actor, kind, input);
+        if ("devices".equals(kind) || "device".equals(kind) || "deviceOptions".equals(kind) || "deviceHistory".equals(kind) || "deviceChanges".equals(kind) || "deviceEvents".equals(kind)) return devices(state, actor, kind, input);
         if ("master".equals(kind) || "person".equals(kind) || "record".equals(kind) || "options".equals(kind) || "impacts".equals(kind)) return master(state, actor, kind, input);
         throw fail(400, "UNKNOWN_QUERY", "未实现此查询");
-    }
-
-    private Map<String, Object> overview(JSONObject state, JSONObject actor, JSONObject input) {
-        String siteId = requiredSite(state, actor, input, "assets:read");
-        Map<String, Object> counts = new LinkedHashMap<String, Object>();
-        for (String metric : Arrays.asList("assets", "available", "assigned", "unknown", "conflict")) counts.put(metric, 0);
-        // Counts depend on ledger relationships, not telemetry or rendered device rows.
-        for (JSONObject device : array(state, "devices")) {
-            if (!siteId.equals(device.getString("siteId")) || !can(state, actor, "assets:read", siteId, device.getString("areaId"))) continue;
-            counts.put("assets", (Integer) counts.get("assets") + 1);
-            if (available(state, device)) counts.put("available", (Integer) counts.get("available") + 1);
-            String relation = relationship(state, device).getString("state").toLowerCase(java.util.Locale.ROOT);
-            if (counts.containsKey(relation)) counts.put(relation, (Integer) counts.get(relation) + 1);
-        }
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
-        body.put("availability", "AVAILABLE");
-        body.put("counts", counts);
-        return body;
-    }
-
-    private Map<String, Object> details(JSONObject state, JSONObject actor, JSONObject input) {
-        String siteId = requiredSite(state, actor, input, "assets:read");
-        String metric = input.getString("metric");
-        if (metric == null || metric.isEmpty()) metric = "assets";
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
-        body.put("availability", "AVAILABLE");
-        body.putAll(page(rowsFor(state, actor, siteId, metric), input, true));
-        return body;
     }
 
     private Map<String, Object> devices(JSONObject state, JSONObject actor, String kind, JSONObject input) {
@@ -74,8 +49,6 @@ public class AdminQueryService {
             Map<String, Object> body = new LinkedHashMap<String, Object>();
             body.put("availability", "AVAILABLE");
             body.put("models", models());
-            body.put("areas", areas(state, siteId, true));
-            body.put("writableAreas", areas(state, siteId, can(state, actor, "assets:write", siteId, null) || system(actor)));
             return body;
         }
         List<JSONObject> visible = new ArrayList<JSONObject>();
@@ -93,11 +66,9 @@ public class AdminQueryService {
             String needle = keyword == null ? "" : keyword.trim().toLowerCase();
             for (JSONObject device : visible) {
                 JSONObject row = project(state, actor, device, telemetry);
-                if("PLATFORM".equals(input.getString("source")) && !"PLATFORM".equals(row.getString("source")))continue;
+                if(input.getString("source") != null && !input.getString("source").isEmpty() && !input.getString("source").equals(row.getString("source")))continue;
                 if (!matches(input, row)) continue;
-                String areaId = input.getString("areaId");
-                if (areaId != null && !areaId.isEmpty() && !areaId.equals(row.getString("areaId"))) continue;
-                String hay = (row.getString("code") + " " + row.getString("sn")).toLowerCase();
+                String hay = (row.getString("code") + " " + row.getString("sn") + " " + row.getString("deviceNumber")).toLowerCase();
                 if (!needle.isEmpty() && !hay.contains(needle)) continue;
                 rows.add(row);
             }
@@ -116,6 +87,7 @@ public class AdminQueryService {
         for (JSONObject item : visible) if (input.getString("id") != null && input.getString("id").equals(item.getString("id"))) device = item;
         if (device == null) throw fail(404, "OBJECT_NOT_FOUND", "设备不存在或不可见");
         if ("device".equals(kind)) return project(state, actor, device, telemetry);
+        if ("deviceEvents".equals(kind)) return deviceEvents(state, actor, device, input);
         if ("deviceChanges".equals(kind)) {
             if (!can(state, actor, "audit:read", device.getString("siteId"), device.getString("areaId"))) throw fail(403, "SECTION_DENIED", "没有资料变更审计权限");
             List<JSONObject> rows = new ArrayList<JSONObject>();
@@ -147,10 +119,95 @@ public class AdminQueryService {
         return body;
     }
 
+    /** Read the same durable device events as the portal, with independent admin authorization. */
+    private Map<String, Object> deviceEvents(JSONObject state, JSONObject actor, JSONObject device, JSONObject input) {
+        String siteId = device.getString("siteId");
+        if (!can(state, actor, "events:read", siteId, device.getString("areaId")))
+            throw fail(403, "SECTION_DENIED", "没有此设备的报警查看权限");
+        String deviceId = device.getString("portalDeviceId");
+        boolean helmet = "DIRECT_HELMET".equals(device.getString("source")) && "HELMET".equals(device.getString("type"));
+        boolean belt = "DIRECT_BELT".equals(device.getString("source")) && "BELT".equals(device.getString("type"));
+        if ((!helmet && !belt)
+                || deviceId == null || deviceId.isEmpty() || !deviceId.equals(device.getString("deviceNumber")))
+            throw fail(400, "UNSUPPORTED_DEVICE", "此设备尚未接入真实设备报警查询");
+        String protocol = helmet ? "direct-helmet" : "direct-belt";
+        // Validate pagination before reading the shared business snapshot.
+        page(new ArrayList<JSONObject>(), input, false);
+        JSONObject snapshot = guardian.snapshot();
+        if (snapshot == null) throw fail(503, "SOURCE_FAILURE", "设备报警数据暂不可用");
+        List<JSONObject> rows = new ArrayList<JSONObject>();
+        for (JSONObject event : array(snapshot, "events")) {
+            if (!deviceId.equals(event.getString("deviceId")) || !siteId.equals(event.getString("siteId"))
+                    || !deviceEventSource(event, deviceId, protocol)) continue;
+            String areaId = event.getString("areaId");
+            if (areaId == null) {
+                JSONObject person = WearableModel.person(state, event.getString("personId"));
+                if (person != null) areaId = person.getString("areaId");
+            }
+            if (!can(state, actor, "events:read", siteId, areaId)) continue;
+            JSONObject row = new JSONObject();
+            // The summary intentionally excludes location, personnel details, uploads and private notes.
+            for (String field : Arrays.asList("id", "deviceId", "protocol", "rawAlarmType", "title", "type",
+                    "status", "date", "time", "createdAt", "updatedAt", "source"))
+                if (event.containsKey(field)) row.put(field, event.get(field));
+            row.put("protocol", protocol);
+            row.put("sourceEventId", event.getString("id"));
+            row.put("alarmCode", event.getString("rawAlarmType"));
+            row.put("alarmName", event.getString("title") == null ? (helmet ? "安全帽设备告警" : "安全带设备告警") : event.getString("title"));
+            rows.add(row);
+        }
+        rows.sort((left, right) -> {
+            String leftTime = left.getString("createdAt"), rightTime = right.getString("createdAt");
+            if (leftTime == null) leftTime = String.valueOf(left.get("date")) + String.valueOf(left.get("time"));
+            if (rightTime == null) rightTime = String.valueOf(right.get("date")) + String.valueOf(right.get("time"));
+            int compared = rightTime.compareTo(leftTime);
+            return compared != 0 ? compared : String.valueOf(right.get("id")).compareTo(String.valueOf(left.get("id")));
+        });
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("availability", "AVAILABLE");
+        body.putAll(page(rows, input, false));
+        return body;
+    }
+
+    private static boolean deviceEventSource(JSONObject event, String deviceId, String protocol) {
+        if (!"device".equals(event.getString("source")) || event.getBooleanValue("demo")) return false;
+        String recordedProtocol = event.getString("protocol");
+        if (recordedProtocol != null && !recordedProtocol.isEmpty()) return protocol.equals(recordedProtocol);
+        if (!"direct-helmet".equals(protocol)) return false;
+        // Before durable helmet envelopes, GuardianIngest.directAlarm/sos wrote these
+        // device-specific deduplication keys without a protocol. Missing protocol alone
+        // is never sufficient evidence: manual, seed and unrelated events stay excluded.
+        String sourceKey = event.getString("sourceKey");
+        if (sourceKey == null) return false;
+        String prefix;
+        if ("人员求助".equals(event.getString("type"))) prefix = deviceId + ":sos:";
+        else if ("设备通信".equals(event.getString("type")) && event.getString("rawAlarmType") != null)
+            prefix = deviceId + ":alarm:" + event.getString("rawAlarmType") + ":";
+        else return false;
+        if (!sourceKey.startsWith(prefix)) return false;
+        String sourceTime = sourceKey.substring(prefix.length());
+        try {
+            java.time.Instant.parse(sourceTime);
+            return true;
+        } catch (java.time.format.DateTimeParseException invalidSourceTime) {
+            // The original direct ingress stored server-local yyyy-MM-dd HH:mm:ss.
+            // Validate its exact shape and calendar date without guessing a time zone.
+            if (sourceTime.length() != 19) return false;
+            try {
+                java.time.LocalDateTime.parse(sourceTime, java.time.format.DateTimeFormatter
+                        .ofPattern("uuuu-MM-dd HH:mm:ss").withResolverStyle(java.time.format.ResolverStyle.STRICT));
+                return true;
+            } catch (java.time.format.DateTimeParseException invalidLegacyTime) {
+                return false;
+            }
+        }
+    }
+
     private Map<String, Object> master(JSONObject state, JSONObject actor, String kind, JSONObject input) {
         if ("options".equals(kind)) return options(state, actor, input);
         String entity = input.getString("entity");
         if ("person".equals(kind)) entity = "people";
+        if ("areas".equals(entity)) throw fail(410, "FEATURE_REMOVED", "行政区域功能已取消");
         if (!READ_ENTITIES.contains(entity)) throw fail(400, "INVALID_ENTITY", "不支持的资料类型");
         boolean accessEntity = "accounts".equals(entity) || "roles".equals(entity);
         String permission = accessEntity ? "access:read" : "sites".equals(entity) ? "sites:read" : "dutyShifts".equals(entity) ? "duty:read" : "people".equals(entity) ? "people:read" : "organization:read";
@@ -164,7 +221,13 @@ public class AdminQueryService {
         List<JSONObject> rows = new ArrayList<JSONObject>();
         for (JSONObject row : array(state, entity)) {
             if (!siteWide && (siteId == null || !siteId.equals(row.getString("siteId")))) continue;
-            if (canReadMaster(state, actor, entity, row)) rows.add(row);
+            if (canReadMaster(state, actor, entity, row)) {
+                if ("people".equals(entity)) {
+                    JSONObject view = JSONObject.parseObject(row.toJSONString());
+                    PersonDutyStatus.project(view, row);
+                    rows.add(view);
+                } else rows.add(row);
+            }
         }
         if ("person".equals(kind) || "record".equals(kind) || "impacts".equals(kind)) {
             JSONObject row = null;
@@ -179,14 +242,13 @@ public class AdminQueryService {
             JSONObject data = JSONObject.parseObject(row.toJSONString());
             if ("people".equals(entity)) {
                 data.put("organizationName", nameOf(state, "organizations", row.getString("organizationId"), "未关联"));
-                data.put("areaName", nameOf(state, "areas", row.getString("areaId"), "未关联"));
                 data.put("equipment", equipment(state, actor, row));
                 data.put("slots", personSlots(state, row));
-                data.put("accountName", null);
+                data.put("accountName", linkedAccountName(state, actor, row));
             }
             return data;
         }
-        String status = input.getString("status");
+        String status = "organizations".equals(entity) ? null : input.getString("status");
         if (status != null && !status.isEmpty() && !"enabled".equals(status) && !"disabled".equals(status)) throw fail(400, "INVALID_FILTER", "无效状态筛选");
         if (status != null && !status.isEmpty()) {
             boolean enabled = "enabled".equals(status);
@@ -194,49 +256,65 @@ public class AdminQueryService {
             for (JSONObject row : rows) if (row.getBooleanValue("enabled") == enabled) filtered.add(row);
             rows = filtered;
         }
+        if ("people".equals(entity) && input.containsKey("dutyStatus")) {
+            Object dutyStatus = input.get("dutyStatus");
+            if (!(dutyStatus instanceof String) || !Arrays.asList("", "ON_DUTY", "OFF_DUTY", "UNKNOWN").contains(dutyStatus))
+                throw fail(400, "INVALID_FILTER", "无效在岗状态筛选");
+            if (!"".equals(dutyStatus)) rows = keep(rows, "dutyStatus", (String) dutyStatus);
+        }
         String organizationId = input.getString("organizationId");
-        if (organizationId != null && !organizationId.isEmpty()) rows = keep(rows, "organizationId", organizationId);
-        String areaId = input.getString("areaId");
-        if (areaId != null && !areaId.isEmpty()) rows = keep(rows, "areaId", areaId);
+        if ("people".equals(entity) && input.containsKey("includeDescendants") && !(input.get("includeDescendants") instanceof Boolean)) throw fail(400, "INVALID_FILTER", "包含下级组织须为布尔值");
+        if (organizationId != null && !organizationId.isEmpty()) {
+            if ("people".equals(entity) && Boolean.TRUE.equals(input.get("includeDescendants"))) {
+                Set<String> organizationIds = descendantOrganizationIds(state, actor, siteId, organizationId);
+                List<JSONObject> filtered = new ArrayList<JSONObject>();
+                for (JSONObject row : rows) if (organizationIds.contains(row.getString("organizationId"))) filtered.add(row);
+                rows = filtered;
+            } else rows = keep(rows, "organizationId", organizationId);
+        }
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("availability", "AVAILABLE");
         body.putAll(page(rows, input, true));
         return body;
     }
 
+    private Set<String> descendantOrganizationIds(JSONObject state, JSONObject actor, String siteId, String rootId) {
+        Set<String> localIds = new HashSet<String>();
+        List<JSONObject> organizations = array(state, "organizations");
+        for (JSONObject organization : organizations) {
+            if (siteId != null && siteId.equals(organization.getString("siteId")) && organization.getString("id") != null && canReadMaster(state, actor, "organizations", organization)) localIds.add(organization.getString("id"));
+        }
+        Set<String> included = new HashSet<String>();
+        if (!localIds.contains(rootId)) return included;
+        Map<String, List<String>> children = new LinkedHashMap<String, List<String>>();
+        for (JSONObject organization : organizations) {
+            if (!siteId.equals(organization.getString("siteId")) || !localIds.contains(organization.getString("id")) || !localIds.contains(organization.getString("parentId"))) continue;
+            String parentId = organization.getString("parentId");
+            if (!children.containsKey(parentId)) children.put(parentId, new ArrayList<String>());
+            children.get(parentId).add(organization.getString("id"));
+        }
+        List<String> pending = new ArrayList<String>();
+        included.add(rootId);pending.add(rootId);
+        for (int index = 0; index < pending.size(); index++) {
+            List<String> descendants = children.get(pending.get(index));
+            if (descendants == null) continue;
+            for (String id : descendants) if (id != null && included.add(id)) pending.add(id);
+        }
+        return included;
+    }
+
     private Map<String, Object> options(JSONObject state, JSONObject actor, JSONObject input) {
         Map<String, Object> data = new LinkedHashMap<String, Object>();
-        for (String key : Arrays.asList("sites", "organizations", "areas", "people", "roles")) {
+        for (String key : Arrays.asList("sites", "organizations", "people", "roles")) {
             List<JSONObject> rows = new ArrayList<JSONObject>();
             for (JSONObject row : array(state, key)) {
-                if (row.getBooleanValue("enabled") == false && row.containsKey("enabled") && !row.getBooleanValue("enabled")) continue;
-                if (!row.getBooleanValue("enabled") && row.containsKey("enabled")) continue;
+                if (!"organizations".equals(key) && !row.getBooleanValue("enabled") && row.containsKey("enabled")) continue;
                 if (!"sites".equals(key) && !"roles".equals(key) && input.getString("siteId") != null && !input.getString("siteId").equals(row.getString("siteId"))) continue;
                 rows.add(row);
             }
             data.put(key, rows);
         }
-        data.put("scopeAreas", array(state, "areas"));
         return data;
-    }
-
-    private List<JSONObject> rowsFor(JSONObject state, JSONObject actor, String siteId, String metric) {
-        if (!Arrays.asList("assets", "available", "assigned", "unknown", "conflict").contains(metric)) throw fail(400, "INVALID_METRIC", "不支持的明细类型");
-        List<JSONObject> rows = new ArrayList<JSONObject>();
-        Telemetry telemetry = new Telemetry();
-        for (JSONObject device : array(state, "devices")) {
-            if (!siteId.equals(device.getString("siteId")) || !can(state, actor, "assets:read", device.getString("siteId"), device.getString("areaId"))) continue;
-            JSONObject relation = relationship(state, device);
-            JSONObject row = project(state, actor, device, telemetry);
-            if ("assets".equals(metric)) rows.add(row);
-            else if ("maintenance".equals(metric)) {
-                for (JSONObject order : array(state, "maintenanceOrders")) {
-                    if (device.getString("id").equals(order.getString("deviceId")) && "OPEN".equals(order.getString("status"))) rows.add(row);
-                }
-            } else if ("available".equals(metric) && available(state, device)) rows.add(row);
-            else if (metric.equalsIgnoreCase(relation.getString("state"))) rows.add(row);
-        }
-        return rows;
     }
 
     private JSONObject project(JSONObject state, JSONObject actor, JSONObject device, Telemetry telemetry) {
@@ -249,17 +327,41 @@ public class AdminQueryService {
         JSONObject assignment = relation.getJSONObject("assignment");
         copy.put("startedAt", assignment == null ? null : assignment.getString("startedAt"));
         copy.put("assignmentSource", assignment == null || assignment.getString("source") == null ? "INITIAL_SNAPSHOT" : assignment.getString("source"));
-        copy.put("areaName", nameOf(state, "areas", device.getString("areaId"), "未分配区域"));
-        copy.put("modelName", modelName(device.getString("type")));
+        copy.put("modelName", deviceModelName(device));
         copy.put("declaration", declaration(device.getString("type")));
+        if ("DIRECT_BELT".equals(device.getString("source")))
+            copy.put("declaration", "状态来自安全带实际连接与上报；挂钩及佩戴原始值须按本批固件确认，未确认时不判定安全。");
 
 
         copy.put("writable", !"SCRAPPED".equals(device.getString("lifecycle")));
         applyTelemetry(copy, telemetry);
+        if(businessPolicy!=null)businessPolicy.decorateDevice(copy);
         return copy;
     }
 
     private void applyTelemetry(JSONObject device, Telemetry telemetry) {
+        if ("DIRECT_HELMET".equals(device.getString("source")) || "DIRECT_BELT".equals(device.getString("source"))) {
+            JSONObject remote = telemetry.find(device.getString("deviceNumber"));
+            device.put("communicationProtocol", "DIRECT_BELT".equals(device.getString("source")) ? "WEBSOCKET" : "SIP");
+            device.put("capabilities", new JSONArray());
+            device.put("online", null);
+            device.put("communication", "UNKNOWN");
+            device.put("freshness", "UNKNOWN");
+            if ("DIRECT_HELMET".equals(device.getString("source"))) {
+                device.put("batteryFreshness", "UNKNOWN");
+                device.put("isWearedFreshness", "UNKNOWN");
+            }
+            if (remote == null || !device.getString("source").equals(remote.getString("source"))) return;
+            for (String key : Arrays.asList("online", "battery", "batteryReportedAt", "batteryFreshness", "freshness", "isWeared", "isWearedReportedAt", "isWearedFreshness", "worn", "latitude", "longitude", "lat", "lng", "locationReportedAt", "locationFreshness", "sourceTime", "capabilities", "hangerAStatus", "hangerBStatus", "relativeAltitude", "relativeAltitudeReportedAt", "relativeAltitudeFreshness", "altitude", "gpsAltitude", "ignoreHookAlarm", "deviceReportedAt", "lastSeenAt", "inUse", "inUseReportedAt", "inUseFreshness", "networkType", "networkTypeReportedAt", "networkTypeFreshness", "networkStrength", "networkStrengthReportedAt", "networkStrengthFreshness", "hookState", "hookAEngaged", "hookBEngaged", "wearMappingConfirmed", "hookMappingConfirmed", "telemetryReportedAt", "telemetryFreshness","mediaAvailable","voiceAvailable","broadcastAvailable","mediaStatus","mediaVerification")) {
+                if (remote.containsKey(key)) device.put(key, remote.get(key));
+            }
+            if (device.get("sourceTime") == null) device.put("sourceTime", remote.get("lastSeenAt") != null ? remote.get("lastSeenAt") : remote.get("telemetryReportedAt") != null ? remote.get("telemetryReportedAt") : remote.get("updated"));
+            Boolean online = remote.getBoolean("online");
+            device.put("communication", online == null ? "UNKNOWN" : online ? "ONLINE" : "OFFLINE");
+            if ("DIRECT_BELT".equals(device.getString("source")) && !Boolean.TRUE.equals(online)
+                    && device.get("sourceTime") == null) device.put("communication", "NOT_CONNECTED");
+            return;
+        }
         if ("PLATFORM".equals(device.getString("source"))) {
             try { if(java.time.Instant.parse(device.getString("sourceTime")).isBefore(java.time.Instant.now().minusSeconds(300))) {
                 device.put("communication","UNKNOWN");device.put("freshness","STALE");
@@ -334,22 +436,41 @@ public class AdminQueryService {
 
     private List<Map<String, Object>> impacts(JSONObject state, String entity, JSONObject row, boolean all) {
         List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
+        if ("roles".equals(entity) && all) {
+            for (JSONObject account : array(state, "accounts")) {
+                JSONArray roleIds = account.getJSONArray("roleIds");
+                if (roleIds != null && roleIds.contains(row.getString("id"))) results.add(impact(account.getString("id"), account.getString("name"), "绑定账号（请先调整账号角色）"));
+            }
+        }
+        if ("accounts".equals(entity) && all) {
+            for (JSONObject order : array(state, "maintenanceOrders")) {
+                if (row.getString("id").equals(order.getString("handlerId")) && "OPEN".equals(order.getString("status"))) {
+                    results.add(impact(order.getString("id"), order.getString("code") == null ? order.getString("id") : order.getString("code"), "未完成维修工单"));
+                }
+            }
+        }
         if ("people".equals(entity)) {
             for (JSONObject assignment : array(state, "assignments")) if (assignment.getBooleanValue("active") && row.getString("id").equals(assignment.getString("personId"))) results.add(impact(assignment.getString("id"), assignment.getString("id"), "有效领用关系（请到发放回收页面归还或核实）"));
             for (JSONObject shift : array(state, "dutyShifts")) {
                 JSONArray members = shift.getJSONArray("personIds");
-                if (!shift.getBooleanValue("enabled") || members == null || !members.contains(row.getString("id"))) continue;
+                if ((!all && !shift.getBooleanValue("enabled")) || members == null || !members.contains(row.getString("id"))) continue;
+                if (all) { results.add(impact(shift.getString("id"), shift.getString("name"), "名册成员引用"));continue; }
                 String ends = shift.getString("endsAt");
                 try {
                     if (ends != null && java.time.Instant.parse(ends).isAfter(java.time.Instant.now())) results.add(impact(shift.getString("id"), shift.getString("name"), "当前或未来名册"));
                 } catch (RuntimeException ignored) { /* 无法解析的班次不当作活动引用 */ }
+            }
+            if (all) {
+                for (JSONObject group : array(state, "groups")) if ((group.getJSONArray("personIds") != null && group.getJSONArray("personIds").contains(row.getString("id"))) || row.getString("id").equals(group.getString("leaderId"))) results.add(impact(group.getString("id"), group.getString("name"), "协助组成员（A5维护）"));
+                for (JSONObject account : array(state, "accounts")) if (row.getString("id").equals(account.getString("personId")) || account.getString("id").equals(row.getString("accountId"))) results.add(impact(account.getString("id"), account.getString("name"), "绑定账号（请先解除人员关联）"));
+                for (JSONObject device : array(state, "devices")) if (row.getString("id").equals(device.getString("personId"))) results.add(impact(device.getString("id"), device.getString("name"), "设备人员关联（请先解除关联）"));
             }
             JSONObject snapshot = guardian.snapshot();
             String portalId = row.getString("portalId");
             if (portalId == null || portalId.isEmpty()) portalId = row.getString("id");
             if (snapshot != null && portalId != null) {
                 for (JSONObject work : array(snapshot, "works")) {
-                    if ("已结束".equals(work.getString("status"))) continue;
+                    if (!guardian.isOperational(work) || "已结束".equals(work.getString("status"))) continue;
                     JSONArray members = work.getJSONArray("members");
                     if (members != null && members.contains(portalId)) results.add(impact(work.getString("id"), work.getString("name"), "未结束作业"));
                 }
@@ -360,7 +481,11 @@ public class AdminQueryService {
             for (JSONObject person : array(state, "people")) if (row.getString("id").equals(person.getString("areaId")) && (all || person.getBooleanValue("enabled"))) results.add(impact(person.getString("id"), person.getString("name"), "人员引用"));
         }
         if ("organizations".equals(entity)) {
-            for (JSONObject person : array(state, "people")) if (row.getString("id").equals(person.getString("organizationId")) && (all || person.getBooleanValue("enabled"))) results.add(impact(person.getString("id"), person.getString("name"), "人员引用"));
+            for (JSONObject child : array(state, "organizations")) if (row.getString("id").equals(child.getString("parentId"))) results.add(impact(child.getString("id"), child.getString("name"), "下级组织引用"));
+            for (JSONObject person : array(state, "people")) if (row.getString("id").equals(person.getString("organizationId"))) results.add(impact(person.getString("id"), person.getString("name"), "人员引用"));
+        }
+        if ("sites".equals(entity)) {
+            for (JSONObject organization : array(state, "organizations")) if (row.getString("id").equals(organization.getString("siteId"))) results.add(impact(organization.getString("id"), organization.getString("name"), "组织引用"));
         }
         return results;
     }
@@ -383,8 +508,8 @@ public class AdminQueryService {
                 if (hay.contains(needle)) filtered.add(row);
             }
         }
-        int from = (pageNum - 1) * pageSize;
-        List<JSONObject> slice = from >= filtered.size() ? new ArrayList<JSONObject>() : filtered.subList(from, Math.min(from + pageSize, filtered.size()));
+        long from = (long) (pageNum - 1) * pageSize;
+        List<JSONObject> slice = from >= filtered.size() ? new ArrayList<JSONObject>() : filtered.subList((int) from, (int) Math.min(from + pageSize, filtered.size()));
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("rows", new ArrayList<JSONObject>(slice));
         body.put("total", filtered.size());
@@ -398,36 +523,22 @@ public class AdminQueryService {
         if (siteId == null || siteId.isEmpty()) throw fail(400, "SITE_REQUIRED", "请选择厂站");
         boolean enabled = false;
         for (JSONObject site : array(state, "sites")) if (siteId.equals(site.getString("id")) && site.getBooleanValue("enabled")) enabled = true;
-        if (!enabled || !can(state, actor, operation, siteId, null)) throw fail(403, "PERMISSION_DENIED", "当前身份无此查询权限");
+        if (!enabled || !(system(actor) || accessHasSite(state, actor, siteId, operation))) throw fail(403, "PERMISSION_DENIED", "当前身份无此查询权限");
         return siteId;
     }
 
     private boolean can(JSONObject state, JSONObject actor, String operation, String siteId, String areaId) {
-        if (system(actor)) return true;
-        for (JSONObject role : array(state, "roles")) {
-            if (!actor.getJSONArray("roleIds").contains(role.getString("id")) || role.getBooleanValue("enabled") == false) continue;
-            JSONArray grants = role.getJSONArray("grants");
-            if (grants == null) continue;
-            for (int i = 0; i < grants.size(); i++) {
-                JSONObject grant = grants.getJSONObject(i);
-                JSONArray operations = grant.getJSONArray("operations");
-                JSONArray sites = grant.getJSONArray("siteIds");
-                if (operations == null || sites == null || !sites.contains(siteId)) continue;
-                if (!(operations.contains("*") || operations.contains(operation))) continue;
-                JSONObject scopes=actor.getJSONObject("roleScopes");
-                JSONObject scope=scopes==null?null:scopes.getJSONObject(role.getString("id"));
-                if(scope!=null && scope.getJSONArray("siteIds")!=null && !scope.getJSONArray("siteIds").contains(siteId)) continue;
-                Object areas = grant.get("areaIds");
-                if(scope!=null && scope.get("areaIds")!=null && !"*".equals(scope.get("areaIds"))) {
-                    JSONArray limit=scope.getJSONArray("areaIds");
-                    if("*".equals(areas)) areas=limit;
-                    else { JSONArray intersection=new JSONArray();if(areas instanceof JSONArray)for(Object a:(JSONArray)areas)if(limit.contains(a))intersection.add(a);areas=intersection; }
-                }
-                if ("*".equals(areas) || areaId == null && areas instanceof JSONArray && !((JSONArray)areas).isEmpty()) return true;
-                if (areas instanceof JSONArray && ((JSONArray) areas).contains(areaId)) return true;
-            }
+        // Administrative areas are retired; authorization retains operation and site boundaries.
+        return system(actor) || scopedCan(state, actor, operation, siteId, areaId);
+    }
+
+    private String linkedAccountName(JSONObject state, JSONObject actor, JSONObject person) {
+        for (JSONObject account : array(state, "accounts")) {
+            boolean linked = account.getString("id") != null && account.getString("id").equals(person.getString("accountId"))
+                    || person.getString("id") != null && person.getString("id").equals(account.getString("personId"));
+            if (linked && canReadMaster(state, actor, "accounts", account)) return account.getString("name");
         }
-        return false;
+        return null;
     }
 
     private boolean canReadMaster(JSONObject state, JSONObject actor, String entity, JSONObject row) {
@@ -476,12 +587,7 @@ public class AdminQueryService {
                 String siteId = grant.siteIds.getString(s);
                 for (int o = 0; o < grant.operations.size(); o++) {
                     String operation = grant.operations.getString(o);
-                    if ("*".equals(grant.areaIds)) {
-                        if (!scopedCan(state, actor, operation, siteId, null)) return false;
-                    } else if (grant.areaIds instanceof JSONArray) {
-                        JSONArray areas = (JSONArray) grant.areaIds;
-                        for (int a = 0; a < areas.size(); a++) if (!scopedCan(state, actor, operation, siteId, areas.getString(a))) return false;
-                    } else return false;
+                    if (!scopedCan(state, actor, operation, siteId, null)) return false;
                 }
             }
         }
@@ -494,14 +600,7 @@ public class AdminQueryService {
         for (ScopeGrant grant : grantsOf(state, actor)) {
             if (grant.siteIds == null || !grant.siteIds.contains(siteId) || grant.operations == null) continue;
             if (!(grant.operations.contains("*") || grant.operations.contains(operation))) continue;
-            if ("*".equals(grant.areaIds)) return true;
-            if (grant.areaIds instanceof JSONArray) {
-                JSONArray areas = (JSONArray) grant.areaIds;
-                for (int i = 0; i < areas.size(); i++) {
-                    JSONObject area = find(state, "areas", areas.getString(i));
-                    if (area != null && siteId.equals(area.getString("siteId")) && area.getBooleanValue("enabled")) return true;
-                }
-            }
+            return true;
         }
         return false;
     }
@@ -512,8 +611,7 @@ public class AdminQueryService {
         for (ScopeGrant grant : grantsOf(state, actor)) {
             if (grant.operations == null || grant.siteIds == null || !grant.siteIds.contains(siteId)) continue;
             if (!(grant.operations.contains("*") || grant.operations.contains(operation))) continue;
-            if ("*".equals(grant.areaIds)) return true;
-            if (areaId != null && grant.areaIds instanceof JSONArray && ((JSONArray) grant.areaIds).contains(areaId)) return true;
+            return true;
         }
         return false;
     }
@@ -523,51 +621,25 @@ public class AdminQueryService {
         if (actor == null || !actor.getBooleanValue("enabled")) return grants;
         JSONArray roleIds = actor.getJSONArray("roleIds");
         if (roleIds == null) return grants;
-        JSONObject scopes = actor.getJSONObject("roleScopes");
         for (int i = 0; i < roleIds.size(); i++) {
             JSONObject role = find(state, "roles", roleIds.getString(i));
             if (role == null || !role.getBooleanValue("enabled")) continue;
-            JSONObject limit = scopes == null ? null : scopes.getJSONObject(role.getString("id"));
             JSONArray roleGrants = role.getJSONArray("grants");
             if (roleGrants == null) continue;
             for (int g = 0; g < roleGrants.size(); g++) {
                 JSONObject grant = roleGrants.getJSONObject(g);
                 ScopeGrant item = new ScopeGrant();
                 item.operations = grant.getJSONArray("operations");
-                item.siteIds = limitSites(grant.getJSONArray("siteIds"), limit);
-                item.areaIds = limitAreas(grant.get("areaIds"), limit);
+                item.siteIds = grant.getJSONArray("siteIds");
                 grants.add(item);
             }
         }
         return grants;
     }
 
-    private static JSONArray limitSites(JSONArray sites, JSONObject limit) {
-        if (limit == null || limit.getJSONArray("siteIds") == null) return sites;
-        JSONArray allowed = limit.getJSONArray("siteIds");
-        JSONArray limited = new JSONArray();
-        if (sites == null) return limited;
-        for (int i = 0; i < sites.size(); i++) if (allowed.contains(sites.getString(i))) limited.add(sites.getString(i));
-        return limited;
-    }
-
-    private static Object limitAreas(Object areas, JSONObject limit) {
-        if (limit == null || limit.get("areaIds") == null || "*".equals(limit.get("areaIds"))) return areas;
-        if ("*".equals(areas)) return limit.get("areaIds");
-        if (areas instanceof JSONArray && limit.get("areaIds") instanceof JSONArray) {
-            JSONArray limited = new JSONArray();
-            JSONArray allowed = limit.getJSONArray("areaIds");
-            JSONArray wanted = (JSONArray) areas;
-            for (int i = 0; i < wanted.size(); i++) if (allowed.contains(wanted.getString(i))) limited.add(wanted.getString(i));
-            return limited;
-        }
-        return areas;
-    }
-
     private static final class ScopeGrant {
         private JSONArray operations;
         private JSONArray siteIds;
-        private Object areaIds;
     }
 
     private boolean system(JSONObject actor) { return actor != null && "demo-system".equals(actor.getString("id")) && actor.getBooleanValue("enabled"); }
@@ -637,6 +709,11 @@ public class AdminQueryService {
         row.put("declaration", declaration(type));
         row.put("options", new ArrayList<Object>());
         return row;
+    }
+
+    static String deviceModelName(JSONObject device) {
+        if (device.containsKey("modelName")) return device.getString("modelName") == null ? "" : device.getString("modelName");
+        return modelName(device.getString("type"));
     }
 
     private static String modelName(String type) {

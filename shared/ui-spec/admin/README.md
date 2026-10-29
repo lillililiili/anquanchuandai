@@ -6,18 +6,18 @@
 
 |后台页面|路由|参考画板 / 类别|
 |---|---|---|
-|管理工作台|`/admin/overview`|监盘总览、巡视报告 / monitor|
-|装备台账|`/admin/assets/devices`|巡视点位、告警及检修建议 / list|
-|装备详情|`/admin/assets/devices/:deviceId`|工作票、缺陷单处理 / detail|
-|发放与回收|`/admin/assets/assignments`|巡视点位 / list|
-|人员档案|`/admin/people`|巡视点位 / list|
-|人员详情|`/admin/people/:personId`|工作票、缺陷单处理 / detail|
-|组织与区域|`/admin/organization`|巡视点位；区域地图参考安全哨兵|
-|厂站资料|`/admin/sites`|巡视点位 / list|
-|班次名册|`/admin/duty`|巡视点位；编辑参考工作票|
-|本地账号|`/admin/access/accounts`|巡视点位；表单及展开控件引用组件库|
-|基础角色|`/admin/access/roles`|巡视点位；权限清单引用组件库|
-|操作日志|`/admin/audit`|告警及检修建议；详情引用缺陷单处理|
+|管理工作台|`/overview`|监盘总览、巡视报告 / monitor|
+|装备台账|`/devices`|巡视点位、告警及检修建议 / list|
+|装备详情|`/devices/:deviceId`|工作票、缺陷单处理 / detail|
+|发放与回收|`/assignments`|巡视点位 / list|
+|人员档案|`/people`|巡视点位 / list|
+|人员详情|`/people/:personId`|工作票、缺陷单处理 / detail|
+|组织 / 班组|`/organization`|组织层级与班组维护|
+|厂站资料|`/sites`|巡视点位 / list|
+|班次名册|`/duty`|巡视点位；编辑参考工作票|
+|用户账号|`/accounts`|巡视点位；表单及展开控件引用组件库|
+|基础角色|`/roles`|巡视点位；权限清单引用组件库|
+|操作日志|`/audit`|告警及检修建议；详情引用缺陷单处理|
 |居中弹窗|上述页面内|[告警弹窗原稿参数与具体映射](dialogs.md)、对应选择与日期组件|
 
 所有列表与详情保留业务模块顺序。人员组织的五个页面继续共用工作区页签；账号和角色继续共用权限工作区。停用的维修、群组、集成路由继续使用原重定向。

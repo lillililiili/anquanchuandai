@@ -1,0 +1,18 @@
+{
+  "code": 0,
+  "message": "success",
+  "requestId": "00000000-0000-4000-8000-000000000002",
+  "serverTime": "2026-10-27T08:00:00.000Z",
+  "data": {
+    "items": [
+      {
+        "sourcePlatform": "wearable-example",
+        "deviceType": "HELMET",
+        "deviceId": "DEMO-HELMET-01",
+        "deviceModel": null,
+        "position": null,
+        "validity": "UNKNOWN"
+      }
+    ]
+  }
+}

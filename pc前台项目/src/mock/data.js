@@ -1,16 +1,34 @@
+  import { supportsDeviceAction, hasCurrentLocation, isRealDevice } from "../lib/device-telemetry.js";
+  import { mapLocation } from "../lib/location.js";
+  import { displayDevice } from "../lib/data-mode.js";
+  import { isSimulatedWatch, isSimulatedVital, projectCachedSamples, projectSingleSimulatedWatch } from "../lib/sample-data.js";
+  import { beijingDate, beijingTime } from "../lib/location.js";
+  import { communicationGuard } from "../lib/communication-guard.js";
+
   "use strict";
   const DATE = "2026-09-15",
     KEY = "rolling-native-v1";
   const clone = (x) => JSON.parse(JSON.stringify(x));
   const typeNames = { H: "智能安全帽", B: "智能安全带", W: "智能手表" };
-  const areas = ["锅炉区", "汽机厂房", "配电区", "循环水区"];
-  const assetForArea = (a) =>
-    ({
-      锅炉区: "scene-boiler.png",
-      汽机厂房: "scene-turbine.png",
-      配电区: "scene-electric.png",
-      循环水区: "scene-water.png",
-    })[a] || "scene-boiler.png";
+  const workLocations = ["锅炉区", "汽机厂房", "配电区"];
+  const assetForPerson = (id) => {
+    const index = Number(String(id || '').match(/\d+$/)?.[0] || 1) - 1;
+    return ['scene-boiler.png', 'scene-turbine.png', 'scene-electric.png', 'scene-water.png'][index % 4] || 'scene-boiler.png';
+  };
+  function withoutAdministrativeAreas(snapshot) {
+    const next = { ...snapshot };
+    delete next.mapAreas;
+    for (const kind of ['people', 'devices', 'groups', 'works']) {
+      if (!Array.isArray(snapshot[kind])) continue;
+      next[kind] = snapshot[kind].map(record => {
+        const row = { ...record };
+        delete row.areaId;
+        if (kind !== 'works') delete row.area;
+        return row;
+      });
+    }
+    return next;
+  }
   function seed() {
     const people = [
       "陈建国",
@@ -34,7 +52,6 @@
               : "运行一班",
       station: "S1",
       active: true,
-      area: i < 3 ? areas[0] : i < 5 ? areas[1] : i < 7 ? areas[2] : areas[3],
       position: [
         [36, 37],
         [44, 53],
@@ -100,7 +117,7 @@
       {
         id: "GL-20260915-018",
         name: "锅炉平台检修",
-        area: areas[0],
+        area: workLocations[0],
         members: ["P1", "P2", "P3"],
         supervisor: "P3",
         leader: "P2",
@@ -112,7 +129,7 @@
       {
         id: "XJ-20260915-006",
         name: "汽机设备巡检",
-        area: areas[1],
+        area: workLocations[1],
         members: ["P4", "P5"],
         supervisor: "P5",
         leader: "P5",
@@ -124,7 +141,7 @@
       {
         id: "JC-20260915-003",
         name: "配电区检查",
-        area: areas[2],
+        area: workLocations[2],
         members: ["P6", "P7"],
         supervisor: "P7",
         leader: "P7",
@@ -394,37 +411,47 @@
       audit: [],
     };
   }
-  function createStore(storage) {
+  function createStore(storage, { demoMode = false, requiredDataVersion = null, loadRtc = () => import("../lib/rtc.js") } = {}) {
     let state = seed(),
       loadError = "";
+    if (!demoMode) {
+      // A first visit waits for the backend. Existing saved ledgers are loaded intact below.
+      for (const key of Object.keys(state)) if (Array.isArray(state[key]) && key !== 'stations') state[key] = [];
+      state.sos = { status: 'ended', members: [], timeline: [] };
+    }
     try {
       const raw = storage && storage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.version !== 1) throw Error("版本不匹配");
+        if (!demoMode && requiredDataVersion && parsed.businessConfig?.dataVersion !== requiredDataVersion) {
+          storage.removeItem(KEY);
+          throw Error('旧业务缓存已清理，正在读取当前业务数据');
+        }
         const stationName = parsed.stations?.[0]?.name || "";
         if (!/[\u4e00-\u9fff]/.test(stationName)) storage.removeItem(KEY);
-        else state = parsed;
+        else state = demoMode ? parsed : projectCachedSamples(parsed, seed());
       }
     } catch (e) {
-      loadError = "本地数据读取失败，已载入初始数据：" + e.message;
+      loadError = (demoMode ? "本地演示数据读取失败，已载入初始演示数据：" : "本地业务缓存已失效，等待读取服务器数据：") + e.message;
     }
+    state = withoutAdministrativeAreas(state);
     // Upgrade older saves without replacing business changes or inventing new bindings.
     const fresh = seed();
     if (!Array.isArray(state.vitals)) {
-      state.vitals = fresh.vitals.filter((v) => state.bindings.some((b) =>
+      state.vitals = (demoMode ? fresh.vitals : []).filter((v) => state.bindings.some((b) =>
         b.id === v.bindingId && b.personId === v.personId && b.deviceId === v.deviceId &&
         b.start <= v.observedAt && (!b.end || b.end > v.observedAt)));
     }
     if (!Array.isArray(state.events)) state.events = [];
-    const addedEvents = fresh.events.filter((event) => !state.events.some((item) => item.id === event.id));
+    const addedEvents = demoMode ? fresh.events.filter((event) => !state.events.some((item) => item.id === event.id)) : [];
     let changed = addedEvents.length > 0;
     if (addedEvents.length) state.events.push(...addedEvents);
-    if (state.sos && !state.sos.eventId && state.events.some((item) => item.id === "RL-E-0915-004")) {
+    if (demoMode && state.sos && !state.sos.eventId && state.events.some((item) => item.id === "RL-E-0915-004")) {
       state.sos.eventId = "RL-E-0915-004";
       changed = true;
     }
-    for (const item of state.sos?.timeline || []) {
+    for (const item of demoMode ? state.sos?.timeline || [] : []) {
       if (item.text === "收到 SOS 演练请求") {
         item.text = "收到安全帽 SOS";
         changed = true;
@@ -434,7 +461,7 @@
         changed = true;
       }
     }
-    for (const call of state.calls || []) {
+    for (const call of demoMode ? state.calls || [] : []) {
       if (call.kind === "SOS 演练") {
         call.kind = "SOS协助";
         changed = true;
@@ -451,8 +478,9 @@
     let remoteCommit = null;
     let voice = null;
     let applyingVoice = false;
-    const now = (s) =>
-      DATE +
+    // Authentication credentials never enter persisted snapshots or localStorage.
+    const callCredentials = new Map();
+    const now = (s) => demoMode ? DATE +
       " " +
       [
         Math.floor(s.clock / 3600) % 24,
@@ -460,15 +488,17 @@
         s.clock % 60,
       ]
         .map((v) => String(v).padStart(2, "0"))
-        .join(":");
+        .join(":") : beijingDate() + " " + beijingTime(new Date().toISOString());
     function commit(label, fn) {
+      const volatileCommunication = !demoMode && voice && ['发起单呼', '发起群呼', '更新通话', '发送文字广播', 'SOS 协助操作'].includes(label);
       const next = clone(state);
       next.clock++;
       const value = fn(next);
-      next.audit.push({ id: "A" + ++next.seq, time: now(next), text: label });
+      if (volatileCommunication) next.seq = state.seq;
+      else next.audit.push({ id: "A" + ++next.seq, time: now(next), text: label });
       validate(next);
-      if (remoteCommit) remoteCommit(next);
-      if (storage) storage.setItem(KEY, JSON.stringify(next));
+      if (remoteCommit && !volatileCommunication) remoteCommit(next);
+      if (storage && !volatileCommunication) storage.setItem(KEY, JSON.stringify(next));
       state = next;
       listeners.forEach((fn) => fn(state));
       return value;
@@ -477,7 +507,7 @@
       return state.people.find((p) => p.id === id);
     }
     function device(id) {
-      return state.devices.find((d) => d.id === id);
+      return displayDevice(state.devices.find((d) => d.id === id), demoMode);
     }
     function work(id) {
       return state.works.find((w) => w.id === id);
@@ -496,7 +526,7 @@
       return b ? person(b.personId) : null;
     }
     function vitalHistory(pid) {
-      return state.vitals.filter((v) => v.personId === pid)
+      return state.vitals.filter((v) => v.personId === pid && (demoMode || !isSimulatedVital(v) || isSimulatedWatch(device(v.deviceId))))
         .sort((a, b) => b.observedAt.localeCompare(a.observedAt));
     }
     function vitals(pid) {
@@ -505,13 +535,35 @@
       const binding = watch && state.bindings.find((b) => !b.end && b.personId === pid && b.deviceId === watch.id);
       const record = p?.active && binding ? vitalHistory(pid).find((v) =>
         v.bindingId === binding.id && v.deviceId === watch.id && v.observedAt >= binding.start) || null : null;
-      const status = !p?.active ? "人员已停用" : !watch ? "未绑定手表" : !watch.online ? "手表离线 · 最近观测" : !record ? "暂无本次领用观测" : "预置观测";
-      return { watch, record, status };
+      const simulated = Boolean(record && isSimulatedVital(record) && (demoMode || isSimulatedWatch(watch)));
+      const status = !p?.active ? "人员已停用" : !watch ? "未绑定手表" : simulated ? watch.online === false ? "模拟数据 · 手表离线" : "模拟数据 · 非实时测量" : watch.online == null ? "暂无真实体征数据" : !watch.online ? "手表离线 · 最近观测" : !record ? "暂无本次领用观测" : "最近观测";
+      return { watch, record, status, simulated };
+    }
+    function locationDevice(pid) {
+      const p = person(pid);
+      const devices = currentDevices(pid);
+      if (demoMode) return devices.find(d => d.type === "H" && d.active && d.online) || null;
+      if (!p?.active || !p.locationDeviceId || !p.locationAssignmentId || p.locationAssignmentVersion == null) return null;
+      const d = devices.find(d => d.id === p.locationDeviceId && d.active && isRealDevice(d) &&
+        (d.type === "H" || d.type === "B" && d.source === "DIRECT_BELT") && hasCurrentLocation(d));
+      if (!d) return null;
+      const bindings = state.bindings.filter(b => !b.end && b.deviceId === d.id);
+      const binding = bindings.length === 1 ? bindings[0] : null;
+      if (!binding || binding.personId !== pid || binding.assignmentId !== p.locationAssignmentId ||
+        binding.assignmentVersion == null || binding.assignmentVersion !== p.locationAssignmentVersion) return null;
+      // The person projection and the selected device must describe one observation.
+      // Never borrow another device's fresh heartbeat to revive old person coordinates.
+      if (!mapLocation(p, { current: true }) || !mapLocation(d, { current: true }) ||
+        Number(p.longitude) !== Number(d.longitude) || Number(p.latitude) !== Number(d.latitude) ||
+        p.coordinateSystem !== d.coordinateSystem ||
+        Date.parse(p.locationReportedAt) !== Date.parse(d.locationReportedAt)) return null;
+      return d;
     }
     function locationValid(pid) {
-      const p = person(pid),
-        h = currentDevices(pid).find((d) => d.type === "H");
-      return !!(p && p.active && p.locationValid && h && h.online && h.active);
+      const p = person(pid);
+      const d = locationDevice(pid);
+      if (!p?.active || !d) return false;
+      return isRealDevice(d) ? Boolean(mapLocation(p, { current: true })) : Boolean(p.locationValid);
     }
     function deviceAt(pid, time, type = "H") {
       const b = state.bindings.find(
@@ -526,7 +578,7 @@
     function currentWork(pid) {
       return state.works.find(
         (w) =>
-          w.date === DATE && w.members.includes(pid) && w.status !== "已结束",
+          w.date === (demoMode ? DATE : beijingDate()) && w.members.includes(pid) && w.status !== "已结束",
       );
     }
     function filter(list, scope = {}) {
@@ -543,7 +595,7 @@
     function stats(scope = {}) {
       const works = filter(state.works, scope);
       const members = new Set(works.flatMap((w) => w.members));
-      const dateValid = !scope.date || scope.date === DATE;
+      const dateValid = !demoMode || !scope.date || scope.date === DATE;
       const people = state.people.filter(
         (p) =>
           p.active &&
@@ -552,14 +604,17 @@
           (!scope.workId || scope.workId === "all" || members.has(p.id)),
       );
       const ids = new Set(people.map((p) => p.id));
-      const devices = state.bindings
+      const assignedDevices = state.bindings
         .filter((b) => !b.end && ids.has(b.personId))
         .map((b) => device(b.deviceId))
         .filter((d) => d && d.active);
+      const devices = assignedDevices.filter(d => demoMode || isRealDevice(d));
+      const simulatedWatches = assignedDevices.filter(isSimulatedWatch);
       const events = filter(state.events, scope);
       return {
         people,
         devices,
+        simulatedWatches,
         works,
         events,
         assigned: people.filter((p) => members.has(p.id)).length,
@@ -629,10 +684,9 @@
               id: "P" + ++s.seq,
               active: true,
               station: fields.station || "S1",
-              position: [50, 50],
-              locationValid: true,
-              updated: "10:42",
-              area: areas[0],
+              position: demoMode ? [50, 50] : null,
+              locationValid: demoMode,
+              updated: demoMode ? "10:42" : null,
             };
         Object.assign(p, {
           name: fields.name.trim(),
@@ -724,6 +778,8 @@
       });
     }
     function capture(pid, kind = "photo", duration = 0, options = {}) {
+      if (!demoMode) throw Error('暂无真实设备上传，不能生成示例影像记录');
+      if (currentDevices(pid).some(d => d.type === 'H' && isRealDevice(d))) throw Error('真实安全帽影像须由设备上传，不能生成示例记录');
       return commit(
         kind === "photo" ? "保存现场照片" : "保存模拟录像记录",
         (s) => {
@@ -744,16 +800,16 @@
             kind,
             title:
               options.title ||
-              p.area + (kind === "photo" ? "现场抓拍" : "模拟录像记录"),
+              p.name + (kind === "photo" ? "现场抓拍" : "模拟录像记录"),
             personId: pid,
             deviceId: b.deviceId,
             workId: w?.id || "",
             eventId: options.eventId || "",
             station: p.station,
-            date: DATE,
+            date: demoMode ? DATE : beijingDate(),
             created,
             time: created.slice(11),
-            asset: assetForArea(p.area),
+            asset: assetForPerson(p.id),
             duration: Math.max(1, duration),
             source: "手动" + (kind === "photo" ? "抓拍" : "录像（图片模拟）"),
             blobId: options.blobId || null,
@@ -777,7 +833,7 @@
           workId: e.workId,
           eventId: e.id,
           station: e.station,
-          date: DATE,
+          date: demoMode ? DATE : beijingDate(),
           created: now(s),
           time: now(s).slice(11),
           blobId,
@@ -793,7 +849,7 @@
         if (!fields.name?.trim()) throw Error("请填写围栏名称");
         if (!fields.points || fields.points.length < 3)
           throw Error("围栏至少需要 3 个节点");
-        if (polygonArea(fields.points) < 1) throw Error("围栏区域过小");
+        if (polygonArea(fields.points) < (fields.coordinateSystem ? 1e-10 : 1)) throw Error("围栏区域过小");
         if (selfIntersects(fields.points)) throw Error("围栏边界不能交叉");
         const f = id
           ? requireItem(s.fences, id)
@@ -880,15 +936,20 @@
         return g.id;
       });
     }
-    function helmetsFor(ids) {
+    function helmetsFor(ids, action) {
       return ids.map((id) => {
         const wearer = requireItem(state.people, id);
         const helmet = currentDevices(id).find((item) => item.type === "H");
         if (!helmet) throw Error(wearer.name + "没有领用安全帽");
+        if (voice && !supportsDeviceAction(helmet, action)) {
+          throw Error(wearer.name + (action === "tts" ? "的安全帽尚无可用播报能力或状态待确认" : "的安全帽尚无可用语音协议或状态待确认"));
+        }
+        // The guardian endpoint resolves the platform ID to physical identity.
         return { hatNumber: helmet.id, name: wearer.name };
       });
     }
-    function startCall(members, kind = "群呼", station = "S1") {
+    function startCall(members, kind = "群呼", station = "S1", options = {}) {
+      communicationGuard.assertAvailable();
       members = [...new Set(members)];
       if (!members.length) throw Error("请选择呼叫人员");
       if (kind === "单呼" && members.length !== 1) throw Error("单呼只能选择一人");
@@ -897,9 +958,12 @@
         if (!wearer.active || wearer.station !== station) throw Error("呼叫人员无效");
       });
       if (state.calls.some((call) => call.status !== "已结束")) throw Error("请先结束当前通话");
-      const hats = helmetsFor(members);
-      const rtc = voice ? voice("/api/guardian/v1/call", { hats }) : null;
-      return commit("发起" + kind, (s) => {
+      const hats = helmetsFor(members, "intercom");
+      const protocols = new Set(members.map(pid => String(currentDevices(pid).find(d => d.type === 'H')?.communicationProtocol || 'AGORA').toUpperCase()));
+      if (voice && protocols.size > 1) throw Error('不同通信协议的安全帽暂不能放在同一通话中');
+      const credentials = voice ? voice("/api/guardian/v1/call", { hats, video: options.video === true }) : null;
+      const rtc = credentials ? { protocol: credentials.protocol || 'AGORA', channel: credentials.channel, callId: credentials.callId, video: options.video === true, status:credentials.status } : null;
+      const id = commit("发起" + kind, (s) => {
         members = [...new Set(members)];
         if (!members.length) throw Error("请选择呼叫人员");
         if (kind === "单呼" && members.length !== 1)
@@ -911,36 +975,51 @@
         if (s.calls.some((c) => c.status !== "已结束"))
           throw Error("请先结束当前通话");
         const call = {
-          id: "CALL" + ++s.seq,
+          id: voice ? 'LOCAL-CALL-' + crypto.randomUUID() : "CALL" + ++s.seq,
           members,
           kind,
           station,
-          date: DATE,
+          date: demoMode ? DATE : beijingDate(),
           time: now(s),
           status: "正在呼叫",
           muted: false,
           joined: [],
+          ...(voice ? { connectionQuality: credentials?.status==='unknown'?'unknown':"requesting", realCommunication: true,
+            ...(credentials?.status==='unknown'?{statusLabel:'云端呼叫结果未确认，请先结束本次会话'}:{}) } : {}),
           rtc,
           history: [{ time: now(s), text: "发起" + kind }],
         };
         s.calls.unshift(call);
         return call.id;
       });
+      if (credentials && credentials.status!=='unknown') callCredentials.set(id, credentials);
+      return id;
     }
     function updateCall(id, action, pid) {
       if (voice && !applyingVoice && action === "connect") return connectVoice(id);
       if (voice && !applyingVoice && action === "end") return endVoice(id);
       if (voice && !applyingVoice && action === "mute") return muteVoice(id);
+      if (voice && action === "invite") throw Error("当前真实通话尚不支持追加成员，请结束后重新选择人员");
       return commit("更新通话", (s) => {
         const c = requireItem(s.calls, id);
         if (c.status === "已结束") throw Error("通话已经结束");
         if (action === "connect") {
-          c.status = "通话中";
-          c.joined = [...c.members];
+          c.status = voice && !c.serverConnected ? "正在呼叫" : "通话中";
+          if (voice) c.statusLabel = c.serverConnected ? "设备已接通" : "本端已加入（设备接通待确认）";
+          c.joined = voice ? [] : [...c.members];
+          if (voice) c.connectionQuality = "local_joined";
+        }
+        if (action === "media") {
+          c.connectionQuality = pid;
+          c.statusLabel = pid === "remote_audio" ? (c.serverConnected ? "设备已接通，收到远端音频" : "收到远端音频（设备身份待确认）") : pid === "remote_video" ? (c.serverConnected ? "设备已接通，收到远端视频" : "收到远端视频（设备身份待确认）") :
+            pid === "playback_blocked" ? "浏览器未自动播放声音，请点击播放" : pid === "ended" ? "远端媒体已结束" : pid === "failed" ? "媒体连接中断" : "本端已加入（设备接通待确认）";
+          c.joined = [];
         }
         if (action === "end") {
-          c.status = "已结束";
-          c.endedAt = now(s);
+          const pending = c.rtc?.protocol==='SIP';
+          c.status = pending ? "正在结束" : "已结束";
+          if (c.rtc) c.statusLabel = pending ? "已请求结束，等待服务器确认" : "已结束";
+          if (!pending)c.endedAt = now(s);
         }
         if (action === "mute") c.muted = !c.muted;
         if (action === "invite") {
@@ -953,8 +1032,9 @@
         c.history.push({
           time: now(s),
           text: {
-            connect: "接通",
-            end: "通话结束",
+            connect: voice ? "本端已加入，等待设备接通证据" : "接通",
+            media: c.statusLabel,
+            end: c.rtc?.protocol==='SIP' ? "已请求结束，等待服务器确认" : "通话结束",
             mute: "切换静音",
             invite: "邀请成员",
           }[action],
@@ -962,14 +1042,34 @@
       });
     }
     async function connectVoice(id) {
+      communicationGuard.assertAvailable();
       const call = state.calls.find((item) => item.id === id);
       if (!call) throw Error("记录不存在");
       if (call.status === "已结束") throw Error("通话已经结束");
-      const rtcApi = await import("../lib/rtc.js");
-      await rtcApi.joinChannel(call.rtc);
+      if (call.rtc?.status==='unknown' || call.status==='正在结束') throw Error('本次呼叫结果未确认或正在结束，请先结束并等待服务器确认');
+      const rtcApi = await loadRtc();
+      let credentials = callCredentials.get(id);
+      if (!credentials && call.rtc?.callId) {
+        const { authFetch } = await import('../lib/auth.js');
+        const response = await authFetch(`/api/guardian/v1/helmet/calls/${encodeURIComponent(call.rtc.callId)}/credentials`);
+        const body = await response.json();
+        if (!response.ok) throw Error(body.message || '通话凭据读取失败，请重新发起');
+        credentials = body;
+        callCredentials.set(id, credentials);
+      }
+      let mediaQuality = null;
+      await rtcApi.joinChannel(credentials ? {...credentials,callId:call.rtc?.callId || credentials.callId} : call.rtc, {
+        onMediaState: (quality) => {
+          mediaQuality = quality;
+          const latest = state.calls.find((item) => item.id === id);
+          if (!latest || latest.status === "已结束") return;
+          try { updateCall(id, "media", quality); } catch { /* Keep RTC errors from escaping event callbacks. */ }
+        },
+      });
       applyingVoice = true;
       try {
-        return updateCall(id, "connect");
+        updateCall(id, "connect");
+        if (mediaQuality) updateCall(id, "media", mediaQuality);
       } finally {
         applyingVoice = false;
       }
@@ -978,9 +1078,10 @@
       const call = state.calls.find((item) => item.id === id);
       if (!call) throw Error("记录不存在");
       if (call.status === "已结束") throw Error("通话已经结束");
-      const rtcApi = await import("../lib/rtc.js");
+      const rtcApi = await loadRtc();
       await rtcApi.leaveChannel();
-      if (call.rtc && call.rtc.channel) voice("/api/guardian/v1/call/end", { channel: call.rtc.channel });
+      if (call.rtc && (call.rtc.channel || call.rtc.callId)) voice("/api/guardian/v1/call/end", { channel: call.rtc.channel, callId: call.rtc.callId });
+      callCredentials.delete(id);
       applyingVoice = true;
       try {
         return updateCall(id, "end");
@@ -991,7 +1092,7 @@
     async function muteVoice(id) {
       const call = state.calls.find((item) => item.id === id);
       if (!call) throw Error("记录不存在");
-      const rtcApi = await import("../lib/rtc.js");
+      const rtcApi = await loadRtc();
       await rtcApi.setMuted(!call.muted);
       applyingVoice = true;
       try {
@@ -1003,7 +1104,7 @@
     function broadcast(groupId, text) {
       if (!text.trim() || text.length > 200) throw Error("广播内容需为 1–200 字");
       const group = requireItem(state.groups, groupId);
-      const hats = helmetsFor(group.members);
+      const hats = helmetsFor(group.members, "tts");
       if (voice) voice("/api/guardian/v1/broadcast", { content: text.trim(), hats });
       return commit("发送文字广播", (s) => {
         const g = requireItem(s.groups, groupId);
@@ -1016,9 +1117,9 @@
           groupName: g.name,
           text: text.trim(),
           station: g.station,
-          date: DATE,
+          date: demoMode ? DATE : beijingDate(),
           time: now(s),
-          status: "已发送",
+          status: voice ? "设备平台已受理（播放未确认）" : "已发送",
         });
       });
     }
@@ -1050,7 +1151,7 @@
             kind: "SOS协助",
             members: [s.sos.personId, ...s.sos.members],
             station: s.sos.station,
-            date: DATE,
+            date: demoMode ? DATE : beijingDate(),
             time: now(s),
             status: "已结束",
             history: clone(s.sos.timeline),
@@ -1059,6 +1160,7 @@
       });
     }
     async function joinSosVoice() {
+      communicationGuard.assertAvailable();
       if (state.sos.status === "ended") throw Error("本次协助已结束");
       if (state.sos.members.includes("operator")) throw Error("值守员已经加入");
       const wearer = state.people.find((item) => item.id === state.sos.personId);
@@ -1083,6 +1185,8 @@
     function tracks(pid, date, start, end) {
       if (start >= end) throw Error("结束时间必须晚于开始时间");
       if (!person(pid)) return [];
+      // Real histories are loaded through the location API with verified geographic coordinates.
+      if (!demoMode) return [];
       const reported = (state.locations || [])
         .filter(
           (item) =>
@@ -1104,6 +1208,8 @@
         }))
         .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
       if (reported.length) return reported;
+      // Connected mode must never turn an empty device history into a demo path.
+      if (remoteCommit || currentDevices(pid).some(isRealDevice)) return [];
       if (date !== DATE) return [];
       const offset = Number(pid.slice(1)) * 2;
       const base = [
@@ -1127,12 +1233,14 @@
         }));
     }
     function reset() {
+      if (!demoMode) throw Error('真实模式不能重置为演示数据');
       const next = seed();
       if (storage) storage.setItem(KEY, JSON.stringify(next));
       state = next;
       listeners.forEach((f) => f(state));
     }
     return {
+      demoMode,
       get state() {
         return state;
       },
@@ -1150,6 +1258,7 @@
       vitalHistory,
       owner,
       currentWork,
+      locationDevice,
       locationValid,
       deviceAt,
       filter,
@@ -1171,6 +1280,19 @@
       saveGroup,
       startCall,
       updateCall,
+      applyServerCallStatus(id, result) {
+        const call = state.calls.find(item => item.id === id);
+        if (!call?.rtc?.callId) return;
+        call.serverStatus = result.status;
+        call.rtc.status = result.status;
+        call.serverConnected = result.serverConnected === true;
+        call.connectedDeviceIds = Array.isArray(result.connectedDeviceIds) ? result.connectedDeviceIds : [];
+        call.statusLabel = ({ offered:'设备正在振铃', connected:'设备已接通（服务端确认）', ending:'正在结束通话', ended:'已结束', failed:'设备通话失败', unknown:'设备接通状态待确认' })[result.status] || '设备接通状态待确认';
+        if (result.status === 'connected' && call.serverConnected) call.status = '通话中';
+        if (result.status === 'ending') call.status = '正在结束';
+        if (['ended','failed'].includes(result.status)) { call.status = '已结束'; callCredentials.delete(id); }
+        listeners.forEach(fn => fn(state));
+      },
       broadcast,
       sos,
       tracks,
@@ -1179,10 +1301,10 @@
       replaceRemote(next) {
         if (!next || next.version !== 1) return false;
         if (!/[\u4e00-\u9fff]/.test(next.stations?.[0]?.name || "")) return false;
-        state = next;
+        state = withoutAdministrativeAreas(demoMode ? next : projectSingleSimulatedWatch(next));
         if (storage) {
           try {
-            storage.setItem(KEY, JSON.stringify(next));
+            storage.setItem(KEY, JSON.stringify(withoutAdministrativeAreas(next)));
           } catch {
             /* 浏览器拒绝写入时仍使用这次读到的快照。 */
           }
@@ -1280,8 +1402,7 @@ export {
   seed,
   createStore,
   typeNames,
-  areas,
-  assetForArea,
+  assetForPerson,
   inside,
   polygonArea,
   selfIntersects,

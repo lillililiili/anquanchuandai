@@ -266,10 +266,10 @@ class _WearLoginPageState extends State<WearLoginPage> {
         SizedBox(height: 10),
         Row(
           children: [
-            Icon(Icons.apartment_outlined, size: 18, color: WearColors.brand),
+            Icon(Icons.account_circle_outlined, size: 18, color: WearColors.brand),
             SizedBox(width: 6),
             Text(
-              '临江示范电厂',
+              '统一账号登录',
               style: TextStyle(
                 fontSize: WearHeaderLayout.subtitleSize,
                 fontWeight: FontWeight.w600,

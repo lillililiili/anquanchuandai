@@ -15,11 +15,13 @@ public class AdminPlatformService {
     private final AdminLedgerStore ledger;
     private final AdminQueryService queries;
     private final PlatformDeviceSyncService platform;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private ExternalDataStore externalData;
     public AdminPlatformService(AdminLedgerStore ledger, AdminQueryService queries, PlatformDeviceSyncService platform) {
         this.ledger=ledger;this.queries=queries;this.platform=platform;
     }
     @Transactional(rollbackFor=Exception.class)
     public synchronized JSONObject sync(String accountId, String siteId) throws Exception {
+        // Unknown external assets stay in the external data inbox until explicitly registered locally.
         return sync(accountId,siteId,false);
     }
     @Transactional(rollbackFor=Exception.class)
@@ -40,28 +42,28 @@ public class AdminPlatformService {
             String sn=raw.getHelmetSn();
             if(sn==null || !sn.matches("[A-Za-z0-9._-]{1,64}") || !seen.add(sn) || !("0".equals(raw.getOnline())||"1".equals(raw.getOnline())))
                 throw AdminQueryService.fail(502,"PLATFORM_INVALID","厂家设备编号或状态无效，未同步");
+            if(externalData!=null)externalData.record("helmet-platform","厂家设备平台",siteId,"DEVICE",sn,
+                    WearableModel.object("deviceNumber",sn,"online",raw.getOnline(),"platformUid",raw.getUid_device()),null);
             JSONObject device=null;
             for(Object item:devices) {
                 JSONObject row=(JSONObject)item;
-                if(sn.equals(row.getString("code"))||sn.equals(row.getString("sn"))) {
+                if(sn.equals(row.getString("code"))||sn.equals(row.getString("sn"))||sn.equals(row.getString("deviceNumber"))||sn.equals(row.getString("portalDeviceId"))) {
                     if(device!=null) throw AdminQueryService.fail(409,"DEVICE_CONFLICT","本地设备编号或SN重复，请先核对");
                     device=row;
                 }
             }
+            if(device!=null && ("DIRECT_HELMET".equals(device.getString("source")) || "DIRECT_BELT".equals(device.getString("source"))))
+                throw AdminQueryService.fail(409,"DEVICE_CONFLICT","厂家列表与直连设备身份冲突，不能接管已登记的直连设备");
             if(device!=null && (!"HELMET".equals(device.getString("type")) || device.getString("code").startsWith("RL-")))
                 throw AdminQueryService.fail(409,"DEVICE_CONFLICT","厂家编号与现有其他类型或示例设备冲突");
             if(device!=null && !siteId.equals(device.getString("siteId"))) { skipped++;continue; }
-            if(device==null) {
-                if(automatic)continue;
-                device=new JSONObject();device.put("id","platform-helmet-"+sn);device.put("code",sn);device.put("sn",sn);
-                device.put("name","厂家安全帽");device.put("type","HELMET");device.put("siteId",siteId);device.put("areaId",null);
-                device.put("lifecycle","STOCK");device.put("relation","UNASSIGNED");device.put("modelId","unknown-HELMET");
-                device.put("assemblies",new JSONObject());device.put("verification","UNCONFIRMED");device.put("capability","UNCONFIRMED");
-                device.put("capabilitySource","厂家设备列表；佩戴、定位和音视频能力待联调");device.put("version",1);devices.add(device);added++;
-            } else { updated++; }
+            if(device==null)continue; // Register assets explicitly; a vendor list never creates local business assets.
+            updated++;
             device.put("source","PLATFORM");device.put("portalDeviceId",sn);device.put("portalStation",station);
             device.put("platformUid",raw.getUid_device());device.put("communication","1".equals(raw.getOnline())?"ONLINE":"OFFLINE");
             device.put("connection","CONNECTED");device.put("freshness","CURRENT");device.put("sourceTime",now);device.put("battery",null);
+            if(externalData!=null)externalData.record("helmet-platform","厂家设备平台",siteId,"DEVICE",sn,
+                    WearableModel.object("deviceNumber",sn,"online",raw.getOnline(),"platformUid",raw.getUid_device()),device.getString("id"));
         }
         // 列表中消失不等于离线或删除，保留资产及领用，仅将通信标记为未知。
         for(Object item:devices) {
@@ -70,7 +72,8 @@ public class AdminPlatformService {
                 d.put("communication","NOT_CONNECTED");d.put("freshness","UNKNOWN");
             }
         }
-        platform.syncRecords(incoming,actor.getString("loginName"));
+        List<HeadbandVO> registered=new ArrayList<>();for(HeadbandVO row:incoming)for(Object raw:devices){JSONObject d=(JSONObject)raw;if("PLATFORM".equals(d.getString("source"))&&siteId.equals(d.getString("siteId"))&&row.getHelmetSn().equals(d.getString("portalDeviceId"))){registered.add(row);break;}}
+        platform.syncRecords(registered,actor.getString("loginName"));
         JSONObject info=new JSONObject();info.put("siteId",siteId);info.put("station",station);info.put("lastSuccessAt",now);info.put("status","SUCCESS");
         info.put("platformTotal",incoming.size());info.put("added",added);info.put("updated",updated);info.put("skippedOtherSite",skipped);
         JSONObject sources=state.getJSONObject("platformSync");if(sources==null){sources=new JSONObject();state.put("platformSync",sources);}sources.put(siteId,info);

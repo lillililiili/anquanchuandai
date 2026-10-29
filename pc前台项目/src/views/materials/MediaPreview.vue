@@ -6,14 +6,16 @@ import MediaImage from "@/components/domain/MediaImage.vue";
 import { db } from "@/mock/runtime";
 import { revision } from "@/lib/queries";
 import { durationText } from "./media";
+import { mediaUrl } from '@/lib/helmet-media';
 
 const props = defineProps({
   mediaId: { type: String, default: "" },
+  file: { type: Object, default: null },
 });
 
 const media = computed(() => {
   revision();
-  return db.state.media.find((item) => item.id === props.mediaId) || null;
+  return props.file || db.state.media.find((item) => item.id === props.mediaId) || null;
 });
 
 const progress = ref(0);
@@ -75,9 +77,10 @@ onUnmounted(stopTimer);
   <AppEmpty v-if="!media" text="资料不存在" />
   <template v-else>
     <div class="media-preview-wrap">
-      <MediaImage :media="media" />
+      <video v-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" aria-label="设备原始录像" style="width:100%;max-height:65vh" />
+      <MediaImage v-else :media="media" />
     </div>
-    <template v-if="media.kind === 'video'">
+    <template v-if="db.demoMode && media.kind === 'video' && !media.url">
       <div class="note">图片模拟回放 · 记录时长 {{ media.duration }} 秒</div>
       <div class="row">
         <AppButton type="button" tone="primary" :icon="playing ? 'pause-fill' : 'play-fill'" @click="togglePlay">

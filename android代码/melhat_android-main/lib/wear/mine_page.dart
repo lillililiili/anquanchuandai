@@ -140,13 +140,17 @@ class _WearMinePageState extends State<WearMinePage> {
                           right: 16,
                           width: 140 * unit,
                           child: Tooltip(
-                            message: session.callActive.value
+                            message: session.siteSelectionLocked
+                                ? '当前厂区'
+                                : session.callActive.value
                                 ? '通话中不能切换厂站'
                                 : '切换厂站',
                             child: TextButton(
                               key: const ValueKey('mine-header-site'),
                               onPressed:
-                                  session.busy || session.callActive.value
+                                  session.siteSelectionLocked ||
+                                      session.busy ||
+                                      session.callActive.value
                                   ? null
                                   : () => context.go('/sites'),
                               style: TextButton.styleFrom(
@@ -167,7 +171,8 @@ class _WearMinePageState extends State<WearMinePage> {
                                       style: TextStyle(fontSize: 11),
                                     ),
                                   ),
-                                  Icon(Icons.expand_more, size: 16 * unit),
+                                  if (!session.siteSelectionLocked)
+                                    Icon(Icons.expand_more, size: 16 * unit),
                                 ],
                               ),
                             ),
@@ -363,6 +368,33 @@ class _WearMinePageState extends State<WearMinePage> {
                                     ),
                                   ),
                                 ),
+                              _menuRow(
+                                Icons.cleaning_services_outlined,
+                                _blue,
+                                '清理业务缓存',
+                                () async {
+                                  try {
+                                    await session.clearBusinessCache();
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('已清理业务缓存，保留登录与未提交草稿'),
+                                      ),
+                                    );
+                                  } catch (error) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          error is WearApiException
+                                              ? error.message
+                                              : '缓存清理失败，请重试',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                               _menuRow(
                                 Icons.chat,
                                 _blue,

@@ -1,4 +1,5 @@
 import '../device_status.dart';
+import '../device_features.dart' as features;
 
 typedef JsonMap = Map<String, dynamic>;
 
@@ -15,6 +16,7 @@ enum WearCallStatus {
   requesting,
   offered,
   connected,
+  ending,
   ended,
   failed,
   timedOut,
@@ -31,6 +33,7 @@ extension WearCallStatusView on WearCallStatus {
     WearCallStatus.requesting => '正在请求设备',
     WearCallStatus.offered => '等待加入',
     WearCallStatus.connected => '已接通',
+    WearCallStatus.ending => '正在结束',
     WearCallStatus.ended => '已结束',
     WearCallStatus.failed => '通话失败',
     WearCallStatus.timedOut => '等待超时',
@@ -42,6 +45,7 @@ WearCallStatus callStatusOf(Object? raw) => switch (_stringOf(raw)) {
   'requesting' => WearCallStatus.requesting,
   'offered' => WearCallStatus.offered,
   'connected' => WearCallStatus.connected,
+  'ending' => WearCallStatus.ending,
   'ended' => WearCallStatus.ended,
   'failed' => WearCallStatus.failed,
   'timed_out' => WearCallStatus.timedOut,
@@ -132,9 +136,26 @@ class RtcCredentials {
     this.expiresAt,
     this.demo = false,
     this.video = false,
+    this.protocol = 'AGORA',
+    this.server = '',
+    this.uri = '',
+    this.authorizationUsername = '',
+    this.authorizationPassword = '',
+    this.target = '',
+    this.iceServers = const [],
   });
 
   factory RtcCredentials.fromJson(JsonMap json) => RtcCredentials(
+    protocol: _stringOf(json['protocol'], 'AGORA').toUpperCase(),
+    server: _stringOf(json['server']),
+    uri: _stringOf(json['uri']),
+    authorizationUsername: _stringOf(json['authorizationUsername']),
+    authorizationPassword: _stringOf(json['authorizationPassword']),
+    target: _stringOf(json['target']),
+    iceServers: (json['iceServers'] as List? ?? [])
+        .whereType<Map>()
+        .map((v) => Map<String, dynamic>.from(v))
+        .toList(),
     appId: _stringOf(json['agoraAppId']),
     channelName: _stringOf(json['channelName']),
     uid: int.tryParse(_stringOf(json['agoraUid'])) ?? 0,
@@ -144,6 +165,13 @@ class RtcCredentials {
     video: _boolOf(json['video']),
   );
 
+  final String protocol,
+      server,
+      uri,
+      authorizationUsername,
+      authorizationPassword,
+      target;
+  final List<Map<String, dynamic>> iceServers;
   final String appId;
   final String channelName;
   final int uid;
@@ -152,8 +180,18 @@ class RtcCredentials {
   final bool demo;
   final bool video;
 
-  bool get isUsable =>
-      appId.isNotEmpty && channelName.isNotEmpty && uid > 0 && token.isNotEmpty;
+  bool get isUsable => protocol == 'SIP'
+      ? (Uri.tryParse(server)?.scheme == 'wss' &&
+            uri.startsWith('sip:') &&
+            target.startsWith('sip:') &&
+            authorizationUsername.isNotEmpty &&
+            authorizationPassword.isNotEmpty &&
+            expiresAt != null)
+      : protocol == 'AGORA' &&
+            appId.isNotEmpty &&
+            channelName.isNotEmpty &&
+            uid > 0 &&
+            token.isNotEmpty;
   bool get isExpired =>
       expiresAt != null && !expiresAt!.isAfter(DateTime.now());
 }
@@ -193,6 +231,8 @@ class CommunicationDevice {
     required this.id,
     required this.sn,
     required this.actions,
+    this.featureStates = const {},
+    this.equipmentContext = const {},
     this.personId,
     this.personName,
     this.typeCode = '',
@@ -226,6 +266,12 @@ class CommunicationDevice {
       simulationStatusLabel: _stringOf(json['simulationStatusLabel']),
       simulatedPresence: _boolOf(json['simulation']),
       actions: actions,
+      equipmentContext: json['equipmentContext'] is Map
+          ? Map<String, dynamic>.from(json['equipmentContext'] as Map)
+          : const {},
+      featureStates: json['featureStates'] is Map
+          ? Map<String, dynamic>.from(json['featureStates'] as Map)
+          : const {},
       demo: _boolOf(json['demo']),
     );
   }
@@ -242,9 +288,16 @@ class CommunicationDevice {
   final String simulationStatusLabel;
   final bool simulatedPresence;
   final Set<String> actions;
+  final JsonMap featureStates;
+  final JsonMap equipmentContext;
   final bool demo;
 
-  bool supports(String action) => actions.contains(action);
+  features.DeviceFeatureState feature(String action) => features.actionFeature({
+    'featureStates': featureStates,
+    'capabilities': {'actions': actions.toList()},
+  }, action);
+  bool supports(String action) => feature(action).supported;
+  bool available(String action) => feature(action).available;
 
   bool get isNormalOnline => online == 'online' && !isAbnormal;
   bool get isAbnormal =>

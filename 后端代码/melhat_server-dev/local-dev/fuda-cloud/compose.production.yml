@@ -1,0 +1,52 @@
+# Compose >=2.24.4 is required for !override. Never apply this to staging with -p.
+name: fuda-wearables-production
+services:
+  mysql:
+    labels: {com.wearables.deployment-role: production}
+  backend:
+    labels: {com.wearables.deployment-role: production}
+    ports: ["127.0.0.1:18084:18084"]
+    # command replaces the staging CLI disable list. The reviewed runtime file owns switches.
+    command: []
+    volumes:
+      - ./.private/production/fuda-api.yml:/run/secrets/fuda-api.yml:ro
+      - ./.private/production/device-runtime.yml:/run/secrets/device-runtime.yml:ro
+    networks: [private, egress]
+  query-gateway:
+    ports: !override ["10.255.1.1:28089:8080"]
+  helmet-gateway:
+    profiles: [production-device-cutover]
+    build:
+      context: ../device-gateway
+      dockerfile: ../fuda-cloud/device-gateway.Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    volumes: ["./.private/production/helmet-gateway.json:/app/.local/config.json:ro"]
+    depends_on: [backend]
+  belt-gateway:
+    profiles: [production-device-cutover]
+    build:
+      context: ../belt-device-gateway
+      dockerfile: ../fuda-cloud/device-gateway.Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    volumes: ["./.private/production/belt-gateway.json:/app/.local/config.json:ro"]
+    depends_on: [backend]
+  phone-gateway:
+    profiles: [production-device-cutover]
+    build:
+      context: ../wear-api-gateway
+      dockerfile: ../fuda-cloud/phone-gateway.Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [backend]
+  private-relays:
+    profiles: [production-device-cutover]
+    build:
+      context: .
+      dockerfile: relay.Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [helmet-gateway, belt-gateway, phone-gateway]
+networks:
+  egress: {}

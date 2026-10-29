@@ -26,6 +26,11 @@ void main() {
         personId: '21',
         personName: '张三',
         actions: {'tts', 'intercom', 'video'},
+        featureStates: {
+          'voice': {'supported': true, 'verified': true, 'available': true},
+          'video': {'supported': true, 'verified': true, 'available': true},
+          'broadcast': {'supported': true, 'verified': true, 'available': true},
+        },
       ),
     );
   });
@@ -355,6 +360,7 @@ class FakeCommunicationsGateway implements CommunicationsGateway {
     required String kind,
     required bool video,
     required String idempotencyKey,
+    Map<String, dynamic> recipient = const {},
     String? eventId,
   }) async {
     startCount++;
@@ -392,6 +398,7 @@ class FakeCommunicationsGateway implements CommunicationsGateway {
     required List<String> deviceIds,
     required String text,
     required String idempotencyKey,
+    List<Map<String, dynamic>> recipients = const [],
     String? eventId,
   }) async {
     lastTtsDeviceIds = deviceIds;

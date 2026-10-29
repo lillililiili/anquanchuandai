@@ -1,0 +1,9 @@
+{
+  "name": "helmet-media-control",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node server.mjs", "test": "node --test test/*.test.mjs", "init": "node init.mjs" },
+  "dependencies": { "busboy": "1.6.0" }
+}

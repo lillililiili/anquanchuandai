@@ -23,29 +23,49 @@ public class GuardianStore {
 
     private static final Logger log = LoggerFactory.getLogger(GuardianStore.class);
 
-    private final Object lock = new Object();
+    private final Object lock = WearableBusinessStore.transactionLock();
     private final Path file = storeFile();
     private final GuardianHatArchive hats;
+    private final WearableBusinessStore business;
+    private long durableRevision;
     private JSONObject state;
     private boolean hatsMirrored;
+    @org.springframework.beans.factory.annotation.Value("${melhat.demo-mode:false}") private boolean demoMode;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private AdminLedgerStore ledger;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private org.springframework.beans.factory.ObjectProvider<com.ruoyi.helmet.service.DirectHelmetAccess> directAccess;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private org.springframework.beans.factory.ObjectProvider<DirectBeltAccess> directBeltAccess;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
 
     private void projectPlatform() {
-        if(ledger==null)return;
         JSONObject next=JSON.parseObject(state.toJSONString());
-        if(PlatformProjection.apply(next,ledger.read())) {
+        if (ledger != null) PlatformProjection.apply(next, ledger.read());
+        DirectHelmetProjection.apply(next, directAccess == null ? null : directAccess.getIfAvailable());
+        DirectBeltProjection.apply(next, directBeltAccess == null ? null : directBeltAccess.getIfAvailable());
+        PersonLocationProjection.apply(next);
+        if(!next.toJSONString().equals(state.toJSONString())) {
             next.put("seq",state.getIntValue("seq")+1);
             commit(next);
         }
     }
 
     public GuardianStore(GuardianHatArchive hats) {
-        this.hats = hats;
+        this(hats, null);
     }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public GuardianStore(GuardianHatArchive hats, WearableBusinessStore business) {
+        this.hats = hats;
+        this.business = business;
+    }
+
+    public boolean isOperational(JSONObject row) { return demoMode || !GuardianDemoData.confirmed(row); }
 
     public JSONObject snapshot() {
         synchronized (lock) {
             ensure();
+            if(maintenance!=null&&maintenance.paused())return JSON.parseObject(state.toJSONString());
             projectPlatform();
             mirrorHats();
             return JSON.parseObject(state.toJSONString());
@@ -53,8 +73,9 @@ public class GuardianStore {
     }
 
     public void replace(JSONObject next) {
-        GuardianValidator.check(next);
+        validate(next);
         synchronized (lock) {
+            if (business != null) ensure();
             commit(next);
         }
     }
@@ -69,23 +90,27 @@ public class GuardianStore {
             }
             if (expectedSeq != state.getIntValue("seq") || next.getIntValue("seq") <= expectedSeq)
                 throw new IllegalArgumentException("数据已变化，请刷新后重试");
-            GuardianValidator.check(next);
+            validate(next);
             commit(next);
         }
     }
 
     public void update(Edit edit) {
         synchronized (lock) {
+            if(maintenance!=null&&maintenance.paused())throw new IllegalStateException("业务正在维护，设备上报已进入持久接收队列");
             ensure();
             projectPlatform();
             JSONObject next = JSON.parseObject(state.toJSONString());
             if (edit == null || !edit.apply(next)) return;
-            GuardianValidator.check(next);
+            validate(next);
             commit(next);
         }
     }
 
-    public void replaceScoped(JSONObject next, int expectedSeq, GuardianAccess.Context ctx) {
+    public void replaceScoped(JSONObject received, int expectedSeq, GuardianAccess.Context ctx) {
+        // Spring's JSON reader may use Double where the durable parser uses BigDecimal.
+        // Compare the same wire representation before enforcing the read-only collections.
+        JSONObject next = JSON.parseObject(received.toJSONString());
         update(current -> {
             if(expectedSeq!=current.getIntValue("seq") || next.getIntValue("seq")<=expectedSeq)
                 throw AdminQueryService.fail(409,"VERSION_CONFLICT","数据已变化，请刷新后重试");
@@ -137,7 +162,20 @@ public class GuardianStore {
         return row!=null && ("核验上传".equals(row.getString("source")) || "现场补充".equals(row.getString("source")) || row.getString("purpose")!=null);
     }
 
+    private void validate(JSONObject next) {
+        // Classify exact legacy seeds before checking live business conflicts, including full imports.
+        GuardianEvents.normalize(next);
+        GuardianValidator.check(next, demoMode);
+    }
+
     private void commit(JSONObject next) {
+        GuardianEvents.normalize(next);
+        if (business != null) {
+            // The SQL event/projection write and legacy helmet archive participate in one transaction.
+            long revision = business.save("guardian", durableRevision, next, () -> hats.sync(next));
+            state = next; durableRevision = revision; hatsMirrored = true;
+            return;
+        }
         hats.sync(next);
         JSONObject previous = state;
         state = next;
@@ -168,6 +206,15 @@ public class GuardianStore {
     }
 
     private void ensure() {
+        if (business != null) {
+            // Always reload SQL revision: an enclosing report transaction may have rolled back
+            // after save() returned, or another process may have committed a newer version.
+            WearableBusinessStore.Snapshot loaded = business.load("guardian", file, this::initialState);
+            state = loaded.state; durableRevision = loaded.revision;
+            if (!readable(state)) throw new IllegalStateException("数据库监护数据格式无效，禁止回填示例");
+            if (GuardianEvents.normalize(state)) durableRevision = business.save("guardian", durableRevision, state, null);
+            return;
+        }
         if (state != null && readable(state)) { GuardianEvents.normalize(state); return; }
         try {
             if (Files.exists(file)) {
@@ -177,8 +224,9 @@ public class GuardianStore {
                     if (GuardianEvents.normalize(state)) persist();
                     return;
                 }
+                throw new IllegalStateException("历史业务文件格式无效，禁止回填示例");
             }
-            state = JSON.parseObject(readStream(new ClassPathResource("guardian-seed.json").getInputStream()));
+            state = initialState();
             GuardianEvents.normalize(state);
             persist();
         } catch (Exception e) {
@@ -187,14 +235,19 @@ public class GuardianStore {
     }
 
     private static boolean readable(JSONObject value) {
-        if (value == null || value.getJSONArray("stations") == null || value.getJSONArray("stations").isEmpty()) return false;
-        String name = value.getJSONArray("stations").getJSONObject(0).getString("name");
-        if (name == null) return false;
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            if (c >= 0x4e00 && c <= 0x9fff) return true;
+        return value != null && value.getIntValue("version") == 1 && value.getJSONArray("stations") != null;
+    }
+
+    private JSONObject initialState() {
+        if (demoMode) {
+            try { return JSON.parseObject(readStream(new ClassPathResource("guardian-seed.json").getInputStream())); }
+            catch (Exception error) { throw new IllegalStateException("演示初始数据不可用", error); }
         }
-        return false;
+        JSONObject empty = new JSONObject(); empty.put("version", 1); empty.put("seq", 0); empty.put("clock", 0);
+        for (String key : new String[]{"stations","people","devices","bindings","locations","vitals","works","events","media","groups","fences","fenceRecords","calls","broadcasts","audit"})
+            empty.put(key, new com.alibaba.fastjson2.JSONArray());
+        empty.put("assistance",new JSONObject()); empty.put("eventOperations",new JSONObject()); empty.put("uploads",new JSONObject());
+        return empty;
     }
 
     private void persist() {

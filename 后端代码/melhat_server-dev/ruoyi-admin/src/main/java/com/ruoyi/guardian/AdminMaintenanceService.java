@@ -306,8 +306,7 @@ public class AdminMaintenanceService {
             JSONArray sites = grant.getJSONArray("siteIds");
             if (operations == null || sites == null || !sites.contains(siteId)) continue;
             if (!(operations.contains("*") || operations.contains("assets:write"))) continue;
-            Object areas = grant.get("areaIds");
-            if ("*".equals(areas) || (areas instanceof JSONArray && ((JSONArray) areas).contains(areaId))) return true;
+            return true;
         }
         return false;
     }

@@ -13,6 +13,7 @@ import AppTextarea from "@/components/ui/AppTextarea.vue";
 import MissingRecord from "@/components/layout/MissingRecord.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import DeviceStrip from "@/components/domain/DeviceStrip.vue";
+import EventLocation from "@/components/domain/EventLocation.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
 import VideoFrame from "@/components/domain/VideoFrame.vue";
 import EventMediaActions from "./EventMediaActions.vue";
@@ -24,6 +25,9 @@ import { go } from "@/lib/actions";
 import { blobPut } from "@/lib/files";
 import { openModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
+import { externalStatusPresentation, hasExternalSource } from '@/lib/external-status';
+import { personFeature } from '@/lib/person-equipment';
+import { formatBeijingDateTime } from '@/lib/date-time';
 
 const route = useRoute();
 const formError = ref("");
@@ -215,7 +219,7 @@ function openMaterials() {
           <AppIcon name="alarm-warning-line" color="yellow" />
           <h1>{{ eventRecord.title }}</h1>
           <AppTag :color="statusColor(eventRecord.status)">{{ eventRecord.status }}</AppTag>
-          <small>{{ eventRecord.snapshot.personName }} · {{ eventRecord.deviceId }} · {{ eventRecord.date }} {{ eventRecord.time }}</small>
+          <small>{{ eventRecord.snapshot?.personName || '未关联人员' }} · {{ eventRecord.deviceId }} · {{ eventRecord.date }} {{ eventRecord.time }}</small>
         </div>
         <AppPanel title="事件关联信息">
           <div class="grid equal">
@@ -234,26 +238,32 @@ function openMaterials() {
             </dl>
           </div>
         </AppPanel>
+        <AppPanel title="事件发生时位置"><EventLocation :event="eventRecord" /></AppPanel>
         <div class="grid equal evidence">
           <AppPanel title="现场影像证据">
             <div v-if="eventMedia[0]" class="media-preview-wrap" data-action="preview-media" :data-id="eventMedia[0].id" style="cursor:pointer" @click="previewMedia(eventMedia[0])">
               <MediaImage :media="eventMedia[0]" />
               <span class="video-label">非实时</span>
             </div>
-            <VideoFrame v-else :person-id="eventRecord.personId" />
+            <AppStatus v-else>暂无本事件的影像证据</AppStatus>
           </AppPanel>
           <AppPanel title="关联装备当前状态">
-            <DeviceStrip :person-id="eventRecord.personId" />
+            <DeviceStrip v-if="eventRecord.personId" :person-id="eventRecord.personId" large />
+            <AppStatus v-else>设备 {{ eventRecord.deviceId || '编号未提供' }} 未关联人员，仍可处理此事件。</AppStatus>
             <div v-if="eventRecord.type === '设备通信' || eventRecord.type === '安全带挂接'" class="detail-section">
-              <AppStatus color="yellow">挂接及受力信息　待协议确认</AppStatus>
+              <AppStatus color="yellow">当前挂接状态见装备信息；事发状态以事件记录为准</AppStatus>
               <p class="note">安全带连接中断不等于挂接违规，需现场核验确认。</p>
             </div>
           </AppPanel>
         </div>
+        <AppPanel v-if="personFeature(db, eventRecord.personId, 'video').supported" title="当前现场视频">
+          <p class="note">当前领用安全帽的现场画面，不作为事件发生时的影像证据。</p>
+          <VideoFrame :person-id="eventRecord.personId" preview />
+        </AppPanel>
         <div class="grid equal">
           <AppPanel title="处置时间线">
             <div class="timeline">
-              <div v-for="(entry, index) in eventRecord.timeline" :key="index" class="timeline-item"><time>{{ entry.time }}</time>{{ entry.actorName ? entry.actorName + " · " : "" }}{{ entry.text }}</div>
+              <div v-for="(entry, index) in eventRecord.timeline" :key="index" class="timeline-item"><time>{{ formatBeijingDateTime(entry.time) === '—' ? entry.time : formatBeijingDateTime(entry.time) }}</time>{{ entry.actorName ? entry.actorName + " · " : "" }}{{ entry.text }}</div>
               <div class="timeline-item">{{ verified ? "核验记录已提交" : "核验记录尚未提交" }}</div>
             </div>
           </AppPanel>
@@ -314,13 +324,11 @@ function openMaterials() {
             <p v-else class="form-error" role="alert"></p>
           </form>
         </AppPanel>
-        <AppPanel title="原安监系统">
+        <AppPanel v-if="hasExternalSource(eventRecord)" title="原安监系统">
           <dl class="info compact">
-            <dt><AppIcon name="lock-fill" /> {{ eventRecord.externalId }}</dt>
-            <dd class="yellow">状态：{{ eventRecord.externalStatus }}</dd>
-            <dt>摘要</dt>
-            <dd>{{ eventRecord.externalStatus || "暂无外部回传状态" }}</dd>
-            <dt>核验记录</dt>
+            <dt><AppIcon name="lock-fill" /> {{ eventRecord.externalId || '外部关联记录' }}</dt>
+            <dd :class="externalStatusPresentation(eventRecord).color">状态：{{ externalStatusPresentation(eventRecord).label }}</dd>
+            <dt>本平台核验记录</dt>
             <dd>{{ verified ? "已提交" : "未提交" }}</dd>
           </dl>
           <p class="note"><AppIcon name="information-line" />平台已核验仅表示记录完成，不代表外部设备告警已解除；原系统状态只读。</p>

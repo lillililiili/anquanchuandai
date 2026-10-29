@@ -1,9 +1,12 @@
 <script setup>
-import { computed, onBeforeUpdate, ref } from "vue";
+import { computed, onBeforeUpdate, onUnmounted, ref, shallowRef, watch } from "vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
-import { assetForArea } from "@/mock/data";
+import { assetForPerson } from "@/mock/data";
 import { db, tick } from "@/mock/runtime";
 import { personName } from "@/lib/queries";
+import { isRealDevice } from '@/lib/device-telemetry';
+import { subscribeMedia } from '@/lib/rtc';
+import { demoVideoAvailable } from '@/lib/data-mode';
 
 const props = defineProps({
   call: { type: Object, required: true },
@@ -11,6 +14,13 @@ const props = defineProps({
 
 const players = ref([]);
 const playback = new Map();
+const remote = shallowRef(null), remoteVideo = ref(null);
+const unsubscribe = subscribeMedia(stream => { remote.value = stream; });
+onUnmounted(unsubscribe);
+const hasRemoteVideo = computed(() => Boolean(remote.value?.getVideoTracks().length));
+watch([remote, remoteVideo], () => {
+  if (remoteVideo.value) { remoteVideo.value.srcObject = remote.value; void remoteVideo.value.play().catch(() => {}); }
+}, { flush: 'post' });
 
 onBeforeUpdate(() => {
   playback.clear();
@@ -38,15 +48,16 @@ const tiles = computed(() => {
   return props.call.members.map((personId) => {
     const person = db.person(personId);
     const helmet = db.currentDevices(personId).find((item) => item.type === "H");
-    const poster = assetForArea(person?.area);
+    const poster = assetForPerson(personId);
     return {
       personId,
       person,
       helmet,
+      real: isRealDevice(helmet),
       poster,
       source: poster.replace("scene-", "call-").replace(".png", ".webm"),
-      available: helmet?.video === "available",
-      status: !helmet ? "未绑定安全帽" : helmet.video === "off" ? "视频未开启" : "视频回传中断",
+      available: demoVideoAvailable(helmet, db.demoMode),
+      status: !helmet ? "未绑定安全帽" : isRealDevice(helmet) ? props.call.rtc?.video ? '等待设备视频回传' : '当前为语音通话' : !db.demoMode ? '暂无真实设备视频' : helmet.video === "off" ? "视频未开启" : "视频回传中断",
     };
   });
 });
@@ -54,6 +65,10 @@ const tiles = computed(() => {
 
 <template>
   <div :class="['call-videos', call.members.length > 1 ? 'multiple' : '']">
+    <figure v-if="hasRemoteVideo" class="call-video-tile">
+      <div class="call-video-frame"><video ref="remoteVideo" autoplay muted playsinline controls aria-label="本次通话远端视频" /><span class="call-video-badge">通话远端画面</span></div>
+      <figcaption>设备接通身份以服务端回执为准；多人通话画面由媒体服务提供。</figcaption>
+    </figure>
     <figure v-for="tile in tiles" :key="call.id + ':' + tile.personId" class="call-video-tile">
       <div class="call-video-frame">
         <template v-if="tile.available">
@@ -76,7 +91,7 @@ const tiles = computed(() => {
           <div class="call-video-error" hidden>模拟视频暂不可用，请刷新后重试</div>
         </template>
         <template v-else>
-          <img :src="'/assets/' + tile.poster" :alt="(tile.person?.area || '') + '现场场景'" />
+          <img v-if="db.demoMode && !tile.real" :src="'/assets/' + tile.poster" alt="现场示意场景" />
           <div class="call-video-unavailable">
             <AppIcon name="vidicon-off-line" />
             <strong>{{ tile.status }}</strong>
@@ -85,8 +100,8 @@ const tiles = computed(() => {
       </div>
       <figcaption>
         <strong>{{ personName(tile.personId) }}</strong>
-        <small>{{ tile.helmet?.id || "未绑定" }} · {{ tile.person?.area || "—" }}</small>
-        <span :class="call.status === '通话中' ? 'green' : 'yellow'">{{ call.status === "通话中" ? "已接通" : "等待接听 · 画面预览" }}</span>
+        <small>{{ tile.helmet?.id || "未绑定" }}</small>
+        <span :class="call.serverConnected || !call.rtc && call.status === '通话中' ? 'green' : 'yellow'">{{ call.rtc ? call.serverConnected ? '设备已接通（服务端确认）' : '设备接通待确认' : call.status === "通话中" ? "已接通" : "等待接听 · 画面预览" }}</span>
       </figcaption>
     </figure>
   </div>

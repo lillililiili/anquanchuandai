@@ -1,0 +1,1530 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "智能穿戴平台—福大 V2 主动拉取接口",
+    "version": "2.0.0",
+    "description": "Implementation contract for the isolated backend. Default disabled; deployment and joint acceptance are still required. Three HTTP query endpoints; GB/T 28181-2022 video uses a separate cascade contract. Source platform identifier must remain stable. Credentials and authorized devices are private configuration. Alarm cursor is bound to app/key and current authorized real-device set; losing/changing scope/key requires controlled resynchronization. No automatic journal deletion in this release. Repeated cursor reads are safe; receiver deduplicates stable event IDs. Position/status provide latest snapshots, not complete intermediate history."
+  },
+  "servers": [
+    {
+      "url": "https://wearable-api.example.invalid",
+      "description": "Placeholder; replace only with the accepted test/production base URL."
+    }
+  ],
+  "paths": {
+    "/openapi/wearables/v2/positions/query": {
+      "post": {
+        "operationId": "queryPositions",
+        "summary": "Query positions",
+        "description": "Fuda initiates this read-only query against our platform. No query string, compression, trailing slash, Authorization or X-Wearable-Token. Body <=65536 bytes. Response preserves request device order.",
+        "security": [
+          {
+            "ApplicationId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-App-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            },
+            "description": "Dedicated partner application ID; human login sessions are rejected."
+          },
+          {
+            "name": "X-Timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,12}$"
+            },
+            "description": "Unix seconds; server permits clock skew up to 300 seconds."
+          },
+          {
+            "name": "X-Nonce",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            },
+            "description": "New UUID per HTTP attempt; replay identity is case-insensitive within this application; stored atomically for at least 600 seconds (implementation 601 seconds covers inclusive clock-window boundaries)."
+          },
+          {
+            "name": "X-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "description": "Lowercase HMAC-SHA256 of six newline-separated fields: POST, exact full path, appId, timestamp, nonce, lowercase SHA256(raw UTF-8 body). No trailing newline. Secret is Base64-decoded into exactly 32 bytes, not used as UTF-8 text."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query succeeded. Persist a complete alarm page locally before advancing nextCursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "40001 invalid request; 40002 invalid/tampered cursor or changed scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "40101 invalid credentials or human session provided; 40102 timestamp outside window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "40301 device scope denied; whole batch rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "40401 gateway method or route not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "40902 nonce already used: retry with new timestamp/nonce/signature; 40903 cursor ahead of durable journal: restore/recovery required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "41001 retained cursor has expired; coordinate historical recovery, never silently reset to newest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "41301 body exceeds 64 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "41501 unsupported content type or content encoding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "42901 gateway rate limit; retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "50201 gateway cannot reach upstream.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "50300 temporary service failure; 50301 replay store unavailable; 50302 API disabled; 50303 application configuration invalid; 50304 device registry unavailable/ambiguous.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/wearables/v2/statuses/query": {
+      "post": {
+        "operationId": "queryStatuses",
+        "summary": "Query statuses",
+        "description": "Fuda initiates this read-only query against our platform. No query string, compression, trailing slash, Authorization or X-Wearable-Token. Body <=65536 bytes. Response preserves request device order.",
+        "security": [
+          {
+            "ApplicationId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-App-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            },
+            "description": "Dedicated partner application ID; human login sessions are rejected."
+          },
+          {
+            "name": "X-Timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,12}$"
+            },
+            "description": "Unix seconds; server permits clock skew up to 300 seconds."
+          },
+          {
+            "name": "X-Nonce",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            },
+            "description": "New UUID per HTTP attempt; replay identity is case-insensitive within this application; stored atomically for at least 600 seconds (implementation 601 seconds covers inclusive clock-window boundaries)."
+          },
+          {
+            "name": "X-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "description": "Lowercase HMAC-SHA256 of six newline-separated fields: POST, exact full path, appId, timestamp, nonce, lowercase SHA256(raw UTF-8 body). No trailing newline. Secret is Base64-decoded into exactly 32 bytes, not used as UTF-8 text."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query succeeded. Persist a complete alarm page locally before advancing nextCursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "40001 invalid request; 40002 invalid/tampered cursor or changed scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "40101 invalid credentials or human session provided; 40102 timestamp outside window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "40301 device scope denied; whole batch rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "40401 gateway method or route not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "40902 nonce already used: retry with new timestamp/nonce/signature; 40903 cursor ahead of durable journal: restore/recovery required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "41001 retained cursor has expired; coordinate historical recovery, never silently reset to newest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "41301 body exceeds 64 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "41501 unsupported content type or content encoding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "42901 gateway rate limit; retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "50201 gateway cannot reach upstream.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "50300 temporary service failure; 50301 replay store unavailable; 50302 API disabled; 50303 application configuration invalid; 50304 device registry unavailable/ambiguous.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/wearables/v2/alarms/query": {
+      "post": {
+        "operationId": "queryAlarms",
+        "summary": "Query alarms",
+        "description": "Fuda initiates this read-only query against our platform. No query string, compression, trailing slash, Authorization or X-Wearable-Token. Body <=65536 bytes. Alarm responses use a persistent committed-order cursor, not event time or page number.",
+        "security": [
+          {
+            "ApplicationId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-App-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            },
+            "description": "Dedicated partner application ID; human login sessions are rejected."
+          },
+          {
+            "name": "X-Timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,12}$"
+            },
+            "description": "Unix seconds; server permits clock skew up to 300 seconds."
+          },
+          {
+            "name": "X-Nonce",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            },
+            "description": "New UUID per HTTP attempt; replay identity is case-insensitive within this application; stored atomically for at least 600 seconds (implementation 601 seconds covers inclusive clock-window boundaries)."
+          },
+          {
+            "name": "X-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "description": "Lowercase HMAC-SHA256 of six newline-separated fields: POST, exact full path, appId, timestamp, nonce, lowercase SHA256(raw UTF-8 body). No trailing newline. Secret is Base64-decoded into exactly 32 bytes, not used as UTF-8 text."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlarmQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query succeeded. Persist a complete alarm page locally before advancing nextCursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlarmResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "40001 invalid request; 40002 invalid/tampered cursor or changed scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "40101 invalid credentials or human session provided; 40102 timestamp outside window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "40301 device scope denied; whole batch rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "40401 gateway method or route not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "40902 nonce already used: retry with new timestamp/nonce/signature; 40903 cursor ahead of durable journal: restore/recovery required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "41001 retained cursor has expired; coordinate historical recovery, never silently reset to newest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "41301 body exceeds 64 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "41501 unsupported content type or content encoding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "42901 gateway rate limit; retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "50201 gateway cannot reach upstream.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "50300 temporary service failure; 50301 replay store unavailable; 50302 API disabled; 50303 application configuration invalid; 50304 device registry unavailable/ambiguous.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApplicationId": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-App-Id",
+        "description": "App ID alone is insufficient. All four HMAC headers are mandatory."
+      }
+    },
+    "schemas": {
+      "DeviceReference": {
+        "type": "object",
+        "properties": {
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "HELMET",
+              "SAFETY_BELT"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          }
+        },
+        "required": [
+          "deviceType",
+          "deviceId"
+        ],
+        "additionalProperties": false
+      },
+      "DeviceQuery": {
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceReference"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "devices"
+        ],
+        "additionalProperties": false,
+        "description": "At least one explicit device. Any unauthorized reference rejects the entire batch; duplicates are rejected."
+      },
+      "AlarmQuery": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512,
+            "description": "Required; null begins at the earliest retained authorized alarm. Subsequent requests use nextCursor unchanged."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 100
+          }
+        },
+        "required": [
+          "cursor"
+        ],
+        "additionalProperties": false
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "coordinateSystem": {
+            "type": "string",
+            "enum": [
+              "WGS84",
+              "GCJ02"
+            ]
+          },
+          "altitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Mean-sea-level altitude, metres. Current adapter returns null: datum unverified."
+          },
+          "relativeHeight": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Metres; current adapter returns null because reference is unverified."
+          },
+          "heightReference": {
+            "type": "string",
+            "enum": [
+              "POWER_ON",
+              "CALIBRATED",
+              "UNKNOWN"
+            ]
+          },
+          "speed": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "km/h. Current adapter returns null: raw units unverified."
+          },
+          "direction": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "exclusiveMaximum": 360,
+            "description": "North=0, clockwise ground course; current adapter returns null."
+          },
+          "positionTime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "timeSource": {
+            "type": "string",
+            "enum": [
+              "DEVICE",
+              "PLATFORM"
+            ]
+          },
+          "positionMethod": {
+            "type": "string",
+            "enum": [
+              "GNSS",
+              "WIFI",
+              "CELL",
+              "OTHER",
+              "UNKNOWN"
+            ]
+          },
+          "historical": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "longitude",
+          "latitude",
+          "coordinateSystem",
+          "altitude",
+          "relativeHeight",
+          "heightReference",
+          "speed",
+          "direction",
+          "positionTime",
+          "timeSource",
+          "positionMethod",
+          "historical"
+        ],
+        "additionalProperties": false,
+        "description": "Known coordinate reference, valid source quality and original observation time required. Current adapter uses platform receipt time (PLATFORM). Unknown/unfixed coordinates are position=null. Belt reference is currently unknown; a per-device location profile may be enabled only after evidence-based commissioning. Such a profile affects current positions only and never reinterprets historical alarm snapshots.",
+        "allOf": [
+          {
+            "not": {
+              "properties": {
+                "longitude": {
+                  "const": 0
+                },
+                "latitude": {
+                  "const": 0
+                }
+              },
+              "required": [
+                "longitude",
+                "latitude"
+              ]
+            }
+          }
+        ]
+      },
+      "Battery": {
+        "type": "object",
+        "properties": {
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Remaining charge, %; unknown is null, not zero."
+          },
+          "voltageMv": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "percent",
+          "voltageMv",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false
+      },
+      "Network": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "CELLULAR_4G",
+              "WIFI",
+              "OTHER",
+              "UNKNOWN"
+            ]
+          },
+          "signalLevel": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Dimensionless level. Current adapter returns null/UNKNOWN until mapping is verified."
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "signalLevel",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false
+      },
+      "Wear": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN",
+              "NOT_WORN",
+              "WORN",
+              "UNSUPPORTED"
+            ]
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false,
+        "description": "Body wearing status. Current safety-belt adapter returns UNKNOWN; hook attachment does not establish body wearing."
+      },
+      "Hook": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN",
+              "ATTACHED",
+              "DETACHED",
+              "UNSUPPORTED"
+            ]
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false,
+        "description": "Attachment detection, not proof of mechanical locking/load safety. Helmet hooks are UNSUPPORTED; belt mapping must be explicitly confirmed."
+      },
+      "PositionItem": {
+        "type": "object",
+        "properties": {
+          "sourcePlatform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "HELMET",
+              "SAFETY_BELT"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "deviceModel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Actual registered model; null when not recorded. Never inferred from device type."
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Position"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "sourcePlatform",
+          "deviceType",
+          "deviceId",
+          "deviceModel",
+          "position",
+          "validity"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "position": {
+                  "type": "null"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validity": {
+                  "const": "UNKNOWN"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "StatusItem": {
+        "type": "object",
+        "properties": {
+          "sourcePlatform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "HELMET",
+              "SAFETY_BELT"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "deviceModel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Actual registered model; null when not recorded. Never inferred from device type."
+          },
+          "onlineStatus": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE"
+            ]
+          },
+          "lastSeenAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "offlineTimeoutSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Actual configured device heartbeat timeout."
+          },
+          "telemetryMaxAgeSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Actual freshness threshold; currently equals the device heartbeat timeout."
+          },
+          "battery": {
+            "$ref": "#/components/schemas/Battery"
+          },
+          "network": {
+            "$ref": "#/components/schemas/Network"
+          },
+          "wear": {
+            "$ref": "#/components/schemas/Wear"
+          },
+          "hookA": {
+            "$ref": "#/components/schemas/Hook"
+          },
+          "hookB": {
+            "$ref": "#/components/schemas/Hook"
+          }
+        },
+        "required": [
+          "sourcePlatform",
+          "deviceType",
+          "deviceId",
+          "deviceModel",
+          "onlineStatus",
+          "lastSeenAt",
+          "offlineTimeoutSeconds",
+          "telemetryMaxAgeSeconds",
+          "battery",
+          "network",
+          "wear",
+          "hookA",
+          "hookB"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "onlineStatus": {
+                  "const": "OFFLINE"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "battery": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "network": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "wear": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "hookA": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "hookB": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AlarmItem": {
+        "type": "object",
+        "properties": {
+          "sourcePlatform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "HELMET",
+              "SAFETY_BELT"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "deviceModel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Actual registered model; null when not recorded. Never inferred from device type."
+          },
+          "eventId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Opaque stable business-event ID, not necessarily UUID. Deduplicate by (sourcePlatform,eventId)."
+          },
+          "occurredAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "receivedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "alarmType": {
+            "type": "string",
+            "enum": [
+              "SOS",
+              "HELMET_REMOVED",
+              "AREA_EXIT",
+              "RESTRICTED_AREA_ENTRY",
+              "TEMPERATURE_HIGH",
+              "FALL_OR_IMPACT",
+              "FALL",
+              "IMPACT",
+              "IMMOBILITY",
+              "LOW_BATTERY",
+              "ELECTRIC_PROXIMITY",
+              "HEIGHT_EXCEEDED",
+              "BOTH_HOOKS_DETACHED",
+              "SINGLE_HOOK_DETACHED",
+              "LOW_ANCHOR",
+              "BEACON_ENTER",
+              "BEACON_EXIT",
+              "BODY_TEMPERATURE_HIGH",
+              "HEART_RATE_ABNORMAL",
+              "BLOOD_PRESSURE_ABNORMAL",
+              "UNKNOWN"
+            ]
+          },
+          "alarmContent": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "rawAlarmType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "rawAlarmName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "alarmOrigin": {
+            "type": "string",
+            "enum": [
+              "DEVICE",
+              "PLATFORM"
+            ]
+          },
+          "positionSource": {
+            "type": "string",
+            "enum": [
+              "EVENT",
+              "LAST_KNOWN",
+              "NONE"
+            ]
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Position"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "positionAgeSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 300
+          }
+        },
+        "required": [
+          "sourcePlatform",
+          "deviceType",
+          "deviceId",
+          "deviceModel",
+          "eventId",
+          "occurredAt",
+          "receivedAt",
+          "alarmType",
+          "alarmContent",
+          "rawAlarmType",
+          "rawAlarmName",
+          "alarmOrigin",
+          "positionSource",
+          "position",
+          "positionAgeSeconds"
+        ],
+        "additionalProperties": false,
+        "description": "Immutable first occurrence only; business processing, claim or verification is not an alarm clear. Current implementation exports confirmed SOS and UNKNOWN with original vendor code; other enum values are reserved until verified. Historical times can be null when unrecoverable.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "positionSource": {
+                  "const": "NONE"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "position": {
+                  "type": "null"
+                },
+                "positionAgeSeconds": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "position": {
+                  "$ref": "#/components/schemas/Position"
+                },
+                "positionAgeSeconds": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 300
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PositionResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0
+          },
+          "message": {
+            "const": "success",
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PositionItem"
+                }
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "serverTime",
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0
+          },
+          "message": {
+            "const": "success",
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/StatusItem"
+                }
+              }
+            },
+            "required": [
+              "items"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "serverTime",
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "AlarmResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0
+          },
+          "message": {
+            "const": "success",
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AlarmItem"
+                }
+              },
+              "nextCursor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "items",
+              "nextCursor",
+              "hasMore"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "serverTime",
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "enum": [
+              40001,
+              40002,
+              40101,
+              40102,
+              40301,
+              40401,
+              40902,
+              40903,
+              41001,
+              41301,
+              41501,
+              42901,
+              50201,
+              50300,
+              50301,
+              50302,
+              50303,
+              50304
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "data": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "serverTime",
+          "data"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

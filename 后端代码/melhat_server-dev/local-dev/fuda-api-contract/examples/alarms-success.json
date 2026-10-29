@@ -1,0 +1,42 @@
+{
+  "code": 0,
+  "message": "success",
+  "requestId": "00000000-0000-4000-8000-000000000002",
+  "serverTime": "2026-10-27T08:00:00.000Z",
+  "data": {
+    "items": [
+      {
+        "sourcePlatform": "wearable-example",
+        "deviceType": "HELMET",
+        "deviceId": "DEMO-HELMET-01",
+        "deviceModel": null,
+        "eventId": "example-stable-event-001",
+        "occurredAt": "2026-10-27T07:59:55.000Z",
+        "receivedAt": "2026-10-27T07:59:55.000Z",
+        "alarmType": "SOS",
+        "alarmContent": "设备发起 SOS",
+        "rawAlarmType": null,
+        "rawAlarmName": null,
+        "alarmOrigin": "DEVICE",
+        "positionSource": "LAST_KNOWN",
+        "position": {
+          "longitude": 119.2,
+          "latitude": 26.1,
+          "coordinateSystem": "GCJ02",
+          "altitude": null,
+          "relativeHeight": null,
+          "heightReference": "UNKNOWN",
+          "speed": null,
+          "direction": null,
+          "positionTime": "2026-10-27T07:59:50.000Z",
+          "timeSource": "PLATFORM",
+          "positionMethod": "GNSS",
+          "historical": false
+        },
+        "positionAgeSeconds": 5
+      }
+    ],
+    "nextCursor": "MnwxfDdlYTUxZmJhYjE2MWNkMTA4ZmM3MWUxYTc5Mjk0NzNjMjA3MDk3NWQ4Y2I2ZDRmMzFlNGU3MGI0ZTRjMTQ4OGM.b5cf1108f90229af30d302c059054c600552352b64ae4336b2767756ce84c855",
+    "hasMore": false
+  }
+}

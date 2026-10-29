@@ -17,22 +17,17 @@ import { db } from "@/mock/runtime";
 import { toast } from "@/stores/notify";
 import { filtersOf, session } from "@/stores/session";
 import { helmetOf, people, personName, revision, works } from "@/lib/queries";
+import { isRealDevice } from '@/lib/device-telemetry';
+import { personDutyPresentation } from '@/lib/person-duty';
+import { personFeature, videoPeople } from '@/lib/person-equipment';
 
 const layouts = ["1+7", "2\u00d74", "3\u00d73"];
-const areaOptions = computed(() => {
-  revision();
-  const names = Array.isArray(db.state.mapAreas)
-    ? db.state.mapAreas.filter((area) => area.station === session.station).map((area) => area.name)
-    : ["锅炉区", "汽机厂房", "配电区", "循环水区"];
-  return [["", "全部区域"], ...names];
-});
-const draft = reactive({ area: "", workId: "" });
+const draft = reactive({ workId: "" });
 
 watch(
   () => session.filters.video,
   (value) => {
     const query = value || {};
-    draft.area = query.area || "";
     draft.workId = query.workId || "";
   },
   { immediate: true },
@@ -45,25 +40,18 @@ const workOptions = computed(() => {
 const cameras = computed(() => {
   revision();
   const query = filtersOf("video");
-  return people().filter(
-    (person) => (!query.area || person.area === query.area) && (!query.workId || db.currentWork(person.id)?.id === query.workId),
+  return videoPeople(db, people()).filter(
+    (person) => !query.workId || db.currentWork(person.id)?.id === query.workId,
   );
 });
 const focus = computed(() => cameras.value.find((person) => person.id === session.person) || cameras.value[0] || null);
+const duty = computed(() => personDutyPresentation(focus.value));
 const cards = computed(() => {
-  const counts = { available: 0, interrupted: 0, off: 0 };
-  let helmets = 0;
-  cameras.value.forEach((person) => {
-    const devices = db.currentDevices(person.id);
-    if (devices.some((device) => device.type === "H")) helmets += 1;
-    const helmet = devices.find((device) => device.type === "H");
-    if (helmet?.video) counts[helmet.video] += 1;
-  });
+  const available = cameras.value.filter(person => personFeature(db, person.id, 'video').available).length;
   return [
-    { icon: "vidicon-line", label: "帽机设备总数", value: helmets, unit: "", color: "cyan" },
-    { icon: "record-circle-fill", label: "视频可用", value: counts.available || 0, unit: "", color: "green" },
-    { icon: "record-circle-fill", label: "回传中断", value: counts.interrupted || 0, unit: "", color: "red" },
-    { icon: "record-circle-fill", label: "未开启", value: counts.off || 0, unit: "", color: "muted" },
+    { icon: 'vidicon-line', label: '已领用视频设备', value: cameras.value.length, unit: '路', color: 'cyan' },
+    { icon: 'record-circle-fill', label: '可实时操作', value: available, unit: '路', color: 'green' },
+    { icon: 'record-circle-fill', label: '离线 / 待联调', value: cameras.value.length - available, unit: '路', color: 'muted' },
   ];
 });
 
@@ -76,7 +64,7 @@ watch(
 );
 
 function applyFilters() {
-  session.filters.video = { area: draft.area, workId: draft.workId };
+  session.filters.video = { workId: draft.workId };
 }
 
 function toggleSound() {
@@ -108,9 +96,6 @@ function workOf(personId) {
   <div class="video-toolbar">
     <div class="layout-control">布局切换：<AppButton v-for="layout in layouts" :key="layout" :tone="session.layout === layout ? 'active' : ''" @click="session.layout = layout">{{ layout }}</AppButton></div>
     <form class="filters" data-form="filters" style="margin:0" @submit.prevent="applyFilters">
-      <AppField label="厂区区域">
-        <AppSelect v-model="draft.area" name="area" :options="areaOptions" />
-      </AppField>
       <AppField label="作业筛选">
         <AppSelect v-model="draft.workId" name="workId" :options="workOptions" />
       </AppField>
@@ -127,11 +112,9 @@ function workOf(personId) {
           <div class="detail-heading">
             <PersonAvatar :person="focus" />
             <h3>{{ focus.name }}　<small>{{ helmetOf(focus.id)?.id || "未绑定" }}</small></h3>
-            <AppStatus>在岗</AppStatus>
+            <AppStatus :color="duty.color" :title="duty.title">{{ duty.label }}</AppStatus>
           </div>
           <dl class="info">
-            <dt>所属区域</dt>
-            <dd>{{ focus.area }}</dd>
             <dt>关联作业</dt>
             <dd>{{ workOf(focus.id)?.name || "待分配" }}</dd>
             <dt>监护人</dt>
@@ -144,7 +127,8 @@ function workOf(personId) {
             <DeviceStrip :person-id="focus.id" />
           </div>
           <div class="form-actions" style="margin-top:28px">
-            <AppButton tone="primary" icon="volume-up-line" @click="toggleSound">声音</AppButton>
+            <AppButton v-if="!isRealDevice(helmetOf(focus.id))" tone="primary" icon="volume-up-line" @click="toggleSound">声音</AppButton>
+            <small v-else>声音由视频播放器控制</small>
             <AppButton icon="fullscreen-line" @click="fullscreen">全屏</AppButton>
             <a class="btn" :href="'#/tracks/' + focus.id">查看轨迹</a>
             <a class="btn primary" :href="'#/single/' + focus.id">单路查看</a>

@@ -1,11 +1,12 @@
 import { createSeed, TOKEN_KEY, SESSION_VERSION_KEY } from './seed'
 import { createAdminService } from './service'
+import { projectSingleSimulatedWatch } from '../shared/simulated-watch.mjs'
 
-const REMOTE_QUERIES = new Set(['overview', 'details', 'devices', 'device', 'deviceOptions', 'deviceHistory', 'deviceChanges', 'master', 'person', 'record', 'options', 'impacts', 'assignments', 'assignmentHistory', 'assignmentCandidates', 'audit', 'auditDetail', 'auditExport', 'authorizationPreview', 'context'])
-const REMOTE_COMMANDS = new Set(['devices.create', 'devices.update', 'devices.configure', 'assignments.issue', 'assignments.return'])
-const REMOTE_MASTER = /^(people|organizations|areas|sites|dutyShifts)\.(create|update|status|delete)$/
+const REMOTE_QUERIES = new Set(['devices', 'device', 'deviceOptions', 'deviceHistory', 'deviceChanges', 'deviceEvents', 'master', 'person', 'record', 'options', 'impacts', 'assignments', 'assignmentHistory', 'assignmentCandidates', 'audit', 'auditDetail', 'auditExport', 'authorizationPreview', 'context'])
+const REMOTE_COMMANDS = new Set(['devices.create', 'devices.update', 'devices.configure', 'assignments.issue', 'assignments.return', 'people.dutyStatus'])
+const REMOTE_MASTER = /^(people|sites|dutyShifts)\.(create|update|status|delete)$|^organizations\.(create|update|delete)$/
 const REMOTE_ACCESS = /^(accounts|roles)\.(create|update|status|delete)$|^accounts\.resetCredential$/
-const REMOTE_ENTITIES = new Set(['people', 'organizations', 'areas', 'sites', 'dutyShifts', 'accounts', 'roles'])
+const REMOTE_ENTITIES = new Set(['people', 'organizations', 'sites', 'dutyShifts', 'accounts', 'roles'])
 
 let provider
 const AUTH_KEY = 'wearable-admin-token'
@@ -71,6 +72,8 @@ function remoteKind(kind, input) {
 
 export function getAdminProvider() {
   if (!provider) {
+    // Retire business-only browser state; authentication remains in sessionStorage.
+    window.localStorage?.removeItem('wearable-admin-state-v1')
     let remote = null
     if (window.sessionStorage.getItem(AUTH_KEY)) {
       try { remote = request('GET', '/api/admin/v1/state').state || null } catch { remote = null }
@@ -78,8 +81,10 @@ export function getAdminProvider() {
       window.sessionStorage.removeItem(TOKEN_KEY)
       window.sessionStorage.removeItem(SESSION_VERSION_KEY)
     }
-    const initial = remote || createSeed()
+    const initial = projectSingleSimulatedWatch(remote) || Object.fromEntries(Object.entries(createSeed()).map(([key, value]) => [key, Array.isArray(value) ? [] : value]))
     provider = createAdminService({ storage: window.sessionStorage, initialState: initial })
+    const replaceState = provider.replaceState.bind(provider)
+    provider.replaceState = next => replaceState(projectSingleSimulatedWatch(next))
     provider.setRemoteSave(() => { throw Error('此操作尚未开放业务接口，修改未保存') })
     provider.setRemoteLogin((username, password) => {
       const result = request('POST', '/api/admin/v1/login', { username, password })

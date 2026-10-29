@@ -26,9 +26,9 @@ fieldset { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
 legend { font-size:14px; font-weight: 700; margin-bottom: 10px; }
 .master-list { padding: var(--space-panel); }
 /* Table and query styles are isolated to the admin entry. */
-.list-filters, .detail-filter { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); align-items: end; gap: 16px; padding: 0 0 20px; border-bottom: 1px solid var(--line); margin: 0 0 20px; }
-.list-filters label, .detail-filter label { display: grid; gap: 8px; width: 100%; min-width: 0; color: var(--muted); font-size:12px; }
-.list-filters input, .list-filters select, .detail-filter input { width: 100%; min-width: 0; }
+.list-filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); align-items: end; gap: 16px; padding: 0 0 20px; border-bottom: 1px solid var(--line); margin: 0 0 20px; }
+.list-filters label { display: grid; gap: 8px; width: 100%; min-width: 0; color: var(--muted); font-size:12px; }
+.list-filters input, .list-filters select { width: 100%; min-width: 0; }
 .list-filters .inline-check { display: flex; align-items: center; width: auto; min-height: 36px; gap: 8px; }
 .list-filters .inline-check input { width: auto; }
 .filter-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; min-height: var(--control-height); grid-column: -2 / -1; }
@@ -131,7 +131,7 @@ legend { font-size:14px; font-weight: 700; margin-bottom: 10px; }
 input::placeholder, textarea::placeholder { color: var(--disabled-text); opacity: 1; }
 
 @media (max-width: 650px) {
-  .list-filters, .detail-filter { grid-template-columns: 1fr; }
+  .list-filters { grid-template-columns: 1fr; }
   .filter-actions { justify-content: flex-start; }
   .filter-actions .button { flex: 1; }
   .pagination { gap: 8px; }

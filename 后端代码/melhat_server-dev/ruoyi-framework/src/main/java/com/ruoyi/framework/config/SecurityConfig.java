@@ -112,6 +112,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 .authorizeRequests()
                 // 对于登录login 注册register 验证码captchaImage 允许匿名访问
                 .antMatchers("/login", "/register", "/captchaImage","/api/melhat/**","/api/guardian/**","/api/admin/**","/wsHat","/ws/**","/ext/**","/monitor/job/**","/test/**","test2/**").permitAll()
+                // The device firmware has a fixed bootstrap path; do not open all /api routes.
+                .antMatchers("/api/index.php", "/api/belt/index.php", "/api/belt/config/index.php", "/wsBelt").permitAll()
+                // These isolated endpoints verify service HMAC credentials themselves; human JWT is insufficient.
+                .antMatchers(HttpMethod.POST, "/openapi/wearables/v2/positions/query", "/openapi/wearables/v2/statuses/query", "/openapi/wearables/v2/alarms/query").permitAll()
+                .antMatchers("/internal/fuda-gb/v1/devices/*/status", "/internal/fuda-gb/v1/leases/*").permitAll()
                 // 静态资源，可匿名访问
                 .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
                 //设置白名单

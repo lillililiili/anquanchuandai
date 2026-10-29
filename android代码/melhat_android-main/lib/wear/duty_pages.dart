@@ -247,17 +247,21 @@ class _WearDutyPageState extends State<WearDutyPage> {
             vertical: 10,
           ),
           leading: _icon(Icons.business_outlined, _blue),
-          title: const Text(
-            '切换厂站',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          title: Text(
+            session.siteSelectionLocked ? '当前厂区' : '切换厂站',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
           ),
           subtitle: Text(
             '当前：${session.siteName}',
             style: const TextStyle(fontSize: 12, color: WearColors.muted),
           ),
-          trailing: const Icon(Icons.chevron_right, color: WearColors.muted),
+          trailing: session.siteSelectionLocked
+              ? null
+              : const Icon(Icons.chevron_right, color: WearColors.muted),
           enabled: !session.callActive.value,
-          onTap: session.callActive.value ? null : () => context.push('/sites'),
+          onTap: session.siteSelectionLocked || session.callActive.value
+              ? null
+              : () => context.push('/sites'),
         ),
       ),
       const SizedBox(height: 12),

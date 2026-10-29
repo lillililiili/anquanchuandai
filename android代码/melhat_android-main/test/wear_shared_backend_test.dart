@@ -345,6 +345,14 @@ void main() {
             '/api/v1/commands/tts',
             data: {
               'deviceIds': ['RL-H001'],
+              'recipients': [
+                {
+                  'deviceId': 'RL-H001',
+                  'personId': 'P1',
+                  'assignmentId': 'A1',
+                  'assignmentVersion': 1,
+                },
+              ],
               'text': '现场确认',
               'idempotencyKey': key,
             },

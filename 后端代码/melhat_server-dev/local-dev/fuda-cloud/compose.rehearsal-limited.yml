@@ -1,0 +1,49 @@
+# Temporary low-concurrency STAGING rehearsal only; this does not relax production preflight.
+# Use only: -f compose.yml -f compose.rehearsal-limited.yml
+# Do not combine with compose.production.yml or override the project name.
+name: fuda-wearables-staging
+services:
+  mysql:
+    labels: {com.wearables.rehearsal-limited: "true"}
+    mem_limit: 384m
+    memswap_limit: 384m
+    cpus: 0.3
+    cpu_shares: 256
+    restart: "no"
+    logging: {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=64M
+      - --innodb-log-buffer-size=8M
+      - --max-connections=20
+      - --performance-schema=OFF
+      - --table-open-cache=200
+  backend:
+    labels: {com.wearables.rehearsal-limited: "true"}
+    mem_limit: 640m
+    memswap_limit: 640m
+    cpus: 0.5
+    cpu_shares: 256
+    restart: "no"
+    environment:
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m -XX:+ExitOnOutOfMemoryError
+    logging: {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+  redis:
+    labels: {com.wearables.rehearsal-limited: "true"}
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.1
+    cpu_shares: 256
+    restart: "no"
+    command: ["sh", "-c", "exec redis-server --appendonly yes --maxmemory 32mb --maxmemory-policy noeviction --requirepass \"$$REDIS_PASSWORD\""]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+  query-gateway:
+    image: fuda-query-gateway:2.0.0
+    labels: {com.wearables.rehearsal-limited: "true"}
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.1
+    cpu_shares: 256
+    restart: "no"
+    logging: {driver: json-file, options: {max-size: 10m, max-file: "3"}}

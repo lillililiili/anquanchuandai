@@ -1,11 +1,13 @@
 <template>
   <section class="area-range">
     <div class="area-range-head">
-      <strong>地图范围</strong>
-      <button class="button" type="button" :disabled="!pointCount" @click="undo">撤销</button>
+      <strong>{{ TEST_SITE.name }} · 地图范围</strong>
+      <button class="button" type="button" @click="resetSite">返回厂区</button>
+      <button class="button" type="button" :disabled="!history.length" @click="undo">撤销</button>
       <button class="button" type="button" :disabled="!pointCount" @click="clearPoints">清空</button>
     </div>
     <p class="muted">单击地图添加节点，拖动节点调整。至少 3 个点才会出现在前台地图，清空后可以只保存名称。</p>
+    <p v-if="!coordinateSystem && pointCount" class="muted">旧示意范围仅供参考；清空并重新绘制后保存真实地图范围。</p>
     <div ref="mapEl" class="area-range-map"></div>
   </section>
 </template>
@@ -26,12 +28,15 @@ import { boundingExtent } from 'ol/extent'
 import { fromLonLat, toLonLat } from 'ol/proj'
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
 import 'ol/ol.css'
-import { LABEL_TILES, PLANT_CENTER, PLANT_ZOOM, SATELLITE_TILES, lonLatToPercent, percentToLonLat } from '../area-geo'
+import { LABEL_TILES, SATELLITE_TILES, lonLatToPercent, percentToLonLat } from '../area-geo'
+import { TEST_SITE, testSiteViewport } from '../../shared/test-site.mjs'
+import { toMapCoordinates, fromMapCoordinates } from '../../shared/map-coordinates.mjs'
 
-const props = defineProps({ modelValue: { type: Array, default: () => [] } })
-const emit = defineEmits(['update:modelValue'])
+const props = defineProps({ modelValue: { type: Array, default: () => [] }, coordinateSystem: { type: String, default: 'GCJ02' } })
+const emit = defineEmits(['update:modelValue', 'update:coordinateSystem'])
 const mapEl = ref(null)
-const history = []
+const history = ref([])
+const siteViewport = testSiteViewport()
 let map
 let drag = null
 let dragged = false
@@ -43,12 +48,27 @@ const points = () => (Array.isArray(props.modelValue) ? props.modelValue : [])
 const pointCount = computed(() => points().length)
 
 function project(point) {
-  return fromLonLat(percentToLonLat(point))
+  const coordinates = props.coordinateSystem
+    ? toMapCoordinates({ longitude: point[0], latitude: point[1], coordinateSystem: props.coordinateSystem })
+    : percentToLonLat(point)
+  return coordinates ? fromLonLat(coordinates) : null
+}
+
+function unproject(coordinate) {
+  const point = toLonLat(coordinate)
+  return props.coordinateSystem ? fromMapCoordinates(point, props.coordinateSystem).map(value => Number(value.toFixed(7))) : lonLatToPercent(point).map(value => Math.round(value * 10) / 10)
+}
+
+function resetSite() {
+  if (!map) return
+  interacted = true
+  map.getView().setCenter(fromLonLat(siteViewport.center))
+  map.getView().setZoom(siteViewport.zoom)
 }
 
 function draw() {
   source.clear()
-  const current = points()
+  const current = points().filter(point => project(point))
   if (current.length >= 3) {
     const ring = current.map(project)
     ring.push(ring[0])
@@ -58,23 +78,37 @@ function draw() {
 }
 
 function commit(next) {
-  history.push(points().map((point) => [...point]))
+  remember()
   emit('update:modelValue', next)
 }
 
+function remember() {
+  history.value.push({ points: points().map(point => [...point]), coordinateSystem: props.coordinateSystem })
+}
+
 function undo() {
-  const previous = history.pop()
-  if (previous) emit('update:modelValue', previous)
+  const previous = history.value.pop()
+  if (previous) {
+    emit('update:modelValue', previous.points)
+    emit('update:coordinateSystem', previous.coordinateSystem)
+  }
 }
 
 function clearPoints() {
   if (!points().length) return
   commit([])
+  emit('update:coordinateSystem', 'GCJ02')
+  resetSite()
 }
 
 function nearest(coordinate) {
-  const here = lonLatToPercent(toLonLat(coordinate))
-  const index = points().findIndex((point) => Math.hypot(point[0] - here[0], point[1] - here[1]) < 3)
+  const here = map?.getPixelFromCoordinate(coordinate)
+  if (!here) return -1
+  const index = points().findIndex((point) => {
+    const projected = project(point)
+    const pixel = projected && map.getPixelFromCoordinate(projected)
+    return pixel && Math.hypot(pixel[0] - here[0], pixel[1] - here[1]) < 14
+  })
   return index
 }
 
@@ -91,16 +125,17 @@ onMounted(() => {
           : { stroke: new Stroke({ color: '#83f6fd', width: 2.5, lineDash: [6, 4] }), fill: new Fill({ color: '#83f6fd33' }) }),
       }),
     ],
-    view: new View({ center: fromLonLat(PLANT_CENTER), zoom: PLANT_ZOOM }),
+    view: new View({ center: fromLonLat(siteViewport.center), zoom: siteViewport.zoom }),
     interactions: defaultInteractions({ dragPan: false }).extend([
       new DragPan({ condition: (event) => nearest(event.coordinate) < 0 }),
     ]),
     controls: [],
   })
   map.on('pointerdown', (event) => {
+    if (!props.coordinateSystem) return
     const index = nearest(event.coordinate)
     if (index >= 0) {
-      history.push(points().map((point) => [...point]))
+      remember()
       drag = index
       event.preventDefault()
     }
@@ -109,30 +144,32 @@ onMounted(() => {
     if (drag == null) return
     dragged = true
     const next = points().map((point) => [...point])
-    next[drag] = lonLatToPercent(toLonLat(event.coordinate)).map((value) => Math.round(value * 10) / 10)
+    next[drag] = unproject(event.coordinate)
     emit('update:modelValue', next)
   })
   map.on('pointerup', () => { drag = null })
   map.on('singleclick', (event) => {
+    if (!props.coordinateSystem) return
     if (dragged) { dragged = false; return }
     if (nearest(event.coordinate) >= 0) return
-    const point = lonLatToPercent(toLonLat(event.coordinate)).map((value) => Math.round(value * 10) / 10)
+    const point = unproject(event.coordinate)
     commit([...points(), point])
   })
   draw()
   const fit = () => {
-    const current = points()
+    const current = points().filter(point => project(point))
     if (!map || interacted || !current.length) return
     map.updateSize()
     map.getView().fit(boundingExtent(current.map(project)), { padding: [28, 28, 28, 28], maxZoom: 17 })
   }
   map.on('pointerdown', () => { interacted = true })
+  mapEl.value.addEventListener('wheel', () => { interacted = true }, { passive: true })
   observer = new ResizeObserver(fit)
   observer.observe(mapEl.value)
   fit()
 })
 
-watch(() => props.modelValue, draw, { deep: true })
+watch(() => [props.modelValue, props.coordinateSystem], draw, { deep: true })
 onUnmounted(() => { observer?.disconnect(); map?.setTarget(null); map = null })
 </script>
 <style scoped>

@@ -6,7 +6,6 @@ import AppInput from "@/components/ui/AppInput.vue";
 import AppPanel from "@/components/ui/AppPanel.vue";
 import AppSelect from "@/components/ui/AppSelect.vue";
 import AppStatCards from "@/components/ui/AppStatCards.vue";
-import AppStatus from "@/components/ui/AppStatus.vue";
 import AppTable from "@/components/ui/AppTable.vue";
 import FilterBar from "@/components/layout/FilterBar.vue";
 import LocationTabs from "@/components/layout/LocationTabs.vue";
@@ -15,6 +14,7 @@ import PlantMap from "@/components/domain/PlantMap.vue";
 import { db } from "@/mock/runtime";
 import { filtersOf, session } from "@/stores/session";
 import { people, revision, search, works } from "@/lib/queries";
+import { locationPresentation } from './location-presentation';
 
 const draft = reactive({ q: "", workId: "" });
 
@@ -28,7 +28,6 @@ readDraft();
 
 const layers = [
   { key: "people", label: "人员" },
-  { key: "areas", label: "作业区域" },
   { key: "fences", label: "电子围栏" },
 ];
 
@@ -71,15 +70,13 @@ const cards = computed(() => {
   const list = locatedPeople.value;
   const visible = list.filter((person) => db.locationValid(person.id)).length;
   return [
-    { icon: "user-line", label: "当班人员", value: list.length, unit: "", color: "cyan" },
+    { icon: "user-line", label: "在册人员", value: list.length, unit: "", color: "cyan" },
     { icon: "map-pin-line", label: "位置可查看", value: visible, unit: "", color: "cyan" },
     { icon: "alarm-warning-line", label: "位置待核验", value: list.length - visible, unit: "", color: "yellow" },
   ];
 });
 
-function helmetId(personId) {
-  return db.currentDevices(personId).find((device) => device.type === "H")?.id || "未绑定";
-}
+const position = person => locationPresentation(db, person);
 
 function applyFilters() {
   session.filters.location = { q: draft.q, workId: draft.workId };
@@ -97,24 +94,24 @@ function choose(id) {
 </script>
 
 <template>
-  <PageHeading title="实时定位" subtitle="按人员查看关联安全帽位置">
+  <PageHeading title="实时定位" subtitle="按人员查看关联安全帽或安全带位置">
     <template #actions>
       <AppStatCards :items="cards" variant="mini" />
     </template>
   </PageHeading>
   <LocationTabs />
   <div class="location-layout">
-    <AppPanel title="当班人员">
+    <AppPanel title="在册人员">
       <FilterBar @submit="applyFilters" @reset="resetFilters">
         <div class="searchbox">
           <AppIcon name="search-line" />
-          <AppInput v-model="draft.q" name="q" placeholder="姓名 / 安全帽编号" />
+          <AppInput v-model="draft.q" name="q" placeholder="姓名 / 设备编号" />
         </div>
         <AppField label="作业分组">
           <AppSelect v-model="draft.workId" name="workId" :options="workOptions" />
         </AppField>
       </FilterBar>
-      <AppTable :rows="locatedPeople" :reset-key="[session.station, session.filters.location]" v-slot="{ rows: pageRows }" :columns="['姓名', '安全帽编号', '作业区域', '状态']" :empty="!locatedPeople.length">
+      <AppTable :rows="locatedPeople" :reset-key="[session.station, session.filters.location]" v-slot="{ rows: pageRows }" :columns="['姓名', '定位设备编号', '设备位置']" :empty="!locatedPeople.length">
         <tr
           v-for="person in pageRows"
           :key="person.id"
@@ -122,13 +119,8 @@ function choose(id) {
           @click="choose(person.id)"
         >
           <td><AppIcon name="user-fill" />　{{ person.name }}</td>
-          <td>{{ helmetId(person.id) }}</td>
-          <td>{{ db.locationValid(person.id) ? person.area : "位置待核验" }}</td>
-          <td>
-            <AppStatus :color="db.locationValid(person.id) ? 'green' : 'yellow'">
-              {{ db.locationValid(person.id) ? "在线" : "待核验" }}
-            </AppStatus>
-          </td>
+          <td>{{ position(person).deviceId }}</td>
+          <td>{{ position(person).summary }}<small class="muted" style="display:block">{{ position(person).detail }}</small><small v-if="person.fenceEvaluation === 'COORDINATE_SYSTEM_MISMATCH'" class="yellow">坐标系不同，未判定围栏</small></td>
         </tr>
       </AppTable>
     </AppPanel>

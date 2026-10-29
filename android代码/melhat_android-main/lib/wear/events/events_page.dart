@@ -530,17 +530,27 @@ class _EventsPageState extends State<EventsPage> {
           InlineFilterGroup('type', '类型', {
             if (_filterOptionsScope == _session?.scopeKey)
               for (final e in _filterOptions)
-                'alarm:${idOf(e['code'])}':
-                    '${textOf(e['label'])} · ${_deviceTypes[idOf(e['code']).split('.').first] ?? idOf(e['code'])}',
+                if (_session?.simulatedWatchVisible != false ||
+                    !idOf(e['code']).startsWith('watch.'))
+                  'alarm:${idOf(e['code'])}':
+                      '${textOf(e['label'])} · ${_deviceTypes[idOf(e['code']).split('.').first] ?? idOf(e['code'])}',
             for (final e in _types.entries)
-              if (e.key.isNotEmpty) 'type:${e.key}': e.value,
+              if (e.key.isNotEmpty &&
+                  (_session?.simulatedWatchVisible != false ||
+                      e.key != 'vitals'))
+                'type:${e.key}': e.value,
             for (final code in filters.selectedAlarmCodes)
               if (!_filterOptions.any((e) => idOf(e['code']) == code))
                 'alarm:$code':
                     filters.alarmLabels[code] ??
                     (filters.alarmLabel.isEmpty ? code : filters.alarmLabel),
           }),
-          const InlineFilterGroup('device', '设备', _deviceTypes),
+          InlineFilterGroup('device', '设备', {
+            for (final entry in _deviceTypes.entries)
+              if (_session?.simulatedWatchVisible != false ||
+                  entry.key != 'watch')
+                entry.key: entry.value,
+          }),
           InlineFilterGroup('flags', '其他', {
             if (controller.actor.isAdmin)
               'mine': _quickFilterLabel('我负责', 'mine'),

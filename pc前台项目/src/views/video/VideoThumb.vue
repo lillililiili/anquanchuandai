@@ -9,15 +9,12 @@ defineProps({
 </script>
 
 <template>
-  <button
-    type="button"
+  <div
     :class="['video-thumb', person.id === session.person ? 'selected' : '']"
     data-action="select-camera"
     :data-id="person.id"
-    @click="session.person = person.id"
   >
-    <VideoFrame :person-id="person.id" />
-    <strong>{{ person.name }}　<small>{{ helmetOf(person.id)?.id || "未绑定" }}</small></strong>
-    <small>{{ person.area }}</small>
-  </button>
+    <VideoFrame :person-id="person.id" preview />
+    <button type="button" class="btn plain" @click="session.person = person.id">{{ person.name }}　<small>{{ helmetOf(person.id)?.id || "未绑定" }}</small></button>
+  </div>
 </template>

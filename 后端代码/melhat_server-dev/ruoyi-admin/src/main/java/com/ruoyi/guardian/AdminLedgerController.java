@@ -20,6 +20,7 @@ public class AdminLedgerController {
     @org.springframework.beans.factory.annotation.Autowired private WearableSessions sessions;
     @org.springframework.beans.factory.annotation.Autowired private WearableCredentials credentials;
     @org.springframework.beans.factory.annotation.Autowired private AdminPlatformService platform;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableBusinessPolicy businessPolicy;
 
     @PostMapping("/platform/helmets/sync")
     public JSONObject syncHelmets(@RequestBody JSONObject body, javax.servlet.http.HttpServletRequest request) {
@@ -65,6 +66,7 @@ public class AdminLedgerController {
             limited.put("sites", queries.query(actor.getString("id"), "context", new JSONObject()).get("sites"));
             state = limited;
         }
+        if(businessPolicy!=null)businessPolicy.decorate(state,true);
         body.put("state", WearableModel.safe(state));
         return body;
     }
@@ -86,10 +88,12 @@ public class AdminLedgerController {
         String type = body == null ? "" : body.getString("type");
         JSONObject input = body == null ? new JSONObject() : body.getJSONObject("input");
         RemovedAssetFeatures.requireCommand(type, input);
+        if (type != null && type.startsWith("areas.")) throw AdminQueryService.fail(410, "FEATURE_REMOVED", "行政区域功能已取消");
+        if ("organizations.status".equals(type)) throw AdminQueryService.fail(400, "UNKNOWN_COMMAND", "未开放此操作");
         if (type != null && access.handles(type)) return WearableModel.safe(access.execute(accountId, type, input));
-        if (type != null && master.handles(type)) return master.execute(accountId, type, input);
-        if (type != null && type.startsWith("assignments.")) return assignments.execute(accountId, type, input);
-        return devices.execute(accountId, type, input);
+        if (type != null && master.handles(type)) return WearableModel.safe(master.execute(accountId, type, input));
+        if (type != null && type.startsWith("assignments.")) return WearableModel.safe(assignments.execute(accountId, type, input));
+        return WearableModel.safe(devices.execute(accountId, type, input));
         }
     }
 

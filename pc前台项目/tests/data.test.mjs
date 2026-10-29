@@ -5,7 +5,31 @@ const storage = () => {
   let text = null;
   return { getItem: () => text, setItem: (_, v) => (text = v) };
 };
-const create = () => D.createStore(storage());
+const createStore = (storage) => D.createStore(storage, { demoMode: true });
+const create = () => createStore(storage());
+
+test("旧区域归属和地图分区不再进入前台，厂站、定位、围栏和作业地点保留", () => {
+  const snapshot = D.seed(), mem = storage();
+  snapshot.mapAreas = [{ id: 'retired-area', station: 'S1', points: [[10,10],[20,10],[20,20]] }];
+  snapshot.people[0].area = '旧区域'; snapshot.people[0].areaId = 'retired-area';
+  snapshot.devices[0].areaId = 'retired-area'; snapshot.groups[0].areaId = 'retired-area';
+  snapshot.works[0].areaId = 'retired-area';
+  mem.setItem(D.KEY, JSON.stringify(snapshot));
+  const cached = createStore(mem), remote = createStore(storage());
+  remote.replaceRemote(snapshot);
+  for (const store of [cached, remote]) {
+    assert.equal(Object.hasOwn(store.state, 'mapAreas'), false);
+    for (const kind of ['people', 'devices', 'groups', 'works']) assert.equal(store.state[kind].some(row => Object.hasOwn(row, 'areaId')), false);
+    assert.equal(Object.hasOwn(store.person('P1'), 'area'), false);
+    assert.equal(store.person('P1').station, 'S1');
+    assert.deepEqual(store.person('P1').position, snapshot.people[0].position);
+    assert.deepEqual(store.state.fences, snapshot.fences);
+    assert.equal(store.state.works[0].area, snapshot.works[0].area);
+    assert.equal(store.stats({ station: 'S2' }).people.length, 0);
+  }
+  assert.equal(snapshot.people[0].areaId, 'retired-area');
+  assert.equal(snapshot.mapAreas.length, 1);
+});
 test("初始数据人数、作业、装备通信与视频数量口径正确", () => {
   const d = create(),
     s = d.stats({ station: "S1", date: D.DATE });
@@ -65,7 +89,7 @@ test("核验草稿不改变统计，提交后数量、列表、时间线一致�
   assert.equal(d.stats().verified, 1);
 });
 test("保存失败回滚内存状态，不能假报成功", () => {
-  const d = D.createStore({
+  const d = createStore({
     getItem: () => null,
     setItem: () => {
       throw Error("quota");
@@ -142,11 +166,11 @@ test("抓拍、录像记录生成相同日期的关联资料", () => {
 });
 test("重载存储保留核验、媒体和绑定修改", () => {
   const store = storage(),
-    a = D.createStore(store);
+    a = createStore(store);
   a.claim("RL-E-0915-002");
   const id = a.capture("P1");
   a.release("RL-W001");
-  const b = D.createStore(store);
+  const b = createStore(store);
   assert.equal(b.event("RL-E-0915-002").status, "处理中");
   assert.ok(b.state.media.find((m) => m.id === id));
   assert.equal(b.owner("RL-W001"), null);
@@ -290,11 +314,11 @@ test("旧存档无损升级体征，修改姓名不篡改历史，刷新保持�
   delete old.vitals;
   old.people[0].name = "陈工";
   mem.setItem(D.KEY, JSON.stringify(old));
-  const d = D.createStore(mem);
+  const d = createStore(mem);
   assert.equal(d.person("P1").name, "陈工");
   assert.equal(d.vitals("P1").record.personName, "陈建国");
   d.updatePerson("P1", { ...d.person("P1"), name: "陈建国（维护）" });
-  const fresh = D.createStore(mem);
+  const fresh = createStore(mem);
   assert.deepEqual(fresh.vitals("P1"), d.vitals("P1"));
   assert.equal(fresh.person("P1").name, "陈建国（维护）");
 });
@@ -306,7 +330,7 @@ test("旧存档补入新增告警且不覆盖已有事件", () => {
   );
   old.events[0].status = "已核验";
   mem.setItem(D.KEY, JSON.stringify(old));
-  const d = D.createStore(mem);
+  const d = createStore(mem);
   assert.equal(d.event("RL-E-0915-001").status, "已核验");
   assert.equal(d.event("RL-E-0915-004").type, "人员求助");
   assert.equal(d.event("RL-E-0915-005").type, "电子围栏");

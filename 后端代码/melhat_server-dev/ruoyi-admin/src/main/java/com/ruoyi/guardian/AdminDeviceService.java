@@ -3,6 +3,7 @@ package com.ruoyi.guardian;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -23,7 +24,14 @@ public class AdminDeviceService {
         this.hats = hats;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public JSONObject execute(String accountId, String type, JSONObject input) {
+        synchronized (ledger) {
+            return executeLocked(accountId, type, input);
+        }
+    }
+
+    private JSONObject executeLocked(String accountId, String type, JSONObject input) {
         if (!Arrays.asList("devices.create", "devices.update", "devices.configure").contains(type)) {
             throw AdminQueryService.fail(400, "COMMAND_NOT_AVAILABLE", "本阶段仅开放设备建档、资料编辑和型号配置");
         }
@@ -33,15 +41,16 @@ public class AdminDeviceService {
         if (actor == null) throw AdminQueryService.fail(401, "IDENTITY_INVALID", "请先登录");
         if (input == null) input = new JSONObject();
         JSONObject existing = "devices.create".equals(type) ? null : findDevice(state, input.getString("id"), input.getString("siteId"));
-        String areaId = existing == null ? null : existing.getString("areaId");
         JSONObject fields = input.getJSONObject("data");
         if(existing!=null && "PLATFORM".equals(existing.getString("source")) && fields!=null) {
             for(String key:new String[]{"code","sn"}) if(fields.containsKey(key) && !java.util.Objects.equals(fields.getString(key),existing.getString(key)))
                 throw AdminQueryService.fail(400,"PLATFORM_ID_READ_ONLY","厂家设备编号和SN不能修改");
         }
-        String nextArea = fields != null && fields.containsKey("areaId") ? fields.getString("areaId") : areaId;
-        if ((existing != null && !queries.allows(state, actor, "assets:write", input.getString("siteId"), areaId))
-                || !queries.allows(state, actor, "assets:write", input.getString("siteId"), nextArea))
+        if(existing!=null && directSource(existing.getString("source")) && fields!=null) {
+            for(String field:new String[]{"code","sn","deviceNumber","source"}) if(fields.containsKey(field) && !java.util.Objects.equals(fields.getString(field),existing.getString(field)))
+                throw AdminQueryService.fail(400,"DIRECT_ID_READ_ONLY","直连设备的登录ID、平台编号和SN不能修改");
+        }
+        if (!queries.allows(state, actor, "assets:write", input.getString("siteId"), null))
             throw AdminQueryService.fail(403, "PERMISSION_DENIED", "当前身份无此操作或数据范围权限");
         String operationId = input.getString("operationId");
         if (operationId == null || operationId.trim().isEmpty() || operationId.length() > 100) {
@@ -71,7 +80,12 @@ public class AdminDeviceService {
             }
         }
         JSONObject output = apply(state, action, row, input);
-        if ("HELMET".equals(output.getString("type"))) hats.ensureUnassigned(output.getString("code"));
+        if ("HELMET".equals(output.getString("type"))) {
+            if ("DIRECT_HELMET".equals(output.getString("source"))) {
+                if ("create".equals(action)) hats.ensureDirectUnassigned(output.getString("deviceNumber"));
+            }
+            else hats.ensureUnassigned(output.getString("code"));
+        }
         state.put("revision", state.getIntValue("revision") + 1);
         JSONArray audit = state.getJSONArray("audit");
         if (audit == null) {
@@ -105,8 +119,8 @@ public class AdminDeviceService {
         JSONObject data = input.getJSONObject("data");
         if (data == null || data.isEmpty() && !"configure".equals(action)) throw AdminQueryService.fail(400, "INVALID_DATA", "请提交设备资料");
         if (data == null) data = new JSONObject();
-        Set<String> allowed = new HashSet<String>(Arrays.asList("code", "name", "manufacturer", "sn", "areaId", "modelId", "assetCode", "purchasedOn", "remark", "assemblies", "confirmModelChange"));
-        if ("create".equals(action)) allowed.add("type");
+        Set<String> allowed = new HashSet<String>(Arrays.asList("code", "name", "manufacturer", "sn", "areaId", "modelId", "modelName", "assetCode", "purchasedOn", "remark", "assemblies", "confirmModelChange"));
+        if ("create".equals(action)) allowed.addAll(Arrays.asList("type", "source", "deviceNumber"));
         if ("configure".equals(action)) allowed = new HashSet<String>(Arrays.asList("modelId", "assemblies", "confirmModelChange"));
         for (String key : data.keySet()) {
             if (!allowed.contains(key)) throw AdminQueryService.fail(400, "FIELD_NOT_ALLOWED", "不能通过基础资料修改厂站、类型、生命周期、通信、领用或验证结果");
@@ -131,6 +145,27 @@ public class AdminDeviceService {
             result.put("assemblies", new JSONObject());
         }
         if (!TYPES.contains(result.getString("type"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择设备类型");
+        if (row == null && (data.containsKey("source") || data.containsKey("deviceNumber"))) {
+            boolean belt = "DIRECT_BELT".equals(data.getString("source"));
+            if ((!belt && !"DIRECT_HELMET".equals(data.getString("source")))
+                    || !(belt ? "BELT" : "HELMET").equals(result.getString("type"))) {
+                throw AdminQueryService.fail(400, "VALIDATION_ERROR", "直连接入方式与设备类型不匹配");
+            }
+            String number = data.getString("deviceNumber");
+            number = number == null ? "" : number.trim();
+            if (!number.matches("[A-Za-z0-9._-]{1,64}")) {
+                throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请填写设备实际登录ID（1至64位字母、数字、点、下划线或连字符）");
+            }
+            result.put("source", belt ? "DIRECT_BELT" : "DIRECT_HELMET");
+            result.put("deviceNumber", number);
+            result.put("portalDeviceId", number);
+            result.put("communicationProtocol", belt ? "WEBSOCKET" : "SIP");
+            result.put("capabilities", new JSONArray());
+            result.put("capabilitySource", (belt ? "安全带" : "一体帽") + "直连预登记；能力以真实设备联调结果为准");
+            result.put("online", null);
+            result.put("battery", null);
+            if (!data.containsKey("code")) result.put("code", number);
+        }
         if (!"configure".equals(action)) {
             for (String key : Arrays.asList("code", "name", "manufacturer", "sn", "assetCode", "purchasedOn", "remark")) {
                 String value = data.containsKey(key) ? data.getString(key) : result.getString(key);
@@ -143,21 +178,14 @@ public class AdminDeviceService {
             if (result.getString("name") == null || result.getString("name").isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请填写设备名称");
             String purchased = result.getString("purchasedOn");
             if (purchased != null && !purchased.isEmpty() && !DATE.matcher(purchased).matches()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请填写有效购置日期");
-        }
-        if (data.containsKey("areaId") || row == null) {
-            String areaId = data.getString("areaId");
-            result.put("areaId", areaId == null || areaId.isEmpty() ? null : areaId);
-        }
-        if (result.getString("areaId") != null) {
-            JSONObject area = find(state, "areas", result.getString("areaId"));
-            if (area == null || !input.getString("siteId").equals(area.getString("siteId")) || !area.getBooleanValue("enabled")) {
-                throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择本厂站启用区域");
-            }
-            JSONObject versions = input.getJSONObject("relatedVersions");
-            if (versions != null && versions.getIntValue(area.getString("id")) != area.getIntValue("version")) {
-                throw AdminQueryService.fail(409, "VERSION_CONFLICT", "区域已变化，请重新读取");
+            if (data.containsKey("modelName")) {
+                Object value = data.get("modelName");
+                if (!(value instanceof String) || ((String) value).trim().length() > 100)
+                    throw AdminQueryService.fail(400, "VALIDATION_ERROR", "型号格式或长度无效");
+                result.put("modelName", ((String) value).trim());
             }
         }
+        // Historical area IDs remain in the ledger; administrative areas are no longer editable.
         String modelId = data.getString("modelId");
         if (modelId == null || modelId.isEmpty()) modelId = result.getString("modelId");
         if (modelId == null || modelId.isEmpty()) modelId = "unknown-" + result.getString("type");
@@ -165,7 +193,8 @@ public class AdminDeviceService {
         boolean changedModel = row != null && !modelId.equals(row.getString("modelId"));
         if (changedModel && !data.getBooleanValue("confirmModelChange")) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请确认型号变更及选配清理影响");
         result.put("modelId", modelId);
-        result.put("assemblies", new JSONObject());
+        if (row == null || changedModel || data.containsKey("assemblies") || !result.containsKey("assemblies"))
+            result.put("assemblies", new JSONObject());
         if (row != null && locked(row, result)) {
             String reason = keyReason(state, row);
             if (reason != null) throw AdminQueryService.fail(409, "KEY_FIELDS_LOCKED", reason);
@@ -177,6 +206,7 @@ public class AdminDeviceService {
                 throw AdminQueryService.fail(409, "DEVICE_CONFLICT", "平台编号已存在，请核对后修改");
             }
             if (sameSn(result, device)) throw AdminQueryService.fail(409, "DEVICE_CONFLICT", "厂商与SN组合已存在，请核对后修改");
+            if (directIdentityConflict(result, device)) throw AdminQueryService.fail(409, "DEVICE_CONFLICT", "直连设备登录ID与已有设备身份冲突");
         }
         result.put("version", result.getIntValue("version") + 1);
         JSONArray devices = state.getJSONArray("devices");
@@ -189,7 +219,24 @@ public class AdminDeviceService {
         return result;
     }
 
+    private static boolean directIdentityConflict(JSONObject left, JSONObject right) {
+        if (!directSource(left.getString("source")) && !directSource(right.getString("source"))) return false;
+        for (String a : Arrays.asList("deviceNumber", "portalDeviceId", "code", "sn")) {
+            String value = left.getString(a);
+            if (value == null || value.isEmpty()) continue;
+            for (String b : Arrays.asList("deviceNumber", "portalDeviceId", "id", "code", "sn")) {
+                if (value.equalsIgnoreCase(right.getString(b))) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean directSource(String source) {
+        return "DIRECT_HELMET".equals(source) || "DIRECT_BELT".equals(source);
+    }
+
     private static boolean locked(JSONObject before, JSONObject after) {
+        if (!AdminQueryService.deviceModelName(before).equals(AdminQueryService.deviceModelName(after))) return true;
         for (String key : Arrays.asList("code", "manufacturer", "sn", "areaId", "modelId")) {
             String left = before.getString(key) == null ? "" : before.getString(key);
             String right = after.getString(key) == null ? "" : after.getString(key);

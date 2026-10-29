@@ -276,7 +276,10 @@ class WearSiteSwitcher extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = WearScope.of(context);
     return InkWell(
-      onTap: session.busy || session.callActive.value
+      onTap:
+          session.siteSelectionLocked ||
+              session.busy ||
+              session.callActive.value
           ? null
           : () => context.go('/sites'),
       child: Row(
@@ -291,7 +294,8 @@ class WearSiteSwitcher extends StatelessWidget {
               style: const TextStyle(fontSize: 12, color: WearColors.muted),
             ),
           ),
-          const Icon(Icons.expand_more, size: 16, color: WearColors.muted),
+          if (!session.siteSelectionLocked)
+            const Icon(Icons.expand_more, size: 16, color: WearColors.muted),
         ],
       ),
     );

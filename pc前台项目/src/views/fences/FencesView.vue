@@ -1,4 +1,5 @@
 <script setup>
+import { fenceWriteIssue } from './fence-policy';
 import { computed, ref, watch } from "vue";
 import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import AppButton from "@/components/ui/AppButton.vue";
@@ -18,6 +19,7 @@ import { openModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
 import { confirm } from "@/lib/dialogs";
 import { revision } from "@/lib/queries";
+import { testSiteName, testSiteChoices } from '../../../../shared/test-site.mjs';
 import FenceMembersModal from "./FenceMembersModal.vue";
 import FenceRecordsModal from "./FenceRecordsModal.vue";
 
@@ -32,7 +34,7 @@ const { formRef, errors, validate } = useFieldErrors(() => ({ name: session.fenc
 
 const stationOptions = computed(() => {
   revision();
-  return db.state.stations.map((item) => [item.id, item.name]);
+  return testSiteChoices(db.state.stations, 'station').map((item) => [item.id, item.name]);
 });
 
 const fences = computed(() => {
@@ -46,7 +48,7 @@ const fences = computed(() => {
 });
 
 function stationName(id) {
-  return db.state.stations.find((item) => item.id === id)?.name || "";
+  return testSiteName(db.state.stations.find((item) => item.id === id)) || "";
 }
 
 function ensureFenceDraft() {
@@ -91,6 +93,7 @@ function createFence() {
   session.fenceDraft = {
     name: "",
     points: [],
+    coordinateSystem: "GCJ02",
     members: [],
     enabled: true,
     enter: false,
@@ -110,6 +113,8 @@ function editFence() {
     toast("请先新建或选择围栏", true);
     return;
   }
+  const issue = fenceWriteIssue(session.fenceDraft, db.demoMode);
+  if (issue) { fenceError.value = issue; return; }
   session.fenceMode = "edit";
 }
 
@@ -126,10 +131,13 @@ function submitFence() {
   if (!draft) return;
   fenceError.value = "";
   try {
+    const issue = fenceWriteIssue(draft, db.demoMode);
+    if (issue) throw Error(issue);
     if (!validate({ name: !String(draft.name || '').trim() && '请填写围栏名称', points: (!draft.points || draft.points.length < 3) && '请在地图上绘制至少3个节点' })) return;
     const id = db.saveFence(draft.id, {
       name: String(draft.name || "").trim(),
       points: draft.points,
+      ...(draft.coordinateSystem ? { coordinateSystem: draft.coordinateSystem } : {}),
       members: [...(draft.members || [])],
       enabled: !!draft.enabled,
       enter: !!draft.enter,
@@ -153,9 +161,11 @@ function submitFence() {
 function askToggle(id) {
   const saved = db.state.fences.find((item) => item.id === id);
   if (!saved) return;
+  const issue = !saved.enabled && fenceWriteIssue(saved, db.demoMode);
+  if (issue) { fenceError.value = issue; toast(issue, true); return; }
   confirm(
     saved.enabled ? "停用前确认" : "启用围栏",
-    saved.enabled ? "停用后不再触发该围栏进出提示，历史记录保留。" : "启用后，模拟位置变化将按围栏条件记录。",
+    saved.enabled ? "停用后不再触发该围栏进出提示，历史记录保留。" : "启用后，仅有效的设备定位上报参与围栏判定，历史记录保留。",
     () => {
       try {
         db.toggleFence(id, !saved.enabled);
@@ -233,13 +243,15 @@ function openRecords() {
         <AppButton tone="danger" icon="delete-bin-line" @click="askDelete(session.fenceDraft.id)">删除</AppButton>
       </div>
     </AppPanel>
-    <PlantMap mode="fence" :markers="false" />
+    <PlantMap v-if="!session.fenceDraft || !fenceWriteIssue(session.fenceDraft, db.demoMode)" mode="fence" :markers="false" />
+    <AppPanel v-else title="旧版示意围栏"><AppStatus color="yellow">{{ fenceWriteIssue(session.fenceDraft, db.demoMode) }}</AppStatus></AppPanel>
     <AppPanel :title="session.fenceDraft?.id ? '编辑围栏' : '新建围栏'">
       <form v-if="session.fenceDraft" ref="formRef" novalidate class="form-stack" @submit.prevent="submitFence">
         <AppField label="围栏名称" data-field="name" :error="errors.name">
           <AppInput v-model="session.fenceDraft.name" name="name" placeholder="请输入名称" maxlength="40" required />
         </AppField>
-        <AppField label="围栏范围" data-field="points" :error="errors.points"><small>已绘制 {{ session.fenceDraft.points?.length || 0 }} 个节点</small></AppField>
+        <AppField label="围栏范围" data-field="points" :error="errors.points"><small>已绘制 {{ session.fenceDraft.points?.length || 0 }} 个节点 · {{ session.fenceDraft.coordinateSystem || '旧版示意坐标（不判定真实设备）' }}</small></AppField>
+        <p class="muted">仅对坐标系一致、位置有效的设备判定进出。基站定位或精度未知时，请结合现场情况核验。</p>
         <AppField label="关联厂站">
           <AppSelect :model-value="session.station" name="station" :options="stationOptions" disabled />
         </AppField>
@@ -265,7 +277,7 @@ function openRecords() {
         </div>
         <div class="form-actions">
           <AppButton @click="cancelFence">取消</AppButton>
-          <AppButton type="submit" tone="primary">保存围栏</AppButton>
+          <AppButton type="submit" tone="primary" :disabled="!!fenceWriteIssue(session.fenceDraft, db.demoMode)" :title="fenceWriteIssue(session.fenceDraft, db.demoMode)">保存围栏</AppButton>
         </div>
         <p class="form-error" role="alert">{{ fenceError }}</p>
       </form>

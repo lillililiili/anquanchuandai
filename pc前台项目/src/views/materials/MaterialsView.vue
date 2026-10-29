@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, watch } from "vue";
+import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppField from "@/components/ui/AppField.vue";
@@ -12,8 +12,10 @@ import AppTag from "@/components/ui/AppTag.vue";
 import FilterBar from "@/components/layout/FilterBar.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
-import { DATE } from "@/mock/data";
-import { db } from "@/mock/runtime";
+import { db, guardianReady } from "@/mock/runtime";
+import { authFetch } from '@/lib/auth';
+import { beijingDate } from '@/lib/location';
+import { isRealDevice } from '@/lib/device-telemetry';
 import { filtersOf, session } from "@/stores/session";
 import { openModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
@@ -21,18 +23,23 @@ import { materials, people, revision, works } from "@/lib/queries";
 import { downloadMedia, durationText } from "./media";
 import MediaPreview from "./MediaPreview.vue";
 import MediaPreviewFooter from "./MediaPreviewFooter.vue";
+import DeviceRecordings from './DeviceRecordings.vue';
+import { personFeature } from '@/lib/person-equipment';
 
 const tabs = [
   { id: "all", label: "全部资料" },
   { id: "photo", label: "照片" },
   { id: "video", label: "录像" },
 ];
+const recordingPersonId = ref('');
+const recordingPeople = computed(() => { revision(); return people().filter(person => personFeature(db, person.id, 'recording').supported); });
+const recordingPerson = computed(() => recordingPeople.value.find(person => person.id === recordingPersonId.value) || recordingPeople.value[0]);
 
 const draft = reactive({
   deviceId: "",
   personId: "",
   workId: "",
-  date: DATE,
+  date: "",
   eventId: "",
 });
 
@@ -41,11 +48,41 @@ function readDraft() {
   draft.deviceId = query.deviceId || "";
   draft.personId = query.personId || "";
   draft.workId = query.workId || "";
-  draft.date = query.date || DATE;
+  draft.date = query.date || "";
   draft.eventId = query.eventId || "";
 }
 
 readDraft();
+const deviceMedia=ref([]),mediaError=ref(''),mediaLoading=ref(false);
+let mediaRequest=0,mediaController;
+async function refreshDeviceMedia(){
+  const operation=++mediaRequest;mediaController?.abort();mediaController=new AbortController();
+  mediaLoading.value=true;mediaError.value='';deviceMedia.value=[];
+  await guardianReady;
+  if(operation!==mediaRequest)return;
+  const station=session.station;
+  const devices=db.state.devices.filter(item=>item.type==='H'&&isRealDevice(item)&&item.station===station);
+  const results=[],failures=[];
+  let index=0;
+  await Promise.all(Array.from({length:Math.min(3,devices.length)},async()=>{
+    while(index<devices.length){
+      const device=devices[index++];
+      try{
+        const response=await authFetch(`/api/guardian/v1/helmet/media?deviceId=${encodeURIComponent(device.id)}`,{signal:mediaController.signal});
+        const body=await response.json();if(!response.ok)throw Error(body.message||'设备资料读取失败');
+        for(const item of body.items||[]){
+          const created=item.createdAt||item.created;
+          const stamp=Date.parse(created||'');
+          results.push({...item,kind:String(item.kind).toLowerCase(),station,title:item.name||'设备上传资料',created:created||'时间未提供',date:Number.isFinite(stamp)?beijingDate(stamp):'',snapshot:item.snapshot||{personName:item.personId?`${item.personId}（历史姓名未提供）`:'未关联人员'}});
+        }
+      }catch(reason){if(reason.name!=='AbortError')failures.push(reason.message);}
+      if(operation!==mediaRequest)return;
+    }
+  }));
+  if(operation===mediaRequest){deviceMedia.value=results;mediaLoading.value=false;if(failures.length)mediaError.value=`${failures.length} 台设备的资料读取失败：${failures[0]}`;}
+}
+watch(()=>session.station,refreshDeviceMedia,{immediate:true});
+onUnmounted(()=>{mediaRequest++;mediaController?.abort();deviceMedia.value=[];});
 
 const applied = computed(() => {
   revision();
@@ -70,12 +107,13 @@ const workOptions = computed(() => {
 const mediaList = computed(() => {
   revision();
   const query = applied.value;
-  return materials().filter(
+  return [...new Map([...materials(),...deviceMedia.value].map(item=>[item.id,item])).values()].filter(
     (item) =>
       (session.mediaTab === "all" || item.kind === session.mediaTab) &&
       (!query.personId || item.personId === query.personId) &&
       (!query.deviceId || item.deviceId === query.deviceId) &&
       (!query.workId || item.workId === query.workId) &&
+      (!query.eventId || item.eventId === query.eventId) &&
       (!query.date || item.date === query.date),
   );
 });
@@ -114,7 +152,7 @@ function selectMedia(id) {
 }
 
 function openPreview(id) {
-  const media = db.state.media.find((item) => item.id === id);
+  const media = mediaList.value.find((item) => item.id === id);
   if (!media) {
     toast("资料不存在", true);
     return;
@@ -123,14 +161,14 @@ function openPreview(id) {
     title: media.title,
     wide: true,
     view: MediaPreview,
-    props: { mediaId: media.id },
+    props: { mediaId: media.id, file: media },
     footer: MediaPreviewFooter,
   });
 }
 
 async function saveMedia(id) {
   try {
-    await downloadMedia(id);
+    await downloadMedia(mediaList.value.find(item=>item.id===id) || id);
   } catch (error) {
     toast(error.message || "操作失败", true);
   }
@@ -138,7 +176,12 @@ async function saveMedia(id) {
 </script>
 
 <template>
-  <PageHeading title="现场影像资料" subtitle="设备回传照片与录像的检索、查看和归档" />
+  <PageHeading title="现场影像资料" subtitle="设备回传照片与录像的检索、查看和归档"><template #actions><AppButton :disabled="mediaLoading" @click="refreshDeviceMedia">{{ mediaLoading?'正在刷新设备资料…':'刷新设备资料' }}</AppButton></template></PageHeading>
+  <template v-if="recordingPeople.length">
+    <AppField label="当前领用人员"><AppSelect :model-value="recordingPerson?.id || ''" :options="recordingPeople.map(person => [person.id, person.name])" @update:model-value="recordingPersonId = $event" /></AppField>
+    <DeviceRecordings v-if="recordingPerson" :key="recordingPerson.id" :person-id="recordingPerson.id" @refresh="refreshDeviceMedia" />
+  </template>
+  <p v-if="mediaError" class="form-error" role="alert">{{ mediaError }}</p>
   <div class="split-detail bounded-split">
     <div class="list-detail-column">
       <FilterBar @submit="applyFilters" @reset="resetFilters">
@@ -191,7 +234,7 @@ async function saveMedia(id) {
       <template v-if="selectedMedia">
         <MediaImage :media="selectedMedia" />
         <h3 style="margin-top:18px">
-          {{ selectedMedia.title }}　<AppTag>{{ selectedMedia.kind === "photo" ? "照片" : "模拟录像" }}</AppTag>
+          {{ selectedMedia.title }}　<AppTag>{{ selectedMedia.kind === "photo" ? "照片" : selectedMedia.url ? "设备录像" : "模拟录像" }}</AppTag>
         </h3>
         <dl class="info">
           <dt>资料编号</dt>
@@ -216,7 +259,7 @@ async function saveMedia(id) {
         </dl>
         <div class="form-actions">
           <AppButton tone="primary" icon="image-line" @click="openPreview(selectedMedia.id)">
-            {{ selectedMedia.kind === "photo" ? "查看原图" : "模拟回放" }}
+            {{ selectedMedia.kind === "photo" ? "查看原图" : selectedMedia.url ? "播放录像" : "查看记录（暂无文件）" }}
           </AppButton>
           <AppButton icon="download-line" @click="saveMedia(selectedMedia.id)">下载资料</AppButton>
         </div>

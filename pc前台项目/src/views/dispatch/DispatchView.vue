@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
+import { useRoute } from 'vue-router';
 import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
@@ -20,14 +21,32 @@ import BroadcastRecords from "./BroadcastRecords.vue";
 import CallRecords from "./CallRecords.vue";
 import GroupForm from "./GroupForm.vue";
 import InviteForm from "./InviteForm.vue";
-import { db } from "@/mock/runtime";
+import { db, refreshSnapshot } from "@/mock/runtime";
+import PersonCall from './PersonCall.vue';
+import { personFeature, personDevice, operationContext } from '@/lib/person-equipment';
+import { authFetch } from '@/lib/auth';
+import { sharedCalls, sharedBroadcasts } from '@/lib/shared-communications';
+import { formatBeijingDateTime } from '@/lib/date-time';
+import { deviceStatus } from "@/lib/device-telemetry";
+import { resumeAudio } from '@/lib/rtc';
 import { filtersOf, session } from "@/stores/session";
 import { openModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
 import { runGuarded } from "@/lib/actions";
 import { helmetOf, people, personName, revision, search } from "@/lib/queries";
+import { featureState } from '../../../../shared/device-features.mjs';
+const route = useRoute();
+const selectedPerson = computed(() => { revision(); const ids=session.selectedMembers.filter(id=>people().some(p=>p.id===id));return ids.length===1?ids[0]:''; });
+const voice = computed(()=>personFeature(db,selectedPerson.value,'voice'));
+const broadcastFeature = computed(()=>{
+  revision();const group=groups.value.find(g=>g.id===broadcastGroupId.value);
+  const list=(group?.members||[]).map(id=>personFeature(db,id,'broadcast'));
+  const supported=people().some(p=>personFeature(db,p.id,'broadcast').supported);
+  return {supported,verified:list.length>0&&list.every(f=>f.verified),available:list.length>0&&list.every(f=>f.available),reason:!list.length?'请选择接收分组':list.find(f=>!f.available)?.reason||'',recipients:list};
+});
+watch(()=>{revision();const id=route.query.personId;return typeof id==='string'&&db.person(id)?id:'';},id=>{if(id)session.selectedMembers=[id];},{immediate:true});
 
-const BROADCAST_DEFAULT = "请锅炉平台作业人员检查随身装备，保持通信畅通。";
+const BROADCAST_DEFAULT = "";
 const dispatchTabs = [
   { id: "people", label: "人员" },
   { id: "groups", label: "协助分组" },
@@ -40,7 +59,10 @@ const broadcastError = ref("");
 const broadcastGroupId = ref("");
 const { formRef: broadcastFormRef, errors: broadcastErrors, validate: validateBroadcast } = useFieldErrors(() => ({ groupId: broadcastGroupId.value, text: broadcastText.value }));
 const queryDraft = ref(filtersOf("dispatch").q || "");
+const videoCall = ref(false);
 let lastBroadcast = 0;
+const broadcasting=ref(false);
+let broadcastRequest;
 
 const groups = computed(() => {
   revision();
@@ -84,12 +106,12 @@ const activeCall = computed(() => {
 
 const recentCalls = computed(() => {
   revision();
-  return db.state.calls.filter((call) => call.station === session.station).slice(0, 3);
+  return [...sharedCalls(session.station),...db.state.calls.filter((call) => call.station === session.station)].sort((a,b)=>String(b.time).localeCompare(String(a.time))).slice(0, 3);
 });
 
 const recentBroadcasts = computed(() => {
   revision();
-  return db.state.broadcasts.filter((item) => item.station === session.station).slice(0, 3);
+  return [...sharedBroadcasts(session.station),...db.state.broadcasts.filter((item) => item.station === session.station)].sort((a,b)=>String(b.time).localeCompare(String(a.time))).slice(0, 3);
 });
 
 const showGroupEditor = computed(() => {
@@ -152,14 +174,12 @@ function toggleMember(id, checked) {
 }
 
 function memberText(personId) {
-  const helmet = helmetOf(personId);
-  if (helmet?.online) return "在线";
-  if (helmet) return "连接中断";
-  return "未绑定";
+  const feature=personFeature(db,personId,'voice');
+  return feature.available ? '可呼叫' : feature.reason;
 }
 
 function joined(call, personId) {
-  return !!call.joined?.includes(personId);
+  return call.rtc ? call.serverConnected === true && call.connectedDeviceIds?.includes(helmetOf(personId)?.id) : !!call.joined?.includes(personId);
 }
 
 function callNames(call) {
@@ -197,7 +217,7 @@ function openBroadcasts() {
 function startCall(kind) {
   runGuarded(async () => {
     const ids = session.selectedMembers.filter((id) => people().some((person) => person.id === id));
-    await db.startCall(ids, kind, session.station);
+    await db.startCall(ids, kind, session.station, { video: videoCall.value });
     toast("呼叫已发起");
   });
 }
@@ -205,14 +225,14 @@ function startCall(kind) {
 function connectCall(id) {
   runGuarded(async () => {
     await db.updateCall(id, "connect");
-    toast("通话已接通");
+    toast("本端已加入，设备接通状态以服务端回执为准");
   });
 }
 
 function endCall(id) {
   runGuarded(async () => {
     await db.updateCall(id, "end");
-    toast("通话已结束，记录已保存");
+    toast(db.state.calls.find(call=>call.id===id)?.status==='正在结束'?'已请求结束，等待服务器确认':'通话已结束，记录已保存');
   });
 }
 
@@ -252,21 +272,33 @@ function previewBroadcast() {
   }
 }
 
-function sendBroadcast() {
+async function sendBroadcast() {
   if (!validateBroadcast({ groupId: !broadcastGroupId.value && '请选择广播对象', text: !broadcastText.value.trim() ? '请输入广播内容' : broadcastText.value.length > 200 ? '广播内容最多200字' : '' })) return;
   const now = Date.now();
-  if (now - lastBroadcast < 1000) return;
+  if (broadcasting.value || now - lastBroadcast < 1000) return;
   lastBroadcast = now;
   broadcastError.value = "";
+  broadcasting.value=true;
   try {
-    db.broadcast(broadcastGroupId.value, broadcastText.value);
+    if(db.demoMode) db.broadcast(broadcastGroupId.value, broadcastText.value);
+    else {
+      if(!broadcastFeature.value.available)throw Error(broadcastFeature.value.reason);
+      const payload={recipients:broadcastFeature.value.recipients.map(operationContext),text:broadcastText.value.trim()};
+      const identity=JSON.stringify(payload);
+      if(broadcastRequest?.identity!==identity)broadcastRequest={identity,key:crypto.randomUUID()};
+      const response=await authFetch('/api/guardian/v1/mobile/broadcast',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,idempotencyKey:broadcastRequest.key})});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok)throw Error(result.message||'广播请求失败');
+      if(!Array.isArray(result)||result.some(row=>!['accepted','completed'].includes(row.status)))throw Error('广播结果未确认，可重试查询同一请求');
+      broadcastRequest=null;await refreshSnapshot();
+    }
     session.broadcastDraft = "";
     broadcastText.value = BROADCAST_DEFAULT;
     charCount.value = "最多 200 字";
-    toast("广播已发送，回执已保存");
+    toast(db.demoMode ? "模拟广播记录已保存" : "广播请求已受理，实际播放结果以设备回执为准");
   } catch (error) {
     broadcastError.value = error.message || "操作失败";
-  }
+  } finally { broadcasting.value=false; }
 }
 </script>
 
@@ -282,7 +314,7 @@ function sendBroadcast() {
       <form class="filters" data-form="filters" @submit.prevent="applySearch">
         <div class="searchbox">
           <AppIcon name="search-line" />
-          <AppInput v-model="queryDraft" name="q" placeholder="姓名 / 安全帽编号" />
+          <AppInput v-model="queryDraft" name="q" placeholder="姓名 / 设备编号" />
         </div>
         <AppButton type="submit" tone="primary" icon="search-line">查询</AppButton>
         <AppButton type="button" icon="refresh-line" @click="resetSearch">重置</AppButton>
@@ -305,36 +337,38 @@ function sendBroadcast() {
         <label v-for="person in visiblePeople" :key="person.id" class="member-row">
           <input type="checkbox" :checked="session.selectedMembers.includes(person.id)" @change="toggleMember(person.id, $event.target.checked)" />
           <PersonAvatar :person="person" />
-          <span>{{ person.name }}<small style="display:block">{{ helmetOf(person.id)?.id || "未绑定" }}</small></span>
-          <AppStatus :color="helmetOf(person.id)?.online ? 'green' : 'muted'">{{ memberText(person.id) }}</AppStatus>
+          <span>{{ person.name }}<small style="display:block">{{ personDevice(db,person.id,'voice')?.id || '未领用通信设备' }}</small></span>
+          <AppStatus :color="personFeature(db,person.id,'voice').available ? 'green' : 'muted'">{{ memberText(person.id) }}</AppStatus>
         </label>
       </div>
       <div class="form-actions">
         <span class="muted">已选 {{ selectedCount }} 人</span>
-        <AppButton @click="startCall('单呼')">单呼</AppButton>
-        <AppButton tone="primary" @click="startCall('群呼')">发起群呼</AppButton>
+        <AppButton v-if="db.demoMode" @click="startCall('单呼')">单呼（演示）</AppButton>
+        <AppButton v-if="db.demoMode" tone="primary" @click="startCall('群呼')">发起群呼（演示）</AppButton>
       </div>
     </AppPanel>
     <div class="stack">
-      <AppPanel :title="'当前通话：' + (activeCall ? activeCall.kind : '未发起')">
+      <PersonCall v-if="!db.demoMode" :person-id="selectedPerson" />
+      <AppPanel v-else :title="'当前通话：' + (activeCall ? activeCall.kind : '未发起')">
         <template v-if="activeCall">
           <div class="call-status">
-            <AppIcon :name="activeCall.status === '通话中' ? 'phone-fill' : 'phone-find-line'" />{{ "　" + activeCall.status + (activeCall.status === "通话中" ? " · 已接通" : " · 等待接听") }}
+            <AppIcon :name="activeCall.status === '通话中' ? 'phone-fill' : 'phone-find-line'" />{{ "　" + (activeCall.statusLabel || (activeCall.rtc ? "设备接通待确认" : activeCall.status)) }}
           </div>
           <CallVideos :call="activeCall" />
+          <AppButton v-if="activeCall.connectionQuality === 'playback_blocked'" @click="runGuarded(resumeAudio)">播放通话声音</AppButton>
           <div v-for="personId in activeCall.members" :key="personId" class="call-member">
             <PersonAvatar :person="db.person(personId)" />
             <div>{{ personName(personId) }}{{ "　" }}<small>{{ helmetOf(personId)?.id || "未绑定" }}</small></div>
-            <AppStatus :color="joined(activeCall, personId) ? 'green' : 'yellow'">{{ joined(activeCall, personId) ? "已接通" : "振铃中" }}</AppStatus>
+            <AppStatus :color="joined(activeCall, personId) ? 'green' : 'yellow'">{{ joined(activeCall, personId) ? "已接通" : "设备接通待确认" }}</AppStatus>
             <AppIcon name="voiceprint-line" />
           </div>
           <div class="form-actions">
             <AppButton tone="danger" icon="phone-fill" @click="endCall(activeCall.id)">{{ activeCall.status === "正在呼叫" ? "取消呼叫" : "结束通话" }}</AppButton>
             <AppButton icon="mic-off-line" @click="muteCall(activeCall.id)">{{ activeCall.muted ? "取消静音" : "静音" }}</AppButton>
-            <AppButton icon="user-add-line" @click="openInvite(activeCall.id)">邀请成员</AppButton>
+            <AppButton v-if="!activeCall.rtc" icon="user-add-line" @click="openInvite(activeCall.id)">邀请成员</AppButton>
           </div>
-          <div v-if="activeCall.status === '正在呼叫'" class="form-actions">
-            <AppButton tone="primary wide" icon="phone-line" @click="connectCall(activeCall.id)">接通</AppButton>
+          <div v-if="activeCall.status === '正在呼叫' && (!activeCall.connectionQuality || activeCall.connectionQuality === 'requesting')" class="form-actions">
+            <AppButton tone="primary wide" icon="phone-line" @click="connectCall(activeCall.id)">加入语音</AppButton>
           </div>
         </template>
         <template v-else>
@@ -342,7 +376,7 @@ function sendBroadcast() {
           <p class="note">通信通道兼容性待联调。</p>
         </template>
       </AppPanel>
-      <AppPanel title="文字广播">
+      <AppPanel v-if="broadcastFeature.supported" :title="broadcastFeature.verified ? '文字广播' : '文字广播 · 待联调'">
         <form ref="broadcastFormRef" novalidate class="broadcast-box" data-form="broadcast" @submit.prevent="sendBroadcast">
           <AppField label="广播对象" vertical data-field="groupId" :error="broadcastErrors.groupId">
             <AppSelect v-model="broadcastGroupId" name="groupId" :options="groupOptions" />
@@ -350,9 +384,10 @@ function sendBroadcast() {
           <AppField label="广播内容" vertical data-field="text" :error="broadcastErrors.text"><AppTextarea name="text" maxlength="200" placeholder="请输入广播内容" :model-value="broadcastText" @update:model-value="setBroadcast" /></AppField>
           <div class="char-count">{{ charCount }}</div>
           <div class="form-actions">
-            <AppButton type="button" icon="play-fill" @click="previewBroadcast">试听</AppButton>
-            <AppButton type="submit" tone="primary" icon="send-plane-fill">发送广播</AppButton>
+            <AppButton type="button" icon="play-fill" @click="previewBroadcast">本机试听</AppButton>
+            <AppButton type="submit" tone="primary" icon="send-plane-fill" :disabled="!broadcastFeature.available || broadcasting">{{ broadcasting ? '正在提交…' : '发送广播' }}</AppButton>
           </div>
+          <p v-if="!broadcastFeature.available" class="muted">{{ broadcastFeature.reason }}</p>
           <p v-if="broadcastError" class="form-error" role="alert">{{ broadcastError }}</p>
         </form>
       </AppPanel>
@@ -362,9 +397,9 @@ function sendBroadcast() {
         <template #extra><AppButton tone="plain" @click="openRecords">更多 <UiIcon name="chevron-right" /></AppButton></template>
         <template v-if="recentCalls.length">
           <div v-for="call in recentCalls" :key="call.id" class="record-entry">
-            <time>{{ call.time.slice(11, 16) }}</time>
-            <h3><AppIcon name="user-voice-line" color="blue" />{{ "　" + call.kind + " · " + callNames(call) }}</h3>
-            <p><AppStatus :color="call.status === '已结束' ? 'green' : 'yellow'">{{ call.status }}</AppStatus></p>
+            <time>{{ formatBeijingDateTime(call.time) }}</time>
+            <h3><AppIcon name="user-voice-line" color="blue" />{{ "　" + call.kind + " · " + (callNames(call) || '未关联人员') }}</h3>
+            <p><AppStatus :color="call.status === '已结束' ? 'green' : 'yellow'">{{ call.status === '已结束' ? call.status : call.statusLabel || (call.rtc ? '设备接通待确认' : call.status) }}</AppStatus></p>
           </div>
         </template>
         <AppEmpty v-else text="暂无通信记录" />

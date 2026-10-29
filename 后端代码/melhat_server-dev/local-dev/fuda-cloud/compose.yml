@@ -1,0 +1,87 @@
+# Default rehearsal project. Production requires compose.production.yml explicitly.
+name: fuda-wearables-staging
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    labels: {com.wearables.deployment-role: staging}
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${FUDA_MYSQL_ROOT_PASSWORD:?Set a private root password}
+      MYSQL_DATABASE: new-helmet
+      MYSQL_USER: wearable
+      MYSQL_PASSWORD: ${FUDA_MYSQL_PASSWORD:?Set a private application password}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes: ["mysql-data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -uroot --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks: [private]
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${FUDA_REDIS_PASSWORD:?Set a private Redis password}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes: ["redis-data:/data"]
+    networks: [private]
+  backend:
+    build:
+      context: ../..
+      dockerfile: local-dev/Dockerfile
+    image: ${FUDA_BACKEND_IMAGE:-fuda-wearable-backend:2.0.0}
+    restart: unless-stopped
+    labels: {com.wearables.deployment-role: staging}
+    # No host port or ordinary network: staging cannot reach production media.
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_DATASOURCE_DRUID_MASTER_URL: jdbc:mysql://mysql:3306/new-helmet?useUnicode=true&characterEncoding=utf8&sslMode=REQUIRED&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
+      SPRING_DATASOURCE_DRUID_MASTER_USERNAME: wearable
+      SPRING_DATASOURCE_DRUID_MASTER_PASSWORD: ${FUDA_MYSQL_PASSWORD:?Set application password}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_DATABASE: 10
+      SPRING_REDIS_PASSWORD: ${FUDA_REDIS_PASSWORD:?Set Redis password}
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/run/secrets/fuda-api.yml,file:/run/secrets/device-runtime.yml
+      RUOYI_PROFILE: /data/uploadPath
+      RUOYI_HATFILE: /data/hatfile
+      RUOYI_TASK_PACKAGE_FILE: /data/taskPackageFile
+      MELHAT_DEMO_MODE: "false"
+      MELHAT_BUSINESS_MEDIA_ENCRYPTION_KEY: ${MELHAT_BUSINESS_MEDIA_ENCRYPTION_KEY:?Use the existing media encryption key}
+    # CLI properties override accidentally enabled private query configuration.
+    command:
+      - --melhat.direct.enabled=false
+      - --melhat.belt.enabled=false
+      - --melhat.helmet-media.enabled=false
+      - --melhat.helmet-media.control-url=
+      - --melhat.helmet-media.shared-key=
+      - --fuda.gb.internal-enabled=false
+      - --fuda.gb.internal-secret=
+      - --fuda.gb.allowed-devices=
+      - --headband.server=https://disabled.invalid
+    volumes:
+      - backend-data:/data
+      - ./.private/staging/fuda-api.yml:/run/secrets/fuda-api.yml:ro
+      - ./safe-runtime.yml:/run/secrets/device-runtime.yml:ro
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_started}
+    networks: [private]
+  query-gateway:
+    build: ../fuda-api-gateway
+    restart: unless-stopped
+    ports: ["127.0.0.1:18089:8080"]
+    environment:
+      FUDA_UPSTREAM_ORIGIN: http://backend:18084
+    depends_on: [backend]
+    # Only the strict three-route gateway reaches the frontend network.
+    networks: [private, frontend]
+networks:
+  private: {internal: true}
+  frontend: {}
+volumes:
+  mysql-data: {}
+  redis-data: {}
+  backend-data: {}

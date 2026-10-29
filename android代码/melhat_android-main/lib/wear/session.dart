@@ -72,6 +72,8 @@ class WearSession extends ChangeNotifier {
   String get personId => idOf(me?['personId']);
   String get userId => idOf(me?['userId']);
   String get scopeKey => '$userId.${siteId ?? "none"}.$_epoch';
+  bool get simulatedWatchVisible =>
+      api.shared.businessConfig['simulatedWatchVisible'] != false;
   Set<String> get roles =>
       (me?['roles'] as List? ?? []).map((e) => e.toString()).toSet();
   Set<String> get permissions =>
@@ -125,6 +127,7 @@ class WearSession extends ChangeNotifier {
           .map((e) => textOf(e['name']))
           .firstOrNull ??
       '选择厂站';
+  bool get siteSelectionLocked => me?['siteSelectionLocked'] == true;
 
   void _emit() {
     if (!_disposed) notifyListeners();
@@ -132,6 +135,41 @@ class WearSession extends ChangeNotifier {
 
   void requestRefresh() {
     if (!_disposed && me != null) refreshTick.value++;
+  }
+
+  /// Remove view caches only; credentials, authored drafts and unresolved
+  /// command idempotency keys must survive a business-data refresh.
+  Future<void> clearBusinessCache() async {
+    if (busy || callActive.value) {
+      throw const WearApiException(409, '请先完成当前操作或结束通话，再清理缓存');
+    }
+    final oldUser = userId;
+    if (oldUser.isEmpty) return;
+    busy = true;
+    _emit();
+    try {
+      await SharedPreferencesEventStateStore.revokeUser(oldUser);
+      final prefs = await SharedPreferences.getInstance();
+      for (final key
+          in prefs
+              .getKeys()
+              .where(
+                (key) =>
+                    key.startsWith('wear.$oldUser.') &&
+                    (key.endsWith('.state') ||
+                        key.endsWith('.snapshot') ||
+                        key.contains('.cache.')),
+              )
+              .toList()) {
+        await prefs.remove(key);
+      }
+      _epoch++;
+      api.shared.clearReadCache();
+    } finally {
+      busy = false;
+      _emit();
+      requestRefresh();
+    }
   }
 
   void _invalidate() {

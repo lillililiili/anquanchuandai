@@ -26,6 +26,29 @@
 
 A new Flutter project.
 
+## 2026-10-26 业务整理验证
+
+设备入口以 `/api/guardian/v1/mobile/context` 返回的 `featureStates` 为准：不支持则隐藏，支持但未验收则显示“待联调”并禁用。`businessConfig.simulatedWatchVisible` 同时控制模拟手表、绑定、体征与筛选入口。正式构建不开放虚构作业预览；“清理业务缓存”保留登录、未提交草稿和未确认请求的幂等键。
+
+本机已存在的 ASCII junction `D:/AndroidDev/wearable-android` 指向本目录。Flutter 版本的 LSP 长度计算在中文工作目录下会截断消息，验证和构建请在这个 junction 中执行，不需要修改 SDK。
+
+```powershell
+# 业务代码与本次测试的定向分析，结果 No issues found。
+flutter analyze --no-pub lib/wear test/wear_device_features_test.dart test/wear_production_preview_test.dart test/wear_real_device_projection_test.dart test/wear_belt_telemetry_test.dart test/wear_helmet_media_test.dart test/wear_comms_controller_test.dart test/wear_comms_state_test.dart test/wear_comms_entry_test.dart
+
+# 旧 Android API 契约夹具使用显式 mock 编译开关；实际 SharedBackend 测试自行设置 mock:false。
+flutter test --no-pub --dart-define=WEAR_MOCK=true test/wear_device_features_test.dart test/wear_demo_visibility_test.dart test/wear_real_device_projection_test.dart test/wear_comms_controller_test.dart test/wear_comms_state_test.dart test/wear_comms_entry_test.dart test/wear_contact_actions_ui_test.dart test/wear_helmet_media_test.dart test/wear_belt_telemetry_test.dart
+flutter test --no-pub --dart-define=WEAR_MOCK=true test/wear_shared_backend_test.dart test/wear_session_test.dart test/wear_current_work_test.dart test/wear_work_reference_test.dart test/wear_event_filter_query_test.dart test/wear_event_filters_layout_test.dart test/wear_queries_test.dart
+flutter test --no-pub --dart-define=WEAR_MOCK=false test/wear_production_preview_test.dart
+
+# 模拟器安装包，真实服务、无演示数据；install -r 保留已有登录及应用数据。
+flutter build apk --debug --no-pub --target-platform android-x64 --dart-define=WEAR_MOCK=false --dart-define=WEAR_BACKEND_URL=https://lingzhiaide.com/wear-api
+adb -s emulator-5554 install -r build/app/outputs/flutter-apk/app-debug.apk
+adb -s emulator-5554 shell am start -n com.rolling.intelligence_headband/.MainActivity
+```
+
+上述三组回归分别通过 52、39、1 项。最后的联系人/作业 UI 复核通过 15 项，数据保护复核见 `business-final-data-test.log`。完整分析仍有旧页面及本地插件的既有 lint；本次业务目录定向分析无问题。构建、分析、回归日志保存在本目录的 `business-*.log`，不纳入 Git。安装包版本保持 `com.rolling.intelligence_headband`、`1.3.1 (8)`。
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

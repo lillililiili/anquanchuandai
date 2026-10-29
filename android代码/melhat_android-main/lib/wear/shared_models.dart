@@ -1,8 +1,11 @@
 import 'data.dart';
+import 'demo_visibility.dart';
+import 'device_features.dart';
+import 'person_equipment_context.dart';
 
 /// Only a presentation projection. Identifiers and versions always come from Spring.
 class SharedModels {
-  SharedModels(this.state);
+  SharedModels(JsonMap state) : state = visibleBusinessState(state);
   final JsonMap state;
   List<JsonMap> rows(String key) => jsonList(state[key]);
   JsonMap find(String key, Object? id) =>
@@ -47,21 +50,122 @@ class SharedModels {
 
   JsonMap person(JsonMap p) => {
     ...p,
+    'personEquipmentContext': jsonMap(
+      jsonMap(state['personEquipmentContext'])[idOf(p['id'])],
+    ),
     'personCode': p['code'] ?? p['id'],
     'teamName': p['team'],
     'status': p['active'] == false ? '1' : '0',
   };
   JsonMap device(JsonMap d) {
+    final demoWatch = isDemoWatch(d);
+    final equipmentContext = equipmentContextForDevice(state, idOf(d['id']));
     final a = rows('assignments')
         .where((a) => a['active'] == true && a['deviceId'] == d['ledgerId'])
         .firstOrNull;
-    final realTelemetry = d['source'] == 'PLATFORM';
+    final realTelemetry = const [
+      'PLATFORM',
+      'DIRECT_HELMET',
+      'DIRECT_BELT',
+    ].contains(d['source']);
+    final freshness = idOf(d['freshness']).toUpperCase();
+    final observed = DateTime.tryParse(idOf(d['sourceTime'] ?? d['updated']));
+    final age = observed == null ? null : DateTime.now().difference(observed);
+    final current =
+        realTelemetry &&
+        freshness == 'CURRENT' &&
+        age != null &&
+        !age.isNegative &&
+        age <= const Duration(minutes: 5);
+    final stale =
+        realTelemetry &&
+        (freshness == 'STALE' ||
+            (age != null && age > const Duration(minutes: 5)));
+    final nativeCapabilities = d['capabilities'];
+    final declaredActions = nativeCapabilities is List
+        ? nativeCapabilities
+        : jsonMap(nativeCapabilities)['actions'] as List? ?? const [];
+    final declaredMetrics = nativeCapabilities is List
+        ? nativeCapabilities
+              .where(
+                (metric) =>
+                    const ['battery', 'wear', 'location'].contains(metric),
+              )
+              .toList()
+        : jsonMap(nativeCapabilities)['metrics'] as List? ?? const [];
+    final protocol = idOf(
+      d['mediaProtocol'] ?? d['communicationProtocol'],
+    ).toUpperCase();
+    final rtcSupported =
+        protocol == 'SIP' ||
+        protocol == 'AGORA' ||
+        (protocol.isEmpty && d['source'] == 'PLATFORM');
+    bool fieldCurrent(String field) =>
+        d['source'] != 'DIRECT_HELMET' ||
+        idOf(d['${field}Freshness']).toUpperCase() == 'CURRENT';
+    final features = <String, JsonMap>{
+      for (final key in deviceFeatureLabels.keys)
+        key: deviceFeature(d, key).toJson(),
+    };
+    for (final key in [
+      'voice',
+      'video',
+      'videoCall',
+      'photo',
+      'recording',
+      'broadcast',
+    ]) {
+      features[key] = contextualFeature(d, equipmentContext, key);
+      if (!current || d['online'] != true || d['active'] == false) {
+        features[key]!['available'] = false;
+        if (features[key]!['verified'] == true) {
+          features[key]!['reason'] = '设备离线或状态已过期';
+        }
+      }
+    }
+    final actions =
+        current &&
+            d['online'] == true &&
+            d['active'] != false &&
+            d['type'] == 'H'
+        ? declaredActions
+              .where(
+                (action) =>
+                    actionFeature({
+                      'featureStates': features,
+                    }, idOf(action)).available &&
+                    (action == 'tts' ||
+                        (action == 'intercom' && rtcSupported) ||
+                        (action == 'video' &&
+                            protocol == 'SIP' &&
+                            d['mediaAvailable'] == true)),
+              )
+              .map(idOf)
+              .toSet()
+              .toList()
+        : <String>[];
+    final rawBattery = d['battery'];
+    final battery = rawBattery is num
+        ? rawBattery
+        : num.tryParse(idOf(rawBattery));
+    final validBattery =
+        battery != null && battery.isFinite && battery >= 0 && battery <= 100;
+    final site = jsonList(
+      jsonMap(state['operator'])['sites'],
+    ).where((site) => idOf(site['id']) == idOf(d['siteId'])).firstOrNull;
     return {
       ...d,
+      if (demoWatch) 'demo': true,
+      if (isWatchRecord(d) && hasRealDeviceSource(d)) 'demo': false,
       'deviceId': d['id'],
-      'sn': d['id'],
+      'sn': textOf(d['sn'], textOf(d['deviceNumber'], idOf(d['id']))),
       'typeCode': type(d['type']),
       'modelName': d['name'],
+      'siteName': d['siteName'] ?? site?['name'],
+      // sourceTime is the server's last received device report. A ledger edit or
+      // a stored location must not imply that the device reported again.
+      'lastReportedAt':
+          d['lastReportedAt'] ?? (realTelemetry ? d['sourceTime'] : null),
       'status': d['active'] == false ? '1' : '0',
       'assetStatus':
           const {
@@ -72,25 +176,62 @@ class SharedModels {
             'SCRAPPED': 'scrapped',
           }[d['lifecycle']] ??
           'unassigned',
-      'online': realTelemetry
+      'online': demoWatch
+          ? (d['online'] == true
+                ? 1
+                : d['online'] == false
+                ? 0
+                : null)
+          : realTelemetry && d['online'] == false
+          ? 0
+          : current
           ? (d['online'] == true
                 ? 1
                 : d['online'] == false
                 ? 0
                 : null)
           : null,
-      'connectionQuality': realTelemetry && d['online'] != null
+      'connectionQuality': demoWatch && d['online'] is bool
+          ? 'ok'
+          : realTelemetry && d['online'] == false
+          ? 'ok'
+          : stale
+          ? 'stale'
+          : current && d['online'] != null
           ? 'ok'
           : 'unknown',
-      'battery': realTelemetry ? d['battery'] : null,
-      'batteryLevel': realTelemetry ? d['battery'] : null,
-      'telemetryNote': realTelemetry ? '设备平台状态' : '暂无真实遥测，后台台账已同步',
+      'battery':
+          (demoWatch || current && fieldCurrent('battery')) && validBattery
+          ? battery
+          : null,
+      'batteryLevel':
+          (demoWatch || current && fieldCurrent('battery')) && validBattery
+          ? battery
+          : null,
+      'worn': current && fieldCurrent('isWeared') && d['worn'] is bool
+          ? d['worn']
+          : null,
+      'hookAEngaged': current && d['hookAEngaged'] is bool
+          ? d['hookAEngaged']
+          : null,
+      'hookBEngaged': current && d['hookBEngaged'] is bool
+          ? d['hookBEngaged']
+          : null,
+      'telemetryNote': demoWatch
+          ? '智能手表示例数据 · 非实测'
+          : d['source'] == 'DIRECT_BELT'
+          ? '安全带直接上报；佩戴及挂钩状态含义以厂家确认结果为准'
+          : d['source'] == 'DIRECT_HELMET'
+          ? '安全帽直接上报；通信能力以已接入协议为准'
+          : realTelemetry
+          ? '设备平台状态'
+          : '暂无真实遥测，后台台账已同步',
       'capabilities': {
-        'actions': realTelemetry && d['active'] != false && d['type'] == 'H'
-            ? ['intercom', 'tts']
-            : [],
-        'metrics': <String>[],
+        'actions': actions,
+        'metrics': realTelemetry ? declaredMetrics : const [],
       },
+      'featureStates': features,
+      'equipmentContext': equipmentContext,
       'currentAssignment': a == null ? null : assignment(a),
     };
   }
@@ -117,8 +258,16 @@ class SharedModels {
       'ledgerPersonId': a['personId'],
       'ledgerDeviceId': a['deviceId'],
       'personName': p['name'] ?? a['personName'],
-      'sn':
-          d['id'] ?? a['deviceCode'] ?? history['deviceCode'] ?? a['deviceId'],
+      'sn': textOf(
+        d['sn'],
+        textOf(
+          d['deviceNumber'],
+          textOf(
+            d['id'],
+            idOf(a['deviceCode'] ?? history['deviceCode'] ?? a['deviceId']),
+          ),
+        ),
+      ),
       'typeCode': type(d['type'] ?? a['type'] ?? history['type']),
       'assignedAt': startedAt,
       'issuedAt': startedAt,
@@ -134,6 +283,8 @@ class SharedModels {
       .toList();
   JsonMap work(JsonMap w) => {
     ...w,
+    'simulatedWatchVisible':
+        jsonMap(state['businessConfig'])['simulatedWatchVisible'] != false,
     'title': w['name'],
     'status': w['status'] == '已结束'
         ? 'ended'
@@ -155,7 +306,10 @@ class SharedModels {
     'ticketRequired': true,
     'ticketStatus': w['source'] == '工作票' ? 'provided' : 'unverified',
     'sourceName': w['source'],
-    'sourceStatus': w['synced'] == true ? '已同步' : '待同步',
+    'sourceStatus': textOf(
+      w['externalStatus'],
+      textOf(w['sourceStatus'], '未接入'),
+    ),
     'demo': idOf(w['sync']).contains('示例'),
     'plannedStartAt': '${w['date']}T${w['start']}:00+08:00',
     'plannedEndAt': '${w['date']}T${w['end']}:00+08:00',
@@ -187,7 +341,7 @@ class SharedModels {
       'personName':
           snapshot['personName'] ?? find('people', e['personId'])['name'],
       'personCode': find('people', e['personId'])['code'] ?? e['personId'],
-      'sn': e['deviceId'],
+      'sn': e['sn'] ?? snapshot['deviceSn'] ?? e['deviceId'],
       'deviceType': type(find('devices', e['deviceId'])['type']),
       'taskId': e['workId'],
       'claimantUserId': e['claimedBy'],
@@ -197,7 +351,11 @@ class SharedModels {
       'alarmName': e['title'],
       'alarmDescription': e['description'] ?? e['title'],
       'location': e['locationDescription'],
-      'locationQuality': 'unknown',
+      'locationQuality': e['locationQuality'] ?? 'unknown',
+      'coordinateSystem': e['coordinateSystem'] ?? 'UNKNOWN',
+      'locationLat': e['locationLat'],
+      'locationLng': e['locationLng'],
+      'locationReportedAt': e['locationReportedAt'],
       'verificationDraft': e['draft'],
       'verification': {
         ...jsonMap(e['verification']),
@@ -225,7 +383,9 @@ class SharedModels {
             ? idOf(jsonList(native['sites']).single['id'])
             : '');
     final operations =
-        (jsonMap(native['permissionsBySite'])[site] as List? ?? [])
+        (site.isEmpty
+                ? const []
+                : jsonMap(native['permissionsBySite'])[site] as List? ?? [])
             .map(idOf)
             .toSet();
     final manager = operations.any(

@@ -20,7 +20,7 @@ h3 { font-size:16px; color:var(--theme-heading); font-weight:700; }
 .sidebar nav a.active { color:var(--theme-accent); }
 .topbar .site-picker .ui-select { width:140px; }
 .topbar .brand-product, .brand-product small { color:var(--theme-text); }
-.panel, .binding-card, .metric-card, .device-header { border-color:var(--theme-border); background:var(--theme-card); box-shadow:none; }
+.panel, .binding-card, .device-header { border-color:var(--theme-border); background:var(--theme-card); box-shadow:none; }
 .section-heading, .panel h2 { border-color:var(--theme-divider); }
 .button { height:32px; min-height:32px; padding:4px 12px; border:1px solid var(--theme-primary); border-radius:4px; font-size:14px; line-height:22px; font-weight:400; color:var(--theme-primary); background:transparent; }
 .button:hover:not(:disabled) { border-color:var(--theme-primary-hover); color:var(--theme-primary-hover); background:var(--theme-component-bg-3); }
@@ -47,7 +47,7 @@ td .badge { height:22px; padding-block:0; line-height:20px; }
 .admin-shell input:focus:where(:not([type=checkbox]):not([type=radio]):not(.ui-date-input)), .modal-panel input:focus:where(:not([type=checkbox]):not([type=radio]):not(.ui-date-input)), textarea:focus { outline:none; border:2px solid var(--theme-accent); padding:3px 11px; }
 .admin-shell input:disabled, .modal-panel input:disabled, textarea:disabled { background:var(--theme-input-disabled-bg); border-color:var(--theme-border-disabled); color:var(--theme-disabled); }
 input::placeholder, textarea::placeholder { color:var(--theme-muted); }
-.list-filters .ui-select, .list-filters .ui-date, .detail-filter .ui-date, .modal-panel label > .ui-select, .modal-panel label > .ui-date, .form-grid .ui-select, .form-grid .ui-date, .assignment-form .ui-select { width:100%; }
+.list-filters .ui-select, .list-filters .ui-date, .modal-panel label > .ui-select, .modal-panel label > .ui-date, .form-grid .ui-select, .form-grid .ui-date, .assignment-form .ui-select { width:100%; }
 .modal-panel .ui-select, .modal-panel .ui-date { max-width:100%; }
 .admin-table th { color:var(--theme-text); background:var(--theme-table-head); font-weight:700; border-color:var(--theme-border); }
 .admin-table td { border-color:var(--theme-divider); background:transparent; }
@@ -83,12 +83,5 @@ input::placeholder, textarea::placeholder { color:var(--theme-muted); }
 .login-page .button.enter { height:40px; min-height:40px; font-size:16px; }
 .login-page .password-toggle { color:var(--theme-muted); background:transparent; }
 .login-page .password-toggle:hover { color:var(--theme-accent); background:var(--theme-component-bg-1); }
-.overview-hero { color:var(--theme-text); background-color:var(--theme-card); border-color:var(--theme-border); }
-.overview-hero h1 { font-size:24px; color:var(--theme-heading); }
-.overview-hero p, .overview-hero .hero-site, .hero-caption { color:var(--theme-muted); }
-.overview-hero::before { background:linear-gradient(90deg,var(--theme-bg),rgba(18,30,55,.75),transparent); }
-.metric-card strong { color:var(--theme-accent); }
-.metric-card svg, .entry-card svg { color:var(--theme-accent); }
-.attention { background:var(--theme-tag-orange); border-color:var(--theme-orange); color:var(--theme-text); }
 .tree-branch .selected, .tree-item.active { background:var(--theme-selected); color:var(--theme-accent); }
 .table-scroll, .device-table-wrap { scrollbar-color:var(--theme-border) var(--theme-bg); }

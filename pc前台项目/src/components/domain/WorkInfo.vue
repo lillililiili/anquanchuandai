@@ -4,6 +4,7 @@ import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppTag from "@/components/ui/AppTag.vue";
 import { db, tick } from "@/mock/runtime";
 import { personName } from "@/lib/queries";
+import { externalStatusPresentation } from '@/lib/external-status';
 
 const props = defineProps({
   workId: { type: String, default: "" },
@@ -20,12 +21,12 @@ const record = computed(() => {
   <AppEmpty v-if="!record" text="暂无关联作业" />
   <dl v-else class="info">
     <dt>数据来源</dt>
-    <dd>示例数据，待对接两票系统；作业票信息只读</dd>
+    <dd>{{ record.externalSource || record.externalSystem || record.source || '来源未提供' }} · {{ externalStatusPresentation(record).label }}；作业票信息只读</dd>
     <dt>工作票号</dt>
     <dd>{{ record.id }} <AppTag color="muted">只读</AppTag></dd>
     <dt>作业名称</dt>
     <dd>{{ record.name }}</dd>
-    <dt>作业区域</dt>
+    <dt>作业地点</dt>
     <dd>{{ record.area }}</dd>
     <dt>监护人</dt>
     <dd>{{ personName(record.supervisor) }}</dd>

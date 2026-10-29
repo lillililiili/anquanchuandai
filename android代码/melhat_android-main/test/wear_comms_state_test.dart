@@ -51,6 +51,10 @@ void main() {
       personId: '21',
       personName: '张三',
       actions: {'tts', 'intercom'},
+      featureStates: {
+        'voice': {'supported': true, 'verified': true, 'available': true},
+        'broadcast': {'supported': true, 'verified': true, 'available': true},
+      },
     );
 
     test('uses person and stable device ids while honoring capabilities', () {

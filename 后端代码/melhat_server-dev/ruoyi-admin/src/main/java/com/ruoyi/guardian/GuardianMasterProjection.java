@@ -13,23 +13,44 @@ final class GuardianMasterProjection {
         for(Object raw:rows(admin,"people")) { JSONObject p=(JSONObject)raw,s=find(admin,"sites",p.getString("siteId"));if(s==null)continue;
             JSONObject target=find(snapshot,"people",p.getString("portalId"));
             if(target==null){target=object("id",p.getString("portalId"),"phone","","locationValid",false,"updated",null);rows(snapshot,"people").add(target);}
-            JSONObject area=find(admin,"areas",p.getString("areaId")),org=find(admin,"organizations",p.getString("organizationId"));
-            target.put("name",p.getString("name"));target.put("ledgerId",p.getString("id"));target.put("siteId",s.getString("id"));target.put("station",s.getString("portalStation"));target.put("active",p.getBooleanValue("enabled"));target.put("areaId",p.get("areaId"));target.put("area",area==null?"未关联区域":area.getString("name"));target.put("team",org==null?"":org.getString("name"));
+            JSONObject org=find(admin,"organizations",p.getString("organizationId"));
+            target.put("name",p.getString("name"));target.put("ledgerId",p.getString("id"));target.put("siteId",s.getString("id"));target.put("station",s.getString("portalStation"));target.put("active",p.getBooleanValue("enabled"));target.remove("areaId");target.remove("area");target.put("team",org==null?"":org.getString("name"));
+            PersonDutyStatus.project(target, p);
         }
         for(Object raw:rows(admin,"devices")) {JSONObject d=(JSONObject)raw,s=find(admin,"sites",d.getString("siteId"));if(s==null)continue;
             String type="HELMET".equals(d.getString("type"))?"H":"BELT".equals(d.getString("type"))?"B":"WATCH".equals(d.getString("type"))?"W":null;if(type==null)continue;
             String id=d.getString("portalDeviceId");JSONObject target=find(snapshot,"devices",id);
             if(target==null){target=object("id",id,"online",null,"battery",null,"video","unavailable","updated",null);rows(snapshot,"devices").add(target);}
             boolean active=!Arrays.asList("DISABLED","SCRAPPED").contains(d.getString("lifecycle"));
-            target.put("areaId",d.getString("areaId"));target.put("type",type);target.put("station",s.getString("portalStation"));target.put("siteId",s.getString("id"));target.put("ledgerId",d.getString("id"));target.put("active",active);target.put("name",d.getString("name"));
+            if ("DIRECT_BELT".equals(d.getString("source"))) active = active && s.getBooleanValue("enabled");
+            target.remove("areaId");target.put("type",type);target.put("station",s.getString("portalStation"));target.put("siteId",s.getString("id"));target.put("ledgerId",d.getString("id"));target.put("active",active);target.put("name",d.getString("name"));
+            if (GuardianDemoData.seedAsset(d)) GuardianDemoData.markDevice(target, "admin-seed.json", d.getString("id"));
+            else if (GuardianDemoData.confirmed(target)) {
+                // A seeded asset can later be registered/edited into a real one. Its old mock telemetry is not evidence.
+                target.remove("demo");target.remove("dataOrigin");target.remove("seedProvenance");
+                target.put("source", d.getString("source") == null ? "ASSET" : d.getString("source"));
+                for (String key : Arrays.asList("online", "battery", "updated", "latitude", "longitude", "lat", "lng", "sourceTime", "locationReportedAt")) target.put(key, null);
+                target.put("video", "unavailable");target.put("freshness", "UNKNOWN");target.put("locationValid", false);
+            }
+            if ("DIRECT_HELMET".equals(d.getString("source")) || "DIRECT_BELT".equals(d.getString("source"))) {
+                target.put("source", d.getString("source"));
+                target.put("deviceNumber", d.getString("deviceNumber"));
+                target.put("code", d.getString("code"));
+                target.put("sn", d.getString("sn"));
+                target.put("communicationProtocol", "DIRECT_BELT".equals(d.getString("source")) ? "WEBSOCKET" : "SIP");
+                target.put("capabilities", new com.alibaba.fastjson2.JSONArray());
+                if (!target.containsKey("freshness")) target.put("freshness", "UNKNOWN");
+            }
             JSONObject assignment=null;for(Object a:rows(admin,"assignments")) {JSONObject row=(JSONObject)a;if(row.getBooleanValue("active")&&d.getString("id").equals(row.getString("deviceId"))) assignment=row;}
             JSONObject person=assignment==null?null:find(admin,"people",assignment.getString("personId"));
-            String held=active&&"IN_USE".equals(d.getString("lifecycle"))&&person!=null&&person.getBooleanValue("enabled")?person.getString("portalId"):null;
+            String held=active&&"IN_USE".equals(d.getString("lifecycle"))&&person!=null&&person.getBooleanValue("enabled")&&d.getString("siteId").equals(person.getString("siteId"))?person.getString("portalId"):null;
+            String bindingId=assignment==null?null:"BIND-"+assignment.getString("id")+"-"+assignment.getIntValue("version");
             JSONObject kept=null;
             for(Object b:rows(snapshot,"bindings")) {JSONObject binding=(JSONObject)b;if(!id.equals(binding.getString("deviceId"))||binding.get("end")!=null)continue;
-                if(held!=null&&held.equals(binding.getString("personId"))&&kept==null)kept=binding;
+                if(held!=null&&held.equals(binding.getString("personId"))&&bindingId.equals(binding.getString("id"))&&kept==null)kept=binding;
                 else binding.put("end",java.time.Instant.now().toString()); }
-            if(held!=null&&kept==null) rows(snapshot,"bindings").add(object("id","BIND-"+assignment.getString("id")+"-"+assignment.getIntValue("version"),"deviceId",id,"personId",held,"start",assignment.getString("startedAt"),"end",null,"operator","后台领用台账"));
+            if(held!=null&&kept==null) {kept=object("id",bindingId,"deviceId",id,"personId",held,"start",assignment.getString("startedAt"),"end",null,"operator","后台领用台账");rows(snapshot,"bindings").add(kept);}
+            if(kept!=null&&assignment!=null){kept.put("assignmentId",assignment.get("id"));kept.put("assignmentVersion",assignment.get("version"));}
         }
     }
 }

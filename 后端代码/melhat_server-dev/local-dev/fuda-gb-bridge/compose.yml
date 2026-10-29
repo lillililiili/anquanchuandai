@@ -1,0 +1,39 @@
+name: fuda-gb-bridge
+services:
+  bridge:
+    profiles: [gb]
+    build: .
+    image: fuda-gb-bridge:0.1.0
+    network_mode: host
+    env_file: .local/gb.env
+    environment:
+      GB_JOURNAL: /app/data/active-sessions.json
+    volumes:
+      - gb_state:/app/data
+    restart: "no"
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    depends_on: [zlm]
+  zlm:
+    profiles: [gb]
+    # Official registry manifest resolved 2026-10-27. Do not replace with a mutable master tag.
+    image: zlmediakit/zlmediakit@sha256:3c98f76c84fe191b3f2411c7378a2b4f4838af4cb2939f12fe1d2c23912ccb26
+    network_mode: host
+    environment:
+      GB_ENABLED: ${GB_ENABLED:-false}
+      GB_ZLM_SECRET: ${GB_ZLM_SECRET:-}
+    entrypoint: [/bin/sh, /etc/fuda-gb/zlm-entrypoint.sh]
+    volumes:
+      - ./zlm-entrypoint.sh:/etc/fuda-gb/zlm-entrypoint.sh:ro
+    restart: "no"
+    read_only: true
+    tmpfs: [/tmp, /opt/media/bin/log, /opt/media/bin/www]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+volumes:
+  gb_state:

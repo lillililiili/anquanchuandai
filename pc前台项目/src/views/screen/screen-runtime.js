@@ -1,8 +1,11 @@
 import { iconMarkup } from "@ui-spec/icons";
 import { DATE } from "@/mock/data";
+import { beijingDate, beijingTime } from "@/lib/location";
 import { db } from "@/mock/runtime";
+import { isRealDevice, isCurrentDevice } from "@/lib/device-telemetry";
 import { events, people as stationPeople, scope } from "@/lib/queries";
 import { session } from "@/stores/session";
+import { testSiteName } from '../../../../shared/test-site.mjs';
 import { INTERVALS, currentVital, eventWindow, isVitalAlert, nextPerson, videoPeople } from "./screen-model";
 
 const esc = (value) =>
@@ -15,15 +18,15 @@ function title(text, right = "") {
 }
 
 function frame() {
-  const station = db.state.stations.find((item) => item.id === session.station)?.name || "未选择电厂";
+  const station = testSiteName(db.state.stations.find((item) => item.id === session.station)) || "未选择电厂";
   return `<div class="screen-stage"><main class="screen" aria-label="数据大屏">
       <header class="screen-head"><div class="screen-brand rl-brand rl-brand-light" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></div>
         <h1>融瓴智能穿戴安全监护中心</h1>
         <img class="screen-head-decoration" src="/assets/sketch/navigation-artwork.svg" alt="" aria-hidden="true">
-        <div class="screen-station">${symbols.factory}<span>${esc(station)}</span></div><div class="screen-clock"><time data-screen-clock></time><small>白班 08:00 — 16:00</small></div>
+        <div class="screen-station">${symbols.factory}<span>${esc(station)}</span></div><div class="screen-clock"><time data-screen-clock></time><small>北京时间</small></div>
       </header>
-      <section class="screen-stats" aria-label="当班概况"></section>
-      <section class="screen-panel screen-equipment">${title("领用装备（含示例）", "<small>在线 / 佩戴待核验</small>")}<div data-equipment></div></section>
+      <section class="screen-stats" aria-label="台账与真实设备概况"></section>
+      <section class="screen-panel screen-equipment">${title(db.demoMode ? "领用装备（演示）" : "真实领用装备", "<small>在线 / 佩戴待核验</small>")}<div data-equipment></div></section>
       <section class="screen-panel screen-vitals" aria-label="人员生命体征轮播">${title("人员生命体征", `<small data-person-mode>自动轮播 · ${INTERVALS.person / 1000}秒</small>`)}
         <div class="screen-vital-identity"><span class="screen-person-name" data-screen-person></span><span data-person-page></span></div>
         <div class="screen-vital-data"><div class="screen-person-meta"><span data-person-device></span><span data-person-status></span></div>
@@ -32,15 +35,15 @@ function frame() {
         <div class="screen-vital-metrics">${[["heart", "心率", "次/分"], ["oxygen", "血氧", "%"], ["temperature", "皮肤温度", "℃"]].map(([key, label, unit], index) => `<div class="screen-metric">${symbols[key]}<div><h3>${label}</h3><p><strong data-metric="${index}">—</strong><span>${unit}</span></p></div></div>`).join("")}</div></div>
 
       </section>
-      <section class="screen-panel screen-map" aria-label="厂区态势与作业区域人数"><div data-screen-map></div></section>
-      <section class="screen-panel screen-events" aria-label="重点事件轮播">${title("重点事件")}<div class="screen-events-list"></div><div class="screen-event-summary"></div></section>
+      <section class="screen-panel screen-map" aria-label="厂区人员定位"><div data-screen-map></div></section>
+      <section class="screen-panel screen-events" aria-label="重点事件轮播">${title("台账待核验事件")}<div class="screen-events-list"></div><div class="screen-event-summary"></div></section>
       <section class="screen-panel screen-trend">${title('心率趋势 <span class="screen-trend-person"></span>')}<div data-screen-trend></div></section>
-      <section class="screen-panel screen-videos" aria-label="现场视频轮播">${title("现场视频", `<div class="screen-video-meta"><span>现场画面</span><span data-video-page></span></div>`)}<div class="screen-video-grid"></div></section>
+      <section class="screen-panel screen-videos" aria-label="现场视频轮播">${title("现场视频", `<div class="screen-video-meta"><span>现场画面</span><span data-video-page></span></div>`)}<div class="screen-video-grid" data-screen-videos></div></section>
       <footer class="screen-footer"><span data-platform-summary></span><span>数据刷新时间<time data-screen-refresh></time></span></footer>
     </main></div>`;
 }
 
-export function mountScreen(root) {
+export function mountScreen(root, { onVideos = () => {} } = {}) {
   root.innerHTML = frame();
   const host = root.querySelector(".screen-stage");
   const query = (selector) => host?.querySelector(selector);
@@ -50,16 +53,14 @@ export function mountScreen(root) {
   const state = { personId: "", eventOffset: 0, videoPage: 0, lastPerson: now, lastEvent: now, lastVideo: now, eventsHtml: "", videosHtml: "", statsSignature: "" };
 
   function onDuty() {
-    return stationPeople();
+    const list = stationPeople();
+    return db.demoMode ? list : list.filter(person => db.currentDevices(person.id).some(device => device.type === 'W' && device.active));
   }
   function nowForData() {
-    return DATE + " " + new Date(db.state.clock * 1000).toISOString().slice(11, 19);
+    return db.demoMode ? DATE + " " + new Date(db.state.clock * 1000).toISOString().slice(11, 19) : beijingDate() + " " + beijingTime(new Date().toISOString());
   }
   function mask(name) {
     return name.length > 2 ? name[0] + "*" + name.at(-1) : name[0] + "*";
-  }
-  function scene(person) {
-    return { 锅炉区: "screen-boiler.png", 汽机厂房: "screen-turbine.png", 配电区: "screen-electric.png", 循环水区: "scene-water.png" }[person.area] || "screen-boiler.png";
   }
   function gearRing(percent, color, radius, width) {
     const length = 2 * Math.PI * radius;
@@ -71,7 +72,7 @@ export function mountScreen(root) {
       ["H", "安全帽", "智能安全帽", "#83f6fd", "#71e96f"],
       ["B", "安全带", "智能安全带", "#f09840", "#f09840"],
       ["W", "手表", "智能手表", "#83f6fd", "#71e96f"],
-    ].map(([key, short, name, outer, inner]) => {
+    ].filter(([key]) => key !== 'W' || stats.devices.some(device => device.type === 'W')).map(([key, short, name, outer, inner]) => {
       const list = stats.devices.filter((device) => device.type === key);
       const total = list.length;
       const online = list.filter((device) => device.online).length;
@@ -108,7 +109,7 @@ export function mountScreen(root) {
               <td class="${row.missing ? "warn" : "ok"}">${row.total ? row.online + "/" + row.total : "—"}</td>
               <td class="muted">${row.total ? "待核验" : "—"}</td>
               <td class="${row.low ? "warn" : "muted"}">${row.low || "—"}</td>
-              <td class="${row.missing ? "bad" : "good"}">${row.missing ? row.missing + " 中断" : "正常"}</td>
+              <td class="${row.missing ? "bad" : "good"}">${row.total ? "待核验" : "—"}</td>
             </tr>`,
           )
           .join("")}</tbody>
@@ -123,9 +124,9 @@ export function mountScreen(root) {
     if (signature === state.statsSignature) return;
     state.statsSignature = signature;
     query(".screen-stats").innerHTML = [
-      [symbols.worker, "当班人员", `${stats.people.length}<span class="unit">人</span><span class="detail">作业关联 ${stats.assigned} · 待分配 ${stats.people.length - stats.assigned}</span>`, ""],
-      [symbols.document, "监护作业", `${stats.works.filter((work) => work.status !== "已结束").length}<span class="unit">项</span>`, "hex cyan"],
-      [symbols.antenna, "领用装备在线", `<span class="fraction">${stats.online} / ${stats.devices.length}</span><span class="unit">台</span>`, "hex"],
+      [symbols.worker, "在册人员", `${stats.people.length}<span class="unit">人</span><span class="detail">作业关联 ${stats.assigned} · 待分配 ${stats.people.length - stats.assigned}</span>`, ""],
+      [symbols.document, "台账作业", `${stats.works.filter((work) => work.status !== "已结束").length}<span class="unit">项</span>`, "hex cyan"],
+      [symbols.antenna, "真实领用装备在线", `<span class="fraction">${stats.online} / ${stats.devices.length}</span><span class="unit">台</span>`, "hex"],
       [symbols.warning, "待核验事件", `${stats.unresolved}<span class="unit">项</span>`, "hex warn"],
     ]
       .map(
@@ -142,7 +143,7 @@ export function mountScreen(root) {
     const hi = Math.max(100, Math.ceil(Math.max(...values) / 10) * 10);
     const y = (value) => 139 - ((value - lo) / (hi - lo)) * 116;
     const points = vital.trend.map((point, index) => [55 + (index * 262) / Math.max(1, vital.trend.length - 1), y(point.value)]);
-    return `<svg class="screen-chart" viewBox="0 0 346 164" role="img" aria-label="${esc(db.person(state.personId)?.name)}心率趋势${vital.demo ? "" : ""}"><defs><linearGradient id="heart-fill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#4faff7" stop-opacity=".48"/><stop offset="1" stop-color="#4faff7" stop-opacity=".08"/></linearGradient></defs><text x="4" y="10">次/分</text>${Array.from({ length: 5 }, (_, index) => {
+    return `<svg class="screen-chart" viewBox="0 0 346 164" role="img" aria-label="${esc(db.person(state.personId)?.name)}心率趋势${vital.demo ? "（模拟数据）" : ""}"><defs><linearGradient id="heart-fill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#4faff7" stop-opacity=".48"/><stop offset="1" stop-color="#4faff7" stop-opacity=".08"/></linearGradient></defs><text x="4" y="10">次/分</text>${Array.from({ length: 5 }, (_, index) => {
       const value = lo + (index * (hi - lo)) / 4;
       return `<path class="grid" d="M35 ${y(value)}H345"/><text x="3" y="${y(value) + 5}">${Math.round(value)}</text>`;
     }).join("")}${points.map(([x]) => `<path class="grid" d="M${x} 23V139"/>`).join("")}<path d="M${points[0][0]} 139L${points.map((point) => point.join(" ")).join("L")}L${points.at(-1)[0]} 139Z" fill="url(#heart-fill)"/><path d="M${points.map((point) => point.join(" ")).join("L")}" fill="none" stroke="#83f6fd" stroke-width="2.2"/>${points
@@ -153,20 +154,22 @@ export function mountScreen(root) {
       .join("")}</svg>`;
   }
   function renderPerson(animate = false) {
+    const showVitals = db.state.businessConfig?.simulatedWatchVisible !== false && onDuty().length > 0;
+    for (const selector of ['.screen-vitals', '.screen-trend']) query(selector).style.display = showVitals ? '' : 'none';
     const list = onDuty();
     if (!list.some((person) => person.id === state.personId)) state.personId = list[0]?.id || "";
     const person = list.find((item) => item.id === state.personId);
     const vital = currentVital(db, person, nowForData());
-    query("[data-screen-person]").textContent = person ? `${person.name} · ${person.area}` : "暂无当班人员";
+    query("[data-screen-person]").textContent = person ? person.name : "暂无在册人员";
     query("[data-person-page]").textContent = list.length ? `${list.findIndex((item) => item.id === state.personId) + 1} / ${list.length}` : "0 / 0";
     query("[data-person-mode]").textContent = `自动轮播 · ${INTERVALS.person / 1000}秒`;
     query("[data-person-device]").textContent = vital.deviceId;
-    query("[data-person-status]").textContent = vital.status === "正常" ? "样例观测" : vital.status;
+    query("[data-person-status]").textContent = vital.demo ? "模拟数据 · 非实时测量" : vital.status;
     query("[data-person-status]").className = vital.status === "正常" ? "" : "invalid";
     vital.values.forEach((value, index) => {
       query(`[data-metric="${index}"]`).textContent = value == null ? "—" : index === 2 ? value.toFixed(1) : String(value);
     });
-    query(".screen-trend-person").textContent = person ? "· " + person.name : "";
+    query(".screen-trend-person").textContent = person ? "· " + person.name + (vital.demo ? "（模拟）" : "") : "";
     query("[data-screen-trend]").innerHTML = trend(vital);
     query(".screen-vital-data").dataset.personId = state.personId;
     query("[data-screen-trend]").dataset.personId = state.personId;
@@ -182,7 +185,7 @@ export function mountScreen(root) {
       shown
         .map(
           (event) =>
-            `<div class="screen-event" data-event-id="${esc(event.id)}" aria-label="${esc(event.title)}"><span class="screen-event-icon">${event.type === "低电量" ? symbols.battery : event.type === "位置异常" ? symbols.pin : isVitalAlert(event) ? symbols.heart : symbols.chain}</span><span class="screen-event-main"><strong>${esc(event.title)}</strong><small>${esc(mask(db.person(event.personId)?.name || event.snapshot?.personName || "未知人员"))} · ${esc(event.deviceId)}</small></span><span class="screen-event-state">${esc(event.time)}<strong>${esc(event.status)}</strong></span></div>`,
+            `<div class="screen-event" data-event-id="${esc(event.id)}" aria-label="${esc(event.title)}"><span class="screen-event-icon">${event.type === "低电量" ? symbols.battery : event.type === "位置异常" ? symbols.pin : isVitalAlert(event) ? symbols.heart : symbols.chain}</span><span class="screen-event-main"><strong>${esc(event.title)}</strong><small>${esc(event.personId ? mask(event.snapshot?.personName || db.person(event.personId)?.name || "未知人员") : "未关联人员")} · ${esc(event.deviceId)}</small></span><span class="screen-event-state"><time>${esc(event.date)}<br>${esc(event.time)}</time><strong>${esc(event.status)}</strong></span></div>`,
         )
         .join("") || '<div class="screen-no-data">暂无待核验事件</div>';
     if (html !== state.eventsHtml) {
@@ -194,34 +197,25 @@ export function mountScreen(root) {
       .join("<em>·</em>");
   }
   function renderVideos() {
-    const list = videoPeople(db, onDuty());
+    const list = videoPeople(db, stationPeople());
     const pages = Math.ceil(list.length / 3);
     state.videoPage = pages ? ((state.videoPage % pages) + pages) % pages : 0;
-    const shown = list.slice(state.videoPage * 3, state.videoPage * 3 + 3);
-    const html =
-      shown
-        .map((person) => {
-          const helmet = db.currentDevices(person.id).find((device) => device.type === "H");
-          return `<div class="screen-video-tile" data-person-id="${esc(person.id)}" aria-label="${esc(person.area)} ${esc(helmet.id)}现场画面"><img src="/assets/${scene(person)}" alt="${esc(person.area)}现场场景"><span class="screen-video-label">${esc(person.area === "锅炉区" ? "锅炉平台" : person.area)} · ${esc(helmet.id)}<small>现场画面</small></span></div>`;
-        })
-        .join("") || '<div class="screen-no-data">暂无可用视频通道</div>';
-    if (html !== state.videosHtml) {
-      query(".screen-video-grid").innerHTML = html;
-      state.videosHtml = html;
-    }
-    query("[data-video-page]").textContent = `${pages ? state.videoPage + 1 : 0} / ${pages}`;
+    onVideos(list.slice(state.videoPage * 3, state.videoPage * 3 + 3));
+    query('.screen-videos').style.display = list.length ? '' : 'none';
+    query('[data-video-page]').textContent = `${pages ? state.videoPage + 1 : 0} / ${pages}`;
   }
   function refresh() {
     statistics(db.stats(scope()));
-    const factory = db.state.devices.filter(d => d.source === "PLATFORM" && d.station === session.station);
-    const current = factory.filter(d => d.freshness === "CURRENT" && Date.now() - Date.parse(d.updated) <= 300000 && d.online != null);
+    const factory = db.state.devices.filter(d => isRealDevice(d) && d.station === session.station);
+    const current = factory.filter(d => isCurrentDevice(d) && typeof d.online === "boolean");
     const online = current.filter(d => d.online).length;
+    const offline = factory.filter(d => d.online === false).length;
     const footer = query("[data-platform-summary]");
-    if (footer) footer.textContent = `厂家安全帽（真实查询）：共 ${factory.length} 台 · 在线 ${online} · 离线 ${current.length - online} · 待刷新 ${factory.length - current.length}；其他监护统计含示例数据`;
+    if (footer) footer.textContent = `真实设备资产：共 ${factory.length} 台 · 在线 ${online} · 离线 ${offline} · 待刷新 ${factory.length - online - offline}；人员、作业、事件为保留台账；实时状态仅使用真实上报`;
     renderPerson();
     renderEvents();
     renderVideos();
-    query("[data-screen-refresh]").textContent = new Date().toTimeString().slice(0, 8);
+    query("[data-screen-refresh]").textContent = beijingTime(new Date().toISOString());
   }
   function tick() {
     if (!host || document.hidden) return;
@@ -249,9 +243,7 @@ export function mountScreen(root) {
     screen.style.setProperty("--screen-scale-y", String(innerHeight / 941));
   }
   function clock() {
-    const current = new Date();
-    const pad = (value) => String(value).padStart(2, "0");
-    query("[data-screen-clock]").textContent = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())} ${pad(current.getHours())}:${pad(current.getMinutes())}`;
+    query("[data-screen-clock]").textContent = beijingDate() + ' ' + beijingTime(new Date().toISOString()).slice(0, 5);
   }
   function visibility() {
     if (!document.hidden) {

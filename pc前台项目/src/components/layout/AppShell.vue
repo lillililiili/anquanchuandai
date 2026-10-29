@@ -5,6 +5,8 @@ import Topbar from "./Topbar.vue";
 import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { people } from "@/lib/queries";
+import { personFeature } from '@/lib/person-equipment';
+import DeviceSessionBar from '@/components/domain/DeviceSessionBar.vue';
 
 const route = useRoute();
 let videoTimer;
@@ -30,7 +32,7 @@ onMounted(() => {
   }, 1000);
   rotateTimer = setInterval(() => {
     if (!(session.rotation && route.name === "video")) return;
-    const available = people().filter((person) => db.currentDevices(person.id).some((device) => device.video === "available"));
+    const available = people().filter((person) => personFeature(db,person.id,'video').available && (!session.filters.video?.workId || db.currentWork(person.id)?.id === session.filters.video.workId));
     if (!available.length) return;
     const index = available.findIndex((person) => person.id === session.person);
     session.person = available[(index + 1) % available.length].id;
@@ -51,5 +53,7 @@ onUnmounted(() => {
   <header class="portal-header">
     <Topbar />
   </header>
+  <DeviceSessionBar />
+  <p v-if="db.demoMode" class="note" role="status">演示模式：示例画面、轨迹和状态仅用于界面演示。</p>
   <main id="main" :class="['main', route.name + '-page']"><slot /></main>
 </template>

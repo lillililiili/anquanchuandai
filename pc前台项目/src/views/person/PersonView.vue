@@ -19,6 +19,11 @@ import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { openModal } from "@/stores/modal";
 import { events, revision } from "@/lib/queries";
+import { formatBeijingDateTime } from "@/lib/date-time";
+import { personDutyPresentation } from "@/lib/person-duty";
+import { testSiteName } from '../../../../shared/test-site.mjs';
+import { personFeature } from '@/lib/person-equipment';
+import { vitalValue, bloodPressure } from './vital-values';
 import { callPerson, runGuarded } from "@/lib/actions";
 import VitalHistoryModal from "./VitalHistoryModal.vue";
 import ModalCloseFooter from "./ModalCloseFooter.vue";
@@ -38,8 +43,10 @@ const person = computed(() => {
 
 const stationName = computed(() => {
   revision();
-  return db.state.stations.find((item) => item.id === person.value?.station)?.name || "";
+  return testSiteName(db.state.stations.find((item) => item.id === person.value?.station)) || "";
 });
+
+const duty = computed(() => personDutyPresentation(person.value));
 
 const work = computed(() => {
   revision();
@@ -55,18 +62,20 @@ const vital = computed(() => {
 const metrics = computed(() => {
   const record = vital.value.record;
   return [
-    { key: "heart", label: "心率", icon: "heart-pulse-line", value: record?.heartRate ?? null, unit: "bpm" },
-    { key: "oxygen", label: "血氧", icon: "drop-line", value: record?.oxygen ?? null, unit: "%" },
-    { key: "temperature", label: "体温", icon: "temp-hot-line", value: record ? record.temperature.toFixed(1) : null, unit: "°C" },
+    { key: "heart", label: "心率", icon: "heart-pulse-line", value: vitalValue(record?.heartRate), unit: "bpm" },
+    { key: "oxygen", label: "血氧", icon: "drop-line", value: vitalValue(record?.oxygen), unit: "%" },
+    { key: "temperature", label: "体温", icon: "temp-hot-line", value: vitalValue(record?.temperature, 1), unit: "°C" },
     {
       key: "pressure",
       label: "血压",
       icon: "pulse-line",
-      value: record ? `${record.systolic} / ${record.diastolic}` : null,
+      value: bloodPressure(record),
       unit: "mmHg",
     },
   ];
 });
+const voiceFeature = computed(() => { revision(); return personFeature(db, person.value?.id, 'voice'); });
+const videoFeature = computed(() => { revision(); return personFeature(db, person.value?.id, 'video'); });
 
 const pending = computed(() => {
   revision();
@@ -135,7 +144,7 @@ function openEvents() {
             <div>
               <h1>{{ person.name }}</h1>
               <p>{{ person.team }}　|　{{ stationName }}</p>
-              <p><AppStatus>在岗</AppStatus>　当前在：{{ work?.name || "待分配" }} {{ work ? "（" + work.id + "）" : "" }}</p>
+              <p><AppStatus :color="duty.color" :title="duty.title">{{ duty.label }}</AppStatus>　当前在：{{ work?.name || "待分配" }} {{ work ? "（" + work.id + "）" : "" }}</p>
             </div>
           </div>
         </section>
@@ -149,7 +158,7 @@ function openEvents() {
           </template>
           <div class="vitals-meta">
             <span>
-              {{ vital.watch.id }}　<AppStatus :color="vital.watch.online ? 'green' : 'muted'">{{ vital.watch.online ? "在线" : "离线" }}</AppStatus>
+              {{ vital.watch.id }}　<AppStatus :color="vital.simulated ? 'yellow' : vital.watch.online ? 'green' : 'muted'">{{ vital.simulated ? '模拟手表' : vital.watch.online == null ? '状态未知' : vital.watch.online ? "在线" : "离线" }}</AppStatus>
             </span>
             <AppTag :color="vital.watch.online ? 'blue' : 'muted'">{{ vital.status }}</AppTag>
           </div>
@@ -163,7 +172,7 @@ function openEvents() {
               <p>
                 <strong>{{ metric.value == null ? "—" : metric.value }}</strong><span>{{ metric.unit }}</span>
               </p>
-              <small>{{ vital.record ? "本地样例 · 非实时测量" : "暂无观测数据" }}</small>
+              <small>{{ vital.record ? vital.simulated ? "模拟数据 · 非实时测量" : "设备观测记录" : "暂无观测数据" }}</small>
             </article>
           </div>
           <div class="vitals-footer">
@@ -196,13 +205,14 @@ function openEvents() {
           </div>
           <AppEmpty v-else text="暂无待核验事件" />
         </AppPanel>
-        <AppPanel title="现场视频（来自安全帽）">
-          <template #extra>非实时</template>
+        <AppPanel v-if="videoFeature.supported || voiceFeature.supported" title="现场影像与通信（来自安全帽）">
+          <template #extra>以实际设备回传为准</template>
           <div class="side-video">
-            <VideoFrame :person-id="person.id" />
+            <VideoFrame v-if="videoFeature.supported" :person-id="person.id" preview />
             <div class="stack">
-              <a class="btn primary" :href="'#/single/' + person.id"><AppIcon name="play-circle-fill" /> 查看视频</a>
-              <AppButton icon="mic-line" @click="talk">发起对讲</AppButton>
+              <a v-if="videoFeature.available" class="btn primary" :href="'#/single/' + person.id"><AppIcon name="play-circle-fill" /> 查看视频</a>
+              <AppButton v-else-if="videoFeature.supported" disabled>{{ videoFeature.verified ? '视频暂不可用' : '视频 · 待联调' }}</AppButton>
+              <AppButton v-if="voiceFeature.supported" icon="mic-line" :disabled="!voiceFeature.available" :title="voiceFeature.reason" @click="talk">{{ voiceFeature.verified ? '发起对讲' : '对讲 · 待联调' }}</AppButton>
               <a v-if="related" class="btn" :href="'#/event/' + related.id"><AppIcon name="file-list-line" /> 查看事件</a>
               <AppButton v-else icon="file-list-line" @click="openEvents">查看事件</AppButton>
             </div>
@@ -224,8 +234,8 @@ function openEvents() {
             <td>{{ item.typeName }}</td>
             <td>{{ item.deviceId }}</td>
             <td>{{ item.operator }}</td>
-            <td>{{ item.start }}</td>
-            <td>{{ item.end || "—" }}</td>
+            <td>{{ formatBeijingDateTime(item.start) }}</td>
+            <td>{{ formatBeijingDateTime(item.end) }}</td>
             <td><AppStatus :color="item.end ? 'muted' : 'green'">{{ item.end ? "已归还" : "使用中" }}</AppStatus></td>
           </tr>
         </AppTable>

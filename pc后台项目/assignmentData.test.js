@@ -9,8 +9,19 @@ beforeEach(() => { sequence = 0; setup() })
 const query = async (kind, input = {}) => (await service.query(kind, { siteId, ...input })).data
 const issue = (extra = {}) => ({ siteId, personId, personVersion: 1, acknowledged: true, operationId: `issue-${++sequence}`, items: ids.map(deviceId => ({ deviceId, deviceVersion: 1 })), ...extra })
 async function returnInput(extra = {}) { const s = await query('assignmentCandidates', { resource: 'selection', personId: extra.personId || personId }); return { siteId, personId: s.person.id, personVersion: s.person.version, acknowledged: true, operationId: `return-${++sequence}`, items: s.current.map(r => ({ deviceId: r.deviceId, deviceVersion: r.deviceVersion, assignmentId: r.id, assignmentVersion: r.version, condition: 'GOOD' })), ...extra } }
-const counts = async () => (await query('overview')).counts
+const counts = async () => Object.fromEntries(await Promise.all(Object.entries({ assets: {}, available: { lifecycle: 'STOCK', relation: 'UNASSIGNED' }, assigned: { relation: 'ASSIGNED' }, maintenance: { lifecycle: 'MAINTENANCE' } }).map(async ([key, filters]) => [key, (await query('devices', filters)).total])))
 describe('A3 atomic assignment transactions', () => {
+  it('candidate warnings honor entered and explicitly cleared model names', async () => {
+    setup(state => {
+      Object.assign(state.devices.find(d => d.id === ids[0]), { modelId: 'unknown-HELMET', modelName: 'RD-D1+', manufacturer: '厂商', sn: 'MODEL-SN-1' })
+      Object.assign(state.devices.find(d => d.id === ids[1]), { modelName: '', manufacturer: '厂商', sn: 'MODEL-SN-2' })
+      Object.assign(state.devices.find(d => d.id === ids[2]), { modelId: 'unknown-WATCH', manufacturer: '厂商', sn: 'MODEL-SN-3' })
+    })
+    const rows = (await query('assignmentCandidates', { resource: 'devices', personId })).rows
+    expect(rows.find(d => d.id === ids[0]).warnings).not.toContain('资料或型号待补充')
+    expect(rows.find(d => d.id === ids[1]).warnings).toContain('资料或型号待补充')
+    expect(rows.find(d => d.id === ids[2]).warnings).toContain('资料或型号待补充')
+  })
   it('three types, partial and mixed return update one source with one order', async () => {
     const result = (await service.execute('assignments.issue', issue())).data
     expect(new Set(result.history.map(h => h.batchId)).size).toBe(1); expect(result.history).toHaveLength(3)
@@ -23,6 +34,42 @@ describe('A3 atomic assignment transactions', () => {
     expect((await query('maintenanceSummary', { id: returned.maintenanceOrderIds[0] }))).toMatchObject({ batchId: returned.batchId, handlerName: '资产管理员', status: 'OPEN' })
     expect((await query('assignmentHistory', { personId })).total).toBe(6)
     expect((await query('assignmentCandidates', { resource: 'devices', personId })).rows.some(d => d.id === ids[2])).toBe(false)
+  })
+  it('one person can collect each type separately and return only the belt before collecting it again', async () => {
+    const types = ['HELMET', 'BELT', 'WATCH']
+    const originalCandidates = (await query('assignmentCandidates', { resource: 'devices', personId })).rows
+    for (const index of [2, 1, 0]) {
+      const selection = await query('assignmentCandidates', { resource: 'selection', personId })
+      await service.execute('assignments.issue', issue({ personVersion: selection.person.version, items: [{ deviceId: ids[index], deviceVersion: 1 }] }))
+      const current = await query('assignmentCandidates', { resource: 'selection', personId })
+      expect(current.slots[types[index]]).toBe('ASSIGNED')
+      const duplicate = originalCandidates.find(d => d.type === types[index] && d.id !== ids[index])
+      expect(duplicate).toBeDefined()
+      await expect(service.execute('assignments.issue', issue({ personVersion: current.person.version, items: [{ deviceId: duplicate.id, deviceVersion: duplicate.version }] }))).rejects.toMatchObject({ errorCode: 'ASSIGNMENT_CONFLICT' })
+    }
+    const fullSelection = await query('assignmentCandidates', { resource: 'selection', personId })
+    expect(fullSelection.slots).toEqual({ HELMET: 'ASSIGNED', BELT: 'ASSIGNED', WATCH: 'ASSIGNED' })
+    expect(fullSelection.current).toHaveLength(3)
+    const retained = fullSelection.current.filter(r => r.type !== 'BELT')
+    const command = await returnInput()
+    command.items = command.items.filter(item => item.deviceId === ids[1])
+    await service.execute('assignments.return', command)
+    const afterReturn = await query('assignmentCandidates', { resource: 'selection', personId })
+    expect(afterReturn.slots).toEqual({ HELMET: 'ASSIGNED', BELT: 'UNASSIGNED', WATCH: 'ASSIGNED' })
+    expect(afterReturn.current.map(r => r.id)).toEqual(retained.map(r => r.id))
+    for (const previous of retained) {
+      expect(afterReturn.current.find(r => r.id === previous.id)).toMatchObject({ version: previous.version, deviceVersion: previous.deviceVersion, startedAt: previous.startedAt })
+    }
+    const candidates = await query('assignmentCandidates', { resource: 'devices', personId })
+    expect(candidates.rows.length).toBeGreaterThan(0)
+    expect(candidates.rows.every(d => d.type === 'BELT')).toBe(true)
+    const belt = candidates.rows.find(d => d.id === ids[1])
+    expect(belt).toBeDefined()
+    await service.execute('assignments.issue', issue({ personVersion: afterReturn.person.version, items: [{ deviceId: belt.id, deviceVersion: belt.version }] }))
+    const restored = await query('assignmentCandidates', { resource: 'selection', personId })
+    expect(restored.slots).toEqual({ HELMET: 'ASSIGNED', BELT: 'ASSIGNED', WATCH: 'ASSIGNED' })
+    expect(restored.current).toHaveLength(3)
+    expect((await query('assignmentHistory', { personId })).total).toBe(5)
   })
   it('baseline metrics and explicit unknown slots remain unchanged', async () => {
     expect(await counts()).toMatchObject({ assets: 36, available: 17, assigned: 12, maintenance: 3 })
@@ -93,8 +140,8 @@ describe('A3 atomic assignment transactions', () => {
     await expect(service.execute('assignments.issue', issue({ personId: 'person-2-4' }))).rejects.toMatchObject({ code: 404 })
     await expect(query('assignments', { siteId: 'site-2' })).rejects.toMatchObject({ code: 403 })
   })
-  it('area and paired role grants cannot be stitched into write privilege', async () => {
-    setup(s => { s.areas.push({ id: 'restricted', siteId, enabled: true }); s.people.find(p => p.id === personId).areaId = 'restricted'; s.roles.find(r => r.id === 'asset').grants = [{ operations: ['assets:write', 'assets:read', 'people:read', 'overview:read'], siteIds: [siteId], areaIds: ['area-1'] }, { operations: ['people:read', 'assets:read', 'overview:read'], siteIds: [siteId], areaIds: ['restricted'] }] })
+  it('site and paired role grants cannot be stitched into write privilege', async () => {
+    setup(s => { s.areas.push({ id: 'restricted', siteId, enabled: true }); s.people.find(p => p.id === personId).areaId = 'restricted'; s.roles.find(r => r.id === 'asset').grants = [{ operations: ['assets:write', 'assets:read', 'people:read', 'overview:read'], siteIds: ['site-2'], areaIds: ['area-1'] }, { operations: ['people:read', 'assets:read', 'overview:read'], siteIds: [siteId], areaIds: ['restricted'] }] })
     service.login('demo-asset', 'Admin@2026'); await expect(service.execute('assignments.issue', issue())).rejects.toMatchObject({ code: 403 })
   })
   it('abort and context changes before commit leave no history', async () => {
@@ -121,20 +168,21 @@ describe('A3 atomic assignment transactions', () => {
     const handlers = await query('repairAssignees', { deviceId: ids[0] }); expect(handlers.rows.length).toBeGreaterThan(0)
     expect(Object.keys(handlers.rows[0]).sort()).toEqual(['id', 'name', 'version'])
   })
-  it('no device/history leakage without its area scope', async () => {
+  it('legacy area limits do not hide same-site assignments or expose another site', async () => {
     setup(s => { s.areas.push({ id: 'area-other', siteId, enabled: true }); s.roles.find(r => r.id === 'asset').grants[0].areaIds = ['area-other'] })
-    service.login('demo-asset', 'Admin@2026'); expect((await query('assignments')).total).toBe(0)
-    await expect(query('assignmentHistory', { deviceId: ids[0] })).rejects.toMatchObject({ code: 404 })
+    service.login('demo-asset', 'Admin@2026'); expect((await query('assignments')).total).toBeGreaterThan(0)
+    expect((await query('assignmentHistory', { deviceId: ids[0] })).total).toBe(0)
+    await expect(query('assignmentHistory', { siteId: 'site-2' })).rejects.toMatchObject({ code: 403 })
   })
-  it('stock device with active maintenance is excluded from metric and candidates', async () => {
+  it('stock device with active maintenance cannot be issued', async () => {
     setup(s => { s.maintenanceOrders.push({ id: 'anomaly', siteId, deviceId: ids[0], status: 'OPEN' }) })
-    expect((await counts()).available).toBe(16)
+    await expect(service.execute('assignments.issue', issue())).rejects.toHaveProperty('errorCode')
     expect((await query('assignmentCandidates', { resource: 'devices', personId })).rows.some(d => d.id === ids[0])).toBe(false)
   })
   it('safe routes preserve only legal assignment filters and maintenance target', () => {
     expect(cleanAssignmentQuery({ tab: 'returns', type: 'BELT', pageSize: '101', deviceId: ids[0], url: 'evil' })).toEqual({ tab: 'returns', type: 'BELT', deviceId: ids[0] })
-    expect(assignmentReturn('https://evil.test')).toBe('/admin/assets/assignments')
-    expect(safeTarget('/admin/assets/maintenance/repair-1?siteId=site-new')).toBe('/admin/assets/devices?siteId=site-new')
+    expect(assignmentReturn('https://evil.test')).toBe('/assignments')
+    expect(safeTarget('/maintenance/repair-1?siteId=site-new')).toBe('/devices?siteId=site-new')
   })
   it('history paginates beyond twenty and filters by device/type/action/batch', async () => {
     for (let i = 0; i < 11; i++) {

@@ -117,4 +117,29 @@ headband:
 # 离线演示时，外部 RTC/TTS 调用由控制器短路为本地记录。
 melhat:
   demo-mode: ${MELHAT_DEMO_MODE:false}
+  direct-location:
+    profiles:
+      # The ca_report_location contract states x_point/y_point use GCJ-02 (2025-09-09, p14).
+      # Scope to the commissioned M6811_58 helmet and observed CELL reports; no belt/default inference.
+      "866652021714127":
+        firmware: M6811_58
+        coordinate-system: GCJ02
+        sources: [CELL]
+        evidence: "对接设备端接口文档250916.pdf 第14页 ca_report_location；device-gateway/OPERATIONS.md M6811_58与gps=6实测记录，2026-10-29复核"
+  belt:
+    enabled: ${MELHAT_BELT_ENABLED:false}
+    public-base-url: ${MELHAT_BELT_PUBLIC_BASE_URL:}
+    api-url: ${MELHAT_BELT_API_URL:}
+    ws-url: ${MELHAT_BELT_WS_URL:}
+    heartbeat-timeout-seconds: ${MELHAT_BELT_HEARTBEAT_TIMEOUT_SECONDS:45}
+    worn-value: "${MELHAT_BELT_WORN_VALUE:}"
+    unworn-value: "${MELHAT_BELT_UNWORN_VALUE:}"
+    hooked-value: "${MELHAT_BELT_HOOKED_VALUE:}"
+    unhooked-value: "${MELHAT_BELT_UNHOOKED_VALUE:}"
+  direct:
+    enabled: ${MELHAT_DIRECT_ENABLED:false}
+    public-base-url: ${MELHAT_DIRECT_PUBLIC_BASE_URL:}
+    api-url: ${MELHAT_DIRECT_API_URL:}
+    ws-url: ${MELHAT_DIRECT_WS_URL:}
+    heartbeat-timeout-seconds: ${MELHAT_DIRECT_HEARTBEAT_TIMEOUT_SECONDS:45}
 

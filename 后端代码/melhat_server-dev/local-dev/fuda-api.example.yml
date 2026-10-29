@@ -1,0 +1,36 @@
+# Private deployment configuration. This example does not enable the API and contains no secret.
+# Mount a reviewed private copy at /run/secrets/fuda-api.yml via spring.config.additional-location.
+fuda:
+  api:
+    enabled: false
+    source-platform: wearable-platform
+    applications:
+      fuda-test:
+        enabled: false
+        # Base64 encoding of exactly 32 cryptographically random bytes. Never reuse a human/media key.
+        secret-base64: ""
+        # Internal ledger IDs are authorization configuration only. HTTP uses deviceNumber, not these IDs.
+        # Confirm actual model, source, portalDeviceId and scope before enabling.
+        allowed-ledger-device-ids:
+          - device-12
+          - device-13
+    # Current-position commissioning, keyed by internal ledger ID.
+    # 2026-10-28 the operator confirmed both real devices use WGS-84.
+    # position-method stays UNKNOWN so a cell or wifi fix is not relabeled as GNSS.
+    # This setting does not reinterpret immutable historical alarm positions.
+    location-profiles:
+      device-12:
+        verified: true
+        coordinate-system: WGS84
+        position-method: UNKNOWN
+        firmware: ""
+        evidence: "2026-10-28 operator confirmed the helmet coordinate reference is WGS-84"
+      device-13:
+        verified: true
+        coordinate-system: WGS84
+        position-method: UNKNOWN
+        firmware: ""
+        evidence: "2026-10-28 operator confirmed the belt coordinate reference is WGS-84"
+# Signed cursors are scoped to the current authorized real-device set and app/key.
+# Alarm journal has no automatic retention deletion in this first release.
+# Coordinate systems, signal scale, belt wear and height are not inferred from raw numbers.

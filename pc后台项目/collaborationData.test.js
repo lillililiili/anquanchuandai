@@ -16,12 +16,12 @@ function setup(seed = createSeed) {
 beforeEach(() => setup())
 const q = async (kind, input = {}) => (await api.query(kind, { siteId, ...input })).data
 const exec = async (type, input) => (await api.execute(type, { siteId, operationId: 'a5-' + ++serial, ...input })).data
-const form = () => ({ code: 'A5-G', name: '预置A5组', areaId: 'area-1', leaderId: 'person-1-0', personIds: ['person-1-0', 'person-1-4'], sos: { enabled: true, recipientIds: ['person-1-4'] }, remark: '' })
-const versions = async () => { const c = await q('groupCandidates'); return Object.fromEntries([...c.people, ...c.areas].map(p => [p.id, p.version])) }
+const form = () => ({ code: 'A5-G', name: '预置A5组', leaderId: 'person-1-0', personIds: ['person-1-0', 'person-1-4'], sos: { enabled: true, recipientIds: ['person-1-4'] }, remark: '' })
+const versions = async () => { const c = await q('groupCandidates'); return Object.fromEntries(c.people.map(p => [p.id, p.version])) }
 const createGroup = async (data = form(), extra = {}) => exec('groups.create', { data, relatedVersions: await versions(), ...extra })
 const updateGroup = async (row, data, extra = {}) => exec('groups.update', { id: row.id, expectedVersion: row.version, relatedVersions: await versions(), data, ...extra })
 const account = async () => exec('accounts.create', { data: { name: '预置A5身份', loginName: 'a5-login' } })
-const grantInput = (a, extra = {}) => ({ siteId, operationId: 'grant', id: a.id, expectedVersion: a.version, relatedVersions: { viewer: 1 }, data: { name: a.name, loginName: a.loginName, personId: null, bindings: [{ roleId: 'viewer', siteIds: [siteId], areaIds: '*' }] }, ...extra })
+const grantInput = (a, extra = {}) => ({ siteId, operationId: 'grant', id: a.id, expectedVersion: a.version, relatedVersions: { viewer: 1 }, data: { name: a.name, loginName: a.loginName, personId: null, bindings: [{ roleId: 'viewer' }] }, ...extra })
 const preview = async (type, command) => q('authorizationPreview', { type, command })
 
 describe('A5 authorization preview and mock credentials', () => {
@@ -31,7 +31,7 @@ describe('A5 authorization preview and mock credentials', () => {
     expect((await q('audit')).total).toBe(before.total)
     expect((await q('record', { entity: 'accounts', id: a.id })).roleIds).toEqual([])
     await api.execute('accounts.update', { ...input, previewId: p.previewId })
-    api.login(a.id, 'Admin@2026'); expect((await q('context')).sites.map(s => s.id)).toEqual([siteId]); expect(api.canAny('assets:read', siteId)).toBe(true); expect(api.canAny('assets:write', siteId)).toBe(false)
+    api.login(a.id, 'Admin@2026'); expect((await q('context')).sites.map(s => s.id)).toEqual([siteId, 'site-2', 'site-empty']); expect(api.canAny('assets:read', siteId)).toBe(true); expect(api.canAny('assets:write', siteId)).toBe(false)
   })
   it('refuses direct authorization writes without preview and rolls back', async () => {
     const a = await account(); await expect(api.execute('accounts.update', grantInput(a))).rejects.toMatchObject({ errorCode: 'PREVIEW_EXPIRED' })
@@ -50,10 +50,10 @@ describe('A5 authorization preview and mock credentials', () => {
   })
   it('preview and actual permission never cross-combine role scopes', () => {
     const s = createSeed(), a = s.accounts.find(a => a.id === 'demo-asset')
-    s.areas.push({ id: 'area-x', siteId, name: '另一范围', enabled: true }); s.roles.find(r => r.id === 'asset').grants = [{ operations: ['assets:read'], siteIds: [siteId], areaIds: ['area-1'] }, { operations: ['assets:write'], siteIds: [siteId], areaIds: ['area-x'] }]
+    s.roles.find(r => r.id === 'asset').grants = [{ operations: ['assets:read'], siteIds: [siteId], areaIds: ['area-1'] }, { operations: ['assets:write'], siteIds: ['site-2'], areaIds: ['area-x'] }]
     const effects = authorizationEffects(s, a)
     for (const e of effects) expect(can(s, a, e.operation, e)).toBe(true)
-    expect(effects.some(e => e.operation === 'assets:write' && e.areaId === 'area-1')).toBe(false)
+    expect(effects.some(e => e.operation === 'assets:write' && e.siteId === siteId)).toBe(false)
   })
   it('preview enforces site-admin delegation and built-in protection', async () => {
     const a = await account(); api.login('demo-site', 'Admin@2026')
@@ -75,9 +75,9 @@ describe('A5 authorization preview and mock credentials', () => {
   })
   it('resets mock version only and invalidates old-version session without touching other keys', async () => {
     const input = { id: 'demo-asset', expectedVersion: 1, reason: '预置失效验证', confirm: true, operationId: 'reset-once' }
-    const before = (await q('overview')).counts, result = await exec('accounts.resetCredential', input)
+    const before = (await q('devices', { pageSize: 100 })).rows, result = await exec('accounts.resetCredential', input)
     expect(result.credentialVersion).toBe(2); expect((await exec('accounts.resetCredential', input)).credentialVersion).toBe(2)
-    expect((await q('overview')).counts).toEqual(before)
+    expect((await q('devices', { pageSize: 100 })).rows).toEqual(before)
     const audit = await q('audit'); expect(JSON.stringify(audit)).toContain('[已脱敏]')
     storage.setItem(TOKEN_KEY, 'demo-asset'); storage.setItem(SESSION_VERSION_KEY, '1')
     await expect(q('context')).rejects.toMatchObject({ code: 401 }); expect(storage.getItem('Admin-Token')).toBe('real'); expect(storage.getItem('Wearable-Portal-Mock-Token')).toBe('portal')
@@ -93,7 +93,7 @@ describe('A5 authorization preview and mock credentials', () => {
 
 describe('A5 persistent-person group model in page memory', () => {
   it('preserves baseline and marks seed policy unknown with no fabricated history', async () => {
-    expect((await q('overview')).counts).toEqual({ assets: 36, available: 17, assigned: 12, maintenance: 3, unknown: 1, conflict: 1 })
+    expect((await q('devices', { pageSize: 100 })).rows).toHaveLength(36)
     const g = await q('group', { id: 'group-1' }); expect(g.leaderId).toBe(null); expect(g.sos).toBe(null); expect((await q('groupHistory', { id: g.id })).total).toBe(0)
   })
   it('creates and updates group with independent leader and notification recipients', async () => {
@@ -109,7 +109,6 @@ describe('A5 persistent-person group model in page memory', () => {
     ['no members', d => { d.personIds = [] }, 'personIds'],
     ['no receivers', d => { d.sos.recipientIds = [] }, 'sos'],
     ['unknown receiver', d => { d.sos.recipientIds = ['person-1-8'] }, 'sos'],
-    ['cross area', d => { d.areaId = 'area-2' }, 'areaId'],
     ['forged site', d => { d.siteId = 'site-2' }, 'name']
   ])('rejects %s atomically', async (_name, mutate, field) => {
     const d = form(); mutate(d); await expect(createGroup(d)).rejects.toMatchObject({ fields: { [field]: expect.any(String) } }); expect((await q('groups')).total).toBe(1); expect((await q('audit')).total).toBe(0)
@@ -133,24 +132,23 @@ describe('A5 persistent-person group model in page memory', () => {
   it('keeps same-site code uniqueness and does not merge sites', async () => {
     await createGroup(); await expect(createGroup({ ...form(), code: ' a5-g ' })).rejects.toMatchObject({ code: 409 })
     const candidate = await q('groupCandidates', { siteId: 'site-2' }), d = { ...form(), areaId: 'area-2', leaderId: 'person-2-0', personIds: ['person-2-0'], sos: { enabled: false, recipientIds: [] } }
-    await exec('groups.create', { siteId: 'site-2', data: d, relatedVersions: Object.fromEntries([...candidate.people, ...candidate.areas].map(p => [p.id, p.version])) })
+    await exec('groups.create', { siteId: 'site-2', data: d, relatedVersions: Object.fromEntries(candidate.people.map(p => [p.id, p.version])) })
   })
-  it('old object/person/area versions and same operation with different input reject', async () => {
+  it('old object/person versions and same operation with different input reject', async () => {
     const v = await versions(), input = { data: form(), relatedVersions: v, operationId: 'once' }, g = await exec('groups.create', input)
     expect((await exec('groups.create', input)).id).toBe(g.id); expect((await q('groupHistory', { id: g.id })).total).toBe(1)
     await expect(exec('groups.create', { ...input, data: { ...form(), name: '不同' } })).rejects.toMatchObject({ errorCode: 'IDEMPOTENCY_CONFLICT' })
     await expect(updateGroup(g, form(), { expectedVersion: 0 })).rejects.toMatchObject({ errorCode: 'VERSION_CONFLICT' })
     await expect(updateGroup(g, form(), { relatedVersions: { ...v, 'person-1-0': 99 } })).rejects.toMatchObject({ code: 409 })
-    await expect(updateGroup(g, form(), { relatedVersions: { ...v, 'area-1': 99 } })).rejects.toMatchObject({ code: 409 })
     expect((await q('groupHistory', { id: g.id })).total).toBe(1)
   })
   it('readonly can inspect but cannot write, asset account has no group access', async () => {
     api.login('demo-audit', 'Admin@2026'); expect((await q('groups')).total).toBe(1); await expect(createGroup()).rejects.toMatchObject({ code: 403 })
     api.login('demo-asset', 'Admin@2026'); await expect(q('group', { id: 'group-1' })).rejects.toMatchObject({ code: 403 })
   })
-  it('same-site cross-area group requires coverage of all members; unseen group is 404', async () => {
+  it('legacy area scope allows same-site members while other sites stay hidden', async () => {
     const seed = () => { const s = createSeed(); s.areas.push({ id: 'area-extra', siteId, name: '预置跨区域', version: 1, enabled: true }); s.people.find(p => p.id === 'person-1-4').areaId = 'area-extra'; s.accounts.find(a => a.id === 'demo-site').roleScopes = { site: { siteIds: [siteId], areaIds: ['area-1'] } }; return s }
-    setup(seed); const g = await createGroup(); api.login('demo-site', 'Admin@2026'); expect((await q('groups')).rows.some(r => r.id === g.id)).toBe(false); await expect(q('group', { id: g.id })).rejects.toMatchObject({ code: 404 }); expect((await q('groupCandidates')).people.some(p => p.id === 'person-1-4')).toBe(false)
+    setup(seed); const g = await createGroup(); api.login('demo-site', 'Admin@2026'); expect((await q('groups')).rows.some(r => r.id === g.id)).toBe(true); expect((await q('group', { id: g.id })).id).toBe(g.id); expect((await q('groupCandidates')).people.some(p => p.id === 'person-1-4')).toBe(true); await expect(q('groupCandidates', { siteId: 'site-2' })).rejects.toMatchObject({ code: 403 })
   })
   it('terminal summary redacts equipment and account without widening group permission', async () => {
     setup(() => { const s = createSeed(); const r = s.roles.find(r => r.id === 'audit'); r.grants[0].operations = ['overview:read', 'access:read', 'people:read']; s.accounts.find(a => a.id === 'demo-system').personId = 'person-1-0'; return s })
@@ -184,8 +182,8 @@ describe('A5 persistent-person group model in page memory', () => {
     api.setScenario({ target: 'groups', mode: 'forbidden' }); await expect(q('groups')).rejects.toMatchObject({ code: 403 })
   })
   it('preserves safe group return and refresh reset isolation', async () => {
-    expect(safeTarget('/admin/access/groups/group-1?siteId=site-1&returnTo=https://bad')).toBe('/admin/overview')
-    expect(recordReturn('https://evil', '/admin/access/groups')).toBe('/admin/access/groups')
+    expect(safeTarget('/groups/group-1?siteId=site-1&returnTo=https://bad')).toBe('/devices?siteId=site-1')
+    expect(recordReturn('https://evil', '/groups')).toBe('/groups')
     await createGroup(); api.logout(); api.login('demo-system', 'Admin@2026'); expect((await q('groups')).total).toBe(2); api.reset(); api.login('demo-system', 'Admin@2026'); expect((await q('groups')).total).toBe(1); expect(storage.getItem('Wearable-Portal-Mock-Token')).toBe('portal')
   })
 })

@@ -105,7 +105,7 @@ void main() {
     },
   );
 
-  testWidgets('voice and broadcast fit small screens and large text', (
+  testWidgets('voice video and broadcast fit small screens and large text', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 640);
@@ -129,12 +129,12 @@ void main() {
         ),
       ),
     );
-    for (final label in ['设备语音', '文字播报']) {
+    for (final label in ['设备语音', '视频通话', '文字播报']) {
       expect(find.text(label).hitTestable(), findsOneWidget);
     }
     expect(find.text('清空'), findsNothing);
     final buttons = tester.widgetList<TextButton>(find.byType(TextButton));
-    expect(buttons, hasLength(2));
+    expect(buttons, hasLength(3));
     expect(find.text('视频群聊'), findsNothing);
     final widths = find
         .byType(TextButton)

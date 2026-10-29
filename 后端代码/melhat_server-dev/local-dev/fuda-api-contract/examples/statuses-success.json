@@ -1,0 +1,47 @@
+{
+  "code": 0,
+  "message": "success",
+  "requestId": "00000000-0000-4000-8000-000000000002",
+  "serverTime": "2026-10-27T08:00:00.000Z",
+  "data": {
+    "items": [
+      {
+        "sourcePlatform": "wearable-example",
+        "deviceType": "HELMET",
+        "deviceId": "DEMO-HELMET-01",
+        "deviceModel": null,
+        "onlineStatus": "ONLINE",
+        "lastSeenAt": "2026-10-27T07:59:50.000Z",
+        "offlineTimeoutSeconds": 45,
+        "telemetryMaxAgeSeconds": 45,
+        "battery": {
+          "percent": 78,
+          "voltageMv": null,
+          "observedAt": "2026-10-27T07:59:50.000Z",
+          "validity": "VALID"
+        },
+        "network": {
+          "type": "UNKNOWN",
+          "signalLevel": null,
+          "observedAt": null,
+          "validity": "UNKNOWN"
+        },
+        "wear": {
+          "status": "WORN",
+          "observedAt": "2026-10-27T07:59:50.000Z",
+          "validity": "VALID"
+        },
+        "hookA": {
+          "status": "UNSUPPORTED",
+          "observedAt": null,
+          "validity": "UNSUPPORTED"
+        },
+        "hookB": {
+          "status": "UNSUPPORTED",
+          "observedAt": null,
+          "validity": "UNSUPPORTED"
+        }
+      }
+    ]
+  }
+}

@@ -22,6 +22,9 @@ import { db } from "@/mock/runtime";
 import { openModal } from "@/stores/modal";
 import { session } from "@/stores/session";
 import { callPerson, runGuarded } from "@/lib/actions";
+import { personFeature, videoPeople } from '@/lib/person-equipment';
+import { isRealDevice, isCurrentDevice } from '@/lib/device-telemetry';
+import { workRisks, workTimeline } from './work-source';
 import { events, personName, revision } from "@/lib/queries";
 
 const route = useRoute();
@@ -31,20 +34,17 @@ const record = computed(() => {
   if (!work || work.station !== session.station) return null;
   return { ...work, members: [...work.members] };
 });
+const cameras = computed(() => { revision(); return videoPeople(db, (record.value?.members || []).map(id => db.person(id)).filter(person => person && person.station === session.station)); });
 const camera = computed(() => {
   const work = record.value;
   if (!work) return null;
-  if (work.members.includes(session.person)) {
-    const person = db.person(session.person);
-    if (person && person.station === session.station) return person;
-  }
-  return db.person(work.members[0]) || null;
+  return cameras.value.find(person => person.id === session.person) || cameras.value[0] || null;
 });
-const devices = computed(() => (record.value ? record.value.members.flatMap((id) => db.currentDevices(id)) : []));
+const devices = computed(() => (record.value ? record.value.members.flatMap(id => db.currentDevices(id)).filter(device => device.active !== false && isRealDevice(device)) : []));
 const stats = computed(() => [
   { icon: "", label: "作业人数", value: record.value?.members.length || 0, unit: "人", color: "cyan" },
   { icon: "", label: "装备数量", value: devices.value.length, unit: "件", color: "cyan" },
-  { icon: "", label: "在线装备", value: devices.value.filter((item) => item.online).length, unit: "件", color: "cyan" },
+  { icon: "", label: "在线装备", value: devices.value.filter(item => item.online === true && isCurrentDevice(item)).length, unit: "件", color: "cyan" },
 ]);
 const currentEvent = computed(() => {
   revision();
@@ -55,13 +55,7 @@ const timeline = computed(() => {
   revision();
   const work = record.value;
   if (!work) return [];
-  return [
-    ...events()
-      .filter((item) => item.workId === work.id)
-      .map((item) => ({ time: item.time, text: personName(item.personId) + "\u3000" + item.title })),
-    { time: "09:12:33", text: personName(work.leader) + " 开始设备检查" },
-    { time: work.start, text: work.members.length + " 人到达作业区域，开始监护" },
-  ];
+  return workTimeline(work, events(), personName);
 });
 const supervisorName = computed(() => db.person(record.value?.supervisor)?.name || "");
 
@@ -105,36 +99,34 @@ function openRecords() {
       </template>
     </PageHeading>
     <div class="row muted" style="margin-bottom:18px">
-      工作票编号　{{ record.id }}　<AppTag color="muted">示例数据 · 只读 · 待对接两票系统</AppTag>
+      工作票编号　{{ record.id }}　<AppTag color="muted">台账记录 · 只读 · {{ record.date || '日期待核对' }}</AppTag>
       <span class="spacer"></span>
       负责人　{{ personName(record.leader) }}　|　监护人　{{ personName(record.supervisor) }}　|　作业时间　{{ record.date }} {{ record.start }} – {{ record.end }}
     </div>
     <div class="grid cols-2">
       <div class="stack">
         <VideoFrame v-if="camera" :person-id="camera.id" controls frame-class="work-media" />
-        <AppEmpty v-else text="作业暂无成员" />
-        <div class="row">
+        <div v-if="cameras.length" class="row">
           <AppButton
-            v-for="(pid, index) in record.members"
-            :key="pid"
-            :tone="session.person === pid ? 'active' : ''"
-            @click="session.person = pid"
-          >镜头 {{ index + 1 }} · {{ memberOf(pid)?.name }}</AppButton>
+            v-for="(person, index) in cameras"
+            :key="person.id"
+            :tone="session.person === person.id ? 'active' : ''"
+            @click="session.person = person.id"
+          >镜头 {{ index + 1 }} · {{ person.name }}</AppButton>
         </div>
         <AppPanel :title="'作业人员与装备状态（' + record.members.length + ' 人）'">
-          <AppTable :rows="record.members" :reset-key="record.id" v-slot="{ rows: pageRows }" :columns="['姓名', '岗位', '三类装备状态（安全帽 / 安全带 / 智能手表）', '位置', '最后上报', '操作']" :empty="!record.members.length">
+          <AppTable :rows="record.members" :reset-key="record.id" v-slot="{ rows: pageRows }" :columns="['姓名', '岗位', '已领用装备状态', '最后上报', '操作']" :empty="!record.members.length">
             <tr v-for="pid in pageRows" :key="pid">
               <td>
                 <div class="person-cell"><PersonAvatar :person="memberOf(pid)" photo />{{ personName(pid) }}</div>
               </td>
               <td><AppTag>{{ roleOf(pid) }}</AppTag></td>
               <td><DeviceStrip :person-id="pid" /></td>
-              <td>{{ memberOf(pid)?.area }}</td>
               <td>{{ memberOf(pid)?.updated }}</td>
               <td>
                 <div class="inline-buttons">
                   <a class="btn small" :href="'#/tracks/' + pid">查看轨迹</a>
-                  <AppButton tone="small" @click="runGuarded(() => callPerson(pid))">发起对讲</AppButton>
+                  <AppButton v-if="personFeature(db,pid,'voice').supported" :disabled="!personFeature(db,pid,'voice').available" tone="small" @click="runGuarded(() => callPerson(pid))">{{ personFeature(db,pid,'voice').verified ? '发起对讲' : '对讲 · 待联调' }}</AppButton>
                 </div>
               </td>
             </tr>
@@ -163,17 +155,17 @@ function openRecords() {
             </dl>
             <div class="form-actions">
               <a class="btn primary" :href="'#/event/' + currentEvent.id">查看事件详情</a>
-              <AppButton @click="runGuarded(() => callPerson(record.supervisor))">联系监护人（{{ supervisorName }}）</AppButton>
+              <AppButton v-if="personFeature(db,record.supervisor,'voice').supported" :disabled="!personFeature(db,record.supervisor,'voice').available" :title="personFeature(db,record.supervisor,'voice').reason" @click="runGuarded(() => callPerson(record.supervisor))">联系监护人（{{ supervisorName }}）</AppButton>
             </div>
           </template>
           <AppStatus v-else>暂无待核验事项</AppStatus>
         </AppPanel>
-        <AppPanel title="作业区域示意">
-          <template #extra>厂区示意 · 非实测</template>
-          <div style="height:220px"><PlantMap :person="camera?.id || ''" :legend="false" /></div>
+        <AppPanel title="作业人员位置">
+          <template #extra>以设备实际定位上报为准</template>
+          <div style="height:220px"><PlantMap :work="record" :legend="false" /></div>
           <div class="detail-section">
             <h3>来源风险提示　<AppTag color="yellow">来源摘要</AppTag></h3>
-            <p class="note">本作业存在高处作业、受限空间临近、热表面等风险，请按作业方案落实安全防护措施。</p>
+            <p class="note">{{ workRisks(record).riskFactors || '尚未取得来源系统的风险信息' }}</p>
             <AppButton tone="plain blue" @click="openRisk">查看完整风险信息 <UiIcon name="chevron-right" /></AppButton>
           </div>
         </AppPanel>
@@ -181,6 +173,7 @@ function openRecords() {
           <template #extra>
             <AppButton tone="small" @click="openRecords">全部记录</AppButton>
           </template>
+          <AppStatus v-if="!timeline.length">暂无实际现场记录</AppStatus>
           <div class="timeline">
             <div v-for="(item, index) in timeline" :key="index" class="timeline-item"><time>{{ item.time }}</time>{{ item.text }}</div>
           </div>

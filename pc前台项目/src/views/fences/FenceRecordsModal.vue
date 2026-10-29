@@ -51,7 +51,7 @@ function submit() {
       <td><AppTag>{{ item.type }}</AppTag></td>
     </tr>
   </AppTable>
-  <div class="detail-section">
+  <div v-if="db.demoMode" class="detail-section">
     <h3>位置变化</h3>
     <p class="note">仅对已启用围栏及其适用人员生成记录。</p>
     <div class="dialog-grid">
@@ -62,5 +62,5 @@ function submit() {
         <AppSelect v-model="target" name="target" :options="targets" />
       </AppField>
     </div><p v-if="error" class="form-error" role="alert">{{ error }}</p>
-  </div></div><div class="dialog-form-footer"><AppButton @click="closeModal">关闭</AppButton><AppButton type="submit" tone="primary">模拟位置变化</AppButton></div></form>
+  </div></div><div class="dialog-form-footer"><AppButton @click="closeModal">关闭</AppButton><AppButton v-if="db.demoMode" type="submit" tone="primary">模拟位置变化</AppButton></div></form>
 </template>

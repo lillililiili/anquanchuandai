@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 @Configuration
 public class WearableWebSecurity implements WebMvcConfigurer {
     private final WearableSessions sessions;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
     public WearableWebSecurity(WearableSessions sessions) { this.sessions = sessions; }
     @Override public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new HandlerInterceptor() {
@@ -20,11 +21,19 @@ public class WearableWebSecurity implements WebMvcConfigurer {
                 try {
                     request.setAttribute("wearable.actor", sessions.require(request, path.startsWith("/api/admin/") ? "admin" : "guardian"));
                     response.setHeader("Cache-Control", "no-store");
+                    if(maintenance!=null && WearableMaintenance.isBusinessWrite(request.getMethod(),path)) {
+                        maintenance.beginWrite();request.setAttribute("wearable.maintenanceLease",Boolean.TRUE);
+                    }
                     return true;
                 } catch (AdminQueryService.QueryFailed error) {
                     response.setStatus(error.code); response.setContentType("application/json;charset=UTF-8");
                     JSONObject body = new JSONObject(); body.put("code", error.code); body.put("message", error.getMessage()); body.put("errorCode", error.errorCode);
                     response.getWriter().write(body.toJSONString()); return false;
+                }
+            }
+            @Override public void afterCompletion(HttpServletRequest request,HttpServletResponse response,Object handler,Exception error) {
+                if(maintenance!=null && Boolean.TRUE.equals(request.getAttribute("wearable.maintenanceLease"))) {
+                    request.removeAttribute("wearable.maintenanceLease");maintenance.endWrite();
                 }
             }
         }).addPathPatterns("/api/admin/**", "/api/guardian/**");

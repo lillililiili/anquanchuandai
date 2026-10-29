@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { queryAudit, redactAudit, auditCsvCell, AUDIT_RESULTS } from './auditData'
 import { createAdminService } from './service'
 import { createLegacySeed as createSeed } from './legacySeed'
-import { safeTarget, cleanIntegrationQuery, integrationReturn, menuPath } from './navigation'
+import { safeTarget, adminHome, menuPath } from './navigation'
 
 function setup() {
   const state = { sites: [{ id: 's', enabled: true }, { id: 'other', enabled: true }], areas: [{ id: 'a', siteId: 's', enabled: true }], roles: [{ id: 'reader', grants: [{ operations: ['audit:read'], siteIds: ['s'], areaIds: ['a'] }] }], audit: [] }
   const actor = { id: 'reader', enabled: true, roleIds: ['reader'] }
   state.audit = Array.from({ length: 25 }, (_, i) => ({ id: `r-${i}`, siteId: 's', areaId: 'a', actorName: '历史账号', objectId: 'deleted-person', action: 'people.update', result: 'SUCCESS', occurredAt: '2026-09-20T12:00:00.000Z', before: { name: '旧名称' }, after: { name: '新名称' }, source: '本地模拟', requestId: 'request-1', operationId: 'operation-1' }))
-  state.audit.push({ ...state.audit[0], id: 'hidden', areaId: 'b', actorName: '不可见账号', objectId: '不可见对象' })
+  state.audit.push({ ...state.audit[0], id: 'hidden', siteId: 'other', areaId: 'b', actorName: '不可见账号', objectId: '不可见对象' })
   const fail = (code, errorCode, message) => Object.assign(new Error(message), { code, errorCode })
   const page = (rows, { pageNum = 1, pageSize = 20 }) => ({ rows: rows.slice((pageNum - 1) * pageSize, pageNum * pageSize), total: rows.length, pageNum, pageSize })
   const q = (kind = 'audit', input = {}) => queryAudit(state, actor, kind, { siteId: 's', ...input }, { fail, page, now: '2026-09-21T00:00:00.000Z' })
@@ -38,10 +38,10 @@ describe('A6 audit snapshots and local CSV', () => {
   })
   it('rechecks dynamic row and site permissions', () => {
     const { q, state } = setup()
-    state.areas.push({ id: 'b', siteId: 's', enabled: true }); state.roles[0].grants[0].areaIds = ['b']
-    expect(q().rows.map(r => r.id)).toEqual(['hidden'])
+    state.roles[0].grants[0].siteIds = ['other']
+    expect(q('audit', { siteId: 'other' }).rows.map(r => r.id)).toEqual(['hidden'])
     expect(() => q('auditDetail', { id: 'r-0' })).toThrow()
-    expect(() => q('auditExport', { siteId: 'other' })).toThrow()
+    expect(() => q('auditExport', { siteId: 's' })).toThrow()
     state.roles[0].enabled = false; expect(() => q()).toThrow()
   })
   it('combines UTC date/account/object/action/result filters, validates calendar dates', () => {
@@ -81,30 +81,19 @@ describe('A6 audit snapshots and local CSV', () => {
   })
 })
 
-describe('A6 navigation sanitization', () => {
-  it('rejects removed integration routes while retaining query sanitization', () => {
-    const query = { siteId: 'site-1', tab: 'jobs', status: 'CONFLICT', connectorId: 'integration-site-1-DEVICE', keyword: 'source', pageNum: '2', pageSize: '50' }
-    expect(cleanIntegrationQuery(query)).toEqual(query)
-    for (const path of ['/admin/integrations', '/admin/integrations/settings', '/admin/integrations/integration-site-1-DEVICE', '/admin/integrations/jobs/integration-job-1']) {
-      const target = safeTarget(path + '?' + new URLSearchParams(query))
-      expect(target).toBe('/admin/overview')
-      expect(menuPath(path)).toBe('/admin/integrations')
-    }
+describe('retired admin navigation sanitization', () => {
+  it.each(['/admin/overview', '/admin/overview/old', '/admin/integrations', '/admin/integrations/settings', '/admin/integrations/jobs/job-1'])('redirects %s to inventory retaining only a valid site', path => {
+    expect(safeTarget(path + '?siteId=site-1&tab=jobs&token=secret&returnTo=https://remote.invalid')).toBe('/devices?siteId=site-1')
+    expect(menuPath(path)).toBe('/devices')
   })
-  it('drops unsafe and unsupported integration filters', () => {
-    expect(cleanIntegrationQuery({ siteId: '../site', tab: 'unknown', status: 'SUCCESS', connectorId: '../../other', keyword: 'x'.repeat(150), pageNum: '0', pageSize: '101', token: 'secret', endpoint: 'https://remote.invalid', returnTo: '//remote.invalid' })).toEqual({ keyword: 'x'.repeat(100) })
-    expect(cleanIntegrationQuery({ siteId: ['site-1', 'site-2'], tab: ['jobs'], status: ['PREVIEW'], connectorId: ['integration-1'] })).toEqual({})
-    expect(safeTarget('/admin/audit?siteId=site-1&token=hidden&url=https%3A%2F%2Fremote.invalid')).toBe('/admin/audit?siteId=site-1')
+  it('drops invalid sites and unsupported entry filters', () => {
+    expect(adminHome({ siteId: ['site-1', 'site-2'], token: 'secret' })).toBe('/devices')
+    expect(adminHome({ siteId: '../site' })).toBe('/devices')
+    expect(adminHome({ siteId: 'site-2', tab: 'jobs' })).toBe('/devices?siteId=site-2')
+    expect(safeTarget('/admin/integrations?siteId=..%2Fsite&token=secret')).toBe('/devices')
+    expect(safeTarget('/audit?siteId=site-1&token=hidden&url=https%3A%2F%2Fremote.invalid')).toBe('/audit?siteId=site-1')
   })
-  it.each(['https://remote.invalid/admin/integrations', '//remote.invalid/admin/integrations', 'javascript:alert(1)', '/admin/integrations\\evil', '/admin/integrations#evil', '/admin/integrations/jobs/id/extra', '/admin/integrations/%2Fremote', '/admin/integrations/jobs/' + 'x'.repeat(101)])('rejects unsafe target %s', value => {
-    expect(safeTarget(value)).toBe('/admin/overview')
-    expect(integrationReturn(value)).toBe('/admin/integrations')
-  })
-  it('rejects removed integration return targets and nested secrets', () => {
-    const back = '/admin/integrations?siteId=site-1&tab=jobs&status=FAILED&token=secret'
-    const result = safeTarget('/admin/integrations/jobs/job-1?' + new URLSearchParams({ siteId: 'site-1', returnTo: back, token: 'secret' }))
-    expect(result).toBe('/admin/overview')
-    expect(result).not.toContain('secret')
-    for (const value of ['/admin/access/accounts', '/admin/integrations/settings', '/admin/integrations/jobs/job-2']) expect(integrationReturn(value)).toBe('/admin/integrations')
+  it.each([undefined, 'https://remote.invalid/admin/integrations', '//remote.invalid/admin/integrations', 'javascript:alert(1)', '/admin/integrations#evil', '/admin/unknown', '/admin/overview/../../live'])('rejects unsafe target %s', value => {
+    expect(safeTarget(value)).toBe('/devices')
   })
 })

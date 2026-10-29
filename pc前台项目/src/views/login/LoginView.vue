@@ -7,6 +7,7 @@ import { session } from "@/stores/session";
 import { go } from "@/lib/actions";
 import { saveAuth } from "@/lib/auth";
 import { db, refreshSnapshot } from "@/mock/runtime";
+import { TEST_SITE_MODE, TEST_SITE } from '../../../../shared/test-site.mjs';
 
 const account = ref("");
 const password = ref("");
@@ -43,7 +44,8 @@ async function submit() {
     const body = await response.json();
     saveAuth(body.token, account.value);
     if (!await refreshSnapshot()) throw Error("业务数据读取失败");
-    if (!db.state.stations.some(site => site.id === session.station)) session.station = db.state.stations[0]?.id || "";
+    if (TEST_SITE_MODE) session.station = TEST_SITE.stationId;
+    else if (!db.state.stations.some(site => site.id === session.station)) session.station = db.state.stations[0]?.id || "";
     session.formDrafts = {};
   } catch {
     error.value = "后端未连接，修改未保存";

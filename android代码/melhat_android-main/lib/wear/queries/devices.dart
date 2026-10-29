@@ -1,7 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core.dart';
+import '../device_location.dart';
+import '../device_features.dart';
+import 'belt_telemetry.dart';
+import 'helmet_media.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
 
@@ -114,6 +119,12 @@ class _DevicesPageState extends State<DevicesPage> {
                   () => _setType('helmet'),
                 ),
                 _filterChip('安全带', _typeCode == 'belt', () => _setType('belt')),
+                if (_session?.simulatedWatchVisible != false)
+                  _filterChip(
+                    '模拟手表',
+                    _typeCode == 'watch',
+                    () => _setType('watch'),
+                  ),
                 const SizedBox(width: 8),
                 PopupMenuButton<String>(
                   tooltip: '资产状态',
@@ -227,6 +238,24 @@ class _DevicePageState extends State<DevicePage> {
   bool _loading = true;
   Object? _error;
   int _request = 0;
+  Timer? _telemetryTimer;
+  @override
+  void initState() {
+    super.initState();
+    _telemetryTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted &&
+          !_loading &&
+          WidgetsBinding.instance.lifecycleState != AppLifecycleState.paused) {
+        _load(quiet: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _telemetryTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -238,13 +267,13 @@ class _DevicePageState extends State<DevicePage> {
     }
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool quiet = false}) async {
     final session = _session;
     if (session == null) return;
     final request = ++_request;
     final scopeKey = session.scopeKey;
     setState(() {
-      _loading = true;
+      _loading = !quiet || _device == null;
       _error = null;
     });
     try {
@@ -277,6 +306,7 @@ class _DevicePageState extends State<DevicePage> {
   @override
   Widget build(BuildContext context) {
     final device = _device;
+    final location = deviceLocation(device ?? {});
     return QueryPage(
       title: device == null ? '设备详情' : textOf(device['sn']),
       body: QueryStateView(
@@ -314,19 +344,70 @@ class _DevicePageState extends State<DevicePage> {
                             label: '连接状态',
                             value: connectionLabel(device),
                           ),
-                          DetailField(
-                            label: '电量',
-                            value: batteryLabel(device['battery']),
-                          ),
+                          if (deviceFeature(device, 'battery').supported)
+                            DetailField(
+                              label: deviceFeatureLabel(device, 'battery'),
+                              value: deviceFeature(device, 'battery').verified
+                                  ? batteryLabel(device['battery'])
+                                  : '待联调',
+                            ),
                           DetailField(
                             label: '最后上报',
                             value: formatTime(device['lastReportedAt']),
                           ),
+                          if (deviceFeature(device, 'location').supported) ...[
+                            DetailField(
+                              label: '设备上报位置',
+                              value: deviceFeature(device, 'location').verified
+                                  ? location.position
+                                  : '待联调',
+                            ),
+                            DetailField(
+                              label: '位置上报状态',
+                              value: location.status,
+                            ),
+                            DetailField(
+                              label: '位置上报时间',
+                              value: location.reportedAt == null
+                                  ? '未收到'
+                                  : formatTime(location.reportedAt),
+                            ),
+                            const Text(
+                              '位置上报时间是平台接收时间；重复上报的坐标不代表设备重新完成定位。',
+                              style: TextStyle(color: WearColors.muted),
+                            ),
+                          ],
+                          for (final key in ['wear', 'alarm', 'sos'])
+                            if (device['source'] != 'DIRECT_BELT' &&
+                                deviceFeature(device, key).supported)
+                              DetailField(
+                                label: deviceFeatureLabels[key]!,
+                                value: deviceFeature(device, key).verified
+                                    ? '已接入'
+                                    : '待联调',
+                              ),
                           if (device['demo'] == true)
                             const DetailField(label: '数据标识', value: '演示数据'),
                         ],
                       ),
                     ),
+                    if (device['source'] == 'DIRECT_BELT') ...[
+                      const SizedBox(height: 18),
+                      BeltTelemetryPanel(device: device),
+                    ],
+                    if (device['source'] == 'DIRECT_HELMET' &&
+                        ['photo', 'video', 'recording'].any(
+                          (key) => deviceFeature(device, key).supported,
+                        )) ...[
+                      const SizedBox(height: 18),
+                      HelmetMediaPanel(
+                        key: ValueKey(
+                          'media-${widget.id}-${_session!.scopeKey}',
+                        ),
+                        deviceId: widget.id,
+                        device: device,
+                      ),
+                    ],
                     if (_session!.isAdmin) ...[
                       const SizedBox(height: 18),
                       _actionPanel(context, device),
@@ -357,35 +438,60 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   Widget _actionPanel(BuildContext context, JsonMap device) {
-    final actions = deviceActions(device);
+    final actions = [
+      'tts',
+      'intercom',
+      'video_call',
+    ].where((action) => actionFeature(device, action).supported).toList();
     final assignment = jsonMap(device['currentAssignment']);
     final personId = assignment['personId']?.toString();
     if (actions.isEmpty) {
-      return const WearCard(
-        child: Text('该型号未声明可用通讯能力。', style: TextStyle(color: WearColors.muted)),
-      );
+      return const SizedBox.shrink();
     }
     final buttons = <Widget>[];
     if (actions.contains('tts')) {
       buttons.add(
         OutlinedButton.icon(
-          onPressed: () =>
-              _openCommunications(context, personId: personId, action: 'tts'),
+          onPressed: !actionFeature(device, 'tts').available
+              ? null
+              : () => _openCommunications(
+                  context,
+                  personId: personId,
+                  action: 'tts',
+                ),
           icon: const Icon(Icons.campaign_outlined),
-          label: const Text('TTS'),
+          label: Text(deviceFeatureLabel(device, 'broadcast', 'TTS')),
         ),
       );
     }
     if (actions.contains('intercom')) {
       buttons.add(
         OutlinedButton.icon(
-          onPressed: () => _openCommunications(
-            context,
-            personId: personId,
-            action: 'intercom',
-          ),
+          onPressed: !actionFeature(device, 'intercom').available
+              ? null
+              : () => _openCommunications(
+                  context,
+                  personId: personId,
+                  action: 'intercom',
+                ),
           icon: const Icon(Icons.call_outlined),
-          label: const Text('对讲'),
+          label: Text(deviceFeatureLabel(device, 'voice', '对讲')),
+        ),
+      );
+    }
+
+    if (actions.contains('video_call')) {
+      buttons.add(
+        OutlinedButton.icon(
+          onPressed: !actionFeature(device, 'video_call').available
+              ? null
+              : () => _openCommunications(
+                  context,
+                  personId: personId,
+                  action: 'video',
+                ),
+          icon: const Icon(Icons.videocam_outlined),
+          label: Text(deviceFeatureLabel(device, 'videoCall', '视频通话')),
         ),
       );
     }

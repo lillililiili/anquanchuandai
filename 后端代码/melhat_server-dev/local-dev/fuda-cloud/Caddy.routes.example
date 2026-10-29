@@ -1,0 +1,11 @@
+# Insert this handler inside the EXISTING approved domain block.
+# The host-bridge binding is private, not a public firewall port.
+@fudaQueries {
+    method POST
+    path /openapi/wearables/v2/positions/query /openapi/wearables/v2/statuses/query /openapi/wearables/v2/alarms/query
+}
+handle @fudaQueries {
+    request_body { max_size 64KB }
+    reverse_proxy 10.255.1.1:28089
+}
+# Keep all unrelated existing routes. Do not proxy /api/admin, /internal or /openapi/* broadly.

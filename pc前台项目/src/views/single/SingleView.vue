@@ -9,6 +9,7 @@ import MissingRecord from "@/components/layout/MissingRecord.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
 import PersonAvatar from "@/components/domain/PersonAvatar.vue";
 import VideoFrame from "@/components/domain/VideoFrame.vue";
+import { personFeature } from '@/lib/person-equipment';
 import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { toast } from "@/stores/notify";
@@ -16,6 +17,8 @@ import { callPerson, go, runGuarded } from "@/lib/actions";
 import { events, helmetOf, materials, personName, revision } from "@/lib/queries";
 
 const route = useRoute();
+const voiceFeature = computed(() => { revision(); return personFeature(db, person.value?.id, 'voice'); });
+const videoFeature = computed(() => { revision(); return personFeature(db, person.value?.id, 'video'); });
 const person = computed(() => {
   revision();
   const id = route.params.id || session.person;
@@ -73,19 +76,20 @@ async function fullscreen(event) {
   <template v-else>
     <p class="muted" style="margin:4px 0 20px"><a href="#/video">视频监看</a>　<UiIcon name="chevron-right" />　{{ person.name }} · 单路监看</p>
     <div class="grid cols-2">
-      <AppPanel extra-class="flush">
-        <template #title>{{ person.name }} · 单路监看　 <small>{{ helmetOf(person.id)?.id || "未绑定" }}　|　{{ person.area }}</small></template>
+      <AppPanel v-if="videoFeature.supported" extra-class="flush">
+        <template #title>{{ person.name }} · 单路监看　 <small>{{ helmetOf(person.id)?.id || "未绑定" }}</small></template>
         <template #extra>
           <AppButton tone="small" icon="fullscreen-line" @click="fullscreen">全屏查看</AppButton>
         </template>
         <VideoFrame :person-id="person.id" controls />
       </AppPanel>
-      <AppPanel title="远程指导">
+      <AppStatus v-else>该人员当前未领用支持视频的安全帽。<a :href="'#/person/' + person.id">查看人员装备</a></AppStatus>
+      <AppPanel v-if="voiceFeature.supported || activeCall" :title="voiceFeature.verified ? '远程指导' : '远程指导 · 待联调'">
         <div class="remote-box">
           <AppIcon name="vidicon-off-line" />
           <h3>{{ activeCall ? activeCall.status : "未发起通话" }}</h3>
-          <p>可与现场人员进行音视频通话，指导作业或核实异常情况。</p>
-          <AppButton tone="primary wide" icon="vidicon-fill" @click="openCall">{{ activeCall ? "查看当前通话" : "发起音视频通话" }}</AppButton>
+          <p>{{ voiceFeature.reason || '前往语音调度，确认当前领用人员后发起联络。' }}</p>
+          <AppButton tone="primary wide" icon="mic-line" :disabled="!activeCall && !voiceFeature.available" @click="openCall">{{ activeCall ? "查看当前通话" : "前往语音调度" }}</AppButton>
         </div>
         <h3>参与者</h3>
         <div class="participant">
@@ -95,15 +99,17 @@ async function fullscreen(event) {
         </div>
         <div class="participant">
           <PersonAvatar :person="person" />
-          <div>{{ person.name }}<small style="display:block">{{ person.area }}</small></div>
+          <div>{{ person.name }}<small style="display:block">{{ person.team }}</small></div>
           <AppStatus :color="joined ? 'green' : 'yellow'">{{ joined ? "已接入" : "待接入" }}</AppStatus>
         </div>
         <div v-if="related" class="warning-box" style="margin-top:15px">
           <a :href="'#/event/' + related.id"><AppIcon name="error-warning-fill" />　{{ related.title }}　<UiIcon name="chevron-right" /></a>
           <small style="display:block;margin-top:8px">{{ related.time }} 发生，{{ related.status }}</small>
         </div>
-        <div class="detail-section">
-          <h3>最近影像 / 记录</h3>
+
+      </AppPanel>
+      <AppPanel v-if="recent.length" title="最近影像 / 记录">
+        <div>
           <div
             v-for="item in recent"
             :key="item.id"
@@ -123,6 +129,6 @@ async function fullscreen(event) {
         </div>
       </AppPanel>
     </div>
-    <p class="note"><AppIcon name="information-line" />图片模拟现场视频；连接成功后显示通话状态，录像记录保留封面与时长。</p>
+    <p class="note"><AppIcon name="information-line" />真实设备以直播流、上传文件和指令回执为准；暂无真实影像时显示空态。</p>
   </template>
 </template>

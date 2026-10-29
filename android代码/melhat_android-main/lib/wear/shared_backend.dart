@@ -5,6 +5,9 @@ import 'package:dio/dio.dart';
 import 'api.dart' show WearApiException, StaleSessionException;
 import 'data.dart';
 import 'shared_models.dart';
+import 'person_equipment_context.dart';
+import '../config/backend_config.dart';
+import 'test_site.dart';
 
 typedef SharedTransport =
     Future<dynamic> Function(
@@ -18,12 +21,19 @@ typedef SharedTransport =
 /// Translates the existing Android view contracts to the shared Spring API.
 /// It never supplies example business data or retries ambiguous writes as new operations.
 class SharedBackend {
-  SharedBackend(this.send, this.siteId, this.epoch);
+  SharedBackend(
+    this.send,
+    this.siteId,
+    this.epoch, {
+    this.testSiteMode = BackendConfig.testSiteMode,
+  });
   final SharedTransport send;
   final String? Function() siteId;
   final int Function() epoch;
+  final bool testSiteMode;
   static const root = '/api/guardian/v1';
   JsonMap _identity = {};
+  JsonMap businessConfig = {};
   Future<SharedModels>? _reading;
   final Map<String, _Pending> _pending = {};
   final Map<String, Future<dynamic>> _running = {};
@@ -42,13 +52,21 @@ class SharedBackend {
   void invalidate() {
     _reading = null;
     _identity = {};
+    businessConfig = {};
     _pending.clear();
     _running.clear();
     _assignmentCommands.clear();
     _communicationCommands.clear();
   }
 
+  void clearReadCache() {
+    _reading = null;
+  }
+
   Future<SharedModels> context() {
+    if (testSiteMode && siteId() != testSiteId) {
+      return Future.error(const WearApiException(403, '当前开发环境仅开放已授权的测试厂区'));
+    }
     final existing = _reading;
     if (existing != null) return existing;
     final scope = epoch();
@@ -64,6 +82,7 @@ class SharedBackend {
           );
           if (scope != epoch()) throw const StaleSessionException();
           _identity = jsonMap(data['operator']);
+          businessConfig = jsonMap(data['businessConfig']);
           return SharedModels(data);
         })().whenComplete(() {
           if (identical(_reading, future)) _reading = null;
@@ -137,6 +156,17 @@ class SharedBackend {
         'captchaEnabled': false,
       }; // Shared login has no captcha protocol.
     }
+    if (path.startsWith('$root/')) {
+      return send(method, path, data: data, query: query);
+    }
+    if (path.startsWith('/api/v1/locations/')) {
+      return send(
+        method,
+        path.replaceFirst('/api/v1', root),
+        data: data,
+        query: query,
+      );
+    }
     if (path == '/login') {
       final result = jsonMap(
         await send(
@@ -157,6 +187,7 @@ class SharedBackend {
         path == '/api/v1/sites' ||
         path == '/api/v1/me/current-site') {
       _identity = jsonMap(await send('GET', '$root/mobile/identity'));
+      if (testSiteMode) _identity = testSiteIdentity(_identity);
       var selected = path.endsWith('current-site')
           ? idOf(body['siteId'])
           : siteId();
@@ -568,6 +599,21 @@ class SharedBackend {
   }
 
   Future<dynamic> _communicate(String action, JsonMap input) async {
+    if (action == 'calls' && !hasEquipmentContext(input)) {
+      throw const WearApiException(409, '人员领用关系缺失，请刷新装备后重试');
+    }
+    if (action == 'broadcast') {
+      final recipients = jsonList(input['recipients']);
+      final ids = (input['deviceIds'] as List? ?? const []).map(idOf).toSet();
+      if (recipients.isEmpty ||
+          recipients.length != ids.length ||
+          recipients.any(
+            (r) =>
+                !hasEquipmentContext(r) || !ids.contains(idOf(r['deviceId'])),
+          )) {
+        throw const WearApiException(409, '播报对象的领用关系已缺失，请刷新后重试');
+      }
+    }
     final fingerprint = jsonEncode({...input}..remove('idempotencyKey'));
     final key = '$action:$fingerprint';
     final body = _communicationCommands.putIfAbsent(

@@ -8,9 +8,14 @@ import org.springframework.stereotype.Component;
 @org.springframework.scheduling.annotation.EnableScheduling
 public class PlatformStatusPoller {
     private final AdminLedgerStore ledger;private final AdminPlatformService platform;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
     public PlatformStatusPoller(AdminLedgerStore ledger,AdminPlatformService platform){this.ledger=ledger;this.platform=platform;}
     @Scheduled(initialDelay=120000,fixedDelay=120000)
     public void refresh() {
+        if(maintenance!=null && !maintenance.tryBeginWrite())return;
+        try { refreshActive(); } finally { if(maintenance!=null)maintenance.endWrite(); }
+    }
+    private void refreshActive() {
         JSONObject state=ledger.read();if(state==null)return;
         JSONObject sources=state.getJSONObject("platformSync");if(sources==null)return;
         for(String site:sources.keySet())try { synchronized(ledger) { platform.sync("demo-system",site,true); } }

@@ -428,7 +428,9 @@ class TaskReferenceView extends StatelessWidget {
                                               for (final type in [
                                                 'helmet',
                                                 'belt',
-                                                'watch',
+                                                if (task['simulatedWatchVisible'] !=
+                                                    false)
+                                                  'watch',
                                               ])
                                                 _memberStatus(person, type),
                                             ],

@@ -13,15 +13,18 @@ public class GuardianEvents {
     private final GuardianStore store;
     private final GuardianAccess access;
     private final GuardianFiles files;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private HelmetEventDelivery helmetDelivery;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private PersonEquipmentContext equipment;
     public GuardianEvents(GuardianStore store,GuardianAccess access,GuardianFiles files) { this.store=store;this.access=access;this.files=files; }
 
     static boolean normalize(JSONObject state) {
         String before=state.toJSONString();
+        GuardianDemoData.mark(state);
         JSONObject assistance=state.getJSONObject("assistance");
         if(assistance==null) { assistance=new JSONObject();state.put("assistance",assistance); }
         for(Object raw:rows(state,"events")) { JSONObject event=(JSONObject)raw;
             if(!event.containsKey("version")) event.put("version",1);
-            if(!event.containsKey("source")) event.put("source","device");
+            if(!event.containsKey("source")) event.put("source","unknown");
             rows(event,"observations");
             if("人员求助".equals(event.getString("type")) && !assistance.containsKey(event.getString("id"))) {
                 JSONObject old=state.getJSONObject("sos");
@@ -31,7 +34,7 @@ public class GuardianEvents {
         }
         return !before.equals(state.toJSONString());
     }
-    public JSONObject snapshot(JSONObject actor) { return access.context(actor).snapshot(store.snapshot()); }
+    public JSONObject snapshot(JSONObject actor) { GuardianAccess.Context ctx=access.context(actor);JSONObject result=ctx.snapshot(store.snapshot());if(equipment!=null)equipment.decorate(ctx,result);return result; }
     public JSONObject detail(JSONObject actor,String id) {
         GuardianAccess.Context ctx=access.context(actor);JSONObject state=store.snapshot();JSONObject event=find(state,"events",id);ctx.requireEvent(event,null);
         return present(state,event,ctx);
@@ -41,7 +44,7 @@ public class GuardianEvents {
         GuardianAccess.Context ctx=access.context(actor);JSONObject state=store.snapshot();List<JSONObject> result=new ArrayList<>();
         if(site!=null&&!site.isEmpty()&&!ctx.site(siteId(ctx.data,site))) throw fail(403,"PERMISSION_DENIED","厂站不在授权范围");
         for(Object raw:rows(state,"events")) {JSONObject e=(JSONObject)raw;
-            if(!ctx.event(e) || site!=null&&!site.isEmpty()&&!site.equals(e.getString("station"))&&!site.equals(ctx.eventSite(e))) continue;
+            if(!ctx.operational(e) || !ctx.event(e) || site!=null&&!site.isEmpty()&&!site.equals(e.getString("station"))&&!site.equals(ctx.eventSite(e))) continue;
             if(status!=null&&!status.isEmpty()&&!status.equals(e.getString("status"))) continue;
             if(type!=null&&!type.isEmpty()&&!type.equals(e.getString("type"))) continue;
             result.add(present(state,e,ctx)); }
@@ -66,6 +69,9 @@ public class GuardianEvents {
         return result[0];
     }
     public JSONObject command(JSONObject actor,String id,String action,JSONObject input) {
+        return HelmetEventLifecycle.coordinate(() -> commandOrdered(actor,id,action,input));
+    }
+    private JSONObject commandOrdered(JSONObject actor,String id,String action,JSONObject input) {
         GuardianAccess.Context ctx=access.context(actor); String op=permission(action),key=operation(ctx,id+":"+action,input);final JSONObject[] result={null};
         store.update(state->{
             JSONObject event=find(state,"events",id);ctx.requireEvent(event,op);
@@ -103,7 +109,9 @@ public class GuardianEvents {
                 }
             }
             event.put("version",event.getIntValue("version")+1);event.put("updatedAt",Instant.now().toString());remember(state,key,input,id);bump(state);result[0]=present(state,event,ctx);return true;
-        });return result[0];
+        });
+        if(helmetDelivery!=null && result[0]!=null && "direct-helmet".equals(result[0].getString("protocol"))) helmetDelivery.synchronize(result[0]);
+        return result[0];
     }
     public void upload(JSONObject actor,String id,String contentType,java.io.InputStream bytes) {
         GuardianAccess.Context ctx=access.context(actor);
@@ -120,6 +128,10 @@ public class GuardianEvents {
         GuardianAccess.Context ctx=access.context(actor);JSONObject state=store.snapshot();
         JSONObject uploads=state.getJSONObject("uploads"), upload=uploads==null?null:uploads.getJSONObject(id);
         if(upload!=null && upload.getString("eventId")==null && ctx.id().equals(upload.getString("ownerId"))) return files.read(id);
+        // Archived demo events remain inspectable, including any later review photos, under the original event ACL.
+        for(Object raw:rows(state,"media")) {JSONObject media=(JSONObject)raw;
+            if(id.equals(media.getString("blobId")) && ctx.event(find(state,"events",media.getString("eventId")))) return files.read(id);
+        }
         for(Object raw:rows(ctx.snapshot(state),"media")) if(id.equals(((JSONObject)raw).getString("blobId"))) return files.read(id);
         throw fail(404,"FILE_NOT_FOUND","照片不存在或不在授权范围");
     }
@@ -141,8 +153,8 @@ public class GuardianEvents {
     private JSONArray verificationPhotos(JSONObject state,String id) {JSONArray ids=new JSONArray();for(Object raw:rows(state,"media")){JSONObject m=(JSONObject)raw;if(id.equals(m.getString("eventId"))&&"核验上传".equals(m.getString("source")))ids.add(m.getString("blobId"));}return ids;}
     private static JSONObject assistance(JSONObject state,String id) {normalize(state);return state.getJSONObject("assistance").getJSONObject(id);}
     private JSONObject present(JSONObject state,JSONObject event,GuardianAccess.Context ctx) {
-        JSONObject out=copy(event);out.put("permissions",ctx.permissions(event));
-        if("人员求助".equals(event.getString("type"))) out.put("assistance",copy(assistance(state,event.getString("id"))));return out;
+        JSONObject out=safe(event);out.put("permissions",ctx.permissions(event));
+        if("人员求助".equals(event.getString("type"))) out.put("assistance",safe(assistance(state,event.getString("id"))));return out;
     }
     private static String permission(String action) {
         switch(action){case "claim":return "events:claim";case "observations":return "events:observe";case "verification-draft":case "verification":case "photos":return "events:verify";case "assist-join":case "assist-end":return "sos:assist";default:throw fail(404,"UNKNOWN_ACTION","未开放此操作");}
