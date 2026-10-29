@@ -1,0 +1,6 @@
+.local/
+node_modules/
+.env
+data/
+models/
+*.tar.gz

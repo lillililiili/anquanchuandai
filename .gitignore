@@ -13,3 +13,30 @@ audit-android-20260923/
 # Local Sketch previews and backend build copies
 /.codex-previews/
 /后端代码/melhat_server-dev/ruoyi-admin/bin/
+
+# Local runtime state and Python validation caches
+/后端代码/melhat_server-dev/ruoyi-admin/data/
+**/__pycache__/
+
+# Generated local handover extracts, scan reports and release receipts
+/交接分析/提取/
+/交接分析/全部文件清单.csv
+/交接分析/分体式文本扫描覆盖.json
+/交接分析/安全帽文件扫描索引.json
+/交接分析/报告引用检查.json
+/交接分析/数据库结构统计.json
+/交接分析/盘点统计.json
+/交接分析/重复文件.json
+/交接分析/person-device-v2*预览.json
+/交接分析/person-device-v2*回执.json
+/交接分析/person-device-v2*核查.json
+
+# One-off analysis helpers with machine-specific source paths
+/split_note.py
+/split_read.py
+/split_scan.py
+/交接分析/audit_materials.py
+/交接分析/audit_sql.py
+/交接分析/read_helmet.py
+/交接分析/scan_helmet.py
+/交接分析/summarize_evidence.py
