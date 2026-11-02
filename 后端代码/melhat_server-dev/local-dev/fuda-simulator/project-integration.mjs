@@ -14,7 +14,9 @@ const cfg = JSON.parse(fs.readFileSync(path.join(local, 'java-config.json')));
 const sim = JSON.parse(fs.readFileSync(path.join(root, '.local/config.json')));
 assert.equal(cfg.javaOrigin, 'http://127.0.0.1:18095');
 assert.equal(cfg.deviceId, 'FUDA-IT-HELMET-01');
-const evidence = {checks: [], source: 'actual project JAR and isolated MySQL, synthetic device over WebSocket'};
+const resultPath = path.join(local, 'data-result.json');
+const evidence = fs.existsSync(resultPath) ? JSON.parse(fs.readFileSync(resultPath))
+  : {checks: [], source: 'actual project JAR and isolated MySQL, synthetic device over WebSocket'};
 const messages = [], pending = new Map();
 let socket, stopping = false, connected = false, mode = 'normal', retryTimer, heartbeat, running = false;
 const media = createVideoSource({onEvent: event => messages.push({at: new Date().toISOString(), media: event})});
@@ -41,7 +43,7 @@ async function json(url, input, headers = {}) {
   assert(response.ok, `HTTP ${response.status} at ${new URL(url).pathname}: ${body.errorCode || body.code || ''}`);
   return body;
 }
-const simulator = () => json('http://127.0.0.1:19091/api/state');
+const simulator = (type = '') => json('http://127.0.0.1:19091/api/state' + (type ? '?type=' + encodeURIComponent(type) : ''));
 function signed(route, body) {
   const time = String(Math.floor(Date.now()/1000)), nonce = randomUUID();
   const digest = createHash('sha256').update(body).digest('hex');
@@ -101,6 +103,7 @@ function passed(name) {evidence.checks.push({name, passed: true, at: new Date().
 
 async function tests() {
   assert(!running, 'Test already running'); running = true; clearInterval(heartbeat);
+  evidence.completed = false; delete evidence.lastError;
   try {
     await until(() => connected, 'device login'); await delivered();
     const before = new Set(rows().map(x => x.id));
@@ -108,10 +111,12 @@ async function tests() {
     let added = rows().filter(x => !before.has(x.id));
     assert(added.some(x => x.type === 'POSITION' && x.body.data.position?.coordinateSystem === 'WGS84'));
     assert(added.some(x => x.type === 'STATUS' && x.body.data.battery?.percent === 86));
-    assert.equal((await send({act: 'ca_sos', device_id: cfg.deviceId, type: '77'})).status, true);
+    // Distinct synthetic raw code avoids the business layer merging a repeat of
+    // an existing open alarm; each acceptance run must prove a NEW alarm delivery.
+    assert.equal((await send({act: 'ca_sos', device_id: cfg.deviceId, type: 'IT-' + Date.now()})).status, true);
     await delivered();
-    const alarm = rows().findLast(x => x.type === 'ALARM'); assert(alarm);
-    assert((await simulator()).data.events.some(x => x.event.eventId === alarm.id));
+    const alarm = rows().findLast(x => x.type === 'ALARM' && !before.has(x.id)); assert(alarm);
+    assert((await simulator('ALARM')).data.events.some(x => x.event.eventId === alarm.id));
     passed('Device WebSocket -> committed business/outbox -> signed HTTP -> simulator: position/status/alarm');
 
     const beforeDrop = new Set(rows().map(x => x.id)), duplicateBefore = (await simulator()).data.duplicates;
