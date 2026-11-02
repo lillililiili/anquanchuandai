@@ -199,3 +199,64 @@
 隔离入口缺 `portal-shell.css`、`spec-screen.css` 的问题已修复；对现有 OpenLayers/HLS/通信依赖显式预构建，避免首次导航期间临时更新依赖缓存。服务端 WorkView 和样式响应200，没有关闭任何隔离限制。动态导入报错与依赖优化重载相邻，根因仍以修复后浏览器复验为准；详细记录见[隔离入口说明](../output/person-device-acceptance-20261029/regression/BROWSER-FIXTURE.md)。
 
 `2026-10-29T08:31:33Z` 最后一次源码检查纳入大屏播放器标签位置调整及隔离入口样式/依赖修复：完整前台 **173/173 通过**、构建成功；最新 `dist/index.html` SHA256 为 `5A14F4978AC4108406CC64C0FDBFA4693E88268D1D7594A5B2C8B2E962155B8C`。前一轮保存为 `results.json.portalBeforeLiveLabel`，当前为 `portalFinal`；日志仍见 `portal-final-test.log`、`portal-final-build.log`。该构建结果不替代尚未归档的样式和隔离场景浏览器复验。
+
+## 附录 D：2026-10-29 隔离浏览器能力矩阵与当前交付边界
+
+本轮回归子任务已在独立 Chrome 标签页实际操作 **5194 隔离入口**，没有操作主任务真实通话标签页。时间约为 08:53—09:08 UTC（北京时间16:53—17:08）。数据只存在内存，设备服务和业务写入均由夹具拒绝；以下“已验证”专指页面能力条件和失败状态，不代表真实硬件功能或后端写入闭环。
+
+所有证据位于 [browser 目录](../output/person-device-acceptance-20261029/browser/)，本批均为 **DOM/可访问性树文本，无成功截图**。两次截图分别在作业详情、单路失败态触发浏览器 capture 超时；没有用其他方式替代截图或把 DOM 称为图片。独立验收标签页结束时已关闭。
+
+### 前台隔离能力矩阵
+
+下表每格的证据文件遵循 `isolated-场景-页面-final.txt`，`场景` 为 belt、helmet、unassigned、offline、revoked，页面为 single、dispatch、work、sos。每格均已实际进入对应路由并读取最终内容；不是按源码推定。
+
+| 实际页面 | 仅安全带 | 仅安全帽 | 未领用 | 已领用但离线 | 权限撤销 |
+| --- | --- | --- | --- | --- | --- |
+| 单路监看 | 无视频播放器、拍照、录像；明确未领用支持视频的安全帽；语音待接入 | 视频入口可点；抓拍/录像/语音待联调禁用 | 摄像及通信区域移除，保留人员装备链接 | 视频区域保留，观看禁用并显示设备离线 | 原页面从仅帽切换后立即禁用观看，显示无操作权限 |
+| 调度通信 | 目标为 QA 安全带；语音待接入、按钮禁用；无广播功能区 | 目标为 QA 安全帽；语音待联调、按钮禁用；广播待联调 | 显示未领用通信设备，无呼叫按钮 | 目标设备保留，设备离线且禁用 | 同一选中人员显示无操作权限且禁用 |
+| 作业详情 | 1成员/1装备/1在线；无镜头；语音和联系监护人待接入 | 1成员/1装备/1在线；只有本成员安全帽镜头；语音待联调 | 1成员/0装备/0在线；无视频、无对讲；无实际现场记录 | 2装备/0在线；视频保留禁用，不能联系监护人 | 1装备仍在线，视频与联系监护人因权限禁用 |
+| SOS 处置 | 保留事件来源安全带、认领/协助入口；语音待接入，无视频 | 保留来源安全帽，语音待联调；接警不显示通话接通 | 未关联人员、明确来源安全带；仍可进入认领、协助流程；无当前通信区域 | 事件及来源仍可查，语音因离线禁用 | 事件仍可查，语音无操作权限；未因此删除处置历史 |
+
+**SOS 归属限制：**夹具的历史 `snapshot` 为空，已领用场景也显示“未关联人员”，没有把当前人员强行当作事发人员。本批只验证无历史归属不被补造；具有历史人员快照的正反例仍应另验。
+
+代表性原始证据：[仅带单路](../output/person-device-acceptance-20261029/browser/isolated-belt-single-final.txt)、[仅帽通信](../output/person-device-acceptance-20261029/browser/isolated-helmet-dispatch-final.txt)、[撤权作业](../output/person-device-acceptance-20261029/browser/isolated-revoked-work-final.txt)、[离线 SOS](../output/person-device-acceptance-20261029/browser/isolated-offline-sos-final.txt)。其他文件按上面的固定命名可直接在证据目录核对。
+
+| 额外实际操作 | 结果 | 证据 |
+| --- | --- | --- |
+| 仅带人员页与视频墙 | 人员侧栏有双钩、无体征与现场视频；视频墙0通道、0可操作、空状态，没有用安全带填格 | [人员页 DOM](../output/person-device-acceptance-20261029/browser/isolated-belt-personnel-final.txt)、[视频墙 AX](../output/person-device-acceptance-20261029/browser/isolated-belt-video-final.txt) |
+| 仅帽单路点击查看实时视频 | 明确“实时视频暂不可用 / 设备服务不可用，未发送实际请求”；保留重试和停止观看，不显示成功或假画面 | [直播失败 DOM](../output/person-device-acceptance-20261029/browser/isolated-helmet-live-failure.txt) |
+| 未领用 SOS 点击接警认领 | 显示“处置写入被阻止，未修改实际事件”，事件仍待认领、待接警；没有伪造处置成功 | [认领失败 DOM](../output/person-device-acceptance-20261029/browser/isolated-unassigned-sos-claim-failure.txt) |
+| 模拟手表显示→隐藏 | 人员详情显示 RL-W001 及四项“模拟数据·非实时测量”；隐藏后手表卡、体征区和模拟领用行消失，帽带两条保留 | [显示](../output/person-device-acceptance-20261029/browser/isolated-watch-visible-person-final.txt)、[隐藏](../output/person-device-acceptance-20261029/browser/isolated-watch-hidden-person-final.txt) |
+| 总览模拟开关对统计的影响 | 显示与隐藏两种状态真实在线均2/2；显示时单独注明模拟手表1块，未计入真实在线率 | [显示](../output/person-device-acceptance-20261029/browser/isolated-watch-visible-overview-final.txt)、[隐藏](../output/person-device-acceptance-20261029/browser/isolated-watch-hidden-overview-final.txt) |
+
+隔离入口本轮修复：补齐 `broadcasts: []`，解决测试夹具造成的调度渲染异常；补充内存模拟手表开关场景，并按真实观测契约补齐 `bindingId/observedAt`。未修改日常数据库或业务数据。作业详情现已正常导航，证据为 `isolated-belt-work-final.txt`；旧 `isolated-belt-work.txt` 仍保留为失败记录，不能计入通过。人员/作业表格以及模拟体征观测时间仍可见长 ISO 串，属于本次隔离观察到的显示改善项，不影响能力判断，但不能称日期显示已全站统一。
+
+### 前后台当前完成范围与未完成项
+
+| 范围 | 当前有证据的完成项 | 仍未完成 / 不作通过结论 |
+| --- | --- | --- |
+| 前台总览、人员、详情、作业、视频、通信、SOS | 日常页面基本入口、真实空态、隔离矩阵如上；大屏取得真实安全帽画面见附录C | 更多视口的截图、完整导航/重登录/厂站切换/失效权限回归；全部播放器音量和全屏；真实通话双向声音、静音/恢复/挂断待主任务追加 |
+| 前台定位与轨迹 | 日常已测人员/设备查询、未知质量过滤与不补假点 | 最新位置恢复后的PC页面证据、有效轨迹回放、换绑分段及实际移动仍需对应记录；不能以安卓地图结果替代PC |
+| 前台围栏、告警、事件 | 日常空围栏/空进出、告警筛选分页、历史证据与当前直播分开；隔离未领用SOS可进入处置且失败不冒充成功 | 地理围栏绘制/保存与真实进入/离开、真实认领至核验闭环、已发生人员归属跨换绑正反例 |
+| 前台资料与统计 | 真实资料空态、待联调按钮禁用；统计真实/模拟口径；92条CSV预览生成 | 照片、录像、设备文件真实生成/预览/下载；CSV实际文件落盘未确认，不能称下载成功 |
+| 后台装备资产、人员组织、权限协作、操作日志 | 本轮既有完整基线477项/31文件通过，构建成功；必要运行服务已核查 | 本子任务未操作5181上述页面，未生成后台浏览器截图；不能把单元测试当逐页验收；新增只读能力表由后台负责子任务另行记录 |
+| 手表统一开关 | 隔离前台人员详情与总览实际切换，体征隐藏/真实分母不变；规则有自动化 | 日常后台配置写入→前台→安卓三端同步、缓存刷新与重登录仍未做浏览器闭环 |
+| 归还换绑、多观看者、清理 | 原上下文/清理有自动化；PC/安卓共同观看另有主任务与后端记录 | 本批隔离不包含真实归还/重新领用、真实服务端403/409、成功语音会话中撤权；不把页面禁止操作当后端验证 |
+
+### 专用语音联调入口与回归
+
+遵照用户同意现场配合，仅 `demo-system` 可在调度通信显式启用一次“语音联调测试”。普通语音入口仍按未验收禁用；验收入口复用人员/设备/领用版本及原幂等通话接口，只发送 `acceptanceTest=true`，不修改 `verified`。安全带无测试入口，设备在线、接入、SIP注册、权限仍校验；会话清理按原归属执行。
+
+新增4项关键策略测试后，定向通话测试 **17/17**、完整前台 **177/177**、构建成功。日志：[定向](../output/person-device-acceptance-20261029/regression/voice-acceptance-test.log)、[全量](../output/person-device-acceptance-20261029/regression/voice-acceptance-full-test.log)、[构建](../output/person-device-acceptance-20261029/regression/voice-acceptance-build.log)。构建入口 SHA256：`076D2AD57C394D80012AA66E7A422587368F331BFD27C140EB9F2D6BD7DFFC15`。本子任务没有发起真实呼叫；普通 `qa-operator` 的隔离调度页面没有测试入口。本段记录代码与权限验证，实机双向声音结果待主任务另行追加。
+
+本批隔离夹具修复后再次完整测试 **177/177**，见 [portal-after-isolated-browser-test.log](../output/person-device-acceptance-20261029/regression/portal-after-isolated-browser-test.log)。只有夹具数据契约改变，日常发布构建入口未变化。
+
+**停止点补记（主任务报告）：**随后 Computer Use 因无法可靠确认 Windows 当前浏览器 URL 而停止。主任务已发起一次真实语音，状态仅到 `offered`、尚未连接；不计为接通或语音验收通过。后端子任务仅清理原会话。该信息为主任务报告，不是本子任务独立浏览器证据；停止后本子任务没有继续操作浏览器。
+
+## 附录 E：语音未接通原因审计与离线修复
+
+后续服务器证据补充：设备实际上在09:08:41已应答PCMA，但电脑没有共同入会，不能把旧UI的offered/等待接听超时当成设备未应答。主任务只读日志确认电脑SIP注册成功、没有INVITE；具体是否麦克风权限未响应尚无实际权限结果，不能下定论。后端子任务负责保留原来被过滤的answered阶段。
+
+前台已改为先准备麦克风，成功后才呼叫设备；20秒授权超时、取消或拒绝均不拨设备，迟到stream释放。SIP复用同一stream，INVITE发出与Established分开；设备应答、电脑入会和双方确认分别显示，避免错误归因。取消发生在异步流移交期间和SIP清理异常都有释放保护，播放恢复成功会同步状态。
+
+本次仅代码、离线测试和构建，**没有新实机呼叫、没有浏览器操作**。定向37项通过；最终前台全量与构建回执见 [修复记录](../output/person-device-acceptance-20261029/regression/麦克风前置与通话阶段修复.md) 和 [results.json](../output/person-device-acceptance-20261029/regression/results.json)。真实麦克风授权、双方声音、静音/恢复及挂断仍未验收；需要用户在浏览器手动处理实际权限后重新验证。

@@ -4,14 +4,14 @@ import AppButton from '@/components/ui/AppButton.vue';
 import AppPanel from '@/components/ui/AppPanel.vue';
 import { db, tick, connection, refreshSnapshot } from '@/mock/runtime';
 import { personFeature, operationContext } from '@/lib/person-equipment';
-import { deviceCallUnavailable, helmetDeviceCall as call } from '@/lib/helmet-device-call';
+import { deviceCallStatus, deviceCallUnavailable, helmetDeviceCall as call } from '@/lib/helmet-device-call';
 const props = defineProps({ personId: { type: String, default: '' } });
 const state = ref(call.getState()), error = ref(''), preparing = ref(false);
 const acceptanceEnabled = ref(false);
 const unsubscribe = call.subscribe(value => { state.value = value; }); onUnmounted(unsubscribe);
 const feature = computed(() => { tick.value; return personFeature(db, props.personId, 'voice'); });
 const active = computed(() => ['requesting','connecting','active','ending','unknown'].includes(state.value.phase));
-const status = computed(() => ({ idle:'尚未发起通话',requesting:'正在请求呼叫',connecting:'等待设备接听',active:'设备已接通（服务端确认）',ending:'正在结束，等待服务端确认',unknown:'通话结果待确认',ended:'通话已结束',failed:'呼叫失败',timeout:'等待接听超时' })[state.value.phase]);
+const status = computed(() => deviceCallStatus(state.value));
 const unavailable = computed(() => !props.personId ? '请选择一名人员' : !feature.value.supported ? '该人员没有已领用的通信设备' : !feature.value.available ? feature.value.reason : connection.value.status !== 'online' ? '业务后台未连接' : '');
 const testEntry = computed(() => {
   tick.value;
@@ -28,7 +28,7 @@ watch(() => JSON.stringify([props.personId, feature.value.deviceId, feature.valu
 async function act(fn) { error.value='';try { await fn(); } catch(reason) { error.value=reason.message || '通信请求失败'; } }
 async function start(acceptanceTest = false) {
   const testing = acceptanceTest === true;
-  if ((testing ? testUnavailable.value : unavailable.value) || preparing.value || active.value) return;
+  if ((testing ? testUnavailable.value : unavailable.value) || preparing.value || active.value || state.value.recovering) return;
   preparing.value=true;
   await act(async () => {
     const context=operationContext(feature.value);
@@ -47,19 +47,22 @@ async function start(acceptanceTest = false) {
   <AppPanel title="语音通话">
     <p v-if="personId">{{ db.person(personId)?.name }} · {{ feature.deviceId || '无通信设备' }}</p>
     <p v-if="unavailable" class="muted">{{ unavailable }}</p>
-    <AppButton v-if="feature.supported" :disabled="!!unavailable || active || preparing" tone="primary" icon="phone-line" @click="start()">{{ preparing ? '正在准备…' : feature.available ? '呼叫该人员' : feature.reason }}</AppButton>
+    <AppButton v-if="feature.supported" :disabled="!!unavailable || active || preparing || state.recovering" tone="primary" icon="phone-line" @click="start()">{{ preparing ? '正在准备…' : feature.available ? '呼叫该人员' : feature.reason }}</AppButton>
     <section v-if="testEntry" class="detail-section" aria-label="语音联调测试">
-      <label><input v-model="acceptanceEnabled" type="checkbox" :disabled="active || preparing"> 启用本次语音联调测试</label>
+      <label><input v-model="acceptanceEnabled" type="checkbox" :disabled="active || preparing || state.recovering"> 启用本次语音联调测试</label>
       <p class="muted">仅系统管理员使用。请确认现场人员已准备；本次测试仍校验领用、在线和接入状态，不会改变正式验收状态。</p>
-      <AppButton :disabled="!!testUnavailable || active || preparing" @click="start(true)">发起语音联调测试</AppButton>
+      <AppButton :disabled="!!testUnavailable || active || preparing || state.recovering" @click="start(true)">发起语音联调测试</AppButton>
       <p v-if="acceptanceEnabled && testUnavailable" role="status" class="muted">{{ testUnavailable }}</p>
     </section>
-    <div v-if="active || state.recordId" class="detail-section">
+    <p v-if="state.recoveryError" role="alert" class="form-error">{{ state.recoveryError }}</p>
+    <AppButton v-if="state.recoveryError && !active" tone="small" :disabled="state.recovering" @click="act(() => call.recover({ operatorId: db.state.operator?.id, deviceId: feature.deviceId }))">{{ state.recovering ? '正在检查…' : '重试检查' }}</AppButton>
+    <div v-if="active || state.recordId || state.error || state.recovering" class="detail-section">
       <p role="status">{{ db.person(state.personId)?.name || state.personId }} · {{ state.deviceId }} · {{ status }}</p>
       <p v-if="state.acceptanceTest" class="muted">本次为语音联调测试，设备语音仍未正式验收。</p>
+      <p v-if="state.recovered" class="muted">此页只恢复会话状态，未打开麦克风或加入通话。请核实原页面；需要结束时使用下方按钮。</p>
       <p v-if="state.clientStatus==='remote_audio'" class="muted">已收到远端音频，接听设备身份仍以服务端确认结果为准。</p>
       <div v-if="active" class="form-actions">
-        <AppButton tone="danger" @click="act(() => call.end())">{{ state.endRequested ? '重试结束' : '结束通话' }}</AppButton>
+        <AppButton tone="danger" @click="act(() => call.end())">{{ state.endRequested ? '重试结束' : state.recovered ? '结束已有会话' : '结束通话' }}</AppButton>
         <AppButton :disabled="state.endRequested || !['local_joined','remote_audio','playback_blocked'].includes(state.clientStatus)" @click="act(() => call.setMuted(!state.muted))">{{ state.muted ? '开启麦克风' : '麦克风静音' }}</AppButton>
         <AppButton :disabled="state.pending" @click="act(() => call.refresh())">刷新通话状态</AppButton>
         <AppButton v-if="state.clientStatus==='playback_blocked'" @click="act(() => call.resumeAudio())">播放通话声音</AppButton>

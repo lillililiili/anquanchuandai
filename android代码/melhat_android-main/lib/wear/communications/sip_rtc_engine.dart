@@ -6,20 +6,63 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'models.dart';
 import 'rtc_engine.dart';
+import 'media_preparation.dart';
+
+abstract interface class WearPreparedRtcMedia {
+  void usePreparedMedia(MediaStream stream);
+}
 
 /// Protocol selection is explicit; SIP secrets never enter persistent settings.
-class ProtocolWearRtcEngine implements WearRtcEngine, WearRtcAudioRoute {
+class ProtocolWearRtcEngine
+    implements WearRtcEngine, WearRtcAudioRoute, WearRtcPreparation {
   ProtocolWearRtcEngine({
     WearRtcEngine Function()? agoraFactory,
     WearRtcEngine Function(void Function(MediaStream?))? sipFactory,
+    RtcMediaPreparation<MediaStream>? preparation,
   }) : _agoraFactory = agoraFactory ?? AgoraWearRtcEngine.new,
-       _sipFactory = sipFactory ?? SipWearRtcEngine.new;
+       _sipFactory = sipFactory ?? SipWearRtcEngine.new,
+       _preparation =
+           preparation ??
+           RtcMediaPreparation<MediaStream>(
+             requestPermission: (video) async {
+               final permissions = await [
+                 Permission.microphone,
+                 if (video) Permission.camera,
+               ].request();
+               return permissions.values.every(
+                 (permission) => permission.isGranted,
+               );
+             },
+             acquire: (video) async {
+               final stream = await navigator.mediaDevices.getUserMedia({
+                 'audio': true,
+                 'video': video,
+               });
+               if (stream.getAudioTracks().isEmpty) {
+                 await releaseWearMedia(stream);
+                 throw const RtcJoinFailure('未取得可用麦克风，未发起呼叫');
+               }
+               return stream;
+             },
+             release: releaseWearMedia,
+           );
   final WearRtcEngine Function() _agoraFactory;
   final WearRtcEngine Function(void Function(MediaStream?)) _sipFactory;
+  final RtcMediaPreparation<MediaStream> _preparation;
   WearRtcEngine? _active;
   final remoteStream = ValueNotifier<MediaStream?>(null);
   bool _disposed = false;
   int _generation = 0;
+  @override
+  Future<void> prepare({required bool video}) async {
+    if (_disposed) throw const RtcOperationCancelled();
+    final generation = ++_generation;
+    await _preparation.prepare(video: video);
+    if (_disposed || generation != _generation) {
+      throw const RtcOperationCancelled();
+    }
+  }
+
   @override
   Future<void> join(RtcCredentials c, RtcCallbacks callbacks) async {
     if (_disposed) throw const RtcOperationCancelled();
@@ -40,6 +83,13 @@ class ProtocolWearRtcEngine implements WearRtcEngine, WearRtcAudioRoute {
         : null;
     if (next == null) throw const RtcJoinFailure('设备通话协议暂不支持');
     _active = next;
+    if (next is WearPreparedRtcMedia) {
+      final local = _preparation.take(video: c.video);
+      if (local == null) throw const RtcJoinFailure('请先准备麦克风后再发起呼叫');
+      (next as WearPreparedRtcMedia).usePreparedMedia(local);
+    } else {
+      await _preparation.cancel();
+    }
     await next.join(c, callbacks);
     if (_disposed || generation != _generation) {
       await next.dispose();
@@ -66,7 +116,11 @@ class ProtocolWearRtcEngine implements WearRtcEngine, WearRtcAudioRoute {
     final old = _active;
     _active = null;
     if (!_disposed) remoteStream.value = null;
-    await old?.dispose();
+    try {
+      await _preparation.cancel();
+    } finally {
+      await old?.dispose();
+    }
   }
 
   @override
@@ -77,13 +131,41 @@ class ProtocolWearRtcEngine implements WearRtcEngine, WearRtcAudioRoute {
     final old = _active;
     _active = null;
     remoteStream.value = null;
-    await old?.dispose();
-    remoteStream.dispose();
+    try {
+      await _preparation.cancel();
+    } finally {
+      try {
+        await old?.dispose();
+      } finally {
+        remoteStream.dispose();
+      }
+    }
   }
 }
 
+Future<void> releaseWearMedia(MediaStream stream) async {
+  Object? failure;
+  for (final track in stream.getTracks()) {
+    try {
+      await track.stop();
+    } catch (error) {
+      failure ??= error;
+    }
+  }
+  try {
+    await stream.dispose();
+  } catch (error) {
+    failure ??= error;
+  }
+  if (failure != null) throw failure;
+}
+
 class SipWearRtcEngine
-    implements WearRtcEngine, WearRtcAudioRoute, SipUaHelperListener {
+    implements
+        WearRtcEngine,
+        WearRtcAudioRoute,
+        WearPreparedRtcMedia,
+        SipUaHelperListener {
   SipWearRtcEngine(this.onStream);
   final void Function(MediaStream?) onStream;
   // SIP messages contain authentication material. Disable library logging even in debug builds.
@@ -98,17 +180,16 @@ class SipWearRtcEngine
   Timer? _deadline, _expiry;
 
   @override
+  void usePreparedMedia(MediaStream stream) => _local = stream;
+
+  @override
   Future<void> join(RtcCredentials c, RtcCallbacks callbacks) async {
     if (_closed || c.demo || !c.isUsable || c.isExpired) {
       throw const RtcJoinFailure('SIP 通话凭据无效或已过期');
     }
-    final permissions = await [
-      Permission.microphone,
-      if (c.video) Permission.camera,
-    ].request();
-    if (_closed) throw const RtcOperationCancelled();
-    if (permissions.values.any((p) => !p.isGranted)) {
-      throw RtcPermissionDenied(video: c.video);
+    final local = _local;
+    if (local == null || local.getAudioTracks().isEmpty) {
+      throw const RtcJoinFailure('麦克风尚未准备，不能加入设备通话');
     }
     _callbacks = callbacks;
     _registered = Completer<void>();
@@ -140,19 +221,7 @@ class SipWearRtcEngine
       await _registered!.future.timeout(const Duration(seconds: 25));
       if (_closed) throw const RtcOperationCancelled();
       if (c.isExpired) throw const RtcJoinFailure('通话授权已到期');
-      // Camera is acquired only for an explicitly requested video call.
-      final local = await navigator.mediaDevices.getUserMedia({
-        'audio': true,
-        'video': c.video,
-      });
-      if (_closed) {
-        for (final track in local.getTracks()) {
-          await track.stop();
-        }
-        await local.dispose();
-        throw const RtcOperationCancelled();
-      }
-      _local = local;
+      // Reuse the stream already acquired before the server dial request.
       if (!await _helper.call(
         c.target,
         voiceOnly: !c.video,
@@ -185,7 +254,10 @@ class SipWearRtcEngine
   void registrationStateChanged(RegistrationState state) {
     final pending = _registered;
     if (_closed || pending == null || pending.isCompleted) return;
-    if (state.state == RegistrationStateEnum.REGISTERED) pending.complete();
+    if (state.state == RegistrationStateEnum.REGISTERED) {
+      _callbacks?.onRegistered?.call();
+      pending.complete();
+    }
     if (state.state == RegistrationStateEnum.REGISTRATION_FAILED) {
       pending.completeError(const RtcJoinFailure('SIP 注册失败'));
     }
@@ -213,7 +285,7 @@ class SipWearRtcEngine
         state.originator == Originator.remote &&
         state.stream != null) {
       onStream(state.stream);
-      if (!_remote) {
+      if (!_remote && state.stream!.getAudioTracks().isNotEmpty) {
         _remote = true;
         _callbacks?.onRemoteJoined(1);
       }
@@ -263,13 +335,17 @@ class SipWearRtcEngine
       _call?.hangup();
     } catch (_) {}
     _call = null;
-    _helper.stop();
-    for (final track in _local?.getTracks() ?? <MediaStreamTrack>[]) {
-      await track.stop();
-    }
-    await _local?.dispose();
+    final local = _local;
     _local = null;
-    onStream(null);
+    try {
+      _helper.stop();
+    } finally {
+      try {
+        if (local != null) await releaseWearMedia(local);
+      } finally {
+        onStream(null);
+      }
+    }
   }
 
   @override

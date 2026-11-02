@@ -69,3 +69,60 @@ test('leaving while SIP connection is pending cancels and cleans its later resul
   await session.leaveChannel();finish();
   await assert.rejects(joining,/取消/);assert.equal(closed,1);
 });
+
+function microphone() {
+  let stopped = 0;
+  const track = { kind: 'audio', readyState: 'live', stop() { this.readyState = 'ended'; stopped++; } };
+  return { stream: { getTracks: () => [track], getAudioTracks: () => [track] }, get stopped() { return stopped; } };
+}
+test('prepared microphone is captured once and transferred to SIP without a second permission request', async () => {
+  const mic = microphone(), stages = []; let acquisitions = 0;
+  const session = createRtcSession(undefined, async (_rtc, options) => {
+    assert.equal(options.microphoneStream, mic.stream);
+    assert.equal(mic.stopped, 0);
+    return { close: async () => {} };
+  }, undefined, { getUserMedia: async constraints => { acquisitions++; assert.deepEqual(constraints, { audio:true, video:false }); return mic.stream; } });
+  await session.prepareMicrophone({ onMediaState: value => stages.push(value) });
+  assert.deepEqual(stages, ['microphone_permission','microphone_ready']);
+  await session.joinChannel({ protocol: 'SIP' }); await session.leaveChannel();
+  assert.equal(acquisitions, 1); assert.ok(mic.stopped > 0);
+});
+test('cancelled permission and timed-out permission stop a late media stream', async () => {
+  for (const timeout of [false,true]) {
+    const mic = microphone(); let allow, timer;
+    const session = createRtcSession(undefined, undefined, undefined, {
+      getUserMedia: () => new Promise(resolve => { allow = resolve; }),
+      schedule: fn => { timer = fn; return 1; }, cancel: () => {},
+    });
+    const preparation = session.prepareMicrophone();
+    const rejected = assert.rejects(preparation, timeout ? /授权超时.*未呼叫/ : /取消.*未呼叫/);
+    if (timeout) timer(); else await session.leaveChannel();
+    await rejected; allow(mic.stream); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(mic.stopped, 1); assert.equal(session.getActiveCallId(), undefined);
+  }
+});
+test('microphone refusal, absence and occupancy return distinct public errors', async () => {
+  for (const [name, text] of [['NotAllowedError', /权限被拒绝/], ['NotFoundError', /未检测到麦克风/], ['NotReadableError', /被占用或无法读取/]]) {
+    const session = createRtcSession(undefined, undefined, undefined, { getUserMedia: async () => { const error = Error('private browser error'); error.name = name; throw error; } });
+    await assert.rejects(session.prepareMicrophone(), text); assert.equal(session.getActiveCallId(), undefined);
+  }
+});
+
+test('cancellation while SIP waits for previous cleanup cannot orphan or reuse the transferred microphone', async () => {
+  const mic = microphone(); let sipCreated = 0;
+  const session = createRtcSession(undefined, async () => { sipCreated++; return { close: async () => {} }; }, undefined,
+    { getUserMedia: async () => mic.stream });
+  await session.prepareMicrophone();
+  const joining = session.joinChannel({ protocol: 'SIP' });
+  const rejected = assert.rejects(joining, /取消/);
+  await session.leaveChannel(); await rejected;
+  assert.equal(sipCreated, 0); assert.ok(mic.stopped > 0); assert.equal(session.getActiveCallId(), undefined);
+});
+test('SIP close rejection still stops the session microphone', async () => {
+  const mic = microphone();
+  const session = createRtcSession(undefined, async () => ({ close: async () => { throw Error('cleanup unavailable'); } }), undefined,
+    { getUserMedia: async () => mic.stream });
+  await session.prepareMicrophone(); await session.joinChannel({ protocol: 'SIP' });
+  await assert.rejects(session.leaveChannel(), /cleanup unavailable/);
+  assert.ok(mic.stopped > 0); assert.equal(session.getActiveCallId(), undefined);
+});

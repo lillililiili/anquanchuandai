@@ -26,34 +26,70 @@ $stateReplaceAttempts = 20
 $stateReplaceDelayMilliseconds = 100
 
 function Get-RetryOutcome([int]$ConsecutiveShortFailures, [double]$AliveSeconds,
-    [int]$ExitCode, [bool]$StopRequested = $false) {
+    [Nullable[int]]$ExitCode, [bool]$StopRequested = $false,
+    [ValidateSet('requested-stop', 'exit-unknown', 'clean-exit', 'host-key-failed', 'authentication-failed', 'forward-rejected', 'network-error', 'ssh-error')]
+    [string]$ExitCategory = 'ssh-error') {
     $stable = $AliveSeconds -ge $stableConnectionSeconds
     $failures = $(if ($stable) { 0 } else { $ConsecutiveShortFailures + 1 })
     $category = if ($StopRequested) { 'operator-stop' }
         elseif ($stable) { 'stable-session-ended' }
         elseif ($ExitCode -eq 0) { 'short-clean-exit' }
         else { 'short-ssh-failure' }
+    $retry = -not $StopRequested -and $failures -lt $maximumConsecutiveShortFailures
+    $delay = $retryDelaySeconds
+    $status = $(if ($StopRequested) { 'stopped' } elseif ($retry) { 'waiting-to-reconnect' } else { 'retry-budget-exhausted' })
+    if (-not $StopRequested -and $ExitCategory -in @('host-key-failed', 'authentication-failed', 'exit-unknown')) {
+        $retry = $false; $status = 'attention-required'; $delay = 0
+    } elseif (-not $StopRequested -and $failures -ge $maximumConsecutiveShortFailures -and
+        $ExitCategory -in @('network-error', 'forward-rejected')) {
+        # A stale remote listener or a long network outage can outlive the fast
+        # retry budget. Keep trying with a bounded cadence; never kill a remote
+        # listener or weaken host-key checks to obtain the port.
+        $retry = $true; $status = 'cooldown-reconnect'
+        $delay = $(if ($failures -eq $maximumConsecutiveShortFailures) { 60 }
+            elseif ($failures -eq $maximumConsecutiveShortFailures + 1) { 120 } else { 300 })
+    }
     return [pscustomobject]@{ consecutiveShortFailures = $failures;
-        shouldRetry = (-not $StopRequested -and $failures -lt $maximumConsecutiveShortFailures);
-        category = $category }
+        shouldRetry = $retry; category = $category; status = $status;
+        delaySeconds = $(if ($retry) { $delay } else { 0 }) }
+}
+
+function Get-ExitCategory($ExitCode, [bool]$StopRequested, [string]$ErrorLogPath) {
+    if ($StopRequested) { return 'requested-stop' }
+    if ($null -eq $ExitCode) { return 'exit-unknown' }
+    if ($ExitCode -eq 0) { return 'clean-exit' }
+    # Inspect only this attempt's local stderr tail; persist enums, never raw
+    # messages, destinations, identity paths or server responses.
+    try { $tail = (Get-Content -LiteralPath $ErrorLogPath -Tail 12 -ErrorAction Stop) -join "`n" }
+    catch { return 'ssh-error' }
+    if ($tail -match 'Host key verification failed|REMOTE HOST IDENTIFICATION HAS CHANGED') { return 'host-key-failed' }
+    if ($tail -match 'Permission denied|Authentication failed|No more authentication methods') { return 'authentication-failed' }
+    if ($tail -match 'remote port forwarding failed|remote forward failure|cannot listen to port') { return 'forward-rejected' }
+    if ($tail -match 'Connection timed out|Operation timed out|Connection refused|Connection reset|Connection closed|Broken pipe|No route to host|Network is unreachable|not responding|Could not resolve hostname') { return 'network-error' }
+    return 'ssh-error'
 }
 
 function Write-TunnelEvent(
-    [ValidateSet('attempt-started', 'connection-stable', 'attempt-exited', 'retry-budget-exhausted', 'worker-ended')]
+    [ValidateSet('attempt-started', 'connection-stable', 'attempt-exited', 'retry-budget-exhausted', 'attention-required', 'worker-ended')]
     [string]$Event,
-    [ValidateSet('none', 'operator-stop', 'stable-session-ended', 'short-clean-exit', 'short-ssh-failure', 'retry-budget-exhausted', 'worker-error')]
+    [ValidateSet('none', 'operator-stop', 'stable-session-ended', 'short-clean-exit', 'short-ssh-failure', 'retry-budget-exhausted', 'attention-required', 'worker-error')]
     [string]$Category,
     [ValidateRange(0, [double]::MaxValue)][double]$AliveSeconds = 0,
     [Nullable[int]]$ExitCode = $null,
     [long]$TotalAttempts = 0,
-    [int]$ConsecutiveShortFailures = 0
+    [int]$ConsecutiveShortFailures = 0,
+    [ValidateSet('none', 'requested-stop', 'exit-unknown', 'clean-exit', 'host-key-failed', 'authentication-failed', 'forward-rejected', 'network-error', 'ssh-error')]
+    [string]$ExitCategory = 'none',
+    [ValidateSet(0, 10, 60, 120, 300)][int]$DelaySeconds = 0
 ) {
     # Callers hold the control lock. Never accept raw SSH output, URLs, key paths,
     # exception text or caller-supplied fields in this small diagnostic journal.
     $record = [ordered]@{ utc = [DateTime]::UtcNow.ToString('o'); event = $Event;
         aliveSeconds = [Math]::Round($AliveSeconds, 3); exitCode = $ExitCode;
         category = $Category; totalAttempts = $TotalAttempts;
-        consecutiveShortFailures = $ConsecutiveShortFailures }
+        consecutiveShortFailures = $ConsecutiveShortFailures;
+        exitCategory = $ExitCategory; delaySeconds = $DelaySeconds }
+    try {
     $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes(($record | ConvertTo-Json -Compress) + "`n")
     if ($bytes.Length -gt $maximumEventFileBytes) { throw 'Tunnel event exceeds the fixed journal limit.' }
     if ([System.IO.File]::Exists($eventFile) -and
@@ -70,6 +106,12 @@ function Write-TunnelEvent(
         [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
     try { $stream.Write($bytes, 0, $bytes.Length) }
     finally { $stream.Dispose() }
+        $script:eventLogError = $false
+    } catch {
+        # A diagnostic log failure must not tear down a healthy SSH process.
+        # The state writer records this boolean without exposing error text.
+        $script:eventLogError = $true
+    }
 }
 
 function Enter-ControlLock {
@@ -96,6 +138,7 @@ function Test-RetryableStateReplaceError([System.Exception]$Failure) {
 
 function Write-State($State) {
     # All readers/writers hold the same exclusive lock.
+    $State | Add-Member -NotePropertyName eventLogError -NotePropertyValue ([bool]$script:eventLogError) -Force
     $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes(($State | ConvertTo-Json -Depth 8))
     $temporary = Join-Path $localDirectory ('.belt-tunnel-state-' + [Guid]::NewGuid().ToString('N') + '.tmp')
     $stream = $null
@@ -199,13 +242,15 @@ function Complete-Worker($OwnedProcess) {
             if ($null -ne $state.PSObject.Properties['connectionStable']) { $state.connectionStable = $false }
             $state.status = $(if ($state.stopRequested) { 'stopped' }
                 elseif ($state.status -eq 'retry-budget-exhausted') { 'retry-budget-exhausted' }
+                elseif ($state.status -eq 'attention-required') { 'attention-required' }
                 else { 'ended-check-ssh-log' })
-            Write-State $state
             $endCategory = $(if ($state.stopRequested) { 'operator-stop' }
                 elseif ($state.status -eq 'retry-budget-exhausted') { 'retry-budget-exhausted' }
+                elseif ($state.status -eq 'attention-required') { 'attention-required' }
                 else { 'worker-error' })
             Write-TunnelEvent -Event 'worker-ended' -Category $endCategory `
                 -TotalAttempts $state.totalAttempts -ConsecutiveShortFailures $state.consecutiveShortFailures
+            Write-State $state
         }
     } finally { $control.Dispose() }
 }
@@ -273,7 +318,10 @@ if ($Action -eq 'Status') {
             workerAlive = (Match-Fingerprint $state.worker); sshPid = $(if ($state.child) { $state.child.pid } else { $null });
             sshAlive = (Match-Fingerprint $state.child); attempts = $state.attempts;
             totalAttempts = $(if ($null -ne $state.totalAttempts) { $state.totalAttempts } else { $state.attempts });
-            consecutiveShortFailures = $state.consecutiveShortFailures; connectionStable = $state.connectionStable }
+            consecutiveShortFailures = $state.consecutiveShortFailures; connectionStable = $state.connectionStable;
+            lastExitCategory = $state.lastExitCategory; lastExitAtUtc = $state.lastExitAtUtc;
+            retryDelaySeconds = $state.retryDelaySeconds; nextRetryAtUtc = $state.nextRetryAtUtc;
+            eventLogError = $state.eventLogError }
     } finally { $control.Dispose() }
     return
 }
@@ -317,10 +365,11 @@ $sshProcess = $null
 $connectionClock = $null
 $totalAttempts = 0L
 $consecutiveShortFailures = 0
+$nextDelaySeconds = $retryDelaySeconds
 try {
     while ($true) {
         if ($totalAttempts -gt 0) {
-            for ($tick = 0; $tick -lt ($retryDelaySeconds * 2); $tick++) {
+            for ($tick = 0; $tick -lt ($nextDelaySeconds * 2); $tick++) {
                 Start-Sleep -Milliseconds 500
                 $control = Enter-ControlLock
                 try { $state = Read-State; if ($state.instance -ne $Instance -or $state.stopRequested) { return } }
@@ -354,9 +403,10 @@ try {
                 $state.totalAttempts = $totalAttempts
                 $state.consecutiveShortFailures = $consecutiveShortFailures
                 $state.connectionStable = $false
-                Write-State $state
                 Write-TunnelEvent -Event 'attempt-started' -Category 'none' `
                     -TotalAttempts $totalAttempts -ConsecutiveShortFailures $consecutiveShortFailures
+                $state | Add-Member -NotePropertyName nextRetryAtUtc -NotePropertyValue $null -Force
+                Write-State $state
             } catch {
                 if ($null -ne $sshProcess -and -not $sshProcess.HasExited) {
                     $sshProcess.Kill()
@@ -376,9 +426,9 @@ try {
                     $stableRecorded = $true
                     $state.consecutiveShortFailures = 0
                     $state.connectionStable = $true
-                    Write-State $state
                     Write-TunnelEvent -Event 'connection-stable' -Category 'none' `
                         -AliveSeconds $connectionClock.Elapsed.TotalSeconds -TotalAttempts $totalAttempts
+                    Write-State $state
                 }
             } finally { $control.Dispose() }
         }
@@ -389,20 +439,26 @@ try {
             $connectionClock.Stop()
             $aliveSeconds = $connectionClock.Elapsed.TotalSeconds
             $exitCode = $sshProcess.ExitCode
-            $outcome = Get-RetryOutcome $consecutiveShortFailures $aliveSeconds $exitCode $state.stopRequested
+            $exitCategory = Get-ExitCategory $exitCode $state.stopRequested (Join-Path $localDirectory 'belt-tunnel-ssh.err.log')
+            $outcome = Get-RetryOutcome $consecutiveShortFailures $aliveSeconds $exitCode $state.stopRequested $exitCategory
             $consecutiveShortFailures = $outcome.consecutiveShortFailures
+            $nextDelaySeconds = $outcome.delaySeconds
             $state.child = $null
             $state.connectionStable = $false
             $state.consecutiveShortFailures = $consecutiveShortFailures
-            $state.status = $(if ($state.stopRequested) { 'stopped' }
-                elseif ($outcome.shouldRetry) { 'waiting-to-reconnect' } else { 'retry-budget-exhausted' })
-            Write-State $state
+            $state.status = $outcome.status
+            $state | Add-Member -NotePropertyName lastExitCategory -NotePropertyValue $exitCategory -Force
+            $state | Add-Member -NotePropertyName lastExitAtUtc -NotePropertyValue ([DateTime]::UtcNow.ToString('o')) -Force
+            $state | Add-Member -NotePropertyName retryDelaySeconds -NotePropertyValue $nextDelaySeconds -Force
+            $state | Add-Member -NotePropertyName nextRetryAtUtc -NotePropertyValue $(if ($outcome.shouldRetry) { [DateTime]::UtcNow.AddSeconds($nextDelaySeconds).ToString('o') } else { $null }) -Force
             Write-TunnelEvent -Event 'attempt-exited' -Category $outcome.category -AliveSeconds $aliveSeconds `
-                -ExitCode $exitCode -TotalAttempts $totalAttempts -ConsecutiveShortFailures $consecutiveShortFailures
+                -ExitCode $exitCode -TotalAttempts $totalAttempts -ConsecutiveShortFailures $consecutiveShortFailures `
+                -ExitCategory $exitCategory -DelaySeconds $nextDelaySeconds
             if (-not $outcome.shouldRetry -and -not $state.stopRequested) {
-                Write-TunnelEvent -Event 'retry-budget-exhausted' -Category $outcome.category -AliveSeconds $aliveSeconds `
-                    -ExitCode $exitCode -TotalAttempts $totalAttempts -ConsecutiveShortFailures $consecutiveShortFailures
+                Write-TunnelEvent -Event $outcome.status -Category $outcome.category -AliveSeconds $aliveSeconds `
+                    -ExitCode $exitCode -TotalAttempts $totalAttempts -ConsecutiveShortFailures $consecutiveShortFailures -ExitCategory $exitCategory
             }
+            Write-State $state
         } finally { $control.Dispose() }
         $sshProcess.Dispose()
         $sshProcess = $null

@@ -1,7 +1,11 @@
 export { videoPeople } from '../../lib/person-equipment.js';
+import { formatBeijingDateTime } from '../../lib/date-time.js';
 const INTERVALS = { person: 3000, events: 3000, video: 30000, refresh: 2000 };
 const positive = (value) => (typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null);
-const stamp = (value) => Date.parse(String(value).replace(" ", "T"));
+const stamp = (value) => {
+  const formatted = formatBeijingDateTime(value);
+  return formatted === '—' ? NaN : Date.parse(formatted.replace(' ', 'T') + '+08:00');
+};
 
 export function isVitalAlert(event) {
   return event.status !== "已核验" && (event.vitalAlert === true || event.type === "生命体征");
@@ -21,12 +25,13 @@ export function currentVital(db, person, now) {
   if (valid) {
     trend = db
       .vitalHistory(person.id)
-      .filter((item) => item.deviceId === record.deviceId && item.bindingId === record.bindingId && positive(item.heartRate) && item.observedAt <= record.observedAt)
+      .filter((item) => item.deviceId === record.deviceId && item.bindingId === record.bindingId && positive(item.heartRate) && stamp(item.observedAt) <= stamp(record.observedAt))
+      .sort((a,b) => stamp(b.observedAt) - stamp(a.observedAt))
       .slice(0, 5)
       .reverse()
-      .map((item) => ({ value: item.heartRate, time: item.observedAt.slice(11, 16) }));
+      .map((item) => ({ value: item.heartRate, time: formatBeijingDateTime(item.observedAt).slice(11, 16) }));
   }
-  return { status, values, trend, time: record?.observedAt.slice(11) || "—", deviceId: watch?.id || "—", demo: seed };
+  return { status, values, trend, time: formatBeijingDateTime(record?.observedAt), deviceId: watch?.id || "—", demo: seed };
 }
 
 export function eventWindow(events, offset, size = 3) {

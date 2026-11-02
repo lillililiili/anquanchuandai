@@ -18,8 +18,12 @@ void main() {
         expect(find.text('清空'), findsOneWidget);
         await tester.pumpAndSettle();
         if (action == '文字播报') {
-          await tester.ensureVisible(find.text('联系人00'));
-          await tester.tap(find.text('联系人00'));
+          // Only contact 07 has equipment in this fixture. Selecting an
+          // unequipped person correctly hides device-only broadcast actions.
+          await tester.ensureVisible(find.text('联系人07'));
+          await tester.pumpAndSettle();
+          expect(find.text('联系人07').hitTestable(), findsOneWidget);
+          await tester.tap(find.text('联系人07'));
           await tester.pumpAndSettle();
           await tester.tap(find.text('文字播报'));
           await tester.pumpAndSettle();

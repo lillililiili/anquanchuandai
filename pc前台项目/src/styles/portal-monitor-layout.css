@@ -1,0 +1,393 @@
+/* Monitoring workspaces fill the available height. Content keeps its readable
+ * size; only map/video canvases flex, while lists and details scroll locally. */
+html[data-portal-theme='business'] .main:is(.location-page,.video-page) > .page-heading {
+  height:auto;
+  min-height:48px;
+}
+html[data-portal-theme='business'] .main:is(.location-page,.tracks-page,.fences-page,.video-page,.single-page,.dispatch-page) > :is(.location-layout,.tracks-layout,.fence-layout,.video-wall,.video-grid-wall,.cols-2,.dispatch-layout) {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+  max-height:none;
+  grid-template-rows:minmax(0,1fr);
+  align-items:stretch;
+  overflow:auto;
+  scrollbar-width:thin;
+}
+html[data-portal-theme='business'] .main :is(.location-layout,.tracks-layout,.fence-layout,.video-wall,.dispatch-layout,.sos-layout) > .panel,
+html[data-portal-theme='business'] .main.single-page > .cols-2 > .panel,
+html[data-portal-theme='business'] .main .dispatch-layout > .stack > .panel {
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  min-height:0;
+  max-height:none;
+}
+html[data-portal-theme='business'] .main :is(.location-layout,.tracks-layout,.fence-layout,.video-wall,.dispatch-layout,.sos-layout) .panel-heading,
+html[data-portal-theme='business'] .main.single-page > .cols-2 .panel-heading {
+  flex:0 0 auto;
+}
+html[data-portal-theme='business'] .main :is(.location-layout,.tracks-layout,.fence-layout,.video-wall,.dispatch-layout,.sos-layout) .panel-body,
+html[data-portal-theme='business'] .main.single-page > .cols-2 > .panel > .panel-body {
+  flex:1 1 0;
+  min-height:0;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+
+/* Live location: the table owns its scrollbar and pagination stays visible. */
+html[data-portal-theme='business'] .main.location-page .location-layout {
+  grid-template-columns:365px minmax(440px,1fr);
+  min-height:280px;
+}
+html[data-portal-theme='business'] .main.location-page .location-layout > .panel > .panel-body {
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  scrollbar-gutter:auto;
+}
+html[data-portal-theme='business'] .main.location-page .location-layout .filters {
+  flex:0 0 auto;
+}
+html[data-portal-theme='business'] .main.location-page .location-layout .app-table {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+  max-height:none;
+}
+html[data-portal-theme='business'] .main.location-page .location-layout > .map {
+  height:100%;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.location-page > .layer-controls {
+  position:static;
+  align-self:flex-end;
+  margin-top:8px;
+  padding:6px 12px;
+}
+html[data-portal-theme='business'] .main.location-page .filters .btn:not(.small) {
+  min-height:35px;
+  font-size:14px;
+}
+
+/* Track playback keeps its controls below a flexible map, never inside it. */
+html[data-portal-theme='business'] .main.tracks-page > .filters {
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+html[data-portal-theme='business'] .main.tracks-page > .filters > :is(.field,.btn) {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main.tracks-page .tracks-layout {
+  grid-template-columns:265px minmax(560px,1fr);
+  min-height:360px;
+}
+html[data-portal-theme='business'] .main.tracks-page .tracks-layout > .stack {
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.tracks-page .track-map {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.tracks-page .track-map > .map {
+  height:100%;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.tracks-page .tracks-layout > .stack > .panel {
+  display:flex;
+  flex-direction:column;
+  flex:0 0 196px;
+  min-height:172px;
+  max-height:50%;
+}
+html[data-portal-theme='business'] .main.tracks-page .track-controls > .row {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .main.tracks-page .track-controls .btn,
+html[data-portal-theme='business'] .main.tracks-page .track-controls .ui-select {
+  flex-shrink:0;
+}
+
+/* Fence columns keep usable form widths; short lists and maps stretch equally. */
+html[data-portal-theme='business'] .main.fences-page .fence-layout {
+  grid-template-columns:minmax(250px,.9fr) minmax(420px,1.8fr) minmax(300px,1fr);
+  min-height:280px;
+}
+html[data-portal-theme='business'] .main.fences-page .fence-layout > .map {
+  height:100%;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.fences-page .fence-layout .form-stack > .field {
+  grid-template-columns:82px minmax(0,1fr);
+}
+html[data-portal-theme='business'] .main.fences-page .map-editbar .btn {
+  padding:5px 9px;
+  flex-shrink:0;
+}
+
+/* A fixed-size thumbnail strip leaves the remaining height to the main feed. */
+html[data-portal-theme='business'] .main.video-page .video-wall {
+  grid-template-columns:minmax(460px,1.8fr) minmax(320px,1fr);
+  min-height:240px;
+}
+html[data-portal-theme='business'] .main.video-page .video-wall > .video-frame {
+  height:100%;
+  min-height:0;
+  aspect-ratio:auto;
+}
+html[data-portal-theme='business'] .main.video-page .video-thumbs {
+  flex:0 0 178px;
+  display:grid;
+  grid-template-columns:none;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(190px,1fr);
+  grid-template-rows:minmax(0,1fr);
+  min-height:0;
+  margin-top:10px;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main.video-page .video-thumb {
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.video-page .video-thumb > .video-frame {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+  aspect-ratio:auto;
+}
+html[data-portal-theme='business'] .main.video-page .video-thumb > .btn {
+  flex:0 0 auto;
+  width:100%;
+  justify-content:flex-start;
+  overflow:hidden;
+  white-space:nowrap;
+}
+html[data-portal-theme='business'] .main.video-page .video-grid-wall {
+  grid-template-columns:repeat(4,minmax(220px,1fr));
+  grid-template-rows:none;
+  grid-auto-rows:minmax(190px,1fr);
+}
+html[data-portal-theme='business'] .main.video-page .video-grid-wall.nine {
+  grid-template-columns:repeat(3,minmax(260px,1fr));
+  grid-template-rows:none;
+  grid-auto-rows:minmax(170px,1fr);
+}
+html[data-portal-theme='business'] .main.video-page .video-grid-wall > .panel {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+html[data-portal-theme='business'] .main.video-page .video-thumb :is(.helmet-preview,.preview-start,.live-video,.live-video video) {
+  min-height:0;
+  height:100%;
+  max-height:none;
+}
+html[data-portal-theme='business'] .main.video-page .video-thumb .preview-start {
+  justify-content:flex-start;
+  overflow:auto;
+  padding:12px;
+}
+
+/* The primary feed spans the available rows; optional records use the sidebar. */
+html[data-portal-theme='business'] .main.single-page > .cols-2 {
+  grid-template-columns:minmax(540px,2.1fr) minmax(320px,1fr);
+  grid-auto-rows:minmax(0,1fr);
+  min-height:280px;
+}
+html[data-portal-theme='business'] .main.single-page > .cols-2:has(> .panel.flush):has(> .panel:nth-child(3)) {
+  grid-template-rows:repeat(2,minmax(0,1fr));
+}
+html[data-portal-theme='business'] .main.single-page > .cols-2 > .panel.flush {
+  grid-column:1;
+  grid-row:1 / -1;
+}
+html[data-portal-theme='business'] .main.single-page > .cols-2:has(> .panel.flush) > .panel:not(.flush) {
+  grid-column:2;
+}
+html[data-portal-theme='business'] .main.single-page > .cols-2 > :only-child {
+  grid-column:1 / -1;
+}
+html[data-portal-theme='business'] .main.single-page > .cols-2 > .panel.flush > .panel-body {
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  scrollbar-gutter:auto;
+}
+html[data-portal-theme='business'] .main.single-page .video-frame {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+  aspect-ratio:auto;
+}
+html[data-portal-theme='business'] .main.single-page .video-controls {
+  gap:7px;
+  padding:11px 12px;
+  overflow-x:auto;
+}
+html[data-portal-theme='business'] .main.single-page .video-controls > * {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main.single-page .video-controls .plain {
+  padding-inline:12px;
+}
+html[data-portal-theme='business'] .main.single-page .video-controls > input {
+  display:block;
+  width:100px;
+}
+html[data-portal-theme='business'] .main.single-page .video-controls > span {
+  display:inline;
+}
+html[data-portal-theme='business'] .main:is(.video-page,.single-page) .video-frame > .helmet-preview,
+html[data-portal-theme='business'] .main:is(.video-page,.single-page) .video-frame .live-video,
+html[data-portal-theme='business'] .main:is(.video-page,.single-page) .video-frame .live-video video {
+  height:100%;
+  min-height:0;
+  max-height:none;
+}
+html[data-portal-theme='business'] .main:is(.video-page,.single-page) .video-frame .preview-start {
+  height:100%;
+  min-height:0;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main:is(.video-page,.single-page) .video-frame:fullscreen {
+  width:100vw;
+  height:100vh;
+}
+
+/* Dispatch keeps all three columns full-height without compressing members. */
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout {
+  grid-template-columns:minmax(280px,1fr) minmax(360px,1.5fr) minmax(280px,1fr);
+  min-height:280px;
+}
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout > .stack {
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout > .stack > .panel {
+  flex:1 1 0;
+}
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout .panel-body > * {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout .panel-body > .member-list {
+  flex:1 1 120px;
+  min-height:120px;
+}
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout .form-actions {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout .call-video-frame {
+  height:260px;
+}
+html[data-portal-theme='business'] .main.dispatch-page .dispatch-layout .call-videos.multiple .call-video-frame {
+  height:auto;
+}
+
+/* Selected SOS events share one workspace: list at left, assistance at right,
+ * and a bounded timeline below. A long event list cannot push the map away. */
+html[data-portal-theme='business'] .main.sos-page > .panel:not(.sos-banner) {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.sos-page > .panel:not(.sos-banner) > .panel-heading {
+  flex:0 0 auto;
+}
+html[data-portal-theme='business'] .main.sos-page > .panel:not(.sos-banner) > .panel-body {
+  flex:1 1 0;
+  min-height:0;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) {
+  display:grid;
+  grid-template-columns:300px minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr) minmax(120px,.3fr);
+  gap:12px;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) > .page-heading {
+  grid-column:1 / -1;
+  margin-bottom:0;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) > .panel:not(.sos-banner) {
+  grid-column:1;
+  grid-row:2 / 4;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) > .panel:not(.sos-banner) .participant {
+  flex-wrap:wrap;
+  gap:8px;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) > .panel:not(.sos-banner) .participant > span:not(.spacer) {
+  flex:1 1 200px;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) > .sos-banner {
+  grid-column:2;
+  grid-row:2;
+  gap:12px;
+  flex-wrap:wrap;
+  margin:0;
+  padding:12px 16px;
+}
+html[data-portal-theme='business'] .main.sos-page .sos-banner h2 {
+  font-size:18px;
+  line-height:26px;
+}
+html[data-portal-theme='business'] .main.sos-page .sos-banner .heading-actions {
+  flex-wrap:wrap;
+  max-width:none;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) > .sos-layout {
+  grid-column:2;
+  grid-row:3;
+  grid-template-columns:none;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(260px,1fr);
+  grid-template-rows:minmax(0,1fr);
+  min-height:0;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main.sos-page .sos-layout > .panel:first-child > .panel-body {
+  display:flex;
+  flex-direction:column;
+}
+html[data-portal-theme='business'] .main.sos-page .event-location {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.sos-page .event-location > .map {
+  flex:1 0 160px;
+  height:auto;
+  min-height:160px;
+}
+html[data-portal-theme='business'] .main.sos-page .event-location > :not(.map) {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main.sos-page:has(> .sos-layout) > div:has(> .panel .timeline) {
+  display:flex;
+  grid-column:1 / -1;
+  grid-row:4;
+  min-height:0;
+  margin-top:0 !important;
+}
+html[data-portal-theme='business'] .main.sos-page > div:has(> .panel .timeline) > .panel {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.sos-page > div:has(> .panel .timeline) .panel-heading {
+  flex:0 0 auto;
+}
+html[data-portal-theme='business'] .main.sos-page > div:has(> .panel .timeline) .panel-body {
+  flex:1 1 0;
+  min-height:0;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main.sos-page .timeline.horizontal .timeline-item {
+  flex:1 0 230px;
+}

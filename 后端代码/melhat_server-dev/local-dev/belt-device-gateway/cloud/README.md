@@ -82,9 +82,11 @@ Caddyfile 和 sshd_config 在原 inode 写入，只 reload，不重启容器或�
 .\cloud\tunnel.ps1 -Action Stop
 ```
 
-脚本固定使用 `belt_tunnel_ed25519` 与严格主机密钥验证，转发 `10.255.1.1:28087:127.0.0.1:18087`。它不会启动网关或后端；隐藏工作进程在断线后每 10 秒重试，连续 31 次不足 120 秒的短连接失败后才停止（即时失败时仍有 30 个重试间隔，共 5 分钟）。SSH 子进程连续存活满 120 秒就将连续短失败计数清零，此后的断线重新使用完整预算；该存活判据不等于公网可达或实物在线。`Status` 中 `totalAttempts` 与兼容字段 `attempts` 始终保留本次 worker 生命周期内的累计次数，`consecutiveShortFailures` 是当前预算计数，`connectionStable` 表示当前 SSH 子进程是否已达到 120 秒；预算耗尽显示 `retry-budget-exhausted`。不安装开机自启。停止时核对 PID、创建时间、完整命令行、父子进程关系，仅终止本脚本的安全带隧道，保留安全帽隧道。
+脚本固定使用 `belt_tunnel_ed25519` 与严格主机密钥验证，转发 `10.255.1.1:28087:127.0.0.1:18087`。它不会启动网关或后端；隐藏工作进程在断线后先每 10 秒重试。连续短失败达到 31 次后，明确的网络错误或远端转发拒绝进入 `cooldown-reconnect`：依次等待 60、120 秒，随后每 300 秒继续重试，不因长时间断网而永久退出。未分类错误仍在 31 次短失败后停止；主机密钥、认证失败或缺失退出结果立即显示 `attention-required`，不通过重试绕过身份校验。SSH 子进程连续存活满 120 秒就将连续短失败计数清零并恢复快速重连；该存活判据不等于公网可达或实物在线。
 
-`../.local/belt-tunnel-events.jsonl` 保存固定字段诊断事件：UTC 时间、事件名、SSH 存活秒数、退出码、故障类别、累计次数和连续短失败次数。单文件最多 128 KiB，另保留 `.1`、`.2` 两份轮转，总计最多 384 KiB；不记录私钥内容、路径凭据、URL、原始报文或异常文本。分类只区分短连接退出、稳定连接结束和主动停止；仅凭退出码不能认定是网络、鉴权还是远程端口占用。原有 SSH stderr 仍仅供私下排障，不应直接粘贴到聊天。
+`Status` 中 `totalAttempts` 与兼容字段 `attempts` 保留本次 worker 生命周期内累计次数，`consecutiveShortFailures` 是当前连续失败次数，`connectionStable` 表示当前 SSH 子进程是否已达到 120 秒；另提供 `lastExitCategory`、`lastExitAtUtc`、`retryDelaySeconds`、`nextRetryAtUtc`、`eventLogError`。不安装开机自启。停止时核对 PID、创建时间、完整命令行、父子进程关系，仅终止本脚本的安全带隧道，保留安全帽隧道。源码更新不会替换运行中 worker；由维护人员在无活动验收时执行现有 `Stop` / `Start` 才启用新规则，期间安全带连接会暂时中断。
+
+`../.local/belt-tunnel-events.jsonl` 保存固定字段诊断事件：UTC 时间、事件名、SSH 存活秒数、退出码、生命周期类别、累计次数、连续短失败次数、`exitCategory` 和下次重试间隔。后两项根据当次 SSH stderr 的有限末尾分类，只记录网络错误、转发拒绝、认证失败等固定枚举；转发拒绝并不证明一定是旧监听占用。单文件最多 128 KiB，另保留 `.1`、`.2` 两份轮转，总计最多 384 KiB；不记录私钥内容、路径凭据、URL、原始报文或异常文本。日志写入失败只在状态中标 `eventLogError`，不终止健康通道或重试；核心进程归属状态仍必须可靠保存。原有 SSH stderr 仅供私下排障，不应直接粘贴到聊天。
 
 可运行 `powershell -NoProfile -File .\cloud\test_tunnel.ps1` 检查重试边界、连续预算重置、事件轮转和严格进程清理；测试只启动隔离的短时 PowerShell 睡眠进程，不启动 SSH 或连接网络。脚本更新不会修改已运行 worker 的内存代码，需要操作者在合适时间显式 Stop/Start 后才生效。
 

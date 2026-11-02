@@ -1,0 +1,170 @@
+/* Business workspaces fill the viewport. Only the content regions scroll;
+ * text and controls retain their normal size as the available space changes. */
+html[data-portal-theme='business'] {
+  min-width:0;
+}
+html[data-portal-theme='business'] .portal-workspace {
+  display:flex;
+  flex-direction:column;
+  height:calc(100dvh - var(--portal-header-height));
+  margin-top:var(--portal-header-height);
+  min-width:0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .portal-workspace > :not(.main) {
+  flex:none;
+}
+html[data-portal-theme='business'] .portal-workspace > .note {
+  margin:0;
+  padding:8px 20px 0;
+}
+html[data-portal-theme='business'] .portal-workspace > .main {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  height:auto;
+  min-height:0;
+  margin:0;
+  padding-bottom:12px;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main > * {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main :is(.page-heading,.panel-heading,.tabs,.filters,.form-actions) {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main .page-heading {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .main .page-heading > div:first-child {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .main .filters {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .main .filters > .searchbox {
+  flex:1 1 220px;
+  min-width:180px;
+}
+html[data-portal-theme='business'] .main .filters > .field {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main .filters .filter-actions {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .main :is(.btn,.ui-select,.ui-date) {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main .tabs {
+  overflow-x:auto;
+}
+html[data-portal-theme='business'] .main .tabs > * {
+  flex-shrink:0;
+  white-space:nowrap;
+}
+
+/* Lists share the personnel page's bounded columns and independent scrolling. */
+html[data-portal-theme='business'] .main > .bounded-split {
+  flex:1 1 0;
+  min-height:260px;
+  grid-template-columns:minmax(0,2fr) minmax(340px,1fr);
+}
+html[data-portal-theme='business'] .main .bounded-split .list-detail-table .panel-body {
+  flex:1 1 0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main .bounded-split .list-detail-table .app-table {
+  max-height:none;
+}
+html[data-portal-theme='business'] .personnel-page .personnel-list {
+  min-width:800px;
+}
+html[data-portal-theme='business'] .personnel-page .personnel-list td {
+  height:77px;
+  padding:10px 12px;
+}
+html[data-portal-theme='business'] .personnel-page .personnel-list .avatar {
+  display:flex;
+  width:40px;
+  min-width:40px;
+  height:40px;
+}
+html[data-portal-theme='business'] .personnel-page .personnel-list .device-item img {
+  width:30px;
+  height:30px;
+}
+html[data-portal-theme='business'] .personnel-page .detail-heading {
+  height:auto;
+  min-height:75px;
+}
+html[data-portal-theme='business'] .main:is(.works-page,.alarms-page) .list-detail-table table {
+  min-width:820px;
+}
+html[data-portal-theme='business'] .main.works-page .works-toolbar .filters {
+  grid-template-columns:minmax(220px,2fr) minmax(160px,1fr) minmax(160px,1fr) auto;
+}
+html[data-portal-theme='business'] .main.works-page .works-toolbar .field:first-child {
+  grid-column:auto;
+}
+html[data-portal-theme='business'] .main.materials-page .bounded-split .list-detail-column > .media-library {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  min-height:120px;
+  padding:12px;
+}
+html[data-portal-theme='business'] .materials-page .media-library > :not(.media-grid) {
+  flex:none;
+}
+html[data-portal-theme='business'] .materials-page .media-grid {
+  grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));
+}
+html[data-portal-theme='business'] .materials-page .media-card {
+  align-self:start;
+}
+html[data-portal-theme='business'] .materials-page .materials-sidebar {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-width:0;
+  min-height:0;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .materials-page .materials-device-recordings {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  min-height:200px;
+  gap:8px;
+}
+html[data-portal-theme='business'] .materials-page .materials-device-recordings > .field {
+  flex:none;
+}
+html[data-portal-theme='business'] .materials-page .materials-sidebar .panel {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .materials-page .materials-sidebar > .media-detail {
+  min-height:180px;
+}
+html[data-portal-theme='business'] .materials-page .materials-sidebar .panel-body {
+  flex:1 1 0;
+  min-height:0;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+
+/* Preserve readable columns on narrow windows; overflow belongs to the
+ * workspace/table, not to a scaled-down page. */
+@media (max-width:900px) {
+  html[data-portal-theme='business'] .main.works-page .works-toolbar .filters {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  html[data-portal-theme='business'] .main > .bounded-split {
+    grid-template-columns:minmax(480px,2fr) minmax(340px,1fr);
+    overflow:auto;
+  }
+}

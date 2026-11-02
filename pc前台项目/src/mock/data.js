@@ -1287,7 +1287,7 @@
         call.rtc.status = result.status;
         call.serverConnected = result.serverConnected === true;
         call.connectedDeviceIds = Array.isArray(result.connectedDeviceIds) ? result.connectedDeviceIds : [];
-        call.statusLabel = ({ offered:'设备正在振铃', connected:'设备已接通（服务端确认）', ending:'正在结束通话', ended:'已结束', failed:'设备通话失败', unknown:'设备接通状态待确认' })[result.status] || '设备接通状态待确认';
+        call.statusLabel = ({ offered:'设备正在振铃', answered:'设备已应答，等待双方接通', connected:'设备已接通（服务端确认）', ending:'正在结束通话', ended:'已结束', failed:'设备通话失败', unknown:'设备接通状态待确认' })[result.status] || '设备接通状态待确认';
         if (result.status === 'connected' && call.serverConnected) call.status = '通话中';
         if (result.status === 'ending') call.status = '正在结束';
         if (['ended','failed'].includes(result.status)) { call.status = '已结束'; callCredentials.delete(id); }

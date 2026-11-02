@@ -18,3 +18,12 @@ export function formatBeijingDateTime(value) {
   const parts = Object.fromEntries(beijingFormatter.formatToParts(instant).map(part => [part.type, part.value]));
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
 }
+
+// Some old records contain only a wall-clock time. Preserve that precision;
+// never attach today's date to a historical observation.
+export function formatRecordedDateTime(value) {
+  const full = formatBeijingDateTime(value);
+  if (full !== '—') return full;
+  const time = typeof value === 'string' ? value.trim() : '';
+  return /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(time) ? time : '—';
+}

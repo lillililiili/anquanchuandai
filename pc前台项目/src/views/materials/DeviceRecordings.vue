@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue';
+import { formatBeijingDateTime } from '@/lib/date-time';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppPanel from '@/components/ui/AppPanel.vue';
 import { db, tick, connection } from '@/mock/runtime';
@@ -70,13 +71,13 @@ function upload() {
       <label>结束<input v-model="end" type="time" /></label>
       <AppButton :disabled="!!busy || !enabled('list_recordings')" :title="feature.reason" @click="query">查询设备录像</AppButton>
     </div>
-    <label v-for="item in recordings" :key="item.fileName || item.name || item.id" class="recording-file"><input v-model="selected" type="checkbox" :value="item.fileName || item.name || item.id" :disabled="!feature.available" />{{ item.name || item.fileName || item.id }} · {{ item.createdAt || '时间未提供' }}</label>
+    <label v-for="item in recordings" :key="item.fileName || item.name || item.id" class="recording-file"><input v-model="selected" type="checkbox" :value="item.fileName || item.name || item.id" :disabled="!feature.available" />{{ item.name || item.fileName || item.id }} · {{ formatBeijingDateTime(item.createdAt) }}</label>
     <p v-if="!recordings.length" class="muted">暂无设备返回的录像列表。查询后等待设备回执。</p>
     <AppButton :disabled="!!busy || !selected.length || !enabled('upload_recording')" :title="feature.reason" @click="upload">上传选中录像</AppButton>
     <p v-if="error" role="alert" class="form-error">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
-    <ul v-if="commands.length"><li v-for="command in commands" :key="command.id">{{ COMMAND_LABELS[command.action] }} · {{ status(command) }} · {{ command.createdAt || '时间未提供' }}</li></ul>
-    <p class="note">查询和上传需要当前人员领用且设备在线；历史上传资料仍可在下方查看。请求受理不表示文件已经上传。</p>
+    <ul v-if="commands.length"><li v-for="command in commands" :key="command.id">{{ COMMAND_LABELS[command.action] }} · {{ status(command) }} · {{ formatBeijingDateTime(command.createdAt) }}</li></ul>
+    <p class="note">查询和上传需要当前人员领用且设备在线；历史上传资料可在资料列表中查看。请求受理不表示文件已经上传。</p>
   </AppPanel>
 </template>
 

@@ -9,7 +9,7 @@ $ast = [System.Management.Automation.Language.Parser]::ParseFile(
     (Join-Path $PSScriptRoot 'tunnel.ps1'), [ref]$tokens, [ref]$parseErrors)
 if ($parseErrors.Count) { throw 'tunnel.ps1 contains PowerShell syntax errors.' }
 $helpers = @('Enter-ControlLock', 'Read-State', 'Write-State', 'Complete-Worker',
-    'Get-RetryOutcome', 'Write-TunnelEvent', 'Assert-WorkerRecord', 'Test-RetryableStateReplaceError')
+    'Get-RetryOutcome', 'Get-ExitCategory', 'Write-TunnelEvent', 'Assert-WorkerRecord', 'Test-RetryableStateReplaceError')
 $definitions = $ast.FindAll({ param($node)
     $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -in $helpers
 }, $true)
@@ -44,6 +44,7 @@ $null = New-Item -ItemType Directory -Path $localDirectory
 $stateFile = Join-Path $localDirectory 'state.json'
 $lockFile = Join-Path $localDirectory 'control.lock'
 $eventFile = Join-Path $localDirectory 'events.jsonl'
+$errorFile = Join-Path $localDirectory 'stderr.log'
 Assert-True ($maximumEventFileBytes -eq 131072 -and $eventArchiveCount -eq 2) 'Production journal retention changed unexpectedly.'
 $maximumEventFileBytes = 1024
 $Instance = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
@@ -94,6 +95,41 @@ try {
     Assert-True ((Get-RetryOutcome 0 1 0).category -eq 'short-clean-exit') 'Clean short exits were misclassified.'
     Write-Output 'PASS: exact stability boundary resets consecutive failures; 100 lifetime sessions remain eligible; stop never reconnects.'
 
+    foreach ($category in @('network-error', 'forward-rejected')) {
+        $failures = 0
+        for ($attemptNumber = 1; $attemptNumber -le 100; $attemptNumber++) {
+            $outcome = Get-RetryOutcome $failures 1 255 $false $category
+            $failures = $outcome.consecutiveShortFailures
+            $expectedDelay = $(if ($attemptNumber -lt 31) { 10 } elseif ($attemptNumber -eq 31) { 60 }
+                elseif ($attemptNumber -eq 32) { 120 } else { 300 })
+            Assert-True ($outcome.shouldRetry -and $outcome.delaySeconds -eq $expectedDelay) 'Recoverable outage stopped or escaped its bounded cadence.'
+            Assert-True ($outcome.status -eq $(if ($attemptNumber -lt 31) { 'waiting-to-reconnect' } else { 'cooldown-reconnect' })) 'Reconnect state is inaccurate.'
+        }
+        $recovered = Get-RetryOutcome 100 120 255 $false $category
+        Assert-True ($recovered.shouldRetry -and $recovered.delaySeconds -eq 10 -and $recovered.consecutiveShortFailures -eq 0) 'A stable connection failed to reset cooldown.'
+        Assert-True (-not (Get-RetryOutcome 100 1 255 $true $category).shouldRetry) 'Operator stop was bypassed by recovery.'
+    }
+    foreach ($category in @('host-key-failed','authentication-failed','exit-unknown')) {
+        $outcome = Get-RetryOutcome 0 200 255 $false $category
+        Assert-True (-not $outcome.shouldRetry -and $outcome.status -eq 'attention-required' -and $outcome.delaySeconds -eq 0) 'Permanent error entered automatic retry.'
+    }
+    Write-Output 'PASS: network/listener outages survive 100 failures with 60/120/300-second cooldown; identity/authentication failures still stop.'
+
+    foreach ($case in @(
+        @('Connection reset by peer','network-error'),
+        @('Timeout, server is not responding.','network-error'),
+        @('remote port forwarding failed for listen port','forward-rejected'),
+        @('Host key verification failed.','host-key-failed'),
+        @('Permission denied (publickey).','authentication-failed'),
+        @('unrecognized test message','ssh-error'))) {
+        [System.IO.File]::WriteAllText($errorFile, $case[0])
+        Assert-True ((Get-ExitCategory 255 $false $errorFile) -eq $case[1]) 'SSH exit category was incorrect.'
+    }
+    Assert-True ((Get-ExitCategory $null $false $errorFile) -eq 'exit-unknown') 'An unavailable exit code was treated as success.'
+    Assert-True ((Get-ExitCategory 0 $false $errorFile) -eq 'clean-exit') 'A clean exit was incorrectly parsed from stale stderr.'
+    Assert-True ((Get-ExitCategory 255 $true $errorFile) -eq 'requested-stop') 'Requested stop was incorrectly parsed from stderr.'
+    Write-Output 'PASS: local stderr is classified into fixed enums; no raw response is needed in diagnostics.'
+
     for ($eventNumber = 1; $eventNumber -le 40; $eventNumber++) {
         Write-TunnelEvent -Event 'attempt-exited' -Category 'short-ssh-failure' `
             -AliveSeconds 1.23456 -ExitCode 255 -TotalAttempts $eventNumber -ConsecutiveShortFailures 1
@@ -106,7 +142,7 @@ try {
         foreach ($line in [System.IO.File]::ReadAllLines($path)) {
             $entry = $line | ConvertFrom-Json
             Assert-True ((@($entry.PSObject.Properties.Name) -join ',') -ceq
-                'utc,event,aliveSeconds,exitCode,category,totalAttempts,consecutiveShortFailures') 'Unexpected diagnostic fields could leak raw data.'
+                'utc,event,aliveSeconds,exitCode,category,totalAttempts,consecutiveShortFailures,exitCategory,delaySeconds') 'Unexpected diagnostic fields could leak raw data.'
             # Newer PowerShell converts ISO strings to DateTime during parsing.
             Assert-True ($line -match '"utc"\s*:\s*"[^"]+Z"') 'Event timestamp was not explicit UTC.'
             Assert-True ($entry.aliveSeconds -eq 1.235 -and $entry.exitCode -eq 255) 'Event did not preserve duration and exit code.'
@@ -122,6 +158,19 @@ try {
     Assert-True $failed 'Arbitrary text was accepted as an event category.'
     Assert-True ([System.IO.File]::ReadAllText($eventFile) -ceq $before) 'Rejected event input was written to disk.'
     Write-Output 'PASS: event schema, UTC, values, strict category allowlist, rotation and total retention are bounded.'
+
+    $blockedEventPath = $eventFile
+    $eventFile = Join-Path $localDirectory 'missing-parent/events.jsonl'
+    Write-TunnelEvent -Event 'attempt-exited' -Category 'short-ssh-failure' -ExitCategory 'network-error' -DelaySeconds 300
+    Write-State ([pscustomobject]@{ status = 'cooldown-reconnect' })
+    Assert-True ((Read-State).eventLogError -eq $true) 'A failed diagnostic write was not recorded in state.'
+    $eventFile = $blockedEventPath
+    Write-TunnelEvent -Event 'attempt-exited' -Category 'short-ssh-failure' -ExitCategory 'network-error' -DelaySeconds 300
+    Write-State ([pscustomobject]@{ status = 'cooldown-reconnect' })
+    Assert-True ((Read-State).eventLogError -eq $false) 'Recovered diagnostics did not clear their error flag.'
+    $lastEvent = ([System.IO.File]::ReadAllLines($eventFile) | Select-Object -Last 1) | ConvertFrom-Json
+    Assert-True ($lastEvent.exitCategory -eq 'network-error' -and $lastEvent.delaySeconds -eq 300) 'Exit cause/cooldown were not retained.'
+    Write-Output 'PASS: diagnostic filesystem failures do not throw or stop reconnection, and status exposes recovery.'
 
     Write-State ([pscustomobject]@{ status = 'first' })
     Write-State ([pscustomobject]@{ status = 'second' })
@@ -225,7 +274,13 @@ try {
     $lastEvent = ([System.IO.File]::ReadAllLines($eventFile) | Select-Object -Last 1) | ConvertFrom-Json
     Assert-True ($lastEvent.totalAttempts -eq 52 -and $lastEvent.consecutiveShortFailures -eq 31) 'Lifetime and consecutive counters were confused.'
     Write-Output 'PASS: final cleanup retains retry exhaustion and distinct lifetime/consecutive counters.'
-    Write-Output 'All 10 tunnel test groups passed; no SSH process or network connection was started.'
+    Write-State ([pscustomobject]@{ instance = $Instance; worker = [pscustomobject]@{ pid = $PID };
+        child = $null; stopRequested = $false; status = 'attention-required';
+        totalAttempts = 1; consecutiveShortFailures = 1; connectionStable = $false })
+    Complete-Worker $null
+    Assert-True ((Read-State).status -eq 'attention-required') 'Cleanup hid an authentication/identity failure.'
+    Write-Output 'PASS: final cleanup retains attention-required for operator intervention.'
+    Write-Output 'All 14 tunnel test groups passed; no SSH process or network connection was started.'
 } finally {
     foreach ($process in @($owned, $observer, $unrelated)) {
         if ($null -ne $process) {
@@ -234,7 +289,7 @@ try {
         }
     }
     # This directory is newly created by the test; remove only its known files.
-    foreach ($path in @($stateFile, $lockFile, $eventFile, ($eventFile + '.1'), ($eventFile + '.2'))) {
+    foreach ($path in @($stateFile, $lockFile, $eventFile, ($eventFile + '.1'), ($eventFile + '.2'), $errorFile)) {
         if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
     }
     if (Test-Path -LiteralPath $localDirectory) { Remove-Item -LiteralPath $localDirectory }

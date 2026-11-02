@@ -60,10 +60,20 @@ sudo sh /opt/helmet-wear/helmet-media/cloud/install.sh
 | GET `/events?after=...&limit=...` | events 数组，含 sequence、type、createdAt；call.connected/ended/failed 与当前 connectedDeviceIds |
 | GET `/assets?deviceId=...` | assets 数组，重新签发短期访问 URL |
 | POST `/device-upload?...` | Node 网关签名后的 multipart 持久化上传；支持 progressId 幂等 |
-| POST `/photo-bind` | deviceId、imageUrl、latitude、longitude；只可绑定该设备已落盘的云照片 |
+| POST `/photo-bind` | deviceId、imageUrl、latitude、longitude；只可绑定该设备已落盘的云照片。固件真实 `talkback_id` 经网关转为 requestId，并带 requestIdSource=`report/add_image.talkback_id`；缺失时不推测关联 |
 
 operator 每次注册和每次拨号都核对有效期/room，禁止任意外呼。播放/文件 URL 是有期票据。FreeSWITCH/SRS 内部回调不经过公网 Caddy，另带私有 hook 密钥。
 
 录像 `recording.ready` / `recording.failed` 事件同时带 `requestId`、`recordingId`、`deviceId`。主动挂断是 `ending` 请求状态；ESL 失败、起呼结果不明和迟到应答都不会提前宣称 ended，避免平台错误释放设备相机。
+
+### 照片请求关联与诊断（2026-11-02）
+
+照片 multipart 只认固件实际上传的 `talkback_id`（HC-UUID），其他同名含义不明的字段不能代替。上传或后续 `report/add_image` 回传的编号进入资产 `requestId`，并记录 `requestIdSource`；已有非空编号不可覆盖，冲突返回 409。相同照片/编号的重复绑定不重复生成 `asset.bound`。
+
+编号缺失时仍持久化真实文件，`correlationStatus=MISSING_DEVICE_REQUEST_ID`，不关联当前人员或最近拍照请求。编号存在为 `DEVICE_REQUEST_ID`，表示固件上报了编号，**不表示已通过业务授权**；Java 还必须验证同设备、原 `take_photo` 命令、原领用快照和资产时间，不可按时间邻近猜测。
+
+下一次实测可核查 `receiptFieldNames`（multipart）及 `bindingReceiptFieldNames`（add_image），只保存受限字段名，不复制任意字段值、图片签名 URL 或密钥。真实固件不回传编号时，明确保持未关联；本次修复不会回填旧照片归属或更改已结束命令。
+
+资料下载使用原授权文件 URL 追加 `download=1`，服务端在原票据校验通过后返回 `Content-Disposition: attachment`。文件名由受限云资产 ID 和已知 MIME 扩展名生成，不采用固件原始文件名；默认 URL 仍用于内联预览。GET、HEAD、Range、票据过期、资产范围和来源校验不变。PC 的 download 属性不能替代此跨域下载响应头。
 
 官方依据：[FreeSWITCH SIP/WebRTC](https://developer.signalwire.com/freeswitch/users-and-endpoints/webrtc-sip/)、[SRS 6](https://ossrs.io/lts/en-us/docs/v6/doc/webrtc)、[离线中文模型](https://k2-fsa.github.io/sherpa/onnx/tts/pretrained_models/vits.html)。

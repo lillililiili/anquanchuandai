@@ -79,6 +79,18 @@ test('server-labelled simulated watches are shown separately from real equipment
   assert.equal(demoVideoAvailable({ type: 'H', source: 'DEMO_WATCH', video: 'available' }), false);
 });
 
+test('screen vital times and chronological trend use Beijing instants across mixed timestamp offsets',()=>{
+  const record={deviceId:'W1',bindingId:'A1',observedAt:'2026-10-23T00:03:00Z',heartRate:75,oxygen:98};
+  const history=[{...record,observedAt:'2026-10-23T08:02:00+08:00',heartRate:74},
+    {...record,observedAt:'2026-10-23T00:01:00Z',heartRate:72},record,
+    {...record,observedAt:'2026-10-23T08:04:00+08:00',heartRate:90},
+    {...record,bindingId:'another-assignment',heartRate:99}];
+  const db={vitals:()=>({watch:{id:'W1',online:true},record,simulated:false}),vitalHistory:()=>history};
+  const vital=currentVital(db,{id:'P1'},'2026-10-23 08:04:00');
+  assert.equal(vital.status,'正常');assert.equal(vital.time,'2026-10-23 08:03:00');
+  assert.deepEqual(vital.trend,[{value:72,time:'08:01'},{value:74,time:'08:02'},{value:75,time:'08:03'}]);
+});
+
 test('single-watch remote view preserves the original saved snapshot and actual watches', () => {
   const snapshot = seed();
   snapshot.devices = snapshot.devices.filter(device => device.type === 'W').map(device => ({ ...device, source: 'DEMO_WATCH', demo: true }));

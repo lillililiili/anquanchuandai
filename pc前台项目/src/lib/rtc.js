@@ -1,18 +1,63 @@
 import { createSipSession } from './sip-session.js';
 import { communicationGuard } from './communication-guard.js';
 
-export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), sipFactory = createSipSession, guard = communicationGuard) {
+export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), sipFactory = createSipSession, guard = communicationGuard, {
+  getUserMedia = constraints => {
+    if (!globalThis.navigator?.mediaDevices?.getUserMedia) throw Error('当前浏览器无法使用麦克风，请使用安全地址并检查录音设备');
+    return globalThis.navigator.mediaDevices.getUserMedia(constraints);
+  }, schedule = setTimeout, cancel = clearTimeout, microphoneTimeout = 20000,
+} = {}) {
   let current = null;
+  let preparedMicrophone = null, preparingMicrophone = null;
   let generation = 0;
   let remoteStream = null;
   const streamListeners = new Set();
   const publishStream = stream => { remoteStream = stream; streamListeners.forEach(listener => listener(stream)); };
+  const stopStream = stream => { for (const track of stream?.getTracks?.() || []) track.stop(); };
+
+  async function prepareMicrophone({ reservation, onMediaState = () => {} } = {}) {
+    guard.assertAvailable(reservation);
+    if (current || preparingMicrophone || preparedMicrophone) throw Error('请先结束当前音频准备或通话');
+    const controller = new AbortController();
+    const pending = { controller };
+    preparingMicrophone = pending;
+    onMediaState('microphone_permission');
+    try {
+      const stream = await new Promise((resolve, reject) => {
+        let settled = false;
+        const done = (error, stream) => {
+          if (settled) { stopStream(stream); return; }
+          settled = true; cancel(timer); controller.signal.removeEventListener('abort', aborted);
+          if (error) reject(error); else resolve(stream);
+        };
+        const aborted = () => done(Error('麦克风准备已取消，未呼叫设备'));
+        const timer = schedule(() => done(Error('等待电脑麦克风授权超时，未呼叫设备；请允许麦克风后重试')), microphoneTimeout);
+        controller.signal.addEventListener('abort', aborted, { once: true });
+        // Prepare after read-only recovery and before any dial POST. Browser
+        // permission prompts may never settle; late streams must still stop.
+        try {
+          Promise.resolve(getUserMedia({ audio: true, video: false })).then(stream => {
+            if (!(stream?.getAudioTracks?.() || []).some(track => track.readyState !== 'ended')) {
+              stopStream(stream); done(Error('未取得可用的电脑麦克风，未呼叫设备')); return;
+            }
+            done(null, stream);
+          }, error => {
+            const messages = { NotAllowedError: '电脑麦克风权限被拒绝，未呼叫设备', NotFoundError: '电脑未检测到麦克风，未呼叫设备', NotReadableError: '电脑麦克风被占用或无法读取，未呼叫设备', SecurityError: '浏览器安全设置阻止麦克风，未呼叫设备' };
+            done(Error(messages[error?.name] || error?.message || '电脑麦克风准备失败，未呼叫设备'));
+          });
+        } catch (error) { done(error); }
+      });
+      if (preparingMicrophone !== pending || controller.signal.aborted) { stopStream(stream); throw Error('麦克风准备已取消，未呼叫设备'); }
+      preparedMicrophone = { stream, reservation };
+      onMediaState('microphone_ready');
+    } finally { if (preparingMicrophone === pending) preparingMicrophone = null; }
+  }
 
   async function close(session) {
     if (!session) return;
     if ('sip' in session) {
-      if (session.sip) await session.sip.close();
-      else session.controller?.abort();
+      try { if (session.sip) await session.sip.close(); else session.controller?.abort(); }
+      finally { stopStream(session.microphoneStream); }
       return;
     }
     session.client.removeAllListeners();
@@ -25,6 +70,9 @@ export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), s
   async function leaveChannel(reservation) {
     guard.assertAvailable(reservation);
     generation++;
+    preparingMicrophone?.controller.abort();
+    preparingMicrophone = null;
+    stopStream(preparedMicrophone?.stream); preparedMicrophone = null;
     const previous = current;
     current = null;
     publishStream(null);
@@ -34,15 +82,22 @@ export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), s
   async function joinChannel(rtc, { onMediaState = () => {}, reservation } = {}) {
     guard.assertAvailable(reservation);
     if (String(rtc?.protocol).toUpperCase() === 'SIP') {
-      await leaveChannel(reservation);
-      const operation = generation;
-      const placeholder = { sip: null, controller: new AbortController(), callId:rtc.callId || rtc.channel };
+      const microphone = preparedMicrophone;
+      if (microphone && microphone.reservation !== reservation) throw Error('麦克风准备不属于当前会话');
+      preparedMicrophone = null;
+      const operation = generation + 1;
+      try {
+        await leaveChannel(reservation);
+        guard.assertAvailable(reservation);
+        if (generation !== operation) throw Error('通话已取消');
+      } catch (error) { stopStream(microphone?.stream); throw error; }
+      const placeholder = { sip: null, controller: new AbortController(), callId:rtc.callId || rtc.channel, microphoneStream: microphone?.stream };
       current = placeholder;
       try {
-        const sip = await sipFactory(rtc, { signal: placeholder.controller.signal, onMediaState, onStream: stream => { if (current === placeholder) publishStream(stream); }, active: () => generation === operation && current === placeholder });
+        const sip = await sipFactory(rtc, { signal: placeholder.controller.signal, microphoneStream: microphone?.stream, onMediaState, onStream: stream => { if (current === placeholder) publishStream(stream); }, active: () => generation === operation && current === placeholder });
         if (generation !== operation || current !== placeholder) { await sip.close(); throw Error('通话已取消'); }
         placeholder.sip = sip;
-      } catch (error) { if (current === placeholder) current = null; throw error; }
+      } catch (error) { if (current === placeholder) current = null; stopStream(microphone?.stream); throw error; }
       return;
     }
     if (!rtc || !rtc.appId || !rtc.channel || !rtc.token ||
@@ -114,10 +169,11 @@ export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), s
   }
 
   function subscribeMedia(listener) { streamListeners.add(listener); listener(remoteStream); return () => streamListeners.delete(listener); }
-  return { joinChannel, leaveChannel, setMuted, subscribeMedia, getActiveCallId:()=>current?.callId, resumeAudio: reservation => { guard.assertAvailable(reservation); return current?.sip?.resumeAudio(); } };
+  return { prepareMicrophone, joinChannel, leaveChannel, setMuted, subscribeMedia, getActiveCallId:()=>current?.callId, resumeAudio: reservation => { guard.assertAvailable(reservation); return current?.sip?.resumeAudio(); } };
 }
 
 const session = createRtcSession();
+export const prepareMicrophone = options => session.prepareMicrophone(options);
 export const joinChannel = (...args) => session.joinChannel(...args);
 export const leaveChannel = reservation => session.leaveChannel(reservation);
 export const setMuted = (muted, reservation) => session.setMuted(muted, reservation);

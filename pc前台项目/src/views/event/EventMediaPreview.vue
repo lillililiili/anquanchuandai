@@ -3,6 +3,8 @@ import { onUnmounted, ref } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
 import { mediaUrl } from '@/lib/helmet-media';
+import { db } from '@/mock/runtime';
+import { mediaKindLabel, mediaTime } from '@/lib/media-presentation';
 
 const props = defineProps({
   media: { type: Object, required: true },
@@ -50,10 +52,10 @@ onUnmounted(() => clearInterval(timer));
 
 <template>
   <div class="media-preview-wrap">
-    <video v-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" aria-label="设备原始录像" style="width:100%;max-height:65vh" />
+    <video v-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" :aria-label="mediaKindLabel(media)" style="width:100%;max-height:65vh" />
     <MediaImage v-else :media="media" />
   </div>
-  <template v-if="media.kind === 'video' && !media.url">
+  <template v-if="db.demoMode && media.kind === 'video' && !media.url">
     <div class="note">图片模拟回放 · 记录时长 {{ media.duration }} 秒</div>
     <div class="row">
       <AppButton tone="primary" :icon="playing ? 'pause-fill' : 'play-fill'" @click="toggle">{{ playing ? "暂停" : ended ? "重播" : "播放" }}</AppButton>
@@ -61,5 +63,5 @@ onUnmounted(() => clearInterval(timer));
       <span>{{ clock(progress) }} / {{ clock(media.duration) }}</span>
     </div>
   </template>
-  <p class="note">{{ media.snapshot?.personName }} · {{ media.deviceId }} · {{ media.created }}</p>
+  <p class="note">{{ media.snapshot?.personName || media.personName || (media.personId ? '历史姓名未提供' : '未关联人员') }} · {{ media.deviceId }} · {{ mediaTime(media).label }}：{{ mediaTime(media).value }}（北京时间）</p>
 </template>

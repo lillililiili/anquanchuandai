@@ -1,5 +1,7 @@
 import { blockedOperations } from './person-device-runtime.js';
 export function authHeaders() { return {}; }
+export function onAuthCleared() { return () => {}; }
+export function captureAuthRequest() { return undefined; }
 export function clearAuth() {}
 export function saveAuth() { throw Error('隔离验收入口不能登录或保存凭据'); }
 export async function authFetch(url) {

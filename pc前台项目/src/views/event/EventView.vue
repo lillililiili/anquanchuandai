@@ -283,7 +283,7 @@ function openMaterials() {
       <div class="stack">
         <AppPanel title="员工现场补充记录">
           <div v-for="record in eventRecord.observations || []" :key="record.id" class="detail-section">
-            <small>{{ record.actorName }} · {{ record.createdAt }}</small><p>{{ record.situation }}</p>
+            <small>{{ record.actorName }} · {{ formatBeijingDateTime(record.createdAt) }}</small><p>{{ record.situation }}</p>
             <div class="grid equal"><template v-for="photoId in record.photoIds || []" :key="photoId"><MediaImage v-if="eventMedia.find(m => m.blobId === photoId)" :media="eventMedia.find(m => m.blobId === photoId)" /></template></div>
           </div>
           <AppStatus v-if="!eventRecord.observations?.length">暂无现场补充</AppStatus>

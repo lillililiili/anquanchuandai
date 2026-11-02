@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, watch } from "vue";
+import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppField from "@/components/ui/AppField.vue";
@@ -20,9 +20,11 @@ import { helmetOf, people, personName, revision, works } from "@/lib/queries";
 import { isRealDevice } from '@/lib/device-telemetry';
 import { personDutyPresentation } from '@/lib/person-duty';
 import { personFeature, videoPeople } from '@/lib/person-equipment';
+import { videoGridPage, nextVideoFocus } from './video-wall';
 
 const layouts = ["1+7", "2\u00d74", "3\u00d73"];
 const draft = reactive({ workId: "" });
+const page = ref(0);
 
 watch(
   () => session.filters.video,
@@ -45,6 +47,11 @@ const cameras = computed(() => {
   );
 });
 const focus = computed(() => cameras.value.find((person) => person.id === session.person) || cameras.value[0] || null);
+const grid = computed(() => videoGridPage(cameras.value, session.layout, page.value));
+const rotatable = computed(() => cameras.value.filter(person => personFeature(db, person.id, 'video').available));
+const gridLayout = computed(() => session.layout !== '1+7');
+const canRotate = computed(() => gridLayout.value ? grid.value.pages > 1 : rotatable.value.length > 1);
+const rotationLabel = computed(() => gridLayout.value ? '整屏轮播' : '主镜头轮播');
 const duty = computed(() => personDutyPresentation(focus.value));
 const cards = computed(() => {
   const available = cameras.value.filter(person => personFeature(db, person.id, 'video').available).length;
@@ -62,6 +69,30 @@ watch(
   },
   { immediate: true },
 );
+
+watch([() => session.layout, () => session.filters.video?.workId, () => session.station], () => { page.value = 0; });
+watch([page, () => grid.value.pages], () => { if (page.value !== grid.value.page) page.value = grid.value.page; });
+watch([gridLayout, () => grid.value.items.map(person => person.id).join('|')], () => {
+  if (gridLayout.value && grid.value.items.length && !grid.value.items.some(person => person.id === session.person)) session.person = grid.value.items[0].id;
+}, { immediate: true });
+
+function changePage(offset) {
+  session.rotation = false;
+  page.value = videoGridPage(cameras.value, session.layout, grid.value.page + offset).page;
+}
+
+function rotate() {
+  if (!session.rotation || !canRotate.value) return;
+  if (gridLayout.value) page.value = (grid.value.page + 1) % grid.value.pages;
+  else session.person = nextVideoFocus(rotatable.value, session.person);
+}
+let rotateTimer;
+watch([() => session.rotation, () => session.layout, canRotate], () => {
+  clearInterval(rotateTimer);
+  if (!canRotate.value) { session.rotation = false; return; }
+  if (session.rotation) rotateTimer = setInterval(rotate, 30000);
+}, { immediate: true });
+onUnmounted(() => clearInterval(rotateTimer));
 
 function applyFilters() {
   session.filters.video = { workId: draft.workId };
@@ -101,7 +132,7 @@ function workOf(personId) {
       </AppField>
       <AppButton type="submit" tone="small">筛选</AppButton>
     </form>
-    <span class="spacer"></span>轮播控制：<AppButton tone="icon-only" :icon="session.rotation ? 'pause-fill' : 'play-fill'" aria-label="rotation" @click="session.rotation = !session.rotation" /><span class="blue">30秒 / {{ session.rotation ? "已开启" : "已暂停" }}</span>
+    <span class="spacer"></span>{{ rotationLabel }}：<AppButton tone="icon-only" :disabled="!canRotate" :icon="session.rotation ? 'pause-fill' : 'play-fill'" :aria-label="(session.rotation ? '暂停' : '开启') + rotationLabel" @click="session.rotation = !session.rotation" /><span class="blue">{{ canRotate ? '30秒 / ' + (session.rotation ? '已开启' : '已暂停') : cameras.length ? gridLayout ? '当前仅1屏，无需轮播' : '不足2路可用镜头' : '暂无视频通道' }}</span>
   </div>
   <template v-if="session.layout === '1+7'">
     <div class="video-wall">
@@ -142,10 +173,19 @@ function workOf(personId) {
       <VideoThumb v-for="person in cameras" :key="person.id" :person="person" />
     </div>
   </template>
-  <div v-else :class="['video-grid-wall', session.layout === layouts[2] ? 'nine' : '']">
-    <VideoThumb v-for="person in cameras" :key="person.id" :person="person" />
-    <div v-if="session.layout === layouts[2] && cameras.length < 9" class="panel">
-      <AppEmpty text="无更多视频通道" />
+  <template v-else>
+    <div v-if="cameras.length" class="video-page-controls" aria-label="视频屏幕分页">
+      <AppButton tone="small" :disabled="grid.page === 0" @click="changePage(-1)">上一屏</AppButton>
+      <span role="status">第 {{ grid.page + 1 }} / {{ grid.pages }} 屏 · 当前 {{ grid.first }}–{{ grid.last }} / {{ grid.total }} 路 · 每屏最多 {{ grid.capacity }} 路</span>
+      <AppButton tone="small" :disabled="grid.page >= grid.pages - 1" @click="changePage(1)">下一屏</AppButton>
     </div>
-  </div>
+    <div v-if="cameras.length" :class="['video-grid-wall', session.layout === layouts[2] ? 'nine' : '']">
+      <VideoThumb v-for="person in grid.items" :key="person.id" :person="person" />
+    </div>
+    <AppEmpty v-else text="暂无符合条件的视频通道" />
+  </template>
 </template>
+
+<style scoped>
+.video-page-controls { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; margin:0 0 14px; }
+</style>

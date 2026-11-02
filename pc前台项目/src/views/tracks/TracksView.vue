@@ -14,7 +14,8 @@ import LocationTabs from "@/components/layout/LocationTabs.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import PlantMap from "@/components/domain/PlantMap.vue";
 import { db, locationApi, guardianReady } from "@/mock/runtime";
-import { beijingDate, trackSegments } from "@/lib/location";
+import { beijingDate, trackSegments, trackBreakLabel, trackEvents, trackQueryContext } from "@/lib/location";
+import { formatBeijingDateTime } from '@/lib/date-time';
 import { filtersOf, session } from "@/stores/session";
 import { toast } from "@/stores/notify";
 import { events, people, revision } from "@/lib/queries";
@@ -71,7 +72,7 @@ const segments = computed(() => {
 const related = computed(() => {
   revision();
   const query=filtersOf('tracks');
-  return events().find((item) => (query.mode==='device'?item.deviceId===query.deviceId:item.personId===session.person) && item.status !== "已核验") || null;
+  return trackEvents(events(), { ...trackWindow.value, ...(query.mode === 'device' ? { deviceId: query.deviceId } : { personId: query.personId || session.person }) });
 });
 
 const currentPoint = computed(() => {
@@ -79,10 +80,10 @@ const currentPoint = computed(() => {
   return session.trackPoints[session.trackIndex] || null;
 });
 
-function resolvedPerson(preferred) {
+function resolvedPerson(preferred, strict = false) {
   const found = db.person(preferred);
   if (found?.station === session.station && found.source !== 'DEMO_WATCH') return found;
-  return db.person(personOptions.value[0]?.[0]) || null;
+  return strict ? null : db.person(personOptions.value[0]?.[0]) || null;
 }
 
 async function loadFromContext() {
@@ -90,7 +91,8 @@ async function loadFromContext() {
   await guardianReady;
   if (disposed) return;
   const query = filtersOf("tracks");
-  const person = resolvedPerson(route.params.id || query.personId || session.person);
+  Object.assign(query, trackQueryContext(query, route.params.id));
+  const person = resolvedPerson(query.personId || session.person, Boolean(route.params.id));
   if (person) session.person = person.id;
   const date = query.date || beijingDate();
   const start = query.start || "00:00";
@@ -101,6 +103,7 @@ async function loadFromContext() {
   draft.date = date;
   draft.start = start;
   draft.end = end;
+  if (route.params.id && !person) trackError.value = '所选人员不存在或不在当前厂站';
   await readTracks(draft.mode==='person'?person?.id:null, date, start, end, draft.mode==='device'?draft.deviceId:undefined);
 }
 
@@ -148,7 +151,10 @@ async function submitTracks() {
     draft.end = end;
     session.person = draft.personId;
     await readTracks(draft.mode==='person'?draft.personId:null, date, start, end, draft.mode==='device'?draft.deviceId:undefined);
-    if (!disposed && route.params.id && draft.mode==='person') go("tracks/" + draft.personId);
+    if (!disposed && route.params.id) {
+      if (draft.mode === 'device') go('tracks');
+      else if (route.params.id !== draft.personId) go('tracks/' + draft.personId);
+    }
   } catch (error) {
     trackError.value = error.message || "结束时间必须晚于开始时间";
   }
@@ -180,12 +186,12 @@ function exportTracks() {
   }
   previewCsv(
     "历史轨迹-" + (filtersOf('tracks').mode === 'device' ? filtersOf('tracks').deviceId : session.person) + ".csv",
-    ["人员", "历史关联设备", "日期（北京时间）", "时间", "经度", "纬度", "坐标系", "定位来源", "时间依据", "设备采集时间", "平台接收时间", "数据缺口起点"],
+    ["人员", "历史关联设备", "历史领用编号", "时间（北京时间）", "经度", "纬度", "坐标系", "定位来源", "时间依据", "设备采集时间", "平台接收时间", "分段起点", "分段原因"],
     session.trackPoints.map((point) => [
       db.person(point.personId)?.name || '未关联人员',
       point.deviceId,
-      trackWindow.value.date,
-      point.time,
+      point.bindingId || point.assignmentId || '未提供',
+      formatBeijingDateTime(point.timeAt),
       point.longitude,
       point.latitude,
       point.coordinateSystem,
@@ -194,6 +200,7 @@ function exportTracks() {
       point.collectedAt || '未确认',
       point.receivedAt || (point.locationTimeBasis === 'RECEIVED_AT' ? point.reportedAt : '') || '未提供',
       point.gap ? "是" : "否",
+      point.gap ? trackBreakLabel(point) : '',
     ]),
   );
 }
@@ -230,8 +237,8 @@ function exportTracks() {
         <template v-for="(group, index) in segments.groups" :key="index">
           <div v-if="index && segments.hasGap" class="track-segment">
             <b class="yellow">{{ segments.groups[index - 1].at(-1).time }} — {{ group[0].time }}</b>
-            <small class="yellow">数据缺口</small>
-            <small>缺口时段无可靠位置，不插值连线。</small>
+            <small class="yellow">{{ trackBreakLabel(group[0]) }}</small>
+            <small>分段边界不插值连线。</small>
           </div>
           <div class="track-segment">
             <b><AppTag>{{ index + 1 }}</AppTag>　{{ group[0].time }} — {{ group[group.length - 1].time }}</b>
@@ -241,10 +248,12 @@ function exportTracks() {
         </template>
         <div class="detail-section">
           <h3>事件记录</h3>
-          <template v-if="related">
-            <p class="yellow">{{ related.time }}　{{ related.title }}</p>
-            <p><small>关联事件　{{ related.id }}</small></p>
-            <a class="btn wide" :href="'#/event/' + related.id">查看核验</a>
+          <template v-if="related.length">
+            <div v-for="item in related" :key="item.id" class="track-segment">
+              <p class="yellow">{{ item.date }} {{ item.time }}　{{ item.title }}</p>
+              <p><small>关联事件　{{ item.id }} · {{ item.status }}</small></p>
+              <a class="btn wide" :href="'#/event/' + item.id">查看核验</a>
+            </div>
           </template>
           <AppEmpty v-else text="无关联事件" />
         </div>
@@ -268,7 +277,7 @@ function exportTracks() {
           />
           <div class="track-labels">
             <span>{{ trackWindow.start }}</span>
-            <span v-if="segments.hasGap" class="yellow">{{ segments.groups.length - 1 }} 处数据间断</span>
+            <span v-if="segments.hasGap" class="yellow">{{ segments.groups.length - 1 }} 处分段边界</span>
             <span>{{ trackWindow.end }}</span>
           </div>
           <div class="row">
@@ -286,10 +295,10 @@ function exportTracks() {
               :options="speeds"
               @update:model-value="session.trackSpeed = Number($event)"
             />
-            <span>{{ trackWindow.date }} {{ currentPoint?.time || "--:--:--" }}</span>
+            <span>{{ currentPoint ? formatBeijingDateTime(currentPoint.timeAt) : trackWindow.date + ' --:--:--' }}</span>
             <span class="spacer"></span>
             <small>当前采样点信息　{{ currentPoint ? currentPoint.deviceId : "—" }}</small>
-            <small v-if="currentPoint">时间轴按记录上报时间；设备采集时间：{{ currentPoint.collectedAt || '未确认' }}</small>
+            <small v-if="currentPoint">时间依据：{{ currentPoint.locationTimeBasis === 'DEVICE_COLLECTED_AT' || (!currentPoint.locationTimeBasis && currentPoint.collectedAt) ? '设备采集时间' : '平台接收时间，采集时间未确认' }}；设备采集时间：{{ currentPoint.collectedAt ? formatBeijingDateTime(currentPoint.collectedAt) : '未确认' }}</small>
           </div>
         </div>
       </AppPanel>

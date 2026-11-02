@@ -9,6 +9,18 @@ export function mediaUrl(value) {
   } catch { return null; }
 }
 
+// The server-issued URL identifies the cloud asset; the business record ID can
+// differ after import. Keep its token and let the media service authenticate
+// the request before returning Content-Disposition: attachment.
+export function mediaDownloadUrl(value) {
+  const safe = mediaUrl(value);
+  if (!safe) return null;
+  const url = new URL(safe);
+  if (!/^\/helmet-media\/files\/[A-Za-z0-9_-]+$/.test(url.pathname)) return null;
+  url.searchParams.set('download', '1');
+  return url.href;
+}
+
 export function createHelmetMediaApi(fetchImpl) {
   async function request(deviceId, suffix, options = {}) {
     const response = await fetchImpl(`/api/guardian/v1/devices/${encodeURIComponent(deviceId)}/${suffix}`, options);

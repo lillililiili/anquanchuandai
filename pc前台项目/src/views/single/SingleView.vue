@@ -11,6 +11,8 @@ import PersonAvatar from "@/components/domain/PersonAvatar.vue";
 import VideoFrame from "@/components/domain/VideoFrame.vue";
 import { personFeature } from '@/lib/person-equipment';
 import { db } from "@/mock/runtime";
+import { formatBeijingDateTime } from '@/lib/date-time';
+import { normalizeMedia, mediaSourceLabel, mediaTime } from '@/lib/media-presentation';
 import { session } from "@/stores/session";
 import { toast } from "@/stores/notify";
 import { callPerson, go, runGuarded } from "@/lib/actions";
@@ -120,9 +122,9 @@ async function fullscreen(event) {
           >
             <MediaImage :media="item" />
             <div>
-              {{ item.created }}
-              <p class="blue">{{ personName(person.id) }} · {{ item.deviceId }}</p>
-              <small>{{ item.source }}</small>
+              {{ mediaTime(item).label }}：{{ mediaTime(item).value }}
+              <p class="blue">{{ normalizeMedia(item).snapshot.personName }} · {{ item.deviceId }}</p>
+              <small>{{ mediaSourceLabel(item) }}</small>
             </div>
           </div>
           <a class="text-link" href="#/materials">查看全部 <UiIcon name="chevron-right" /></a>

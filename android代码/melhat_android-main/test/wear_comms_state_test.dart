@@ -10,6 +10,7 @@ void main() {
         final expected = <String, WearCallStatus>{
           'requesting': WearCallStatus.requesting,
           'offered': WearCallStatus.offered,
+          'answered': WearCallStatus.answered,
           'connected': WearCallStatus.connected,
           'ended': WearCallStatus.ended,
           'failed': WearCallStatus.failed,
@@ -42,6 +43,41 @@ void main() {
       expect(call.isConnected, isFalse);
       expect(call.statusLabel, '演示状态（未连接真实设备）');
     });
+    test(
+      'SIP connected requires explicit cloud confirmation; answered stays intermediate',
+      () {
+        final raw = {
+          'id': '17',
+          'deviceId': '9',
+          'requesterUserId': '4',
+          'protocol': 'SIP',
+          'status': 'answered',
+          'serverConnected': true,
+        };
+        expect(CallSession.fromJson(raw).isConnected, isFalse);
+        expect(CallSession.fromJson(raw).statusLabel, contains('等待双方接通'));
+        expect(
+          CallSession.fromJson({
+            ...raw,
+            'status': 'connected',
+            'serverConnected': false,
+          }).isConnected,
+          isFalse,
+        );
+        expect(
+          CallSession.fromJson({
+            ...raw,
+            'status': 'connected',
+            'serverConnected': false,
+          }).statusLabel,
+          '设备连接待确认',
+        );
+        expect(
+          CallSession.fromJson({...raw, 'status': 'connected'}).isConnected,
+          isTrue,
+        );
+      },
+    );
   });
 
   group('communications policy', () {

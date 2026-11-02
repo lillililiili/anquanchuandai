@@ -15,6 +15,7 @@ bool _boolOf(Object? value) =>
 enum WearCallStatus {
   requesting,
   offered,
+  answered,
   connected,
   ending,
   ended,
@@ -32,6 +33,7 @@ extension WearCallStatusView on WearCallStatus {
   String get label => switch (this) {
     WearCallStatus.requesting => '正在请求设备',
     WearCallStatus.offered => '等待加入',
+    WearCallStatus.answered => '设备已应答，等待双方接通',
     WearCallStatus.connected => '已接通',
     WearCallStatus.ending => '正在结束',
     WearCallStatus.ended => '已结束',
@@ -44,6 +46,7 @@ extension WearCallStatusView on WearCallStatus {
 WearCallStatus callStatusOf(Object? raw) => switch (_stringOf(raw)) {
   'requesting' => WearCallStatus.requesting,
   'offered' => WearCallStatus.offered,
+  'answered' => WearCallStatus.answered,
   'connected' => WearCallStatus.connected,
   'ending' => WearCallStatus.ending,
   'ended' => WearCallStatus.ended,
@@ -67,6 +70,8 @@ class CallSession {
     this.video = false,
     this.demo = false,
     this.connectionQuality = '',
+    this.protocol = '',
+    this.serverConnected = false,
     this.expiresAt,
     this.startedAt,
     this.connectedAt,
@@ -89,6 +94,8 @@ class CallSession {
     video: _boolOf(json['video']),
     demo: _boolOf(json['demo']),
     connectionQuality: _stringOf(json['connectionQuality']),
+    protocol: _stringOf(json['protocol']).toUpperCase(),
+    serverConnected: json['serverConnected'] == true,
     expiresAt: _dateOf(json['expiresAt']),
     startedAt: _dateOf(json['startedAt']),
     connectedAt: _dateOf(json['connectedAt']),
@@ -110,6 +117,8 @@ class CallSession {
   final bool video;
   final bool demo;
   final String connectionQuality;
+  final String protocol;
+  final bool serverConnected;
   final DateTime? expiresAt;
   final DateTime? startedAt;
   final DateTime? connectedAt;
@@ -117,10 +126,17 @@ class CallSession {
   final String failReason;
   final int version;
 
-  bool get isConnected => status == WearCallStatus.connected && !demo;
+  bool get isConnected =>
+      status == WearCallStatus.connected &&
+      !demo &&
+      (protocol != 'SIP' || serverConnected);
   bool get isTerminal => status.isTerminal;
   String get statusLabel => demo
       ? '演示状态（未连接真实设备）'
+      : protocol == 'SIP' && status == WearCallStatus.connected
+      ? serverConnected
+            ? '设备会话已连接'
+            : '设备连接待确认'
       : status == WearCallStatus.connected &&
             connectionQuality == 'local_joined'
       ? '本端已加入（设备接通待确认）'

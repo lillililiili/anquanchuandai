@@ -78,7 +78,7 @@ export function createServer(config, dependencies = {}) {
         if (!(config.browserOrigins ?? [config.publicOrigin]).includes(browserOrigin)) throw fault(403, 'ORIGIN_DENIED');
         response.setHeader('Access-Control-Allow-Origin', browserOrigin);
         response.setHeader('Vary', 'Origin');
-        response.setHeader('Access-Control-Expose-Headers', 'Content-Length,Content-Range,Accept-Ranges,Location');
+        response.setHeader('Access-Control-Expose-Headers', 'Content-Length,Content-Range,Accept-Ranges,Location,Content-Disposition');
         if (request.method === 'OPTIONS') {
           response.writeHead(204, { 'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Range', 'Access-Control-Max-Age': '600' });
           return response.end();
@@ -94,6 +94,8 @@ export function createServer(config, dependencies = {}) {
       const file = pathname.match(/^\/helmet-media\/files\/([A-Za-z0-9_-]+)$/);
       if (file && ['GET', 'HEAD'].includes(request.method)) {
         if (!service.authorize(url.searchParams.get('token'), 'asset', file[1])) throw fault(403, 'INVALID_TICKET');
+        const download=url.searchParams.has('download');
+        if(download&&(url.searchParams.getAll('download').length!==1||url.searchParams.get('download')!=='1'))throw fault(400,'INVALID_DOWNLOAD_MODE');
         const asset = service.store.data.assets[file[1]]; if (!asset) throw fault(404, 'ASSET_NOT_FOUND');
         const filename = path.join(service.store.directory, 'assets', asset.filename), stat = fs.statSync(filename);
         const range = request.headers.range;
@@ -103,7 +105,9 @@ export function createServer(config, dependencies = {}) {
           start = Number(match[1]); end = match[2] ? Number(match[2]) : end;
           if (start > end || start >= stat.size || end >= stat.size) throw fault(416, 'INVALID_RANGE'); status = 206;
         }
+        const extension=({'image/jpeg':'jpg','image/png':'png','video/mp4':'mp4','audio/mpeg':'mp3'})[asset.mime]??'bin';
         response.writeHead(status, { 'Content-Type': asset.mime, 'Content-Length': end - start + 1, 'Accept-Ranges': 'bytes',
+          ...(download?{'Content-Disposition':`attachment; filename="${file[1]}.${extension}"`}:{}),
           'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', ...(status === 206 ? { 'Content-Range': `bytes ${start}-${end}/${stat.size}` } : {}) });
         if (request.method === 'HEAD') return response.end();
         fs.createReadStream(filename, { start, end }).on('error', () => response.destroy()).pipe(response); return;

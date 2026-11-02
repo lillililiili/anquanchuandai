@@ -3,6 +3,7 @@ import { computed } from "vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppTable from "@/components/ui/AppTable.vue";
 import { db } from "@/mock/runtime";
+import { formatBeijingDateTime } from '@/lib/date-time';
 import { revision } from "@/lib/queries";
 import { isSimulatedVital } from "@/lib/sample-data";
 import { vitalValue, bloodPressure } from './vital-values';
@@ -24,7 +25,7 @@ const rows = computed(() => {
   <AppTable :rows="rows" v-slot="{ rows: pageRows }" v-if="rows.length" table-class="compact" :columns="columns">
     <tr v-for="item in pageRows" :key="item.id">
       <td>{{ item.personName }}<small>{{ item.deviceId }}</small><small>{{ isSimulatedVital(item) ? '模拟数据' : '设备观测' }}</small></td>
-      <td>{{ item.observedAt }}<small>{{ item.receivedAt }}</small></td>
+      <td>{{ formatBeijingDateTime(item.observedAt) }}<small>{{ formatBeijingDateTime(item.receivedAt) }}</small></td>
       <td>{{ vitalValue(item.heartRate) ?? '—' }} bpm</td>
       <td>{{ vitalValue(item.oxygen) ?? '—' }} %</td>
       <td>{{ vitalValue(item.temperature, 1) ?? '—' }} °C</td>

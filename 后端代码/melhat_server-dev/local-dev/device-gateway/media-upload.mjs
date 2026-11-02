@@ -30,7 +30,13 @@ export function createMediaUpload(config, fetchMedia = fetch) {
         const chunks=[];let count=0;for await(const chunk of request){count+=chunk.length;if(count>max)throw Error('Too large');chunks.push(chunk);}
         const input=streamCheck?{}:JSON.parse(Buffer.concat(chunks));
         if(binding&&input.device_id!==config.deviceId) return fail(response,403,'DeviceMismatch');
-        body=Buffer.from(JSON.stringify({deviceId:config.deviceId,...(binding?{imageUrl:input.image_url,latitude:input.x_point,longitude:input.y_point}:{})}));
+        const requestId=binding?input.talkback_id:null;
+        if(requestId!=null&&requestId!==''&&!/^HC-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(typeof requestId==='string'?requestId:''))return fail(response,400,'InvalidPhotoRequestId');
+        // Keep only the firmware's exact command echo and field names. Never
+        // infer association from upload time, current wearer or the latest command.
+        const receiptFieldNames=binding?Object.keys(input).filter(k=>/^[A-Za-z0-9_]{1,64}$/.test(k)).slice(0,32).sort():[];
+        body=Buffer.from(JSON.stringify({deviceId:config.deviceId,...(binding?{imageUrl:input.image_url,latitude:input.x_point,longitude:input.y_point,
+          ...(requestId?{requestId,requestIdSource:'report/add_image.talkback_id'}:{}),receiptFieldNames}:{})}));
         controlPath='/helmet-media/control/v1/'+(binding?'photo-bind':'device-stream-status');headers={...signedHeaders(config.mediaSigningKey,'POST',controlPath,body),'Content-Type':'application/json'};
       } else {
         saved=await spool(request,path.join(path.dirname(fileURLToPath(import.meta.url)),'.local/upload-temp'),max);

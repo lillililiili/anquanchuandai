@@ -223,6 +223,72 @@ class GuardianSharedBusinessTest {
         assertEquals(200,mobile.assignment("return",input,request(admin)).getIntValue("code"));
         verify(assignments).execute(admin.getString("id"),"assignments.return",input);
     }
+    @Test void sipDeviceAnsweredAllowsBrowserJoinButOnlyCloudConnectedConfirmsTheCall(){
+        find(master,"devices","RL-H001").put("source","PLATFORM");GuardianVoiceService voice=mock(GuardianVoiceService.class);
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);when(voice.directMedia()).thenReturn(media);
+        when(voice.call(any(),anyString(),anyBoolean())).thenReturn(new HashMap<String,Object>(){{put("protocol","SIP");put("channel","SIP-stage");put("authorizationPassword","private-sip-token");put("expiresAt",java.time.Instant.now().plusSeconds(60).toString());}});
+        GuardianMobileCommunications controller=communications(voice);String id=controller.start(object("deviceId","RL-H001","idempotencyKey","sip-stage-001"),request(admin)).getString("id");
+        when(media.callState("SIP-stage")).thenReturn(object("status","answered","connectedDeviceIds",JSONArray.of("RL-H001"),"statusVerified",true));
+        JSONObject answered=controller.details(id,request(admin));assertEquals("answered",answered.getString("status"));assertFalse(answered.getBooleanValue("serverConnected"));assertEquals(JSONArray.of("RL-H001"),answered.getJSONArray("connectedDeviceIds"));assertTrue(answered.getBooleanValue("statusVerified"));assertFalse(answered.containsKey("credentials"));
+        assertEquals("private-sip-token",controller.credentials(id,request(admin)).getString("authorizationPassword"));
+        JSONObject joined=controller.joined(id,object(),request(admin));assertEquals("answered",joined.getString("status"));assertFalse(joined.getBooleanValue("serverConnected"));assertNotNull(joined.getString("clientJoinedAt"));
+        when(media.callState("SIP-stage")).thenReturn(object("status","connected","connectedDeviceIds",JSONArray.of("RL-H001")));assertTrue(controller.details(id,request(admin)).getBooleanValue("serverConnected"));assertFalse(controller.details(id,request(admin)).containsKey("statusVerified"));
+        when(media.callState("SIP-stage")).thenReturn(object("status","ending"));assertEquals(409,assertThrows(AdminQueryService.QueryFailed.class,()->controller.credentials(id,request(admin))).code);assertEquals(409,assertThrows(AdminQueryService.QueryFailed.class,()->controller.joined(id,object(),request(admin))).code);
+        when(media.callState("SIP-stage")).thenReturn(object("status","ended","connectedDeviceIds",new JSONArray()));JSONObject ended=controller.details(id,request(admin));assertFalse(ended.getBooleanValue("serverConnected"));assertTrue(ended.getJSONArray("connectedDeviceIds").isEmpty());assertEquals(409,assertThrows(AdminQueryService.QueryFailed.class,()->controller.credentials(id,request(admin))).code);
+        verify(voice,times(1)).call(any(),anyString(),anyBoolean());
+    }
+    @Test void unknownSameKeyReturnsOriginalRecoverableRecordAndNeverRedials(){
+        find(master,"devices","RL-H001").put("source","PLATFORM");GuardianVoiceService voice=mock(GuardianVoiceService.class);
+        when(voice.call(any(),anyString(),anyBoolean())).thenThrow(new IllegalStateException("network outcome unavailable"));
+        GuardianMobileCommunications controller=communications(voice);JSONObject input=object("deviceId","RL-H001","idempotencyKey","unknown-call-001");
+        JSONObject first=controller.start(input,request(admin));assertEquals("unknown",first.getString("status"));assertEquals("PLATFORM_UNCONFIRMED",first.getString("errorCode"));assertNotNull(first.getString("id"));assertFalse(first.containsKey("credentials"));
+        JSONObject repeated=controller.start(input,request(admin));assertEquals(first.getString("id"),repeated.getString("id"));assertEquals("unknown",repeated.getString("status"));assertFalse(repeated.containsKey("channelName"));
+        assertEquals("CALL_BUSY",assertThrows(AdminQueryService.QueryFailed.class,()->controller.start(object("deviceId","RL-H001","idempotencyKey","unknown-call-002"),request(admin))).errorCode);
+        verify(voice,times(1)).call(any(),anyString(),anyBoolean());assertEquals(1,controller.calls(null,"RL-H001",null,true,"active",request(admin)).size());
+        store.update(state->{find(state,"sharedCommunications",first.getString("id")).put("status","failed");return true;});
+        JSONObject failed=controller.start(input,request(admin));assertEquals(first.getString("id"),failed.getString("id"));assertEquals("failed",failed.getString("status"));assertFalse(failed.containsKey("credentials"));
+        store.update(state->{find(state,"sharedCommunications",first.getString("id")).put("status","ended");return true;});assertEquals("ended",controller.start(input,request(admin)).getString("status"));verify(voice,times(1)).call(any(),anyString(),anyBoolean());
+    }
+    @Test void existingUnknownWithCloudIdRefreshesAndOwnedActiveListNeverLeaksOtherActors(){
+        find(master,"devices","RL-H001").put("source","PLATFORM");GuardianVoiceService voice=mock(GuardianVoiceService.class);
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);when(voice.directMedia()).thenReturn(media);
+        when(voice.call(any(),anyString(),anyBoolean())).thenReturn(new HashMap<String,Object>(){{put("protocol","SIP");put("channel","SIP-unknown");put("status","unknown");put("message","awaiting actual outcome");}});
+        GuardianMobileCommunications controller=communications(voice);JSONObject input=object("deviceId","RL-H001","idempotencyKey","cloud-unknown-001");JSONObject first=controller.start(input,request(admin));
+        assertEquals("SIP-unknown",first.getString("channelName"));when(media.callState("SIP-unknown")).thenReturn(object("status","answered","connectedDeviceIds",JSONArray.of("RL-H001")));
+        store.update(state->{rows(state,"sharedCommunications").add(object("id","other-private-call","operationType","call","requesterUserId",member.getString("id"),"deviceId","RL-H001","siteId","site-1","status","offered","protocol","SIP","channelName","SIP-other-private","credentials",object("password","other-secret")));return true;});
+        JSONArray owned=controller.calls(null,"RL-H001",null,true,"active",request(admin));assertEquals(1,owned.size());assertEquals("answered",owned.getJSONObject(0).getString("status"));assertFalse(owned.toJSONString().contains("other-private"));assertFalse(owned.toJSONString().contains("credentials"));verify(media,never()).callState("SIP-other-private");
+        JSONObject repeated=controller.start(input,request(admin));assertEquals(first.getString("id"),repeated.getString("id"));assertEquals("answered",repeated.getString("status"));assertFalse(repeated.containsKey("credentials"));
+        when(media.callState("SIP-unknown")).thenReturn(object("status","ended","connectedDeviceIds",new JSONArray()));assertTrue(controller.calls(null,"RL-H001",null,true,"active",request(admin)).isEmpty());assertEquals("ended",controller.start(input,request(admin)).getString("status"));verify(voice,times(1)).call(any(),anyString(),anyBoolean());
+    }
+    @Test void knownBusyDoesNotCreateAnUnknownRecordAndRaceRejectionIsExplicitlyNotSubmitted(){
+        find(master,"devices","RL-H001").put("source","DIRECT_HELMET");GuardianVoiceService voice=mock(GuardianVoiceService.class);when(voice.isDirect("RL-H001")).thenReturn(true);
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);when(voice.directMedia()).thenReturn(media);
+        doThrow(new AdminQueryService.QueryFailed(409,"CALL_BUSY","busy")).when(media).requireCallReady(anyList());
+        GuardianMobileCommunications controller=communications(voice);int before=rows(store.snapshot(),"sharedCommunications").size();
+        assertEquals("CALL_BUSY",assertThrows(AdminQueryService.QueryFailed.class,()->controller.start(object("deviceId","RL-H001","idempotencyKey","busy-before-001"),request(admin))).errorCode);
+        assertEquals(before,rows(store.snapshot(),"sharedCommunications").size());verify(voice,never()).call(any(),anyString(),anyBoolean());
+        doNothing().when(media).requireCallReady(anyList());when(voice.call(any(),anyString(),anyBoolean())).thenThrow(new AdminQueryService.QueryFailed(409,"CALL_BUSY","busy after preflight"));
+        JSONObject input=object("deviceId","RL-H001","idempotencyKey","busy-race-001");assertEquals("CALL_BUSY",assertThrows(AdminQueryService.QueryFailed.class,()->controller.start(input,request(admin))).errorCode);
+        JSONObject rejected=rows(store.snapshot(),"sharedCommunications").getJSONObject(0);assertEquals("failed",rejected.getString("status"));assertEquals("NOT_SENT",rejected.getString("submissionState"));assertEquals("CALL_BUSY",rejected.getString("errorCode"));
+        assertEquals(rejected.getString("id"),controller.start(input,request(admin)).getString("id"));verify(voice,times(1)).call(any(),anyString(),anyBoolean());
+    }
+    @Test void sameKeyAfterAssignmentChangesRecoversIdentityWithoutRestoringCredentials(){
+        find(master,"devices","RL-H001").put("source","PLATFORM");GuardianVoiceService voice=mock(GuardianVoiceService.class);
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);when(voice.directMedia()).thenReturn(media);
+        when(voice.call(any(),anyString(),anyBoolean())).thenReturn(new HashMap<String,Object>(){{put("protocol","SIP");put("channel","SIP-returned");put("authorizationPassword","must-not-return");put("expiresAt",java.time.Instant.now().plusSeconds(60).toString());}});
+        GuardianMobileCommunications controller=communications(voice);JSONObject input=object("deviceId","RL-H001","idempotencyKey","returned-call-001");String id=controller.start(input,request(admin)).getString("id");
+        PersonEquipmentContext equipment=(PersonEquipmentContext)ReflectionTestUtils.getField(controller,"equipment");
+        when(equipment.require(any(),anyString(),any(),anyString(),anyString())).thenThrow(new AdminQueryService.QueryFailed(409,"ASSIGNMENT_CHANGED","returned"));
+        when(media.callState("SIP-returned")).thenReturn(object("status","answered","connectedDeviceIds",JSONArray.of("RL-H001")));
+        JSONObject recovered=controller.start(input,request(admin));assertEquals(id,recovered.getString("id"));assertEquals("answered",recovered.getString("status"));assertTrue(recovered.getBooleanValue("recoveryOnly"));assertEquals("ASSIGNMENT_CHANGED",recovered.getString("operationErrorCode"));assertFalse(recovered.containsKey("credentials"));
+        assertEquals("ASSIGNMENT_CHANGED",assertThrows(AdminQueryService.QueryFailed.class,()->controller.credentials(id,request(admin))).errorCode);
+        when(media.callState("SIP-returned")).thenReturn(object("status","unknown"));assertEquals(id,controller.start(input,request(admin)).getString("id"));
+        when(media.callState("SIP-returned")).thenReturn(object("status","ended"));assertEquals("ended",controller.start(input,request(admin)).getString("status"));verify(voice,times(1)).call(any(),anyString(),anyBoolean());
+    }
+    @Test void publicCallHistoryDoesNotExposePrivateCorrectionSnapshots(){
+        JSONObject row=object("id","reviewed-call","status","failed","errorCode","CALL_BUSY","submissionState","NOT_SENT","requestId","private-key","fingerprint","private-fingerprint", "correctionAudit",JSONArray.of(object("before",object("requestId","private-key","fingerprint","private-fingerprint","credentials",object("test","private-token")))));
+        JSONObject visible=GuardianMobileCommunications.publicRow(row);assertEquals("failed",visible.getString("status"));assertEquals("CALL_BUSY",visible.getString("errorCode"));assertFalse(visible.toJSONString().contains("private-"));assertFalse(visible.containsKey("correctionAudit"));assertTrue(row.containsKey("correctionAudit"));
+    }
     @Test void uncertainBroadcastResultCannotBecomeSuccessOrReplayOnRetry(){
         find(master,"devices","RL-H001").put("source","PLATFORM");GuardianVoiceService voice=mock(GuardianVoiceService.class);
         doThrow(new GuardianRejected("platform unavailable")).when(voice).broadcast(any(),anyString(),anyString(),anyString());

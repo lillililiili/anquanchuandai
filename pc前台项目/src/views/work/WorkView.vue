@@ -19,6 +19,7 @@ import ModalClose from "./ModalClose.vue";
 import WorkRecords from "./WorkRecords.vue";
 import WorkRiskInfo from "./WorkRiskInfo.vue";
 import { db } from "@/mock/runtime";
+import { formatRecordedDateTime } from '@/lib/date-time';
 import { openModal } from "@/stores/modal";
 import { session } from "@/stores/session";
 import { callPerson, runGuarded } from "@/lib/actions";
@@ -122,7 +123,7 @@ function openRecords() {
               </td>
               <td><AppTag>{{ roleOf(pid) }}</AppTag></td>
               <td><DeviceStrip :person-id="pid" /></td>
-              <td>{{ memberOf(pid)?.updated }}</td>
+              <td>{{ formatRecordedDateTime(memberOf(pid)?.updated) }}</td>
               <td>
                 <div class="inline-buttons">
                   <a class="btn small" :href="'#/tracks/' + pid">查看轨迹</a>
@@ -175,7 +176,7 @@ function openRecords() {
           </template>
           <AppStatus v-if="!timeline.length">暂无实际现场记录</AppStatus>
           <div class="timeline">
-            <div v-for="(item, index) in timeline" :key="index" class="timeline-item"><time>{{ item.time }}</time>{{ item.text }}</div>
+            <div v-for="(item, index) in timeline" :key="index" class="timeline-item"><time>{{ formatRecordedDateTime(item.time) }}</time>{{ item.text }}</div>
           </div>
         </AppPanel>
       </div>

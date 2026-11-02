@@ -190,7 +190,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   void _onControllerChanged() {
     final controller = _controller;
     if (controller != null && !callLabEnabled) {
-      _session?.callActive.value = controller.hasActiveOwnedSession;
+      _session?.callActive.value = controller.hasLocalSession;
     }
     if (mounted) setState(() {});
   }
@@ -316,6 +316,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       });
       _pruneSelection();
       controller.selectDevice(selected);
+      await controller.recoverOwnedCalls();
     } catch (error) {
       if (error is StaleSessionException) return;
       if (!mounted ||
@@ -370,6 +371,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         _history = history;
       });
       _controller?.selectDevice(selected);
+      await _controller?.recoverOwnedCalls();
     } catch (error) {
       if (error is StaleSessionException) return;
       if (!mounted ||
@@ -459,6 +461,16 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
                           children: [
+                            if (controller?.recoveryError.isNotEmpty == true)
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  controller!.recoveryError,
+                                  style: const TextStyle(
+                                    color: WearColors.danger,
+                                  ),
+                                ),
+                              ),
                             if (controller?.activeCall != null)
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
@@ -538,6 +550,28 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                     ),
                                   const SizedBox(height: 6),
                                   _selectionBar(),
+                                  if (controller != null &&
+                                      controller.activeCall == null &&
+                                      controller.statusMessage.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: WearCard(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(controller.statusMessage),
+                                            if (controller.rtcPhase ==
+                                                WearRtcPhase.preparing)
+                                              TextButton(
+                                                onPressed: controller
+                                                    .cancelPreparation,
+                                                child: const Text('取消准备'),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   const SizedBox(height: 6),
                                   ..._visibleContacts.map(_contactTile),
                                   if (_visibleContacts.isEmpty)
@@ -1239,7 +1273,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
     final call = controller.activeCall!;
     final statusColor = call.demo
         ? WearColors.warning
-        : call.status == WearCallStatus.connected
+        : controller.isConnected
         ? WearColors.primary
         : call.status == WearCallStatus.failed ||
               call.status == WearCallStatus.timedOut
@@ -1261,7 +1295,12 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                   ),
                 ),
               ),
-              WearBadge(text: call.statusLabel, color: statusColor),
+              Flexible(
+                child: WearBadge(
+                  text: controller.activeStatusLabel,
+                  color: statusColor,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1281,7 +1320,26 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 ),
               ),
             ),
-          if (call.video && controller.rtc is ProtocolWearRtcEngine)
+          if (controller.isSip &&
+              !call.isTerminal &&
+              !controller.isRecoveredSession)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '语音服务：${controller.sipRegistered ? '已注册' : '尚未注册'}\n'
+                '本端信令：${controller.rtcPhase == WearRtcPhase.localJoined ? '已确认' : '尚未确认'}\n'
+                '远端音频：${controller.remotePresent ? '已收到媒体流' : '等待媒体流'}\n'
+                '设备会话：${call.serverConnected && call.status == WearCallStatus.connected
+                    ? '服务端确认连接'
+                    : call.status == WearCallStatus.answered
+                    ? '设备已应答，等待双方接通'
+                    : '等待服务端确认'}',
+                style: const TextStyle(color: WearColors.muted, height: 1.7),
+              ),
+            ),
+          if (call.video &&
+              !controller.isRecoveredSession &&
+              controller.rtc is ProtocolWearRtcEngine)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: SipRemoteVideo(
@@ -1302,6 +1360,28 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   }
 
   Widget _callControls(CommunicationsController controller) {
+    if (controller.isRecoveredSession) {
+      return Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          OutlinedButton.icon(
+            onPressed: controller.busy ? null : controller.refreshActiveCall,
+            icon: const Icon(Icons.refresh),
+            label: const Text('刷新原通话状态'),
+          ),
+          FilledButton.icon(
+            onPressed:
+                !controller.busy &&
+                    controller.policy.canEnd(controller.activeCall!)
+                ? controller.hangUp
+                : null,
+            icon: const Icon(Icons.call_end),
+            label: const Text('结束原通话'),
+          ),
+        ],
+      );
+    }
     Widget action(IconData icon, String label, VoidCallback? onTap) => SizedBox(
       width: 66,
       child: Column(
@@ -1415,6 +1495,13 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   }
 
   Widget _historyCard(CommunicationsController? controller) {
+    final records = <String, CallSession>{
+      for (final call in _history) call.id: call,
+      for (final call in controller?.recoveredCalls ?? <CallSession>[])
+        call.id: call,
+      if (controller?.activeCall != null)
+        controller!.activeCall!.id: controller.activeCall!,
+    }.values.toList();
     return WearCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1428,16 +1515,19 @@ class _CommunicationsPageState extends State<CommunicationsPage>
             ),
           ),
           const SizedBox(height: 10),
-          if (_history.isEmpty)
+          if (records.isEmpty)
             const Text('暂无相关通话记录', style: TextStyle(color: WearColors.muted))
           else
-            ..._history.map((call) {
-              final canResume =
+            ...records.map((call) {
+              final canObserve =
                   !callLabEnabled &&
                   controller != null &&
                   !controller.busy &&
-                  !controller.hasActiveOwnedSession &&
-                  controller.policy.canJoin(call);
+                  (controller.activeCall == null ||
+                      controller.activeCall!.isTerminal ||
+                      controller.isRecoveredSession) &&
+                  controller.policy.owns(call) &&
+                  !call.isTerminal;
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
@@ -1450,8 +1540,10 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 subtitle: Text(
                   '${call.statusLabel} · ${formatTime(call.startedAt)}',
                 ),
-                trailing: canResume ? const Icon(Icons.login) : null,
-                onTap: canResume ? () => controller.resumeCall(call) : null,
+                trailing: canObserve
+                    ? const Icon(Icons.visibility_outlined)
+                    : null,
+                onTap: canObserve ? () => controller.observeCall(call) : null,
               );
             }),
         ],
