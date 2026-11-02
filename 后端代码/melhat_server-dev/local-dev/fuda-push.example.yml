@@ -3,6 +3,9 @@ fuda:
   push:
     enabled: false
     destination-id: fuda-test
+    # Production credential reuse was approved on 2026-11-02. Copy the agreed
+    # query AppId/Secret into a Git-ignored private file, never into this example.
+    # Synthetic tests still use separate test values.
     app-id: ""
     secret-base64: ""
     endpoint: ""

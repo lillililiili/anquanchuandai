@@ -46,13 +46,17 @@ ALARM.data 沿用报警查询的 `eventId/occurredAt/receivedAt/alarmType/alarmC
 
 可交给对方开发者的文件：[推送 OpenAPI](openapi.json)、[位置示例](examples/position.json)、[状态示例](examples/status.json)、[报警示例](examples/alarm.json) 和 [公开签名测试向量](examples/signature-vector.json)。这些全部是虚构测试数据；测试向量中的公开密钥不得用于部署。`python build_contract.py` 可从现有查询字段定义重建资料。
 
-## 签名（使用独立推送凭据）
+## 签名与凭据
+
+2026-11-02，用户已确认本项目主动推送复用原三个查询接口文档《01-接口账号.docx》中的 AppId 和 Secret，无需福大另行申请。推送仍使用单独的 `fuda.push` 配置项；复用凭据不会自动启用推送，也不会自动继承查询接口的设备授权。
+
+已在本机 Git 忽略目录准备 `local-dev/fuda-cloud/.private/production/fuda-push.yml`，仅用于后续配置：`enabled: false`，接收地址及推送设备白名单尚未填写。该文件未被现有运行配置加载。福大接收端须配置相同 AppId 和 Secret 并按以下规则验签；以后轮换这组凭据时，查询与推送两端须同步更新。真实凭据不写入本说明、示例或 Git 提交。
 
 请求头：
 
 | 请求头 | 规则 |
 | --- | --- |
-| X-App-Id | 双方约定的推送 AppId，不默认复用查询账号 |
+| X-App-Id | 本项目经用户确认，使用原查询接口的 AppId；仍须在推送配置中显式填写 |
 | X-Timestamp | 本次 HTTP 请求的 Unix 秒时间戳 |
 | X-Nonce | 每次请求新生成 UUID；重试也更新 |
 | X-Signature | HMAC-SHA256 十六进制小写结果 |
@@ -86,7 +90,7 @@ POST
 
 1. 使用独立分支构建并通过测试；先在隔离数据库运行。不要直接替换当前日常服务。
 2. 新增 SQL 为 `ruoyi-admin/src/main/resources/db/20261102_fuda_push_outbox.sql`（随应用启动幂等初始化）。仅新增表和索引，没有删除/修改原业务表；发布前备份数据库。
-3. 复制 [配置示例](../fuda-push.example.yml) 为部署环境私密配置。先保持 enabled=false；配置目标专用 destinationId、接收地址、独立凭据和真实设备台账 ID。
+3. 复制 [配置示例](../fuda-push.example.yml) 为部署环境私密配置。先保持 enabled=false；配置目标专用 destinationId、接收地址、双方约定凭据和真实设备台账 ID。本项目正式对接复用原查询 AppId/Secret，已准备的本机私密文件见上文；加载配置和启用推送仍须后续安排。
 4. 获取福大测试地址，确认成功响应/签名/白名单/限流/历史范围后，在隔离环境启用。测试及正式应使用不同 destinationId 和凭据；**更换接收组织或环境时必须更换 destinationId，不能把旧任务发送给新接收方。** 同一方凭据轮换可保留 destinationId。
 5. 对账“设备上报—业务入库—推送—福大去重保存”及上下线、重启、断网恢复；这些实机/外部步骤不由本地测试代替。
 6. 暂停发送将 enabled=false 并按现有发布流程重启候选服务；该期间不新增推送任务，原待发任务保留。再次启用补发既有任务；停用期间报警可用查询补漏。不要将关闭推送描述成暂停采集但持续排队。
@@ -102,4 +106,4 @@ POST
 
 ## 待福大确认
 
-测试/正式接收地址、是否接受上述签名与成功响应、独立推送凭据、出口白名单或专网要求、可接受频率，以及是否需要历史报警补推。视频参数依然按已有国标文档单独确认。
+测试/正式接收地址、接收端按上述规则验签并配置约定凭据、成功响应、出口白名单或专网要求、可接受频率，以及是否需要历史报警补推。AppId/Secret 已确定复用原查询凭据，不再要求重新申请；隔离测试仍使用合成测试凭据。视频参数依然按已有国标文档单独确认。
