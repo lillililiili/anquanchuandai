@@ -100,6 +100,8 @@ POST
 
 ## 本地模拟接收端
 
+可视化数据接收、国标视频点播/接收及回放，使用已集成的 [福大接口模拟器](../fuda-simulator/README.md)。以下命令仍可单独运行轻量数据接收器。
+
 仅用虚构数据，设置环境变量 `MOCK_APP_ID`、`MOCK_SECRET_BASE64`（32 字节测试密钥的 Base64），然后执行 `node mock-receiver.mjs`；默认仅监听 `127.0.0.1:19091/receive`。`MOCK_PORT` 可换端口，`MOCK_DROP_FIRST_RESPONSE=true` 模拟已保存但首次响应丢失，`MOCK_DELAY_MS` 模拟慢响应。我方测试配置须显式设 `allow-loopback-http: true`。
 
 示例接收端校验签名、时间戳、nonce，并按 eventId 去重；数据只保留内存，重启清空，**不可作正式福大接收服务**。正式接收端须用持久数据库唯一约束去重。自动检查：`node --test mock-receiver.test.mjs`。
