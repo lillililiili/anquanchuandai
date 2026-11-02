@@ -3,7 +3,7 @@ import { helmetSipTransportOptions } from './helmet-sip-transport.js';
 
 // SIP.js owns signalling/WebRTC. Server call status remains authoritative for
 // which physical helmet answered; a remote track alone is not that evidence.
-export async function createSipSession(rtc, { onMediaState = () => {}, onStream = () => {}, active = () => true, signal } = {}, {
+export async function createSipSession(rtc, { onMediaState = () => {}, onStream = () => {}, active = () => true, signal, microphoneStream } = {}, {
   loadSip = () => import('sip.js'),
   makeStream = () => new MediaStream(),
   makeAudio = () => new Audio(),
@@ -29,6 +29,11 @@ export async function createSipSession(rtc, { onMediaState = () => {}, onStream 
     logConfiguration: false,
     ...(import.meta.env?.DEV ? { logConnector: (_level, _category, _label, content) => diagnostic(sipLogDiagnostic(content)) } : {}),
     sessionDescriptionHandlerFactoryOptions: { peerConnectionConfiguration: { iceServers: rtc.iceServers || [] } },
+    ...(microphoneStream ? { sessionDescriptionHandlerFactory: SIP.Web.defaultSessionDescriptionHandlerFactory(async constraints => {
+      if (closed || signal?.aborted || !active()) throw Error('通话已取消');
+      if (constraints.video || !(microphoneStream.getAudioTracks?.() || []).some(track => track.readyState !== 'ended')) throw Error('已准备的电脑麦克风不可用');
+      return microphoneStream;
+    }) } : {}),
     delegate: { onConnect: () => diagnostic({ event: 'transport_connected' }), onDisconnect: () => { diagnostic({ event: 'transport_disconnected' }); changed('failed'); }, onInvite: invitation => { void invitation.reject(); } },
   });
   function close() {
@@ -42,6 +47,7 @@ export async function createSipSession(rtc, { onMediaState = () => {}, onStream 
     cancelRegistration?.();
     audio.pause(); audio.srcObject = null;
     for (const track of stream.getTracks()) track.stop();
+    for (const track of microphoneStream?.getTracks?.() || []) track.stop();
     for (const sender of inviter?.sessionDescriptionHandler?.peerConnection?.getSenders?.() || []) sender.track?.stop();
     onStream(null);
     try {
@@ -53,17 +59,27 @@ export async function createSipSession(rtc, { onMediaState = () => {}, onStream 
   }
   const aborted = () => { void close().catch(() => {}); };
   signal?.addEventListener('abort', aborted, { once:true });
-  const result = { close, resumeAudio: () => audio.play(), setMuted: async muted => {
+  const result = { close, resumeAudio: async () => {
+    if (closed || !active()) throw Error('通话已结束，不能恢复声音');
+    try { await audio.play(); }
+    catch {
+      changed('playback_blocked');
+      throw Error('浏览器仍未允许播放通话声音，请检查声音权限后重试');
+    }
+    changed(stream.getVideoTracks().length ? 'remote_video' : stream.getAudioTracks().length ? 'remote_audio' : 'local_joined');
+  }, setMuted: async muted => {
     const tracks = inviter?.sessionDescriptionHandler?.peerConnection?.getSenders?.().map(sender => sender.track).filter(track => track?.kind === 'audio') || [];
     if (!tracks.length) throw Error('本端尚未加入通话');
     tracks.forEach(track => { track.enabled = !muted; });
   } };
   try {
     if (signal?.aborted) throw Error('通话已取消');
+    changed('connecting_service');
     await userAgent.start();
     diagnostic({ event: 'transport_start_resolved' });
     if (closed || signal?.aborted || !active()) throw Error('通话已取消');
     registerer = new SIP.Registerer(userAgent);
+    changed('registering');
     await new Promise((resolve, reject) => {
       const cleanup = () => { clearTimeout(timer); registerer.stateChange.removeListener(listener); cancelRegistration = null; };
       const listener = state => {
@@ -78,10 +94,14 @@ export async function createSipSession(rtc, { onMediaState = () => {}, onStream 
       registerer.register({ requestDelegate: { onReject: () => { cleanup(); reject(Error('SIP 注册被拒绝')); } } }).catch(error => { cleanup(); reject(error); });
     });
     if (closed || signal?.aborted || !active()) throw Error('通话已取消');
+    changed('preparing_offer');
+    diagnostic({ event: 'offer_preparing', preparedMicrophone: !!microphoneStream });
     inviter = new SIP.Inviter(userAgent, target, { sessionDescriptionHandlerOptions: { constraints: { audio: true, video: rtc.video === true } } });
     inviter.stateChange.addListener(state => {
       if (closed || !active()) return;
       if (state === SIP.SessionState.Established) {
+        changed('local_joined');
+        diagnostic({ event: 'local_joined' });
         const pc = inviter.sessionDescriptionHandler?.peerConnection;
         const update = () => {
           if (closed || !active()) return;
@@ -103,7 +123,10 @@ export async function createSipSession(rtc, { onMediaState = () => {}, onStream 
     });
     await inviter.invite();
     if (closed || signal?.aborted || !active()) throw Error('通话已取消');
-    if (inviter.state !== SIP.SessionState.Established) changed('local_joined');
+    // invite() resolving only proves the INVITE was sent. It is not a 200/ACK
+    // exchange and must never be reported as an established local session.
+    if (inviter.state !== SIP.SessionState.Established) changed('invite_sent');
+    diagnostic({ event: 'invite_sent' });
     return result;
   } catch (error) {
     try { await close(); } catch { /* Preserve the signalling/media error. */ }

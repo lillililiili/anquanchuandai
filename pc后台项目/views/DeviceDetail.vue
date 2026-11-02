@@ -25,6 +25,7 @@
     <div class="device-detail-grid"><section class="panel"><h2>基础资料</h2><dl class="record-fields"><template v-for="[key, name] in fields" :key="key"><dt>{{ name }}</dt><dd>{{ d[key] || '待补充' }}</dd></template><dt>厂站</dt><dd>{{ store.sites.find(s => s.id === d.siteId)?.name }}</dd></dl><p class="notice">{{ verified.identity }}</p></section>
     <section class="panel"><h2>当前领用关系</h2><p>{{ DEVICE_FILTERS.relation[d.relation] }}</p><template v-if="d.person"><router-link class="button" :to="{ path: '/people/' + d.person.id, query: { siteId: store.siteId } }">{{ d.person.name }} · 人员详情</router-link><p class="muted">{{ d.assignmentSource === 'MOCK_OPERATION' ? '本页本地办理' : '初始领用记录' }} · 领用开始：{{ beijingTime(d.startedAt) }}</p></template><p v-else class="muted">{{ d.relation === 'UNASSIGNED' ? '来源明确未领用。' : '人员关联未知、冲突或无权查看；不推定使用人。' }}</p></section>
     </div>
+    <DeviceFeatureStatus :device="d" />
     <section v-if="d.source === 'DIRECT_BELT'" class="panel"><h2>安全带上报</h2><dl class="record-fields"><dt>佩戴状态</dt><dd>{{ beltState(d.worn, '已佩戴', '未佩戴') }}</dd><dt>佩戴原始值</dt><dd>{{ rawStatus(d.isWeared) }}</dd><dt>A挂钩状态</dt><dd>{{ beltState(d.hookAEngaged, '已挂扣', '未挂扣') }}</dd><dt>A挂钩原始值</dt><dd>{{ rawStatus(d.hangerAStatus) }}</dd><dt>B挂钩状态</dt><dd>{{ beltState(d.hookBEngaged, '已挂扣', '未挂扣') }}</dd><dt>B挂钩原始值</dt><dd>{{ rawStatus(d.hangerBStatus) }}</dd><dt>上报时间</dt><dd>{{ d.deviceReportedAt || d.sourceTime || '尚未上报' }}</dd></dl><p class="notice">原始值保留厂家上报内容；状态值含义确认前显示为待确认。建档和收到上报均不等于完成真实设备安全验证。</p></section>
     <section v-if="d.source === 'DIRECT_HELMET'" class="panel" aria-label="安全帽上报">
       <h2>安全帽上报</h2>
@@ -73,6 +74,7 @@ import { DEVICE_FILTERS, DEVICE_TYPES } from '../deviceData'
 import { verifiedDeviceSummary } from '../devicePresentation'
 import QueryState from '../components/QueryState.vue'
 import DeviceEditPanel from '../components/DeviceEditPanel.vue'
+import DeviceFeatureStatus from '../components/DeviceFeatureStatus.vue'
 import DeviceMark from '../components/DeviceMark.vue'
 import AssetTabs from '../components/AssetTabs.vue'
 import AssignmentEntry from '../components/AssignmentEntry.vue'

@@ -209,7 +209,7 @@ public class GuardianStore {
         if (business != null) {
             // Always reload SQL revision: an enclosing report transaction may have rolled back
             // after save() returned, or another process may have committed a newer version.
-            WearableBusinessStore.Snapshot loaded = business.load("guardian", file, this::initialState);
+            WearableBusinessStore.Snapshot loaded = business.loadWorkingSet("guardian", file, this::initialState);
             state = loaded.state; durableRevision = loaded.revision;
             if (!readable(state)) throw new IllegalStateException("数据库监护数据格式无效，禁止回填示例");
             if (GuardianEvents.normalize(state)) durableRevision = business.save("guardian", durableRevision, state, null);

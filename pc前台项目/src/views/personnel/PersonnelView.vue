@@ -16,6 +16,7 @@ import DeviceStrip from "@/components/domain/DeviceStrip.vue";
 import PersonAvatar from "@/components/domain/PersonAvatar.vue";
 import VideoFrame from "@/components/domain/VideoFrame.vue";
 import { db } from "@/mock/runtime";
+import { formatRecordedDateTime } from '@/lib/date-time';
 import { filtersOf, session } from "@/stores/session";
 import { events, people, personName, revision, search, statusColor } from "@/lib/queries";
 import { personFeature } from '@/lib/person-equipment';
@@ -160,7 +161,7 @@ function talk() {
                 {{ row.work?.name || "待分配" }}<small>{{ row.work ? "（监护人：" + personName(row.work.supervisor) + "）" : "" }}</small>
               </td>
               <td><DeviceStrip :person-id="row.person.id" /></td>
-              <td>{{ row.person.updated }}</td>
+              <td>{{ formatRecordedDateTime(row.person.updated) }}</td>
               <td><a class="btn small" :href="'#/person/' + row.person.id" @click.stop>查看详情</a></td>
             </tr>
           </template>

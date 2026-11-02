@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +15,68 @@ import 'wear_session_test.dart'
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets(
+    'restored unknown offers refresh and explicit end without taking media',
+    (tester) async {
+      final requests = <RequestOptions>[];
+      var permissionRequests = 0;
+      final router = await openDevice(
+        tester,
+        requests,
+        restoredStatus: 'unknown',
+        onPermissionRequest: () => permissionRequests++,
+      );
+      router.go('/communications?deviceId=42');
+      await tester.pumpAndSettle();
+      expect(find.text('刷新原通话状态').hitTestable(), findsOneWidget);
+      expect(find.text('结束原通话').hitTestable(), findsOneWidget);
+      expect(find.text('麦克风'), findsNothing);
+      expect(permissionRequests, 0);
+      router.go('/devices/42');
+      await tester.pumpAndSettle();
+      expect(
+        requests.where((r) => r.method == 'POST' && r.path.contains('/calls')),
+        isEmpty,
+      );
+      router.go('/communications?deviceId=42');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('结束原通话'));
+      await tester.pumpAndSettle();
+      expect(
+        requests.where(
+          (r) => r.method == 'POST' && r.path == '/api/v1/calls/c42/end',
+        ),
+        hasLength(1),
+      );
+      expect(permissionRequests, 0);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'denied microphone shows a retry reason without creating a cloud call',
+    (tester) async {
+      final requests = <RequestOptions>[];
+      final router = await openDevice(
+        tester,
+        requests,
+        microphoneGranted: false,
+      );
+      router.go('/communications?deviceId=42&personId=7');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('设备语音'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('请允许麦克风权限后重试'), findsOneWidget);
+      expect(
+        requests.where((r) => r.method == 'POST' && r.path == '/api/v1/calls'),
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   for (final entry in {'TTS': 'tts', '对讲': 'intercom'}.entries) {
     testWidgets(
@@ -219,7 +282,47 @@ Future<GoRouter> openDevice(
   List<String> actions = const ['tts', 'intercom', 'video'],
   String? fontFamily,
   Future<void> Function(String)? beforeDeviceRead,
+  bool microphoneGranted = true,
+  String? restoredStatus,
+  void Function()? onPermissionRequest,
 }) async {
+  // Exercise the production preflight without real permissions or audio I/O.
+  const permissions = MethodChannel('flutter.baseflow.com/permissions/methods');
+  const media = MethodChannel('FlutterWebRTC.Method');
+  const mediaEvents = MethodChannel('FlutterWebRTC.Event');
+  final messenger = tester.binding.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(permissions, (call) async {
+    if (call.method == 'requestPermissions') {
+      onPermissionRequest?.call();
+      return {
+        for (final value in call.arguments as List)
+          value: microphoneGranted ? 1 : 0,
+      };
+    }
+    return microphoneGranted ? 1 : 0;
+  });
+  messenger.setMockMethodCallHandler(media, (call) async {
+    if (call.method == 'getUserMedia')
+      return {
+        'streamId': 'test-microphone',
+        'audioTracks': [
+          {
+            'id': 'test-audio',
+            'label': 'fixture',
+            'kind': 'audio',
+            'enabled': true,
+          },
+        ],
+        'videoTracks': [],
+      };
+    return null;
+  });
+  messenger.setMockMethodCallHandler(mediaEvents, (_) async => null);
+  addTearDown(() {
+    messenger.setMockMethodCallHandler(permissions, null);
+    messenger.setMockMethodCallHandler(media, null);
+    messenger.setMockMethodCallHandler(mediaEvents, null);
+  });
   tester.view.physicalSize = const Size(360, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -298,6 +401,12 @@ Future<GoRouter> openDevice(
             if (request.path == '/api/v1/calls' && request.method == 'POST') {
               callVideo = request.data['video'] == true;
               return reply(call('offered'));
+            }
+            if (request.path == '/api/v1/calls' && request.method == 'GET') {
+              return reply([
+                if (restoredStatus != null)
+                  {...call(restoredStatus), 'demo': false},
+              ]);
             }
             if (request.path == '/api/v1/calls/c42/end') {
               return reply(call('ended'));

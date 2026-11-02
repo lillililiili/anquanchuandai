@@ -29,7 +29,8 @@ class CommunicationsPolicy {
   bool canJoin(CallSession session) =>
       canStartCalls &&
       owns(session) &&
-      session.status == WearCallStatus.offered &&
+      (session.status == WearCallStatus.offered ||
+          session.status == WearCallStatus.answered) &&
       !session.demo;
 
   bool canEnd(CallSession session) =>

@@ -1,10 +1,24 @@
 const TOKEN = "wearable-guardian-token";
+const authClearedListeners = new Set();
+export function onAuthCleared(listener) { authClearedListeners.add(listener); return () => authClearedListeners.delete(listener); }
+// The token remains inside this temporary request closure. It is never placed
+// in a call record, public state, error or diagnostic output.
+export function captureAuthRequest() {
+  const token = typeof sessionStorage === 'undefined' ? '' : sessionStorage.getItem(TOKEN);
+  return token ? (url, options = {}) => fetch(url, { ...options, headers: { ...options.headers, 'X-Wearable-Token': token } }) : undefined;
+}
 export function authHeaders() { return { "X-Wearable-Token": sessionStorage.getItem(TOKEN) || "" }; }
 export function saveAuth(token, account) {
   if (!token) throw Error("登录响应缺少会话凭据");
   sessionStorage.setItem(TOKEN, token); sessionStorage.setItem("rolling-session", account);
 }
-export function clearAuth() { sessionStorage.removeItem(TOKEN); sessionStorage.removeItem("rolling-session"); }
+export function clearAuth() {
+  const request = captureAuthRequest();
+  sessionStorage.removeItem(TOKEN); sessionStorage.removeItem("rolling-session");
+  for (const listener of authClearedListeners) {
+    try { Promise.resolve(listener({ request })).catch(() => {}); } catch { /* Auth must clear even if local cleanup fails. */ }
+  }
+}
 export async function authFetch(url, options = {}) {
   const response = await fetch(url, { ...options, headers: { ...options.headers, ...authHeaders() } });
   if (response.status === 401) { clearAuth(); window.location.hash = "/login"; }

@@ -7,6 +7,7 @@ import { db } from "@/mock/runtime";
 import { revision } from "@/lib/queries";
 import { durationText } from "./media";
 import { mediaUrl } from '@/lib/helmet-media';
+import { normalizeMedia, mediaKindLabel, mediaTime } from '@/lib/media-presentation';
 
 const props = defineProps({
   mediaId: { type: String, default: "" },
@@ -15,7 +16,8 @@ const props = defineProps({
 
 const media = computed(() => {
   revision();
-  return props.file || db.state.media.find((item) => item.id === props.mediaId) || null;
+  const value = props.file || db.state.media.find((item) => item.id === props.mediaId);
+  return value ? normalizeMedia(value) : null;
 });
 
 const progress = ref(0);
@@ -77,7 +79,7 @@ onUnmounted(stopTimer);
   <AppEmpty v-if="!media" text="资料不存在" />
   <template v-else>
     <div class="media-preview-wrap">
-      <video v-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" aria-label="设备原始录像" style="width:100%;max-height:65vh" />
+      <video v-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" :aria-label="mediaKindLabel(media)" style="width:100%;max-height:65vh" />
       <MediaImage v-else :media="media" />
     </div>
     <template v-if="db.demoMode && media.kind === 'video' && !media.url">
@@ -98,6 +100,6 @@ onUnmounted(stopTimer);
         <span id="media-play-time">{{ durationText(progress) }} / {{ durationText(media.duration) }}</span>
       </div>
     </template>
-    <p class="note">{{ media.snapshot?.personName }} · {{ media.deviceId }} · {{ media.created }}</p>
+    <p class="note">{{ media.snapshot?.personName }} · {{ media.deviceId }} · {{ mediaTime(media).label }}：{{ mediaTime(media).value }}（北京时间）</p>
   </template>
 </template>

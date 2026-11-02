@@ -92,6 +92,33 @@ class WearableBusinessStoreTest {
         assertEquals("LOC3",store.read("guardian").state.getJSONArray("locations").getJSONObject(0).getString("id"));
     }
 
+    @Test void liveWorkingSetStaysBoundedWhileHistoryExportsAndRollbackKeepEveryLocation() {
+        JdbcTemplate jdbc=spy(database());WearableBusinessStore store=new WearableBusinessStore(jdbc);
+        WearableBusinessStore.Snapshot initial=store.load("guardian",null,this::empty);
+        int total=WearableBusinessStore.LIVE_LOCATION_LIMIT+27;
+        for(int index=1;index<=total;index++)rows(initial.state,"locations").add(object("id","tail-"+index,"deviceId","belt","personId","P1","receivedMillis",index));
+        rows(initial.state,"locations").add(object("id","quiet-helmet","deviceId","helmet","personId","P1","receivedMillis",0));
+        store.save("guardian",initial.revision,initial.state,null);
+        WearableBusinessStore.Snapshot live=store.loadWorkingSet("guardian",null,this::empty);
+        assertEquals(WearableBusinessStore.LIVE_LOCATION_LIMIT+1,rows(live.state,"locations").size());
+        assertEquals("tail-"+total,rows(live.state,"locations").getJSONObject(0).getString("id"));
+        assertEquals("quiet-helmet",rows(live.state,"locations").getJSONObject(WearableBusinessStore.LIVE_LOCATION_LIMIT).getString("id"));
+        assertEquals(total+1,rows(store.read("guardian").state,"locations").size());
+        assertEquals("tail-1",store.locations(null,"belt",0,total+1,0,"",1).get(0).getString("id"));
+        rows(live.state,"locations").add(0,object("id","tail-new","deviceId","belt","personId","P1","receivedMillis",total+1));
+        clearInvocations(jdbc);
+        assertThrows(IllegalStateException.class,()->store.save("guardian",live.revision,live.state,()->{throw new IllegalStateException("isolated rollback");}));
+        assertEquals(total+1,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_location",Integer.class));
+        long revision=store.save("guardian",live.revision,live.state,null);
+        assertEquals(total+2,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_location",Integer.class));
+        assertEquals(total+2,rows(store.read("guardian").state,"locations").size());
+        store.save("guardian",revision,live.state,null);
+        assertEquals(total+2,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_location",Integer.class));
+        assertTrue(mockingDetails(jdbc).getInvocations().stream().filter(call->"query".equals(call.getMethod().getName())&&call.getArguments().length>0)
+                .map(call->String.valueOf(call.getArguments()[0])).filter(sql->sql.startsWith("SELECT record_key,body,sort_order FROM wearable_location "))
+                .allMatch(sql->sql.contains("record_key IN (")));
+    }
+
     @Test void privateMediaMigratesEncryptedAndSurvivesRestartWithoutJsonWrites() throws Exception {
         JdbcTemplate jdbc=database();Path file=directory.resolve("private.json");JSONObject media=object("accounts",object("helmet",object("password","private-password","sipId","sip-helmet")),"commands",new JSONObject(),"eventCursor",12);
         Files.write(file,media.toJSONString().getBytes(StandardCharsets.UTF_8));

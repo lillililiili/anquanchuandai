@@ -1,12 +1,9 @@
 import { db } from "@/mock/runtime";
 import { toast } from "@/stores/notify";
 import { blobGet, download, imageBlob } from "@/lib/files";
-import { mediaUrl } from '@/lib/helmet-media';
+import { mediaDownloadUrl } from '@/lib/helmet-media';
 
-export function durationText(value) {
-  const total = Number(value) || 0;
-  return String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
-}
+export { durationText } from '@/lib/media-presentation';
 
 function recordBody(media) {
   return JSON.stringify(
@@ -48,11 +45,11 @@ export async function downloadMedia(id) {
     return;
   }
   if (media.url) {
-    const url=mediaUrl(media.url);
-    if(!url)throw Error('原始文件地址无效');
+    const url=mediaDownloadUrl(media.url);
+    if(!url)throw Error('原始文件下载地址无效，请刷新设备资料');
     if(media.expiresAt && Date.parse(media.expiresAt)<=Date.now())throw Error('文件授权已过期，请刷新设备资料');
-    const link=document.createElement('a');link.href=url;link.download=media.name||media.id;link.target='_blank';link.rel='noopener noreferrer';link.click();
-    toast('已打开设备原始文件，可在浏览器中保存');return;
+    const link=document.createElement('a');link.href=url;link.download='';link.rel='noopener noreferrer';link.referrerPolicy='no-referrer';link.click();
+    toast('已请求下载，请查看浏览器下载记录');return;
   }
   const blob = await fileBlob(media);
   if (!db.demoMode && (media.kind === 'video' || !blob)) throw Error('暂无可下载的原始文件，台账记录仍保留');

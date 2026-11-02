@@ -76,6 +76,127 @@ WearApi api(
 
 void main() {
   test(
+    'cleanup retains original token after expiry and cannot expire new login',
+    () async {
+      var token = 'test-original-token';
+      var site = 'old-site';
+      var epoch = 1;
+      var expired = 0;
+      final requests = <RequestOptions>[];
+      final client = WearApi(
+        mock: false,
+        dio: transport((r) {
+          requests.add(r);
+          return reply(
+            {'code': 401, 'message': '旧会话已失效'},
+            code: 401,
+            raw: true,
+          );
+        }),
+        token: () => token,
+        siteId: () => site,
+        epoch: () => epoch,
+        onUnauthorized: () => expired++,
+      );
+      final captured = client.captureCallCleanup();
+      client.invalidate();
+      epoch++;
+      token = 'test-new-token';
+      site = 'new-site';
+      // The call id may arrive only after expiry; identity was already captured.
+      await expectLater(
+        captured('late-owned-id')(),
+        throwsA(isA<WearApiException>()),
+      );
+      expect(requests.single.path, '$root/mobile/calls/late-owned-id/end');
+      expect(
+        requests.single.headers['X-Wearable-Token'],
+        'test-original-token',
+      );
+      expect(expired, 0);
+      expect(token, 'test-new-token');
+    },
+  );
+  test(
+    'owned active calls forward query without context or credentials request',
+    () async {
+      final reads = <RequestOptions>[];
+      final client = api((r) {
+        reads.add(r);
+        return reply([
+          {'id': 'call-1', 'status': 'unknown'},
+        ], raw: true);
+      });
+      final result = await client.get(
+        '/api/v1/calls',
+        query: {'owned': true, 'status': 'active'},
+      );
+      expect(jsonList(result).single['id'], 'call-1');
+      expect(reads.single.path, '$root/mobile/calls');
+      expect(reads.single.queryParameters['owned'], true);
+      expect(reads.single.queryParameters['status'], 'active');
+    },
+  );
+
+  test(
+    'known call error retains semantic code without claiming unknown',
+    () async {
+      final client = api(
+        (r) => reply(
+          {'code': 409, 'errorCode': 'CALL_BUSY', 'message': '设备已有通话'},
+          code: 409,
+          raw: true,
+        ),
+      );
+      await expectLater(
+        client.get('/api/v1/calls', query: {'owned': true}),
+        throwsA(
+          isA<WearApiException>()
+              .having((e) => e.code, 'http code', 409)
+              .having((e) => e.errorCode, 'semantic code', 'CALL_BUSY'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'public unknown keeps command key until exact record is terminal',
+    () async {
+      final writes = <JsonMap>[];
+      var state = 'unknown';
+      final client = api((r) {
+        if (r.method == 'POST' && r.path.endsWith('/calls')) {
+          writes.add(Map<String, dynamic>.from(r.data));
+        }
+        return reply({'id': 'call-1', 'status': state}, raw: true);
+      });
+      Future<dynamic> dial(String key) => client.post(
+        '/api/v1/calls',
+        data: {
+          'deviceId': 'D1',
+          'personId': 'P1',
+          'assignmentId': 'A1',
+          'assignmentVersion': 1,
+          'kind': 'single',
+          'video': false,
+          'idempotencyKey': key,
+        },
+      );
+      await dial('first');
+      await dial('retry');
+      expect(writes[0]['idempotencyKey'], writes[1]['idempotencyKey']);
+      state = 'ending';
+      await client.post('/api/v1/calls/call-1/end');
+      await dial('still-pending');
+      expect(writes[0]['idempotencyKey'], writes[2]['idempotencyKey']);
+      state = 'ended';
+      await client.captureCallCleanup()('call-1')();
+      state = 'offered';
+      await dial('new-explicit-request');
+      expect(writes[3]['idempotencyKey'], isNot(writes[0]['idempotencyKey']));
+    },
+  );
+  test(
     'native verification preserves operator, time and attached photo IDs',
     () {
       final projected = SharedModels({}).event({

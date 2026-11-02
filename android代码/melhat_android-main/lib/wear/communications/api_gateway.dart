@@ -2,10 +2,25 @@ import '../core.dart';
 import 'controller.dart';
 import 'models.dart' hide JsonMap;
 
-class WearCommunicationsGateway implements CommunicationsGateway {
+class WearCommunicationsGateway
+    implements CommunicationsGateway, CallCleanupGateway {
   const WearCommunicationsGateway(this.api);
 
   final WearApi api;
+
+  @override
+  Future<CallSession> Function() Function(String) captureCallCleanup() {
+    final captured = api.captureCallCleanup();
+    return (callId) {
+      final end = captured(callId);
+      return () async => CallSession.fromJson(jsonMap(await end()));
+    };
+  }
+
+  @override
+  Future<List<CallSession>> ownedActiveCalls() async => jsonList(
+    await api.get('/api/v1/calls', query: {'owned': true, 'status': 'active'}),
+  ).map(CallSession.fromJson).toList(growable: false);
 
   @override
   Future<StartedCall> startCall({

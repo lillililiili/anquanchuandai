@@ -2,10 +2,36 @@
 export const SCENARIOS = Object.freeze([
   ['belt', '仅安全带'], ['helmet', '仅安全帽'], ['both', '帽带同领'],
   ['unassigned', '未领用'], ['offline', '已领用但离线'], ['revoked', '权限已撤销'],
+  ['watch_visible', '模拟手表显示'], ['watch_hidden', '模拟手表隐藏'],
+  ['video_many', '20 路视频分页与轮播'],
 ]);
 
 export function fixtureState(scenario = 'belt', now = new Date()) {
   if (!SCENARIOS.some(([id]) => id === scenario)) throw Error('Unknown isolated scenario');
+  if (scenario === 'video_many') {
+    const state = fixtureState('helmet', now);
+    const originalPerson = state.people[0], originalDevice = state.devices[0], originalBinding = state.bindings[0];
+    const originalContext = state.personEquipmentContext['QA-PERSON'];
+    state.people = []; state.devices = []; state.bindings = []; state.personEquipmentContext = {};
+    state.works.push({ ...structuredClone(state.works[0]), id: 'QA-WORK-OTHER', name: '隔离视频作业二（非真实业务）', members: [] });
+    state.works[0].members = [];
+    for (let index = 0; index < 20; index++) {
+      const personId = index ? `QA-PERSON-${index + 1}` : 'QA-PERSON';
+      const deviceId = `QA-VIDEO-HELMET-${String(index + 1).padStart(2, '0')}`;
+      const assignmentId = `QA-VIDEO-BINDING-${index + 1}`;
+      const work = state.works[index < 10 ? 0 : 1];
+      state.people.push({ ...structuredClone(originalPerson), id: personId, name: `隔离镜头人员 ${String(index + 1).padStart(2, '0')}`, workId: work.id, locationDeviceId: deviceId, locationAssignmentId: assignmentId });
+      state.devices.push({ ...structuredClone(originalDevice), id: deviceId });
+      state.bindings.push({ ...structuredClone(originalBinding), id: assignmentId, assignmentId, deviceId, personId });
+      const context = structuredClone(originalContext);
+      context.personId = personId;
+      for (const feature of Object.values(context.features)) Object.assign(feature, { deviceId, assignmentId });
+      state.personEquipmentContext[personId] = context;
+      work.members.push(personId);
+    }
+    state.events = [];
+    return state;
+  }
   const observed = now.toISOString();
   const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
   const start = new Date(now.getTime() - 3600000).toISOString();
@@ -30,6 +56,14 @@ export function fixtureState(scenario = 'belt', now = new Date()) {
   };
   const devices = scenario === 'belt' ? [makeDevice('B')] : scenario === 'helmet' || scenario === 'revoked' ? [makeDevice('H')] : [makeDevice('H'), makeDevice('B')];
   const bindings = scenario === 'unassigned' ? [] : devices.map((device, index) => ({ id: `QA-BINDING-${index}`, assignmentId: `QA-BINDING-${index}`, assignmentVersion: 1, deviceId: device.id, personId: 'QA-PERSON', start, end: null, operator: '隔离验收' }));
+  const watchScenario = scenario.startsWith('watch_');
+  if (watchScenario) {
+    // The shared projection deliberately recognizes this one simulated ID only.
+    // It exists solely in this fixture's memory, never in a backend request.
+    devices.push({ id: 'RL-W001', type: 'W', source: 'DEMO_WATCH', station: 'S1', active: true, online: true, battery: 75,
+      updated: observed, featureStates: { vitals: { supported: true, verified: true, available: true, reason: '模拟数据' } } });
+    bindings.push({ id: 'QA-BINDING-WATCH', assignmentId: 'QA-BINDING-WATCH', assignmentVersion: 1, deviceId: 'RL-W001', personId: 'QA-PERSON', start, end: null, operator: '隔离验收' });
+  }
   const person = { id: 'QA-PERSON', name: '隔离验收人员', station: 'S1', team: '隔离验收班组', active: true, updated: observed, phone: '', workId: 'QA-WORK', dutyStatus: 'UNKNOWN' };
   if (bindings.length && online) Object.assign(person, {
     latitude: devices[0].latitude, longitude: devices[0].longitude, coordinateSystem: 'WGS84',
@@ -47,9 +81,9 @@ export function fixtureState(scenario = 'belt', now = new Date()) {
     version: 1, seq: 1, stations: [{ id: 'S1', name: '隔离验收厂站' }], people: [person], devices, bindings,
     works: [{ id: 'QA-WORK', station: 'S1', name: '隔离验收作业（非真实业务）', date, start: '08:00', end: '17:00', status: '监护中', members: ['QA-PERSON'], leader: 'QA-PERSON', supervisor: 'QA-PERSON', timeline: [], risks: [], safetyMeasures: '', source: 'ISOLATED_BROWSER_FIXTURE' }],
     events: [{ id: 'QA-SOS', station: 'S1', deviceId: devices.at(-1).id, personId: scenario === 'unassigned' ? '' : 'QA-PERSON', workId: scenario === 'unassigned' ? '' : 'QA-WORK', type: '人员求助', title: '隔离验收 SOS（非真实事件）', date, time: '10:00:00', occurredAt: observed, status: '待认领', version: 1, snapshot: {}, timeline: [], photos: [], permissions: { 'events:claim': true, 'sos:assist': true } }],
-    calls: [], media: [], groups: [], fences: [], fenceRecords: [], vitals: [], commands: [], communications: [],
+    calls: [], broadcasts: [], media: [], groups: [], fences: [], fenceRecords: [], vitals: watchScenario ? [{ id: 'QA-VITAL', deviceId: 'RL-W001', personId: 'QA-PERSON', bindingId: 'QA-BINDING-WATCH', source: 'DEMO_WATCH', observedAt: observed, heartRate: 75, oxygen: 98, temperature: 36.5, systolic: 120, diastolic: 80 }] : [], commands: [], communications: [],
     assistance: { 'QA-SOS': { status: 'waiting', members: [], timeline: [] } }, sos: { status: 'ended', members: [], timeline: [] },
-    operator: { id: 'qa-operator', name: '隔离验收操作员' }, businessConfig: { dataVersion: 'isolated-browser-fixture', simulatedWatchVisible: false },
+    operator: { id: 'qa-operator', name: '隔离验收操作员' }, businessConfig: { dataVersion: 'isolated-browser-fixture', simulatedWatchVisible: scenario === 'watch_visible' },
     personEquipmentContext: { 'QA-PERSON': { personId: 'QA-PERSON', features } },
   };
 }

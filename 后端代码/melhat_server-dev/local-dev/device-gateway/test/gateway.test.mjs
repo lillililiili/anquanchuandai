@@ -11,6 +11,21 @@ import { DEFAULTS, DEVICE_ID, validateConfig } from '../config.mjs';
 const login = { act: 'ca_login', device_id: DEVICE_ID };
 const report = { act: 'ca_report_location', device_id: DEVICE_ID, bat_l: 51, is_weared: 1 };
 
+test('photo callback forwards only exact firmware command echo and safe field names',async t=>{
+ const calls=[];
+ const f=await fixture(t,{mediaFetch:async(url,options)=>{calls.push(JSON.parse(options.body.toString()));return new Response(JSON.stringify({code:200,data:{status:'ready'}}));}});
+ const requestId='HC-11111111-2222-3333-4444-555555555555';
+ const body={device_id:DEVICE_ID,image_url:'https://helmet.example.com/helmet-media/files/photo?token=test-only',x_point:22,y_point:114,talkback_id:requestId,private_value:'must-not-forward',requestId:'cannot-substitute'};
+ const send=input=>fetch(f.origin+f.basePath+'?ctl=report&act=add_image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
+ assert.equal((await send(body)).status,200);
+ assert.equal(calls[0].requestId,requestId);assert.equal(calls[0].requestIdSource,'report/add_image.talkback_id');
+ assert.equal(calls[0].private_value,undefined);assert.ok(calls[0].receiptFieldNames.includes('talkback_id'));
+ const missing={...body};delete missing.talkback_id;
+ assert.equal((await send(missing)).status,200);assert.equal(calls[1].requestId,undefined);
+ for(const invalid of ['latest',{},['HC-11111111-2222-3333-4444-555555555555']])assert.equal((await send({...body,talkback_id:invalid})).status,400);
+ assert.equal(calls.length,2);
+});
+
 async function waitFor(check, timeout = 1500) {
   const deadline = Date.now() + timeout;
   while (!check()) { if (Date.now() > deadline) throw new Error('Timed out waiting for isolated fixture'); await delay(5); }

@@ -1,0 +1,205 @@
+/* Dashboard cards share the available workspace; only their contents scroll. */
+html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) > .stats {
+  flex:0 0 auto;
+  height:auto;
+  min-height:88px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  margin-bottom:12px;
+}
+html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) .stat {
+  height:auto;
+  min-height:88px;
+  gap:16px;
+  padding:12px 16px;
+}
+html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) .stat > div { min-width:0; }
+html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) .stat > :is(i,.ui-icon) { font-size:40px; }
+html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) .stat span {
+  font-size:14px;
+  line-height:22px;
+  white-space:normal;
+}
+html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) .stat strong { font-size:24px; line-height:32px; }
+html[data-portal-theme='business'] .main.overview-page .stats.flat .stat em {
+  display:block;
+  position:static;
+  margin:0;
+  white-space:normal;
+  font-size:12px;
+  line-height:18px;
+}
+
+html[data-portal-theme='business'] .main.overview-page > .overview-layout {
+  flex:1.5 1 0;
+  height:auto;
+  min-height:330px;
+  grid-template-columns:minmax(0,1.7fr) minmax(360px,1fr);
+  grid-template-rows:minmax(0,1fr);
+  gap:12px;
+}
+html[data-portal-theme='business'] .main.overview-page > .overview-bottom {
+  flex:1 1 0;
+  height:auto;
+  min-height:160px;
+  grid-template-columns:minmax(0,1.28fr) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr);
+  margin-top:12px;
+}
+html[data-portal-theme='business'] .main.overview-page > .overview-bottom:has(> .panel:only-child) {
+  grid-template-columns:minmax(0,1fr);
+}
+html[data-portal-theme='business'] .main.overview-page .overview-map {
+  height:auto;
+  min-width:0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.overview-page .overview-map > .map { height:100%; min-height:0; }
+html[data-portal-theme='business'] .main.overview-page .overview-layout > .stack {
+  min-height:0;
+  gap:12px;
+}
+html[data-portal-theme='business'] .main.overview-page :is(.overview-layout,.overview-bottom) .panel {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  height:auto;
+  min-height:0;
+}
+/* Retain room for a complete record below the header and above pagination. */
+html[data-portal-theme='business'] .main.overview-page .overview-layout > .stack > .panel:first-child { min-height:220px; }
+html[data-portal-theme='business'] .main.overview-page .panel-heading {
+  flex:0 0 auto;
+  height:auto;
+  min-height:46px;
+}
+html[data-portal-theme='business'] .main.overview-page .panel-body {
+  flex:1 1 0;
+  min-height:0;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .main.overview-page .panel-body:has(> .app-table) { overflow:hidden; scrollbar-gutter:auto; }
+html[data-portal-theme='business'] .main.overview-page .app-table {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+  max-height:none;
+}
+html[data-portal-theme='business'] .main.overview-page .overview-layout .progress-row {
+  grid-template-columns:44px 84px minmax(40px,1fr) 56px;
+  height:43px;
+  margin:8px 0;
+  gap:10px;
+  font-size:14px;
+}
+html[data-portal-theme='business'] .main.overview-page .overview-layout .progress-row img { width:40px; height:43px; }
+html[data-portal-theme='business'] .main.overview-page .overview-layout .compact td { height:57px; font-size:14px; padding:8px; }
+html[data-portal-theme='business'] .main.overview-page .overview-layout .compact :is(th,td) { white-space:nowrap; }
+html[data-portal-theme='business'] .main.overview-page .overview-videos {
+  height:100%;
+  min-height:0;
+  grid-template-rows:minmax(0,1fr);
+}
+html[data-portal-theme='business'] .main.overview-page .overview-videos .stack { min-height:0; }
+html[data-portal-theme='business'] .main.overview-page .overview-videos .video-frame {
+  flex:1 1 0;
+  height:100%;
+  min-height:0;
+  aspect-ratio:auto;
+}
+/* The shared live-preview placeholder normally reserves 240px. In a dashboard
+ * tile it follows the tile height so the watch action remains visible. */
+html[data-portal-theme='business'] .main.overview-page .overview-videos .helmet-preview {
+  height:100%;
+  min-height:0;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main.overview-page .overview-videos .preview-start {
+  min-height:100%;
+  padding:12px;
+  gap:12px;
+}
+
+/* Filters and summary values keep their size; charts and records take the rest. */
+html[data-portal-theme='business'] .main.statistics-page > .page-heading { flex-wrap:wrap; }
+html[data-portal-theme='business'] .main.statistics-page .page-heading > .heading-actions { max-width:100%; min-width:0; }
+html[data-portal-theme='business'] .main.statistics-page .page-heading .filters { flex-wrap:wrap; }
+html[data-portal-theme='business'] .main.statistics-page > .row:has(> .tabs) {
+  height:auto;
+  min-height:44px;
+  flex-wrap:wrap;
+  gap:8px 16px;
+  margin-bottom:10px;
+}
+html[data-portal-theme='business'] .main.statistics-page > .row > .tabs { margin-bottom:0; flex:0 0 auto; }
+html[data-portal-theme='business'] .main.statistics-page .stats-notice { max-width:none; flex:1 1 280px; }
+html[data-portal-theme='business'] .main.statistics-page > .grid.equal {
+  flex:1 1 0;
+  min-height:180px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:minmax(0,1fr);
+}
+html[data-portal-theme='business'] .main.statistics-page > div:not(.grid):has(> .panel) {
+  display:flex;
+  flex-direction:column;
+  flex:1.2 1 0;
+  min-height:190px;
+}
+html[data-portal-theme='business'] .main.statistics-page .panel {
+  display:flex;
+  flex-direction:column;
+  flex:1 1 0;
+  height:auto;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main.statistics-page .panel-heading {
+  flex:0 0 auto;
+  height:auto;
+  min-height:46px;
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .main.statistics-page .panel-body {
+  flex:1 1 0;
+  min-height:0;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .main.statistics-page .panel-body:has(> .app-table) { overflow:hidden; scrollbar-gutter:auto; }
+html[data-portal-theme='business'] .main.statistics-page .app-table {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+  max-height:none;
+}
+html[data-portal-theme='business'] .main.statistics-page > .note { margin:0; padding:6px 0; }
+html[data-portal-theme='business'] .main.statistics-page .chart-line { margin:8px 0; }
+
+/* Retain a single header row on smaller desktops by using field widths and
+ * whitespace, leaving the normal text and control heights intact. */
+@media (min-width:901px) and (max-width:1200px) {
+  html[data-portal-theme='business'] .main.statistics-page > .page-heading { flex-wrap:nowrap; gap:12px; }
+  html[data-portal-theme='business'] .main.statistics-page > .page-heading > div:first-child { flex:1 1 0; min-width:0; }
+  html[data-portal-theme='business'] .main.statistics-page .page-heading > .heading-actions { flex:0 0 auto; }
+  html[data-portal-theme='business'] .main.statistics-page .page-heading .filters { flex-wrap:nowrap; gap:8px; padding:12px; }
+  html[data-portal-theme='business'] .main.statistics-page .page-heading .field { gap:8px; }
+  html[data-portal-theme='business'] .main.statistics-page .page-heading .ui-date { width:176px; }
+  html[data-portal-theme='business'] .main.statistics-page .page-heading .ui-select { width:120px; }
+}
+
+/* Narrow windows reflow cards without scaling their typography or controls. */
+@media (max-width:900px) {
+  html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) > .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  html[data-portal-theme='business'] .main.overview-page > .overview-layout {
+    flex:1 0 480px;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(220px,1fr) minmax(240px,1fr);
+  }
+  html[data-portal-theme='business'] .main.overview-page .overview-layout > .stack {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:minmax(0,1fr);
+  }
+  html[data-portal-theme='business'] .main.overview-page > .overview-bottom { flex:1 0 240px; }
+  html[data-portal-theme='business'] .main.statistics-page > .grid.equal { flex:1 0 220px; }
+  html[data-portal-theme='business'] .main.statistics-page > div:not(.grid):has(> .panel) { flex:1 0 240px; }
+}

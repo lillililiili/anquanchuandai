@@ -176,7 +176,7 @@ function openEvents() {
             </article>
           </div>
           <div class="vitals-footer">
-            <span>观测时间：{{ vital.record ? vital.record.observedAt : "—" }}</span>
+            <span>观测时间：{{ formatBeijingDateTime(vital.record?.observedAt) }}</span>
             <span>非诊断</span>
           </div>
         </AppPanel>

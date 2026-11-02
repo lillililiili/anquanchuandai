@@ -148,7 +148,11 @@ public class GuardianIngest {
     private static void noteGeographicFences(JSONObject state,Helmet h,JSONObject point,Date when) {
         String cs=point.getString("coordinateSystem");
         h.person.put("fenceEvaluation","COORDINATE_SYSTEM_UNKNOWN");
-        if(!"valid".equals(point.getString("locationQuality"))||!PersonLocationProjection.knownCoordinateSystem(cs)) return;
+        if(!"valid".equals(point.getString("locationQuality"))||!PersonLocationProjection.knownCoordinateSystem(cs)
+                ||!PersonLocationProjection.coordinates(point)) return;
+        // Runtime telemetry can already contain this point before durable delivery enters the
+        // shared store. The projected person position is therefore not a previous observation.
+        JSONObject previous=previousFenceLocation(state,h,point,when);
         h.person.put("fenceEvaluation","NO_MATCHING_FENCE");
         for(Object raw:WearableModel.rows(state,"fences")) {
             JSONObject fence=(JSONObject)raw;
@@ -157,28 +161,56 @@ public class GuardianIngest {
             if(!java.util.Objects.equals(cs,fence.getString("coordinateSystem"))) { h.person.put("fenceEvaluation","COORDINATE_SYSTEM_MISMATCH");continue; }
             // Coarse/network fixes do not establish a precise fence crossing.
             Double accuracy=point.getDouble("accuracyMeters");
-            if(accuracy==null || accuracy<=0 || accuracy>50) {h.person.put("fenceEvaluation","INSUFFICIENT_ACCURACY");continue;}
+            if(accuracy==null || !Double.isFinite(accuracy) || accuracy<=0 || accuracy>50) {h.person.put("fenceEvaluation","INSUFFICIENT_ACCURACY");continue;}
             h.person.put("fenceEvaluation","EVALUATED");
-            if(!cs.equals(h.person.getString("coordinateSystem")) || !"CURRENT".equals(h.person.getString("locationFreshness"))
-                    || !h.person.getBooleanValue("locationValid")) continue;
-            Date previous=parseTime(h.person.getString("locationReportedAt"));
-            if(previous==null || when.getTime()-previous.getTime()>45000) continue;
+            if(previous==null || !cs.equals(previous.getString("coordinateSystem"))
+                    || !"valid".equals(previous.getString("locationQuality"))) continue;
+            Date previousTime=fenceLocationTime(previous);
+            if(previousTime==null || when.getTime()-previousTime.getTime()>45000) continue;
             JSONArray polygon=fence.getJSONArray("points");
             double lon=point.getDoubleValue("longitude"),lat=point.getDoubleValue("latitude");
             // Require the uncertainty disks of both observations to clear every edge.
-            Double oldAccuracy=h.person.getDouble("accuracyMeters");
+            Double oldAccuracy=previous.getDouble("accuracyMeters");
             if(oldAccuracy==null || !clearBoundary(lon,lat,accuracy,polygon)
-                    || !clearBoundary(h.person.getDoubleValue("longitude"),h.person.getDoubleValue("latitude"),oldAccuracy,polygon)) continue;
-            boolean was=inside(h.person.getDoubleValue("longitude"),h.person.getDoubleValue("latitude"),polygon), now=inside(lon,lat,polygon);
+                    || !clearBoundary(previous.getDoubleValue("longitude"),previous.getDoubleValue("latitude"),oldAccuracy,polygon)) continue;
+            boolean was=inside(previous.getDoubleValue("longitude"),previous.getDoubleValue("latitude"),polygon), now=inside(lon,lat,polygon);
             if(was==now || now&&!fence.getBooleanValue("enter") || !now&&!fence.getBooleanValue("leave")) continue;
             array(state,"fenceRecords").add(0,WearableModel.object("id","FR"+nextSeq(state),"fenceId",fence.getString("id"),
                     "fenceName",fence.getString("name"),"personId",h.personId,"personName",h.personName,"type",now?"进入":"离开",
-                    "time",stamp(when),"station",h.station,"coordinateSystem",cs,"longitude",lon,"latitude",lat));
+                    "time",stamp(when),"station",h.station,"coordinateSystem",cs,"longitude",lon,"latitude",lat,
+                    "source","PLATFORM_GEOFENCE","deviceId",h.deviceId,"bindingId",point.get("bindingId"),
+                    "locationId",point.get("id"),"previousLocationId",previous.get("id"),"previousDeviceId",previous.get("deviceId"),
+                    "locationReportedAt",when.toInstant().toString(),"accuracyMeters",accuracy));
         }
     }
 
+    private static JSONObject previousFenceLocation(JSONObject state,Helmet h,JSONObject point,Date when) {
+        JSONObject previous=null;Date latest=null;boolean ambiguous=false;
+        for(Object raw:WearableModel.rows(state,"locations")) {
+            JSONObject candidate=(JSONObject)raw;Date at=fenceLocationTime(candidate);
+            if(point.getString("id")!=null&&point.getString("id").equals(candidate.getString("id")))continue;
+            if(!java.util.Objects.equals(h.personId,candidate.getString("personId")) || at==null
+                    || !PersonLocationProjection.sameBinding(state,candidate.getString("deviceId"),candidate,at.toInstant().toString())) continue;
+            if(latest==null || at.after(latest)) {previous=candidate;latest=at;ambiguous=false;}
+            else if(at.equals(latest) && (!java.util.Objects.equals(previous.getDouble("longitude"),candidate.getDouble("longitude"))
+                    || !java.util.Objects.equals(previous.getDouble("latitude"),candidate.getDouble("latitude"))
+                    || !java.util.Objects.equals(previous.getString("coordinateSystem"),candidate.getString("coordinateSystem"))
+                    || !java.util.Objects.equals(previous.getString("locationQuality"),candidate.getString("locationQuality"))))ambiguous=true;
+        }
+        // A later durable point, or another device at the same instant, cannot be a
+        // new transition. Keep the earlier chosen observation's crossing decision.
+        return latest!=null&&latest.before(when)&&!ambiguous&&PersonLocationProjection.coordinates(previous)?previous:null;
+    }
+
+    private static Date fenceLocationTime(JSONObject point) {
+        for(String field:new String[]{"locationReportedAt","receivedAt","time"}) {
+            Date time=parseTime(point.getString(field));if(time!=null)return time;
+        }
+        return null;
+    }
+
     private static boolean clearBoundary(double lon,double lat,double accuracy,JSONArray polygon) {
-        if(polygon==null || polygon.size()<3 || accuracy<=0 || accuracy>50) return false;
+        if(polygon==null || polygon.size()<3 || !Double.isFinite(accuracy) || accuracy<=0 || accuracy>50) return false;
         double sx=111320*Math.cos(Math.toRadians(lat)),sy=111320;
         for(int i=0;i<polygon.size();i++) {
             JSONArray a=polygon.getJSONArray(i),b=polygon.getJSONArray((i+1)%polygon.size());

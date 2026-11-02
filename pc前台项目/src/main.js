@@ -13,6 +13,10 @@ import "@ui-spec/controls.css";
 import "@ui-spec/icon-masks.css";
 import "./styles/portal-shell.css";
 import "./styles/portal-business.css";
+import "./styles/portal-layout.css";
+import "./styles/portal-dashboard-layout.css";
+import "./styles/portal-detail-layout.css";
+import "./styles/portal-monitor-layout.css";
 
 
 const app = createApp(App);

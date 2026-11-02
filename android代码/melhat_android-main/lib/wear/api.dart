@@ -10,7 +10,8 @@ import 'shared_backend.dart';
 class WearApiException implements Exception {
   final int code;
   final String message;
-  const WearApiException(this.code, this.message);
+  final String errorCode;
+  const WearApiException(this.code, this.message, {this.errorCode = ''});
   @override
   String toString() => message;
 }
@@ -58,6 +59,64 @@ class WearApi {
 
   bool get isMock => dio.httpClientAdapter is MockBackend;
 
+  /// An in-memory, single-record cleanup capability. It cannot inherit a later
+  /// login or expire that login when the original credentials are rejected.
+  Future<dynamic> Function() Function(String) captureCallCleanup() {
+    final capturedToken = token();
+    final capturedSite = siteId();
+    final capturedEpoch = epoch();
+    final cleanup = WearApi(
+      dio: dio,
+      mock: !_real,
+      token: () => capturedToken,
+      siteId: () => capturedSite,
+      epoch: () => 0,
+    );
+    return (callId) {
+      final path = '/api/v1/calls/${Uri.encodeComponent(callId)}/end';
+      return () async {
+        final result = await cleanup.post(path);
+        if (capturedEpoch == epoch()) {
+          shared.acknowledgeTerminalCall(jsonMap(result));
+        }
+        return result;
+      };
+    };
+  }
+
+  /// Only releases this viewer's lease, never stops another viewer or recording.
+  Future<dynamic> Function() captureViewerRelease({
+    required String deviceId,
+    required String viewerSessionId,
+    required Map<String, dynamic> identity,
+  }) {
+    final capturedToken = token(), capturedSite = siteId();
+    final cleanup = WearApi(
+      dio: dio,
+      mock: !_real,
+      token: () => capturedToken,
+      siteId: () => capturedSite,
+      epoch: () => 0,
+    );
+    final path =
+        '/api/guardian/v1/devices/${Uri.encodeComponent(deviceId)}/commands';
+    final recipient = {
+      'personId': identity['personId'],
+      'assignmentId': identity['assignmentId'],
+      'assignmentVersion': identity['assignmentVersion'],
+    };
+    return () => cleanup.post(
+      path,
+      data: {
+        ...recipient,
+        'action': 'stop_video',
+        'viewerSessionId': viewerSessionId,
+        'idempotencyKey': SharedBackend.requestId(),
+        'parameters': <String, dynamic>{},
+      },
+    );
+  }
+
   void invalidate() {
     _cancel.cancel('session changed');
     _cancel = CancelToken();
@@ -71,7 +130,9 @@ class WearApi {
     Map<String, dynamic>? query,
     String? contentType,
   }) async {
-    if (Uri.tryParse(path)?.hasScheme == true) throw const WearApiException(400, '接口地址不合法');
+    if (Uri.tryParse(path)?.hasScheme == true) {
+      throw const WearApiException(400, '接口地址不合法');
+    }
     // Dio concatenates baseUrl + path, preserving deployment prefixes.
     final captured = epoch();
     final response = await dio.request<dynamic>(
@@ -95,6 +156,7 @@ class WearApi {
       throw WearApiException(
         effective,
         _safeMessage(body['message'] ?? body['msg'], effective),
+        errorCode: idOf(body['errorCode']),
       );
     }
     if (response.data is! Map && response.data is! List) {
@@ -188,6 +250,7 @@ class WearApi {
         throw WearApiException(
           effectiveCode,
           _safeMessage(body['msg'], effectiveCode),
+          errorCode: idOf(body['errorCode']),
         );
       }
       if (payload is! Map || binary) {

@@ -41,6 +41,7 @@ public class WearableBusinessStore {
     private final boolean lockingReads;
     private final FudaAlarmJournal alarmJournal;
     private static final Object BUSINESS_LOCK = new Object();
+    static final int LIVE_LOCATION_LIMIT = 512; // Per device, never a global tail that can hide a quieter device.
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Map<String, String> GUARDIAN = new LinkedHashMap<String, String>();
     private static final Map<String, String> MEDIA = new LinkedHashMap<String, String>();
@@ -86,6 +87,15 @@ public class WearableBusinessStore {
 
     /** Import only on first use. A corrupt legacy file fails closed instead of falling back to sample data. */
     public synchronized Snapshot load(String namespace, Path legacyFile, Supplier<JSONObject> empty) {
+        return load(namespace,legacyFile,empty,false);
+    }
+
+    /** Runtime projections need a bounded recent tail; history queries and exports still read all SQL rows. */
+    public synchronized Snapshot loadWorkingSet(String namespace, Path legacyFile, Supplier<JSONObject> empty) {
+        return load(namespace,legacyFile,empty,true);
+    }
+
+    private Snapshot load(String namespace, Path legacyFile, Supplier<JSONObject> empty, boolean workingSet) {
         requireNamespace(namespace);
         List<String> existing = jdbc.query("SELECT namespace FROM wearable_business_meta WHERE namespace=?", (rs,n)->rs.getString(1), namespace);
         if (existing.isEmpty()) {
@@ -118,10 +128,14 @@ public class WearableBusinessStore {
                 return null;
             });
         }
-        return read(namespace);
+        return read(namespace,workingSet);
     }
 
     public Snapshot read(String namespace) {
+        return read(namespace,false);
+    }
+
+    private Snapshot read(String namespace,boolean workingSet) {
         requireNamespace(namespace);
         return transactions.execute(status -> {
             JSONObject meta = lock(namespace);
@@ -131,7 +145,9 @@ public class WearableBusinessStore {
                 if ("scalar".equals(type)) state.put(key, JSON.parse(decode(namespace,key,"$",rs.getString(3))));
                 else {
                     String ordering="locations".equals(key)?"observed_at DESC,record_key":"sort_order,record_key";
-                    List<Map<String,Object>> rows = jdbc.queryForList("SELECT record_key, body FROM " + table(namespace,key) + " WHERE namespace=? AND collection_key=? ORDER BY "+ordering, namespace,key);
+                    List<Map<String,Object>> rows = workingSet&&"guardian".equals(namespace)&&"locations".equals(key)
+                            ? locationWorkingRows(namespace,key)
+                            : jdbc.queryForList("SELECT record_key, body FROM " + table(namespace,key) + " WHERE namespace=? AND collection_key=? ORDER BY "+ordering, namespace,key);
                     if ("array".equals(type)) {
                         JSONArray values = new JSONArray();
                         for (Map<String,Object> row : rows) values.add(JSON.parse(decode(namespace,key,String.valueOf(row.get("record_key")),String.valueOf(row.get("body")))));
@@ -145,6 +161,19 @@ public class WearableBusinessStore {
             }, namespace);
             return new Snapshot(state,meta.getLongValue("revision"));
         });
+    }
+
+    private List<Map<String,Object>> locationWorkingRows(String namespace,String key) {
+        List<Map<String,Object>> result=new ArrayList<>();
+        List<String> devices=jdbc.query("SELECT DISTINCT device_id FROM wearable_location WHERE namespace=? AND collection_key=?",(rs,n)->rs.getString(1),namespace,key);
+        for(String device:devices) {
+            List<Object> parameters=new ArrayList<>(Arrays.asList(namespace,key));
+            String predicate=device==null?"device_id IS NULL":"device_id=?";if(device!=null)parameters.add(device);
+            result.addAll(jdbc.queryForList("SELECT record_key,body,observed_at FROM wearable_location WHERE namespace=? AND collection_key=? AND "+predicate+" ORDER BY observed_at DESC,record_key LIMIT "+LIVE_LOCATION_LIMIT,parameters.toArray()));
+        }
+        result.sort(Comparator.<Map<String,Object>,Long>comparing(row->row.get("observed_at")==null?null:((Number)row.get("observed_at")).longValue(),Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(row->String.valueOf(row.get("record_key"))));
+        return result;
     }
 
     /** Optimistic storage revision prevents another instance or a stale cache from overwriting accepted data. */
@@ -216,7 +245,17 @@ public class WearableBusinessStore {
     private void syncRows(String namespace,String key,LinkedHashMap<String,Object> rows) {
         String table=table(namespace,key);
         Map<String,JSONObject> previous=new HashMap<String,JSONObject>();
-        jdbc.query("SELECT record_key,body,sort_order FROM "+table+" WHERE namespace=? AND collection_key=?",rs->{previous.put(rs.getString(1),object("body",rs.getString(2),"order",rs.getInt(3)));},namespace,key);
+        if("locations".equals(key)) {
+            // Location history is append-only. Compare only incoming IDs, never reload
+            // the growing archive merely to decide which live-tail rows changed.
+            List<String> ids=new ArrayList<>(rows.keySet());
+            for(int offset=0;offset<ids.size();offset+=256) {
+                List<String> batch=ids.subList(offset,Math.min(offset+256,ids.size()));
+                List<Object> parameters=new ArrayList<>();parameters.add(namespace);parameters.add(key);parameters.addAll(batch);
+                String placeholders=String.join(",",Collections.nCopies(batch.size(),"?"));
+                jdbc.query("SELECT record_key,body,sort_order FROM "+table+" WHERE namespace=? AND collection_key=? AND record_key IN ("+placeholders+")",rs->{previous.put(rs.getString(1),object("body",rs.getString(2),"order",rs.getInt(3)));},parameters.toArray());
+            }
+        } else jdbc.query("SELECT record_key,body,sort_order FROM "+table+" WHERE namespace=? AND collection_key=?",rs->{previous.put(rs.getString(1),object("body",rs.getString(2),"order",rs.getInt(3)));},namespace,key);
         int order=0;
         for(Map.Entry<String,Object> entry:rows.entrySet()) {
             String id=entry.getKey();if(id==null || id.length()>512)throw new IllegalArgumentException("业务记录键无效");

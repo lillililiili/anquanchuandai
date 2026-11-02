@@ -13,6 +13,12 @@ export const CONTROL = '/helmet-media/control/v1';
 export const PUBLIC = '/helmet-media';
 export function fault(status, code) { return Object.assign(new Error(code), { status, code }); }
 export function id(value) { if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,80}$/.test(value)) throw fault(400, 'INVALID_ID'); return value; }
+function photoRequestId(value) {
+  if(value==null||value==='')return null;
+  if(typeof value!=='string'||!/^HC-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value))throw fault(400,'INVALID_PHOTO_REQUEST_ID');
+  return value;
+}
+function receiptFields(names) { return [...new Set((Array.isArray(names)?names:[]).filter(k=>typeof k==='string'&&/^[A-Za-z0-9_]{1,64}$/.test(k)))].sort().slice(0,32); }
 const epoch = value => typeof value === 'number' ? (value > 1e12 ? value : value * 1000) : Date.parse(value);
 const xml = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[ch]));
 // FreeSWITCH's file preprocessor drops the entire line containing an XML declaration.
@@ -279,7 +285,8 @@ export class MediaService {
     const info = fs.statSync(filename);
     if(process.platform!=='win32'){const directory=fs.openSync(path.dirname(filename),'r');try{fs.fsyncSync(directory);}finally{fs.closeSync(directory);}}
     const asset = { assetId, filename: path.basename(filename), ...meta, size: info.size, status: 'ready', createdAt: new Date().toISOString() };
-    this.store.data.assets[assetId] = asset; this.store.event('asset.ready', { assetId, deviceId: asset.deviceId ?? null, kind: asset.kind, requestId: asset.requestId ?? null });
+    this.store.data.assets[assetId] = asset; this.store.event('asset.ready', { assetId, deviceId: asset.deviceId ?? null, kind: asset.kind, requestId: asset.requestId ?? null,
+      ...(asset.kind==='photo'?{requestIdSource:asset.requestIdSource??null,correlationStatus:asset.correlationStatus??'MISSING_DEVICE_REQUEST_ID'}:{}) });
     return this.assetPublic(asset);
   }
   async tts(input) {
@@ -304,13 +311,23 @@ export class MediaService {
     const prior = metadata.progressId && Object.values(this.store.data.assets).find(a => a.deviceId === deviceId && a.progressId === metadata.progressId);
     if (prior) return this.assetPublic(prior);
     const assetId = randomUUID(), temporary = this.store.assetPath(assetId, 'partial');
-    let parser, error, fileCount = 0, originalName = '', writing;
+    let parser, error, fileCount = 0, originalName = '', writing, photoRequest = null, photoRequestSeen = false;
+    const fieldNames=[];
     try { parser = Busboy({ headers: { 'content-type': contentType }, limits: { files: 1, fileSize: 255 * 1024 * 1024, fields: 16, fieldSize: 4096, parts: 18 } }); }
     catch { throw fault(400, 'INVALID_MULTIPART'); }
     const finished = new Promise((resolve,reject) => {
-      parser.on('field',(name,value)=>{ if(name==='device_id' && value!==deviceId) error=fault(403,'DEVICE_MISMATCH'); });
+      parser.on('field',(name,value,info)=>{
+        fieldNames.push(name);
+        if(name==='device_id' && value!==deviceId) error=fault(403,'DEVICE_MISMATCH');
+        if(kind==='photo'&&name==='talkback_id'){
+          try{
+            if(photoRequestSeen||info.valueTruncated)throw fault(400,'INVALID_PHOTO_REQUEST_ID');
+            photoRequestSeen=true;photoRequest=photoRequestId(value);
+          }catch(e){error=e;}
+        }
+      });
       parser.on('file',(name,file,info)=>{
-        fileCount++; if(name!=='file') error=fault(400,'INVALID_FILE_FIELD');
+        fieldNames.push(name);fileCount++; if(name!=='file') error=fault(400,'INVALID_FILE_FIELD');
         originalName=path.basename(info.filename ?? '').slice(0,160);
         file.on('limit',()=>{error=fault(413,'FILE_TOO_LARGE');});
         writing=(async()=>{const output=await fs.promises.open(temporary,'wx',0o600);try{for await(const chunk of file)await output.write(chunk);await output.sync();}finally{await output.close();}})();
@@ -331,8 +348,11 @@ export class MediaService {
       else if(kind==='video'&&head.subarray(4,8).toString()==='ftyp'){extension='mp4';mime='video/mp4';}
       else throw fault(415,'UNSUPPORTED_FILE_CONTENT');
       if(kind==='video' && !await this.probe(temporary))throw fault(415,'INVALID_VIDEO');
+      if(kind==='photo'&&metadata.requestId&&metadata.requestId!==photoRequest)throw fault(400,'UNVERIFIED_PHOTO_REQUEST_ID');
+      const correlation=kind==='photo'?{requestId:photoRequest,requestIdSource:photoRequest?'multipart.talkback_id':null,
+        correlationStatus:photoRequest?'DEVICE_REQUEST_ID':'MISSING_DEVICE_REQUEST_ID',receiptFieldNames:receiptFields(fieldNames)}:{};
       const filename=this.store.assetPath(assetId,extension);await fs.promises.rename(temporary,filename);
-      return this.registerAsset(assetId,filename,{deviceId,kind,mime,originalName,...metadata});
+      return this.registerAsset(assetId,filename,{deviceId,kind,mime,originalName,...metadata,...correlation});
     } finally {source.destroy();await fs.promises.unlink(temporary).catch(()=>{});}
   }
   bindPhoto(input) {
@@ -342,10 +362,19 @@ export class MediaService {
     const assetId=url.pathname.match(/^\/helmet-media\/files\/([A-Za-z0-9_-]+)$/)?.[1];
     const asset=this.store.data.assets[assetId];
     if(!asset || asset.deviceId!==deviceId || asset.kind!=='photo')throw fault(403,'ASSET_OWNER_MISMATCH');
+    const requestId=photoRequestId(input.requestId);
+    if(requestId&&input.requestIdSource!=='report/add_image.talkback_id')throw fault(400,'UNVERIFIED_PHOTO_REQUEST_ID');
+    if(requestId&&asset.requestId&&asset.requestId!==requestId)throw fault(409,'PHOTO_REQUEST_ID_CONFLICT');
     const latitude=Number(input.latitude),longitude=Number(input.longitude);
     if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)throw fault(400,'INVALID_LOCATION');
+    const changed=!asset.deviceBindingConfirmed||Boolean(requestId&&!asset.requestId);
+    if(requestId&&!asset.requestId){asset.requestId=requestId;asset.requestIdSource='report/add_image.talkback_id';}
+    asset.correlationStatus=asset.requestId?'DEVICE_REQUEST_ID':'MISSING_DEVICE_REQUEST_ID';
+    asset.bindingReceiptFieldNames=receiptFields(input.receiptFieldNames);
     asset.deviceBindingConfirmed=true;asset.latitude=latitude;asset.longitude=longitude;asset.coordinateSystem='GCJ-02';
-    this.store.event('asset.bound',{assetId,deviceId,requestId:asset.requestId??null});
+    if(changed)this.store.event('asset.bound',{assetId,deviceId,kind:'photo',requestId:asset.requestId??null,
+      requestIdSource:asset.requestIdSource??null,correlationStatus:asset.correlationStatus});
+    else this.store.save();
     return {assetId,status:'ready'};
   }
   async startRecording(input) {

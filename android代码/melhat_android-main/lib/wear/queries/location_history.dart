@@ -12,6 +12,7 @@ class LocationHistoryPage extends StatefulWidget {
 
 class _LocationHistoryPageState extends State<LocationHistoryPage> {
   WearSession? _session;
+  String? _scope;
   DateTime _date = DateTime.now().toUtc().add(const Duration(hours: 8));
   List<JsonMap> _rows = [];
   String? _cursor;
@@ -22,10 +23,17 @@ class _LocationHistoryPageState extends State<LocationHistoryPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final next = WearScope.of(context);
-    if (!identical(next, _session)) {
+    if (!identical(next, _session) || _scope != next.scopeKey) {
       _session = next;
+      _scope = next.scopeKey;
       _load();
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant LocationHistoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.personId != widget.personId) _load();
   }
 
   Future<void> _load({bool more = false}) async {
@@ -66,6 +74,10 @@ class _LocationHistoryPageState extends State<LocationHistoryPage> {
     } catch (e) {
       if (!mounted || scope != session.scopeKey || request != _request) return;
       setState(() {
+        if (e is WearApiException && [401, 403, 404].contains(e.code)) {
+          _rows = [];
+          _cursor = null;
+        }
         _error = e;
         _busy = false;
       });
@@ -151,7 +163,9 @@ class _LocationHistoryPageState extends State<LocationHistoryPage> {
                           ? Icons.location_off_outlined
                           : Icons.location_on_outlined,
                     ),
-                    title: Text(formatTime(row['reportedAt'])),
+                    title: Text(
+                      '${locationTimeLabel(row)} · ${formatTime(locationTimeValue(row))}',
+                    ),
                     subtitle: Text(
                       '${row['latitude'] ?? '未知'}, ${row['longitude'] ?? '未知'} · ${row['coordinateSystem'] ?? 'UNKNOWN'}\n设备 ${row['deviceId'] ?? '未知'} · ${row['locationSource'] ?? '未知来源'}',
                     ),

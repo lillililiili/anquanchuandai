@@ -15,6 +15,7 @@ import { session } from "@/stores/session";
 import { events, people, personName, revision, scope, statusColor, works } from "@/lib/queries";
 import { go } from "@/lib/actions";
 import { videoPeople } from "@/lib/person-equipment";
+import { formatRecordedDateTime } from '@/lib/date-time';
 
 const summary = computed(() => {
   revision();
@@ -43,6 +44,10 @@ const cards = computed(() => {
 });
 const equipment = computed(() => Object.entries(summary.value.byType).filter(([key, count]) => key !== 'W' || count.total > 0));
 
+function eventTime(item) {
+  return formatRecordedDateTime(item.occurredAt || (item.date && item.time ? `${item.date} ${item.time}` : item.time));
+}
+
 function eventIcon(item) {
   if (item.type === "位置异常" || item.type === "电子围栏") return ["map-pin-fill", "blue"];
   if (item.type === "人员求助") return ["alarm-warning-fill", "red"];
@@ -60,7 +65,7 @@ function eventIcon(item) {
         <template #extra><a class="text-link" href="#/alarms">查看全部 <UiIcon name="chevron-right" /></a></template>
         <AppTable :reset-key="session.station" :rows="openEvents" v-slot="{ rows: pageRows }" :columns="['时间', '事件', '人员 / 装备', '状态']" table-class="compact" :empty="!openEvents.length">
           <tr v-for="item in pageRows" :key="item.id" @click="go('event/' + item.id)">
-            <td>{{ item.time }}</td>
+            <td class="event-time" :title="eventTime(item) + '（北京时间）'"><span v-for="(part, index) in eventTime(item).split(' ')" :key="index">{{ part }}</span></td>
             <td><AppIcon :name="eventIcon(item)[0]" :color="eventIcon(item)[1]" />　{{ item.title }}</td>
             <td>{{ personName(item.personId) }} · {{ item.deviceId }}</td>
             <td><AppTag :color="statusColor(item.status)">{{ item.status }}</AppTag></td>
@@ -105,3 +110,7 @@ function eventIcon(item) {
     </AppPanel>
   </div>
 </template>
+
+<style scoped>
+.event-time span { display:block; line-height:1.5; }
+</style>

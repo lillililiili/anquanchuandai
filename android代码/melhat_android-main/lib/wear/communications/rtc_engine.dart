@@ -5,6 +5,7 @@ import 'models.dart';
 
 class RtcCallbacks {
   const RtcCallbacks({
+    this.onRegistered,
     required this.onLocalJoined,
     required this.onRemoteJoined,
     required this.onRemoteLeft,
@@ -13,6 +14,7 @@ class RtcCallbacks {
   });
 
   final void Function() onLocalJoined;
+  final void Function()? onRegistered;
   final void Function(int uid) onRemoteJoined;
   final void Function(int uid) onRemoteLeft;
   final void Function() onTokenExpiring;
@@ -29,6 +31,10 @@ abstract interface class WearRtcEngine {
 
 abstract interface class WearRtcAudioRoute {
   Future<void> setSpeakerphone(bool enabled);
+}
+
+abstract interface class WearRtcPreparation {
+  Future<void> prepare({required bool video});
 }
 
 /// A second guard behind demo credentials: this engine has no native SDK.

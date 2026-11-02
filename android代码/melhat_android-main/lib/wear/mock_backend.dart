@@ -823,6 +823,22 @@ class MockBackend implements HttpClientAdapter {
       });
       return reply(event);
     }
+    if (p == '/api/v1/calls' && !write) {
+      return reply(
+        calls.values
+            .where(
+              (call) =>
+                  call['requesterUserId'] == _userId &&
+                  call['siteId'] == siteId &&
+                  !const {
+                    'ended',
+                    'failed',
+                    'timed_out',
+                  }.contains(call['status']),
+            )
+            .toList(),
+      );
+    }
     if (p == '/api/v1/calls' && write) {
       if (body['video'] == true) return invalid('本轮仅支持设备语音');
       final id = _nextId;

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:rolling_intelligence_headband/wear/communications/media_preparation.dart';
 import 'package:rolling_intelligence_headband/wear/communications/models.dart';
 import 'package:rolling_intelligence_headband/wear/communications/rtc_engine.dart';
 import 'package:rolling_intelligence_headband/wear/communications/sip_rtc_engine.dart';
@@ -74,6 +76,50 @@ void main() {
       await engine.dispose();
     },
   );
+
+  test(
+    'SIP consumes the exact prepared stream once and owns its cleanup',
+    () async {
+      final media = _Media(), sip = _PreparedDriver();
+      var captures = 0, temporaryReleases = 0;
+      final engine = ProtocolWearRtcEngine(
+        sipFactory: (_) => sip,
+        preparation: RtcMediaPreparation<MediaStream>(
+          requestPermission: (_) async => true,
+          acquire: (_) async {
+            captures++;
+            return media;
+          },
+          release: (_) async {
+            temporaryReleases++;
+          },
+        ),
+      );
+      await engine.prepare(video: false);
+      await engine.join(credentials('SIP'), callbacks);
+      expect(identical(sip.media, media), isTrue);
+      expect(captures, 1);
+      expect(temporaryReleases, 0);
+      await engine.leave();
+      expect(sip.disposed, isTrue);
+      expect(sip.media, isNull);
+      await engine.dispose();
+      expect(temporaryReleases, 0);
+    },
+  );
+}
+
+class _Media extends Fake implements MediaStream {}
+
+class _PreparedDriver extends _Driver implements WearPreparedRtcMedia {
+  MediaStream? media;
+  @override
+  void usePreparedMedia(MediaStream stream) => media = stream;
+  @override
+  Future<void> leave() async {
+    media = null;
+    await super.leave();
+  }
 }
 
 class _Driver implements WearRtcEngine {

@@ -13,6 +13,8 @@ import * as features from '../../shared/device-features.mjs';
 import { personDutyPresentation } from '../src/lib/person-duty.js';
 import * as dateTime from '../src/lib/date-time.js';
 import { videoPeople as screenVideoPeople } from '../src/views/screen/screen-model.js';
+import * as videoWall from '../src/views/video/video-wall.js';
+import * as mediaPresentation from '../src/lib/media-presentation.js';
 
 function fixture(type = 'B', online = true) {
   const person = { id: 'P1', name: '现场人员', active: true, station: 'S1', team: '一班' };
@@ -41,8 +43,9 @@ async function render(path, f) {
     vue: Vue, 'vue/server-renderer': SSR, 'vue-router': { useRoute: () => f.route },
     '@/mock/runtime': { db: f.db, tick: Vue.ref(0) }, '@/mock/data': { typeNames: { H: '安全帽', B: '安全带', W: '手表' } },
     '@/lib/person-equipment': equipment, '@/lib/device-telemetry': telemetry, '@/lib/external-status': external, '@/lib/date-time': dateTime,
-    '../../../../shared/device-features.mjs': features, '@/lib/person-duty': { personDutyPresentation }, './work-source': source,
+    '../../../../shared/device-features.mjs': features, '@/lib/person-duty': { personDutyPresentation }, './work-source': source, './video-wall': videoWall,
     '@/lib/queries': f.queries, '@/stores/session': { session: f.session, filtersOf: key => f.session.filters[key] || {} },
+    '@/lib/media-presentation': mediaPresentation,
     '@/stores/notify': { toast() {} }, '@/stores/modal': { openModal() {} }, '@/lib/actions': { callPerson() {}, go() {}, runGuarded: fn => fn() },
     '@/lib/files': { blobPut() {} }, '@ui-spec/useFieldErrors': { useFieldErrors: () => ({ formRef: Vue.ref(null), errors: Vue.ref({}), validate: () => true }) },
   };
@@ -77,6 +80,17 @@ test('离线安全帽仍保留视频区和待联调语音状态，入口没有�
   const personnel = await render('personnel/PersonnelView.vue', f);
   const voiceButton = [...personnel.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].find(match => match[2].includes('对讲 · 待联调'));
   assert.ok(voiceButton); assert.match(voiceButton[1], /disabled/);
+});
+
+test('总览历史事件保留日期，只有时分的旧记录不会被补为今天', async () => {
+  const f = fixture('H');
+  f.db.state.events.push({ id: 'E1', personId: 'P1', deviceId: f.device.id, title: '旧告警', status: '待认领', date: '2026-10-29', time: '19:07' });
+  let html = await render('overview/OverviewView.vue', f);
+  assert.match(html, /2026-10-29<\/span><span>19:07:00/);
+  f.db.state.events[0].date = '';
+  html = await render('overview/OverviewView.vue', f);
+  assert.match(html, /19:07<\/span>/);
+  assert.doesNotMatch(html, /2026-10-29<\/span>/);
 });
 
 test('大屏和视频墙共用当前领用视频人员，真实帽不再被 demo 开关排除', () => {
@@ -140,7 +154,7 @@ test('设备录像查询使用领用上下文；离线、待联调和重复点�
   const modules = {
     vue: { ...Vue, onUnmounted() {}, watch(selector, callback, options) { watchers.push(callback); if (options?.immediate) callback(); } },
     '@/mock/runtime': { db: f.db, tick, connection: Vue.ref({ status: 'online' }) }, '@/lib/auth': { authFetch() { assert.fail('test must never access a backend'); } },
-    '@/lib/location': { beijingDate: () => '2026-10-27' }, '@/lib/person-equipment': equipment, '@/lib/device-telemetry': telemetry,
+    '@/lib/location': { beijingDate: () => '2026-10-27' }, '@/lib/date-time': dateTime, '@/lib/person-equipment': equipment, '@/lib/device-telemetry': telemetry,
     '@/lib/helmet-media': { COMMAND_LABELS: { list_recordings: '查询设备录像', upload_recording: '上传选中录像' }, COMMAND_STATUSES: { sent: '已发送，设备待回执' }, createHelmetMediaApi: () => ({ read: async () => ({ recordings: [], commands: [] }), command: (...args) => { sent.push(args); return new Promise(resolve => { resolveCommand = resolve; }); } }) },
   };
   const compiled = code.replace(/^import\s+([\s\S]*?)\s+from\s+(['"])([^'"]+)\2;?\s*$/gm, (_, names, quote, from) => {

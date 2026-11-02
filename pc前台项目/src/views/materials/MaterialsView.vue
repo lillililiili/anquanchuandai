@@ -14,7 +14,7 @@ import PageHeading from "@/components/layout/PageHeading.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
 import { db, guardianReady } from "@/mock/runtime";
 import { authFetch } from '@/lib/auth';
-import { beijingDate } from '@/lib/location';
+import { normalizeMedia, mediaKindLabel, mediaSourceLabel, mediaTime } from '@/lib/media-presentation';
 import { isRealDevice } from '@/lib/device-telemetry';
 import { filtersOf, session } from "@/stores/session";
 import { openModal } from "@/stores/modal";
@@ -71,9 +71,7 @@ async function refreshDeviceMedia(){
         const response=await authFetch(`/api/guardian/v1/helmet/media?deviceId=${encodeURIComponent(device.id)}`,{signal:mediaController.signal});
         const body=await response.json();if(!response.ok)throw Error(body.message||'设备资料读取失败');
         for(const item of body.items||[]){
-          const created=item.createdAt||item.created;
-          const stamp=Date.parse(created||'');
-          results.push({...item,kind:String(item.kind).toLowerCase(),station,title:item.name||'设备上传资料',created:created||'时间未提供',date:Number.isFinite(stamp)?beijingDate(stamp):'',snapshot:item.snapshot||{personName:item.personId?`${item.personId}（历史姓名未提供）`:'未关联人员'}});
+          results.push(normalizeMedia(item, station));
         }
       }catch(reason){if(reason.name!=='AbortError')failures.push(reason.message);}
       if(operation!==mediaRequest)return;
@@ -107,7 +105,7 @@ const workOptions = computed(() => {
 const mediaList = computed(() => {
   revision();
   const query = applied.value;
-  return [...new Map([...materials(),...deviceMedia.value].map(item=>[item.id,item])).values()].filter(
+  return [...new Map([...materials(),...deviceMedia.value].map(item=>[item.id,normalizeMedia(item)])).values()].filter(
     (item) =>
       (session.mediaTab === "all" || item.kind === session.mediaTab) &&
       (!query.personId || item.personId === query.personId) &&
@@ -177,10 +175,6 @@ async function saveMedia(id) {
 
 <template>
   <PageHeading title="现场影像资料" subtitle="设备回传照片与录像的检索、查看和归档"><template #actions><AppButton :disabled="mediaLoading" @click="refreshDeviceMedia">{{ mediaLoading?'正在刷新设备资料…':'刷新设备资料' }}</AppButton></template></PageHeading>
-  <template v-if="recordingPeople.length">
-    <AppField label="当前领用人员"><AppSelect :model-value="recordingPerson?.id || ''" :options="recordingPeople.map(person => [person.id, person.name])" @update:model-value="recordingPersonId = $event" /></AppField>
-    <DeviceRecordings v-if="recordingPerson" :key="recordingPerson.id" :person-id="recordingPerson.id" @refresh="refreshDeviceMedia" />
-  </template>
   <p v-if="mediaError" class="form-error" role="alert">{{ mediaError }}</p>
   <div class="split-detail bounded-split">
     <div class="list-detail-column">
@@ -200,74 +194,83 @@ async function saveMedia(id) {
           <AppInput v-model="draft.date" name="date" type="date" />
         </AppField>
       </FilterBar>
-      <AppTabs v-model="session.mediaTab" :tabs="tabs" />
-      <div class="media-grid" tabindex="0" role="region" aria-label="资料列表，可滚动">
-        <article
-          v-for="item in mediaList"
-          :key="item.id"
-          :class="['media-card', item.id === selectedMedia?.id ? 'selected' : '']"
-          tabindex="0"
-          role="button"
-          @click="selectMedia(item.id)"
-          @keydown.enter.prevent="selectMedia(item.id)"
-          @keydown.space.prevent="selectMedia(item.id)"
-        >
-          <div class="preview">
-            <MediaImage :media="item" />
-            <span class="video-label">非实时</span>
-            <template v-if="item.kind === 'video'">
-              <span class="play-overlay"><AppIcon name="play-fill" /></span>
-              <span class="video-time">{{ durationText(item.duration) }}</span>
-            </template>
-          </div>
-          <h3>{{ item.title }}　<AppTag>{{ item.kind === "photo" ? "照片" : "录像 " + item.duration + "秒" }}</AppTag></h3>
-          <p>
-            <span><AppIcon name="user-line" /> {{ item.deviceId }} · {{ item.snapshot?.personName }}</span>
-            <span><AppIcon name="time-line" /> {{ item.created }}</span>
-          </p>
-        </article>
-        <AppEmpty v-if="!mediaList.length" />
-      </div>
-      <p class="count-label">共 {{ mediaList.length }} 条</p>
-    </div>
-    <AppPanel title="资料详情" extra-class="media-detail">
-      <template v-if="selectedMedia">
-        <MediaImage :media="selectedMedia" />
-        <h3 style="margin-top:18px">
-          {{ selectedMedia.title }}　<AppTag>{{ selectedMedia.kind === "photo" ? "照片" : selectedMedia.url ? "设备录像" : "模拟录像" }}</AppTag>
-        </h3>
-        <dl class="info">
-          <dt>资料编号</dt>
-          <dd>{{ selectedMedia.id }}</dd>
-          <dt>来源</dt>
-          <dd>{{ selectedMedia.source }}</dd>
-          <dt>拍摄设备</dt>
-          <dd>{{ selectedMedia.deviceId }}</dd>
-          <dt>关联人员</dt>
-          <dd>{{ selectedMedia.snapshot?.personName }}</dd>
-          <dt>关联作业</dt>
-          <dd>{{ selectedMedia.workId || "—" }}</dd>
-          <dt>关联事件</dt>
-          <dd>{{ selectedMedia.eventId || "—" }}</dd>
-          <dt>拍摄时间</dt>
-          <dd>{{ selectedMedia.created }}</dd>
-          <dt>核验引用</dt>
-          <dd>
-            <AppTag v-if="selectedMedia.eventId" color="yellow">{{ db.event(selectedMedia.eventId)?.status || "待提交" }}</AppTag>
-            <template v-else>—</template>
-          </dd>
-        </dl>
-        <div class="form-actions">
-          <AppButton tone="primary" icon="image-line" @click="openPreview(selectedMedia.id)">
-            {{ selectedMedia.kind === "photo" ? "查看原图" : selectedMedia.url ? "播放录像" : "查看记录（暂无文件）" }}
-          </AppButton>
-          <AppButton icon="download-line" @click="saveMedia(selectedMedia.id)">下载资料</AppButton>
+      <div class="panel media-library">
+        <AppTabs v-model="session.mediaTab" :tabs="tabs" />
+        <div class="media-grid" tabindex="0" role="region" aria-label="资料列表，可滚动">
+          <article
+            v-for="item in mediaList"
+            :key="item.id"
+            :class="['media-card', item.id === selectedMedia?.id ? 'selected' : '']"
+            tabindex="0"
+            role="button"
+            @click="selectMedia(item.id)"
+            @keydown.enter.prevent="selectMedia(item.id)"
+            @keydown.space.prevent="selectMedia(item.id)"
+          >
+            <div class="preview">
+              <MediaImage :media="item" />
+              <span class="video-label">非实时</span>
+              <template v-if="item.kind === 'video'">
+                <span class="play-overlay"><AppIcon name="play-fill" /></span>
+                <span class="video-time">{{ durationText(item.duration) }}</span>
+              </template>
+            </div>
+            <h3>{{ item.title }}　<AppTag>{{ mediaKindLabel(item) }}</AppTag></h3>
+            <p>
+              <span><AppIcon name="user-line" /> {{ item.deviceId }} · {{ item.snapshot?.personName }}</span>
+              <span><AppIcon name="time-line" /> {{ mediaTime(item).label }}：{{ mediaTime(item).value }}（北京时间）</span>
+            </p>
+          </article>
+          <AppEmpty v-if="!mediaList.length" />
         </div>
-        <p v-if="selectedMedia.eventId" style="margin-top:16px">
-          <a class="text-link" :href="'#/event/' + selectedMedia.eventId">查看关联事件 <UiIcon name="chevron-right" /></a>
-        </p>
-      </template>
-      <AppEmpty v-else />
-    </AppPanel>
+        <p class="count-label">共 {{ mediaList.length }} 条</p>
+      </div>
+    </div>
+    <div class="materials-sidebar">
+      <div v-if="recordingPeople.length" class="materials-device-recordings">
+        <AppField label="当前领用人员"><AppSelect :model-value="recordingPerson?.id || ''" :options="recordingPeople.map(person => [person.id, person.name])" @update:model-value="recordingPersonId = $event" /></AppField>
+        <DeviceRecordings v-if="recordingPerson" :key="recordingPerson.id" :person-id="recordingPerson.id" @refresh="refreshDeviceMedia" />
+      </div>
+      <AppPanel title="资料详情" extra-class="media-detail">
+        <template v-if="selectedMedia">
+          <MediaImage :media="selectedMedia" />
+          <h3 style="margin-top:18px">
+            {{ selectedMedia.title }}　<AppTag>{{ mediaKindLabel(selectedMedia) }}</AppTag>
+          </h3>
+          <dl class="info">
+            <dt>资料编号</dt>
+            <dd>{{ selectedMedia.id }}</dd>
+            <dt>来源</dt>
+            <dd>{{ mediaSourceLabel(selectedMedia) }}</dd>
+            <dt>拍摄设备</dt>
+            <dd>{{ selectedMedia.deviceId }}</dd>
+            <dt>关联人员</dt>
+            <dd>{{ selectedMedia.snapshot?.personName }}</dd>
+            <dt>关联作业</dt>
+            <dd>{{ selectedMedia.workId || "—" }}</dd>
+            <dt>关联事件</dt>
+            <dd>{{ selectedMedia.eventId || "—" }}</dd>
+            <dt>{{ mediaTime(selectedMedia).label }}</dt>
+            <dd>{{ mediaTime(selectedMedia).value }}（北京时间）</dd>
+            <template v-if="selectedMedia.kind === 'video'"><dt>时长</dt><dd>{{ durationText(selectedMedia.duration) }}</dd></template>
+            <dt>核验引用</dt>
+            <dd>
+              <AppTag v-if="selectedMedia.eventId" color="yellow">{{ db.event(selectedMedia.eventId)?.status || "待提交" }}</AppTag>
+              <template v-else>—</template>
+            </dd>
+          </dl>
+          <div class="form-actions">
+            <AppButton tone="primary" icon="image-line" @click="openPreview(selectedMedia.id)">
+              {{ selectedMedia.kind === "photo" ? "查看原图" : selectedMedia.url ? "播放录像" : "查看记录（暂无文件）" }}
+            </AppButton>
+            <AppButton icon="download-line" @click="saveMedia(selectedMedia.id)">下载资料</AppButton>
+          </div>
+          <p v-if="selectedMedia.eventId" style="margin-top:16px">
+            <a class="text-link" :href="'#/event/' + selectedMedia.eventId">查看关联事件 <UiIcon name="chevron-right" /></a>
+          </p>
+        </template>
+        <AppEmpty v-else />
+      </AppPanel>
+    </div>
   </div>
 </template>

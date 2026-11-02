@@ -39,6 +39,7 @@ class SharedBackend {
   final Map<String, Future<dynamic>> _running = {};
   final Map<String, JsonMap> _assignmentCommands = {};
   final Map<String, JsonMap> _communicationCommands = {};
+  final Map<String, String> _communicationCallIds = {};
 
   static String requestId() {
     final random = Random.secure(),
@@ -57,6 +58,7 @@ class SharedBackend {
     _running.clear();
     _assignmentCommands.clear();
     _communicationCommands.clear();
+    _communicationCallIds.clear();
   }
 
   void clearReadCache() {
@@ -236,12 +238,21 @@ class SharedBackend {
       return _assignment(path, body);
     }
     if (path == '/api/v1/calls' && write) return _communicate('calls', body);
+    if (path == '/api/v1/calls' && !write) {
+      final rows = await send('GET', '$root/mobile/calls', query: query);
+      for (final row in jsonList(rows)) {
+        acknowledgeTerminalCall(row);
+      }
+      return rows;
+    }
     if (path.startsWith('/api/v1/calls/')) {
-      return send(
+      final result = await send(
         method,
         '$root/mobile/calls/${parts.skip(4).join('/')}',
         data: data,
       );
+      acknowledgeTerminalCall(jsonMap(result));
+      return result;
     }
     if (path == '/api/v1/commands/tts') return _communicate('broadcast', body);
     if (write) throw const WearApiException(403, '此功能为只读，或尚未开放');
@@ -625,7 +636,13 @@ class SharedBackend {
     _running[key] = request;
     try {
       final result = await request;
-      _communicationCommands.remove(key);
+      final row = jsonMap(result);
+      if (action != 'calls' || _terminalCall(row)) {
+        _communicationCommands.remove(key);
+        _communicationCallIds.remove(key);
+      } else if (idOf(row['id']).isNotEmpty) {
+        _communicationCallIds[key] = idOf(row['id']);
+      }
       return result;
     } on WearApiException catch (e) {
       if ([400, 401, 403, 404].contains(e.code)) {
@@ -634,6 +651,22 @@ class SharedBackend {
       rethrow;
     } finally {
       _running.remove(key);
+    }
+  }
+
+  bool _terminalCall(JsonMap row) =>
+      const {'ended', 'failed', 'timed_out', 'timeout'}.contains(row['status']);
+
+  void acknowledgeTerminalCall(JsonMap row) {
+    if (!_terminalCall(row)) return;
+    final id = idOf(row['id']);
+    final keys = _communicationCallIds.entries
+        .where((entry) => entry.value == id)
+        .map((entry) => entry.key)
+        .toList();
+    for (final key in keys) {
+      _communicationCommands.remove(key);
+      _communicationCallIds.remove(key);
     }
   }
 }

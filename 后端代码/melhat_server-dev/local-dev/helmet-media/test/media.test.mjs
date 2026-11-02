@@ -22,6 +22,55 @@ function fixture(t) {
     fetch: async url => new Response(JSON.stringify(url.endsWith('/health') ? { ready: true } : { code: 0, streams: [], clients: [] })) });
   return { config, service, commands };
 }
+
+test('multipart photo command echo is exact, durable and never inferred',async t=>{
+ const {service,config}=fixture(t),requestId='HC-11111111-2222-3333-4444-555555555555';
+ const multipart=fields=>Buffer.concat([Buffer.from(fields.map(([name,value])=>`--bound\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`).join('')+'--bound\r\nContent-Disposition: form-data; name="file"; filename="photo.jpg"\r\nContent-Type: image/jpeg\r\n\r\n'),Buffer.from([255,216,255,0,0]),Buffer.from('\r\n--bound--\r\n')]);
+ const upload=fields=>service.ingestUpload(multipart(fields),'multipart/form-data; boundary=bound','d1','photo');
+ const missing=await upload([['device_id','d1'],['requestId',requestId]]);
+ assert.equal(missing.requestId,null);assert.equal(missing.correlationStatus,'MISSING_DEVICE_REQUEST_ID');
+ const linked=await upload([['device_id','d1'],['talkback_id',requestId]]);
+ assert.equal(linked.requestId,requestId);assert.equal(linked.requestIdSource,'multipart.talkback_id');
+ assert.deepEqual(linked.receiptFieldNames,['device_id','file','talkback_id']);
+ const restored=new Store(config.dataDir);assert.equal(restored.data.assets[linked.assetId].requestId,requestId);
+ assert.equal(restored.data.events.at(-1).requestId,requestId);
+ await assert.rejects(upload([['talkback_id',requestId],['talkback_id',requestId]]),/INVALID_PHOTO_REQUEST_ID/);
+ await assert.rejects(upload([['talkback_id','not-a-command']]),/INVALID_PHOTO_REQUEST_ID/);
+ await assert.rejects(upload([['device_id','other'],['talkback_id',requestId]]),/DEVICE_MISMATCH/);
+ assert.equal(Object.keys(service.store.data.assets).length,2);
+});
+
+test('photo binding may add a real echo once, cannot overwrite or transfer ownership',t=>{
+ const {service}=fixture(t),requestId='HC-11111111-2222-3333-4444-555555555555',other='HC-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+ service.store.data.assets.photo1={assetId:'photo1',deviceId:'d1',kind:'photo',status:'ready'};
+ const base={deviceId:'d1',imageUrl:'https://media.example.com/helmet-media/files/photo1',latitude:22,longitude:114};
+ service.bindPhoto(base);assert.equal(service.store.data.assets.photo1.correlationStatus,'MISSING_DEVICE_REQUEST_ID');
+ const echo={...base,requestId,requestIdSource:'report/add_image.talkback_id',receiptFieldNames:['device_id','talkback_id','image_url']};
+ service.bindPhoto(echo);const count=service.store.data.events.length;
+ service.bindPhoto(echo);assert.equal(service.store.data.events.length,count);
+ assert.equal(service.store.data.events.at(-1).type,'asset.bound');assert.equal(service.store.data.events.at(-1).requestId,requestId);
+ assert.throws(()=>service.bindPhoto({...echo,requestId:other}),/PHOTO_REQUEST_ID_CONFLICT/);
+ assert.throws(()=>service.bindPhoto({...echo,deviceId:'d2'}),/ASSET_OWNER_MISMATCH/);
+ assert.throws(()=>service.bindPhoto({...echo,requestIdSource:'latest_command'}),/UNVERIFIED_PHOTO_REQUEST_ID/);
+ service.bindPhoto(base);assert.equal(service.store.data.assets.photo1.requestId,requestId);
+ assert.equal(service.store.data.events.length,count);
+});
+
+test('explicit asset download keeps ticket, expiry, range and inline preview boundaries',async t=>{
+ const {service,config}=fixture(t),assetId='test-video';
+ const filename=service.store.assetPath(assetId,'mp4');fs.writeFileSync(filename,Buffer.from('0123456789'));
+ const asset=service.registerAsset(assetId,filename,{kind:'video',deviceId:'d1',mime:'video/mp4',originalName:'../untrusted\r\nfilename.html'});
+ const {server}=createServer(config,{service});server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>{server.closeAllConnections();return new Promise(resolve=>server.close(resolve));});
+ const origin=`http://127.0.0.1:${server.address().port}`,assetPath=new URL(asset.url).pathname+new URL(asset.url).search;
+ const preview=await fetch(origin+assetPath);assert.equal(preview.status,200);assert.equal(preview.headers.get('content-disposition'),null);assert.equal(await preview.text(),'0123456789');
+ const download=await fetch(origin+assetPath+'&download=1');assert.equal(download.status,200);assert.equal(download.headers.get('content-disposition'),'attachment; filename="test-video.mp4"');assert.equal(await download.text(),'0123456789');
+ const partial=await fetch(origin+assetPath+'&download=1',{headers:{Range:'bytes=2-4'}});assert.equal(partial.status,206);assert.equal(partial.headers.get('content-range'),'bytes 2-4/10');assert.equal(await partial.text(),'234');
+ const head=await fetch(origin+assetPath+'&download=1',{method:'HEAD'});assert.equal(head.status,200);assert.equal(head.headers.get('content-length'),'10');assert.equal(await head.text(),'');
+ const expired=ticket(config.signingKey,{purpose:'asset',id:assetId,exp:1});
+ for(const url of [`/helmet-media/files/${assetId}?download=1`,`/helmet-media/files/${assetId}?token=${expired}&download=1`,assetPath.replace(assetId,'other')+'&download=1'])assert.equal((await fetch(origin+url)).status,403);
+ assert.equal((await fetch(origin+assetPath+'&download=0')).status,400);
+ assert.equal((await fetch(origin+assetPath+'&download=1&download=1')).status,400);
+});
 test('live playback tickets expire with the viewer lease while publishing remains independent', t => {
   const { config, service } = fixture(t);
   const now = Date.now(), stream = service.createStream({ deviceId: 'device1', sessionId: 'session1' });

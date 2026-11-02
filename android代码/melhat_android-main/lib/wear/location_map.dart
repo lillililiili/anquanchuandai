@@ -14,7 +14,11 @@ bool isCurrentLocation(JsonMap row, {DateTime? now}) {
 
 LatLng? verifiedLocation(JsonMap row) {
   if (!const ['GCJ02', 'WGS84'].contains(row['coordinateSystem']) ||
-      !const ['valid', 'ok'].contains(row['locationQuality'])) {
+      !const [
+        'valid',
+        'ok',
+        'good',
+      ].contains(idOf(row['locationQuality']).toLowerCase())) {
     return null;
   }
   final lat = double.tryParse('${row['latitude'] ?? row['locationLat']}');
@@ -31,35 +35,99 @@ LatLng? verifiedLocation(JsonMap row) {
   return LatLng(lat, lon);
 }
 
-/// Never join observations across missing fixes, a device change or a five-minute gap.
+String locationTimeValue(JsonMap row) {
+  final basis =
+      row['locationTimeBasis'] ??
+      (row['collectedAt'] != null ? 'DEVICE_COLLECTED_AT' : 'RECEIVED_AT');
+  return switch (basis) {
+    'DEVICE_COLLECTED_AT' => idOf(row['collectedAt'] ?? row['reportedAt']),
+    'RECEIVED_AT' => idOf(
+      row['receivedAt'] ?? row['reportedAt'] ?? row['locationReportedAt'],
+    ),
+    _ => '',
+  };
+}
+
+String locationTimeLabel(JsonMap row) => switch (row['locationTimeBasis'] ??
+    (row['collectedAt'] != null ? 'DEVICE_COLLECTED_AT' : 'RECEIVED_AT')) {
+  'DEVICE_COLLECTED_AT' => '设备采集时间',
+  'RECEIVED_AT' => '平台接收时间（采集时间未确认）',
+  _ => '时间依据未确认',
+};
+
+String _locationBinding(JsonMap row) =>
+    '${idOf(row['personId'])}/${idOf(row['bindingId'] ?? row['assignmentId'] ?? row['locationAssignmentId'])}/${idOf(row['assignmentVersion'] ?? row['locationAssignmentVersion'])}';
+
+/// Never join observations across missing fixes, changed issuance or reported gaps.
 List<List<LatLng>> locationSegments(List<JsonMap> rows, String system) {
   final result = <List<LatLng>>[];
   List<LatLng>? segment;
   DateTime? previous;
   String? device;
-  for (final row in rows) {
+  String? binding;
+  final invalidDevices = <String>{};
+  final seen = <String>{};
+  // Stable time ordering within known-time runs. A record with no known time
+  // remains a boundary in its received order; do not invent its observation time.
+  final ordered = <JsonMap>[];
+  final timed = <({JsonMap row, DateTime time, int index})>[];
+  void flush() {
+    timed.sort((a, b) {
+      final order = a.time.compareTo(b.time);
+      return order == 0 ? a.index.compareTo(b.index) : order;
+    });
+    ordered.addAll(timed.map((p) => p.row));
+    timed.clear();
+  }
+
+  for (var index = 0; index < rows.length; index++) {
+    final row = rows[index],
+        time = DateTime.tryParse(locationTimeValue(rows[index]));
+    if (time == null) {
+      flush();
+      ordered.add(row);
+    } else {
+      timed.add((row: row, time: time, index: index));
+    }
+  }
+  flush();
+  for (final row in ordered) {
     final point = verifiedLocation(row);
-    final time = DateTime.tryParse(
-      idOf(row['reportedAt'] ?? row['locationReportedAt']),
-    );
-    if (point == null || row['coordinateSystem'] != system || time == null) {
+    final time = DateTime.tryParse(locationTimeValue(row));
+    final rowDevice = idOf(row['deviceId']);
+    if (point == null || time == null) {
+      // A belt's unverified fix says nothing about the helmet's continuity.
+      if (rowDevice.isNotEmpty) invalidDevices.add(rowDevice);
+      continue;
+    }
+    if (row['coordinateSystem'] != system) {
       segment = null;
       previous = null;
       device = null;
+      binding = null;
       continue;
     }
+    final key = idOf(row['id']).isNotEmpty
+        ? idOf(row['id'])
+        : '$rowDevice/${_locationBinding(row)}/${time.toIso8601String()}/${point.latitude}/${point.longitude}';
+    if (!seen.add(key)) continue;
+    final interrupted = invalidDevices.remove(rowDevice);
     final difference = previous == null ? null : time.difference(previous);
     if (segment == null ||
         difference == null ||
         difference.isNegative ||
         difference > const Duration(minutes: 5) ||
-        device != idOf(row['deviceId'])) {
+        device != rowDevice ||
+        binding != _locationBinding(row) ||
+        interrupted ||
+        row['gap'] == true) {
       segment = [];
       result.add(segment);
     }
     segment.add(point);
     previous = time;
-    device = idOf(row['deviceId']);
+    device = rowDevice;
+    binding = _locationBinding(row);
   }
   return result;
 }

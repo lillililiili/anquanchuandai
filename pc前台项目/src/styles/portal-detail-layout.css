@@ -1,0 +1,244 @@
+/* Detail workspaces keep readable content sizes inside the available viewport. */
+html[data-portal-theme='business'] .main:is(.person-page,.work-page,.event-page) {
+  overflow:hidden;
+}
+html[data-portal-theme='business'] .main:is(.work-page,.event-page) > .grid.cols-2,
+html[data-portal-theme='business'] .main.person-page > .person-main {
+  flex:1 1 0;
+  min-width:0;
+  min-height:0;
+  grid-template-columns:minmax(420px,1.55fr) minmax(340px,1fr);
+  grid-template-rows:minmax(0,1fr);
+  align-items:stretch;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main:is(.person-page,.work-page,.event-page) > .cols-2 > .stack {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .main:is(.person-page,.work-page,.event-page) > .cols-2 > .stack > * {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main:is(.person-page,.work-page,.event-page) .panel:has(> .panel-body) {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+}
+html[data-portal-theme='business'] .main:is(.person-page,.work-page,.event-page) .panel > .panel-heading {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .main:is(.person-page,.work-page,.event-page) .panel > .panel-body {
+  flex:1 1 auto;
+  min-height:0;
+}
+
+/* The upper columns and the map/history row together fill person detail. */
+html[data-portal-theme='business'] .main.person-page > .person-main {
+  flex:3 1 0;
+}
+html[data-portal-theme='business'] .main.person-page > .person-lower {
+  display:grid;
+  flex:1 1 0;
+  min-height:200px;
+  grid-template-columns:minmax(280px,1fr) minmax(420px,1.5fr);
+  grid-template-rows:minmax(0,1fr);
+  overflow:auto;
+}
+html[data-portal-theme='business'] .main.person-page > .person-lower.single {
+  grid-template-columns:minmax(0,1fr);
+}
+html[data-portal-theme='business'] .person-page .person-summary {
+  height:auto;
+  min-height:138px;
+}
+html[data-portal-theme='business'] .person-page .person-summary > .row {
+  align-items:flex-start;
+}
+html[data-portal-theme='business'] .person-page .person-summary > .row > div {
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+html[data-portal-theme='business'] .person-page .person-summary .avatar {
+  flex:0 0 76px;
+}
+html[data-portal-theme='business'] .person-page .person-main > .stack > .panel:last-child {
+  flex:1 0 auto;
+}
+html[data-portal-theme='business'] .person-page .person-main .person-vitals {
+  min-height:320px;
+}
+html[data-portal-theme='business'] .person-page .person-main .person-location-fill {
+  min-height:260px;
+}
+html[data-portal-theme='business'] .person-page .person-lower > .panel > .panel-body {
+  overflow:auto;
+}
+html[data-portal-theme='business'] .person-page .person-lower .person-map,
+html[data-portal-theme='business'] .person-page .person-lower .map {
+  height:100%;
+  min-height:0;
+}
+html[data-portal-theme='business'] .person-page .person-lower .app-table {
+  flex:1 1 0;
+  height:0;
+  min-height:0;
+  max-height:none;
+}
+html[data-portal-theme='business'] .person-page .person-lower table {
+  min-width:760px;
+}
+html[data-portal-theme='business'] .person-page .side-video {
+  grid-template-columns:minmax(200px,1.9fr) minmax(150px,1fr);
+  overflow:auto;
+}
+html[data-portal-theme='business'] .person-page .vitals-body {
+  grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);
+}
+html[data-portal-theme='business'] .person-page .vital-card strong {
+  font-size:30px;
+}
+html[data-portal-theme='business'] .person-page .vital-pressure strong {
+  font-size:24px;
+}
+
+/* Work video and the personnel table use the full left column. */
+html[data-portal-theme='business'] .work-page > .page-heading {
+  height:auto;
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .work-page > .row {
+  flex-wrap:wrap;
+  font-size:14px;
+  line-height:22px;
+}
+html[data-portal-theme='business'] .work-page .work-media {
+  flex:1 0 260px;
+  height:auto;
+  min-height:260px;
+  aspect-ratio:auto;
+}
+html[data-portal-theme='business'] .work-page .video-controls {
+  height:auto;
+  min-height:57px;
+  overflow-x:auto;
+}
+html[data-portal-theme='business'] .work-page .video-controls > :not(.spacer) {
+  flex-shrink:0;
+  white-space:nowrap;
+}
+html[data-portal-theme='business'] .work-page .video-controls .btn {
+  font-size:14px;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack > .row {
+  margin-top:0;
+  padding:0;
+  height:auto;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  pointer-events:auto;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack > .row > .btn {
+  font-size:14px;
+  min-height:32px;
+  padding:4px 10px;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:first-child > .panel {
+  flex:1 0 220px;
+  min-height:220px;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:first-child .app-table {
+  flex:1 1 0;
+  height:0;
+  max-height:none;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:first-child table {
+  min-width:1000px;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:first-child :is(th,td),
+html[data-portal-theme='business'] .work-page .device-strip:not(.large) {
+  white-space:nowrap;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:nth-child(2) > .panel {
+  flex:1 0 140px;
+  min-height:140px;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:nth-child(2) > .panel:has(.map) {
+  flex:2 0 300px;
+  min-height:300px;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack > .panel > .panel-body {
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:nth-child(2) > .panel:has(.form-actions) {
+  flex-basis:200px;
+  min-height:200px;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:nth-child(2) > .panel > .panel-body:has(> .form-actions) {
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:nth-child(2) > .panel .panel-body:has(> .form-actions) > .info {
+  flex:1 1 0;
+  min-height:0;
+  overflow:auto;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:nth-child(2) > .panel .form-actions {
+  flex-shrink:0;
+}
+html[data-portal-theme='business'] .work-page .cols-2 > .stack:nth-child(2) > .panel :is(.info,.timeline-item) {
+  font-size:14px;
+  line-height:22px;
+}
+
+/* Evidence stays in its own scrolling column; the verification card fills the other. */
+html[data-portal-theme='business'] .event-page .cols-2 > .stack:first-child > .grid.equal:last-child {
+  flex:1 0 auto;
+}
+html[data-portal-theme='business'] .event-page .cols-2 > .stack:nth-child(2) > .panel {
+  flex:0 1 auto;
+  min-height:120px;
+  max-height:32%;
+}
+html[data-portal-theme='business'] .event-page .cols-2 > .stack:nth-child(2) > .panel:nth-child(2) {
+  flex:1 0 240px;
+  min-height:240px;
+  max-height:none;
+}
+html[data-portal-theme='business'] .event-page .cols-2 > .stack:nth-child(2) > .panel > .panel-body {
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+html[data-portal-theme='business'] .event-page .event-banner {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .event-page .event-banner h1 {
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+html[data-portal-theme='business'] .event-page .evidence .device-item {
+  height:auto;
+  min-height:51px;
+}
+html[data-portal-theme='business'] .event-page .evidence .device-item > div {
+  flex-wrap:wrap;
+}
+html[data-portal-theme='business'] .event-page .timeline-item {
+  font-size:14px;
+  line-height:22px;
+}
+
+/* Stack wide subcards before their labels or controls would have to shrink. */
+@media (max-width:1200px) {
+  html[data-portal-theme='business'] .person-page .side-video,
+  html[data-portal-theme='business'] .event-page .cols-2 > .stack:first-child > .grid.equal,
+  html[data-portal-theme='business'] .event-page .cols-2 > .stack:first-child > .panel > .panel-body > .grid.equal {
+    grid-template-columns:minmax(0,1fr);
+  }
+}

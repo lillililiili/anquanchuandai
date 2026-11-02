@@ -23,10 +23,13 @@ class HelmetMediaPanel extends StatefulWidget {
 
 class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
   WearSession? _session;
+  String? _scope;
   JsonMap _data = {};
   JsonMap _live = {}, _viewContext = {}, _recordingContext = {};
   String? _viewerSessionId;
   String? _recordingSourceCommandId;
+  Future<dynamic> Function()? _viewerRelease;
+  String? _recordingStartKey;
   bool _viewing = false;
   Object? _error;
   String _liveError = '';
@@ -39,10 +42,18 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final session = WearScope.of(context);
-    if (!identical(session, _session)) {
+    if (!identical(session, _session) || _scope != session.scopeKey) {
       _releaseView();
       _session = session;
+      _scope = session.scopeKey;
       _data = {};
+      _live = {};
+      _recordingContext = {};
+      _recordingSourceCommandId = null;
+      _recordingStartKey = null;
+      _loading = true;
+      _reading = false;
+      _writing = false;
       _pending.clear();
       ++_generation;
       _load();
@@ -54,15 +65,34 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
   @override
   void didUpdateWidget(covariant HelmetMediaPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.deviceId != widget.deviceId ||
+    final changedDevice = oldWidget.deviceId != widget.deviceId;
+    final changedIssuance =
+        jsonEncode(
+          equipmentIdentity(jsonMap(oldWidget.device['equipmentContext'])),
+        ) !=
+        jsonEncode(
+          equipmentIdentity(jsonMap(widget.device['equipmentContext'])),
+        );
+    final unavailable =
         _viewerSessionId != null &&
-            !sameEquipmentContext(
-              _viewContext,
-              jsonMap(widget.device['equipmentContext']),
-            )) {
-      _releaseView(oldWidget.deviceId);
+        !actionFeature(widget.device, 'start_video').available;
+    if (changedDevice || changedIssuance || unavailable) {
+      _releaseView();
       _live = {};
       ++_generation;
+      _data = {};
+      _error = null;
+      _message = '';
+      _loading = true;
+      _reading = false;
+      _writing = false;
+      _pending.clear();
+      if (changedDevice) {
+        _recordingContext = {};
+        _recordingSourceCommandId = null;
+        _recordingStartKey = null;
+      }
+      _load();
     }
   }
 
@@ -79,25 +109,29 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     _reading = true;
     final session = _session!,
         scope = _session!.scopeKey,
-        generation = _generation;
+        generation = _generation,
+        deviceId = widget.deviceId;
     try {
       final data = jsonMap(
-        await session.api.get(
-          '/api/guardian/v1/devices/${widget.deviceId}/media',
-        ),
+        await session.api.get('/api/guardian/v1/devices/$deviceId/media'),
       );
+      if (!mounted || scope != session.scopeKey || generation != _generation) {
+        return;
+      }
       JsonMap live = {};
       String liveError = '';
+      var releasedCurrentView = false;
+      final liveViewerId = _viewerSessionId;
       if (_viewing &&
           _viewerSessionId != null &&
           hasEquipmentContext(_viewContext)) {
         try {
           live = jsonMap(
             await session.api.get(
-              '/api/guardian/v1/devices/${widget.deviceId}/live',
+              '/api/guardian/v1/devices/$deviceId/live',
               query: {
                 ...equipmentIdentity(_viewContext),
-                'viewerSessionId': _viewerSessionId,
+                'viewerSessionId': liveViewerId,
               },
             ),
           );
@@ -107,14 +141,21 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
           if (mounted &&
               scope == session.scopeKey &&
               generation == _generation &&
+              _viewerSessionId == liveViewerId &&
               e is WearApiException &&
               [403, 404, 409].contains(e.code)) {
+            releasedCurrentView = true;
             _releaseView();
           }
         }
       }
       if (!mounted || scope != session.scopeKey || generation != _generation) {
         return;
+      }
+      // A response begun before Stop must never restore released playback URLs.
+      if (!_viewing || liveViewerId != _viewerSessionId) {
+        live = {};
+        if (!releasedCurrentView) liveError = '';
       }
       setState(() {
         _data = data;
@@ -128,18 +169,25 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
         return;
       }
       setState(() {
+        if (e is WearApiException && [401, 403, 404].contains(e.code)) {
+          _releaseView();
+          _data = {};
+        }
         _error = e;
         _live = {};
         _loading = false;
       });
     } finally {
-      _reading = false;
+      if (generation == _generation) _reading = false;
     }
   }
 
   Future<void> _command(String action, [JsonMap parameters = const {}]) async {
     if (_writing) return;
-    final session = _session!, scope = _session!.scopeKey;
+    final session = _session!,
+        scope = _session!.scopeKey,
+        generation = _generation,
+        deviceId = widget.deviceId;
     final recipient = action == 'stop_video'
         ? _viewContext
         : action == 'stop_recording'
@@ -152,6 +200,11 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     if (action == 'start_video') {
       _viewerSessionId ??= SharedBackend.requestId();
       _viewContext = Map<String, dynamic>.from(recipient);
+      _viewerRelease ??= session.api.captureViewerRelease(
+        deviceId: deviceId,
+        viewerSessionId: _viewerSessionId!,
+        identity: equipmentIdentity(recipient),
+      );
     }
     if (action == 'start_recording') {
       _recordingContext = Map<String, dynamic>.from(recipient);
@@ -159,6 +212,9 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     final intent =
         '$action:${jsonEncode(parameters)}:${jsonEncode(equipmentIdentity(recipient))}';
     final key = _pending.putIfAbsent(intent, SharedBackend.requestId);
+    if (action == 'start_recording') _recordingStartKey = key;
+    final releaseViewer = action == 'start_video' ? _viewerRelease : null;
+    final viewerId = _viewerSessionId;
     setState(() {
       _writing = true;
       _message = '正在提交…';
@@ -166,7 +222,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     try {
       final result = jsonMap(
         await session.api.post(
-          '/api/guardian/v1/devices/${widget.deviceId}/commands',
+          '/api/guardian/v1/devices/$deviceId/commands',
           data: {
             'action': action,
             'idempotencyKey': key,
@@ -175,11 +231,30 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
             if (action == 'stop_recording')
               'sourceCommandId': _recordingSourceCommandId,
             if (action == 'start_video' || action == 'stop_video')
-              'viewerSessionId': _viewerSessionId,
+              'viewerSessionId': viewerId,
           },
         ),
       );
-      if (!mounted || scope != session.scopeKey) return;
+      if (!mounted || scope != session.scopeKey || generation != _generation) {
+        // A pre-ack release may precede registration of the old viewer.
+        if (releaseViewer != null) {
+          try {
+            await releaseViewer();
+          } catch (_) {
+            /* lease expiry remains fallback */
+          }
+        }
+        // Keep only the original recording's cleanup handle after reassignment
+        // of the same hardware; never apply it to a different device.
+        if (mounted &&
+            scope == session.scopeKey &&
+            deviceId == widget.deviceId &&
+            action == 'start_recording' &&
+            _recordingStartKey == key) {
+          setState(() => _recordingSourceCommandId = idOf(result['id']));
+        }
+        return;
+      }
       _pending.remove(intent);
       if (action == 'start_video') _viewing = true;
       if (action == 'start_recording') {
@@ -189,15 +264,26 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
         _viewing = false;
         _live = {};
         _viewerSessionId = null;
+        _viewerRelease = null;
       }
       if (action == 'stop_recording') {
         _recordingContext = {};
         _recordingSourceCommandId = null;
+        _recordingStartKey = null;
       }
       setState(() => _message = textOf(result['message'], '已提交，等待设备确认'));
       await _load();
     } catch (e) {
-      if (!mounted || scope != session.scopeKey) return;
+      if (!mounted || scope != session.scopeKey || generation != _generation) {
+        if (releaseViewer != null) {
+          try {
+            await releaseViewer();
+          } catch (_) {
+            /* uncertain outcome; lease expires */
+          }
+        }
+        return;
+      }
       if (e is WearApiException && e.code >= 400 && e.code < 500) {
         _pending.remove(intent);
       }
@@ -207,7 +293,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
             : '请求结果未确认，请刷新记录核实，勿重复提交',
       );
     } finally {
-      if (mounted && scope == session.scopeKey) {
+      if (mounted && scope == session.scopeKey && generation == _generation) {
         setState(() => _writing = false);
       }
     }
@@ -260,30 +346,12 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
 
   JsonMap get _features => {...widget.device};
 
-  void _releaseView([String? deviceId]) {
-    final session = _session, viewer = _viewerSessionId;
-    if (session == null ||
-        viewer == null ||
-        !hasEquipmentContext(_viewContext)) {
-      return;
-    }
-    final recipient = equipmentIdentity(_viewContext);
+  void _releaseView() {
+    final release = _viewerRelease;
     _viewerSessionId = null;
+    _viewerRelease = null;
     _viewing = false;
-    unawaited(
-      session.api
-          .post(
-            '/api/guardian/v1/devices/${deviceId ?? widget.deviceId}/commands',
-            data: {
-              'action': 'stop_video',
-              'idempotencyKey': SharedBackend.requestId(),
-              'parameters': <String, dynamic>{},
-              ...recipient,
-              'viewerSessionId': viewer,
-            },
-          )
-          .catchError((Object _) => null),
-    );
+    if (release != null) unawaited(release().catchError((Object _) => null));
   }
 
   Future<void> _listLocal() async {

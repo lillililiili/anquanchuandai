@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatBeijingDateTime } from '../src/lib/date-time.js';
+import { formatBeijingDateTime, formatRecordedDateTime } from '../src/lib/date-time.js';
 
 test('binding timestamps display Beijing time to seconds, including backend nanoseconds', () => {
   assert.equal(formatBeijingDateTime('2026-10-27T07:51:35.508036103Z'), '2026-10-27 15:51:35');
@@ -25,4 +25,10 @@ test('missing or invalid timestamps do not show malformed dates', () => {
   for (const value of [null, undefined, '', ' ', 'invalid', '—', 0, {}, '2026-02-30T10:00:00Z', '2026-13-01T10:00:00Z', '2026-10-27T24:00:00Z', '2026-10-27T10:60:00Z', '2026-10-27T10:00:60Z', '2026-10-27T10:00:00+25:00']) {
     assert.equal(formatBeijingDateTime(value), '—', String(value));
   }
+});
+
+test('time-only legacy records preserve their precision without adding a date',()=>{
+  assert.equal(formatRecordedDateTime('08:12'),'08:12');assert.equal(formatRecordedDateTime('08:12:34'),'08:12:34');
+  assert.equal(formatRecordedDateTime('2026-10-23T16:01:02.123456789Z'),'2026-10-24 00:01:02');
+  for(const value of ['25:00','08:65','invalid',null])assert.equal(formatRecordedDateTime(value),'—');
 });

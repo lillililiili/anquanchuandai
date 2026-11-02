@@ -11,8 +11,9 @@ test('隔离夹具各场景使用真实能力计算，不产生额外人员、�
   const db = createStore(null, { demoMode: false });
   for (const [scenario] of SCENARIOS) {
     const state = fixtureState(scenario);
-    assert.equal(state.people.length, 1);
-    assert.ok(state.devices.every(device => device.id.startsWith('QA-')));
+    assert.equal(state.people.length, scenario === 'video_many' ? 20 : 1);
+    assert.ok(state.devices.every(device => device.id.startsWith('QA-') || device.id === 'RL-W001' && device.source === 'DEMO_WATCH'));
+    assert.deepEqual(state.broadcasts, []);
     assert.doesNotMatch(JSON.stringify(state), /866652021714127|866652023095053/);
     assert.equal(db.replaceRemote(state), true);
     assert.equal(personFeature(db, 'QA-PERSON', 'video').supported, !['belt','unassigned'].includes(scenario));
@@ -26,8 +27,28 @@ test('隔离夹具各场景使用真实能力计算，不产生额外人员、�
       assert.equal(db.currentDevices('QA-PERSON').length, 0);
       assert.equal(db.state.events[0].personId, '');
     }
+    if (scenario.startsWith('watch_')) {
+      assert.equal(db.currentDevices('QA-PERSON').filter(device => device.type !== 'W').length, 2);
+      assert.equal(db.state.devices.some(device => device.id === 'RL-W001'), scenario === 'watch_visible');
+      assert.equal(db.state.vitals.length, scenario === 'watch_visible' ? 1 : 0);
+    }
   }
   assert.throws(() => fixtureState('real-device'), /Unknown isolated scenario/);
+});
+
+test('多镜头夹具有二十个独立人员领用上下文及两个真实筛选集合，仍只存在隔离内存', () => {
+  const db = createStore(null, { demoMode: false });
+  const state = fixtureState('video_many');
+  assert.equal(db.replaceRemote(state), true);
+  assert.equal(new Set(state.devices.map(device => device.id)).size, 20);
+  assert.equal(new Set(state.bindings.map(binding => binding.assignmentId)).size, 20);
+  assert.deepEqual(state.works.map(work => work.members.length), [10, 10]);
+  for (const person of state.people) {
+    const video = personFeature(db, person.id, 'video');
+    assert.equal(video.available, true);
+    assert.equal(video.deviceId, db.currentDevices(person.id)[0].id);
+    assert.equal(db.currentWork(person.id).id, person.workId);
+  }
 });
 
 test('隔离 Vite 无 API 代理且替换别名及相对路径的运行时和认证模块', () => {

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.test.util.ReflectionTestUtils;
 import java.nio.file.Path;
+import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static com.ruoyi.melhat.direct.HelmetMediaService.obj;
@@ -44,6 +45,65 @@ class HelmetMediaServiceTest {
         assertEquals("unknown",f.service.command("operator","helmet-a",input).getString("status"));
         assertEquals("unknown",f.service.command("operator","helmet-a",input).getString("status"));
         verify(f.gateway,times(1)).sendCommand(eq("helmet-a"),any());
+    }
+    @Test void mediaOriginAndHistoricalNameComeOnlyFromTheOriginalCommand() {
+        Fixture f=fixture();JSONObject input=obj("action","take_photo","idempotencyKey","captured-photo-001",
+                "personId","person-original","name","记录时姓名","siteId","site-original","assignmentId","issue-original","assignmentVersion",4);
+        JSONObject command=f.service.command("operator","helmet-a",input);
+        input.put("name","后来姓名");
+        when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("items",JSONArray.of(
+                obj("assetId","photo-1","deviceId","helmet-a","kind","photo","status","ready","createdAt",java.time.Instant.now().toString(),"requestId",command.get("id")),
+                obj("assetId","video-unlinked","deviceId","helmet-a","kind","video"))));
+        JSONArray files=f.service.assets("helmet-a");JSONObject photo=files.getJSONObject(0);
+        assertEquals("DEVICE_PHOTO",photo.getString("mediaOrigin"));assertEquals("take_photo",photo.getString("commandAction"));
+        assertEquals("记录时姓名",photo.getString("personName"));assertEquals("issue-original",photo.getString("assignmentId"));
+        assertEquals(4,photo.getIntValue("assignmentVersion"));assertEquals("UNKNOWN",files.getJSONObject(1).getString("mediaOrigin"));
+        assertNull(files.getJSONObject(1).get("personId"));assertNull(files.getJSONObject(1).get("duration"));
+    }
+    @Test void platformAndDeviceRecordingsHaveExplicitOriginsWithoutInventingOldNames() {
+        Fixture f=fixture();f.store.update(s->{s.put("commands",obj(
+                "HC-platform",obj("id","HC-platform","deviceId","helmet-a","action","start_recording","personId","original","siteId","site-original","createdAt","2026-11-02T01:00:00Z"),
+                "HC-device",obj("id","HC-device","deviceId","helmet-a","action","upload_recording","personId","current-uploader","personName","当前上传者","siteId","site-current","createdAt","2026-11-02T01:00:00Z")));
+            return null;});
+        when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("items",JSONArray.of(
+                obj("assetId","platform-1","deviceId","helmet-a","kind","video","status","ready","createdAt","2026-11-02T01:01:00Z","requestId","HC-platform"),
+                obj("assetId","device-1","deviceId","helmet-a","kind","video","status","ready","createdAt","2026-11-02T01:01:00Z","requestId","HC-device"))));
+        JSONArray files=f.service.assets("helmet-a");
+        assertEquals("PLATFORM_RECORDING",files.getJSONObject(0).getString("mediaOrigin"));
+        assertEquals("original",files.getJSONObject(0).getString("personId"));assertNull(files.getJSONObject(0).get("personName"));
+        assertEquals("DEVICE_RECORDING",files.getJSONObject(1).getString("mediaOrigin"));
+        assertNull(files.getJSONObject(1).get("personName"));assertNull(files.getJSONObject(1).get("personId"));
+    }
+    @Test void photoBindingEventCompletesOnlyTheExactOriginalRequestAndPreservesCapturedAuthority() {
+        Fixture f=fixture();JSONObject command=f.service.command("owner","helmet-a",obj("action","take_photo","idempotencyKey","photo-bound-001",
+                "personId","original-person","name","原姓名","siteId","original-site","assignmentId","original-issue","assignmentVersion",1));
+        String id=command.getString("id");JSONObject asset=obj("assetId","photo-bound","deviceId","helmet-a","kind","photo","status","ready",
+                "createdAt",java.time.Instant.now().toString(),"requestId",id,"requestIdSource","report/add_image.talkback_id");
+        when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("items",JSONArray.of(asset)));
+        f.store.update(s->{s.getJSONObject("commands").getJSONObject(id).put("status","timeout");return null;});
+        JSONObject event=obj("type","asset.bound","assetId","photo-bound","deviceId","helmet-a","requestId",id,"sequence",1);
+        ReflectionTestUtils.invokeMethod(f.service,"applyEvent",event);
+        assertEquals("completed",f.store.snapshot().getJSONObject("commands").getJSONObject(id).getString("status"));
+        JSONObject file=f.service.assets("helmet-a").getJSONObject(0);
+        assertEquals("original-person",file.getString("personId"));assertEquals("原姓名",file.getString("personName"));
+        ReflectionTestUtils.invokeMethod(f.service,"applyEvent",event);
+        assertEquals("photo-bound",f.store.snapshot().getJSONObject("commands").getJSONObject(id).getString("assetId"));
+        asset.put("assetId","another-file");event.put("assetId","another-file");event.put("sequence",2);
+        ReflectionTestUtils.invokeMethod(f.service,"applyEvent",event);
+        assertEquals("photo-bound",f.store.snapshot().getJSONObject("commands").getJSONObject(id).getString("assetId"));
+        assertNull(f.service.assets("helmet-a").getJSONObject(0).get("personId"));
+    }
+    @Test void photoBindingCannotMatchByTimingOrUseAnotherDeviceOldFileWrongActionOrUnreadyFile() {
+        Fixture f=fixture();JSONObject command=f.service.command("owner","helmet-a",obj("action","take_photo","idempotencyKey","photo-invalid-001","personId","person-a","siteId","site-a"));
+        String id=command.getString("id");
+        JSONObject original=obj("assetId","untrusted-file","deviceId","helmet-a","kind","photo","status","ready","createdAt",java.time.Instant.now().toString(),"requestId",id);
+        for(JSONObject changes:Arrays.asList(obj("requestId",null),obj("deviceId","helmet-b"),obj("createdAt","2020-01-01T00:00:00Z"),obj("createdAt",null),obj("kind","video"),obj("status","uploading"))) {
+            JSONObject asset=new JSONObject(original);asset.putAll(changes);
+            when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("items",JSONArray.of(asset)));
+            ReflectionTestUtils.invokeMethod(f.service,"applyEvent",obj("type","asset.bound","assetId","untrusted-file","deviceId","helmet-a","requestId",id,"sequence",1));
+            assertEquals("sent",f.store.snapshot().getJSONObject("commands").getJSONObject(id).getString("status"));
+            assertNull(f.service.assets("helmet-a").getJSONObject(0).get("personId"));
+        }
     }
     @Test void journalSurvivesRestartAndSIPPasswordsAreNeverInPublicCallState() {
         Fixture f=fixture();f.store.update(s->{s.put("calls",obj("SIP-test",obj("id","SIP-test","actorId","owner","status","offered","credentials",obj("authorizationPassword","secret","expiresAt",java.time.Instant.now().plusSeconds(60).toString()))));return null;});
@@ -106,10 +166,53 @@ class HelmetMediaServiceTest {
         assertEquals("ended",f.service.callState("SIP-old").getString("status"));
         assertFalse(f.store.snapshot().getJSONObject("calls").getJSONObject("SIP-old").containsKey("credentials"));
     }
+    private Fixture offeredCall(){
+        Fixture f=fixture();f.store.update(s->{s.put("calls",obj("SIP-stages",obj("id","SIP-stages","actorId","owner","status","offered","deviceIds",JSONArray.of("helmet-a"),"credentials",obj("authorizationPassword","test-only","expiresAt",java.time.Instant.now().plusSeconds(60).toString()))));return null;});return f;
+    }
+    private void callEvent(Fixture f,String type,long sequence,String time,String... devices){
+        ReflectionTestUtils.invokeMethod(f.service,"applyEvent",obj("callId","SIP-stages","type",type,"sequence",sequence,"createdAt",time,"connectedDeviceIds",new JSONArray(Arrays.asList(devices))));
+    }
+    @Test void actualAnsweredEventKeepsDeviceEvidenceWithoutClaimingBothSidesConnected(){
+        Fixture f=offeredCall();callEvent(f,"call.answered",31,"2026-10-29T09:08:41Z","helmet-a","unrelated-device","helmet-a");
+        JSONObject state=f.service.callState("SIP-stages");assertEquals("answered",state.getString("status"));assertEquals(JSONArray.of("helmet-a"),state.getJSONArray("connectedDeviceIds"));
+        assertFalse(state.containsKey("statusVerified"));assertFalse(state.containsKey("credentials"));assertEquals("test-only",f.service.credentials("SIP-stages","owner").getString("authorizationPassword"));
+        callEvent(f,"call.answered",31,"2026-10-29T09:09:00Z");assertEquals(state,f.service.callState("SIP-stages"));
+        callEvent(f,"call.connected",32,"2026-10-29T09:09:01Z","helmet-a");assertEquals("connected",f.service.callState("SIP-stages").getString("status"));
+        callEvent(f,"call.answered",33,"2026-10-29T09:09:02Z");assertEquals("connected",f.service.callState("SIP-stages").getString("status"));
+        callEvent(f,"call.ended",34,"2026-10-29T09:09:03Z","helmet-a");assertEquals("ended",f.service.callState("SIP-stages").getString("status"));assertTrue(f.service.callState("SIP-stages").getJSONArray("connectedDeviceIds").isEmpty());
+        assertThrows(IllegalArgumentException.class,()->f.service.credentials("SIP-stages","owner"));
+        JSONObject terminal=f.service.callState("SIP-stages");callEvent(f,"call.connected",35,"2026-10-29T09:09:04Z","helmet-a");callEvent(f,"call.answered",36,"2026-10-29T09:09:05Z","helmet-a");callEvent(f,"call.ended",37,"2026-10-29T09:09:06Z");assertEquals(terminal,f.service.callState("SIP-stages"));
+    }
+    @Test void cloudPollRecoversAnsweredAndOnlyCopiesActualVerificationEvidence(){
+        Fixture f=offeredCall();when(f.cloud.request("GET","/calls/SIP-stages",null)).thenReturn(obj("status","answered","connectedDeviceIds",JSONArray.of("helmet-a"),"statusVerified",true));
+        ReflectionTestUtils.invokeMethod(f.service,"reconcileCalls");assertEquals("answered",f.service.callState("SIP-stages").getString("status"));assertTrue(f.service.callState("SIP-stages").getBooleanValue("statusVerified"));
+        when(f.cloud.request("GET","/calls/SIP-stages",null)).thenReturn(obj("status","offered","connectedDeviceIds",new JSONArray()));ReflectionTestUtils.invokeMethod(f.service,"reconcileCalls");assertEquals("answered",f.service.callState("SIP-stages").getString("status"));
+        when(f.cloud.request("GET","/calls/SIP-stages",null)).thenReturn(obj("status","connected","connectedDeviceIds",JSONArray.of("helmet-a")));ReflectionTestUtils.invokeMethod(f.service,"reconcileCalls");assertEquals("connected",f.service.callState("SIP-stages").getString("status"));assertFalse(f.service.callState("SIP-stages").containsKey("statusVerified"));
+        f.service.endCall("SIP-stages");assertThrows(IllegalArgumentException.class,()->f.service.credentials("SIP-stages","owner"));
+        ReflectionTestUtils.invokeMethod(f.service,"reconcileCalls");assertEquals("ending",f.service.callState("SIP-stages").getString("status"));
+        when(f.cloud.request("GET","/calls/SIP-stages",null)).thenReturn(obj("status","ended","statusVerified",true));ReflectionTestUtils.invokeMethod(f.service,"reconcileCalls");assertEquals("ended",f.service.callState("SIP-stages").getString("status"));assertTrue(f.service.callState("SIP-stages").getJSONArray("connectedDeviceIds").isEmpty());
+    }
+    @Test void operatorAnswerWithoutADeviceLegNeverInventsDeviceParticipation(){
+        Fixture f=offeredCall();callEvent(f,"call.answered",1,"2026-10-29T09:08:41Z");assertEquals("answered",f.service.callState("SIP-stages").getString("status"));assertTrue(f.service.callState("SIP-stages").getJSONArray("connectedDeviceIds").isEmpty());
+        f.store.update(s->{s.getJSONObject("calls").getJSONObject("SIP-stages").put("sessionInvalidatedAt","2026-10-29T09:08:42Z");s.getJSONObject("calls").getJSONObject("SIP-stages").put("status","unknown");return null;});
+        callEvent(f,"call.answered",2,"2026-10-29T09:08:43Z","helmet-a");assertEquals("unknown",f.service.callState("SIP-stages").getString("status"));assertTrue(f.service.callState("SIP-stages").getJSONArray("connectedDeviceIds").isEmpty());
+    }
+    @Test void knownCallRejectionsHappenBeforeMediaRowsAndCommands() throws Exception {
+        Fixture f=fixture();when(f.gateway.isOnline("helmet-a")).thenReturn(false);
+        assertEquals("DEVICE_OFFLINE",assertThrows(com.ruoyi.guardian.AdminQueryService.QueryFailed.class,()->f.service.call("owner",Arrays.asList("helmet-a"),false)).errorCode);
+        when(f.gateway.isOnline("helmet-a")).thenReturn(true);
+        assertEquals("SIP_NOT_REGISTERED",assertThrows(com.ruoyi.guardian.AdminQueryService.QueryFailed.class,()->f.service.call("owner",Arrays.asList("helmet-a"),false)).errorCode);
+        ReflectionTestUtils.setField(f.service,"healthy",false);
+        assertEquals("MEDIA_SERVICE_UNAVAILABLE",assertThrows(com.ruoyi.guardian.AdminQueryService.QueryFailed.class,()->f.service.call("owner",Arrays.asList("helmet-a"),false)).errorCode);
+        assertNull(f.store.snapshot().getJSONObject("calls"));verify(f.gateway,never()).sendCommand(anyString(),any());verify(f.cloud,never()).request(anyString(),anyString(),any());
+        Fixture busy=offeredCall();callEvent(busy,"call.answered",1,"2026-10-29T10:00:30Z","helmet-a");
+        assertEquals("CALL_BUSY",assertThrows(com.ruoyi.guardian.AdminQueryService.QueryFailed.class,()->busy.service.call("another-owner",Arrays.asList("helmet-a"),false)).errorCode);
+        assertEquals(1,busy.store.snapshot().getJSONObject("calls").size());verify(busy.gateway,never()).sendCommand(anyString(),any());verify(busy.cloud,never()).request(anyString(),anyString(),any());
+    }
     @Test void uploadedHistoricalVideoCanMatchCommandWithoutClaimingCurrentWearer(){
         Fixture f=fixture();String now=java.time.Instant.now().toString();
         f.store.update(s->{s.put("commands",obj("HC-upload",obj("id","HC-upload","deviceId","helmet-a","action","upload_recording","createdAt",java.time.Instant.now().minusSeconds(30).toString(),"personId","new-wearer","siteId","new-site","requestedFiles",JSONArray.of(obj("fileName","old.mp4","progressId","abc123")))));return null;});
-        when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("assets",JSONArray.of(obj("assetId","asset-old","kind","video","deviceId","helmet-a","originalName","old.mp4","progressId","abc123","createdAt",now))));
+        when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("assets",JSONArray.of(obj("assetId","asset-old","kind","video","status","ready","deviceId","helmet-a","originalName","old.mp4","progressId","abc123","createdAt",now))));
         JSONObject asset=f.service.assets("helmet-a").getJSONObject(0);
         assertEquals("HC-upload",asset.getString("requestId"));assertTrue(asset.getBooleanValue("unassigned"));assertNull(asset.get("personId"));assertNull(asset.get("siteId"));
     }
