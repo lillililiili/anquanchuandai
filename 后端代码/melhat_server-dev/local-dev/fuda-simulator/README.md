@@ -75,3 +75,73 @@ node --test fuda-push/mock-receiver.test.mjs fuda-simulator/*.test.mjs fuda-gb-b
 | `index.html` | `refresh/action/controls`、页面事件处理 | 数据查看、国标状态、点播/停止、接收记录和浏览器回放 |
 | `server.test.mjs`、`sip-upper.test.mjs`、`rtp-receiver.test.mjs` | 35 项模块与集成用例 | HTTP 控制边界、信令异常、实际媒体传输及关闭清理 |
 | `.gitignore`、`start-simulator.cmd` | 无具体方法 | 排除私密凭据/数据/工具；Windows 启动入口 |
+
+## 现有项目完整本地联调（2026-11-02）
+
+已接入当前项目的完整 Java JAR，使用独立 MySQL、Redis、SRS、ZLMediaKit、媒体控制服务和国标桥。输入为合成安全帽/安全带报文、640×360 H.264 画面及 AAC 测试音；没有连接实际设备或福大平台。没有使用模拟器“发送三类测试数据/连接测试安全帽”按钮代替项目链路。
+
+数据链路：合成设备 → 原 `/wsHat`、`/wsBelt` → 项目业务事务与 MySQL outbox → 原签名发送器 → 本地故障注入转发 → 模拟器验签保存。
+
+视频链路：模拟器 SIP 点播 → 原 GbBridge → Java 内部 HMAC 租约 → 原媒体控制服务 → 设备 WebSocket 推流命令 → 合成设备 FFmpeg → SRS → ZLM PS/RTP → 模拟器保存/回放。Docker Desktop 的 ZLM 转发只把回环目标改为 `host.docker.internal`，不代替媒体编码、收包或鉴权。
+
+### 已通过的联调
+
+- 安全帽和安全带的位置、状态、报警真实入库和推送；原三个签名查询接口可用，报警业务 ID 对账一致。
+- 接收成功但应答丢失：实际发送器重试，外层 eventId 不变，模拟器只保存一份。
+- 接收端 503 后自动恢复；设备断开/重连产生 OFFLINE/ONLINE；实际重启隔离 Java 进程后，原待发任务补发成功。
+- SIP Digest 注册、目录、点播及停止；UDP 698 包、TCP 695 包，均零序号缺口/无效包，接收形成的 H.264/AAC 文件全量解码通过，GB journal 清空。
+- 国标停止后，独立 FFmpeg 观看者持续接收（49 → 150 帧），避免把“租约尚在”误当作画面不断。
+- 仅停止合成设备 FFmpeg 后，13.851 秒检测到失流并释放；重新点播恢复，TCP 672 包解码通过。
+
+本地 JAR SHA256 为 `6658a2e3abbffdf3456b2be05cba22b58f26ad26b25f9e2517dcf59869b5b945`，与 main 推送合并时已通过 547 项 Java 测试的产物一致；本轮没有修改生产 Java/Node 模块。既有国标桥 15 项回归再次通过。联调脚本另完成语法检查和上述实际运行验证。
+
+### 配置与运行边界
+
+所有本轮配置在已忽略的 `.local/integration/`。正式 `fuda-cloud/.private/production/fuda-push.yml` 仍关闭，正式 AppId/Secret 复用约定保持不变。**只有本地联调 JAR 的推送开启**，使用独立模拟器凭据与 `fuda-local-integration` 目标，只授权两个合成设备。
+
+| 入口 | 本机地址 |
+| --- | --- |
+| 接收模拟器/页面 | `127.0.0.1:19091` |
+| 数据故障注入转发 | `127.0.0.1:19092`，固定转发到模拟器 |
+| 隔离项目 Java / 测试控制 | `127.0.0.1:18095` / `127.0.0.1:19101` |
+| 隔离 MySQL / Redis | `127.0.0.1:13316` / `127.0.0.1:16389` |
+| 模拟器 SIP / 项目 SIP | `127.0.0.1:15061` / `127.0.0.1:15060` |
+| 媒体 HTTPS / SRS RTMP | `127.0.0.1:19190` / `127.0.0.1:1935` |
+
+Java 使用本轮专用 truststore 验证本地测试证书，没有修改系统信任或关闭证书校验。证书仅 7 天有效，过期后须重新生成并导入专用 truststore。FreeSWITCH 官方 Windows 包仅提取在忽略目录、校验发布摘要，没有安装系统服务；因程序不支持中文路径，`D:\fuda-sim-it-media` 是指向该目录的 junction。Java 使用 JDK 17 和 ASCII 临时目录，避免本机 JBR 21 的回环管道错误。
+
+当前本地实例保留可点播。网页选择 **Project synthetic helmet - real media chain**，开始点播/停止接收/播放回放即可。合成安全帽心跳每 20 秒经过项目发送器产生一条状态记录。结束测试时运行：
+
+```powershell
+.\stop-project-integration.ps1
+```
+
+它只停止有 PID/命令行或容器标签归属证据的本轮实例，保留模拟器、接收记录及隔离数据库。不会删除容器/卷，不结束原业务服务。
+
+复测现有实例：
+
+```powershell
+Invoke-RestMethod -Method Post http://127.0.0.1:19101/api/test-data -Headers @{'X-Integration-Request'='1'}
+node verify-project-belt.mjs
+node video-integration-check.mjs transport
+node video-integration-check.mjs other-watcher
+node video-integration-check.mjs source-recovery
+```
+
+首次准备入口是 `prepare-project.py prepare` 与 `video-integration.mjs prepare`；前者拒绝覆盖已存在数据库和配置。已准备的环境应复用现有四个 `fuda-sim-it-*` 容器、私密配置与证书。启动顺序为隔离 MySQL/Redis/SRS/ZLM → `video-integration-freeswitch.ps1` → `node video-integration.mjs media` → `start-project.ps1` → `node project-integration.mjs` → `node video-integration.mjs bridge`，后台启动须隐藏窗口并保留 PID。`start-project.ps1 -Restart` 仅重启隔离 Java。
+
+结果索引：`.local/integration/data-result.json`、`belt-result.json`、`video-transport-evidence.json`、`video-other-watcher-evidence.json`、`video-source-recovery-evidence.json`。本轮汇总及浏览器截图保存在工作区 `output/fuda-project-integration-20261102/`。失败调试记录也予以保留，正式结论使用上述最终通过的证据。
+
+### 本轮代码变更
+
+| 文件 | 方法/函数 | 作用 |
+| --- | --- | --- |
+| `prepare-project.py` | `prepare/configure` | 新建隔离测试库、生成只指向本机的项目配置 |
+| `start-project.ps1` | 无具体方法 | 校验 JAR/端口/配置，启动或重启隔离 Java |
+| `project-integration.mjs` | `register/connect/report/tests`、relay/control | 设备原入口接线，故障注入、投递对账与重启补发验证 |
+| `verify-project-belt.mjs` | `send/post/until` | 安全带原入口三类推送及原查询联调 |
+| `video-integration.mjs` | `prepare/serveMedia/serveBridge` | 复用真实媒体模块与国标桥、配置 TLS 和 Docker 回环转发 |
+| `video-source.mjs` | `createVideoSource/command/start/stop` | 响应设备命令，启动/停止合成音视频源 |
+| `video-integration-check.mjs` | `play/stop/decode` | UDP/TCP、独立观看者、断流恢复的媒体验收 |
+| `video-integration-freeswitch.ps1` | 无具体方法 | 校验官方包并隐藏启动隔离 FreeSWITCH |
+| `stop-project-integration.ps1` | 无具体方法 | 校验实例归属，停止本轮测试服务并保留记录 |
