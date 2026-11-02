@@ -1,0 +1,26 @@
+-- Additive migration. No data deletion; querying APIs and device tables remain unchanged.
+CREATE TABLE IF NOT EXISTS fuda_push_outbox (
+ sequence BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ event_id VARCHAR(80) NOT NULL,
+ destination_key CHAR(64) NOT NULL,
+ destination_id VARCHAR(64) NOT NULL,
+ ledger_device_id VARCHAR(128) NOT NULL,
+ device_type VARCHAR(24) NOT NULL,
+ device_id VARCHAR(64) NOT NULL,
+ device_key CHAR(64) NOT NULL,
+ event_type VARCHAR(16) NOT NULL,
+ body LONGTEXT NOT NULL,
+ status VARCHAR(16) NOT NULL,
+ attempts INT NOT NULL DEFAULT 0,
+ next_attempt_at BIGINT NOT NULL,
+ lease_token VARCHAR(36),
+ lease_until BIGINT,
+ created_at BIGINT NOT NULL,
+ completed_at BIGINT,
+ last_attempt_at BIGINT,
+ last_outcome VARCHAR(64),
+ last_http_status INT,
+ UNIQUE KEY fuda_push_event(event_id),
+ INDEX fuda_push_due(destination_key,status,next_attempt_at),
+ INDEX fuda_push_device(destination_key,device_key,sequence,status)
+);

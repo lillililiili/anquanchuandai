@@ -1,0 +1,1069 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "福大穿戴数据推送接收协议（待联调确认）",
+    "version": "1.0.0",
+    "description": "Receiver contract proposal. Independent push credentials; existing V2 query APIs remain available. See README.md for exact HMAC canonical text, retries and timestamp semantics."
+  },
+  "servers": [
+    {
+      "url": "https://receiver.example.invalid",
+      "description": "Placeholder only; supplied by Fuda before enabling"
+    }
+  ],
+  "paths": {
+    "/receive": {
+      "post": {
+        "summary": "接收一条位置、状态或报警事件",
+        "operationId": "receiveWearablePush",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-App-Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Timestamp",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,12}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Nonce",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "HmacSignature": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/POSITIONEvent"
+                  },
+                  {
+                    "$ref": "#/components/schemas/STATUSEvent"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ALARMEvent"
+                  }
+                ]
+              },
+              "examples": {
+                "POSITION": {
+                  "summary": "Synthetic POSITION event; not a real device",
+                  "value": {
+                    "schemaVersion": "1.0",
+                    "eventId": "FP-1f53ba177d9876b56cca5c89fbde0e3f7a7e0beb2bf28d883eb669397afbb5f4",
+                    "eventType": "POSITION",
+                    "trigger": "REPORT",
+                    "occurredAt": "2026-10-27T07:59:55.000Z",
+                    "createdAt": "2026-10-27T08:00:00.000Z",
+                    "data": {
+                      "sourcePlatform": "wearable-example",
+                      "deviceType": "HELMET",
+                      "deviceId": "DEMO-HELMET-01",
+                      "deviceModel": null,
+                      "position": {
+                        "longitude": 119.2,
+                        "latitude": 26.1,
+                        "coordinateSystem": "GCJ02",
+                        "altitude": null,
+                        "relativeHeight": null,
+                        "heightReference": "UNKNOWN",
+                        "speed": null,
+                        "direction": null,
+                        "positionTime": "2026-10-27T07:59:50.000Z",
+                        "timeSource": "PLATFORM",
+                        "positionMethod": "GNSS",
+                        "historical": false
+                      },
+                      "validity": "VALID"
+                    }
+                  }
+                },
+                "STATUS": {
+                  "summary": "Synthetic STATUS event; not a real device",
+                  "value": {
+                    "schemaVersion": "1.0",
+                    "eventId": "FP-456d713f43e1436c8ee30101a2bf5aa0d1aa711a5e907f53fa5e16839402f2d6",
+                    "eventType": "STATUS",
+                    "trigger": "REPORT",
+                    "occurredAt": "2026-10-27T07:59:55.000Z",
+                    "createdAt": "2026-10-27T08:00:00.000Z",
+                    "data": {
+                      "sourcePlatform": "wearable-example",
+                      "deviceType": "HELMET",
+                      "deviceId": "DEMO-HELMET-01",
+                      "deviceModel": null,
+                      "onlineStatus": "ONLINE",
+                      "lastSeenAt": "2026-10-27T07:59:50.000Z",
+                      "offlineTimeoutSeconds": 45,
+                      "telemetryMaxAgeSeconds": 45,
+                      "battery": {
+                        "percent": 78,
+                        "voltageMv": null,
+                        "observedAt": "2026-10-27T07:59:50.000Z",
+                        "validity": "VALID"
+                      },
+                      "network": {
+                        "type": "UNKNOWN",
+                        "signalLevel": null,
+                        "observedAt": null,
+                        "validity": "UNKNOWN"
+                      },
+                      "wear": {
+                        "status": "WORN",
+                        "observedAt": "2026-10-27T07:59:50.000Z",
+                        "validity": "VALID"
+                      },
+                      "hookA": {
+                        "status": "UNSUPPORTED",
+                        "observedAt": null,
+                        "validity": "UNSUPPORTED"
+                      },
+                      "hookB": {
+                        "status": "UNSUPPORTED",
+                        "observedAt": null,
+                        "validity": "UNSUPPORTED"
+                      }
+                    }
+                  }
+                },
+                "ALARM": {
+                  "summary": "Synthetic ALARM event; not a real device",
+                  "value": {
+                    "schemaVersion": "1.0",
+                    "eventId": "FP-89bb39cfab4a2cb1c15bd9be8d6cff549eae01d5fb3d7a6cc34f8f4012ca3a53",
+                    "eventType": "ALARM",
+                    "trigger": "ALARM",
+                    "occurredAt": "2026-10-27T07:59:55.000Z",
+                    "createdAt": "2026-10-27T08:00:00.000Z",
+                    "data": {
+                      "sourcePlatform": "wearable-example",
+                      "deviceType": "HELMET",
+                      "deviceId": "DEMO-HELMET-01",
+                      "deviceModel": null,
+                      "eventId": "example-stable-event-001",
+                      "occurredAt": "2026-10-27T07:59:55.000Z",
+                      "receivedAt": "2026-10-27T07:59:55.000Z",
+                      "alarmType": "SOS",
+                      "alarmContent": "设备发起 SOS",
+                      "rawAlarmType": null,
+                      "rawAlarmName": null,
+                      "alarmOrigin": "DEVICE",
+                      "positionSource": "LAST_KNOWN",
+                      "position": {
+                        "longitude": 119.2,
+                        "latitude": 26.1,
+                        "coordinateSystem": "GCJ02",
+                        "altitude": null,
+                        "relativeHeight": null,
+                        "heightReference": "UNKNOWN",
+                        "speed": null,
+                        "direction": null,
+                        "positionTime": "2026-10-27T07:59:50.000Z",
+                        "timeSource": "PLATFORM",
+                        "positionMethod": "GNSS",
+                        "historical": false
+                      },
+                      "positionAgeSeconds": 5
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Only integer code=0 after durable save (or durable duplicate) is successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "const": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Not confirmed. Sender retains the same eventId and retries with a fresh timestamp and nonce."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PositionItem": {
+        "type": "object",
+        "properties": {
+          "sourcePlatform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "HELMET",
+              "SAFETY_BELT"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "deviceModel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Actual registered model; null when not recorded. Never inferred from device type."
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Position"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "sourcePlatform",
+          "deviceType",
+          "deviceId",
+          "deviceModel",
+          "position",
+          "validity"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "position": {
+                  "type": "null"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validity": {
+                  "const": "UNKNOWN"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "coordinateSystem": {
+            "type": "string",
+            "enum": [
+              "WGS84",
+              "GCJ02"
+            ]
+          },
+          "altitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Mean-sea-level altitude, metres. Current adapter returns null: datum unverified."
+          },
+          "relativeHeight": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Metres; current adapter returns null because reference is unverified."
+          },
+          "heightReference": {
+            "type": "string",
+            "enum": [
+              "POWER_ON",
+              "CALIBRATED",
+              "UNKNOWN"
+            ]
+          },
+          "speed": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "km/h. Current adapter returns null: raw units unverified."
+          },
+          "direction": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "exclusiveMaximum": 360,
+            "description": "North=0, clockwise ground course; current adapter returns null."
+          },
+          "positionTime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "timeSource": {
+            "type": "string",
+            "enum": [
+              "DEVICE",
+              "PLATFORM"
+            ]
+          },
+          "positionMethod": {
+            "type": "string",
+            "enum": [
+              "GNSS",
+              "WIFI",
+              "CELL",
+              "OTHER",
+              "UNKNOWN"
+            ]
+          },
+          "historical": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "longitude",
+          "latitude",
+          "coordinateSystem",
+          "altitude",
+          "relativeHeight",
+          "heightReference",
+          "speed",
+          "direction",
+          "positionTime",
+          "timeSource",
+          "positionMethod",
+          "historical"
+        ],
+        "additionalProperties": false,
+        "description": "Known coordinate reference, valid source quality and original observation time required. Current adapter uses platform receipt time (PLATFORM). Unknown/unfixed coordinates are position=null. Belt reference is currently unknown; a per-device location profile may be enabled only after evidence-based commissioning. Such a profile affects current positions only and never reinterprets historical alarm snapshots.",
+        "allOf": [
+          {
+            "not": {
+              "properties": {
+                "longitude": {
+                  "const": 0
+                },
+                "latitude": {
+                  "const": 0
+                }
+              },
+              "required": [
+                "longitude",
+                "latitude"
+              ]
+            }
+          }
+        ]
+      },
+      "POSITIONEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "eventId",
+          "eventType",
+          "trigger",
+          "occurredAt",
+          "createdAt",
+          "data"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "const": "1.0"
+          },
+          "eventId": {
+            "type": "string",
+            "pattern": "^FP-[0-9a-f]{64}$",
+            "description": "Stable delivery ID. Deduplicate before confirming receipt."
+          },
+          "eventType": {
+            "type": "string",
+            "const": "POSITION"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "REPORT"
+            ]
+          },
+          "occurredAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Original observation time, not HTTP arrival time."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PositionItem"
+          }
+        }
+      },
+      "StatusItem": {
+        "type": "object",
+        "properties": {
+          "sourcePlatform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "HELMET",
+              "SAFETY_BELT"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "deviceModel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Actual registered model; null when not recorded. Never inferred from device type."
+          },
+          "onlineStatus": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE"
+            ]
+          },
+          "lastSeenAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "offlineTimeoutSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Actual configured device heartbeat timeout."
+          },
+          "telemetryMaxAgeSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Actual freshness threshold; currently equals the device heartbeat timeout."
+          },
+          "battery": {
+            "$ref": "#/components/schemas/Battery"
+          },
+          "network": {
+            "$ref": "#/components/schemas/Network"
+          },
+          "wear": {
+            "$ref": "#/components/schemas/Wear"
+          },
+          "hookA": {
+            "$ref": "#/components/schemas/Hook"
+          },
+          "hookB": {
+            "$ref": "#/components/schemas/Hook"
+          }
+        },
+        "required": [
+          "sourcePlatform",
+          "deviceType",
+          "deviceId",
+          "deviceModel",
+          "onlineStatus",
+          "lastSeenAt",
+          "offlineTimeoutSeconds",
+          "telemetryMaxAgeSeconds",
+          "battery",
+          "network",
+          "wear",
+          "hookA",
+          "hookB"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "onlineStatus": {
+                  "const": "OFFLINE"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "battery": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "network": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "wear": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "hookA": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                },
+                "hookB": {
+                  "properties": {
+                    "validity": {
+                      "not": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Battery": {
+        "type": "object",
+        "properties": {
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Remaining charge, %; unknown is null, not zero."
+          },
+          "voltageMv": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "percent",
+          "voltageMv",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false
+      },
+      "Network": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "CELLULAR_4G",
+              "WIFI",
+              "OTHER",
+              "UNKNOWN"
+            ]
+          },
+          "signalLevel": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Dimensionless level. Current adapter returns null/UNKNOWN until mapping is verified."
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "signalLevel",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false
+      },
+      "Wear": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN",
+              "NOT_WORN",
+              "WORN",
+              "UNSUPPORTED"
+            ]
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false,
+        "description": "Body wearing status. Current safety-belt adapter returns UNKNOWN; hook attachment does not establish body wearing."
+      },
+      "Hook": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN",
+              "ATTACHED",
+              "DETACHED",
+              "UNSUPPORTED"
+            ]
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "validity": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "STALE",
+              "UNKNOWN",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "observedAt",
+          "validity"
+        ],
+        "additionalProperties": false,
+        "description": "Attachment detection, not proof of mechanical locking/load safety. Helmet hooks are UNSUPPORTED; belt mapping must be explicitly confirmed."
+      },
+      "STATUSEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "eventId",
+          "eventType",
+          "trigger",
+          "occurredAt",
+          "createdAt",
+          "data"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "const": "1.0"
+          },
+          "eventId": {
+            "type": "string",
+            "pattern": "^FP-[0-9a-f]{64}$",
+            "description": "Stable delivery ID. Deduplicate before confirming receipt."
+          },
+          "eventType": {
+            "type": "string",
+            "const": "STATUS"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "REPORT",
+              "ONLINE",
+              "OFFLINE"
+            ]
+          },
+          "occurredAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Original observation time, not HTTP arrival time."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "$ref": "#/components/schemas/StatusItem"
+          }
+        }
+      },
+      "AlarmItem": {
+        "type": "object",
+        "properties": {
+          "sourcePlatform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "HELMET",
+              "SAFETY_BELT"
+            ]
+          },
+          "deviceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "deviceModel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Actual registered model; null when not recorded. Never inferred from device type."
+          },
+          "eventId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Opaque stable business-event ID, not necessarily UUID. Deduplicate by (sourcePlatform,eventId)."
+          },
+          "occurredAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "receivedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "alarmType": {
+            "type": "string",
+            "enum": [
+              "SOS",
+              "HELMET_REMOVED",
+              "AREA_EXIT",
+              "RESTRICTED_AREA_ENTRY",
+              "TEMPERATURE_HIGH",
+              "FALL_OR_IMPACT",
+              "FALL",
+              "IMPACT",
+              "IMMOBILITY",
+              "LOW_BATTERY",
+              "ELECTRIC_PROXIMITY",
+              "HEIGHT_EXCEEDED",
+              "BOTH_HOOKS_DETACHED",
+              "SINGLE_HOOK_DETACHED",
+              "LOW_ANCHOR",
+              "BEACON_ENTER",
+              "BEACON_EXIT",
+              "BODY_TEMPERATURE_HIGH",
+              "HEART_RATE_ABNORMAL",
+              "BLOOD_PRESSURE_ABNORMAL",
+              "UNKNOWN"
+            ]
+          },
+          "alarmContent": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "rawAlarmType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "rawAlarmName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "alarmOrigin": {
+            "type": "string",
+            "enum": [
+              "DEVICE",
+              "PLATFORM"
+            ]
+          },
+          "positionSource": {
+            "type": "string",
+            "enum": [
+              "EVENT",
+              "LAST_KNOWN",
+              "NONE"
+            ]
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Position"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "positionAgeSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 300
+          }
+        },
+        "required": [
+          "sourcePlatform",
+          "deviceType",
+          "deviceId",
+          "deviceModel",
+          "eventId",
+          "occurredAt",
+          "receivedAt",
+          "alarmType",
+          "alarmContent",
+          "rawAlarmType",
+          "rawAlarmName",
+          "alarmOrigin",
+          "positionSource",
+          "position",
+          "positionAgeSeconds"
+        ],
+        "additionalProperties": false,
+        "description": "Immutable first occurrence only; business processing, claim or verification is not an alarm clear. Current implementation exports confirmed SOS and UNKNOWN with original vendor code; other enum values are reserved until verified. Historical times can be null when unrecoverable.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "positionSource": {
+                  "const": "NONE"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "position": {
+                  "type": "null"
+                },
+                "positionAgeSeconds": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "position": {
+                  "$ref": "#/components/schemas/Position"
+                },
+                "positionAgeSeconds": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 300
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ALARMEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "eventId",
+          "eventType",
+          "trigger",
+          "occurredAt",
+          "createdAt",
+          "data"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "const": "1.0"
+          },
+          "eventId": {
+            "type": "string",
+            "pattern": "^FP-[0-9a-f]{64}$",
+            "description": "Stable delivery ID. Deduplicate before confirming receipt."
+          },
+          "eventType": {
+            "type": "string",
+            "const": "ALARM"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "ALARM"
+            ]
+          },
+          "occurredAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Original observation time, not HTTP arrival time."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AlarmItem"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "HmacSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Signature",
+        "description": "Lowercase HMAC-SHA256 hex of POST, actual raw path, X-App-Id, X-Timestamp, X-Nonce, body SHA256 joined with LF; no trailing LF. Decode the 32-byte Base64 secret first."
+      }
+    }
+  }
+}

@@ -87,6 +87,12 @@
             <version>2.0.9</version>
         </dependency>
 
+        <!-- Dedicated Fuda push HTTP transport; version managed by the parent. -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+        </dependency>
+
         <!-- 测试依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

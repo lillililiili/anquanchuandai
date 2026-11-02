@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "eventId": "FP-1f53ba177d9876b56cca5c89fbde0e3f7a7e0beb2bf28d883eb669397afbb5f4",
+  "eventType": "POSITION",
+  "trigger": "REPORT",
+  "occurredAt": "2026-10-27T07:59:55.000Z",
+  "createdAt": "2026-10-27T08:00:00.000Z",
+  "data": {
+    "sourcePlatform": "wearable-example",
+    "deviceType": "HELMET",
+    "deviceId": "DEMO-HELMET-01",
+    "deviceModel": null,
+    "position": {
+      "longitude": 119.2,
+      "latitude": 26.1,
+      "coordinateSystem": "GCJ02",
+      "altitude": null,
+      "relativeHeight": null,
+      "heightReference": "UNKNOWN",
+      "speed": null,
+      "direction": null,
+      "positionTime": "2026-10-27T07:59:50.000Z",
+      "timeSource": "PLATFORM",
+      "positionMethod": "GNSS",
+      "historical": false
+    },
+    "validity": "VALID"
+  }
+}

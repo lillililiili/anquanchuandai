@@ -40,6 +40,9 @@ public class WearableBusinessStore {
     private final byte[] mediaKey;
     private final boolean lockingReads;
     private final FudaAlarmJournal alarmJournal;
+    private com.ruoyi.fuda.FudaPushCapture fudaPushCapture;
+    @Autowired(required=false)
+    public void setFudaPushCapture(com.ruoyi.fuda.FudaPushCapture capture) { this.fudaPushCapture=capture; }
     private static final Object BUSINESS_LOCK = new Object();
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Map<String, String> GUARDIAN = new LinkedHashMap<String, String>();
@@ -174,6 +177,8 @@ public class WearableBusinessStore {
 
     private void replace(String namespace,JSONObject state,boolean historicalImport) {
         if(state==null) throw new IllegalArgumentException("缺少业务数据");
+        Map<String,JSONObject> previousDevices="guardian".equals(namespace)&&fudaPushCapture!=null
+                ? fudaPushCapture.previousDevices() : Collections.emptyMap();
         Set<String> previousEventIds="guardian".equals(namespace)
                 ? new HashSet<String>(jdbc.query("SELECT record_key FROM wearable_event WHERE namespace='guardian' AND collection_key='events'",(rs,n)->rs.getString(1)))
                 : Collections.emptySet();
@@ -210,6 +215,7 @@ public class WearableBusinessStore {
         if("guardian".equals(namespace)) {
             syncActions(state);
             if(alarmJournal!=null) alarmJournal.appendNew(state,previousEventIds,historicalImport);
+            if(fudaPushCapture!=null) fudaPushCapture.saved(state,previousDevices,previousEventIds,historicalImport);
         }
     }
 
@@ -269,7 +275,9 @@ public class WearableBusinessStore {
             },receiptId);
             if(rows.size()!=1)throw new IllegalArgumentException("设备接收记录不存在");
             if(rows.get(0).get("processedAt")!=null)return false;
-            if(alarmJournal==null)handler.run();else alarmJournal.duringReceipt(rows.get(0),handler);
+            Runnable apply=()->{if(alarmJournal==null)handler.run();else alarmJournal.duringReceipt(rows.get(0),handler);};
+            if(fudaPushCapture==null)apply.run();else fudaPushCapture.duringReceipt(rows.get(0).getString("deviceId"),apply);
+            if(fudaPushCapture!=null)fudaPushCapture.receipt(receiptId,rows.get(0));
             markReportProcessed(receiptId);return true;
         });
         }

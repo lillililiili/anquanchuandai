@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "eventId": "FP-89bb39cfab4a2cb1c15bd9be8d6cff549eae01d5fb3d7a6cc34f8f4012ca3a53",
+  "eventType": "ALARM",
+  "trigger": "ALARM",
+  "occurredAt": "2026-10-27T07:59:55.000Z",
+  "createdAt": "2026-10-27T08:00:00.000Z",
+  "data": {
+    "sourcePlatform": "wearable-example",
+    "deviceType": "HELMET",
+    "deviceId": "DEMO-HELMET-01",
+    "deviceModel": null,
+    "eventId": "example-stable-event-001",
+    "occurredAt": "2026-10-27T07:59:55.000Z",
+    "receivedAt": "2026-10-27T07:59:55.000Z",
+    "alarmType": "SOS",
+    "alarmContent": "设备发起 SOS",
+    "rawAlarmType": null,
+    "rawAlarmName": null,
+    "alarmOrigin": "DEVICE",
+    "positionSource": "LAST_KNOWN",
+    "position": {
+      "longitude": 119.2,
+      "latitude": 26.1,
+      "coordinateSystem": "GCJ02",
+      "altitude": null,
+      "relativeHeight": null,
+      "heightReference": "UNKNOWN",
+      "speed": null,
+      "direction": null,
+      "positionTime": "2026-10-27T07:59:50.000Z",
+      "timeSource": "PLATFORM",
+      "positionMethod": "GNSS",
+      "historical": false
+    },
+    "positionAgeSeconds": 5
+  }
+}

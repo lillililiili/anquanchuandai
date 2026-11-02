@@ -1,0 +1,7 @@
+{
+  "purpose": "PUBLIC TEST VECTOR ONLY. Never use this key in deployment.",
+  "secretBase64": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "bodyText": "{\"schemaVersion\":\"1.0\",\"eventId\":\"FP-456d713f43e1436c8ee30101a2bf5aa0d1aa711a5e907f53fa5e16839402f2d6\",\"eventType\":\"STATUS\",\"trigger\":\"REPORT\",\"occurredAt\":\"2026-10-27T07:59:55.000Z\",\"createdAt\":\"2026-10-27T08:00:00.000Z\",\"data\":{\"sourcePlatform\":\"wearable-example\",\"deviceType\":\"HELMET\",\"deviceId\":\"DEMO-HELMET-01\",\"deviceModel\":null,\"onlineStatus\":\"ONLINE\",\"lastSeenAt\":\"2026-10-27T07:59:50.000Z\",\"offlineTimeoutSeconds\":45,\"telemetryMaxAgeSeconds\":45,\"battery\":{\"percent\":78,\"voltageMv\":null,\"observedAt\":\"2026-10-27T07:59:50.000Z\",\"validity\":\"VALID\"},\"network\":{\"type\":\"UNKNOWN\",\"signalLevel\":null,\"observedAt\":null,\"validity\":\"UNKNOWN\"},\"wear\":{\"status\":\"WORN\",\"observedAt\":\"2026-10-27T07:59:50.000Z\",\"validity\":\"VALID\"},\"hookA\":{\"status\":\"UNSUPPORTED\",\"observedAt\":null,\"validity\":\"UNSUPPORTED\"},\"hookB\":{\"status\":\"UNSUPPORTED\",\"observedAt\":null,\"validity\":\"UNSUPPORTED\"}}}",
+  "canonicalText": "POST\n/receive\npush-example\n1791024000\n00000000-0000-4000-8000-000000000001\n278fa30c523aab1e9ef318157aab3baa7bf257ab89983fbf27eabf427abe4b37",
+  "signature": "c44027282e20155507d1acd1643e6bbd183534f4f5de653b0b520f190c31a2a2"
+}

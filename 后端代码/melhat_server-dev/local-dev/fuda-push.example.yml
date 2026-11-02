@@ -1,0 +1,22 @@
+# Private deployment override; do not commit populated credentials or real endpoint URLs.
+fuda:
+  push:
+    enabled: false
+    destination-id: fuda-test
+    app-id: ""
+    secret-base64: ""
+    endpoint: ""
+    # Optional per-type receivers; unspecified types use endpoint above.
+    endpoints: {}
+    # Explicit synthetic loopback testing only; keep false with real data.
+    allow-loopback-http: false
+    allowed-ledger-device-ids: []
+    connect-timeout-millis: 2000
+    request-timeout-millis: 5000
+    lease-millis: 30000
+    batch-size: 50
+    min-send-interval-millis: 100
+    retry-base-millis: 1000
+    retry-max-millis: 300000
+# Existing fuda.api.location-profiles supplies only verified coordinate mappings.
+# Query credentials/permissions do not enable or authorize push automatically.
