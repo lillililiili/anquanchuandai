@@ -9,11 +9,13 @@ import static com.ruoyi.guardian.WearableModel.object;
 @Service
 public class WearableMaintenance {
     private final JdbcTemplate jdbc;
+    private final com.ruoyi.common.database.DatabaseDialect dialect;
     private int activeWrites;
     public WearableMaintenance(JdbcTemplate jdbc) {
         this.jdbc=jdbc;
-        jdbc.execute("CREATE TABLE IF NOT EXISTS wearable_runtime_control (control_key VARCHAR(32) PRIMARY KEY, mode VARCHAR(16) NOT NULL, updated_at BIGINT NOT NULL, updated_by VARCHAR(128))");
-        jdbc.update("INSERT INTO wearable_runtime_control (control_key,mode,updated_at,updated_by) VALUES ('global','ACTIVE',?,NULL) ON DUPLICATE KEY UPDATE control_key=control_key",System.currentTimeMillis());
+        this.dialect = com.ruoyi.common.database.DatabaseDialect.of(jdbc);
+        com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261026_wearable_business");
+        dialect.insertIfAbsent(jdbc,"wearable_runtime_control",java.util.Arrays.asList("control_key","mode","updated_at","updated_by"),java.util.Arrays.asList("control_key"),"global","ACTIVE",System.currentTimeMillis(),null);
     }
     public boolean paused() { return !"ACTIVE".equals(jdbc.queryForObject("SELECT mode FROM wearable_runtime_control WHERE control_key='global'",String.class)); }
     public JSONObject status() {

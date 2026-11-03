@@ -3,11 +3,9 @@ package com.ruoyi.guardian;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -48,19 +46,20 @@ public class FudaAlarmJournal {
     private static final String[] LOCATION_FIELDS = {"longitude", "latitude", "coordinateSystem", "locationQuality",
             "locationSource", "accuracyMeters", "locationReportedAt", "altitude", "gpsAltitude", "speed", "direction"};
     private final JdbcTemplate jdbc;
+    private final com.ruoyi.common.database.DatabaseDialect dialect;
     private final TransactionTemplate independent;
     private final ThreadLocal<JSONObject> receiptEvidence = new ThreadLocal<>();
 
     /** Schema initialization belongs to WearableBusinessStore startup, not to API reads. */
     public FudaAlarmJournal(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.dialect = com.ruoyi.common.database.DatabaseDialect.of(jdbc);
         this.independent = new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
         this.independent.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     public void initialize() {
-        new ResourceDatabasePopulator(new ClassPathResource("db/20261027_fuda_alarm_journal.sql"))
-                .execute(jdbc.getDataSource());
+        com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261027_fuda_alarm_journal");
         backfill();
     }
 
@@ -158,11 +157,7 @@ public class FudaAlarmJournal {
     /** The original helmet envelope outlives delayed business projection and later review. */
     private JSONObject initialHelmetEvidence(JSONObject event) {
         if (!"direct-helmet".equals(event.getString("protocol"))) return null;
-        Boolean exists = jdbc.execute((ConnectionCallback<Boolean>) connection -> {
-            try (java.sql.ResultSet tables = connection.getMetaData().getTables(connection.getCatalog(), null, "helmet_event_link", null)) {
-                return tables.next();
-            }
-        });
+        Boolean exists = com.ruoyi.common.database.DatabaseDialect.tableExists(jdbc,"helmet_event_link");
         if (!Boolean.TRUE.equals(exists)) return null;
         // The older source table can use a case-insensitive collation. Match the exact opaque
         // identity again before choosing its first envelope; do not take another event's row.
@@ -204,8 +199,8 @@ public class FudaAlarmJournal {
         List<String> keys = new ArrayList<>(); for (String key : authorizedKeys) keys.add(identityHash(key));
         Collections.sort(keys); arguments.addAll(keys); arguments.add(limit + 1);
         String placeholders = String.join(",", Collections.nCopies(keys.size(), "?"));
-        List<JSONObject> selected = jdbc.query("SELECT body FROM fuda_alarm_journal WHERE export_sequence>? AND export_sequence<=? AND scope_hash IN ("
-                        + placeholders + ") ORDER BY export_sequence LIMIT ?",
+        List<JSONObject> selected = jdbc.query(dialect.limit("SELECT body FROM fuda_alarm_journal WHERE export_sequence>? AND export_sequence<=? AND scope_hash IN ("
+                        + placeholders + ") ORDER BY export_sequence","?"),
                 (rs, n) -> JSONObject.parseObject(rs.getString(1)), arguments.toArray());
         boolean more = selected.size() > limit;
         if (more) selected.remove(selected.size() - 1);

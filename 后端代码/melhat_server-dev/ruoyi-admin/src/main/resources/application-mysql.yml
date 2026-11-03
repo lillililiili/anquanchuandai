@@ -1,0 +1,12 @@
+# Explicit production MySQL contract; legacy single-instance startup remains the default.
+melhat:
+  database:
+    product: mysql
+    schema-mode: ${MELHAT_SCHEMA_MODE:legacy}
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    druid:
+      validationQuery: SELECT 1
+pagehelper:
+  helperDialect: mysql

@@ -43,6 +43,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, SafetyHatInfo> implements ISafetyHatInfoService {
+    @org.springframework.beans.factory.annotation.Value("${melhat.database.product:mysql}")
+    private String databaseProduct="mysql";
+
 
     @Autowired
     private IGroupInfoService groupInfoService;
@@ -293,7 +296,7 @@ public class SafetyHatInfoServiceImpl extends ServiceImpl<SafetyHatInfoMapper, S
         SafetyHatLocationRecord location = safetyHatLocationRecordService.lambdaQuery()
                 .eq(SafetyHatLocationRecord::getHatNumber, hatNumber)
                 .orderByDesc(SafetyHatLocationRecord::getTimestamp)
-                .last("limit 1").one();
+                .last("dm8".equalsIgnoreCase(databaseProduct)?"FETCH FIRST 1 ROWS ONLY":"LIMIT 1").one();
         if (location != null) {
             safetyHatListVO.setLongitude(location.getLng());
             safetyHatListVO.setLatitude(location.getLat());

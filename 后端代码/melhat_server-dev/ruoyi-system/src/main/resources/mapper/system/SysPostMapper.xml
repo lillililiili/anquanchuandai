@@ -64,12 +64,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	
 	<select id="checkPostNameUnique" parameterType="String" resultMap="SysPostResult">
 		<include refid="selectPostVo"/>
-		 where post_name=#{postName} limit 1
+		 where post_name=#{postName} <choose><when test="_databaseId == 'dm8'">FETCH FIRST 1 ROWS ONLY</when><otherwise>LIMIT 1</otherwise></choose>
 	</select>
 	
 	<select id="checkPostCodeUnique" parameterType="String" resultMap="SysPostResult">
 		<include refid="selectPostVo"/>
-		 where post_code=#{postCode} limit 1
+		 where post_code=#{postCode} <choose><when test="_databaseId == 'dm8'">FETCH FIRST 1 ROWS ONLY</when><otherwise>LIMIT 1</otherwise></choose>
 	</select>
 	
 	<update id="updatePost" parameterType="SysPost">
@@ -81,7 +81,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="status != null and status != ''">status = #{status},</if>
  			<if test="remark != null">remark = #{remark},</if>
  			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
- 			update_time = sysdate()
+			update_time = CURRENT_TIMESTAMP
  		</set>
  		where post_id = #{postId}
 	</update>
@@ -104,7 +104,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="status != null and status != ''">#{status},</if>
  			<if test="remark != null and remark != ''">#{remark},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
- 			sysdate()
+			CURRENT_TIMESTAMP
  		)
 	</insert>
 	
@@ -119,4 +119,4 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach> 
  	</delete>
 
-</mapper> 
+</mapper>

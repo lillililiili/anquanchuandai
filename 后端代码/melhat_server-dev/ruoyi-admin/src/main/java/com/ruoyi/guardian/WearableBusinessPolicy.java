@@ -14,8 +14,7 @@ public class WearableBusinessPolicy {
     private final JdbcTemplate jdbc;
     public WearableBusinessPolicy(JdbcTemplate jdbc) {
         this.jdbc=jdbc;
-        jdbc.execute("CREATE TABLE IF NOT EXISTS wearable_business_config (id INT PRIMARY KEY, version INT NOT NULL, body LONGTEXT NOT NULL)");
-        jdbc.execute("CREATE TABLE IF NOT EXISTS wearable_feature_acceptance (device_id VARCHAR(100) NOT NULL, feature_key VARCHAR(40) NOT NULL, evidence VARCHAR(500) NOT NULL, PRIMARY KEY(device_id,feature_key))");
+        com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261026_wearable_business");
         if(jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_config WHERE id=1",Integer.class)==0) {
             // These are acceptance records of the existing physical units, never generated assets or telemetry.
             accept("866652021714127", "output/device-ready/helmet-media-acceptance-20261026/cloud-findings.json", "battery","wear","location","alarm","sos","video");

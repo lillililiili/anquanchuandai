@@ -13,10 +13,11 @@ import static com.ruoyi.guardian.WearableModel.*;
 @Service
 public class ExternalDataStore {
     private final JdbcTemplate jdbc;
+    private final com.ruoyi.common.database.DatabaseDialect dialect;
     private static final Pattern SECRET=Pattern.compile("password|passwd|token|secret|authorization|cookie|credential|sip_pwd|pushUrl|wssUrl|iceServers",Pattern.CASE_INSENSITIVE);
     public ExternalDataStore(JdbcTemplate jdbc){this.jdbc=jdbc;
-        jdbc.execute("CREATE TABLE IF NOT EXISTS external_integration (id VARCHAR(100) PRIMARY KEY,site_id VARCHAR(100) NOT NULL,kind VARCHAR(40) NOT NULL,version INT NOT NULL,body LONGTEXT NOT NULL)");
-        jdbc.execute("CREATE TABLE IF NOT EXISTS external_data_record (id VARCHAR(100) PRIMARY KEY,integration_id VARCHAR(100) NOT NULL,site_id VARCHAR(100) NOT NULL,kind VARCHAR(40) NOT NULL,direction VARCHAR(12) NOT NULL,external_key VARCHAR(100) NOT NULL,received_at VARCHAR(40) NOT NULL,status VARCHAR(40) NOT NULL,body LONGTEXT NOT NULL,UNIQUE(integration_id,kind,direction,external_key))");
+        this.dialect = com.ruoyi.common.database.DatabaseDialect.of(jdbc);
+        com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261026_wearable_business");
     }
     public JSONArray integrations(GuardianAccess.Context ctx,String site){JSONArray result=new JSONArray();
         for(String body:jdbc.query("SELECT body FROM external_integration ORDER BY site_id,id",(rs,n)->rs.getString(1))){JSONObject row=JSONObject.parseObject(body);if((site==null||site.equals(row.getString("siteId")))&&ctx.can("integrations:read",row.getString("siteId"),null))result.add(publicIntegration(row));}return result;}
@@ -27,8 +28,8 @@ public class ExternalDataStore {
         String placeholders=String.join(",",Collections.nCopies(allowed.size(),"?"));String where=" WHERE site_id IN ("+placeholders+")";List<Object> args=new ArrayList<Object>(allowed);
         if(integrationId!=null&&!integrationId.isEmpty()){where+=" AND integration_id=?";args.add(integrationId);}
         Long total=jdbc.queryForObject("SELECT COUNT(*) FROM external_data_record"+where,Long.class,args.toArray());
-        args.add(pageSize);args.add((page-1)*pageSize);JSONArray out=new JSONArray();
-        for(String body:jdbc.query("SELECT body FROM external_data_record"+where+" ORDER BY received_at DESC,id LIMIT ? OFFSET ?",(rs,n)->rs.getString(1),args.toArray()))out.add(redact(JSONObject.parseObject(body)));
+        if(dialect==com.ruoyi.common.database.DatabaseDialect.DM8){args.add((page-1)*pageSize);args.add(pageSize);}else{args.add(pageSize);args.add((page-1)*pageSize);}JSONArray out=new JSONArray();
+        for(String body:jdbc.query("SELECT body FROM external_data_record"+where+" ORDER BY received_at DESC,id"+(dialect==com.ruoyi.common.database.DatabaseDialect.DM8?" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY":" LIMIT ? OFFSET ?"),(rs,n)->rs.getString(1),args.toArray()))out.add(redact(JSONObject.parseObject(body)));
         return object("items",out,"total",total,"page",page,"pageSize",pageSize);
     }
     private JSONObject get(String id){List<String> values=jdbc.query("SELECT body FROM external_integration WHERE id=?",(rs,n)->rs.getString(1),id);return values.isEmpty()?null:JSONObject.parseObject(values.get(0));}

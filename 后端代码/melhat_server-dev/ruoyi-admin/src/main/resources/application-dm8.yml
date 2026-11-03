@@ -1,0 +1,18 @@
+# Enable with --spring.profiles.active=dev,dm8 (dm8 must be last).
+melhat:
+  database:
+    product: dm8
+    schema-mode: validate
+spring:
+  datasource:
+    driverClassName: dm.jdbc.driver.DmDriver
+    druid:
+      master:
+        url: ${MELHAT_DB_URL}
+        username: ${MELHAT_DB_USERNAME}
+        password: ${MELHAT_DB_PASSWORD}
+        driverClassName: dm.jdbc.driver.DmDriver
+      validationQuery: SELECT 1 FROM DUAL
+      filters: stat
+pagehelper:
+  helperDialect: dm

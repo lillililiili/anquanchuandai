@@ -18,11 +18,17 @@ class FudaPushMySqlTest {
         int port=Integer.parseInt(System.getProperty("fuda.push.mysqlTestPort"));
         if(port<1024||port>65535)throw new IllegalArgumentException("Test port outside allowed range");
         jdbc=new JdbcTemplate(new DriverManagerDataSource("jdbc:mysql://127.0.0.1:"+port
-                +"/fuda_push_test?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC","root","fuda_disposable_test_20261102"));
+                +"/fuda_push_test?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC",required("FUDA_MYSQL_TEST_USERNAME"),required("FUDA_MYSQL_TEST_PASSWORD")));
         assertEquals("fuda_push_test",jdbc.queryForObject("SELECT DATABASE()",String.class));
         jdbc.execute("DROP TABLE IF EXISTS fuda_push_outbox");
+        // This fixture deliberately removes schema; remove its matching test-only journal too.
+        if(com.ruoyi.common.database.DatabaseDialect.tableExists(jdbc,"wearable_schema_history"))
+            jdbc.update("DELETE FROM wearable_schema_history WHERE version_id='20261102_fuda_push_outbox'");
+        if(com.ruoyi.common.database.DatabaseDialect.tableExists(jdbc,"wearable_schema_step"))
+            jdbc.update("DELETE FROM wearable_schema_step WHERE version_id='20261102_fuda_push_outbox'");
         box=new FudaPushOutbox(jdbc); tx=new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
     }
+    private static String required(String key){String value=System.getenv(key);if(value==null||value.isEmpty())throw new IllegalStateException("Missing test environment "+key);return value;}
     void enqueue(String id,String device) {
         tx.execute(s->{box.enqueue("test","ledger-"+device,"HELMET",device,object("eventId",id,"eventType","STATUS","data",object("deviceId",device)),1000);return null;});
     }

@@ -124,6 +124,9 @@ public class MyBatisConfig
 
         final SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);
+        org.apache.ibatis.mapping.VendorDatabaseIdProvider provider=new org.apache.ibatis.mapping.VendorDatabaseIdProvider();
+        java.util.Properties vendors=new java.util.Properties();vendors.setProperty("MySQL","mysql");vendors.setProperty("DM DBMS","dm8");vendors.setProperty("H2","mysql");provider.setProperties(vendors);
+        sessionFactory.setDatabaseIdProvider(provider);
         sessionFactory.setTypeAliasesPackage(typeAliasesPackage);
         sessionFactory.setMapperLocations(resolveMapperLocations(StringUtils.split(mapperLocations, ",")));
         sessionFactory.setConfigLocation(new DefaultResourceLoader().getResource(configLocation));

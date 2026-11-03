@@ -27,6 +27,7 @@ public class AdminLedgerStore {
     private static final Map<String, String> TABLES = arrayTables();
 
     private final JdbcTemplate jdbc;
+    private final com.ruoyi.common.database.DatabaseDialect dialect;
     private final Object lock = new Object();
     private TransactionTemplate transactions;
     private final boolean demoMode;
@@ -39,6 +40,7 @@ public class AdminLedgerStore {
     public AdminLedgerStore(JdbcTemplate jdbc,
             @org.springframework.beans.factory.annotation.Value("${melhat.demo-mode:false}") boolean demoMode) {
         this.jdbc = jdbc;
+        this.dialect = com.ruoyi.common.database.DatabaseDialect.of(jdbc);
         this.demoMode = demoMode;
         ensureSchema();
     }
@@ -150,7 +152,7 @@ public class AdminLedgerStore {
     }
 
     private void replace(JSONObject state) {
-        jdbc.update("INSERT INTO wearable_meta (id, revision, next_id) VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE revision=VALUES(revision), next_id=VALUES(next_id)", number(state, "revision"), number(state, "nextId"));
+        dialect.upsert(jdbc,"wearable_meta",Arrays.asList("id","revision","next_id"),Arrays.asList("id"),1,number(state,"revision"),number(state,"nextId"));
         replaceRows("wearable_site", "INSERT INTO wearable_site (id, code, name, time_zone, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?)", state.getJSONArray("sites"), new SiteBinder());
         replaceRows("wearable_organization", "INSERT INTO wearable_organization (id, site_id, code, name, area_id, parent_id, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?,?)", state.getJSONArray("organizations"), new OrganizationBinder());
         replaceRows("wearable_area", "INSERT INTO wearable_area (id, site_id, code, name, parent_id, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?)", state.getJSONArray("areas"), new AreaBinder());
@@ -181,12 +183,9 @@ public class AdminLedgerStore {
         });
         Set<String> kept = new HashSet<String>();
         String columns = sql.substring(sql.indexOf('(') + 1, sql.indexOf(')'));
-        StringBuilder update = new StringBuilder(sql).append(" ON DUPLICATE KEY UPDATE ");
-        for (String column : columns.split(",")) {
-            column = column.trim(); if ("id".equals(column)) continue;
-            if (update.charAt(update.length() - 1) != ' ') update.append(',');
-            update.append(column).append("=VALUES(").append(column).append(')');
-        }
+        List<String> names=new ArrayList<String>();for(String column:columns.split(","))names.add(column.trim());
+        List<String> updates=new ArrayList<String>(names);updates.remove("id");
+        String update=dialect.upsertSql(table,names,Arrays.asList("id"),updates);
         for (int i = 0; rows != null && i < rows.size(); i++) {
             JSONObject row = rows.getJSONObject(i);
             if (row == null || text(row, "id") == null) throw new GuardianRejected("后台台账无法保存");
@@ -207,23 +206,14 @@ public class AdminLedgerStore {
         jdbc.query("SELECT " + column + ", body FROM " + table, rs -> { previous.put(rs.getString(1), rs.getString(2)); });
         for (String key : next.keySet()) {
             String body = JSON.toJSONString(next.get(key));
-            if (!body.equals(previous.get(key))) jdbc.update("INSERT INTO " + table + " (" + column + ", body) VALUES (?, ?) ON DUPLICATE KEY UPDATE body=VALUES(body)", key, body);
+            if (!body.equals(previous.get(key))) dialect.upsert(jdbc,table,Arrays.asList(column,"body"),Arrays.asList(column),key,body);
         }
         for (String key : previous.keySet()) if (!next.containsKey(key)) jdbc.update("DELETE FROM " + table + " WHERE " + column + "=?", key);
     }
 
     private void ensureSchema() {
         if (transactions != null) return;
-        jdbc.execute("CREATE TABLE IF NOT EXISTS admin_ledger (id TINYINT NOT NULL PRIMARY KEY, body LONGTEXT NOT NULL, updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)");
-        try {
-            String sql = StreamUtils.copyToString(new ClassPathResource("db/20261003_wearable_master.sql").getInputStream(), StandardCharsets.UTF_8);
-            for (String part : sql.split(";")) {
-                String statement = stripComments(part);
-                if (!statement.isEmpty()) jdbc.execute(statement);
-            }
-        } catch (java.io.IOException error) {
-            throw new IllegalStateException("主数据表结构不可用", error);
-        }
+        com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261003_wearable_master");
         transactions = new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
     }
 

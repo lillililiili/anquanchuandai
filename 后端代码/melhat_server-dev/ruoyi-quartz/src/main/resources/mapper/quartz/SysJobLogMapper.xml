@@ -36,10 +36,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				AND invoke_target like concat('%', #{invokeTarget}, '%')
 			</if>
 			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
-				and date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+				and <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(create_time AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(create_time,'%y%m%d')</otherwise></choose> &gt;= <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(#{params.beginTime} AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(#{params.beginTime},'%y%m%d')</otherwise></choose>
 			</if>
 			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
-				and date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+				and <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(create_time AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(create_time,'%y%m%d')</otherwise></choose> &lt;= <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(#{params.endTime} AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(#{params.endTime},'%y%m%d')</otherwise></choose>
 			</if>
 		</where>
 	</select>
@@ -86,8 +86,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="jobMessage != null and jobMessage != ''">#{jobMessage},</if>
  			<if test="status != null and status != ''">#{status},</if>
  			<if test="exceptionInfo != null and exceptionInfo != ''">#{exceptionInfo},</if>
- 			sysdate()
+			CURRENT_TIMESTAMP
  		)
 	</insert>
 
-</mapper> 
+</mapper>

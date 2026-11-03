@@ -91,13 +91,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			AND u.phonenumber like concat('%', #{phonenumber}, '%')
 		</if>
 		<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
-			AND date_format(u.create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+			AND <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(u.create_time AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(u.create_time,'%y%m%d')</otherwise></choose> &gt;= <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(#{params.beginTime} AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(#{params.beginTime},'%y%m%d')</otherwise></choose>
 		</if>
 		<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
-			AND date_format(u.create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+			AND <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(u.create_time AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(u.create_time,'%y%m%d')</otherwise></choose> &lt;= <choose><when test="_databaseId == 'dm8'">TO_CHAR(CAST(#{params.endTime} AS TIMESTAMP),'YYMMDD')</when><otherwise>date_format(#{params.endTime},'%y%m%d')</otherwise></choose>
 		</if>
 		<if test="deptId != null and deptId != 0">
-			AND (u.dept_id = #{deptId} OR u.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE find_in_set(#{deptId}, ancestors) ))
+			AND (u.dept_id = #{deptId} OR u.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE INSTR(CONCAT(CONCAT(',',COALESCE(ancestors,'')),','),CONCAT(CONCAT(',',#{deptId}),',')) &gt; 0 ))
 		</if>
 		<if test="userType != null and userType != '' ">
 			AND user_type = #{userType}
@@ -174,15 +174,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
 	
 	<select id="checkUserNameUnique" parameterType="String" resultMap="SysUserResult">
-		select user_id, user_name from sys_user where user_name = #{userName} and del_flag = '0' limit 1
+		select user_id, user_name from sys_user where user_name = #{userName} and del_flag = '0' <choose><when test="_databaseId == 'dm8'">FETCH FIRST 1 ROWS ONLY</when><otherwise>LIMIT 1</otherwise></choose>
 	</select>
 	
 	<select id="checkPhoneUnique" parameterType="String" resultMap="SysUserResult">
-		select user_id, phonenumber from sys_user where phonenumber = #{phonenumber} and del_flag = '0' limit 1
+		select user_id, phonenumber from sys_user where phonenumber = #{phonenumber} and del_flag = '0' <choose><when test="_databaseId == 'dm8'">FETCH FIRST 1 ROWS ONLY</when><otherwise>LIMIT 1</otherwise></choose>
 	</select>
 	
 	<select id="checkEmailUnique" parameterType="String" resultMap="SysUserResult">
-		select user_id, email from sys_user where email = #{email} and del_flag = '0' limit 1
+		select user_id, email from sys_user where email = #{email} and del_flag = '0' <choose><when test="_databaseId == 'dm8'">FETCH FIRST 1 ROWS ONLY</when><otherwise>LIMIT 1</otherwise></choose>
 	</select>
 
 		<select id="countOnlineUsers" resultType="int">
@@ -268,7 +268,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="sipId != null and sipId != ''">#{sipId},</if>
 		<if test="assistGroup != null and assistGroup != ''">#{assistGroup},</if>
 
- 			sysdate()
+			CURRENT_TIMESTAMP
  		)
 	</insert>
 	
@@ -303,7 +303,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="electronicSignature != null and electronicSignature != ''">electronic_signature=#{electronicSignature},</if>
 			<if test="sipId != null and sipId != ''">sip_id=#{sipId},</if>
 			<if test="assistGroup != null and assistGroup != ''">assist_group=#{assistGroup},</if>
-			update_time = sysdate()
+			update_time = CURRENT_TIMESTAMP
  		</set>
  		where user_id = #{userId}
 	</update>
@@ -348,7 +348,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
 	<select id="getMaxSipId" resultType="string">
-		select sip_id from sys_user ORDER BY sip_id desc limit 1
+		select sip_id from sys_user ORDER BY sip_id desc <choose><when test="_databaseId == 'dm8'">FETCH FIRST 1 ROWS ONLY</when><otherwise>LIMIT 1</otherwise></choose>
 	</select>
 
 	<select id="getUsersGroup" resultType="com.ruoyi.common.core.domain.entity.SysUser">
@@ -362,6 +362,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		WHERE b.role_id in (select c.role_id from sys_user_role c left join sys_role d on c.role_id=d.role_id  where c.user_id = #{id} and d.role_key=#{roleName})
 	</select>
 	<select id="getUsersByGroup" resultType="com.ruoyi.common.core.domain.entity.SysUser">
-		select * from sys_user where FIND_IN_SET(#{groupName},assist_group)
+		select * from sys_user where INSTR(CONCAT(CONCAT(',',COALESCE(assist_group,'')),','),CONCAT(CONCAT(',',#{groupName}),',')) &gt; 0
 	</select>
 </mapper>

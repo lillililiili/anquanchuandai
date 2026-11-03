@@ -5,10 +5,8 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -36,6 +34,7 @@ public class WearableBusinessStore {
         Snapshot(JSONObject state, long revision) { this.state = state; this.revision = revision; }
     }
     private final JdbcTemplate jdbc;
+    private final com.ruoyi.common.database.DatabaseDialect dialect;
     private final TransactionTemplate transactions;
     private final byte[] mediaKey;
     private final boolean lockingReads;
@@ -74,11 +73,12 @@ public class WearableBusinessStore {
     private WearableBusinessStore(JdbcTemplate jdbc,String encodedKey,boolean initialize,boolean lockingReads) {
         this.lockingReads = lockingReads;
         this.jdbc = jdbc;
+        this.dialect = com.ruoyi.common.database.DatabaseDialect.of(jdbc);
         this.transactions = new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
         try { this.mediaKey = encodedKey == null || encodedKey.trim().isEmpty() ? null : Base64.getDecoder().decode(encodedKey.trim()); }
         catch (IllegalArgumentException error) { throw new IllegalStateException("媒体数据库加密密钥必须为 Base64 编码", error); }
         if (mediaKey != null && mediaKey.length != 32) throw new IllegalStateException("媒体数据库加密密钥必须包含32字节");
-        if(initialize)new ResourceDatabasePopulator(new ClassPathResource("db/20261026_wearable_business.sql")).execute(jdbc.getDataSource());
+        if(initialize)com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261026_wearable_business");
         this.alarmJournal = lockingReads ? new FudaAlarmJournal(jdbc) : null;
         if(initialize) this.alarmJournal.initialize();
     }
@@ -121,8 +121,7 @@ public class WearableBusinessStore {
             } catch (Exception error) { throw new IllegalStateException("历史业务数据导入失败，原文件保持不变", error); }
             final JSONObject imported = initial; final String importedSource = source, hash = digest;
             transactions.execute(status -> {
-                jdbc.update("INSERT INTO wearable_business_meta (namespace,revision,imported_from,import_sha256,imported_at) VALUES (?,0,?,?,?) ON DUPLICATE KEY UPDATE namespace=namespace",
-                        namespace, importedSource, hash, System.currentTimeMillis());
+                dialect.insertIfAbsent(jdbc,"wearable_business_meta",Arrays.asList("namespace","revision","imported_from","import_sha256","imported_at"),Arrays.asList("namespace"),namespace,0,importedSource,hash,System.currentTimeMillis());
                 JSONObject meta = lock(namespace);
                 if (meta.getLongValue("revision") == 0) {
                     replace(namespace, imported, true);
@@ -150,7 +149,7 @@ public class WearableBusinessStore {
                     String ordering="locations".equals(key)?"observed_at DESC,record_key":"sort_order,record_key";
                     List<Map<String,Object>> rows = workingSet&&"guardian".equals(namespace)&&"locations".equals(key)
                             ? locationWorkingRows(namespace,key)
-                            : jdbc.queryForList("SELECT record_key, body FROM " + table(namespace,key) + " WHERE namespace=? AND collection_key=? ORDER BY "+ordering, namespace,key);
+                            : documentRows("SELECT record_key, body FROM " + table(namespace,key) + " WHERE namespace=? AND collection_key=? ORDER BY "+ordering, namespace,key);
                     if ("array".equals(type)) {
                         JSONArray values = new JSONArray();
                         for (Map<String,Object> row : rows) values.add(JSON.parse(decode(namespace,key,String.valueOf(row.get("record_key")),String.valueOf(row.get("body")))));
@@ -166,13 +165,21 @@ public class WearableBusinessStore {
         });
     }
 
+    /** Explicit text extraction avoids leaking driver-specific CLOB objects into JSON. */
+    private List<Map<String,Object>> documentRows(String sql,Object... args) {
+        return jdbc.query(sql,(rs,n)->{
+            Map<String,Object> row=new HashMap<>();row.put("record_key",rs.getString("record_key"));row.put("body",rs.getString("body"));
+            for(int i=1;i<=rs.getMetaData().getColumnCount();i++)if("observed_at".equalsIgnoreCase(rs.getMetaData().getColumnLabel(i)))row.put("observed_at",rs.getObject(i));
+            return row;
+        },args);
+    }
     private List<Map<String,Object>> locationWorkingRows(String namespace,String key) {
         List<Map<String,Object>> result=new ArrayList<>();
         List<String> devices=jdbc.query("SELECT DISTINCT device_id FROM wearable_location WHERE namespace=? AND collection_key=?",(rs,n)->rs.getString(1),namespace,key);
         for(String device:devices) {
             List<Object> parameters=new ArrayList<>(Arrays.asList(namespace,key));
             String predicate=device==null?"device_id IS NULL":"device_id=?";if(device!=null)parameters.add(device);
-            result.addAll(jdbc.queryForList("SELECT record_key,body,observed_at FROM wearable_location WHERE namespace=? AND collection_key=? AND "+predicate+" ORDER BY observed_at DESC,record_key LIMIT "+LIVE_LOCATION_LIMIT,parameters.toArray()));
+            result.addAll(documentRows(dialect.limit("SELECT record_key,body,observed_at FROM wearable_location WHERE namespace=? AND collection_key=? AND "+predicate+" ORDER BY observed_at DESC,record_key",String.valueOf(LIVE_LOCATION_LIMIT)),parameters.toArray()));
         }
         result.sort(Comparator.<Map<String,Object>,Long>comparing(row->row.get("observed_at")==null?null:((Number)row.get("observed_at")).longValue(),Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(row->String.valueOf(row.get("record_key"))));
@@ -233,7 +240,7 @@ public class WearableBusinessStore {
             }
             syncRows(namespace,key,records);
             String body="scalar".equals(type) ? encode(namespace,key,"$",JSON.toJSONString(value)) : null;
-            jdbc.update("INSERT INTO wearable_business_document (namespace,collection_key,value_type,body) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE value_type=VALUES(value_type),body=VALUES(body)",namespace,key,type,body);
+            dialect.upsert(jdbc,"wearable_business_document",Arrays.asList("namespace","collection_key","value_type","body"),Arrays.asList("namespace","collection_key"),namespace,key,type,body);
             old.remove(key);
         }
         for(String key:old) {
@@ -269,7 +276,7 @@ public class WearableBusinessStore {
             if(prior!=null && json.equals(decode(namespace,key,id,prior.getString("body"))) && ("locations".equals(key)||prior.getIntValue("order")==order)){order++;continue;}
             JSONObject row=entry.getValue() instanceof JSONObject?(JSONObject)entry.getValue():new JSONObject();
             Long time=observedAt(row);
-            jdbc.update("INSERT INTO "+table+" (namespace,collection_key,record_key,record_id,device_id,person_id,site_id,area_id,event_id,source,observed_at,sort_order,body) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE record_id=VALUES(record_id),device_id=VALUES(device_id),person_id=VALUES(person_id),site_id=VALUES(site_id),area_id=VALUES(area_id),event_id=VALUES(event_id),source=VALUES(source),observed_at=VALUES(observed_at),sort_order=VALUES(sort_order),body=VALUES(body)",
+            dialect.upsert(jdbc,table,Arrays.asList("namespace","collection_key","record_key","record_id","device_id","person_id","site_id","area_id","event_id","source","observed_at","sort_order","body"),Arrays.asList("namespace","collection_key","record_key"),
                     namespace,key,id,text(row,"id"),"devices".equals(key)?text(row,"id"):first(row,"deviceId","sn"),text(row,"personId"),text(row,"siteId"),text(row,"areaId"),text(row,"eventId"),first(row,"source","protocol"),time,order++,encode(namespace,key,id,json));
         }
         if(!"locations".equals(key))for(String id:previous.keySet())jdbc.update("DELETE FROM "+table+" WHERE namespace=? AND collection_key=? AND record_key=?",namespace,key,id);
@@ -296,7 +303,7 @@ public class WearableBusinessStore {
         if(receiptId==null || !receiptId.matches("[A-Za-z0-9._:-]{1,128}") || protocol==null || protocol.length()>64 || deviceId==null || deviceId.length()>128 || payload==null)
             throw new IllegalArgumentException("设备接收记录参数无效");
         return transactions.execute(status->{
-            jdbc.update("INSERT INTO wearable_device_report (receipt_id,protocol,device_id,received_at,body) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE receipt_id=receipt_id",receiptId,protocol,deviceId,System.currentTimeMillis(),payload.toJSONString());
+            dialect.insertIfAbsent(jdbc,"wearable_device_report",Arrays.asList("receipt_id","protocol","device_id","received_at","body"),Arrays.asList("receipt_id"),receiptId,protocol,deviceId,System.currentTimeMillis(),payload.toJSONString());
             JSONObject saved=jdbc.queryForObject("SELECT sequence,protocol,device_id,body FROM wearable_device_report WHERE receipt_id=?",(rs,n)->object("sequence",rs.getLong(1),"protocol",rs.getString(2),"deviceId",rs.getString(3),"body",rs.getString(4)),receiptId);
             if(!protocol.equals(saved.getString("protocol")) || !deviceId.equals(saved.getString("deviceId")) || !JSON.parseObject(payload.toJSONString()).equals(JSON.parseObject(saved.getString("body"))))throw new IllegalStateException("接收编号已被其他报文使用");
             return saved.getLongValue("sequence");
@@ -323,13 +330,13 @@ public class WearableBusinessStore {
     }
     public List<JSONObject> pendingReports(long afterSequence,int limit) {
         if(afterSequence<0 || limit<1 || limit>1000)throw new IllegalArgumentException("报文分页参数无效");
-        return jdbc.query("SELECT sequence,receipt_id,protocol,device_id,received_at,body FROM wearable_device_report WHERE sequence>? AND processed_at IS NULL ORDER BY sequence LIMIT ?",
+        return jdbc.query(dialect.limit("SELECT sequence,receipt_id,protocol,device_id,received_at,body FROM wearable_device_report WHERE sequence>? AND processed_at IS NULL ORDER BY sequence","?"),
                 (rs,n)->object("sequence",rs.getLong(1),"receiptId",rs.getString(2),"protocol",rs.getString(3),"deviceId",rs.getString(4),"receivedMillis",rs.getLong(5),"payload",JSON.parseObject(rs.getString(6))),afterSequence,limit);
     }
 
     public List<JSONObject> locations(String personId,String deviceId,long from,long to,long cursorTime,String cursorId,int limit) {
         String column=personId==null?"device_id":"person_id";
-        return jdbc.query("SELECT body,observed_at FROM wearable_location WHERE namespace='guardian' AND collection_key='locations' AND "+column+"=? AND observed_at>=? AND observed_at<? AND (observed_at>? OR (observed_at=? AND record_key>?)) ORDER BY observed_at,record_key LIMIT ?",
+        return jdbc.query(dialect.limit("SELECT body,observed_at FROM wearable_location WHERE namespace='guardian' AND collection_key='locations' AND "+column+"=? AND observed_at>=? AND observed_at<? AND (observed_at>? OR (observed_at=? AND record_key>?)) ORDER BY observed_at,record_key","?"),
                 (rs,n)->{JSONObject row=JSON.parseObject(rs.getString(1));row.put("queryMillis",rs.getLong(2));return row;},personId==null?deviceId:personId,from,to,cursorTime,cursorTime,cursorId,limit);
     }
 

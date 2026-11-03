@@ -16,6 +16,7 @@
     </description>
 
     <dependencies>
+        <dependency><groupId>com.dameng</groupId><artifactId>DmJdbcDriver8</artifactId><version>8.1.4.93</version></dependency>
 
         <!-- spring-boot-devtools -->
         <dependency>

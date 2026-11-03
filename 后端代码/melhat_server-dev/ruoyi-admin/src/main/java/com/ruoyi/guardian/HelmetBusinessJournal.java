@@ -1,9 +1,7 @@
 package com.ruoyi.guardian;
 
 import com.alibaba.fastjson2.JSONObject;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.stereotype.Repository;
@@ -13,11 +11,13 @@ import java.util.List;
 @Repository
 public class HelmetBusinessJournal {
     private final JdbcTemplate jdbc;
+    private final com.ruoyi.common.database.DatabaseDialect dialect;
     private final TransactionTemplate transaction;
     public HelmetBusinessJournal(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.dialect = com.ruoyi.common.database.DatabaseDialect.of(jdbc);
         this.transaction = new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
-        new ResourceDatabasePopulator(new ClassPathResource("db/20261023_helmet_business.sql")).execute(jdbc.getDataSource());
+        com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261023_helmet_business");
     }
     public void location(JSONObject point) {
         saveLocation(point,false);
@@ -25,16 +25,17 @@ public class HelmetBusinessJournal {
     public void offlineLocation(JSONObject point){saveLocation(point,true);}
     private void saveLocation(JSONObject point,boolean idempotent) {
         point.put("queryMillis",point.containsKey("collectedMillis")?point.getLongValue("collectedMillis"):point.getLongValue("receivedMillis"));
-        jdbc.update("INSERT INTO helmet_location_fix (id,device_id,person_id,site_id,area_id,received_at,observed_at,body) VALUES (?,?,?,?,?,?,?,?)"+(idempotent?" ON DUPLICATE KEY UPDATE id=id":""),
-                point.getString("id"),point.getString("deviceId"),point.getString("personId"),point.getString("siteId"),
-                point.getString("areaId"),point.getLongValue("receivedMillis"),point.getLongValue("queryMillis"),point.toJSONString());
+        Object[] values={point.getString("id"),point.getString("deviceId"),point.getString("personId"),point.getString("siteId"),
+                point.getString("areaId"),point.getLongValue("receivedMillis"),point.getLongValue("queryMillis"),point.toJSONString()};
+        if(idempotent)dialect.insertIfAbsent(jdbc,"helmet_location_fix",java.util.Arrays.asList("id","device_id","person_id","site_id","area_id","received_at","observed_at","body"),java.util.Arrays.asList("id"),values);
+        else jdbc.update("INSERT INTO helmet_location_fix (id,device_id,person_id,site_id,area_id,received_at,observed_at,body) VALUES (?,?,?,?,?,?,?,?)",values);
     }
     public void event(JSONObject event) {
         if (event.getLong("sourceRecordId") == null) throw new IllegalStateException("告警原始记录编号缺失");
         transaction.execute(status -> {
             String key=groupKey(event);
             // Upsert creates the mutex row without a check/insert race, and joins the raw-report transaction.
-            jdbc.update("INSERT INTO helmet_event_group (group_key) VALUES (?) ON DUPLICATE KEY UPDATE group_key=group_key",key);
+            dialect.insertIfAbsent(jdbc,"helmet_event_group",java.util.Arrays.asList("group_key"),java.util.Arrays.asList("group_key"),key);
             JSONObject group=jdbc.queryForObject("SELECT open_event_id,initial_body FROM helmet_event_group WHERE group_key=? FOR UPDATE",
                     (rs,n)->WearableModel.object("id",rs.getString(1),"initial",rs.getString(2)),key);
             String open=group.getString("id");
@@ -62,7 +63,7 @@ public class HelmetBusinessJournal {
         return org.apache.commons.codec.digest.DigestUtils.sha256Hex(key.toJSONString());
     }
     public List<JSONObject> pending() {
-        return jdbc.query("SELECT body FROM helmet_event_link WHERE projected=0 ORDER BY received_at,source_type,source_record_id LIMIT 100",
+        return jdbc.query(dialect.limit("SELECT body FROM helmet_event_link WHERE projected=0 ORDER BY received_at,source_type,source_record_id","100"),
                 (rs,n)->JSONObject.parseObject(rs.getString(1)));
     }
     public void projected(JSONObject envelope) {
@@ -74,8 +75,8 @@ public class HelmetBusinessJournal {
     }
     public List<JSONObject> locations(String personId,String deviceId,long from,long to,long cursorTime,String cursorId,int limit) {
         String selector=personId != null ? "person_id" : "device_id";
-        return jdbc.query("SELECT body FROM helmet_location_fix WHERE " + selector + "=? AND observed_at>=? AND observed_at<?"
-                        + " AND (observed_at>? OR (observed_at=? AND id>?)) ORDER BY observed_at,id LIMIT ?",
+        return jdbc.query(dialect.limit("SELECT body FROM helmet_location_fix WHERE " + selector + "=? AND observed_at>=? AND observed_at<?"
+                        + " AND (observed_at>? OR (observed_at=? AND id>?)) ORDER BY observed_at,id","?"),
                 (rs,n)->JSONObject.parseObject(rs.getString(1)),personId != null ? personId : deviceId,from,to,cursorTime,cursorTime,cursorId,limit);
     }
     /** A persisted final verification is authoritative. Repeated synchronization is harmless. */
