@@ -200,6 +200,7 @@ public class HelmetMediaService {
                     if(source!=null){source.put("status","cancelled");source.put("message","已取消等待视频，未开始录像");saveCommand(source);}
                     row.put("status","completed");row.put("message","已取消等待中的平台录像");
                 }
+                if(clusteredCommands())return finishRecordingStop(row,stream);
                 if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))sendDevice(deviceId,obj("cmd","server_push_stop_rtsp"));
             } else {
                 if("broadcast".equals(action)) {
@@ -219,6 +220,22 @@ public class HelmetMediaService {
         }
         if(clusteredCommands()&&Arrays.asList("configured","completed","accepted").contains(row.getString("status")))commandRouter.completeWithoutSend(id);
         saveCommand(row); return publicCommand(row);
+    }
+    /** Cloud recording phase and the optional device cleanup delivery have separate outcomes. */
+    private JSONObject finishRecordingStop(JSONObject row,JSONObject stream) {
+        String id=row.getString("id"),deviceId=row.getString("deviceId");
+        // Publish the confirmed phase before activating delivery; never write this old row after send.
+        saveCommand(row);
+        try {
+            if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))
+                sendDevice(deviceId,obj("cmd","server_push_stop_rtsp","talkback_id",id));
+            else commandRouter.completeWithoutSend(id);
+        } catch(com.ruoyi.cluster.DeviceCommandRouter.Pending pending) {
+            // The same HC owns cleanup delivery. QUEUED/UNKNOWN cannot undo cloud finalization/cancellation.
+        } catch(Exception error) {
+            commandRouter.failBeforeSend(id,"录像停止已处理，但设备停止推流指令准备失败");
+        }
+        return commandState(id);
     }
     public JSONObject commandState(String id){JSONObject row=map(store.snapshot(),"commands").getJSONObject(id);return row==null?null:publicCommand(row);}
     public JSONObject media(String deviceId) {
