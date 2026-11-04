@@ -6,8 +6,7 @@ import { spool } from '../helmet-media/spool.mjs';
 
 // Owner is fixed by the registered secret entry, never caller headers.
 // Firmware can delete its local video after ACK: acknowledge durable storage only.
-export function createMediaUpload(config, fetchMedia = fetch) {
-  let active = 0;
+export function createMediaUpload(config, fetchMedia = fetch, admission = { active: 0, maximum: 2 }) {
   return async (request, response, query, send, fail, video = false) => {
     if (!config.mediaControlOrigin) return fail(response, 501, 'Unsupported');
     const action = `${query.get('ctl')}/${query.get('act')}`;
@@ -19,11 +18,11 @@ export function createMediaUpload(config, fetchMedia = fetch) {
       || [...query.values()].some(v=>v.length>256||/[\u0000-\u001f\u007f-\u009f]/.test(v))
       || (query.has('device_id')&&query.get('device_id')!==config.deviceId)
       || (video && (query.get('device_id')!==config.deviceId || !/^[A-Za-z0-9_-]{8,80}$/.test(query.get('X-Progress-ID')??'')))) return fail(response,400,'InvalidUpload');
-    if(active>=2) return fail(response,429,'Busy');
+    if(admission.active>=admission.maximum) return fail(response,429,'Busy');
     const max=binding||streamCheck?8192:256*1024*1024;
     if(Number(request.headers['content-length']??0)>max) return fail(response,413,'TooLarge');
     if(!binding && !streamCheck && !/^multipart\/form-data;\s*boundary=/i.test(request.headers['content-type']??'')) return fail(response,415,'InvalidUpload');
-    active++;let saved,body;
+    admission.active++;let saved,body;
     try {
       let controlPath,headers;
       if(binding||streamCheck) {
@@ -54,6 +53,6 @@ export function createMediaUpload(config, fetchMedia = fetch) {
       if(asset.deviceId!==config.deviceId||asset.kind!==kind||!asset.url?.startsWith(config.mediaControlOrigin+'/helmet-media/files/'))throw Error('Invalid owner');
       return send(response,200,{status:true,msg_code:video?'Success':'UploadSucc',msg:'上传成功',data:{url:asset.url,whole_url:asset.url}});
     }catch{return fail(response,502,'UploadUnavailable');}
-    finally{active--;if(body?.destroy)await new Promise(resolve=>{body.once('close',resolve);body.destroy();if(body.closed)resolve();});if(saved)await fs.promises.unlink(saved.filename).catch(()=>{});}
+    finally{admission.active--;if(body?.destroy)await new Promise(resolve=>{body.once('close',resolve);body.destroy();if(body.closed)resolve();});if(saved)await fs.promises.unlink(saved.filename).catch(()=>{});}
   };
 }

@@ -87,10 +87,11 @@ function rejectUpgrade(socket, status = 404) {
   socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 }
 
-export function createBeltDeviceGateway(input, { testOnly = false, limits: testLimits = {}, observer } = {}) {
-  const config = validateConfig(input, { testOnly });
+export function createBeltDeviceGateway(input, { testOnly = false, limits: testLimits = {}, observer,
+  configure = validateConfig, accepting = () => true, management = () => false } = {}) {
+  const config = configure(input, { testOnly });
   if (!testOnly && Object.keys(testLimits).length) throw new Error('Runtime limits are fixed.');
-  const limits = { ...DEFAULT_LIMITS, ...testLimits };
+  const limits = { ...DEFAULT_LIMITS, ...config.runtimeLimits, ...testLimits };
   const observationCounts = new Map();
   function observe(event, reason) {
     if (typeof observer !== 'function' || !EVENT_REASONS[event]?.includes(reason)) return;
@@ -103,15 +104,15 @@ export function createBeltDeviceGateway(input, { testOnly = false, limits: testL
       if (result && typeof result.catch === 'function') result.catch(() => {});
     } catch { /* Diagnostics must never change acceptance or connection handling. */ }
   }
-  const bootstrapPaths = new Set([`/${config.pathToken}/api/belt/index.php`,
-    `/${config.pathToken}/api/belt/config/index.php`]);
-  const websocketPath = `/${config.pathToken}/wsBelt`;
-  const deviceWebsocketPath = `/${config.pathToken}/wsHat`;
   // RD1102 truncates its HTTP upgrade request at 199 bytes with the full
   // credential. Keep both existing routes and advertise a 24-character
   // (144-bit) prefix so the observed complete handshake fits in that buffer.
-  const shortDeviceWebsocketPath = `/${config.pathToken.slice(0, 24)}/wsHat`;
-  const websocketPaths = new Set([websocketPath, deviceWebsocketPath, shortDeviceWebsocketPath]);
+  const httpRoutes = new Map(), websocketRoutes = new Map();
+  for (const device of config.devices ?? [config]) {
+    const scoped = { ...config, deviceId: device.deviceId, pathToken: device.pathToken };
+    for (const suffix of ['api/belt/index.php', 'api/belt/config/index.php']) httpRoutes.set(`/${device.pathToken}/${suffix}`, scoped);
+    for (const route of [`/${device.pathToken}/wsBelt`, `/${device.pathToken}/wsHat`, `/${device.pathToken.slice(0, 24)}/wsHat`]) websocketRoutes.set(route, scoped);
+  }
   const allowRequest = counter(limits.requestsPerMinute, 60000);
   const allowUpgrade = counter(limits.upgradesPerMinute, 60000);
   const bridges = new Set();
@@ -125,7 +126,9 @@ export function createBeltDeviceGateway(input, { testOnly = false, limits: testL
     const raw = request.url ?? '';
     const separator = raw.indexOf('?');
     const path = separator === -1 ? raw : raw.slice(0, separator);
-    if (!bootstrapPaths.has(path)) return deny('path', 404);
+    const config = httpRoutes.get(path);
+    if (!config) return deny('path', 404);
+    const shortDeviceWebsocketPath = `/${config.pathToken.slice(0, 24)}/wsHat`;
     if (!allowRequest()) return deny('rate', 429);
     if (!['GET', 'POST'].includes(request.method)) return deny('method', 405);
     const rawQuery = separator === -1 ? '' : raw.slice(separator + 1);
@@ -165,7 +168,7 @@ export function createBeltDeviceGateway(input, { testOnly = false, limits: testL
       if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied)) throw new Error('Invalid configuration');
       const rewritten = { ...payload, data: { ...payload.data, config: JSON.stringify({ ...supplied,
         api_url: MANUFACTURER_API_URL,
-        ws_url: `${DEVICE_WS_ORIGIN}${shortDeviceWebsocketPath}` }) } };
+        ws_url: `${config.deviceWebsocketOrigin ?? DEVICE_WS_ORIGIN}${shortDeviceWebsocketPath}` }) } };
       // This gateway has no authority to reset paired accessory configuration.
       delete rewritten.data.extra;
       if (!response.destroyed) { jsonReply(response, 200, rewritten); observe('http_result', 'ok'); }
@@ -183,7 +186,8 @@ export function createBeltDeviceGateway(input, { testOnly = false, limits: testL
 
   const server = http.createServer({ maxHeaderSize: 8192 }, (request, response) => {
     observe('http_request', 'received');
-    if (closing) { observe('http_result', 'closing'); return failure(response, 503); }
+    if (management(request, response)) return;
+    if (closing || !accepting()) { observe('http_result', 'closing'); return failure(response, 503); }
     void bootstrap(request, response).catch(() => {
       observe('http_result', 'internal_failure');
       if (!response.destroyed && !response.headersSent) failure(response, 502);
@@ -199,7 +203,7 @@ export function createBeltDeviceGateway(input, { testOnly = false, limits: testL
     if (socket.writable) rejectUpgrade(socket, 400);
   });
 
-  function bridge(client) {
+  function bridge(client, config) {
     let upstream, ended = false, authenticated = false, queuedBytes = 0;
     let queued = [];
     const allowMessage = counter(limits.messagesPerSecond, 1000);
@@ -330,19 +334,21 @@ export function createBeltDeviceGateway(input, { testOnly = false, limits: testL
   server.on('upgrade', (request, socket, head) => {
     observe('ws_upgrade', 'received');
     const deny = (reason, status) => { observe('ws_upgrade_result', reason); return rejectUpgrade(socket, status); };
-    if (closing) return deny('closing');
+    if (closing || !accepting()) return deny('closing', 503);
     if (request.method !== 'GET') return deny('method');
-    if (!websocketPaths.has(request.url)) return deny('path');
+    const scoped = websocketRoutes.get(request.url);
+    if (!scoped) return deny('path');
     if (bridges.size >= limits.maxConnections) return deny('capacity', 429);
     if (!allowUpgrade()) return deny('rate', 429);
     let accepted = false;
     wsServer.handleUpgrade(request, socket, head, client => {
-      accepted = true; observe('ws_upgrade_result', 'accepted'); bridge(client);
+      accepted = true; observe('ws_upgrade_result', 'accepted'); bridge(client, scoped);
     });
     if (!accepted) observe('ws_upgrade_result', 'handshake');
   });
 
   return {
+    disconnectDevices() { for (const handle of [...bridges]) handle.close(); },
     async listen() {
       await new Promise((resolve, reject) => {
         server.once('error', reject);

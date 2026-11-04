@@ -35,15 +35,23 @@ function rejectUpgrade(socket, status = 404) {
   socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 }
 
-export function createDeviceGateway(input, { testOnly = false, limits: testLimits = {}, onGpsReport, mediaFetch } = {}) {
-  const config = validateConfig(input, { testOnly });
+export function createDeviceGateway(input, { testOnly = false, limits: testLimits = {}, onGpsReport, mediaFetch,
+  configure = validateConfig, accepting = () => true, management = () => false } = {}) {
+  const config = configure(input, { testOnly });
   if (!testOnly && Object.keys(testLimits).length) throw new Error('Runtime limits are fixed.');
   if (!testOnly && mediaFetch) throw new Error('Runtime media transport is fixed.');
-  const mediaUpload = createMediaUpload(config, mediaFetch);
-  const limits = { ...DEFAULT_LIMITS, ...testLimits };
-  const bootstrapPath = `/${config.pathToken}/api/index.php`;
-  const uploadPath = `/${config.pathToken}/api/upload`;
-  const websocketPath = `/${config.pathToken}/wsHat`;
+  const limits = { ...DEFAULT_LIMITS, ...config.runtimeLimits, ...testLimits };
+  const httpRoutes = new Map(), websocketRoutes = new Map();
+  // Bound temporary disk/network use for the whole process, across device routes.
+  const mediaAdmission = { active: 0, maximum: 2 };
+  for (const device of config.devices ?? [config]) {
+    const scoped = { ...config, deviceId: device.deviceId, pathToken: device.pathToken };
+    const route = { config: scoped, bootstrapPath: `/${device.pathToken}/api/index.php`,
+      uploadPath: `/${device.pathToken}/api/upload`, websocketPath: `/${device.pathToken}/wsHat`,
+      mediaUpload: createMediaUpload(scoped, mediaFetch, mediaAdmission) };
+    httpRoutes.set(route.bootstrapPath, route); httpRoutes.set(route.uploadPath, route);
+    websocketRoutes.set(route.websocketPath, scoped);
+  }
   const allowRequest = counter(limits.requestsPerMinute, 60000);
   const allowUpgrade = counter(limits.upgradesPerMinute, 60000);
   const bridges = new Set();
@@ -57,7 +65,9 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
     const raw = request.url ?? '';
     const separator = raw.indexOf('?');
     const path = separator === -1 ? raw : raw.slice(0, separator);
-    if (path !== bootstrapPath && path !== uploadPath) return failure(response, 404);
+    const route = httpRoutes.get(path);
+    if (!route) return failure(response, 404);
+    const { config, bootstrapPath, uploadPath, websocketPath, mediaUpload } = route;
     if (!allowRequest()) return failure(response, 429);
     if (request.method === 'POST') {
       const rawQuery = separator === -1 ? '' : raw.slice(separator + 1);
@@ -113,7 +123,7 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
       if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied)) throw new Error('Invalid configuration');
       const rewritten = { ...payload, data: { ...payload.data, config: JSON.stringify({ ...supplied,
         api_url: `${config.publicOrigin}/${config.pathToken}/api/`,
-        ws_url: `${config.publicOrigin.replace(/^https:/, 'wss:')}${websocketPath}` }) } };
+        ws_url: `${config.deviceWebsocketOrigin ?? config.publicOrigin.replace(/^https:/, 'wss:')}${websocketPath}` }) } };
       // This gateway has no authority to reset paired accessory configuration.
       delete rewritten.data.extra;
       if (!response.destroyed) jsonReply(response, 200, rewritten);
@@ -128,7 +138,8 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
   }
 
   const server = http.createServer({ maxHeaderSize: 8192 }, (request, response) => {
-    if (closing) return failure(response, 503);
+    if (management(request, response)) return;
+    if (closing || !accepting()) return failure(response, 503);
     void bootstrap(request, response).catch(() => {
       if (!response.destroyed && !response.headersSent) failure(response, 502);
     });
@@ -139,7 +150,7 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
   server.keepAliveTimeout = 1000;
   server.on('clientError', (_error, socket) => { if (socket.writable) rejectUpgrade(socket, 400); });
 
-  function bridge(client) {
+  function bridge(client, config) {
     const gpsDiagnostics = startGpsDiagnostics?.();
     let upstream, ended = false, authenticated = false, loginAccepted = false, queuedBytes = 0;
     let queued = [];
@@ -261,12 +272,15 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
   }
 
   server.on('upgrade', (request, socket, head) => {
-    if (closing || request.method !== 'GET' || request.url !== websocketPath) return rejectUpgrade(socket);
+    if (closing || !accepting()) return rejectUpgrade(socket, 503);
+    const scoped = websocketRoutes.get(request.url);
+    if (request.method !== 'GET' || !scoped) return rejectUpgrade(socket);
     if (bridges.size >= limits.maxConnections || !allowUpgrade()) return rejectUpgrade(socket, 429);
-    wsServer.handleUpgrade(request, socket, head, client => bridge(client));
+    wsServer.handleUpgrade(request, socket, head, client => bridge(client, scoped));
   });
 
   return {
+    disconnectDevices() { for (const handle of [...bridges]) handle.close(); },
     async listen() {
       await new Promise((resolve, reject) => {
         server.once('error', reject);
