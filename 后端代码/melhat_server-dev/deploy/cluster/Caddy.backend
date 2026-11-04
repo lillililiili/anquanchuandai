@@ -1,0 +1,18 @@
+{
+    admin off
+    auto_https off
+    log default {
+        output discard
+    }
+}
+http://:18084 {
+    reverse_proxy app-a:18084 app-b:18084 {
+        lb_policy round_robin
+        lb_retries 0
+        health_uri /internal/cluster/ready
+        health_interval 2s
+        health_timeout 1500ms
+        health_status 200
+        health_body `"ready"\s*:\s*true`
+    }
+}

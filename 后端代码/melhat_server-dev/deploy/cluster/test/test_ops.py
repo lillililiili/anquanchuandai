@@ -22,7 +22,7 @@ class ConfigurationTest(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / 'private').mkdir()
         (self.root / 'shared' / 'files').mkdir(parents=True)
-        for name in ('compose.yml', 'compose.lab.yml', 'application-cluster.yml', 'Caddyfile'):
+        for name in ('compose.yml', 'compose.lab.yml', 'application-cluster.yml', 'Caddyfile', 'Caddy.backend'):
             shutil.copyfile(DEPLOY / name, self.root / name)
         shutil.copyfile(DEPLOY / 'Caddyfile', self.root / 'private' / 'Caddy.lab')
         secret = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('=')
@@ -39,6 +39,7 @@ class ConfigurationTest(unittest.TestCase):
                  for name in ('helmet-a.json', 'helmet-b.json', 'belt-a.json', 'belt-b.json', 'Caddy.devices')}
         (self.root / 'private' / 'gateway-manifest.json').write_text(json.dumps(dict(generation='42bb991a-a149-4a82-94f3-62aca3b41fb1', files=files)))
         self.dotenv = f'BACKEND_IMAGE=wearable-backend:lab\nGATEWAY_IMAGE=wearable-gateway:lab\nMELHAT_DB_PRODUCT=dm8\nSHARED_DATA_DIR={self.root.as_posix()}/shared\nCADDY_SITE=http://:80\n'
+        self.dotenv += 'PC_STATIC_UPSTREAM=pc-static:80\nMEDIA_UPSTREAM=media:18190\nSIP_UPSTREAM=freeswitch:5066\n'
         (self.root / '.env').write_text(self.dotenv)
         lab = self.root / 'private' / 'lab'
         lab.mkdir()
@@ -55,7 +56,7 @@ class ConfigurationTest(unittest.TestCase):
 
     def test_real_compose_has_two_isolated_apps_and_no_public_backend_ports(self):
         config = ops.configuration(True)
-        for service in ('app-a', 'app-b', 'helmet-a', 'helmet-b', 'belt-a', 'belt-b'):
+        for service in ('app-a', 'app-b', 'helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'wear-api', 'fuda-api', 'backend-router'):
             self.assertFalse(config['services'][service].get('ports'))
         self.assertEqual(len(config['services']['ingress']['ports']), 1)
         self.assertEqual(config['services']['ingress']['ports'][0]['host_ip'], '127.0.0.1')
@@ -63,6 +64,17 @@ class ConfigurationTest(unittest.TestCase):
             mounts = config['services'][service]['volumes']
             self.assertTrue(any(v['target'] == f'/run/private/{service}.json' for v in mounts))
             self.assertFalse(any(v['target'] == '/run/private' for v in mounts))
+
+    def test_entry_cannot_publish_private_services_or_fall_back_to_spring(self):
+        config = ops.configuration(True)
+        config['services']['wear-api']['ports'] = [{'published': 18088}]
+        with self.assertRaisesRegex(ValueError, 'Only ingress'):
+            ops.validate_entry(config['services'])
+        del config['services']['wear-api']['ports']
+        for target in ('backend:18084', 'app-a:18084', 'example.com:80', '8.8.8.8:80', 'pc-static:80 { injected }'):
+            config['services']['ingress']['environment']['PC_STATIC_UPSTREAM'] = target
+            with self.assertRaises(ValueError):
+                ops.validate_entry(config['services'])
 
     def test_duplicate_identity_and_floating_production_images_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'pinned'):

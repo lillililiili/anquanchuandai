@@ -8,7 +8,9 @@
 
 - `app-a/app-b` 使用同一固定数据库版本和 Redis；各有唯一稳定 node-id。每个 JVM 每次启动还会生成会话代次。
 - `helmet-a/b`、`belt-a/b` 仅转发到对应后端，复用原协议校验；同一设备的凭证在两组网关保持一致。设备重连由 Caddy 分配，存量连接不迁移。
-- `Caddyfile` 按设备凭证匹配协议，按健康状态轮询；其余业务地址保留，内部管理/裸设备入口封闭。失败写入没有代理重试。既有 PC 静态站点、福大白名单路由与媒体服务继续使用原入口配置，合并时必须保留其鉴权/签名/访问控制。
+- `Caddyfile` 按设备凭证匹配协议；手机 `/wear-api` 剥一次前缀后进入原 wear 网关，福大三个 POST 查询进入原 fuda 网关。`backend-router` 只在私网将 HTTP 分给健康 app；所有代理均禁用重试。原 PC guardian 重叠接口也进入同一个 wear 网关，防止通过根路径绕过限流；只有 GET/PUT snapshot、POST business/commands 和独立 admin API 按现有鉴权进入 router。其他 API 与内部/裸设备入口拒绝。
+- wear/fuda 网关各保持一个实例；手机原登录限流按来源、业务限流按 token+来源统计。不要直接复制 wear 实例并声称共享限流。Caddy 覆盖 X-Real-IP 为直接连接来源；多层入口须另配置并验证可信代理链，不能信任客户端自报 IP。
+- `/helmet-media` 的 control/files/whep/hls 以及精确 SIP 地址保留到独立媒体/FreeSWITCH；路径、查询、签名、Range、CORS 与 WebSocket 不做业务转换。其他网页地址交给原 PC 静态服务，禁止将其 fallback 配成 Spring。独立静态站点的原有页面路由需在现场保持。
 - `SHARED_DATA_DIR` 是已经挂载的共享根，应用看到 `/shared`；`files/` 存放 Guardian 文件和 `.wearable-store-id`，另有 `upload/hatfile/tasks` 供既有入口使用。不得让 Docker 自动创建缺失挂载目录。应用 UID/GID 为 `10001:10001`；NFS 权限由服务端显式分配。
 - 生产只向审批的入口开放 80/443；应用、数据库、Redis、网关不直接暴露公网。Compose 默认只绑定主机 loopback 测试端口。
 
@@ -36,13 +38,13 @@ MELHAT_CLUSTER_ADMIN_TOKEN=<32-byte-base64url-token>
 
 另按已有业务配置启用直连头盔、腰带、媒体与福大接口；实验环境只使用模拟设备、假媒体和禁止真实推送的配置。上述骨架不默认启用任何真实设备控制或外部推送。禁止把“关闭功能后启动成功”计作全业务验收。
 
-5. `.env` 配置非密钥的 `BACKEND_IMAGE/GATEWAY_IMAGE/MELHAT_DB_PRODUCT/SHARED_DATA_DIR/CLUSTER_PROJECT/CLUSTER_NETWORK/CADDY_SITE`；按需要设置 `NODE_A_ID/NODE_B_ID/INGRESS_BIND/INGRESS_HTTP_PORT/INGRESS_HTTPS_PORT`。先创建独立 Docker 网络；外部数据库/Redis必须能从该网络访问。不要接入日常开发项目的数据库或共享卷。
+5. `.env` 配置非密钥的 `BACKEND_IMAGE/GATEWAY_IMAGE/MELHAT_DB_PRODUCT/SHARED_DATA_DIR/CLUSTER_PROJECT/CLUSTER_NETWORK/CADDY_SITE`；还必须填写 `PC_STATIC_UPSTREAM/MEDIA_UPSTREAM/SIP_UPSTREAM` 为已核对的独立私网 `host:port`（例如 `pc-static:80`、`media:18190`、`freeswitch:5066`，不是自动部署或默认回退地址）。按需要设置 `NODE_A_ID/NODE_B_ID/INGRESS_BIND/INGRESS_HTTP_PORT/INGRESS_HTTPS_PORT`。先创建独立 Docker 网络；外部数据库/Redis/静态/媒体依赖必须能从该网络访问。不要接入日常开发项目的数据库或共享卷。
 6. 将已有设备 ID 和已有 pathToken 写入私有 `gateway-input.json`，包含 `publicOrigin/adminToken/helmets/belts`；每个设备对象为 `{deviceId,pathToken}`。adminToken 与 backend.env 一致。可设置 `deviceWebsocketOrigin`，例如特定固件需要的同域 `ws://...:80`；默认 wss，实际固件与防火墙必须验收。需要上传时提供同域的 `mediaControlOrigin/mediaSigningKey`。
 7. 从后端根运行 `node local-dev/protocol-cluster/render-config.mjs deploy/cluster/private/gateway-input.json deploy/cluster/private`。Linux 已有目录必须归当前用户所有且权限为 0700；Windows 开发环境需由操作者限制目录 ACL，POSIX 模式位不能证明 ACL 安全。已有文件默认拒绝覆盖；受控变更时使用 `--replace`，停机或排空后同步替换所有节点并重建网关。工具不会生成或更换设备凭证。私有目录不得归档进公开交付包。
 
 配置生成有 `gateway-manifest.json` 完整代次摘要，开始替换时先创建 `.gateway-config.incomplete`；中断或摘要不一致会阻止运维脚本启动/重建服务。恢复时保持设备入口排空，保全故障文件用于核对，从已保存的同一版本私有输入恢复；确认没有生成进程运行后移除该中断标记，再执行 `--replace` 完整生成，最后运行 `clusterctl.sh check`。不要逐个手改生成文件或绕过脚本启动混合版本。
 
-更换设备路由/凭据必须有完整维护窗口：先 `stop --node a`、`stop --node b` 完成排空，再生成新代次，执行 `up`。代次标签会让 Compose 重建四个网关和 **Caddy ingress**；入口不能只重载宿主机文件，因为单文件 bind mount 及已解析的 Caddy 配置仍可能指向旧内容。`up` 检查所有运行容器的代次标签和挂载文件摘要，确认一致后才可恢复入口。仍有任一应用/网关运行时，脚本拒绝套用新代次；这不是多个容器同时热更新。
+更换设备路由/凭据必须有完整维护窗口：先 `stop --node a`、`stop --node b` 完成排空，再生成新代次，执行 `up`。代次标签会让 Compose 重建四个协议网关、两个 API 网关、私网 router 和 **Caddy ingress**；入口不能只重载宿主机文件，因为单文件 bind mount 及已解析的 Caddy 配置仍可能指向旧内容。`up` 检查所有运行容器的代次标签、协议配置及两份 Caddy 实际挂载摘要，确认一致后才可恢复入口。代码发布更换 Caddy 配置也须在维护窗口重建对应容器。仍有任一应用/协议网关运行时，脚本拒绝套用新代次；这不是多个容器同时热更新。
 
 ## 操作
 
@@ -66,6 +68,6 @@ MELHAT_CLUSTER_ADMIN_TOKEN=<32-byte-base64url-token>
 
 ## 已验证与边界
 
-Node Linux 16 项测试、既有头盔 47/腰带 55 项回归通过。`test/proxy.test.mjs` 运行真实 Caddy/四个网关容器和两个测试 HTTP/WS 后端，验证双组分流、内部路径隔离、失败写入次数、排空、后端失活摘流及完整配置代次重建。它不验证 Spring/DM8/Redis/NFS 业务一致性。只应在有 Docker 和隔离资源的开发机运行，结束只清理本轮随机命名的容器和网络。
+既有 Node Linux 16 项、头盔 47/腰带 55 项回归通过；完整入口新增测试另见交付证据。`test/proxy.test.mjs` 运行真实入口 Caddy/私网 router/四个协议网关/两个 API 网关，以及两个测试 HTTP/WS 后端和独立依赖替身。验证手机前缀与同源别名限流、福大精确路径/原始字节/头剥离、媒体 Range/路径/SIP WebSocket、双组分流、内部路径隔离、失败写入次数、排空、后端失活摘流及完整设备配置代次重建。它不验证 Spring/DM8/Redis/NFS 业务一致性，也不证明媒体签名、票据和视频播放已通过。只应在有 Docker 和隔离资源的开发机运行，结束只清理本轮随机命名的容器和网络。
 
 官方配置依据：[Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)、[Compose services](https://docs.docker.com/reference/compose-file/services/)。正式部署前必须保存实际版本与复测结果。

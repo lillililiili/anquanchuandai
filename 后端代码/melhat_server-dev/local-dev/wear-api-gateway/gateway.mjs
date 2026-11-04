@@ -23,9 +23,11 @@ const patterns = [
 export function allowed(method, pathname) { return patterns.some(([m, pattern]) => m === method && pattern.test(pathname)); }
 const login = pathname => pathname === `${PREFIX}/login` || pathname === `${PREFIX}/mobile/login`;
 function fail(response, status, code) { response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); response.end(JSON.stringify({ code: status, error: code })); }
-export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false } = {}) {
+export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false,
+  management = () => false, accepting = () => true } = {}) {
   const upstream = new URL(upstreamOrigin);
-  if (upstream.protocol !== 'http:' || upstream.hostname !== '127.0.0.1' || upstream.origin !== upstreamOrigin
+  const hosts = testOnly ? ['127.0.0.1'] : ['127.0.0.1', 'backend'];
+  if (upstream.protocol !== 'http:' || !hosts.includes(upstream.hostname) || upstream.origin !== upstreamOrigin || upstream.username || upstream.password
     || (!testOnly && upstream.port !== '18084') || (testOnly && upstream.port === '18084')) throw Error('Expected isolated local backend');
   const limits = new Map();
   const take = (key, max) => {
@@ -36,6 +38,8 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     return ++entry.count <= max;
   };
   const server = http.createServer({ maxHeaderSize: 8192 }, (request, response) => {
+    if (management(request, response)) return;
+    if (!accepting()) return fail(response, 503, 'BACKEND_NOT_READY');
     const raw = request.url ?? '';
     if (!raw.startsWith('/') || raw.startsWith('//') || raw.length > 4096 || /%2f|%5c|%00|\\|\.\.|#/i.test(raw)) return fail(response, 400, 'INVALID_PATH');
     const url = new URL(raw, 'http://localhost');
@@ -56,7 +60,7 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     }
     const token = request.headers['x-wearable-token'];
     if (!login(url.pathname) && !/^[A-Za-z0-9_-]{43}$/.test(token ?? '')) return fail(response, 401, 'SESSION_REQUIRED');
-    // Caddy replaces X-Real-IP; the gateway binds loopback behind its exclusive tunnel.
+    // Caddy replaces X-Real-IP. This listener is private (loopback tunnel or container network).
     const source = /^[0-9a-f:.]{3,64}$/i.test(request.headers['x-real-ip'] ?? '') ? request.headers['x-real-ip'] : 'local';
     if (!take(`${login(url.pathname) ? 'login' : token}:${source}`, login(url.pathname) ? 12 : 180)) return fail(response, 429, 'RATE_LIMIT');
     const maximum = request.method === 'PUT' && /\/files\//.test(url.pathname) ? 10 * 1024 * 1024 : 128 * 1024;
@@ -66,6 +70,7 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     request.on('data', chunk => { length += chunk.length; if (length > maximum) { rejected = true; request.resume(); if (!response.headersSent) fail(response, 413, 'BODY_TOO_LARGE'); } else chunks.push(chunk); });
     request.on('end', () => {
       if (rejected) return;
+      if (!accepting()) return fail(response, 503, 'BACKEND_NOT_READY');
       const body = Buffer.concat(chunks);
       const headers = { Accept: 'application/json', 'Content-Length': String(body.length) };
       if (token) headers['X-Wearable-Token'] = token;

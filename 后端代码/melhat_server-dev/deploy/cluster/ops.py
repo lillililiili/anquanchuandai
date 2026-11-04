@@ -2,6 +2,7 @@
 """Bounded operations for this isolated Compose project; never prints configuration secrets."""
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,24 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent
 COMPOSE = ['docker', 'compose', '--project-directory', str(ROOT), '--env-file', str(ROOT / '.env'), '-f', str(ROOT / 'compose.yml')]
 PRIVATE = ROOT / 'private'
+ENTRY_SERVICES = ('helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'wear-api', 'fuda-api', 'backend-router', 'ingress')
+
+def validate_entry(services):
+    for service in ('app-a', 'app-b', *ENTRY_SERVICES[:-1]):
+        if services[service].get('ports'):
+            raise ValueError('Only ingress may publish a host port; backend and gateways must remain private.')
+    for key in ('PC_STATIC_UPSTREAM', 'MEDIA_UPSTREAM', 'SIP_UPSTREAM'):
+        value = services['ingress']['environment'].get(key, '')
+        match = re.fullmatch(r'([a-zA-Z0-9.-]+):([0-9]{1,5})', value)
+        if not match or not 1 <= int(match[2]) <= 65535:
+            raise ValueError('Entry dependencies require explicit private host:port values.')
+        host = match[1].lower()
+        try:
+            private = ipaddress.ip_address(host).is_private
+        except ValueError:
+            private = bool(re.fullmatch(r'[a-z][a-z0-9-]{0,62}', host))
+        if not private or host in {'backend', 'backend-router', 'app-a', 'app-b', 'wear-api', 'fuda-api', 'ingress', 'localhost'}:
+            raise ValueError('Static/media/SIP entries require their independent private services, never an application/router fallback.')
 
 def call(args, *, capture=False, timeout=120, env=None):
     return subprocess.run(args, cwd=ROOT, check=True, text=True, encoding='utf-8',
@@ -42,6 +61,7 @@ def configuration(lab=False, *, inventory=None):
     os.environ['GATEWAY_CONFIG_GENERATION'] = generation
     config = json.loads(call(COMPOSE + ['config', '--format', 'json'], capture=True))
     services = config['services']
+    validate_entry(services)
     apps = [services['app-a'], services['app-b']]
     identities = [app['environment'].get('MELHAT_CLUSTER_NODE_ID', '') for app in apps]
     if len(set(identities)) != 2 or any(not re.fullmatch(r'[A-Za-z0-9_.-]{1,80}', item) for item in identities):
@@ -56,7 +76,7 @@ def configuration(lab=False, *, inventory=None):
                 raise ValueError('Backend private configuration has a missing required value.')
         if not re.fullmatch(r'[A-Za-z0-9_-]{43}', env.get('MELHAT_CLUSTER_ADMIN_TOKEN', '')):
             raise ValueError('Backend requires a private 32-byte cluster management token.')
-    for service in ('app-a', 'app-b', 'helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'ingress'):
+    for service in ('app-a', 'app-b', *ENTRY_SERVICES):
         image = services[service]['image']
         if not lab and not re.search(r'(?:@|^)sha256:[0-9a-f]{64}$', image):
             raise ValueError('Production images must be pinned to a tested digest or immutable image ID.')
@@ -148,7 +168,7 @@ def generation_window():
     running = call(COMPOSE + ['ps', '--services', '--filter', 'status=running'], capture=True).splitlines()
     changed = False
     evidence = False
-    for service in ('helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'ingress'):
+    for service in ENTRY_SERVICES:
         # Stopping a container must not erase evidence of its previous generation.
         container = call(COMPOSE + ['ps', '--all', '-q', service], capture=True).strip()
         if not container:
@@ -161,11 +181,20 @@ def generation_window():
 
 def verify_loaded_generation():
     manifest = json.loads((PRIVATE / 'gateway-manifest.json').read_text(encoding='utf-8'))
-    for service in ('helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'ingress'):
+    for service in ENTRY_SERVICES:
         container = call(COMPOSE + ['ps', '-q', service], capture=True).strip()
         loaded = call(['docker', 'inspect', '--format', '{{index .Config.Labels "org.wearable.gateway-generation"}}', container], capture=True).strip()
         if loaded != manifest['generation']:
             raise ValueError('A running gateway or ingress still has the previous configuration generation.')
+        if service in ('wear-api', 'fuda-api'):
+            continue  # Fixed image entrypoint; no per-device configuration mount.
+        if service in ('backend-router', 'ingress'):
+            source = ROOT / 'Caddy.backend' if service == 'backend-router' else (PRIVATE / 'Caddy.lab' if PRIVATE.name == 'lab' else ROOT / 'Caddyfile')
+            actual_config = call(COMPOSE + ['exec', '-T', service, 'sha256sum', '/etc/caddy/Caddyfile'], capture=True).split()[0]
+            if actual_config != hashlib.sha256(source.read_bytes()).hexdigest():
+                raise ValueError('The running entry/router has a stale configuration mount. Recreate it in the maintenance window.')
+            if service == 'backend-router':
+                continue
         if service == 'ingress':
             actual = call(COMPOSE + ['exec', '-T', service, 'sha256sum', '/etc/caddy/Caddy.devices'], capture=True).split()[0]
             filename = 'Caddy.devices'
@@ -175,7 +204,7 @@ def verify_loaded_generation():
             actual = call(COMPOSE + ['exec', '-T', service, 'node', '-e', code, '/run/private/' + filename], capture=True).strip()
         if actual != manifest['files'][filename]:
             raise ValueError('A running container has a stale configuration mount; do not reopen the device entry.')
-    print('All four gateways and ingress loaded the same verified configuration generation.')
+    print('Device/API gateways, private router and ingress loaded the verified generation and configuration mounts.')
 
 def preflight(config, lab):
     app = config['services']['app-a']

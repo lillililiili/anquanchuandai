@@ -80,6 +80,38 @@ services:
     <<: *gateway
     command: [belt, /run/private/belt-b.json]
     volumes: [./private/belt-b.json:/run/private/belt-b.json:ro]
+  wear-api:
+    <<: *gateway
+    entrypoint: [node, /opt/wearable/protocol-cluster/api-cli.mjs]
+    command: [wear]
+  fuda-api:
+    <<: *gateway
+    entrypoint: [node, /opt/wearable/protocol-cluster/api-cli.mjs]
+    command: [fuda]
+  backend-router:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    labels:
+      org.wearable.gateway-generation: ${GATEWAY_CONFIG_GENERATION:?Use clusterctl to validate the gateway generation}
+    volumes:
+      - type: bind
+        source: ./Caddy.backend
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind: {create_host_path: false}
+    networks:
+      cluster:
+        aliases: [backend]
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O - http://127.0.0.1:18084/internal/cluster/ready | grep -Eq '\"ready\"[[:space:]]*:[[:space:]]*true'"]
+      interval: 5s
+      timeout: 3s
+      retries: 2
+      start_period: 90s
+    mem_limit: 96m
+    cpus: 0.5
+    security_opt: [no-new-privileges:true]
+    logging: *logging
   ingress:
     image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
     restart: unless-stopped
@@ -87,6 +119,9 @@ services:
       org.wearable.gateway-generation: ${GATEWAY_CONFIG_GENERATION:?Use clusterctl to validate the gateway generation}
     environment:
       CADDY_SITE: ${CADDY_SITE:?Set the approved HTTPS domain or local http address}
+      PC_STATIC_UPSTREAM: ${PC_STATIC_UPSTREAM:?Set the approved private existing PC static service host:port}
+      MEDIA_UPSTREAM: ${MEDIA_UPSTREAM:?Set the private independent media service host:port}
+      SIP_UPSTREAM: ${SIP_UPSTREAM:?Set the private independent FreeSWITCH service host:port}
     ports:
       - '${INGRESS_BIND:-127.0.0.1}:${INGRESS_HTTP_PORT:-18080}:80'
       - '${INGRESS_BIND:-127.0.0.1}:${INGRESS_HTTPS_PORT:-18443}:443'

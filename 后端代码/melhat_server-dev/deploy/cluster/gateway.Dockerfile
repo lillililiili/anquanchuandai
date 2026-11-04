@@ -5,6 +5,8 @@ RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean -
 COPY local-dev/protocol-cluster/*.mjs ./protocol-cluster/
 COPY local-dev/device-gateway/*.mjs ./device-gateway/
 COPY local-dev/belt-device-gateway/*.mjs ./belt-device-gateway/
+COPY local-dev/wear-api-gateway/gateway.mjs ./wear-api-gateway/
+COPY local-dev/fuda-api-gateway/gateway.mjs ./fuda-api-gateway/
 COPY local-dev/helmet-media/auth.mjs local-dev/helmet-media/spool.mjs ./helmet-media/
 RUN mkdir -p /opt/wearable/device-gateway/.local/upload-temp \
     && chown -R node:node /opt/wearable/device-gateway/.local

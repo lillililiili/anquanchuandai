@@ -5,15 +5,6 @@
         output discard
     }
 }
-(backend_pool) {
-    lb_policy round_robin
-    lb_retries 0
-    health_uri /internal/cluster/ready
-    health_interval 2s
-    health_timeout 1500ms
-    health_status 200
-    health_body `"ready"\s*:\s*true`
-}
 (gateway_pool) {
     lb_policy round_robin
     lb_retries 0
@@ -29,8 +20,87 @@
         @private path /internal /internal/* /druid /druid/* /actuator /actuator/* /wsHat /wsBelt /api/index.php /api/belt/* /api/upload
         respond @private 404
         import /etc/caddy/Caddy.devices
-        reverse_proxy app-a:18084 app-b:18084 {
-            import backend_pool
+        handle /wear-api/api/guardian/v1/* {
+            uri strip_prefix /wear-api
+            request_body {
+                max_size 10MB
+            }
+            reverse_proxy wear-api:8080 {
+                import gateway_pool
+                header_up X-Real-IP {remote_host}
+                header_up -Authorization
+                header_up -Cookie
+            }
+        }
+        @fuda {
+            method POST
+            path /openapi/wearables/v2/positions/query /openapi/wearables/v2/statuses/query /openapi/wearables/v2/alarms/query
+        }
+        handle @fuda {
+            request_body {
+                max_size 64KB
+            }
+            reverse_proxy fuda-api:8080 {
+                import gateway_pool
+            }
+        }
+        handle /helmet-media/sip {
+            reverse_proxy {$SIP_UPSTREAM} {
+                lb_retries 0
+            }
+        }
+        @media path /helmet-media/control/v1/* /helmet-media/files/* /helmet-media/whep/* /helmet-media/hls/*
+        handle @media {
+            request_body {
+                max_size 256MB
+            }
+            reverse_proxy {$MEDIA_UPSTREAM} {
+                lb_retries 0
+            }
+        }
+        @pc_snapshot {
+            method GET PUT
+            path /api/guardian/v1/snapshot
+        }
+        handle @pc_snapshot {
+            reverse_proxy backend:18084 {
+                lb_retries 0
+            }
+        }
+        @pc_command {
+            method POST
+            path /api/guardian/v1/business/commands
+        }
+        handle @pc_command {
+            reverse_proxy backend:18084 {
+                lb_retries 0
+            }
+        }
+        # PC and mobile overlap uses the SAME gateway and rate-limit counters.
+        handle /api/guardian/v1/* {
+            request_body {
+                max_size 10MB
+            }
+            reverse_proxy wear-api:8080 {
+                import gateway_pool
+                header_up X-Real-IP {remote_host}
+                header_up -Authorization
+                header_up -Cookie
+            }
+        }
+        handle /api/admin/v1/* {
+            reverse_proxy backend:18084 {
+                lb_retries 0
+            }
+        }
+        # Unknown API paths must never fall through to legacy Spring endpoints.
+        @unknown_api path /api /api/* /openapi /openapi/* /wear-api /wear-api/* /helmet-media /helmet-media/* /ext /ext/* /monitor /monitor/* /test /test/*
+        respond @unknown_api 404
+        handle {
+            # Preserve the independently deployed PC/static site's existing routing.
+            reverse_proxy {$PC_STATIC_UPSTREAM} {
+                lb_retries 0
+            }
         }
     }
 }

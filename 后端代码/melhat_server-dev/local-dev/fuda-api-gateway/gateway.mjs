@@ -12,13 +12,16 @@ function fail(res, status, message) {
 }
 
 /** Exact-path proxy only. The backend authenticates the original signed bytes. */
-export function createGateway({upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false} = {}) {
+export function createGateway({upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false,
+  management = () => false, accepting = () => true} = {}) {
   const upstream = new URL(upstreamOrigin);
   const hosts = testOnly ? ['127.0.0.1'] : ['127.0.0.1', 'backend', '10.255.1.1'];
   if (upstream.protocol !== 'http:' || !hosts.includes(upstream.hostname) || upstream.origin !== upstreamOrigin || upstream.username || upstream.password)
     throw Error('Backend must be the configured private HTTP origin');
   if (testOnly && upstream.port === '18084') throw Error('Tests must not use the daily backend');
   const server = http.createServer({maxHeaderSize: 8192}, (req, res) => {
+    if (management(req, res)) return;
+    if (!accepting()) return fail(res, 503, 'BACKEND_NOT_READY');
     if (req.method !== 'POST' || !ROUTES.has(req.url)) return fail(res, 404, 'NOT_FOUND');
     if (req.headers['content-encoding'] || !/^application\/json(?:\s*;\s*charset=(?:utf-8|"utf-8"))?$/i.test(req.headers['content-type'] ?? ''))
       return fail(res, 415, 'JSON_UTF8_REQUIRED');
@@ -37,6 +40,7 @@ export function createGateway({upstreamOrigin = 'http://127.0.0.1:18084', testOn
     });
     req.on('end', () => {
       if (rejected) return;
+      if (!accepting()) return fail(res, 503, 'BACKEND_NOT_READY');
       const body = Buffer.concat(chunks);
       const headers = Object.fromEntries(forwarded.map(k => [k, req.headers[k]]));
       headers['content-length'] = String(body.length);
