@@ -165,6 +165,7 @@ public class HelmetMediaService {
             JSONObject admitted=commandRouter.admit(id,commandRouter.scope(actorId,deviceId,key),fingerprint,"helmet",deviceId,row,wire,false,()->saveCommand(row));
             if(!id.equals(admitted.getString("id"))){JSONObject existing=map(store.snapshot(),"commands").getJSONObject(admitted.getString("id"));return publicCommand(existing==null?admitted:existing);}
         }else saveCommand(row);
+        JSONObject recordingStopStream=null;
         try {
             if("configure_sip".equals(action)) {
                 provision(deviceId); row.put("status","configured"); row.put("message","SIP 账号已配置，设备下次登录时生效");
@@ -200,8 +201,8 @@ public class HelmetMediaService {
                     if(source!=null){source.put("status","cancelled");source.put("message","已取消等待视频，未开始录像");saveCommand(source);}
                     row.put("status","completed");row.put("message","已取消等待中的平台录像");
                 }
-                if(clusteredCommands())return finishRecordingStop(row,stream);
-                if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))sendDevice(deviceId,obj("cmd","server_push_stop_rtsp"));
+                if(clusteredCommands())recordingStopStream=stream;
+                else if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))sendDevice(deviceId,obj("cmd","server_push_stop_rtsp"));
             } else {
                 if("broadcast".equals(action)) {
                     String content=text(params,"text"); if(content.isEmpty()||content.length()>200)throw new IllegalArgumentException("广播内容需为1至200字");
@@ -218,6 +219,8 @@ public class HelmetMediaService {
             if(clusteredCommands())commandRouter.failBeforeSend(id,"准备设备指令失败，尚未开始发送");
             row.put("status","unknown");row.put("message","操作结果未确认，请核对记录和设备状态；不会自动重复下发");
         }
+        // Confirmed cloud phase cleanup/readback must not enter the preparation-failure catch above.
+        if(recordingStopStream!=null)return finishRecordingStop(row,recordingStopStream);
         if(clusteredCommands()&&Arrays.asList("configured","completed","accepted").contains(row.getString("status")))commandRouter.completeWithoutSend(id);
         saveCommand(row); return publicCommand(row);
     }

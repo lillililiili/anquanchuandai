@@ -153,6 +153,46 @@ class ClusterMediaIntegrationTest extends ClusterRoutingContractTest {
         assertStopDelivery(completed,"completed","EXPIRED");
         ra.dispatchOwnedBatch();assertEquals(1,sentWires.size());
     }
+    @Test void recordingStopReadbackFailurePreservesFinalizingAndPropagatesUnavailable() {
+        assertStopReadbackFailure(true);
+    }
+    @Test void cancelledRecordingReadbackFailurePreservesCompletedAndPropagatesUnavailable() {
+        assertStopReadbackFailure(false);
+    }
+    private void assertStopReadbackFailure(boolean recording) {
+        JSONObject start=startRecording(recording),input=stopInput(start);
+        HelmetMediaStore failingStore=spy(store);
+        java.util.concurrent.atomic.AtomicBoolean failed=new java.util.concurrent.atomic.AtomicBoolean();
+        org.springframework.dao.TransientDataAccessResourceException unavailable=
+                new org.springframework.dao.TransientDataAccessResourceException("one-shot final snapshot unavailable");
+        doAnswer(invocation->{
+            JSONObject snapshot=(JSONObject)invocation.callRealMethod();
+            for(Object value:snapshot.getJSONObject("commands").values()){
+                JSONObject command=(JSONObject)value;
+                if("stop_recording".equals(command.getString("action"))
+                        &&"QUEUED".equals(rb.read(command.getString("id")).getString("deliveryStatus"))
+                        &&failed.compareAndSet(false,true))throw unavailable;
+            }
+            return snapshot;
+        }).when(failingStore).snapshot();
+        ReflectionTestUtils.setField(media,"store",failingStore);
+        assertSame(unavailable,assertThrows(org.springframework.dao.TransientDataAccessResourceException.class,
+                ()->media.command("actor","h",input)));
+        assertTrue(failed.get());
+        JSONObject recovered=media.command("actor","h",input);
+        assertStopDelivery(recovered,recording?"finalizing":"completed","QUEUED");
+        assertEquals(1,sentWires.size());
+        ra.dispatchOwnedBatch();assertStopWire(recovered);
+        if(recording){
+            when(cloud.request("GET","/recordings/recording",null)).thenReturn(obj("status","ready","assetId","asset-after-read-failure"));
+            media.reconcile();
+        }
+        JSONObject completed=media.command("actor","h",input);
+        assertEquals(recovered.getString("id"),completed.getString("id"));
+        assertStopDelivery(completed,"completed","SENT");
+        if(recording)assertEquals("asset-after-read-failure",completed.getString("assetId"));
+        ra.dispatchOwnedBatch();assertEquals(2,sentWires.size());
+    }
     private JSONObject startRecording(boolean recording) {
         when(cloud.request("GET","/health",null)).thenReturn(obj("ready",true));
         when(cloud.request("GET","/events?after=0&limit=100",null)).thenReturn(obj("events",new JSONArray()));

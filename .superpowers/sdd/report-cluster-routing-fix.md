@@ -1,6 +1,6 @@
 # stop_recording 清理投递 P1 修复报告
 
-状态：本轮 P1 已修复且定向验证通过，等待独立复审。仅修复 `review-cluster-routing.md` 指出的停止录像业务阶段被内部 cleanup Pending 覆盖、原 HC 滞留 PREPARING 的问题。基线 `f99edd3a732fe01998968edfde25a4ce5a6b8094`。不扩展媒体全局协调、UI、部署或性能测试。
+状态：本轮 P1 及复审发现的 P2 收尾读取异常已修复且定向验证通过，等待独立复审。仅修复 `review-cluster-routing.md` 指出的停止录像业务阶段被内部 cleanup Pending 覆盖、原 HC 滞留 PREPARING 的问题及其直接收尾异常路径。基线 `f99edd3a732fe01998968edfde25a4ce5a6b8094`。不扩展媒体全局协调、UI、部署或性能测试。
 
 ## 行为与实现
 
@@ -53,3 +53,15 @@ MySQL 本轮进程证据：`D:/DevTools/dm8-tmp/cluster-process-1343336665232543
 ## 保留边界
 
 全局媒体副作用、维护/quiescent、跨节点业务条件更新及早回执覆盖等任务 2 工作保持原边界。本次没有泛改 receipt/saveCommand 或全媒体锁，不宣称解决所有早回执竞争。未接触真实设备、日常服务、WEARABLE_APP、父任务 deploy/benchmark/GuardianFiles；未执行 push/merge。未跑完整后端/前端/Android/browser；本次验证范围是上述定向测试与两数据库路由脚本。
+
+## P2 复审修正：响应读取失败不能降级已确认业务
+
+复审基线 `21b4059b95491cdeb0c3f93a7e08e3a99480c542`，问题见 `review-cluster-routing-recheck.md`。原 helper 最终 `commandState` 读取异常仍会落入 `command` 通用准备失败 catch，将已保存 finalizing/completed 的旧 row 改成 unknown。
+
+- `command` 仅在云停止/取消准备成功后捕获 `recordingStopStream`，在准备异常 catch **之外**执行 `finishRecordingStop`。已确认 phase 的持久化、cleanup 收尾与最终响应读不再进入准备失败降级路径。
+- 最终 snapshot/transport 读取失败直接上抛，调用方获得真实异常，不用旧快照伪装成功，也不改写业务或 transport。恢复后可用原 key 查询原 HC。
+- 新增 `recordingStopReadbackFailurePreservesFinalizingAndPropagatesUnavailable` 与 `cancelledRecordingReadbackFailurePreservesCompletedAndPropagatesUnavailable`，共用 `assertStopReadbackFailure`。在 cleanup 已 QUEUED 后，仅让最终 store snapshot 抛一次 `TransientDataAccessResourceException`；检查异常本体向上抛出、业务 phase 保留、transport 仍 QUEUED、同键仍同 HC；owner dispatch 后仅一条 stop wire，真实录像通过假云 ready 后完成，取消分支持续 completed。
+
+验证：`routing-fix-readback-red.log` 为 22 项中 2 项预期失败（应抛读取异常，实际被吞掉）；`routing-fix-readback-green.log` 为 **55 项，0 failures / 0 errors / 0 skipped**（cluster media 22 + media service 32 + receipt time 1）。限定文件 `git diff --check` 通过。
+
+本次 P2 没有改 SQL、router 或跨进程协议，只改变已确认业务的 Java 异常范围；按父任务风险边界，仅重跑上述受影响定向测试，未重复两数据库 32 项矩阵。前节 DM8/MySQL 证据属于 P1 提交后的运行，不冒充 P2 后重跑。
