@@ -33,6 +33,17 @@ public class MigrationInspect {
             case "seed-json" -> {
                 j.update("INSERT INTO demo_compat_record(module_key,business_key,payload) VALUES ('migration','json-unicode',?)","{\"name\":\"中文🪖\",\"n\":9000000000001,\"decimal\":12.3400}");
             }
+            case "seed-recovery" -> {
+                MigrationTool.require(j.queryForObject("SELECT COUNT(*) FROM wearable_cluster_recovery",Integer.class)==0,"EMPTY_RECOVERY_FIXTURE_REQUIRED");
+                j.update("INSERT INTO wearable_cluster_recovery(recovery_id,node_id,generation,actor_id,reason,summary_json,created_at) VALUES (?,?,?,?,?,?,?)",
+                    "a9137259-e6b9-48b9-94dd-c6484bc352a2","retired-fixture-node","ed56cb17-63b4-4488-a63e-b5bf3a2efbaa","fixture-operator","迁移验收🪖",
+                    "{\"message\":\"恢复审计🪖\",\"counts\":{\"UNKNOWN\":2},\"revision\":9000000000001}",1700000000123L);
+            }
+            case "assert-recovery" -> {
+                String summary=j.queryForObject("SELECT summary_json FROM wearable_cluster_recovery WHERE recovery_id=?",(rs,n)->rs.getString(1),"a9137259-e6b9-48b9-94dd-c6484bc352a2");
+                var value=MigrationTool.JSON.readTree(summary);
+                MigrationTool.require(value.path("message").asText().equals("恢复审计🪖")&&value.path("counts").path("UNKNOWN").asInt()==2&&value.path("revision").asLong()==9000000000001L,"RECOVERY_AUDIT_CONTENT_CHANGED");
+            }
             case "consume-target-identity" -> {
                 MigrationTool.require(j.queryForObject("SELECT COUNT(*) FROM wearable_device_report",Integer.class)==0,"EMPTY_TARGET_REQUIRED");
                 j.execute("SET IDENTITY_INSERT wearable_device_report ON");
