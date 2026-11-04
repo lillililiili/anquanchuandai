@@ -80,6 +80,7 @@ function fullscreen(event) {
       <span v-if="demo" data-video-time>{{ playClock }}</span>
       <div class="spacer"></div>
       <AppButton v-if="demo || feature('photo').supported" :disabled="!demo && !feature('photo').available" tone="plain" icon="camera-line" @click="runGuarded(() => capturePhoto(personId))">{{ !demo && !feature('photo').verified ? '抓拍 · 待联调' : '抓拍' }}</AppButton>
+      <AppButton v-if="!demo && feature('photo').supported" :disabled="!feature('photo').available" tone="plain" title="明确创建新的抓拍请求；原未决请求仍保留，不会自动重发" @click="runGuarded(() => capturePhoto(personId, { newRequest: true }))">另发一次抓拍</AppButton>
       <AppButton v-if="demo || feature('recording').supported" :disabled="!demo && !feature('recording').available && session.recording?.person !== personId" :tone="session.recording?.person === personId ? 'red plain' : 'plain'" icon="record-circle-line" @click="runGuarded(() => toggleRecording(personId))">{{ session.recording?.person === personId ? '结束录像请求' : !demo && !feature('recording').verified ? '录像 · 待联调' : '录制现场视频' }}</AppButton>
       <a class="btn plain" :href="'#/tracks/' + personId"><AppIcon name="map-pin-line" />轨迹</a>
       <AppButton v-if="demo || feature('voice').supported" tone="plain" icon="mic-line" @click="runGuarded(() => callPerson(personId))">调度通信</AppButton>

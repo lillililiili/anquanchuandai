@@ -453,14 +453,14 @@ void main() {
     },
   );
   test(
-    'broadcast retry retains ID even when UI makes another click key',
+    'broadcast retry retains the same explicit intention after ambiguous response',
     () async {
       final writes = <JsonMap>[];
       final client = api((r) {
         writes.add(Map<String, dynamic>.from(r.data));
         return reply({'message': '平台结果未知'}, code: 502, raw: true);
       });
-      for (final key in ['click-1', 'click-2']) {
+      for (final key in ['same-click-001', 'same-click-001']) {
         await expectLater(
           client.post(
             '/api/v1/commands/tts',

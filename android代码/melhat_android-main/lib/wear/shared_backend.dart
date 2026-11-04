@@ -626,10 +626,13 @@ class SharedBackend {
       }
     }
     final fingerprint = jsonEncode({...input}..remove('idempotencyKey'));
-    final key = '$action:$fingerprint';
+    // Broadcast retries and explicit new broadcasts are distinct user intentions.
+    // Preserve the caller's durable key all the way to the shared backend.
+    final suppliedKey = action == 'broadcast' ? idOf(input['idempotencyKey']) : '';
+    final key = '$action:$fingerprint:$suppliedKey';
     final body = _communicationCommands.putIfAbsent(
       key,
-      () => {...input, 'idempotencyKey': requestId()},
+      () => {...input, 'idempotencyKey': suppliedKey.isEmpty ? requestId() : suppliedKey},
     );
     if (_running.containsKey(key)) return _running[key];
     final request = send('POST', '$root/mobile/$action', data: body);
@@ -637,7 +640,8 @@ class SharedBackend {
     try {
       final result = await request;
       final row = jsonMap(result);
-      if (action != 'calls' || _terminalCall(row)) {
+      final broadcastSettled = action == 'broadcast' && jsonList(result).isNotEmpty && jsonList(result).every((item) => !const ['queued', 'dispatching', 'requesting', 'sent', 'unknown', 'accepted'].contains(item['status']));
+      if ((action == 'calls' && _terminalCall(row)) || broadcastSettled) {
         _communicationCommands.remove(key);
         _communicationCallIds.remove(key);
       } else if (idOf(row['id']).isNotEmpty) {

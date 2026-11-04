@@ -17,8 +17,8 @@ export default defineConfig({
     port: 5181,
     strictPort: true,
     proxy: {
-      "/api/guardian": { target: "http://127.0.0.1:18084", changeOrigin: true },
-      "/api/admin": { target: "http://127.0.0.1:18084", changeOrigin: true },
+      "/api/guardian": { target: process.env.VITE_BACKEND_ORIGIN || "http://127.0.0.1:18084", changeOrigin: true },
+      "/api/admin": { target: process.env.VITE_BACKEND_ORIGIN || "http://127.0.0.1:18084", changeOrigin: true },
     },
   },
 });

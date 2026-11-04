@@ -13,7 +13,7 @@ import java.util.*;
 /** DDL is an operator action on DM8 and cluster deployments. No DDL runs during validation. */
 public final class SchemaLifecycle {
  private static final Map<DataSource,String> MODES=Collections.synchronizedMap(new WeakHashMap<>());
- public static final String[] BUSINESS={"20261003_wearable_master","20261023_helmet_business","20261026_wearable_business","20261027_fuda_alarm_journal","20261102_fuda_push_outbox","20261103_shared_files"};
+ public static final String[] BUSINESS={"20261003_wearable_master","20261023_helmet_business","20261026_wearable_business","20261027_fuda_alarm_journal","20261102_fuda_push_outbox","20261103_shared_files","20261103_cluster_routing"};
  private final JdbcTemplate jdbc;
  public SchemaLifecycle(JdbcTemplate jdbc){this.jdbc=jdbc;}
  public static void configure(DataSource source,String product,String mode) {

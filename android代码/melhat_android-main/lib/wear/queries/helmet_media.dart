@@ -255,7 +255,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
         }
         return;
       }
-      _pending.remove(intent);
+      if (!const ['queued', 'dispatching', 'requesting', 'sent', 'unknown', 'accepted'].contains(result['status'])) _pending.remove(intent);
       if (action == 'start_video') _viewing = true;
       if (action == 'start_recording') {
         _recordingSourceCommandId = idOf(result['id']);
@@ -336,6 +336,8 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     ).where((c) => c['action'] == action).firstOrNull;
     return last == null ||
         !const [
+          'queued',
+          'dispatching',
           'requesting',
           'sent',
           'unknown',
@@ -397,6 +399,8 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                   runSpacing: 8,
                   children: [
                     _button('拍照', Icons.photo_camera_outlined, 'take_photo'),
+                    if (_pending.keys.any((key) => key.startsWith('take_photo:') || key.startsWith('list_recordings:') || key.startsWith('upload_recording:')))
+                      TextButton(onPressed: _writing ? null : () => setState(() { _pending.updateAll((key, value) => key.startsWith('take_photo:') || key.startsWith('list_recordings:') || key.startsWith('upload_recording:') ? SharedBackend.requestId() : value); _message = '下一次操作将创建新请求；原未确认请求仍保留'; }), child: const Text('新建另一请求')),
                     _button('实时观看', Icons.videocam_outlined, 'start_video'),
                     _button('停止观看', Icons.stop_circle_outlined, 'stop_video'),
                     _button(
@@ -594,7 +598,12 @@ String _statusLabel(String value, String action) => value == 'completed'
             'recording': '正在录像',
             'waiting_media': '等待真实画面',
             'timeout': '回执超时',
-            'unknown': '结果未确认',
+            'unknown': '结果未确认，不会自动重复下发',
+            'queued': '已排队，等待发送',
+            'dispatching': '正在发送，结果待确认',
+            'expired': '发送前已过期',
+            'cancelled': '发送前已取消',
+            'failed_before_send': '发送前失败',
             'rejected': '设备拒绝',
             'finalizing': '文件封装中',
             'requesting': '提交中',

@@ -289,7 +289,9 @@ async function sendBroadcast() {
       const response=await authFetch('/api/guardian/v1/mobile/broadcast',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,idempotencyKey:broadcastRequest.key})});
       const result=await response.json().catch(()=>({}));
       if(!response.ok)throw Error(result.message||'广播请求失败');
-      if(!Array.isArray(result)||result.some(row=>!['accepted','completed'].includes(row.status)))throw Error('广播结果未确认，可重试查询同一请求');
+      if(!Array.isArray(result))throw Error('广播结果未确认，可重试查询同一请求');
+      const pending=result.find(row=>!['acknowledged','completed'].includes(row.status));
+      if(pending){broadcastError.value=pending.vendorMsg||pending.message||'广播等待发送或回执；重试仅查询同一请求';await refreshSnapshot();return;}
       broadcastRequest=null;await refreshSnapshot();
     }
     session.broadcastDraft = "";
@@ -384,6 +386,7 @@ async function sendBroadcast() {
           <AppField label="广播内容" vertical data-field="text" :error="broadcastErrors.text"><AppTextarea name="text" maxlength="200" placeholder="请输入广播内容" :model-value="broadcastText" @update:model-value="setBroadcast" /></AppField>
           <div class="char-count">{{ charCount }}</div>
           <div class="form-actions">
+            <AppButton type="button" :disabled="broadcasting" @click="broadcastRequest=null; broadcastError='下一次提交将创建新广播；原未确认请求仍保留。'">新建另一广播</AppButton>
             <AppButton type="button" icon="play-fill" @click="previewBroadcast">本机试听</AppButton>
             <AppButton type="submit" tone="primary" icon="send-plane-fill" :disabled="!broadcastFeature.available || broadcasting">{{ broadcasting ? '正在提交…' : '发送广播' }}</AppButton>
           </div>

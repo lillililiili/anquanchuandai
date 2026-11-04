@@ -1,5 +1,5 @@
 export const COMMAND_LABELS = { take_photo:'拍照', start_recording:'开始录像', stop_recording:'停止录像', start_video:'开启直播', stop_video:'关闭直播', list_recordings:'查询设备录像', upload_recording:'上传选中录像', configure_sip:'同步语音配置' };
-export const COMMAND_STATUSES = { queued:'等待发送', requesting:'正在请求', configured:'配置已保存，设备下次登录生效', waiting_media:'等待设备视频，尚未开始录像', recording:'正在录制实际视频', finalizing:'录像文件正在封装', accepted:'平台已受理', sent:'已发送，设备待回执', acknowledged:'设备已回执', completed:'设备已完成', failed:'执行失败', timeout:'等待回执超时', rejected:'设备拒绝', pending:'等待设备处理', unknown:'执行状态待确认' };
+export const COMMAND_STATUSES = { queued:'已排队，等待设备所在节点发送', dispatching:'正在发送，结果待确认', expired:'发送前已过期', cancelled:'发送前已取消', failed_before_send:'发送前失败', requesting:'正在请求', configured:'配置已保存，设备下次登录生效', waiting_media:'等待设备视频，尚未开始录像', recording:'正在录制实际视频', finalizing:'录像文件正在封装', accepted:'平台已受理', sent:'已发送，设备待回执', acknowledged:'设备已回执', completed:'设备已完成', failed:'执行失败', timeout:'等待回执超时', rejected:'设备拒绝', pending:'等待设备处理', unknown:'结果未确认，不会自动重复下发' };
 
 export function mediaUrl(value) {
   if (typeof value !== 'string' || !value) return null;
@@ -143,3 +143,5 @@ export async function openWhep(live, video, { fetchImpl = fetch, PeerConnection 
     throw mediaPlaybackError({offer:'浏览器无法创建实时视频连接',ice:'实时视频网络协商失败（ICE）',request:'实时视频协商请求未完成，请检查媒体服务、网络或跨域配置',answer:'实时视频应答无法解析，请检查服务协议和设备视频编码'}[phase]);
   }
 }
+
+export const commandUnresolved = status => ['queued','dispatching','requesting','sent','unknown','pending','accepted'].includes(String(status).toLowerCase());

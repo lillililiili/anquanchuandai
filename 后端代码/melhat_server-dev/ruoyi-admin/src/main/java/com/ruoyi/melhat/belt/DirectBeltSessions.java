@@ -9,7 +9,8 @@ import java.util.*;
 
 /** Live session ownership and receipt times are separate from persisted last-known readings. */
 public final class DirectBeltSessions {
-    private final Clock clock;
+    private Clock clock;
+    public void useClock(Clock clock) { this.clock=clock; }
     private final Map<String, Connection> devices = new HashMap<>();
     private final Map<Session, String> identities = new IdentityHashMap<>();
     public DirectBeltSessions() { this(Clock.systemUTC()); }

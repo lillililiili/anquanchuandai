@@ -15,6 +15,30 @@ import static com.ruoyi.guardian.WearableModel.object;
 /** Durable reception precedes acknowledgement. Recovery retains the received time and ownership. */
 @Service
 public class WearableReportDelivery {
+
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.DeviceOwnership ownership;
+    /** Capture business context before cluster control. SQL receipt + owner update commit together.
+     * Projection/recovery happens only after releasing ownership SQL and business locks. */
+    public boolean helmetOwned(com.ruoyi.cluster.OwnerToken token,String raw,JSONObject status,boolean mediaReceipt) {
+        String receipt="WR-"+UUID.randomUUID();
+        HelmetEventLifecycle.coordinate(()->{synchronized(WearableBusinessStore.transactionLock()){
+            JSONObject payload;
+            if(mediaReceipt)payload=object("raw",JSONObject.parseObject(raw),"receivedAt",ownership.clock().instant().toString());
+            else {JSONObject context=ingest.captureDirect(token.deviceId);context.put("receivedAt",ownership.clock().instant().toString());
+                SafetyHatInfo device=helmets.getObject().registered(token.deviceId);if(device==null)throw new IllegalStateException("设备登记已变化");
+                context.put("rawUserId",device.getBindUserId());context.put("rawUserName",device.getBindUserName());payload=object("raw",JSONObject.parseObject(raw),"context",context);}
+            ownership.receiveUnderOwner(token,status,()->journal.appendDeviceReport(receipt,mediaReceipt?"direct-helmet-media":"direct-helmet",token.deviceId,payload));return true;
+        }});
+        recover();return !paused();
+    }
+    public void beltOwned(com.ruoyi.cluster.OwnerToken token,String raw,JSONObject status,String rawType,String timestamp,boolean sos) {
+        synchronized(WearableBusinessStore.transactionLock()) {
+            JSONObject payload=object("raw",JSONObject.parseObject(raw),"context",ingest.captureBelt(token.deviceId),"status",status,"rawType",rawType,"timestamp",timestamp,"sos",sos);
+            ownership.receiveUnderOwner(token,status,()->journal.appendDeviceReport("WR-"+UUID.randomUUID(),"direct-belt",token.deviceId,payload));
+        }
+        recover();
+    }
+
     private final WearableBusinessStore journal;
     private final GuardianIngest ingest;
     private final ObjectProvider<DirectHelmetTelemetryService> helmets;

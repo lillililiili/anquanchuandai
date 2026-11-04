@@ -216,7 +216,7 @@ void main() {
                 Response(
                   requestOptions: options,
                   statusCode: 200,
-                  data: {'status': 'completed', 'message': '文件已保存'},
+                  data: {'status': ids.length == 2 ? 'queued' : 'completed', 'message': '文件已保存'},
                 ),
               );
             } else {
@@ -285,7 +285,10 @@ void main() {
       expect(ids[0], ids[1]);
       await tester.tap(find.text('拍照'));
       await tester.pumpAndSettle();
-      expect(ids[2], isNot(ids[1]));
+      expect(ids[2], ids[1]);
+      await tester.tap(find.text('拍照'));
+      await tester.pumpAndSettle();
+      expect(ids[3], isNot(ids[2]));
       expect(find.textContaining('已接通'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());

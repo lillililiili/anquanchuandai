@@ -577,7 +577,12 @@ void main() {
       ];
       await controller.sendTts(eventId: '31');
 
-      expect(controller.ttsMessage, '指令已提交（不代表现场已听到）');
+      expect(controller.ttsMessage, '已发送，等待设备回执');
+      expect(gateway.ttsKeys[0], gateway.ttsKeys[1]);
+      gateway.ttsResult = const [TtsCommand(id:'88',deviceId:'9',status:TtsCommandStatus.queued)];
+      await controller.sendTts(eventId:'31');
+      expect(gateway.ttsKeys[2],gateway.ttsKeys[0]);
+      expect(controller.ttsMessage,contains('等待设备所在节点发送'));
       expect(controller.ttsText, '请立即撤离');
     },
   );
@@ -626,6 +631,7 @@ class FakeCommunicationsGateway
   String? joinedUid;
   Object? ttsError;
   List<TtsCommand> ttsResult = const [];
+  final ttsKeys = <String>[];
   List<String>? lastTtsDeviceIds;
   String? lastTtsEventId;
 
@@ -712,6 +718,7 @@ class FakeCommunicationsGateway
     List<Map<String, dynamic>> recipients = const [],
     String? eventId,
   }) async {
+    ttsKeys.add(idempotencyKey);
     lastTtsDeviceIds = deviceIds;
     lastTtsEventId = eventId;
     if (ttsError != null) throw ttsError!;

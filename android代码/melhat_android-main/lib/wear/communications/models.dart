@@ -351,7 +351,23 @@ class PersonHelmetStatus {
       : '安全帽${device!.stateLabel}';
 }
 
-enum TtsCommandStatus { accepted, sent, failed, unknown }
+enum TtsCommandStatus { accepted, queued, dispatching, sent, acknowledged, rejected, expired, cancelled, failedBeforeSend, failed, unknown }
+extension TtsCommandStatusLabel on TtsCommandStatus {
+ String get label => switch (this) {
+  TtsCommandStatus.accepted => '平台已受理，实际播放待确认',
+  TtsCommandStatus.queued => '已排队，等待设备所在节点发送',
+  TtsCommandStatus.dispatching => '正在发送，结果待确认',
+  TtsCommandStatus.sent => '已发送，等待设备回执',
+  TtsCommandStatus.acknowledged => '设备已确认，现场是否听到需核实',
+  TtsCommandStatus.rejected => '设备拒绝了操作',
+  TtsCommandStatus.expired => '发送前已过期',
+  TtsCommandStatus.cancelled => '发送前已取消',
+  TtsCommandStatus.failedBeforeSend => '发送前失败',
+  TtsCommandStatus.failed => '指令失败',
+  TtsCommandStatus.unknown => '结果未确认，不会自动重复下发',
+ };
+ bool get unresolved => const [TtsCommandStatus.accepted,TtsCommandStatus.queued,TtsCommandStatus.dispatching,TtsCommandStatus.sent,TtsCommandStatus.unknown].contains(this);
+}
 
 class TtsCommand {
   const TtsCommand({
@@ -364,13 +380,20 @@ class TtsCommand {
   factory TtsCommand.fromJson(JsonMap json) => TtsCommand(
     id: _stringOf(json['id']),
     deviceId: _stringOf(json['deviceId']),
-    status: switch (_stringOf(json['status'])) {
+    status: switch (_stringOf(json['status']).toLowerCase()) {
       'accepted' => TtsCommandStatus.accepted,
+      'queued' => TtsCommandStatus.queued,
+      'dispatching' => TtsCommandStatus.dispatching,
+      'acknowledged' => TtsCommandStatus.acknowledged,
+      'rejected' => TtsCommandStatus.rejected,
+      'expired' => TtsCommandStatus.expired,
+      'cancelled' => TtsCommandStatus.cancelled,
+      'failed_before_send' => TtsCommandStatus.failedBeforeSend,
       'sent' => TtsCommandStatus.sent,
       'failed' => TtsCommandStatus.failed,
       _ => TtsCommandStatus.unknown,
     },
-    vendorMessage: _stringOf(json['vendorMsg']),
+    vendorMessage: _stringOf(json['vendorMsg'] ?? json['deliveryReason'] ?? json['message']),
   );
 
   final String id;

@@ -16,6 +16,13 @@ import java.io.IOException;
 /** Runtime state is backed by a live device-owned WebSocket, never by seeded database status. */
 @Component
 public class DirectHelmetGateway implements DirectHelmetAccess {
+
+    @Autowired(required=false) private com.ruoyi.cluster.DeviceOwnership ownership;
+    @Autowired(required=false) private com.ruoyi.cluster.DeviceCommandRouter router;
+    private final java.util.Map<Session,com.ruoyi.cluster.OwnerToken> ownerTokens=java.util.Collections.synchronizedMap(new java.util.IdentityHashMap<>());
+    private boolean clustered(){return ownership!=null&&ownership.enabled();}
+    @javax.annotation.PostConstruct public void clusterStart(){if(clustered()){sessions.useClock(ownership.clock());router.register("helmet",this::sendLocal);}}
+
     private static final Logger LOG = LoggerFactory.getLogger(DirectHelmetGateway.class);
     private final DirectHelmetProperties properties;
     private final DirectHelmetTelemetryService telemetry;
@@ -38,11 +45,11 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
     public long idleTimeoutMillis() { return (properties.getHeartbeatTimeoutSeconds() + 5L) * 1000L; }
     @Override public boolean supports(String deviceId) { return telemetry.registered(deviceId) != null; }
     @Override public boolean isOnline(String deviceId) {
-        return isEnabled() && supports(deviceId) && sessions.session(deviceId, properties.getHeartbeatTimeoutSeconds()) != null;
+        return isEnabled() && supports(deviceId) && (clustered()?ownership.readPresence("helmet",deviceId).getBooleanValue("online"):sessions.session(deviceId, properties.getHeartbeatTimeoutSeconds()) != null);
     }
 
     @Override public JSONObject status(String deviceId) {
-        JSONObject status = sessions.status(deviceId, properties.getHeartbeatTimeoutSeconds());
+        JSONObject status = clustered()?ownership.readPresence("helmet",deviceId):sessions.status(deviceId, properties.getHeartbeatTimeoutSeconds());
         if (!isEnabled()) {
             status.put("online", false); status.put("freshness", "UNKNOWN");
         }
@@ -80,7 +87,7 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
             HelmetMediaService media=mediaProvider==null?null:mediaProvider.getIfAvailable();
             if(java.util.Arrays.asList("ca_upload_photo","upload_video_success","push_to_client").contains(message.act)) {
                 if(reports!=null) {
-                    reports.helmetMedia(deviceId,json);
+                    if(clustered())reports.helmetOwned(ownerTokens.get(session),json,sessions.preview(session,message,properties.getHeartbeatTimeoutSeconds()),true);else reports.helmetMedia(deviceId,json);
                     sessions.heard(session,message);
                     return response(message.act,true,"回执已保存，处理结果以业务记录为准");
                 }
@@ -93,7 +100,8 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
                     && !"ca_sip_sos".equals(message.act))
                 return response(message.act, false, "当前接入尚不支持此设备消息");
             boolean processed=true;
-            if(reports==null)telemetry.receive(hat,message);else processed=reports.helmet(deviceId,json);
+            if(clustered()){if(reports==null)throw new IllegalStateException("持久接收服务未就绪");processed=reports.helmetOwned(ownerTokens.get(session),json,sessions.preview(session,message,properties.getHeartbeatTimeoutSeconds()),false);}
+            else if(reports==null)telemetry.receive(hat,message);else processed=reports.helmet(deviceId,json);
             sessions.heard(session, message);
             if(processed)publish(deviceId);
             JSONObject result = response(message.act, true, "上报成功！");
@@ -117,7 +125,11 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
             return response(message.act, false, "连接已经绑定其他设备");
         SafetyHatInfo hat = telemetry.registered(message.deviceId);
         if (hat == null) return response(message.act, false, "设备未预先登记为一体式安全帽");
-        if(reports==null||!reports.paused())telemetry.connection(hat, true);
+        if(clustered()){
+            if(bound!=null){if(!ownership.current(ownerTokens.get(session)))throw new IllegalArgumentException("连接所有权已变化，请重新登录");}
+            else ownerTokens.put(session,ownership.claimLogin("helmet",message.deviceId,session.getId(),properties.getHeartbeatTimeoutSeconds()*1000L,sessions.status(message.deviceId,properties.getHeartbeatTimeoutSeconds())));
+        }
+        if(!clustered()&&(reports==null||!reports.paused()))telemetry.connection(hat, true);
         Session replaced = sessions.register(message.deviceId, session);
         if (replaced != null) close(replaced, "设备已建立新连接");
         if(reports==null||!reports.paused())publish(message.deviceId);
@@ -134,11 +146,13 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
     }
 
     public synchronized void disconnected(Session session) {
+        com.ruoyi.cluster.OwnerToken token=ownerTokens.remove(session);
         String deviceId = sessions.disconnect(session);
+        if(clustered()&&!ownership.release(token))return;
         if (deviceId == null) return;
         try {
             SafetyHatInfo hat = telemetry.registered(deviceId);
-            if (hat != null&&(reports==null||!reports.paused())) telemetry.connection(hat, false);
+            if (hat != null&&!clustered()&&(reports==null||!reports.paused())) telemetry.connection(hat, false);
         }
         catch (RuntimeException error) { LOG.warn("Direct helmet offline state persistence failed"); }
         if(reports==null||!reports.paused())publish(deviceId);
@@ -147,6 +161,8 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
     @Scheduled(fixedDelay = 5000)
     public synchronized void expireConnections() {
         if (!isEnabled()) return;
+        if(clustered()){java.util.List<Session> stale=new java.util.ArrayList<>();synchronized(ownerTokens){for(java.util.Map.Entry<Session,com.ruoyi.cluster.OwnerToken> e:ownerTokens.entrySet())if(!ownership.current(e.getValue()))stale.add(e.getKey());}for(Session session:stale){disconnected(session);close(session,"设备连接所有权或租约已失效");}}
+        if(clustered()&&(reports==null||!reports.paused()))for(String id:ownership.expiredDeviceIds("helmet"))publish(id);
         for (Session session : sessions.expired(properties.getHeartbeatTimeoutSeconds())) {
             disconnected(session);
             close(session, "设备心跳超时，请重新登录");
@@ -155,12 +171,23 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
 
     /** Exact recipient only; no broadcast or fallback to an unrelated device. */
     public synchronized void sendCommand(String deviceId, JSONObject command) throws IOException {
+        if(clustered()){router.send(deviceId,command,"legacy:"+command.getString("cmd"));return;}
         if (!isOnline(deviceId)) throw new IllegalStateException("设备不在线，未下发命令");
         Session session = sessions.session(deviceId, properties.getHeartbeatTimeoutSeconds());
         if (session == null) throw new IllegalStateException("设备心跳超时，未下发命令");
         synchronized (session) { session.getBasicRemote().sendText(command.toJSONString()); }
     }
 
+    public void sendCommand(String deviceId,JSONObject command,String purpose) throws IOException {if(clustered())router.send(deviceId,command,purpose);else sendCommand(deviceId,command);}
+    private void sendLocal(com.ruoyi.cluster.OwnerToken token,String wire,long timeout,Runnable validateAttempt) throws Exception {
+        Session session=sessions.session(token.deviceId,properties.getHeartbeatTimeoutSeconds());
+        com.ruoyi.cluster.OwnerToken local=session==null?null:ownerTokens.get(session);
+        if(local==null||!local.connectionToken.equals(token.connectionToken)||!ownership.current(token))throw new IllegalStateException("本地目标连接已失效");
+        validateAttempt.run();
+        session.getAsyncRemote().setSendTimeout(timeout);
+        try{session.getAsyncRemote().sendText(wire).get(timeout,java.util.concurrent.TimeUnit.MILLISECONDS);}
+        catch(Exception e){close(session,"发送结果未确认，请重新连接");throw e;}
+    }
     private void publish(String deviceId) {
         try { telemetry.snapshot(deviceId, status(deviceId)); }
         catch (RuntimeException error) { LOG.warn("Direct helmet snapshot update failed"); }

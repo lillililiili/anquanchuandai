@@ -42,23 +42,24 @@ public class HelmetMediaService {
         JSONObject lease=map(store.snapshot(),"gbLeases").getJSONObject(leaseId);
         if(lease!=null&&!deviceId.equals(lease.getString("deviceId")))throw new IllegalArgumentException("GB_LEASE_CONFLICT");
         if(lease!=null&&lease.getBooleanValue("released"))throw new IllegalArgumentException("GB_LEASE_RELEASED");
-        if(lease!=null&&!Instant.parse(lease.getString("expiresAt")).isAfter(Instant.now())){gbRelease(leaseId);throw new IllegalArgumentException("GB_LEASE_EXPIRED");}
+        if(lease!=null&&!Instant.parse(lease.getString("expiresAt")).isAfter(now())){gbRelease(leaseId);throw new IllegalArgumentException("GB_LEASE_EXPIRED");}
         boolean fresh=lease==null;
         JSONObject current=stream(deviceId);
-        if(fresh)lease=obj("leaseId",leaseId,"deviceId",deviceId,"createdAt",Instant.now().toString());
-        lease.put("expiresAt",Instant.now().plusSeconds(ttlSeconds).toString());
+        if(fresh)lease=obj("leaseId",leaseId,"deviceId",deviceId,"createdAt",now().toString());
+        lease.put("expiresAt",now().plusSeconds(ttlSeconds).toString());
         final JSONObject saved=lease;
         store.update(s->{map(s,"gbLeases").put(leaseId,saved);return null;});
         boolean alreadyDemanded=current.getBooleanValue("watchRequested")||current.getBooleanValue("recordRequested");
         setGbWatcher(current,leaseId,true);saveStream(deviceId,current);
-        if(fresh&&!alreadyDemanded)try{gateway().sendCommand(deviceId,obj("cmd","server_push_open_rtsp","push_url",current.getString("pushUrl")));}
+        if(fresh&&!alreadyDemanded)try{sendDevice(deviceId,obj("cmd","server_push_open_rtsp","push_url",current.getString("pushUrl")),"gb-open:"+leaseId);}
+        catch(com.ruoyi.cluster.DeviceCommandRouter.Pending pending){saved.put("commandId",pending.commandId);store.update(state->{map(state,"gbLeases").put(leaseId,saved);return null;});}
         catch(Exception error){gbRelease(leaseId);throw new IllegalStateException("GB_DEVICE_COMMAND_UNCONFIRMED");}
         return gbLeaseStatus(leaseId);
     }
     public synchronized JSONObject gbLeaseStatus(String leaseId) {
         JSONObject lease=map(store.snapshot(),"gbLeases").getJSONObject(leaseId);
         if(lease==null||lease.getBooleanValue("released"))throw new IllegalArgumentException("GB_LEASE_NOT_FOUND");
-        if(!Instant.parse(lease.getString("expiresAt")).isAfter(Instant.now())){gbRelease(leaseId);throw new IllegalArgumentException("GB_LEASE_EXPIRED");}
+        if(!Instant.parse(lease.getString("expiresAt")).isAfter(now())){gbRelease(leaseId);throw new IllegalArgumentException("GB_LEASE_EXPIRED");}
         String deviceId=lease.getString("deviceId");JSONObject result=gbDeviceStatus(deviceId);
         JSONObject current=map(store.snapshot(),"streams").getJSONObject(deviceId);
         if(current==null)throw new IllegalStateException("GB_STREAM_NOT_FOUND");
@@ -70,6 +71,7 @@ public class HelmetMediaService {
         if(token.isEmpty())throw new IllegalStateException("GB_PLAY_TICKET_UNAVAILABLE");
         result.putAll(obj("leaseId",leaseId,"leaseExpiresAt",lease.get("expiresAt"),"streamId",actual.get("streamId"),"playToken",token,
                 "publishing",actual.getBooleanValue("publishing"),"statusVerified",actual.getBooleanValue("statusVerified"),"expiresAt",actual.get("expiresAt")));
+        if(clusteredCommands()&&lease.getString("commandId")!=null){JSONObject command=commandRouter.read(lease.getString("commandId"));if(command!=null){result.put("deliveryStatus",command.get("deliveryStatus"));result.put("deliveryReason",command.get("deliveryReason"));}}
         return result;
     }
     public synchronized JSONObject gbRelease(String leaseId) {
@@ -77,10 +79,10 @@ public class HelmetMediaService {
         if(lease==null||lease.getBooleanValue("released"))return obj("released",true);
         String deviceId=lease.getString("deviceId");JSONObject current=map(store.snapshot(),"streams").getJSONObject(deviceId);
         if(current!=null){setGbWatcher(current,leaseId,false);saveStream(deviceId,current);}
-        lease.put("released",true);lease.put("releasedAt",Instant.now().toString());
+        lease.put("released",true);lease.put("releasedAt",now().toString());
         store.update(s->{map(s,"gbLeases").put(leaseId,lease);return null;});
         if(current!=null&&!current.getBooleanValue("watchRequested")&&!current.getBooleanValue("recordRequested")&&gateway().isOnline(deviceId))
-            try{gateway().sendCommand(deviceId,obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){/* No remaining demand; the disconnected device is not retried. */}
+            try{sendDevice(deviceId,obj("cmd","server_push_stop_rtsp"),"gb-stop:"+leaseId);}catch(Exception ignored){/* No remaining demand; the disconnected device is not retried. */}
         return obj("released",true);
     }
     @Scheduled(fixedDelay=10000)
@@ -94,10 +96,10 @@ public class HelmetMediaService {
         boolean prune=false;
         for(Map.Entry<String,Object> item:leases.entrySet()){
             JSONObject lease=(JSONObject)item.getValue();
-            if(!lease.getBooleanValue("released")&&!Instant.parse(lease.getString("expiresAt")).isAfter(Instant.now()))gbRelease(item.getKey());
-            if(lease.getBooleanValue("released")&&Instant.parse(lease.getString("releasedAt")).isBefore(Instant.now().minusSeconds(86400)))prune=true;
+            if(!lease.getBooleanValue("released")&&!Instant.parse(lease.getString("expiresAt")).isAfter(now()))gbRelease(item.getKey());
+            if(lease.getBooleanValue("released")&&Instant.parse(lease.getString("releasedAt")).isBefore(now().minusSeconds(86400)))prune=true;
         }
-        if(prune)store.update(s->{map(s,"gbLeases").entrySet().removeIf(e->{JSONObject l=(JSONObject)e.getValue();return l.getBooleanValue("released")&&Instant.parse(l.getString("releasedAt")).isBefore(Instant.now().minusSeconds(86400));});return null;});
+        if(prune)store.update(s->{map(s,"gbLeases").entrySet().removeIf(e->{JSONObject l=(JSONObject)e.getValue();return l.getBooleanValue("released")&&Instant.parse(l.getString("releasedAt")).isBefore(now().minusSeconds(86400));});return null;});
     }
     public JSONObject capabilities() { return obj("mediaAvailable",available(),"voiceAvailable",available(),
             "broadcastAvailable",available()&&ttsHealthy,"mediaProtocol","SIP","mediaStatus",!cloud.configured()?"unconfigured":healthy?"ready":"unavailable",
@@ -122,13 +124,17 @@ public class HelmetMediaService {
         final JSONObject saved=account; store.update(s->{map(s,"accounts").put(deviceId,saved);return null;});
         return account;
     }
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.DeviceCommandRouter commandRouter;
+    private Instant now(){return clusteredCommands()?commandRouter.now():Instant.now();}
+    private boolean clusteredCommands(){return commandRouter!=null&&commandRouter.enabled();}
     public synchronized JSONObject command(String actorId,String deviceId,JSONObject input) {
         String action=text(input,"action"), key=text(input,"idempotencyKey");
         if(!key.matches("[A-Za-z0-9_-]{8,100}"))throw new IllegalArgumentException("请提供稳定的请求编号");
         if(!Arrays.asList("take_photo","start_video","stop_video","list_recordings","upload_recording",
                 "start_recording","stop_recording","broadcast","set_config","configure_sip").contains(action))
             throw new IllegalArgumentException("不支持此设备操作");
-        String fingerprint=DigestUtils.sha256Hex(input.toJSONString());
+        String fingerprint=clusteredCommands()?com.ruoyi.cluster.DeviceCommandRouter.fingerprint(input):DigestUtils.sha256Hex(input.toJSONString());
+        if(clusteredCommands()){JSONObject prior=commandRouter.find(commandRouter.scope(actorId,deviceId,key),fingerprint);if(prior!=null){JSONObject business=map(store.snapshot(),"commands").getJSONObject(prior.getString("id"));return publicCommand(business==null?prior:business);}}
         for(Object raw:map(store.snapshot(),"commands").values()) {
             JSONObject previous=(JSONObject)raw;
             if(actorId.equals(previous.getString("actorId"))&&deviceId.equals(previous.getString("deviceId"))&&key.equals(previous.getString("requestId"))) {
@@ -149,31 +155,34 @@ public class HelmetMediaService {
         String id="HC-"+UUID.randomUUID(); wire.put("talkback_id",id);
         JSONObject row=obj("id",id,"deviceId",deviceId,"actorId",actorId,"action",action,"requestId",key,"fingerprint",fingerprint,
                 "siteId",input.get("siteId"),"areaId",input.get("areaId"),"personId",input.get("personId"),
-                "status","requesting","createdAt",Instant.now().toString(),"expiresAt",Instant.now().plusSeconds(properties.getCommandTimeoutSeconds()).toString());
+                "status","requesting","createdAt",now().toString(),"expiresAt",now().plusSeconds(properties.getCommandTimeoutSeconds()).toString());
         // The controller supplies this name from the validated assignment authority. Keep
         // the captured name with the command; historical media must not look up today's wearer.
         if(!text(input,"name").isEmpty())row.put("personName",input.getString("name"));
         for(String field:Arrays.asList("assignmentId","assignmentVersion","ledgerDeviceId","viewerSessionId"))if(input.containsKey(field))row.put(field,input.get(field));
         if(requestedFiles!=null)row.put("requestedFiles",requestedFiles);
-        saveCommand(row);
+        if(clusteredCommands()){
+            JSONObject admitted=commandRouter.admit(id,commandRouter.scope(actorId,deviceId,key),fingerprint,"helmet",deviceId,row,wire,false,()->saveCommand(row));
+            if(!id.equals(admitted.getString("id"))){JSONObject existing=map(store.snapshot(),"commands").getJSONObject(admitted.getString("id"));return publicCommand(existing==null?admitted:existing);}
+        }else saveCommand(row);
         try {
             if("configure_sip".equals(action)) {
                 provision(deviceId); row.put("status","configured"); row.put("message","SIP 账号已配置，设备下次登录时生效");
             } else if("start_video".equals(action)) {
                 JSONObject stream=stream(deviceId); wire.put("push_url",stream.getString("pushUrl"));
                 boolean needed=!stream.getBooleanValue("watchRequested")&&!stream.getBooleanValue("recordRequested");
-                setViewer(stream,actorId,input,true);saveStream(deviceId,stream);if(needed)gateway().sendCommand(deviceId,wire);sent(row);
+                setViewer(stream,actorId,input,true);saveStream(deviceId,stream);if(needed)sendDevice(deviceId,wire);sent(row);if(!needed&&clusteredCommands()){row.put("status","accepted");row.put("message","已订阅现有共享视频，播放情况以实时画面为准");}
             } else if("stop_video".equals(action)) {
                 JSONObject stream=map(store.snapshot(),"streams").getJSONObject(deviceId);
                 if(stream!=null) {setViewer(stream,actorId,input,false);saveStream(deviceId,stream);}
-                if(stream!=null&&!stream.getBooleanValue("recordRequested")&&!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))gateway().sendCommand(deviceId,wire);
+                if(stream!=null&&!stream.getBooleanValue("recordRequested")&&!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))sendDevice(deviceId,wire);
                 row.put("status","completed");row.put("message","已释放本次观看会话");
             } else if("start_recording".equals(action)) {
                 JSONObject stream=stream(deviceId);
                 if(stream.getBooleanValue("recordRequested")||!text(stream,"recordingId").isEmpty()||stream.getBooleanValue("recordStartUnknown"))throw new IllegalArgumentException("平台录像已在启动、录制或等待停止确认");
                 stream.remove("sessionInvalidatedAt");stream.remove("cleanupStatus");
                 stream.put("recordRequestId",id);stream.put("recordRequested",true);saveStream(deviceId,stream);
-                gateway().sendCommand(deviceId,obj("cmd","server_push_open_rtsp","push_url",stream.getString("pushUrl"),"talkback_id",id));
+                sendDevice(deviceId,obj("cmd","server_push_open_rtsp","push_url",stream.getString("pushUrl"),"talkback_id",id));
                 row.put("status","waiting_media");row.put("message","已请求设备推流，收到真实视频后开始录像");
             } else if("stop_recording".equals(action)) {
                 JSONObject stream=map(store.snapshot(),"streams").getJSONObject(deviceId);
@@ -191,7 +200,7 @@ public class HelmetMediaService {
                     if(source!=null){source.put("status","cancelled");source.put("message","已取消等待视频，未开始录像");saveCommand(source);}
                     row.put("status","completed");row.put("message","已取消等待中的平台录像");
                 }
-                if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))gateway().sendCommand(deviceId,obj("cmd","server_push_stop_rtsp"));
+                if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(deviceId))sendDevice(deviceId,obj("cmd","server_push_stop_rtsp"));
             } else {
                 if("broadcast".equals(action)) {
                     String content=text(params,"text"); if(content.isEmpty()||content.length()>200)throw new IllegalArgumentException("广播内容需为1至200字");
@@ -199,13 +208,19 @@ public class HelmetMediaService {
                     if(!"ready".equals(audio.getString("status"))||text(audio,"audioUrl").isEmpty())throw new IllegalStateException("语音文件尚未生成");
                     wire.put("message",audio.getString("audioUrl"));wire.put("message_type",0);
                 }
-                gateway().sendCommand(deviceId,wire);sent(row);
+                sendDevice(deviceId,wire);sent(row);
             }
+        } catch(com.ruoyi.cluster.DeviceCommandRouter.Pending pending) {
+            row.put("status",pending.status.toLowerCase(java.util.Locale.ROOT));row.put("deliveryStatus",pending.status);
+            row.put("message","QUEUED".equals(pending.status)?"请求已保存，正在等待设备所在节点发送":"结果未确认，不会自动重复下发");
         } catch(Exception error) {
+            if(clusteredCommands())commandRouter.failBeforeSend(id,"准备设备指令失败，尚未开始发送");
             row.put("status","unknown");row.put("message","操作结果未确认，请核对记录和设备状态；不会自动重复下发");
         }
+        if(clusteredCommands()&&Arrays.asList("configured","completed","accepted").contains(row.getString("status")))commandRouter.completeWithoutSend(id);
         saveCommand(row); return publicCommand(row);
     }
+    public JSONObject commandState(String id){JSONObject row=map(store.snapshot(),"commands").getJSONObject(id);return row==null?null:publicCommand(row);}
     public JSONObject media(String deviceId) {
         JSONObject state=store.snapshot();
         JSONArray commands=new JSONArray();
@@ -231,16 +246,16 @@ public class HelmetMediaService {
     private JSONObject liveActive(String actorId,String deviceId,JSONObject input) {
         JSONObject stream=map(store.snapshot(),"streams").getJSONObject(deviceId);
         JSONObject viewer=ownedViewer(stream,actorId,input);
-        if(!Instant.parse(viewer.getString("expiresAt")).isAfter(Instant.now()))throw new IllegalArgumentException("观看会话已过期，请重新开始观看");
+        if(!Instant.parse(viewer.getString("expiresAt")).isAfter(now()))throw new IllegalArgumentException("观看会话已过期，请重新开始观看");
         requireCloud();if(!gateway().isOnline(deviceId))throw new IllegalStateException("设备离线");
         JSONObject current=cloud.request("GET","/streams/"+stream.getString("streamId"),null);
         try {
-            Instant expiry=Instant.parse(current.getString("expiresAt")),now=Instant.now();
+            Instant expiry=Instant.parse(current.getString("expiresAt")),now=now();
             if(!expiry.isAfter(now)||expiry.isAfter(now.plusSeconds(45)))throw new IllegalArgumentException();
         }catch(RuntimeException error){throw com.ruoyi.guardian.AdminQueryService.fail(503,"MEDIA_SERVICE_UPGRADE_REQUIRED","媒体服务播放票据需升级，暂不提供实时画面");}
         setViewer(stream,actorId,input,true);saveStream(deviceId,stream);
         JSONObject live=current.getBooleanValue("publishing")?obj("protocol","HLS","url",current.get("hlsUrl"),"hlsUrl",current.get("hlsUrl"),"iceServers",current.get("iceServers"),"expiresAt",current.get("expiresAt")):null;
-        return obj("deviceId",deviceId,"viewerSessionId",viewerId(input),"status",live==null?"waiting_media":"playing","live",live,"leaseExpiresAt",Instant.now().plusSeconds(30).toString());
+        return obj("deviceId",deviceId,"viewerSessionId",viewerId(input),"status",live==null?"waiting_media":"playing","live",live,"leaseExpiresAt",now().plusSeconds(30).toString());
     }
     public synchronized JSONObject requireCleanup(String actorId,String deviceId,JSONObject input) {
         JSONObject state=store.snapshot(),stream=map(state,"streams").getJSONObject(deviceId),captured;
@@ -284,16 +299,17 @@ public class HelmetMediaService {
     public synchronized JSONObject call(String actorId,List<String> devices,boolean video,JSONArray recipients) {
         requireCallReady(devices);
         String id="SIP-"+UUID.randomUUID(),room="r"+random().substring(0,20),operator="o"+random().substring(0,20);
-        JSONObject row=obj("id",id,"actorId",actorId,"deviceIds",new JSONArray(devices),"status","requesting","createdAt",Instant.now().toString());
+        JSONObject row=obj("id",id,"actorId",actorId,"deviceIds",new JSONArray(devices),"status","requesting","createdAt",now().toString());
         row.put("recipients",com.alibaba.fastjson2.JSON.parseArray(recipients.toJSONString()));
         saveCall(row);
         try {
             JSONArray participants=new JSONArray();
             for(String device:devices) {
                 JSONObject account=provision(device); participants.add(account.getString("sipId"));
-                gateway().sendCommand(device,obj("cmd","server_push_stop_rtsp"));
+                try{sendDevice(device,obj("cmd","server_push_stop_rtsp"),"call-stop:"+id);}
+                catch(com.ruoyi.cluster.DeviceCommandRouter.Pending pending){JSONObject delivery=row.getJSONObject("deviceDelivery");if(delivery==null){delivery=new JSONObject();row.put("deviceDelivery",delivery);}delivery.put(device,obj("commandId",pending.commandId,"deliveryStatus",pending.status));saveCall(row);}
             }
-            String password=random(), expiry=Instant.now().plusSeconds(3600).toString();
+            String password=random(), expiry=now().plusSeconds(3600).toString();
             JSONObject op=cloud.request("PUT","/accounts/"+operator,obj("password",password,"kind","operator","roomId",room,"expiresAt",expiry));
             JSONObject result=cloud.request("POST","/calls",obj("callId",id,"roomId",room,"participants",participants,"video",video));
             JSONObject credentials=obj("protocol","SIP","server",op.get("wssUrl"),"uri","sip:"+operator+"@"+op.getString("sipHost"),
@@ -324,7 +340,7 @@ public class HelmetMediaService {
         JSONObject row=map(store.snapshot(),"calls").getJSONObject(id);
         if(row==null||!actorId.equals(row.getString("actorId")))throw new IllegalArgumentException("通话不存在");
         JSONObject credentials=row.getJSONObject("credentials");
-        if(!Arrays.asList("offered","answered","connected").contains(row.getString("status"))||credentials==null||!Instant.parse(credentials.getString("expiresAt")).isAfter(Instant.now()))throw new IllegalArgumentException("通话凭据已失效");
+        if(!Arrays.asList("offered","answered","connected").contains(row.getString("status"))||credentials==null||!Instant.parse(credentials.getString("expiresAt")).isAfter(now()))throw new IllegalArgumentException("通话凭据已失效");
         return new JSONObject(credentials);
     }
     public boolean receipt(String deviceId,JSONObject message) { return receipt(deviceId,message,null); }
@@ -336,9 +352,10 @@ public class HelmetMediaService {
         JSONObject row=map(store.snapshot(),"commands").getJSONObject(id);
         if(row==null||!deviceId.equals(row.getString("deviceId")))return true; // Uncorrelated legacy data never completes another command.
         if("push_to_client".equals(act)&&!Arrays.asList("list_recordings","upload_recording").contains(row.getString("action")))return false;
-        if(!Arrays.asList("sent","requesting","unknown","timeout").contains(row.getString("status")))return true;
-        row.put("receiptAt",receivedAt==null?Instant.now().toString():Instant.parse(receivedAt).toString());
+        if(!Arrays.asList("sent","requesting","queued","dispatching","unknown","timeout").contains(row.getString("status")))return true;
+        row.put("receiptAt",receivedAt==null?now().toString():Instant.parse(receivedAt).toString());
         boolean success=res!=null?res.getBooleanValue("status"):message.getBooleanValue("status");
+        if(clusteredCommands())commandRouter.acknowledge(id,deviceId,success);
         row.put("status",success?"acknowledged":"rejected");
         row.put("message",success?"设备已确认；上传文件是否入库请查看媒体列表":"设备拒绝了此操作");
         if("list_recordings".equals(row.getString("action"))&&res!=null)row.put("result",res.getJSONArray("data"));
@@ -370,7 +387,7 @@ public class HelmetMediaService {
             boolean recording=stream.getBooleanValue("recordRequested")||!text(stream,"recordingId").isEmpty();
             boolean invalid=(recording||stream.getBooleanValue("recordStartUnknown"))&&(stream.containsKey("sessionInvalidatedAt")||command==null||!authority.test(command.getString("actorId"),command));
             if(invalid){
-                stream.put("recordRequested",false);stream.put("sessionInvalidatedAt",Instant.now().toString());
+                stream.put("recordRequested",false);stream.put("sessionInvalidatedAt",now().toString());
                 saveStream(deviceId,stream); // Disable delayed recording before attempting external stop.
                 if(command!=null){command.put("sessionInvalidatedAt",stream.get("sessionInvalidatedAt"));command.put("status",text(stream,"recordingId").isEmpty()&&!stream.getBooleanValue("recordStartUnknown")?"cancelled":"unknown");command.put("message","领用或权限已变化，正在结束原录像会话");saveCommand(command);}
                 if(!text(stream,"recordingId").isEmpty())try{
@@ -381,14 +398,14 @@ public class HelmetMediaService {
                 }catch(RuntimeException error){stream.put("cleanupStatus","unknown");}
             }
             saveStream(deviceId,stream);
-            if((previouslyWatching||invalid)&&!stream.getBooleanValue("watchRequested")&&!stream.getBooleanValue("recordRequested")&&gateway().isOnline(deviceId))try{gateway().sendCommand(deviceId,obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}
+            if((previouslyWatching||invalid)&&!stream.getBooleanValue("watchRequested")&&!stream.getBooleanValue("recordRequested")&&gateway().isOnline(deviceId))try{sendDevice(deviceId,obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}
         }
         for(Object raw:map(store.snapshot(),"calls").values()) {
             JSONObject call=(JSONObject)raw;if(Arrays.asList("ended","failed").contains(call.getString("status")))continue;
             JSONArray recipients=call.getJSONArray("recipients");boolean valid=recipients!=null&&!recipients.isEmpty();
             if(valid)for(Object recipient:recipients)if(!authority.test(call.getString("actorId"),(JSONObject)recipient)){valid=false;break;}
             if(valid&&!call.containsKey("sessionInvalidatedAt"))continue;
-            call.remove("credentials");call.put("sessionInvalidatedAt",Instant.now().toString());call.put("status","unknown");call.put("message","领用或权限已变化，原通话正在结束，结果待确认");saveCall(call);
+            call.remove("credentials");call.put("sessionInvalidatedAt",now().toString());call.put("status","unknown");call.put("message","领用或权限已变化，原通话正在结束，结果待确认");saveCall(call);
             // Cloud endCall hangs up channels and retains the call record.
             try{cloud.request("DELETE","/calls/"+call.getString("id"),null);call.put("status","ending");saveCall(call);}catch(RuntimeException ignored){}
         }
@@ -412,7 +429,7 @@ public class HelmetMediaService {
             startPendingRecordings();
             reconcileRecordings();
             store.update(s->{for(Object raw:map(s,"commands").values()) {JSONObject c=(JSONObject)raw;
-                if(Arrays.asList("sent","requesting").contains(c.getString("status"))&&Instant.parse(c.getString("expiresAt")).isBefore(Instant.now())){c.put("status","timeout");c.put("message","超时未收到可关联的设备确认，不代表设备未执行");}}
+                if(Arrays.asList("sent","requesting").contains(c.getString("status"))&&Instant.parse(c.getString("expiresAt")).isBefore(now())){c.put("status","timeout");c.put("message","超时未收到可关联的设备确认，不代表设备未执行");}}
                 return null;});
         } catch(RuntimeException error){healthy=false;}
     }
@@ -441,7 +458,7 @@ public class HelmetMediaService {
             JSONObject stream=(JSONObject)entry.getValue();if(!stream.getBooleanValue("recordRequested")||!text(stream,"recordingId").isEmpty())continue;
             JSONObject command=map(store.snapshot(),"commands").getJSONObject(stream.getString("recordRequestId"));if(command==null)continue;
             try{
-                if(Instant.parse(command.getString("expiresAt")).isBefore(Instant.now())){stream.put("recordRequested",false);saveStream(entry.getKey(),stream);command.put("status","timeout");command.put("message","未收到真实视频，录像没有开始");saveCommand(command);if(!stream.getBooleanValue("watchRequested"))try{gateway().sendCommand(entry.getKey(),obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}continue;}
+                if(Instant.parse(command.getString("expiresAt")).isBefore(now())){stream.put("recordRequested",false);saveStream(entry.getKey(),stream);command.put("status","timeout");command.put("message","未收到真实视频，录像没有开始");saveCommand(command);if(!stream.getBooleanValue("watchRequested"))try{sendDevice(entry.getKey(),obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}continue;}
                 JSONObject actual=cloud.request("GET","/streams/"+stream.getString("streamId"),null);if(!actual.getBooleanValue("publishing"))continue;
                 stream.put("recordStartUnknown",true);saveStream(entry.getKey(),stream);
                 JSONObject recording=cloud.request("POST","/recordings",obj("streamId",stream.getString("streamId"),"requestId",command.get("id")));
@@ -454,12 +471,12 @@ public class HelmetMediaService {
         for(Object raw:devices) {
             String device=String.valueOf(raw);JSONObject stream=map(store.snapshot(),"streams").getJSONObject(device);
             if(stream!=null&&(stream.getBooleanValue("watchRequested")||stream.getBooleanValue("recordRequested")))
-                try{gateway().sendCommand(device,obj("cmd","server_push_open_rtsp","push_url",stream.getString("pushUrl")));}catch(Exception ignored){}
+                try{sendDevice(device,obj("cmd","server_push_open_rtsp","push_url",stream.getString("pushUrl")),"call-resume:"+call.getString("id"));}catch(Exception ignored){}
         }
     }
     private JSONObject stream(String deviceId) {
         JSONObject old=map(store.snapshot(),"streams").getJSONObject(deviceId);
-        if(old!=null&&!text(old,"expiresAt").isEmpty()&&Instant.parse(old.getString("expiresAt")).isAfter(Instant.now().plusSeconds(30)))return old;
+        if(old!=null&&!text(old,"expiresAt").isEmpty()&&Instant.parse(old.getString("expiresAt")).isAfter(now().plusSeconds(30)))return old;
         if(old!=null){
             JSONObject fresh=cloud.request("GET","/streams/"+old.getString("streamId"),null);
             // Refresh signed URLs without abandoning an existing recorder or its owner intentions.
@@ -483,14 +500,14 @@ public class HelmetMediaService {
         if(viewer==null||!actorId.equals(viewer.getString("actorId")))throw new IllegalArgumentException("观看会话不存在或不属于当前账号");
         if(viewer.containsKey("assignmentId"))com.ruoyi.guardian.PersonEquipmentContext.sameContext(viewer,input);return viewer;
     }
-    private static void setViewer(JSONObject stream,String actorId,JSONObject input,boolean watching){
+    private void setViewer(JSONObject stream,String actorId,JSONObject input,boolean watching){
         JSONObject viewers=map(stream,"viewers");String id=viewerId(input);JSONObject prior=viewers.getJSONObject(id);
         if(prior!=null){if(!actorId.equals(prior.getString("actorId")))throw new IllegalArgumentException("观看会话已被其他账号使用");if(prior.containsKey("assignmentId"))com.ruoyi.guardian.PersonEquipmentContext.sameContext(prior,input);}
         if(watching){
             // GET /live omits server-owned site/area fields. Renew the original authorized lease,
             // otherwise the next assignment/permission reconciliation incorrectly revokes it.
             JSONObject viewer=prior==null?obj("actorId",actorId):new JSONObject(prior);
-            viewer.put("expiresAt",Instant.now().plusSeconds(30).toString());
+            viewer.put("expiresAt",now().plusSeconds(30).toString());
             for(String field:Arrays.asList("personId","assignmentId","assignmentVersion","siteId","areaId"))
                 if(input.containsKey(field)&&!viewer.containsKey(field))viewer.put(field,input.get(field));
             viewers.put(id,viewer);
@@ -500,9 +517,9 @@ public class HelmetMediaService {
     private void expireViewers(){
         for(Map.Entry<String,Object> entry:map(store.snapshot(),"streams").entrySet()){
             JSONObject stream=(JSONObject)entry.getValue(),viewers=map(stream,"viewers");boolean before=stream.getBooleanValue("watchRequested");
-            for(String id:new ArrayList<>(viewers.keySet())){JSONObject viewer=viewers.getJSONObject(id);try{if(Instant.parse(viewer.getString("expiresAt")).isAfter(Instant.now()))continue;}catch(RuntimeException ignored){}viewers.remove(id);}
+            for(String id:new ArrayList<>(viewers.keySet())){JSONObject viewer=viewers.getJSONObject(id);try{if(Instant.parse(viewer.getString("expiresAt")).isAfter(now()))continue;}catch(RuntimeException ignored){}viewers.remove(id);}
             stream.remove("watchActorIds");refreshWatching(stream);saveStream(entry.getKey(),stream);
-            if(before&&!stream.getBooleanValue("watchRequested")&&!stream.getBooleanValue("recordRequested")&&gateway().isOnline(entry.getKey()))try{gateway().sendCommand(entry.getKey(),obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}
+            if(before&&!stream.getBooleanValue("watchRequested")&&!stream.getBooleanValue("recordRequested")&&gateway().isOnline(entry.getKey()))try{sendDevice(entry.getKey(),obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}
         }
     }
     private void reconcileCalls(){
@@ -535,7 +552,7 @@ public class HelmetMediaService {
             call.put("connectedDeviceIds",connected);
         }else if(terminal)call.put("connectedDeviceIds",new JSONArray());
         if(evidence.containsKey("statusVerified"))call.put("statusVerified",evidence.getBooleanValue("statusVerified"));else call.remove("statusVerified");
-        call.put("updatedAt",evidence.containsKey("createdAt")?evidence.get("createdAt"):Instant.now().toString());
+        call.put("updatedAt",evidence.containsKey("createdAt")?evidence.get("createdAt"):now().toString());
         if(terminal)call.remove("credentials");return true;
     }
     private void reconcileRecordings(){
@@ -551,7 +568,7 @@ public class HelmetMediaService {
                     saveCommand(command);
                 }
                 if(terminal){stream.put("recordRequested",false);stream.remove("recordingId");saveStream(entry.getKey(),stream);
-                    if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(entry.getKey()))try{gateway().sendCommand(entry.getKey(),obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}
+                    if(!stream.getBooleanValue("watchRequested")&&gateway().isOnline(entry.getKey()))try{sendDevice(entry.getKey(),obj("cmd","server_push_stop_rtsp"));}catch(Exception ignored){}
                 }
             }catch(RuntimeException ignored){/* Keep last confirmed state; do not silently start a second recorder. */}
         }
@@ -641,11 +658,27 @@ public class HelmetMediaService {
             default:return new JSONObject();
         }
     }
-    private static void sent(JSONObject row){row.put("status","sent");row.put("message","指令已发送，等待设备确认");row.put("sentAt",Instant.now().toString());}
+    private void sent(JSONObject row){row.put("status","sent");row.put("message","指令已发送，等待设备确认");row.put("sentAt",now().toString());}
     private void saveCommand(JSONObject row){store.update(s->{map(s,"commands").put(row.getString("id"),new JSONObject(row));return null;});}
     private void saveCall(JSONObject row){store.update(s->{map(s,"calls").put(row.getString("id"),new JSONObject(row));return null;});}
     private void saveStream(String id,JSONObject row){store.update(s->{map(s,"streams").put(id,new JSONObject(row));return null;});}
-    private static JSONObject publicCommand(JSONObject row){JSONObject out=new JSONObject(row);for(String key:Arrays.asList("fingerprint","wire"))out.remove(key);return out;}
+    private void sendDevice(String device,JSONObject wire,String purpose) throws java.io.IOException {if(clusteredCommands())gateway().sendCommand(device,wire,purpose);else gateway().sendCommand(device,wire);}
+    private void sendDevice(String device,JSONObject wire) throws java.io.IOException {
+        if(!clusteredCommands()){gateway().sendCommand(device,wire);return;}
+        JSONObject stream=map(store.snapshot(),"streams").getJSONObject(device);
+        JSONObject purpose=new JSONObject();if(stream!=null)for(String key:Arrays.asList("recordRequestId","recordingId","viewers","watchRequested","recordRequested","sessionInvalidatedAt"))purpose.put(key,stream.get(key));
+        gateway().sendCommand(device,wire,"media:"+com.ruoyi.cluster.DeviceCommandRouter.fingerprint(purpose));
+    }
+    private JSONObject publicCommand(JSONObject row){JSONObject out=new JSONObject(row);
+        if(clusteredCommands()){JSONObject delivery=commandRouter.read(row.getString("id"));if(delivery!=null){String state=delivery.getString("deliveryStatus");out.put("deliveryStatus","PREPARING".equals(state)?"QUEUED":state);out.put("deliveryReason",delivery.get("deliveryReason"));
+            if(Arrays.asList("requesting","queued","dispatching","sent","unknown","timeout").contains(out.getString("status"))){
+                String status="PREPARING".equals(state)?"requesting":state.toLowerCase(java.util.Locale.ROOT);
+                if("start_recording".equals(out.getString("action"))&&Arrays.asList("SENT","ACKNOWLEDGED").contains(state)){status="waiting_media";out.put("message","已请求设备推流，收到真实视频后开始录像");}
+                else out.put("message",delivery.get("deliveryReason")!=null?delivery.get("deliveryReason"):"QUEUED".equals(state)?"请求已保存，等待设备所在节点发送":"正在准备设备操作");out.put("status",status);
+            }
+        }}
+        for(String key:Arrays.asList("fingerprint","wire"))out.remove(key);return out;
+    }
     private DirectHelmetGateway gateway(){return gateways.getObject();}
     private void requireCloud(){if(!available())throw new IllegalStateException("云媒体服务未就绪，请先完成部署和健康检查");}
     private static JSONObject map(JSONObject s,String key){JSONObject value=s.getJSONObject(key);if(value==null){value=new JSONObject();s.put(key,value);}return value;}

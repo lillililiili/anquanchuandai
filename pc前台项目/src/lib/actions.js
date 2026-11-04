@@ -15,13 +15,13 @@ export function go(route) {
   location.hash = "#/" + String(route).replace(/^#?\//, "");
 }
 
-export async function capturePhoto(personId) {
+export async function capturePhoto(personId, options = {}) {
   const device = db.currentDevices(personId).find((item) => item.type === "H");
   if (isRealDevice(device)) {
     const feature = personFeature(db, personId, 'photo');
     if (!feature.available) throw Error(feature.reason);
-    const result = await mediaOperations.photo(operationContext(feature));
-    toast(result.status === 'completed' ? '照片已返回，可在现场资料中查看' : ['unknown','requesting'].includes(result.status) ? '拍照结果待确认，可在现场资料查看回执' : '拍照请求已提交，照片返回后在现场资料中查看');
+    const result = await mediaOperations.photo(operationContext(feature), options);
+    toast(result.status === 'completed' ? '照片已返回，可在现场资料中查看' : ['queued','dispatching','unknown','requesting','sent'].includes(result.status) ? '拍照结果待确认，可在现场资料查看回执' : '拍照请求已提交，照片返回后在现场资料中查看');
     return;
   }
   if (!db.demoMode) throw Error('暂无真实设备视频，不能生成示例抓拍');

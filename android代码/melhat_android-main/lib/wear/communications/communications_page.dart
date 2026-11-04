@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -65,7 +66,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   bool _batchBusy = false;
   bool _preparingCall = false;
   List<JsonMap> _broadcastReceipts = const [];
-  String? _broadcastId;
+  String? _broadcastId, _broadcastIntent, _broadcastRequestKey;
   Timer? _presenceTimer;
   bool _presenceBusy = false;
   bool _foreground = true;
@@ -943,13 +944,22 @@ class _CommunicationsPageState extends State<CommunicationsPage>
           icon: const Icon(Icons.campaign_outlined),
           label: Text(_batchBusy ? '提交中…' : '提交播报指令'),
         ),
+        if (!callLabEnabled && _broadcastRequestKey != null)
+          TextButton(onPressed: _batchBusy ? null : () => setState(() { _broadcastIntent = null; _broadcastRequestKey = null; _snack('下一次提交将创建新广播；原未确认请求仍保留'); }), child: const Text('新建另一广播')),
         ..._broadcastReceipts.map(
           (r) => Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               '${_receiptCaption(r)} · ${switch (idOf(r['state'])) {
-                'sent' => '已发送',
-                'acknowledged' => '模拟设备已确认',
+                'queued' => '已排队，等待设备所在节点发送',
+                'dispatching' => '正在发送，结果待确认',
+                'sent' => '已发送，等待设备回执',
+                'unknown' => '结果未确认，不会自动重复下发',
+                'expired' => '发送前已过期',
+                'cancelled' => '发送前已取消',
+                'failedBeforeSend' => '发送前失败',
+                'rejected' => '设备拒绝',
+                'acknowledged' => callLabEnabled ? '模拟设备已确认' : '设备已确认',
                 'offline' => '离线未发送',
                 'accepted' => '已受理',
                 'failed' => '发送失败',
@@ -1029,15 +1039,18 @@ class _CommunicationsPageState extends State<CommunicationsPage>
             {'deviceId': d.id, 'state': 'unsupported'},
         ];
         if (supported.isNotEmpty) {
+          final intent = jsonEncode([scope, text, supported.map((d) => [d.id, d.equipmentContext]).toList(), widget.eventId]);
+          if (_broadcastIntent != intent) { _broadcastIntent = intent; _broadcastRequestKey = 'tts-${DateTime.now().microsecondsSinceEpoch}'; }
           final results = await _gateway!.sendTts(
             deviceIds: supported.map((d) => d.id).toList(),
             recipients: supported
                 .map((d) => {...d.equipmentContext, 'deviceId': d.id})
                 .toList(),
             text: text,
-            idempotencyKey: 'tts-${DateTime.now().microsecondsSinceEpoch}',
+            idempotencyKey: _broadcastRequestKey!,
             eventId: _clean(widget.eventId),
           );
+          if (results.isNotEmpty && results.every((r) => !r.status.unresolved)) { _broadcastIntent = null; _broadcastRequestKey = null; }
           receipts.addAll(
             results.map(
               (r) => {'deviceId': r.deviceId, 'state': r.status.name},

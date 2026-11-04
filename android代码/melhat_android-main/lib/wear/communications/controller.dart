@@ -822,6 +822,7 @@ class CommunicationsController extends ChangeNotifier {
     _notify();
   }
 
+  String? _ttsIntent, _ttsRequestKey;
   Future<void> sendTts({String? eventId}) async {
     final device = selectedDevice;
     final text = ttsText.trim();
@@ -842,6 +843,8 @@ class CommunicationsController extends ChangeNotifier {
     if (ttsBusy) return;
     ttsBusy = true;
     ttsMessage = '正在提交…';
+    final intent = '$text|${device.id}|${device.equipmentContext}|$eventId';
+    if (_ttsIntent != intent) { _ttsIntent = intent; _ttsRequestKey = _idempotencyKey('tts'); }
     final operation = _operationGeneration;
     _notify();
     try {
@@ -852,13 +855,14 @@ class CommunicationsController extends ChangeNotifier {
         ],
         text: text,
         eventId: eventId,
-        idempotencyKey: _idempotencyKey('tts'),
+        idempotencyKey: _ttsRequestKey!,
       );
       if (_disposed || operation != _operationGeneration) return;
       final failed = commands.any(
         (item) => item.status == TtsCommandStatus.failed,
       );
-      ttsMessage = failed ? '指令提交失败，请查看设备结果' : '指令已提交（不代表现场已听到）';
+      ttsMessage = failed ? '指令提交失败，请查看设备结果' : commands.map((item) => item.status.label).toSet().join('；');
+      if (commands.isNotEmpty && commands.every((item) => !item.status.unresolved)) { _ttsIntent = null; _ttsRequestKey = null; }
     } catch (error) {
       if (_disposed || operation != _operationGeneration) return;
       ttsMessage = _errorMessage(error, '指令提交失败');

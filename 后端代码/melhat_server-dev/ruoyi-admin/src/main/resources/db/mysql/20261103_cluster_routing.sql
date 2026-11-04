@@ -1,0 +1,6 @@
+CREATE TABLE wearable_cluster_control (id INT PRIMARY KEY);
+INSERT INTO wearable_cluster_control(id) VALUES (1);
+CREATE TABLE wearable_cluster_node (node_id VARCHAR(80) PRIMARY KEY,generation VARCHAR(36) NOT NULL,lease_until BIGINT NOT NULL,draining INT NOT NULL);
+CREATE TABLE wearable_device_owner (device_type VARCHAR(24) NOT NULL,device_id VARCHAR(128) NOT NULL,node_id VARCHAR(80) NOT NULL,generation VARCHAR(36) NOT NULL,connection_token VARCHAR(36) NOT NULL,session_id VARCHAR(128),lease_until BIGINT NOT NULL,last_seen BIGINT NOT NULL,heartbeat_millis BIGINT NOT NULL,status_json LONGTEXT NOT NULL,PRIMARY KEY(device_type,device_id));
+CREATE TABLE wearable_transport_command (command_id VARCHAR(128) PRIMARY KEY,scope_key CHAR(64) NOT NULL UNIQUE,fingerprint CHAR(64) NOT NULL,device_type VARCHAR(24) NOT NULL,device_id VARCHAR(128) NOT NULL,node_id VARCHAR(80) NOT NULL,generation VARCHAR(36) NOT NULL,connection_token VARCHAR(36) NOT NULL,wire_json LONGTEXT NOT NULL,context_json LONGTEXT NOT NULL,delivery_status VARCHAR(32) NOT NULL,reason VARCHAR(240),deadline BIGINT NOT NULL,claim_token VARCHAR(36),attempt_until BIGINT,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL);
+CREATE INDEX wearable_command_queue ON wearable_transport_command(node_id,generation,delivery_status);

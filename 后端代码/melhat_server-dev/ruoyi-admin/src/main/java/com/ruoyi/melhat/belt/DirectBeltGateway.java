@@ -16,6 +16,13 @@ import java.time.Instant;
 
 @Component
 public class DirectBeltGateway implements DirectBeltAccess {
+
+    @Autowired(required=false) private com.ruoyi.cluster.DeviceOwnership ownership;
+    @Autowired(required=false) private com.ruoyi.cluster.DeviceCommandRouter router;
+    private final java.util.Map<Session,com.ruoyi.cluster.OwnerToken> ownerTokens=java.util.Collections.synchronizedMap(new java.util.IdentityHashMap<>());
+    private boolean clustered(){return ownership!=null&&ownership.enabled();}
+    @javax.annotation.PostConstruct public void clusterStart(){if(clustered()){sessions.useClock(ownership.clock());}}
+
     private static final Logger LOG = LoggerFactory.getLogger(DirectBeltGateway.class);
     private final DirectBeltProperties properties;
     private final DirectBeltTelemetryService telemetry;
@@ -32,7 +39,7 @@ public class DirectBeltGateway implements DirectBeltAccess {
     public long idleTimeoutMillis() { return (properties.getHeartbeatTimeoutSeconds() + 5L) * 1000L; }
     public boolean supports(String id) { return telemetry.registered(id) != null; }
     // Called while GuardianStore is locked: never look up registration or acquire the gateway monitor here.
-    @Override public JSONObject status(String id) { return sessions.status(id, properties); }
+    @Override public JSONObject status(String id) { return clustered()?ownership.readPresence("belt",id):sessions.status(id, properties); }
 
     public synchronized JSONObject receive(Session session, String json) {
         if (!isEnabled()) return response("error", false, "安全带直连接入未启用");
@@ -43,7 +50,7 @@ public class DirectBeltGateway implements DirectBeltAccess {
             if ("ca_login".equals(message.act)) return login(session, message);
             String id = sessions.identity(session);
             if (id == null) return response(message.act, false, "请先登录设备");
-            if (!status(id).getBooleanValue("online")) {
+            if (clustered()?!ownership.current(ownerTokens.get(session)):!sessions.status(id,properties).getBooleanValue("online")) {
                 disconnected(session); close(session, "设备心跳超时，请重新登录");
                 return response(message.act, false, "设备心跳超时，请重新登录");
             }
@@ -59,7 +66,8 @@ public class DirectBeltGateway implements DirectBeltAccess {
             JSONObject next = sessions.preview(session, message, properties);
             String rawType=alarm?(message.alarmType==null?"unknown":message.alarmType):null;
             String timestamp=message.deviceReportedAt==null?next.getString("lastSeenAt"):message.deviceReportedAt;
-            if(reports==null)telemetry.receive(id,next,rawType,timestamp,sos);else reports.belt(id,json,next,rawType,timestamp,sos);
+            if(clustered()){if(reports==null)throw new IllegalStateException("持久接收服务未就绪");reports.beltOwned(ownerTokens.get(session),json,next,rawType,timestamp,sos);}
+            else if(reports==null)telemetry.receive(id,next,rawType,timestamp,sos);else reports.belt(id,json,next,rawType,timestamp,sos);
             sessions.heard(session, next);
             JSONObject result = response(message.act, true, "上报成功！");
             if ("ca_report_location".equals(message.act)) {
@@ -83,10 +91,14 @@ public class DirectBeltGateway implements DirectBeltAccess {
         if (bound != null && !bound.equals(message.deviceId)) return response(message.act, false, "连接已经绑定其他设备");
         JSONObject device = telemetry.registered(message.deviceId);
         if (device == null) return response(message.act, false, "设备未预先登记为直连安全带");
+        if(clustered()){
+            if(bound!=null){if(!ownership.current(ownerTokens.get(session)))throw new IllegalArgumentException("连接所有权已变化，请重新登录");}
+            else ownerTokens.put(session,ownership.claimLogin("belt",message.deviceId,session.getId(),properties.getHeartbeatTimeoutSeconds()*1000L,sessions.status(message.deviceId,properties)));
+        }
         Session previous = sessions.register(message.deviceId, session);
         if (previous != null) close(previous, "设备已建立新连接");
         try { if(reports==null||!reports.paused())telemetry.snapshot(message.deviceId, status(message.deviceId)); }
-        catch (RuntimeException error) { sessions.disconnect(session); throw error; }
+        catch (RuntimeException error) { if(!clustered())sessions.disconnect(session); throw error; }
         JSONObject result = response(message.act, true, "登陆成功！");
         JSONObject data = new JSONObject();
         data.put("device_id", message.deviceId);
@@ -96,13 +108,17 @@ public class DirectBeltGateway implements DirectBeltAccess {
         return result;
     }
     public synchronized void disconnected(Session session) {
+        com.ruoyi.cluster.OwnerToken token=ownerTokens.remove(session);
         String id = sessions.disconnect(session);
+        if(clustered()&&!ownership.release(token))return;
         if (id == null) return;
         try { if(reports==null||!reports.paused())telemetry.snapshot(id, status(id)); }
         catch (RuntimeException error) { LOG.warn("Direct belt offline snapshot could not be saved"); }
     }
     @Scheduled(fixedDelay = 5000)
     public synchronized void expireConnections() {
+        if(clustered()){java.util.List<Session> stale=new java.util.ArrayList<>();synchronized(ownerTokens){for(java.util.Map.Entry<Session,com.ruoyi.cluster.OwnerToken> e:ownerTokens.entrySet())if(!ownership.current(e.getValue()))stale.add(e.getKey());}for(Session session:stale){disconnected(session);close(session,"设备连接所有权或租约已失效");}}
+        if(clustered()&&(reports==null||!reports.paused()))for(String id:ownership.expiredDeviceIds("belt"))telemetry.snapshot(id,status(id));
         for (Session session : sessions.expired(properties)) {
             disconnected(session); close(session, "设备心跳超时，请重新登录");
         }

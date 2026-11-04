@@ -1,19 +1,21 @@
+import { commandUnresolved } from './helmet-media.js';
 // Keep uncertain requests and their original assignment until the server confirms
 // their outcome. A second click must never create a second recorder.
 export function createMediaOperations({ api, state, makeId = () => crypto.randomUUID(), now = Date.now }) {
   const photos = new Map();
   let starting, stopping, refreshing;
-  const rejected = result => ['failed', 'rejected', 'timeout'].includes(result.status);
+  const rejected = result => ['failed', 'failed_before_send', 'expired', 'cancelled', 'rejected', 'timeout'].includes(result.status);
   const definitive = error => error.status >= 400 && error.status < 500 && error.status !== 408;
   const keyOf = context => JSON.stringify(context);
-  async function photo(context) {
+  async function photo(context, { newRequest = false } = {}) {
     const key = keyOf(context);
     let request = photos.get(key);
+    if (newRequest && !request?.pending) { photos.delete(key); request = undefined; }
     if (!request) { request = { key: makeId() }; photos.set(key, request); }
     if (request.pending) return request.pending;
     request.pending = api.command(context.deviceId, 'take_photo', {}, request.key, undefined, context)
       .then(result => {
-        if (!['unknown', 'requesting'].includes(result.status)) photos.delete(key);
+        if (!commandUnresolved(result.status)) photos.delete(key);
         if (rejected(result)) throw Error(result.message || '拍照失败');
         return result;
       }).catch(error => { if (definitive(error)) photos.delete(key); throw error; })
@@ -67,7 +69,7 @@ export function createMediaOperations({ api, state, makeId = () => crypto.random
       recording.stopKey ||= makeId();
       const result = await api.command(recording.deviceId, 'stop_recording', {}, recording.stopKey, undefined, { ...recording.context, sourceCommandId: recording.commandId });
       Object.assign(recording, { stopCommandId: result.id, status: result.status, message: result.message, stopRequested: true });
-      if (['unknown', 'requesting', 'failed', 'rejected', 'timeout'].includes(result.status)) throw Error(result.message || '停止录像尚未确认，请重试');
+      if (['queued', 'dispatching', 'unknown', 'requesting', 'failed', 'failed_before_send', 'expired', 'cancelled', 'rejected', 'timeout'].includes(result.status)) throw Error(result.message || '停止录像尚未确认，请重试');
       if (result.status === 'completed') state.recording = null;
       return result;
     })().finally(() => { stopping = null; });

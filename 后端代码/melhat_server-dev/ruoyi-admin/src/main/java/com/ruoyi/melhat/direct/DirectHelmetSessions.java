@@ -13,7 +13,8 @@ import java.util.Map;
 
 /** Exact session ownership prevents late messages and late close events from replacing a newer login. */
 public final class DirectHelmetSessions {
-    private final Clock clock;
+    private Clock clock;
+    public void useClock(Clock clock) { this.clock=clock; }
     private final Map<String, Connection> devices = new HashMap<>();
     private final Map<Session, String> identities = new IdentityHashMap<>();
 
@@ -43,6 +44,17 @@ public final class DirectHelmetSessions {
         Connection connection = devices.get(deviceId);
         if (connection == null || connection.session != session)
             throw new IllegalArgumentException("请先登录设备");
+        update(connection, message);
+    }
+
+    public synchronized JSONObject preview(Session session, DirectHelmetMessage message, int timeoutSeconds) {
+        String id=identities.get(session); Connection original=devices.get(id);
+        if(original==null||original.session!=session)throw new IllegalArgumentException("请先登录设备");
+        Connection next=new Connection(session, original.lastSeen); next.telemetry.putAll(original.telemetry); next.observed.addAll(original.observed);
+        update(next,message);devices.put(id,next);
+        try{return status(id,timeoutSeconds);}finally{devices.put(id,original);}
+    }
+    private void update(Connection connection, DirectHelmetMessage message) {
         connection.lastSeen = clock.instant();
         if ("ca_report_location".equals(message.act)) {
             observed(connection, "battery", message.battery);

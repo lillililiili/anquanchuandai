@@ -19,6 +19,21 @@ import java.util.Map;
 
 @Service
 public class GuardianVoiceService {
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterProperties clusterProperties;
+    public boolean durableBroadcastEnabled(){return clusterProperties!=null&&clusterProperties.isEnabled();}
+    /** Stable per-recipient intent; queued is a truthful result, never reported as played. */
+    public JSONArray broadcastCommands(JSONArray hats,String content,String actorId,String actorName,String requestId){
+        JSONArray result=new JSONArray(),legacy=new JSONArray();
+        for(Object raw:hats){JSONObject hat=(JSONObject)raw;String number=hat.getString("hatNumber");
+            if(!isDirect(number)){legacy.add(hat);continue;}
+            JSONObject command=com.ruoyi.melhat.direct.HelmetMediaService.obj("action","broadcast","idempotencyKey",org.apache.commons.codec.digest.DigestUtils.sha256Hex(requestId+":"+number),"parameters",com.ruoyi.melhat.direct.HelmetMediaService.obj("text",content));
+            for(String field:new String[]{"siteId","areaId","personId","assignmentId","assignmentVersion","ledgerDeviceId"})command.put(field,hat.get(field));
+            result.add(directMedia().command(actorId,number,command));
+        }
+        if(!legacy.isEmpty()){broadcast(legacy,content,actorId,actorName);for(Object raw:legacy){JSONObject hat=(JSONObject)raw;result.add(com.ruoyi.melhat.direct.HelmetMediaService.obj("id",requestId+":"+hat.getString("hatNumber"),"deviceId",hat.getString("hatNumber"),"status","accepted","message","设备平台已受理，实际播放待设备确认"));}}
+        return result;
+    }
+    public JSONArray refreshBroadcastCommands(JSONArray commands){JSONArray result=new JSONArray();for(Object raw:commands){JSONObject row=(JSONObject)raw;JSONObject current=isDirect(row.getString("deviceId"))?directMedia().commandState(row.getString("id")):row;if(current==null)current=row;JSONObject out=new JSONObject(current);out.put("vendorMsg",out.get("message"));result.add(out);}return result;}
     private final HeadbandService headband;
     private final ITtsTextSynthesisBroadcastService broadcasts;
     @org.springframework.beans.factory.annotation.Autowired(required = false)

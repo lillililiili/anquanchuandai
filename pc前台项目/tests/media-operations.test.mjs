@@ -41,3 +41,14 @@ test('a completed source clears an earlier failed stop without reporting the fai
   await f.manager.start(context);await assert.rejects(f.manager.stop());const result=await f.manager.refresh();
   assert.equal(result.status,'completed');assert.equal(result.message,'录像文件已保存');assert.equal(f.state.recording,null);
 });
+test('queued and dispatching photo retries reuse the original durable intention',async()=>{
+  const f=fixture(async()=>({id:'C1',status:'queued'}));
+  await f.manager.photo(context);await f.manager.photo(context);
+  assert.equal(f.calls[0][3],f.calls[1][3]);
+});
+
+test('explicit new photo intention is distinct from querying an unresolved request',async()=>{
+  const f=fixture(async()=>({id:'C1',status:'unknown'}));
+  await f.manager.photo(context);await f.manager.photo(context);await f.manager.photo(context,{newRequest:true});
+  assert.equal(f.calls[0][3],f.calls[1][3]);assert.notEqual(f.calls[1][3],f.calls[2][3]);
+});
