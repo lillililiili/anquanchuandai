@@ -17,7 +17,8 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent
 COMPOSE = ['docker', 'compose', '--project-directory', str(ROOT), '--env-file', str(ROOT / '.env'), '-f', str(ROOT / 'compose.yml')]
 PRIVATE = ROOT / 'private'
-ENTRY_SERVICES = ('helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'wear-api', 'fuda-api', 'backend-router', 'ingress')
+SHARED_ENTRY_SERVICES = ('wear-api', 'fuda-api', 'backend-router', 'ingress')
+ENTRY_SERVICES = ('helmet-a', 'helmet-b', 'belt-a', 'belt-b', *SHARED_ENTRY_SERVICES)
 
 def validate_entry(services):
     for service in ('app-a', 'app-b', *ENTRY_SERVICES[:-1]):
@@ -182,7 +183,7 @@ def generation_window():
 
 def verify_loaded_generation(restart_node=None):
     manifest = json.loads((PRIVATE / 'gateway-manifest.json').read_text(encoding='utf-8'))
-    # Only the other node's device gateways may be stopped during a targeted restart.
+    # Only the other node's device gateways may be stopped during a targeted start or restart.
     peer = {'a': 'b', 'b': 'a'}.get(restart_node)
     optional = (f'helmet-{peer}', f'belt-{peer}') if peer else ()
     for service in ENTRY_SERVICES:
@@ -296,7 +297,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--lab', action='store_true', help='Local validation only; never certifies Kylin/NFS')
     parser.add_argument('command', choices=['check', 'migrate', 'up', 'status', 'logs', 'drain', 'stop', 'restart'])
-    parser.add_argument('--node', choices=['a', 'b'])
+    parser.add_argument('--node', choices=['a', 'b'], help='For up, start one node group and the shared entry without starting its peer.')
     parser.add_argument('--timeout', type=int, default=120)
     args = parser.parse_args()
     if not 10 <= args.timeout <= 300:
@@ -318,9 +319,18 @@ def main():
     elif args.command == 'up':
         # Applications need JVM startup time; existing unready edge containers must
         # not make Compose abort before their dependencies have become healthy.
-        call(COMPOSE + ['up', '-d', '--wait', '--wait-timeout', str(args.timeout), 'app-a', 'app-b'], timeout=args.timeout + 30)
-        call(COMPOSE + ['up', '-d', '--wait', '--wait-timeout', str(args.timeout)], timeout=args.timeout + 30)
-        verify_loaded_generation()
+        up = COMPOSE + ['up', '-d', '--wait', '--wait-timeout', str(args.timeout)]
+        if args.node:
+            # Explicit targets and --no-deps keep a stopped peer out of both stages.
+            up += ['--no-deps']
+            apps = [f'app-{args.node}']
+            entry = [f'helmet-{args.node}', f'belt-{args.node}', *SHARED_ENTRY_SERVICES]
+        else:
+            apps = ['app-a', 'app-b']
+            entry = []
+        call(up + apps, timeout=args.timeout + 30)
+        call(up + entry, timeout=args.timeout + 30)
+        verify_loaded_generation(restart_node=args.node)
     elif args.command == 'status':
         call(COMPOSE + ['ps'])
     elif args.command == 'logs':

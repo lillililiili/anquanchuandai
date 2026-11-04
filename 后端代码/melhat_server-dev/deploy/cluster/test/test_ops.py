@@ -152,9 +152,9 @@ class ConfigurationTest(unittest.TestCase):
         with patch.object(ops, 'call', side_effect=responses('app-a\n', previous=os.environ['GATEWAY_CONFIG_GENERATION'])):
             ops.generation_window()
 
-    def run_entry_operation(self, command, missing=(), stale_label=None, stale_mount=None):
-        ops.configuration(True)
-        generation = os.environ['GATEWAY_CONFIG_GENERATION']
+    def run_entry_operation(self, command, node=None, missing=(), stale_label=None, stale_mount=None, running=()):
+        private = self.root / 'private' / 'lab'
+        generation = json.loads((private / 'gateway-manifest.json').read_text())['generation']
         up_targets = []
 
         def fake(args, **kwargs):
@@ -164,7 +164,7 @@ class ConfigurationTest(unittest.TestCase):
             action, *tail = args[len(ops.COMPOSE):]
             if action == 'ps':
                 if '--services' in tail:
-                    return 'app-b\n'
+                    return '\n'.join(running)
                 service = tail[-1]
                 return f'id-{service}' if '--all' in tail or service not in missing else ''
             if action == 'exec':
@@ -177,28 +177,56 @@ class ConfigurationTest(unittest.TestCase):
             if action == 'up':
                 up_targets.append(tail[4:])
             else:
-                self.assertEqual(action, 'stop')
+                self.assertEqual((command, action), ('restart', 'stop'))
 
-        argv = ['ops.py', '--lab', command] + (['--node', 'b'] if command == 'restart' else [])
+        argv = ['ops.py', '--lab', command] + (['--node', node] if node else [])
         with patch.object(ops.sys, 'argv', argv), patch.object(ops, 'configuration'), \
-                patch.object(ops, 'preflight'), patch.object(ops, 'drain'), patch.object(ops, 'call', side_effect=fake):
+                patch.object(ops, 'PRIVATE', private), patch.dict(os.environ, GATEWAY_CONFIG_GENERATION=generation), \
+                patch.object(ops, 'preflight') as preflight, patch.object(ops, 'drain'), \
+                patch.object(ops, 'call', side_effect=fake):
             ops.main()
+            preflight.assert_called_once()
         return up_targets
 
     def test_restart_b_allows_stopped_a_without_starting_it(self):
-        targets = self.run_entry_operation('restart', missing=('helmet-a', 'belt-a'))
+        targets = self.run_entry_operation('restart', 'b', missing=('helmet-a', 'belt-a'))
         self.assertEqual(targets, [['helmet-b', 'belt-b', 'app-b']])
 
     def test_restart_requires_selected_gateways_and_shared_entry(self):
         for service in ('helmet-b', 'belt-b', 'wear-api', 'fuda-api', 'backend-router', 'ingress'):
             with self.subTest(service=service), self.assertRaisesRegex(ValueError, service):
-                self.run_entry_operation('restart', missing=('helmet-a', 'belt-a', service))
+                self.run_entry_operation('restart', 'b', missing=('helmet-a', 'belt-a', service))
 
     def test_restart_rejects_stale_stopped_peer_generation_or_running_peer_mount(self):
         with self.assertRaisesRegex(ValueError, 'both node groups'):
-            self.run_entry_operation('restart', missing=('helmet-a', 'belt-a'), stale_label='helmet-a')
+            self.run_entry_operation('restart', 'b', missing=('helmet-a', 'belt-a'), stale_label='helmet-a', running=('app-b',))
         with self.assertRaisesRegex(ValueError, 'stale configuration mount'):
-            self.run_entry_operation('restart', stale_mount='helmet-a')
+            self.run_entry_operation('restart', 'b', stale_mount='helmet-a')
+
+    def test_targeted_up_starts_only_selected_group_and_shared_entry(self):
+        for node, peer in (('a', 'b'), ('b', 'a')):
+            with self.subTest(node=node):
+                targets = self.run_entry_operation('up', node, missing=(f'helmet-{peer}', f'belt-{peer}'))
+                self.assertEqual(targets, [
+                    ['--no-deps', f'app-{node}'],
+                    ['--no-deps', f'helmet-{node}', f'belt-{node}', 'wear-api', 'fuda-api', 'backend-router', 'ingress'],
+                ])
+
+    def test_targeted_up_requires_selected_gateways_and_shared_entry(self):
+        for service in ('helmet-a', 'belt-a', 'wear-api', 'fuda-api', 'backend-router', 'ingress'):
+            with self.subTest(service=service), self.assertRaisesRegex(ValueError, service):
+                self.run_entry_operation('up', 'a', missing=('helmet-b', 'belt-b', service))
+
+    def test_targeted_up_still_verifies_running_peer_mount(self):
+        with self.assertRaisesRegex(ValueError, 'stale configuration mount'):
+            self.run_entry_operation('up', 'a', stale_mount='helmet-b')
+
+    def test_targeted_up_rejects_stale_stopped_peer_generation_during_live_operation(self):
+        with self.assertRaisesRegex(ValueError, 'both node groups'):
+            self.run_entry_operation('up', 'a', missing=('helmet-b', 'belt-b'), stale_label='helmet-b', running=('app-a',))
+
+    def test_default_up_starts_both_apps_then_entire_project(self):
+        self.assertEqual(self.run_entry_operation('up'), [['app-a', 'app-b'], []])
 
     def test_full_up_requires_both_nodes_gateways(self):
         with self.assertRaisesRegex(ValueError, 'helmet-a'):
