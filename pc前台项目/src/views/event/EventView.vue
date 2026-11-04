@@ -105,12 +105,23 @@ watch(
 function loadLatestDraft() { if (eventRecord.value) { delete session.formDrafts[eventRecord.value.id]; formError.value = ""; } }
 
 async function appendObservation() {
-  if (busy.value) return;
+  const item = eventRecord.value;
+  if (!item || busy.value) return;
+  const { id: eventId, version } = item;
+  const situation = observation.value;
   observationError.value = '';
-  if (!observation.value.trim()) { observationError.value = '请填写现场补充情况'; return; }
+  if (!situation.trim()) { observationError.value = '请填写现场补充情况'; return; }
   busy.value = true;
-  try { await db.observe(eventRecord.value.id, { situation: observation.value }); observation.value = ""; toast("现场补充已保存"); }
-  catch (error) { observationError.value = error.message; } finally { busy.value = false; }
+  try {
+    const saved = await db.observe(eventId, { situation, expectedVersion: version });
+    const draft = session.formDrafts[eventId];
+    // A replay can return a later version that includes another terminal's writes.
+    if (draft?.expectedVersion === version && saved.version === version + 1) draft.expectedVersion = saved.version;
+    if (eventRecord.value?.id === eventId && observation.value === situation) observation.value = "";
+    toast("现场补充已保存");
+  } catch (error) {
+    if (eventRecord.value?.id === eventId) observationError.value = error.message;
+  } finally { busy.value = false; }
 }
 
 function formValues() {
