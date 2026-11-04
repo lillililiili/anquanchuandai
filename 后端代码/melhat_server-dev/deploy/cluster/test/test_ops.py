@@ -140,7 +140,7 @@ class ConfigurationTest(unittest.TestCase):
                 if args[1] == 'inspect':
                     return previous
                 self.assertIn('--all', args)
-                return 'ingress-id' if exists and args[-1] == 'ingress' else ''
+                return 'helmet-a-id' if exists and args[-1] == 'helmet-a' else ''
             return fake
         for running in ('app-a\nhelmet-a\ningress\n', 'app-a\n'):
             for exists in (True, False):
@@ -151,6 +151,58 @@ class ConfigurationTest(unittest.TestCase):
             ops.generation_window()
         with patch.object(ops, 'call', side_effect=responses('app-a\n', previous=os.environ['GATEWAY_CONFIG_GENERATION'])):
             ops.generation_window()
+
+    def run_entry_operation(self, command, missing=(), stale_label=None, stale_mount=None):
+        ops.configuration(True)
+        generation = os.environ['GATEWAY_CONFIG_GENERATION']
+        up_targets = []
+
+        def fake(args, **kwargs):
+            if args[:2] == ['docker', 'inspect']:
+                self.assertTrue(args[-1].startswith('id-'), 'inspect requires a container ID')
+                return 'old' if args[-1] == f'id-{stale_label}' else generation
+            action, *tail = args[len(ops.COMPOSE):]
+            if action == 'ps':
+                if '--services' in tail:
+                    return 'app-b\n'
+                service = tail[-1]
+                return f'id-{service}' if '--all' in tail or service not in missing else ''
+            if action == 'exec':
+                _, service, *_, target = tail
+                if target.endswith('/Caddyfile'):
+                    source = self.root / 'Caddy.backend' if service == 'backend-router' else ops.PRIVATE / 'Caddy.lab'
+                else:
+                    source = ops.PRIVATE / Path(target).name
+                return 'old' if service == stale_mount else hashlib.sha256(source.read_bytes()).hexdigest()
+            if action == 'up':
+                up_targets.append(tail[4:])
+            else:
+                self.assertEqual(action, 'stop')
+
+        argv = ['ops.py', '--lab', command] + (['--node', 'b'] if command == 'restart' else [])
+        with patch.object(ops.sys, 'argv', argv), patch.object(ops, 'configuration'), \
+                patch.object(ops, 'preflight'), patch.object(ops, 'drain'), patch.object(ops, 'call', side_effect=fake):
+            ops.main()
+        return up_targets
+
+    def test_restart_b_allows_stopped_a_without_starting_it(self):
+        targets = self.run_entry_operation('restart', missing=('helmet-a', 'belt-a'))
+        self.assertEqual(targets, [['helmet-b', 'belt-b', 'app-b']])
+
+    def test_restart_requires_selected_gateways_and_shared_entry(self):
+        for service in ('helmet-b', 'belt-b', 'wear-api', 'fuda-api', 'backend-router', 'ingress'):
+            with self.subTest(service=service), self.assertRaisesRegex(ValueError, service):
+                self.run_entry_operation('restart', missing=('helmet-a', 'belt-a', service))
+
+    def test_restart_rejects_stale_stopped_peer_generation_or_running_peer_mount(self):
+        with self.assertRaisesRegex(ValueError, 'both node groups'):
+            self.run_entry_operation('restart', missing=('helmet-a', 'belt-a'), stale_label='helmet-a')
+        with self.assertRaisesRegex(ValueError, 'stale configuration mount'):
+            self.run_entry_operation('restart', stale_mount='helmet-a')
+
+    def test_full_up_requires_both_nodes_gateways(self):
+        with self.assertRaisesRegex(ValueError, 'helmet-a'):
+            self.run_entry_operation('up', missing=('helmet-a',))
 
 if __name__ == '__main__':
     unittest.main()

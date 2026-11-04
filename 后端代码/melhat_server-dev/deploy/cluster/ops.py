@@ -180,10 +180,17 @@ def generation_window():
     if (changed or not evidence) and any(service in running for service in ('app-a', 'app-b', 'helmet-a', 'helmet-b', 'belt-a', 'belt-b')):
         raise ValueError('Gateway generation changed. Drain and stop both node groups before applying the complete generation, including ingress.')
 
-def verify_loaded_generation():
+def verify_loaded_generation(restart_node=None):
     manifest = json.loads((PRIVATE / 'gateway-manifest.json').read_text(encoding='utf-8'))
+    # Only the other node's device gateways may be stopped during a targeted restart.
+    peer = {'a': 'b', 'b': 'a'}.get(restart_node)
+    optional = (f'helmet-{peer}', f'belt-{peer}') if peer else ()
     for service in ENTRY_SERVICES:
         container = call(COMPOSE + ['ps', '-q', service], capture=True).strip()
+        if not container:
+            if service in optional:
+                continue
+            raise ValueError(f'Required gateway or entry service is not running: {service}.')
         loaded = call(['docker', 'inspect', '--format', '{{index .Config.Labels "org.wearable.gateway-generation"}}', container], capture=True).strip()
         if loaded != manifest['generation']:
             raise ValueError('A running gateway or ingress still has the previous configuration generation.')
@@ -205,7 +212,7 @@ def verify_loaded_generation():
             actual = call(COMPOSE + ['exec', '-T', service, 'node', '-e', code, '/run/private/' + filename], capture=True).strip()
         if actual != manifest['files'][filename]:
             raise ValueError('A running container has a stale configuration mount; do not reopen the device entry.')
-    print('Device/API gateways, private router and ingress loaded the verified generation and configuration mounts.')
+    print('Running device gateways, API gateways, private router and ingress loaded the verified generation and configuration mounts.')
 
 def local_shared_probe(root, store_id):
     root = Path(root)
@@ -326,7 +333,7 @@ def main():
             call(COMPOSE + ['stop', '--timeout', '40'] + services, timeout=150)
             if args.command == 'restart':
                 call(COMPOSE + ['up', '-d', '--wait', '--wait-timeout', str(args.timeout)] + services, timeout=args.timeout + 30)
-                verify_loaded_generation()
+                verify_loaded_generation(restart_node=args.node)
 
 if __name__ == '__main__':
     try:
