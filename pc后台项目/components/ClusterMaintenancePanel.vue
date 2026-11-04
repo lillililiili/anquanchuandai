@@ -37,7 +37,7 @@ async function reconcile() {
   if (busy.value || !state.value?.paused || reason.value.trim().length < 10) return
   busy.value = true; error.value = ''; controller = new AbortController()
   try { state.value = await api.reconcileMaintenance(reason.value.trim(), controller.signal); reason.value = '' }
-  catch (e) { if (e.name !== 'AbortError') error.value = e.message }
+  catch (e) { if (e.name !== 'AbortError') { error.value = e.message; state.value = null } }
   finally { busy.value = false }
 }
 function toggle(event) { opened.value = event.target.open; clearInterval(poll); if (opened.value) { refresh(); poll = setInterval(refresh, 2000) } else controller?.abort() }

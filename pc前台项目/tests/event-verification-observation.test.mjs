@@ -22,8 +22,9 @@ function fixture(t) {
   };
   const events = Vue.ref(structuredClone(server));
   const requests = [];
+  const toasts = [];
   const applied = new Set();
-  let beforeResponse;
+  let beforeResponse, failedReply;
   const refresh = async () => { events.value = structuredClone(server); };
   const api = createEventApi({
     current: id => events.value[id],
@@ -33,6 +34,7 @@ function fixture(t) {
       const [id, action] = url.split('/').slice(-2);
       const body = JSON.parse(options.body);
       requests.push({ id, action, body });
+      if (failedReply) return new Response(JSON.stringify(failedReply));
       const item = server[id];
       if (applied.has(body.requestId)) {
         return { ok: true, json: async () => structuredClone(item) };
@@ -61,14 +63,33 @@ function fixture(t) {
     '@/stores/session': { session },
     '@/lib/queries': { revision() {} },
     '@/lib/files': { blobPut: async () => {} },
-    '@/stores/notify': { toast() {} },
+    '@/stores/notify': { toast: message => toasts.push(message) },
   };
   const scope = Vue.effectScope();
   t.after(() => scope.stop());
   const component = setup(path => modules[path] ?? {});
   const view = scope.run(() => component.setup({}, { expose() {} }));
-  return { view, session, route, server, refresh, requests, onResponse: fn => { beforeResponse = fn; } };
+  return { view, session, route, server, refresh, requests, toasts,
+    onResponse: fn => { beforeResponse = fn; }, setFailedReply: reply => { failedReply = reply; } };
 }
+
+test('verification failure keeps the local draft and never shows success before an acknowledgment', async t => {
+  const { view, session, server, toasts, setFailedReply, requests } = fixture(t);
+  view.form.value.conclusion = '需现场处理';
+  view.form.value.situation = '现场草稿';
+  await Vue.nextTick();
+  setFailedReply({ code: 500, msg: '服务暂不可用' });
+  await view.submitVerify();
+  assert.equal(view.formError.value, '服务暂不可用');
+  assert.equal(session.formDrafts.one.situation, '现场草稿');
+  assert.equal(server.one.verification, undefined);
+  assert.deepEqual(toasts, []);
+  setFailedReply(undefined);
+  await view.submitVerify();
+  assert.equal(requests[0].body.requestId, requests[1].body.requestId);
+  assert.equal(server.one.verification.situation, '现场草稿');
+  assert.deepEqual(toasts, ['核验记录已提交']);
+});
 
 test('saving a field observation and adding a photo allows verification without losing typed fields', async t => {
   const { view, requests, server } = fixture(t);

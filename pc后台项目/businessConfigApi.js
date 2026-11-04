@@ -6,7 +6,11 @@ export function createBusinessConfigApi({ fetchImpl = fetch, token = () => sessi
       ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     let result; try { result = await response.json(); } catch { throw Error('服务响应无效，请刷新后重试'); }
     if (signal?.aborted || currentToken !== token()) throw new DOMException('登录状态已变化', 'AbortError');
-    if (!response.ok) throw Object.assign(Error(result.message || '操作失败'), { code: response.status });
+    const code = response.ok ? Number(result?.code) : response.status;
+    if (!response.ok || code >= 400) throw Object.assign(Error(result?.message || result?.msg || '操作失败'), { code });
+    if (path.startsWith('maintenance') && (typeof result?.paused !== 'boolean' || typeof result?.quiescent !== 'boolean')) {
+      throw Error('服务响应无效，请刷新后重试');
+    }
     return result;
   };
   return {

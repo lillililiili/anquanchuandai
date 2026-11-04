@@ -1,5 +1,6 @@
 package com.ruoyi.guardian;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -7,6 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Order(0)
 @RestControllerAdvice(assignableTypes = {GuardianController.class, GuardianMobileController.class, GuardianMobileCommunications.class, GuardianLocationController.class, GuardianHelmetMediaController.class,WearableBusinessController.class,WearableMaintenanceController.class})
 public class GuardianError {
     @ExceptionHandler(IllegalStateException.class)

@@ -15,4 +15,14 @@ describe('cluster maintenance', () => {
     expect(JSON.parse(calls[1].options.body)).toEqual({ mode: 'PAUSED' }); expect(JSON.parse(calls[2].options.body)).toEqual({ mode: 'ACTIVE' })
     expect(state.quiescent).toBe(false)
   })
+  it('rejects error bodies and incomplete status from all maintenance operations', async () => {
+    let payload
+    const api = createBusinessConfigApi({ token: () => 'fixture', fetchImpl: async () => new Response(JSON.stringify(payload)) })
+    for (const operation of [api.maintenance, () => api.setMaintenance(true), () => api.reconcileMaintenance('核对依据')]) {
+      payload = { code: 500, msg: '服务暂不可用' }
+      await expect(operation()).rejects.toThrow('服务暂不可用')
+      payload = { paused: false }
+      await expect(operation()).rejects.toThrow('服务响应无效')
+    }
+  })
 })

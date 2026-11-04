@@ -18,13 +18,16 @@ export function createEventApi({ fetchImpl, refresh, current, uuid = () => crypt
       const response = await fetchImpl(`/api/guardian/v1/events/${encodeURIComponent(id)}/${action}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request.body),
       });
-      const body = await response.json();
-      if (!response.ok) {
-        if (response.status < 500) pending.delete(key);
-        if (response.status === 409) await refresh();
-        throw Object.assign(Error(body.message || "事件操作失败"), { code: response.status });
+      const body = await response.json().catch(() => null);
+      const code = response.ok ? Number(body?.code) : response.status;
+      if (!response.ok || code >= 400) {
+        if (code >= 400 && code < 500) pending.delete(key);
+        if (code === 409) await refresh();
+        throw Object.assign(Error(body?.message || body?.msg || "事件操作失败"), { code });
       }
+      if (body?.id !== id || !Number.isSafeInteger(body.version) || body.version < 1) throw Error("事件操作响应无效，请刷新后重试");
       pending.delete(key);
+      // The committed event is the acknowledgment; snapshot refresh is only for display.
       await refresh();
       return body;
     })();

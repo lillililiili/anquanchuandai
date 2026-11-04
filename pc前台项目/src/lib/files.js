@@ -5,7 +5,8 @@ function fileUrl(id) {
 
 async function failureMessage(response, fallback) {
   try {
-    return (await response.json()).message || fallback;
+    const body = await response.json();
+    return body?.message || body?.msg || fallback;
   } catch {
     return fallback;
   }
@@ -26,6 +27,9 @@ export async function blobPut(id, blob) {
     const fallback = response.status === 413 ? "图片不能超过 10MB" : "照片保存失败，请检查磁盘空间";
     throw Error(await failureMessage(response, fallback));
   }
+  const body = await response.json().catch(() => null);
+  if (Number(body?.code) >= 400) throw Error(body.message || body.msg || "照片保存失败");
+  if (body?.ok !== true || body.id !== id) throw Error("照片保存响应无效，请刷新后重试");
   return id;
 }
 
