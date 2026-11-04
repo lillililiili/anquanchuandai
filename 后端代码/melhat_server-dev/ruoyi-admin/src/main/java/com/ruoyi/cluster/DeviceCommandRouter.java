@@ -231,6 +231,7 @@ import java.util.concurrent.ConcurrentHashMap;
         }
         );
         if(attempt==null)return;
+        boolean senderEntered=false;
         try {
             identity.requireActive();
             if(guard!=null)guard.dispatch(id);
@@ -246,11 +247,18 @@ import java.util.concurrent.ConcurrentHashMap;
             }
             ;
             fence.run();
-            sender.send(owner,attempt.getString("wire"),properties.getSendTimeoutMillis(),fence);
+            String wire=attempt.getString("wire");
+            long timeout=properties.getSendTimeoutMillis();
+            senderEntered=true;
+            sender.send(owner,wire,timeout,fence);
             finish(id,attempt.getString("claim"),"SENT","已交给设备连接，等待设备确认");
         }
         catch(Exception e) {
-            finish(id,attempt.getString("claim"),"UNKNOWN","结果未确认，不会自动重复下发");
+            if(senderEntered) {
+                finish(id,attempt.getString("claim"),"UNKNOWN","结果未确认，不会自动重复下发");
+            } else {
+                finish(id,attempt.getString("claim"),"FAILED_BEFORE_SEND","发送前检查未通过，未发送");
+            }
         }
     }
     private OwnerToken owner(JSONObject a) {

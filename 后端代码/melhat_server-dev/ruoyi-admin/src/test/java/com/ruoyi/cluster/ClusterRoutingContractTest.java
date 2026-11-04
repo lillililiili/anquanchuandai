@@ -2,9 +2,13 @@ package com.ruoyi.cluster;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.database.SchemaLifecycle;
 import com.ruoyi.common.database.DatabaseDialect;
+import com.ruoyi.guardian.ClusterMaintenanceGuard;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.util.ReflectionTestUtils;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
@@ -102,6 +106,59 @@ class ClusterRoutingContractTest {
         ra.dispatchOwnedBatch();
         assertEquals("UNKNOWN",rb.read("c").getString("deliveryStatus"));
         assertEquals(0,count.get());
+    }
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void maintenanceAfterDurableClaimFinishesBeforeSend(boolean pauseGlobally) {
+        SchemaLifecycle.ensure(db.jdbc,"20261026_wearable_business");
+        SchemaLifecycle.ensure(db.jdbc,"20261102_fuda_push_outbox");
+        SchemaLifecycle.ensure(db.jdbc,"20261103_cluster_coordination");
+        db.jdbc.update("INSERT INTO wearable_runtime_control(control_key,mode,updated_at) VALUES('global','ACTIVE',0)");
+        ClusterWorkCoordinator coordinator=new ClusterWorkCoordinator(db,a);
+        AtomicInteger guardCalls=new AtomicInteger();
+        ClusterMaintenanceGuard guard=new ClusterMaintenanceGuard(a,coordinator,db,null) {
+            @Override public void dispatch(String commandId) {
+                if(guardCalls.incrementAndGet()==2) {
+                    assertEquals("DISPATCHING",rb.read(commandId).getString("deliveryStatus"));
+                    if(pauseGlobally) {
+                        db.jdbc.update("UPDATE wearable_runtime_control SET mode='PAUSED' WHERE control_key='global'");
+                    } else {
+                        a.beginDrain();
+                    }
+                }
+                super.dispatch(commandId);
+            }
+        };
+        ReflectionTestUtils.setField(ra,"guard",guard);
+        oa.claimLogin("helmet","h","s",30000,new JSONObject());
+        rb.submit("c","scope","fingerprint","helmet","h",new JSONObject(),new JSONObject());
+        AtomicInteger sends=new AtomicInteger();
+        ra.register("helmet",(o,w,t,fence)->sends.incrementAndGet());
+
+        ra.dispatchOwnedBatch();
+        ra.recoverAttempts();
+
+        assertEquals(2,guardCalls.get());
+        assertEquals(0,sends.get());
+        assertEquals("FAILED_BEFORE_SEND",rb.read("c").getString("deliveryStatus"));
+        JSONObject status=coordinator.status(!pauseGlobally);
+        assertEquals(0,status.getIntValue("uncertainTransport"));
+        assertTrue(status.getBooleanValue("quiescent"));
+    }
+    @Test void senderFailureRemainsUnknownAndNeverRetries() {
+        oa.claimLogin("helmet","h","s",30000,new JSONObject());
+        rb.submit("c","scope","fingerprint","helmet","h",new JSONObject(),new JSONObject());
+        AtomicInteger sends=new AtomicInteger();
+        ra.register("helmet",(o,w,t,fence)-> {
+            sends.incrementAndGet();
+            throw new java.io.IOException("Device send failed");
+        });
+
+        ra.dispatchOwnedBatch();
+        ra.dispatchOwnedBatch();
+
+        assertEquals(1,sends.get());
+        assertEquals("UNKNOWN",rb.read("c").getString("deliveryStatus"));
     }
     @Test void changedOwnerCancelsQueuedEvenWhenOriginalWorkerIsGone() {
         oa.claimLogin("helmet","h","s",30000,new JSONObject());rb.submit("c","scope","fingerprint","helmet","h",new JSONObject(),new JSONObject());
