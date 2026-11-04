@@ -96,8 +96,12 @@ DM8 的自增水位需保留已删除 ID：工具记录原水位，以 `DROP IDE
 
 ## 当前证据与边界
 
-本机隔离真实 MySQL8/严格 DM8 已完成98表、26行、4文件的双向搬迁及内容核验；额外 JSON/中文/表情案例和真实进程 kill 已覆盖自增属性删除后的恢复、并发 resume 拒绝、owner 丢失拒绝、INT/BIGINT 删除水位、零主键、同条数内容篡改、文件损坏和非空目标拒绝。以上使用明确标记的 development snapshot，最终完整 jar 与新增 schema 版本仍须复验，不能据此声明最终发布包通过。
+最终完整JAR SHA256 `35290a865fe8169bdaeeacab57151e379b7235a2808a4e7cbf0e8358158e8614` 已在本机隔离真实MySQL8/严格DM8完成双向往返：两份包各99表、28行、4文件，三次对账均COMPLETE，验证91张恢复表27行、内容、自增水位及文件，其余8张运行态表仅归档。两端新增记录的自增键和恢复审计JSON另行读回通过。证据见仓库 `.superpowers/sdd/report-migration-release-final.md`。
 
-测试期间原1.5GB DM8测试容器曾 OOM 退出，已保留未完成DDL记录而没有补写成功；恢复后测试资源固定为2GB。受影响的临时模式留作证据，故障矩阵在新的模式完成。此事件不涉及日常数据库，也不构成容量测试结果。
+真实进程kill、自增属性删除后恢复、并发/旧owner拒绝、9e12高水位、零主键、同条数篡改、坏文件、非法JSON及非空目标矩阵曾在71ab732e完整JAR上通过；本次未在35290a86重跑。递归字节比较确认相关迁移类、SQL和JDBC没有改变；这个比较和新构建往返验证各自记录，不将旧故障矩阵冒称为新构建运行结果。
+
+另已从实际四模拟设备应用，在暂停和排空后用最终JAR导出99表、12246行、5文件的容量基线，并通过源库离线对账；容量目标的恢复和测量另行记录。这些仍是开发数据与本机容器验证，不能代替真实数据量、麒麟、NAS/NFS和设备切换验收。
+
+测试期间原1.5GB DM8容器曾OOM退出，已保留未完成DDL记录而没有补写成功；恢复后先调整为2GB，最终往返和当前容量准备固定为3GB/1CPU。受影响模式留作证据，故障矩阵使用新的模式。正常重启释放缓存前先停止全部应用并保留完整快照；没有清库或删除业务记录。此事件不涉及日常数据库，也不构成容量结果。
 
 SQL依据：[达梦事务表锁](https://eco.dameng.com/document/dm/zh-cn/pm/management-affairs.html)、[MySQL表锁](https://dev.mysql.com/doc/refman/8.4/en/lock-tables.html)、[达梦现有列自增属性](https://eco.dameng.com/document/dm/zh-cn/pm/definition-statement.html)、[达梦自增水位函数](https://eco.dameng.com/document/dm/zh-cn/pm/sql-appendix.html)、[达梦JSON](https://eco.dameng.com/document/dm/zh-cn/pm/json)。实际SQL和恢复行为以固定版本的真实数据库测试为准。

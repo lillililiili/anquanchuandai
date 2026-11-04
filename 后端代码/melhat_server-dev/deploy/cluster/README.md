@@ -1,8 +1,8 @@
-# 双应用节点与麒麟部署包（开发中）
+# 双应用节点与麒麟部署包（开发验证版）
 
 本目录对应“达梦 8 + 两组协议网关/后端 + 共享 NAS/NFS”的方案。数据库、Redis、媒体服务与入口自身没有冗余保障。当前 Compose 在一台主机运行两个应用进程，证明应用层分流与协作，不证明主机故障高可用。跨物理主机部署必须按实际内网地址拆分节点配置，并重新验证 NFS、入口健康检查和网络隔离。
 
-**尚未作为生产包验收：** 后端全局任务/维护协调和真实双库迁移已有专项测试证据；完整双节点业务、页面/安卓、容量及麒麟实机仍需完成。不要以配置文件存在或网关测试通过替代这些门槛。验收记录见仓库 `docs/deployment/dm8-cluster-acceptance.md`。
+**尚未作为生产包验收：** 最终构建已完成本机真实DM8/MySQL迁移、完整双节点业务、逐节点故障恢复、依赖故障和已列PC/安卓调试场景验证。容量比较另见CAPACITY.md；麒麟实机、真实NAS/NFS、物理设备及正式安卓发布仍待验收。不要以本机容器通过替代这些门槛。验收记录见仓库 `docs/deployment/dm8-cluster-acceptance.md`。
 
 ## 组成与隔离
 
@@ -16,9 +16,9 @@
 
 ## 准备
 
-1. 在目标主机安装经过本项目验证的 Docker Engine、Compose V2、Python 3.9 或更新版本与 bash。先运行 `kylin-preflight.sh`；默认必须是麒麟 V10 x86_64、hard NFS。`--lab` 仅用于开发，不能形成麒麟结论。
+1. 准备 Docker Engine、Compose V2、Python 3.9 或更新版本与 bash；配置生成需要Node24.16.0，独立迁移工具需要JDK17。先准备下述共享目录和标记，再运行预检。默认预检必须是麒麟 V10 x86_64、hard NFS；`--lab` 仅用于开发，不能形成麒麟结论。开发实测版本不能代替目标主机验证。
 2. 显式准备共享目录与权限；使用 `prepare-shared-store.py /mnt/wearable/files <UUID>` 创建唯一标记，重复执行不能更换已存在标记。记录 UUID，并在两个节点配置相同值。备份/恢复必须连标记、文件、数据库指针一起处理。
-3. 构建已经测试过的后端 jar，再从后端根目录构建 `deploy/cluster/backend.Dockerfile` 和 `gateway.Dockerfile`。镜像运行 Java 17、Node 24.16.0，基础镜像和 Caddy 2.10.2 固定摘要。正式 `.env` 的 BACKEND_IMAGE/GATEWAY_IMAGE 必须使用实际验收镜像摘要或本地不可变 image ID，不填写浮动标签。
+3. 优先加载交付包中已验证的后端、网关镜像并核对身份。自行构建时，使用已测试的后端jar，从后端根目录构建 `deploy/cluster/backend.Dockerfile` 和 `gateway.Dockerfile`，新镜像须重新记录并验证。镜像运行 Java 17、Node 24.16.0，基础镜像和 Caddy 2.10.2 固定摘要。正式 `.env` 的 BACKEND_IMAGE/GATEWAY_IMAGE 必须使用实际验收镜像摘要或本地不可变 image ID，不填写浮动标签。
 4. 创建权限 0700 的 `private/`。`backend.env` 权限 0600，设置下列参数。两节点共享 JWT/媒体加密密钥/Redis，不要重新生成已有数据使用的加密密钥。
 
 ```
@@ -38,7 +38,7 @@ MELHAT_CLUSTER_ADMIN_TOKEN=<32-byte-base64url-token>
 
 另按已有业务配置启用直连头盔、腰带、媒体与福大接口；实验环境只使用模拟设备、假媒体和禁止真实推送的配置。上述骨架不默认启用任何真实设备控制或外部推送。禁止把“关闭功能后启动成功”计作全业务验收。
 
-5. `.env` 配置非密钥的 `BACKEND_IMAGE/GATEWAY_IMAGE/MELHAT_DB_PRODUCT/SHARED_DATA_DIR/CLUSTER_PROJECT/CLUSTER_NETWORK/CADDY_SITE`；还必须填写 `PC_STATIC_UPSTREAM/MEDIA_UPSTREAM/SIP_UPSTREAM` 为已核对的独立私网 `host:port`（例如 `pc-static:80`、`media:18190`、`freeswitch:5066`，不是自动部署或默认回退地址）。按需要设置 `NODE_A_ID/NODE_B_ID/INGRESS_BIND/INGRESS_HTTP_PORT/INGRESS_HTTPS_PORT`。先创建独立 Docker 网络；外部数据库/Redis/静态/媒体依赖必须能从该网络访问。不要接入日常开发项目的数据库或共享卷。
+5. `.env` 配置非密钥的 `BACKEND_IMAGE/GATEWAY_IMAGE/MELHAT_DB_PRODUCT/SHARED_DATA_DIR/CLUSTER_PROJECT/CLUSTER_NETWORK/CADDY_SITE`；还必须填写 `PC_STATIC_UPSTREAM/MEDIA_UPSTREAM/SIP_UPSTREAM` 为已核对的独立私网 `host:port`（例如 `pc-static:80`、`media:18190`、`freeswitch:5066`，不是自动部署或默认回退地址）。按需要设置 `NODE_A_ID/NODE_B_ID/INGRESS_BIND/INGRESS_HTTP_PORT/INGRESS_HTTPS_PORT`。先创建独立 Docker 网络；外部数据库/Redis/静态/媒体依赖必须能从该网络访问。不要接入日常开发项目的数据库或共享卷。PC静态页面须按现场入口重新构建，管理端的 `VITE_ADMIN_PORTAL_URL` 显式设置为前台实际地址，不沿用本机5191/6191测试地址。
 6. 将已有设备 ID 和已有 pathToken 写入私有 `gateway-input.json`，包含 `publicOrigin/adminToken/helmets/belts`；每个设备对象为 `{deviceId,pathToken}`。adminToken 与 backend.env 一致。可设置 `deviceWebsocketOrigin`，例如特定固件需要的同域 `ws://...:80`；默认 wss，实际固件与防火墙必须验收。需要上传时提供同域的 `mediaControlOrigin/mediaSigningKey`。
 7. 从后端根运行 `node local-dev/protocol-cluster/render-config.mjs deploy/cluster/private/gateway-input.json deploy/cluster/private`。Linux 已有目录必须归当前用户所有且权限为 0700；Windows 开发环境需由操作者限制目录 ACL，POSIX 模式位不能证明 ACL 安全。已有文件默认拒绝覆盖；受控变更时使用 `--replace`，停机或排空后同步替换所有节点并重建网关。工具不会生成或更换设备凭证。私有目录不得归档进公开交付包。
 
@@ -48,11 +48,37 @@ MELHAT_CLUSTER_ADMIN_TOKEN=<32-byte-base64url-token>
 
 ## 操作
 
-`clusterctl.sh check` 进行配置与主机预检；`migrate` 在两个 app 都已停止时运行单独迁移进程；`up` 等待全部健康；`status`/`logs --node a` 查看状态/有限日志；`drain --node a`/`stop --node a`/`restart --node a` 先后端排空、网关关闭存量连接、确认真实 quiescent 后处理单节点。开发使用下述独立实验室配置后才可加 `--lab`。没有无条件强制停止回退；未知外部执行结果必须先核对。排空不等同于全局维护暂停，不能用单节点排空授权数据库导入。
+下文的 `clusterctl.sh` 均指从后端根执行 `bash deploy/cluster/clusterctl.sh`，不是PATH中的同名程序。`check` 进行配置与主机预检；`migrate` 在两个 app 都已停止时运行单独迁移进程；`up --node a` 首次只启动A组和公共入口，`up` 再加入B组并等待全部健康；`status`/`logs --node a` 查看状态/有限日志；`drain --node a`/`stop --node a`/`restart --node a` 先后端排空、网关关闭存量连接、确认真实 quiescent 后处理单节点。指定节点up不负责停止已经运行的对端，首次单节点验收前须确认B未启动。开发使用下述独立实验室配置后才可加 `--lab`。没有无条件强制停止回退；未知外部执行结果必须先核对。排空不等同于全局维护暂停，不能用单节点排空授权数据库导入。
 
-应用启动只校验迁移版本和校验和，缺表或版本不一致会失败。空数据库也要显式迁移；业务初始管理员使用 `com.ruoyi.guardian.WearableBusinessBootstrap` 离线命令，参数为包含五份显式 JSON 的私有绝对目录（`admin-ledger.json/guardian-state.json/helmet-media-private.json/business-config.json/feature-acceptance.json`），连接与媒体加密密钥通过环境提供。初始化仅接收账号、组织及初始配置，设备/领用/绑定必须为空，媒体为 `{}`、验收为 `[]`。随后通过正式建档、领用接口建立设备及协议档案；已有业务采用 [完整迁移工具](migration/README.md)，不能将业务快照伪装成空库种子。命令要求所有应用已停止，绝不合并或覆盖已有业务。
+首次新目标示例（bash，当前目录为后端根；配置、设备凭证、依赖网络已按上节准备）：
 
-容器日志在应用最早初始化阶段即使用 `logback-cluster.xml` 输出到控制台，由 Docker 按 10MB/3 文件轮转；不会在只读容器中创建旧 Windows 日志目录。`CLUSTER_JAVA_OPTIONS` 可显式配置已测的堆、元空间及信任库，资源测试需记录其实际值。`up` 先等待两个应用健康再启动/检查入口网关；健康检查的启动宽限不等于业务就绪。
+```sh
+# 已挂载共享根及由prepare-shared-store.py生成的标记；这里填现场值。
+export SHARED_FILES_DIR=/mnt/wearable/files
+export MELHAT_FILES_STORE_ID='<现场相同的小写UUID>'
+bash deploy/cluster/kylin-preflight.sh
+bash deploy/cluster/clusterctl.sh check
+
+# check内部的环境变量不传回shell，原生Compose操作显式读取已校验代次。
+export GATEWAY_CONFIG_GENERATION="$(python3 -c 'import json; print(json.load(open("deploy/cluster/private/gateway-manifest.json"))["generation"])')"
+compose=(docker compose --project-directory deploy/cluster --env-file deploy/cluster/.env -f deploy/cluster/compose.yml)
+"${compose[@]}" create --no-deps app-a app-b
+bash deploy/cluster/clusterctl.sh migrate
+"${compose[@]}" ps --all app-a app-b
+# 两容器须为Created/Exited，保留它们供离线迁移的身份/配置证明。
+# 现在二选一：空库按BOOTSTRAP.md初始化；既有业务按migration/README.md完整导入及对账。
+# 完成后才启动。确认没有对端应用或协议网关在运行。
+bash deploy/cluster/clusterctl.sh up --node a
+# 实际验收登录、设备、定位、报警、照片和必要媒体后，再加入第二节点。
+bash deploy/cluster/clusterctl.sh up
+bash deploy/cluster/clusterctl.sh status
+```
+
+`create` 示例仅适用于全新的目标；既有运行环境先通过全局维护暂停与逐节点排空/停止保全数据。不要执行 `docker compose config` 输出完整配置到公开日志，因为它包含展开后的私有环境。
+
+应用启动只校验迁移版本和校验和，缺表或版本不一致会失败。空数据库也要显式迁移；业务初始管理员使用 `com.ruoyi.guardian.WearableBusinessBootstrap` 离线命令，五份输入及fatjar启动方法见 [空库初始化](BOOTSTRAP.md)。初始化仅接收账号、组织及初始配置，设备/领用/绑定必须为空，媒体为 `{}`、验收为 `[]`。随后通过正式建档、领用接口建立设备及协议档案；已有业务采用 [完整迁移工具](migration/README.md)，不能将业务快照伪装成空库种子。命令要求所有应用已停止，绝不合并或覆盖已有业务。
+
+容器日志在应用最早初始化阶段即使用 `logback-cluster.xml` 输出到控制台，由 Docker 按 10MB/3 文件轮转；不会在只读容器中创建旧 Windows 日志目录。`CLUSTER_JAVA_OPTIONS` 可显式配置已测的堆、元空间及信任库，资源测试需记录其实际值。`up` 先等待所选应用健康（默认两个节点）再启动/检查入口网关；健康检查的启动宽限不等于业务就绪。
 
 `versions.sh` 记录系统、运行时与镜像身份，不输出环境密钥。达梦版本、字符集/兼容/严格参数、JDBC 摘要以及媒体依赖版本另行记录。库迁移、最终对账、备份恢复和回滚手册完成后才可执行切换；新库产生写入后不能直接恢复旧备份。
 
