@@ -2,7 +2,7 @@
 
 本目录对应“达梦 8 + 两组协议网关/后端 + 共享 NAS/NFS”的方案。数据库、Redis、媒体服务与入口自身没有冗余保障。当前 Compose 在一台主机运行两个应用进程，证明应用层分流与协作，不证明主机故障高可用。跨物理主机部署必须按实际内网地址拆分节点配置，并重新验证 NFS、入口健康检查和网络隔离。
 
-**尚未作为生产包验收：** 后端全局任务/维护协调、数据迁移、完整双节点业务与麒麟实机仍需完成。不要以配置文件存在或网关测试通过替代这些门槛。验收记录见仓库 `docs/deployment/dm8-cluster-acceptance.md`。
+**尚未作为生产包验收：** 后端全局任务/维护协调和真实双库迁移已有专项测试证据；完整双节点业务、页面/安卓、容量及麒麟实机仍需完成。不要以配置文件存在或网关测试通过替代这些门槛。验收记录见仓库 `docs/deployment/dm8-cluster-acceptance.md`。
 
 ## 组成与隔离
 
@@ -50,7 +50,9 @@ MELHAT_CLUSTER_ADMIN_TOKEN=<32-byte-base64url-token>
 
 `clusterctl.sh check` 进行配置与主机预检；`migrate` 在两个 app 都已停止时运行单独迁移进程；`up` 等待全部健康；`status`/`logs --node a` 查看状态/有限日志；`drain --node a`/`stop --node a`/`restart --node a` 先后端排空、网关关闭存量连接、确认真实 quiescent 后处理单节点。开发使用下述独立实验室配置后才可加 `--lab`。没有无条件强制停止回退；未知外部执行结果必须先核对。排空不等同于全局维护暂停，不能用单节点排空授权数据库导入。
 
-应用启动只校验迁移版本和校验和，缺表或版本不一致会失败。空数据库也要显式迁移；业务初始管理员/导入必须使用后续专用初始化与迁移工具，不使用旧实例自动回填示例数据。
+应用启动只校验迁移版本和校验和，缺表或版本不一致会失败。空数据库也要显式迁移；业务初始管理员使用 `com.ruoyi.guardian.WearableBusinessBootstrap` 离线命令，参数为包含五份显式 JSON 的私有绝对目录（`admin-ledger.json/guardian-state.json/helmet-media-private.json/business-config.json/feature-acceptance.json`），连接与媒体加密密钥通过环境提供。初始化仅接收账号、组织及初始配置，设备/领用/绑定必须为空，媒体为 `{}`、验收为 `[]`。随后通过正式建档、领用接口建立设备及协议档案；已有业务采用 [完整迁移工具](migration/README.md)，不能将业务快照伪装成空库种子。命令要求所有应用已停止，绝不合并或覆盖已有业务。
+
+容器日志在应用最早初始化阶段即使用 `logback-cluster.xml` 输出到控制台，由 Docker 按 10MB/3 文件轮转；不会在只读容器中创建旧 Windows 日志目录。`CLUSTER_JAVA_OPTIONS` 可显式配置已测的堆、元空间及信任库，资源测试需记录其实际值。`up` 先等待两个应用健康再启动/检查入口网关；健康检查的启动宽限不等于业务就绪。
 
 `versions.sh` 记录系统、运行时与镜像身份，不输出环境密钥。达梦版本、字符集/兼容/严格参数、JDBC 摘要以及媒体依赖版本另行记录。库迁移、最终对账、备份恢复和回滚手册完成后才可执行切换；新库产生写入后不能直接恢复旧备份。
 
@@ -63,6 +65,10 @@ MELHAT_CLUSTER_ADMIN_TOKEN=<32-byte-base64url-token>
 3. 私有 `workload.json` 增加 `labId=wearable-lab-...` 和随机32-byte base64url `isolationProof`。用 `node deploy/cluster/prepare-lab-entry.mjs deploy/cluster/private/lab/workload.json deploy/cluster/private/lab/Caddy.lab` 生成单独入口。该入口只能绑定本机；证明值不得出现在公开日志。
 4. 运行 `python3 deploy/cluster/prepare-lab-inventory.py --database-container <专用数据库容器> --redis-container <专用Redis容器>`。它只登记现有依赖，核对库/schema、Redis database、共享标记、配置摘要与真实网络连接，生成新的私有 `isolation.json`。若此目录已有正式 `.env/backend.env`，通过不同网络别名复用同一依赖实例也会被拒绝。脚本不覆盖已有清单；修改配置或重建依赖时应保留旧清单，重新核对后显式准备新清单。
 5. 再运行 `clusterctl.sh --lab check/migrate/up` 等命令。每次操作重验清单；入口仅映射 `127.0.0.1:${LAB_INGRESS_PORT:-18080}`。跨主机负载测试需要另行配置受控专网，不能直接取消此本机限制。
+
+Windows 开发机使用 `python deploy/cluster/ops.py --lab <操作>`；仅允许 Linux x86_64 Docker 引擎。文件预检验证专用目录、标记、写入/刷盘/原子改名/读回，应用就绪检查再以容器 UID 验证访问。标记字节必须是小写 UUID 加单个 LF；使用 `prepare-shared-store.py` 生成，不用 PowerShell 重写换行。正式模式仍要求实际麒麟 Linux 与 NFS，不接受 Windows 预检代替。
+
+`test/lab-media.mjs` 与 `test/media-fixture.Dockerfile` 仅用于隔离验收：保留真实媒体 HTTP、认证及存储路径，替换 ESL/SRS 等设备依赖；实际录像明确不可用。该替身只能证明接口协作，不能证明 SIP、通话、摄像头、推流或播放通过，禁止用于正式部署。
 
 这套校验防止本目录实验室配置误指向已登记的正式依赖，不替代操作者核对其他机器或其他目录的生产资产。完整负载步骤与结果口径见 [CAPACITY.md](CAPACITY.md)。
 

@@ -2,6 +2,7 @@
 private/
 .env
 .lab.env
+.lab.env.*
 __pycache__/
 evidence/
 vendor/

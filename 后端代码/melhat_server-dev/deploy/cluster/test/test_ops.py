@@ -22,7 +22,7 @@ class ConfigurationTest(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / 'private').mkdir()
         (self.root / 'shared' / 'files').mkdir(parents=True)
-        for name in ('compose.yml', 'compose.lab.yml', 'application-cluster.yml', 'Caddyfile', 'Caddy.backend'):
+        for name in ('compose.yml', 'compose.lab.yml', 'application-cluster.yml', 'logback-cluster.xml', 'Caddyfile', 'Caddy.backend'):
             shutil.copyfile(DEPLOY / name, self.root / name)
         shutil.copyfile(DEPLOY / 'Caddyfile', self.root / 'private' / 'Caddy.lab')
         secret = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('=')
@@ -58,6 +58,12 @@ class ConfigurationTest(unittest.TestCase):
         config = ops.configuration(True)
         for service in ('app-a', 'app-b', 'helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'wear-api', 'fuda-api', 'backend-router'):
             self.assertFalse(config['services'][service].get('ports'))
+            if service != 'backend-router':
+                self.assertEqual(len(config['services'][service]['tmpfs']), 1)
+                self.assertTrue(config['services'][service]['tmpfs'][0].startswith('/tmp:size='))
+                self.assertIn(',mode=1777', config['services'][service]['tmpfs'][0])
+        self.assertEqual(config['services']['app-a']['environment']['LOGGING_CONFIG'], 'file:/config/logback-cluster.xml')
+        self.assertIn('-Dlogback.configurationFile=/config/logback-cluster.xml', config['services']['app-a']['environment']['JAVA_TOOL_OPTIONS'])
         self.assertEqual(len(config['services']['ingress']['ports']), 1)
         self.assertEqual(config['services']['ingress']['ports'][0]['host_ip'], '127.0.0.1')
         for service in ('helmet-a', 'helmet-b', 'belt-a', 'belt-b'):
@@ -75,6 +81,38 @@ class ConfigurationTest(unittest.TestCase):
             config['services']['ingress']['environment']['PC_STATIC_UPSTREAM'] = target
             with self.assertRaises(ValueError):
                 ops.validate_entry(config['services'])
+
+    def test_local_file_probe_requires_matching_marker_and_leaves_no_temporary_files(self):
+        root = self.root / 'shared' / 'files'
+        store = '42bb991a-a149-4a82-94f3-62aca3b41fb1'
+        with self.assertRaisesRegex(ValueError, 'identity'):
+            ops.local_shared_probe(root, store)
+        (root / '.wearable-store-id').write_bytes((store + '\n').encode('ascii'))
+        ops.local_shared_probe(root, store)
+        self.assertEqual([p.name for p in root.iterdir()], ['.wearable-store-id'])
+        with self.assertRaisesRegex(ValueError, 'identity'):
+            ops.local_shared_probe(root, '43bb991a-a149-4a82-94f3-62aca3b41fb1')
+        with self.assertRaisesRegex(ValueError, 'identity'):
+            ops.local_shared_probe(root, store.upper())
+        for suffix in ('\r\n', '', '\n\n'):
+            (root / '.wearable-store-id').write_bytes((store + suffix).encode('ascii'))
+            with self.assertRaisesRegex(ValueError, 'identity'):
+                ops.local_shared_probe(root, store)
+
+    def test_store_initializer_refuses_noncanonical_existing_marker(self):
+        spec = importlib.util.spec_from_file_location('prepare_shared_store', DEPLOY / 'prepare-shared-store.py')
+        store_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(store_module)
+        root = self.root / 'shared' / 'files'
+        store = '42bb991a-a149-4a82-94f3-62aca3b41fb1'
+        store_module.initialize(root, store)
+        self.assertEqual((root / '.wearable-store-id').read_bytes(), (store + '\n').encode('ascii'))
+        store_module.initialize(root, store)
+        invalid = (store + '\r\n').encode('ascii')
+        (root / '.wearable-store-id').write_bytes(invalid)
+        with self.assertRaisesRegex(ValueError, 'differs'):
+            store_module.initialize(root, store)
+        self.assertEqual((root / '.wearable-store-id').read_bytes(), invalid)
 
     def test_duplicate_identity_and_floating_production_images_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'pinned'):

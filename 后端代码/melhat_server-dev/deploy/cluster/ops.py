@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import time
+import tempfile
 import uuid
 from urllib.parse import urlsplit
 
@@ -206,9 +207,43 @@ def verify_loaded_generation():
             raise ValueError('A running container has a stale configuration mount; do not reopen the device entry.')
     print('Device/API gateways, private router and ingress loaded the verified generation and configuration mounts.')
 
+def local_shared_probe(root, store_id):
+    root = Path(root)
+    if not root.is_absolute() or root == Path(root.anchor) or not root.is_dir() or root.is_symlink() or getattr(root, 'is_junction', lambda: False)():
+        raise ValueError('Laboratory shared directory must be an existing dedicated directory, not a link.')
+    marker = root / '.wearable-store-id'
+    if str(uuid.UUID(store_id)) != store_id or marker.is_symlink() or not marker.is_file() or marker.read_bytes() != (store_id + '\n').encode('ascii'):
+        raise ValueError('Laboratory shared store identity is missing or differs.')
+    source = target = None
+    try:
+        fd, source = tempfile.mkstemp(prefix='.wearable-preflight-', dir=root)
+        data = os.urandom(4096)
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        target = root / ('.wearable-preflight-' + uuid.uuid4().hex)
+        os.replace(source, target)
+        if target.read_bytes() != data:
+            raise ValueError('Laboratory shared file readback differs.')
+    finally:
+        for file in (source, target):
+            if file is not None:
+                Path(file).unlink(missing_ok=True)
+
 def preflight(config, lab):
     app = config['services']['app-a']
     source = next(v['source'] for v in app['volumes'] if v['target'] == '/shared')
+    if os.name == 'nt':
+        if not lab:
+            raise ValueError('Production preflight requires the actual Kylin Linux host.')
+        info = json.loads(call(['docker', 'info', '--format', '{"os":{{json .OSType}},"arch":{{json .Architecture}}}'], capture=True))
+        if info != {'os': 'linux', 'arch': 'x86_64'}:
+            raise ValueError('Laboratory containers require Linux x86_64.')
+        call(['docker', 'compose', 'version'])
+        local_shared_probe(Path(source) / 'files', app['environment']['MELHAT_FILES_STORE_ID'])
+        print('PASS: Windows laboratory file create/flush/rename/readback. Application UID access is checked by readiness; Kylin/NFS remain pending.')
+        return
     env = dict(os.environ, SHARED_FILES_DIR=str(Path(source) / 'files'),
                MELHAT_FILES_STORE_ID=app['environment']['MELHAT_FILES_STORE_ID'])
     call(['bash', str(ROOT / 'kylin-preflight.sh')] + (['--lab'] if lab else []), env=env)
@@ -274,6 +309,9 @@ def main():
             raise ValueError('Schema migration requires both application nodes stopped after drain.')
         call(COMPOSE + ['--profile', 'tools', 'run', '--rm', 'migrate'], timeout=300)
     elif args.command == 'up':
+        # Applications need JVM startup time; existing unready edge containers must
+        # not make Compose abort before their dependencies have become healthy.
+        call(COMPOSE + ['up', '-d', '--wait', '--wait-timeout', str(args.timeout), 'app-a', 'app-b'], timeout=args.timeout + 30)
         call(COMPOSE + ['up', '-d', '--wait', '--wait-timeout', str(args.timeout)], timeout=args.timeout + 30)
         verify_loaded_generation()
     elif args.command == 'status':

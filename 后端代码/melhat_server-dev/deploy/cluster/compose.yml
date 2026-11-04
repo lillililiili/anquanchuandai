@@ -4,11 +4,16 @@ x-app: &app
   restart: unless-stopped
   env_file: ./private/backend.env
   read_only: true
-  tmpfs: [/tmp:size=128m,mode=1777]
+  tmpfs: ['/tmp:size=128m,mode=1777']
   volumes:
     - type: bind
       source: ./application-cluster.yml
       target: /config/application-cluster.yml
+      read_only: true
+      bind: {create_host_path: false}
+    - type: bind
+      source: ./logback-cluster.xml
+      target: /config/logback-cluster.xml
       read_only: true
       bind: {create_host_path: false}
     - type: bind
@@ -18,7 +23,8 @@ x-app: &app
   environment: &app-env
     SPRING_PROFILES_ACTIVE: dev,${MELHAT_DB_PRODUCT:?dm8 or mysql},cluster
     SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/
-    JAVA_TOOL_OPTIONS: -Xms128m -Xmx512m -XX:MaxMetaspaceSize=192m
+    LOGGING_CONFIG: file:/config/logback-cluster.xml
+    JAVA_TOOL_OPTIONS: '${CLUSTER_JAVA_OPTIONS:--Xms128m -Xmx512m -XX:MaxMetaspaceSize=192m} -Dlogback.configurationFile=/config/logback-cluster.xml'
   healthcheck:
     test: [CMD, /app/probe.sh]
     interval: 5s
@@ -40,12 +46,13 @@ x-gateway: &gateway
   labels:
     org.wearable.gateway-generation: ${GATEWAY_CONFIG_GENERATION:?Use clusterctl to validate the gateway generation}
   read_only: true
-  tmpfs: [/tmp:size=16m,mode=1777]
+  tmpfs: ['/tmp:size=16m,mode=1777']
   healthcheck:
     test: [CMD, node, -e, "fetch('http://127.0.0.1:8080/internal/gateway/ready').then(r=>{if(r.status!==200)process.exit(1)}).catch(()=>process.exit(1))"]
     interval: 5s
     timeout: 3s
     retries: 2
+    start_period: 90s
   security_opt: [no-new-privileges:true]
   cap_drop: [ALL]
   mem_limit: 256m

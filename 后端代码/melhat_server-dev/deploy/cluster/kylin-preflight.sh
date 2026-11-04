@@ -37,7 +37,7 @@ python3 - "$root" "${MELHAT_FILES_STORE_ID:?Set the expected shared-store UUID}"
 import hashlib, os, pathlib, sys, tempfile, uuid
 root = pathlib.Path(sys.argv[1]).resolve(strict=True)
 marker = root / '.wearable-store-id'
-if marker.is_symlink() or not marker.is_file() or marker.read_text().strip() != sys.argv[2]:
+if marker.is_symlink() or not marker.is_file() or marker.read_bytes() != (sys.argv[2] + '\n').encode('ascii'):
     raise RuntimeError('Shared store identity is missing or does not match; do not write to the backing local directory')
 source = target = None
 try:

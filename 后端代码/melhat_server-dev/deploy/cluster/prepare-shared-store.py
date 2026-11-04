@@ -17,7 +17,7 @@ def initialize(root: Path, store_id: str):
     try:
         fd = os.open(str(marker), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o640)
     except FileExistsError:
-        if marker.is_symlink() or not marker.is_file() or marker.read_text().strip() != store_id:
+        if marker.is_symlink() or not marker.is_file() or marker.read_bytes() != (store_id + '\n').encode('ascii'):
             raise ValueError("Existing store marker differs; stop and verify the mount")
         return
     with os.fdopen(fd, "w", encoding="ascii", newline="\n") as handle:
