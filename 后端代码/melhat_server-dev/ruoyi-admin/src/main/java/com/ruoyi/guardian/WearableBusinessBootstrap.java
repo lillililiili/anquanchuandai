@@ -23,6 +23,11 @@ public final class WearableBusinessBootstrap {
     }
     static void initialize(JdbcTemplate jdbc,String mediaKey,JSONObject ledger,JSONObject guardian,JSONObject media,JSONObject config,JSONArray acceptance){
         if(mediaKey==null||mediaKey.isBlank()||Base64.getDecoder().decode(mediaKey.trim()).length!=32)throw new IllegalArgumentException("Explicit Base64 32-byte media key is required");
+        // Bootstrap is account/organization setup, not an alternative to the device
+        // writers that atomically register protocol ownership and related SQL rows.
+        if(ledger==null||guardian==null||hasRows(ledger,"devices")||hasRows(ledger,"assignments")
+                ||hasRows(guardian,"devices")||hasRows(guardian,"bindings")||media==null||!media.isEmpty()||acceptance==null||!acceptance.isEmpty())
+            throw new IllegalArgumentException("初始化不导入设备、领用、媒体运行态或验收记录；请通过正式建档/领用接口或完整迁移导入");
         new SchemaLifecycle(jdbc).validate(SchemaLifecycle.all(DatabaseDialect.of(jdbc)));
         GuardianValidator.check(guardian,false);
         if(media==null||config==null||!(config.get("simulatedWatchVisible") instanceof Boolean)||acceptance==null)throw new IllegalArgumentException("Complete explicit business input is required");
@@ -51,5 +56,6 @@ public final class WearableBusinessBootstrap {
             });
         }finally{jdbc.update("UPDATE wearable_schema_lock SET owner=NULL WHERE id=1 AND owner=?",owner);}
     }
+    private static boolean hasRows(JSONObject object,String key){Object value=object.get(key);return value!=null&&(!(value instanceof JSONArray)||!((JSONArray)value).isEmpty());}
     private static String required(String key){String value=System.getenv(key);if(value==null||value.isBlank())throw new IllegalArgumentException("Missing "+key);return value;}
 }

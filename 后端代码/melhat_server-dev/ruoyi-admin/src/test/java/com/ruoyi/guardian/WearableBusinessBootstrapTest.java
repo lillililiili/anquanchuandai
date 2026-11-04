@@ -15,9 +15,34 @@ class WearableBusinessBootstrapTest {
     JSONObject guardian(){JSONObject state=object("version",1,"seq",0,"clock",0);for(String key:Arrays.asList("stations","people","devices","bindings","locations","vitals","works","events","media","groups","fences","fenceRecords","calls","broadcasts","audit"))state.put(key,new JSONArray());return state;}
     void initialize(JdbcTemplate jdbc,JSONObject ledger,JSONArray acceptance){WearableBusinessBootstrap.initialize(jdbc,KEY,ledger,guardian(),new JSONObject(),WearableBusinessPolicy.defaults(),acceptance);}
     @Test void initializesBothNamespacesAndMetadataExactlyOnce(){JdbcTemplate jdbc=database();initialize(jdbc,ledger(),new JSONArray());assertEquals(1,jdbc.queryForObject("SELECT revision FROM wearable_meta WHERE id=1",Integer.class));assertEquals(2,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_meta WHERE revision=1",Integer.class));assertEquals("ACTIVE",jdbc.queryForObject("SELECT mode FROM wearable_runtime_control WHERE control_key='global'",String.class));assertThrows(IllegalStateException.class,()->initialize(jdbc,ledger(),new JSONArray()));}
-    @Test void noCredentialDefaultsAndAnyLateFailureRollsBackAllInputs(){JdbcTemplate jdbc=database();JSONObject seed=ledger();seed.put("accounts",JSONArray.of(object("id","operator","enabled",true)));assertThrows(IllegalArgumentException.class,()->initialize(jdbc,seed,new JSONArray()));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));JSONArray bad=JSONArray.of(object("deviceId","h","featureKey","video"));assertThrows(IllegalArgumentException.class,()->initialize(jdbc,ledger(),bad));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_meta",Integer.class));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));assertNull(jdbc.queryForObject("SELECT owner FROM wearable_schema_lock WHERE id=1",String.class));}
+    @Test void rejectsMissingCredentialsAndImportedAcceptanceWithoutWriting(){JdbcTemplate jdbc=database();JSONObject seed=ledger();seed.put("accounts",JSONArray.of(object("id","operator","enabled",true)));assertThrows(IllegalArgumentException.class,()->initialize(jdbc,seed,new JSONArray()));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));JSONArray bad=JSONArray.of(object("deviceId","h","featureKey","video"));assertThrows(IllegalArgumentException.class,()->initialize(jdbc,ledger(),bad));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_meta",Integer.class));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));assertNull(jdbc.queryForObject("SELECT owner FROM wearable_schema_lock WHERE id=1",String.class));}
+    @Test void lateDatabaseFailureRollsBackMasterAndBothNamespaces(){
+        JdbcTemplate jdbc=database();
+        jdbc.execute("ALTER TABLE wearable_business_config ADD CONSTRAINT bootstrap_failure CHECK(version=99)");
+        assertThrows(org.springframework.dao.DataIntegrityViolationException.class,()->initialize(jdbc,ledger(),new JSONArray()));
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_meta",Integer.class));
+        for(String table:WearableBusinessStore.storageTables())assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class),table);
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_config",Integer.class));
+        assertNull(jdbc.queryForObject("SELECT owner FROM wearable_schema_lock WHERE id=1",String.class));
+    }
     @Test void refusesUnknownOperationAndUnmarkedRows(){JdbcTemplate jdbc=database();jdbc.update("INSERT INTO wearable_cluster_operation(operation_id,node_id,generation,operation_kind,state,lease_until,created_at) VALUES('unknown','old','old','BUSINESS','ACTIVE',0,0)");assertThrows(IllegalStateException.class,()->initialize(jdbc,ledger(),new JSONArray()));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));}
     @Test void rejectsBlankAndMalformedKeysEvenForEmptyMedia(){JdbcTemplate jdbc=database();for(String key:Arrays.asList(" ","",Base64.getEncoder().encodeToString(new byte[16]),"bad@"))assertThrows(IllegalArgumentException.class,()->WearableBusinessBootstrap.initialize(jdbc,key,ledger(),guardian(),new JSONObject(),WearableBusinessPolicy.defaults(),new JSONArray()));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));}
+    @Test void bootstrapCannotBypassDeviceRegistrationOrImportRuntimeHistory(){
+        for(String field:Arrays.asList("ledger.devices","ledger.assignments","guardian.devices","guardian.bindings","media","acceptance")){
+            JdbcTemplate jdbc=database();JSONObject master=ledger(),state=guardian(),media=new JSONObject();JSONArray acceptance=new JSONArray();
+            JSONObject row=object("id","unregistered","source","DIRECT_HELMET","type","HELMET");
+            if(field.startsWith("ledger."))master.put(field.substring(7),JSONArray.of(row));
+            if(field.startsWith("guardian."))state.put(field.substring(9),JSONArray.of(row));
+            if(field.equals("media"))media.put("accounts",object("h",object("deviceId","unregistered")));
+            if(field.equals("acceptance"))acceptance.add(object("deviceId","unregistered","featureKey","video","evidence","not-a-registration"));
+            IllegalArgumentException error=assertThrows(IllegalArgumentException.class,()->WearableBusinessBootstrap.initialize(jdbc,KEY,master,state,media,WearableBusinessPolicy.defaults(),acceptance),field);
+            assertTrue(error.getMessage().contains("建档"),field);
+            assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));
+            assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_meta",Integer.class));
+            assertNull(jdbc.queryForObject("SELECT owner FROM wearable_schema_lock WHERE id=1",String.class));
+        }
+    }
     @Test void rejectsUnmarkedExternalAndHatRows(){
         for(String insert:Arrays.asList("INSERT INTO external_integration VALUES('old','s','DEVICE',1,'{}')","INSERT INTO external_data_record VALUES('old','integration','s','DEVICE','IN','x','now','OK','{}')","INSERT INTO safety_hat_info(hat_number) VALUES('old')")){
             JdbcTemplate jdbc=database();jdbc.update(insert);assertThrows(IllegalStateException.class,()->initialize(jdbc,ledger(),new JSONArray()));assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_meta",Integer.class));
