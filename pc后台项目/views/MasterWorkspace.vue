@@ -289,7 +289,7 @@ async function confirmAction() {
 }
 async function preparePreview(type, command) {
   const data = (await provider.query('authorizationPreview', { siteId: store.siteId, type, command }, { signal: saveController.signal })).data
-  if (data.availability !== 'AVAILABLE') throw Object.assign(new Error(data.reason || '授权预览未接入'), { errorCode: 'NOT_CONNECTED' })
+  if (data.availability !== 'AVAILABLE') throw Object.assign(new Error(data.reason || '授权预览读取失败，请重试'), { errorCode: 'NOT_CONNECTED' })
   if (!data.required) return false
   preview.value = data; pending.value = { type, command }; return true
 }

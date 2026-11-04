@@ -9,6 +9,8 @@ plugins {
 }
 
 val splitApks = project.findProperty("split-per-abi")?.toString() == "true"
+// Opt-in disposable integration package; the installed user application keeps its data.
+val wearQaBuild = providers.gradleProperty("wearQa").orNull == "true"
 val requestedDebugAbis =
     (project.findProperty("target-platform")?.toString() ?: "android-arm64,android-x64")
         .split(",")
@@ -37,7 +39,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.rolling.intelligence_headband"
+        applicationId = "com.rolling.intelligence_headband" + if (wearQaBuild) ".qa" else ""
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -133,6 +135,7 @@ dependencies {
 }
 tasks.matching { it.name == "preReleaseBuild" }.configureEach {
     doFirst {
+        require(!wearQaBuild) { "The disposable QA application ID is debug-only." }
         require(rootProject.file("signing.properties").exists()) { "Release requires android/signing.properties; debug signing is never used for release." }
         val defines = (project.findProperty("dart-defines") as? String).orEmpty()
             .split(",").filter { it.isNotEmpty() }

@@ -100,7 +100,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     const permission = GROUP_QUERIES.includes(kind) || kind === 'authorizationPreview' ? 'access:read' : ['audit', 'auditDetail', 'auditExport'].includes(kind) ? 'audit:read' : 'assets:read'
     if (!master && !hasSite(state, current, input.siteId, permission)) throw fail(403, 'PERMISSION_DENIED', '当前身份无此查询权限')
     if ((captured.target === kind || (master && captured.target === input.entity)) && captured.mode !== 'normal') {
-      if (captured.mode === 'unavailable') return response({ availability: 'NOT_CONNECTED', reason: '当前查询来源未接入（预置场景）' })
+      if (captured.mode === 'unavailable') return response({ availability: 'NOT_CONNECTED', reason: '当前查询服务不可用，请稍后重试' })
       throw fail(captured.mode === 'forbidden' ? 403 : 503, captured.mode === 'forbidden' ? 'SECTION_DENIED' : 'SOURCE_FAILURE', captured.mode === 'forbidden' ? '当前分区无权限（预置场景）' : '数据请求失败，请恢复场景后重试')
     }
     if (master) return response(queryMaster(state, current, kind, input, { fail, page, now: now(), relationship }))

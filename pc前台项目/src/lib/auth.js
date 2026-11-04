@@ -20,7 +20,13 @@ export function clearAuth() {
   }
 }
 export async function authFetch(url, options = {}) {
-  const response = await fetch(url, { ...options, headers: { ...options.headers, ...authHeaders() } });
-  if (response.status === 401) { clearAuth(); window.location.hash = "/login"; }
+  const headers = { ...options.headers, ...authHeaders() };
+  const token = headers["X-Wearable-Token"];
+  const response = await fetch(url, { ...options, headers });
+  // An expired request can finish after a different account has logged in.
+  // Only the session that sent this request may be invalidated by its response.
+  if (response.status === 401 && token && token === authHeaders()["X-Wearable-Token"]) {
+    clearAuth(); window.location.hash = "/login";
+  }
   return response;
 }

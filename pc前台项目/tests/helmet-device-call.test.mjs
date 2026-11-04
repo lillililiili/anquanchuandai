@@ -176,24 +176,27 @@ test('existing personnel call entry is blocked before any server call while devi
   } finally { communicationGuard.release(owner); }
 });
 
-const pendingVoice = () => ({ ...media, verified: false, available: false, reason: '待联调', verificationStatus: 'PENDING' });
-const pendingDevice = () => ({ ...device(), featureStates: { voice: { supported: true, verified: false, available: false, reason: '待联调' } } });
+const pendingVoice = () => ({ ...media, verified: false, available: true, reason: '', verificationStatus: 'PENDING' });
+const pendingDevice = () => ({ ...device(), featureStates: { voice: { supported: true, verified: false, available: true, integrationStatus: 'CONNECTED', reason: '' } } });
 const acceptance = () => ({ acceptanceTest: true, operator: { id: 'demo-system' } });
 
-test('pending voice needs explicit administrator acceptance and never modifies permanent feature states', async () => {
-  for (const options of [{}, { ...acceptance(), acceptanceTest: false }, { ...acceptance(), acceptanceTest: 'true' },
+test('operational SIP voice is a normal call while acceptance metadata remains unchanged', async () => {
+  const f = fixture(), d = pendingDevice(), feature = pendingVoice(), original = JSON.stringify({ d, feature });
+  await f.call.start(d, feature, false, assignment);
+  assert.deepEqual(f.requests[0].body, { ...assignment, video: false, idempotencyKey: 'stable-test-request' });
+  assert.equal(f.call.getState().acceptanceTest, false);
+  assert.equal(JSON.stringify({ d, feature }), original);
+  assert.equal(deviceCallUnavailable(d, feature, false, assignment), '');
+  await f.terminate();
+});
+
+test('legacy acceptance test cannot bypass unavailable runtime voice', async () => {
+  for (const options of [{}, acceptance(), { ...acceptance(), acceptanceTest: false },
     { acceptanceTest: true, operator: { id: 'demo-duty' } }, { acceptanceTest: true },
     { acceptanceTest: true, operator: { id: 'demo-system', enabled: false } }]) {
-    const f = fixture(); await assert.rejects(f.call.start(pendingDevice(), pendingVoice(), false, assignment, options));
+    const f = fixture(); await assert.rejects(f.call.start(pendingDevice(), { ...pendingVoice(), available:false, reason:'待联调' }, false, assignment, options));
     assert.equal(f.requests.length, 0); assert.equal(f.rtcEvents.length, 0);
   }
-  const f = fixture(), d = pendingDevice(), feature = pendingVoice(), original = JSON.stringify({ d, feature });
-  await f.call.start(d, feature, false, assignment, acceptance());
-  assert.deepEqual(f.requests[0].body, { ...assignment, video: false, idempotencyKey: 'stable-test-request', acceptanceTest: true });
-  assert.equal(f.call.getState().acceptanceTest, true);
-  assert.equal(JSON.stringify({ d, feature }), original);
-  assert.equal(deviceCallUnavailable(d, feature, false, assignment), '待联调');
-  await f.terminate();
 });
 
 test('administrator acceptance cannot bypass permission, assignment, freshness, physical type or SIP readiness', async () => {
@@ -204,7 +207,7 @@ test('administrator acceptance cannot bypass permission, assignment, freshness, 
     [{ ...pendingDevice(), sipRegistered: false }, pendingVoice(), assignment],
     [{ ...pendingDevice(), communicationProtocol: 'AGORA' }, pendingVoice(), assignment],
     [{ ...pendingDevice(), capabilities: { actions: [] } }, pendingVoice(), assignment],
-    [pendingDevice(), { ...pendingVoice(), reason: '无操作权限' }, assignment],
+    [pendingDevice(), { ...pendingVoice(), available: false, reason: '无操作权限' }, assignment],
     [pendingDevice(), { ...pendingVoice(), integrationStatus: 'NOT_CONNECTED' }, assignment],
     [pendingDevice(), { ...pendingVoice(), supported: false }, assignment],
     [pendingDevice(), pendingVoice(), { ...assignment, assignmentVersion: 4 }],
@@ -436,4 +439,13 @@ test('switching actors closes only a locally owned call and recovers the new act
   assert.equal(f.call.getState().recordId,'COMM-new'); assert.equal(f.call.getState().localJoined,false);
   assert.equal(f.rtcEvents.filter(([kind])=>kind==='join').length,1);
   await f.call.detach(); assert.equal(closes.length,1);
+});
+
+test('legacy unavailable reasons never leak or allow an unavailable call', () => {
+  for (const reason of ['待联调', '尚未接入', '尚未部署']) {
+    const detail=deviceCallUnavailable(device(), {...media,available:false,reason}, false, assignment);
+    assert.doesNotMatch(detail,/待联调|未接入|未部署/);
+    assert.match(detail,/检查/);
+  }
+  assert.equal(deviceCallUnavailable(device(), {...media,available:false,reason:'无操作权限'}, false, assignment),'无操作权限');
 });

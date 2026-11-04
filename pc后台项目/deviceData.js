@@ -7,18 +7,18 @@ export const DEVICE_FILTERS = {
   type: DEVICE_TYPES,
   lifecycle: { STOCK: '库存', IN_USE: '使用中', MAINTENANCE: '维修中', DISABLED: '停用', SCRAPPED: '报废' },
   relation: { UNASSIGNED: '未领用', ASSIGNED: '已领用', UNKNOWN: '领用情况不明', CONFLICT: '领用记录有矛盾' },
-  communication: { NOT_CONNECTED: '未接入', ONLINE: '在线', OFFLINE: '离线', UNKNOWN: '通信未知' }
+  communication: { NOT_CONNECTED: '暂无连接', ONLINE: '在线', OFFLINE: '离线', UNKNOWN: '通信未知' }
 }
 export const ASSEMBLY = { INSTALLED: '已装配（本地配置）', ABSENT: '未装配', UNKNOWN: '待确认' }
 export const MODELS = [
-  { id: 'demo-helmet-basic', type: 'HELMET', name: '安全帽', declaration: '前台使用视频通道和定位。这里只登记资产，上报接入前通信为未接入。', options: [] },
+  { id: 'demo-helmet-basic', type: 'HELMET', name: '安全帽', declaration: '设备登记后，通信状态随实际设备上报更新。', options: [] },
   { id: 'demo-belt', type: 'BELT', name: '安全带', declaration: '没有设备上报，不记录受力或生命体征。', options: [] },
   { id: 'demo-watch', type: 'WATCH', name: '手表', declaration: '没有设备上报，不记录心率和血氧。', options: [] },
   ...Object.entries(DEVICE_TYPES).map(([type, name]) => ({ id: `unknown-${type}`, type, name: `${name} · 型号待确认`, declaration: '无可靠型号声明，不能任意添加能力', options: [] }))
 ]
 export const DEVICE_QUERIES = ['devices', 'device', 'deviceOptions', 'deviceHistory', 'deviceChanges']
 export function extendDevices(state) {
-  state.devices.forEach(d => Object.assign(d, { manufacturer: '预置厂商（非真实厂家）', sn: d.code, modelId: d.type === 'HELMET' ? 'demo-helmet-basic' : `demo-${d.type.toLowerCase()}`, assetCode: '', purchasedOn: '', remark: '', assemblies: {}, communication: 'NOT_CONNECTED', connection: 'NOT_CONNECTED', freshness: 'UNKNOWN', sourceTime: null, verification: 'UNCONFIRMED', capabilitySource: '资产档案，未接入上报' }))
+  state.devices.forEach(d => Object.assign(d, { manufacturer: '预置厂商（非真实厂家）', sn: d.code, modelId: d.type === 'HELMET' ? 'demo-helmet-basic' : `demo-${d.type.toLowerCase()}`, assetCode: '', purchasedOn: '', remark: '', assemblies: {}, communication: 'NOT_CONNECTED', connection: 'NOT_CONNECTED', freshness: 'UNKNOWN', sourceTime: null, verification: 'UNCONFIRMED', capabilitySource: '资产档案，暂无设备上报' }))
   state.devices.forEach(d => { d.assemblies = Object.fromEntries(MODELS.find(m => m.id === d.modelId).options.map(o => [o.id, 'UNKNOWN'])) })
   return state
 }

@@ -28,7 +28,7 @@ A new Flutter project.
 
 ## 2026-10-26 业务整理验证
 
-设备入口以 `/api/guardian/v1/mobile/context` 返回的 `featureStates` 为准：不支持则隐藏，支持但未验收则显示“待联调”并禁用。`businessConfig.simulatedWatchVisible` 同时控制模拟手表、绑定、体征与筛选入口。正式构建不开放虚构作业预览；“清理业务缓存”保留登录、未提交草稿和未确认请求的幂等键。
+设备入口以 `/api/guardian/v1/mobile/context` 返回的 `featureStates` 为准：不支持则隐藏；安全帽通讯和媒体服务按 `integrationStatus=CONNECTED` 与 `available` 判断当前能否操作，人工验收记录 `verified` 单独保留。语音同时要求设备在线、当前领用身份一致及账号权限。`businessConfig.simulatedWatchVisible` 同时控制模拟手表、绑定、体征与筛选入口。正式构建不开放虚构作业预览；“清理业务缓存”保留登录、未提交草稿和未确认请求的幂等键。
 
 本机已存在的 ASCII junction `D:/AndroidDev/wearable-android` 指向本目录。Flutter 版本的 LSP 长度计算在中文工作目录下会截断消息，验证和构建请在这个 junction 中执行，不需要修改 SDK。
 

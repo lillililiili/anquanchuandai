@@ -49,10 +49,6 @@ JsonMap contextualFeature(JsonMap device, JsonMap context, String feature) {
   return {
     ...declared,
     'available': false,
-    'reason': declared['verified'] != true
-        ? declared['reason']
-        : hasEquipmentContext(context)
-        ? '该人员当前装备不支持此操作'
-        : '请先办理人员领用',
+    'reason': hasEquipmentContext(context) ? '该人员当前装备不支持此操作' : '请先办理人员领用',
   };
 }

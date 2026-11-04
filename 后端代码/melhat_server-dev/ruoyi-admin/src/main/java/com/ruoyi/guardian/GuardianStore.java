@@ -37,6 +37,9 @@ public class GuardianStore {
     @org.springframework.beans.factory.annotation.Autowired(required=false)
     private org.springframework.beans.factory.ObjectProvider<DirectBeltAccess> directBeltAccess;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableBusinessPolicy businessPolicy;
+
+    private void refreshBusinessConfig() { if(businessPolicy!=null)state.put("businessConfig",businessPolicy.config()); }
 
     private void projectPlatform() {
         JSONObject next=JSON.parseObject(state.toJSONString());
@@ -65,6 +68,7 @@ public class GuardianStore {
     public JSONObject snapshot() {
         synchronized (lock) {
             ensure();
+            refreshBusinessConfig();
             if(maintenance!=null&&maintenance.paused())return JSON.parseObject(state.toJSONString());
             projectPlatform();
             mirrorHats();
@@ -83,6 +87,7 @@ public class GuardianStore {
     public void replaceFromClient(JSONObject next, int expectedSeq) {
         synchronized (lock) {
             ensure();
+            refreshBusinessConfig();
             projectPlatform();
             for (String key : new String[]{"works", "stations", "people", "devices", "bindings", "mapAreas", "platformSync", "events", "sos", "assistance", "eventOperations", "uploads"}) {
                 if (!java.util.Objects.equals(state.get(key), next.get(key)))
@@ -99,6 +104,7 @@ public class GuardianStore {
         synchronized (lock) {
             if(maintenance!=null&&maintenance.paused())throw new IllegalStateException("业务正在维护，设备上报已进入持久接收队列");
             ensure();
+            refreshBusinessConfig();
             projectPlatform();
             JSONObject next = JSON.parseObject(state.toJSONString());
             if (edit == null || !edit.apply(next)) return;

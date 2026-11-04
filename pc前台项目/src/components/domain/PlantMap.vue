@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled } from '@/lib/work-business';
 import { iconMarkup } from "@ui-spec/icons";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -68,7 +69,7 @@ const visiblePeople = computed(() => {
   const source = props.person ? people().filter((item) => item.id === props.person) : people();
   return source.filter((item) =>
     (!props.personIds || props.personIds.includes(item.id)) &&
-    (!props.work || props.work.members?.includes(item.id)),
+    (!workBusinessEnabled(db) || !props.work || props.work.members?.includes(item.id)),
   );
 });
 const workFocusPoints = computed(() => {
@@ -247,7 +248,7 @@ function renderPopup() {
   const valid = db.locationValid(person.id);
   popupOverlay.getElement().innerHTML =
     `<b>${esc(person.name)}</b>　${esc(db.locationDevice(person.id)?.id || "定位来源待确认")}` +
-    `<p>作业：${esc(workName(person.id))}</p>` +
+    (workBusinessEnabled(db) ? `<p>作业：${esc(workName(person.id))}</p>` : "") +
     `<p>定位状态：<span class="status ${valid ? "green" : "yellow"}"><b></b>${valid ? "位置有效" : "待核验"}</span></p>` +
     `<div class="row"><a class="text-link" href="#/tracks/${esc(person.id)}">历史轨迹 ${iconMarkup("arrow-right")}</a><a class="text-link" href="#/person/${esc(person.id)}">查看人员</a></div>`;
   popupOverlay.setPosition(projected(positionOf(person)));

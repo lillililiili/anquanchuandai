@@ -23,6 +23,68 @@ function fixture(t) {
   return { config, service, commands };
 }
 
+test('device audio retains original bytes and serves the verified derivative with a separate short ticket',async t=>{
+ const {service,config}=fixture(t),raw=Buffer.from('#!AMR\nactual-original-fixture');
+ service.prepareAudio=async(input,output)=>{assert.deepEqual(fs.readFileSync(input),raw);fs.writeFileSync(output,'ID3-playback');return {extension:'amr',originalMime:'audio/amr',originalSha256:createHash('sha256').update(raw).digest('hex'),durationSeconds:1.2,playbackMime:'audio/mpeg',playbackVerified:true};};
+ const multipart=Buffer.concat([Buffer.from('--bound\r\nContent-Disposition: form-data; name="file"; filename="mislabelled.mp3"\r\nContent-Type: audio/mpeg\r\n\r\n'),raw,Buffer.from('\r\n--bound--\r\n')]);
+ const asset=await service.ingestUpload(multipart,'multipart/form-data; boundary=bound','d1','audio');
+ assert.equal(asset.mime,'audio/amr');assert.equal(asset.originalMime,'audio/amr');assert.equal(asset.playbackMime,'audio/mpeg');assert.equal(asset.kind,'audio');
+ assert.equal(asset.filename,undefined);assert.equal(asset.playbackFilename,undefined);assert.equal(asset.durationSeconds,1.2);
+ const restored=new Store(config.dataDir).data.assets[asset.assetId];assert.deepEqual(fs.readFileSync(path.join(config.dataDir,'assets',restored.filename)),raw);
+ assert.equal(restored.originalSha256,createHash('sha256').update(raw).digest('hex'));
+ const {server}=createServer(config,{service});server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>{server.closeAllConnections();return new Promise(resolve=>server.close(resolve));});
+ const origin=`http://127.0.0.1:${server.address().port}`,play=new URL(asset.playbackUrl),original=new URL(asset.url);
+ const response=await fetch(origin+play.pathname+play.search);assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'audio/mpeg');assert.equal(await response.text(),'ID3-playback');
+ const rawResponse=await fetch(origin+original.pathname+original.search);assert.equal(rawResponse.headers.get('content-type'),'audio/amr');assert.deepEqual(Buffer.from(await rawResponse.arrayBuffer()),raw);
+ assert.equal((await fetch(origin+original.pathname+original.search+'&variant=playback')).status,403);
+ assert.equal((await fetch(origin+play.pathname+'?token='+play.searchParams.get('token'))).status,403);
+ const token=play.searchParams.get('token');assert.equal(readTicket(config.signingKey,token,Date.now()+31000),null);
+ const expired=ticket(config.signingKey,{purpose:'asset-playback',id:asset.assetId,exp:1});assert.equal((await fetch(origin+play.pathname+'?variant=playback&token='+expired)).status,403);
+ assert.equal(service.assetPublic({...restored,playbackVerified:false}).playbackUrl,undefined);
+ assert.equal(service.assetPublic({...restored,status:'storage-unconfirmed'}).playbackUrl,undefined);
+ service.store.data.assets[asset.assetId].status='storage-unconfirmed';
+ assert.equal((await fetch(origin+play.pathname+play.search)).status,404);
+ assert.equal((await fetch(origin+original.pathname+original.search)).status,404);
+});
+
+test('invalid device audio never creates a ready asset or success event',async t=>{
+ const {service}=fixture(t);service.prepareAudio=async()=>{throw Object.assign(Error('INVALID_AUDIO'),{status:415});};
+ const body=Buffer.from('--bound\r\nContent-Disposition: form-data; name="file"; filename="fake.mp3"\r\n\r\nID3bad\r\n--bound--\r\n');
+ await assert.rejects(service.ingestUpload(body,'multipart/form-data; boundary=bound','d1','audio'),/INVALID_AUDIO/);
+ assert.equal(Object.keys(service.store.data.assets).length,0);assert.equal(service.store.data.events.length,0);assert.equal(service.processingAudio,0);
+ assert.deepEqual(fs.readdirSync(path.join(service.store.directory,'assets')),[]);
+});
+
+for(const failure of ['rename','save-before-commit','save-after-commit'])test('audio storage failure '+failure+' does not acknowledge or orphan an uncommitted pair',async t=>{
+ const {service,config}=fixture(t);
+ service.prepareAudio=async(_input,output)=>{fs.writeFileSync(output,'ID3-playback');return {extension:'amr',originalMime:'audio/amr',durationSeconds:1,playbackMime:'audio/mpeg',playbackVerified:true};};
+ const body=Buffer.from('--bound\r\nContent-Disposition: form-data; name="file"; filename="a.mp3"\r\n\r\n#!AMR\naudio\r\n--bound--\r\n');
+ const saved=service.store.save.bind(service.store);
+ if(failure==='rename')t.mock.method(fs.promises,'rename',async()=>{throw Error('injected-rename-failure');});
+ else service.store.save=()=>{if(failure==='save-after-commit')saved();throw Error('injected-save-failure');};
+ await assert.rejects(service.ingestUpload(body,'multipart/form-data; boundary=bound','d1','audio'),/injected-/);
+ const onDisk=JSON.parse(fs.readFileSync(service.store.filename,'utf8'));
+ if(failure==='save-after-commit'){
+  assert.equal(Object.keys(onDisk.assets).length,1);const asset=Object.values(onDisk.assets)[0];
+  assert.ok(fs.existsSync(path.join(config.dataDir,'assets',asset.filename)));assert.ok(fs.existsSync(path.join(config.dataDir,'assets',asset.playbackFilename)));
+ }else{
+  assert.equal(Object.keys(service.store.data.assets).length,0);assert.equal(service.store.data.events.length,0);assert.equal(service.store.data.sequence,0);
+  assert.equal(Object.keys(onDisk.assets).length,0);assert.deepEqual(fs.readdirSync(path.join(config.dataDir,'assets')),[]);
+ }
+});
+
+test('cancelling a playback range releases its source file stream',async t=>{
+ const {service,config}=fixture(t),assetId='cancelled-audio',raw=service.store.assetPath(assetId,'amr'),playback=service.store.assetPath(assetId,'playback.mp3');
+ fs.writeFileSync(raw,'#!AMR\n');fs.writeFileSync(playback,Buffer.alloc(16*1024*1024,1));
+ const asset=service.registerAsset(assetId,raw,{deviceId:'d1',kind:'audio',mime:'audio/amr',playbackFilename:path.basename(playback),playbackVerified:true,playbackMime:'audio/mpeg'});
+ const original=fs.createReadStream;let opened;
+ t.mock.method(fs,'createReadStream',function(filename,options){const stream=original.call(this,filename,{...options,highWaterMark:1024});if(filename===playback)opened=stream;return stream;});
+ const {server}=createServer(config,{service});server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>{server.closeAllConnections();return new Promise(resolve=>server.close(resolve));});
+ const url=new URL(asset.playbackUrl),response=await fetch(`http://127.0.0.1:${server.address().port}${url.pathname}${url.search}`,{headers:{Range:'bytes=0-16777215'}});
+ assert.equal(response.status,206);assert.ok(opened);const closed=once(opened,'close');await response.body.cancel();await closed;
+ assert.equal(opened.destroyed,true);assert.equal(opened.closed,true);
+});
+
 test('multipart photo command echo is exact, durable and never inferred',async t=>{
  const {service,config}=fixture(t),requestId='HC-11111111-2222-3333-4444-555555555555';
  const multipart=fields=>Buffer.concat([Buffer.from(fields.map(([name,value])=>`--bound\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`).join('')+'--bound\r\nContent-Disposition: form-data; name="file"; filename="photo.jpg"\r\nContent-Type: image/jpeg\r\n\r\n'),Buffer.from([255,216,255,0,0]),Buffer.from('\r\n--bound--\r\n')]);

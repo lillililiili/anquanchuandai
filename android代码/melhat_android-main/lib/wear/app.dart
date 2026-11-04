@@ -30,13 +30,21 @@ class WearApp extends StatefulWidget {
   State<WearApp> createState() => _WearAppState();
 }
 
-class _WearAppState extends State<WearApp> {
+class _WearAppState extends State<WearApp> with WidgetsBindingObserver {
   late final WearSession _session = widget.session ?? WearSession();
   late final WearNotifications _notifications;
   late final GoRouter _router;
+  Timer? _businessTimer;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _businessTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      final lifecycle = WidgetsBinding.instance.lifecycleState;
+      if (lifecycle == null || lifecycle == AppLifecycleState.resumed) {
+        unawaited(_session.refreshBusinessConfig());
+      }
+    });
     _notifications = WearNotifications(
       session: _session,
       openEvent: _openNotice,
@@ -55,6 +63,15 @@ class _WearAppState extends State<WearApp> {
           return '/communications';
         }
         if (path == '/login') return '/workbench';
+        if (!_session.workBusinessEnabled) {
+          if (path == '/tasks' || path.startsWith('/tasks/')) {
+            return '/workbench';
+          }
+          if (state.uri.queryParameters.containsKey('taskId')) {
+            final query = {...state.uri.queryParameters}..remove('taskId');
+            return state.uri.replace(queryParameters: query).toString();
+          }
+        }
         if (!_session.isAdmin &&
             !(path == '/workbench' ||
                 path == '/communications' ||
@@ -205,10 +222,19 @@ class _WearAppState extends State<WearApp> {
 
   @override
   void dispose() {
+    _businessTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _notifications.dispose();
     _router.dispose();
     if (widget.session == null) _session.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_session.refreshBusinessConfig());
+    }
   }
 
   @override

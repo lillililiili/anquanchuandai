@@ -70,32 +70,26 @@ class BeltTelemetryPanel extends StatelessWidget {
           if (deviceFeature(device, 'wear').supported) ...[
             DetailField(
               label: deviceFeatureLabel(device, 'wear', '佩戴状态'),
-              value: deviceFeature(device, 'wear').verified ? view.worn : '待联调',
+              value: view.worn,
             ),
             DetailField(label: '佩戴原始值', value: view.raw('isWeared')),
           ],
           if (deviceFeature(device, 'hooks').supported) ...[
             DetailField(
               label: deviceFeatureLabel(device, 'hooks', 'A 挂钩'),
-              value: deviceFeature(device, 'hooks').verified
-                  ? view.hookA
-                  : '待联调',
+              value: view.hookA,
             ),
             DetailField(label: 'A 原始值', value: view.raw('hangerAStatus')),
             DetailField(
               label: deviceFeatureLabel(device, 'hooks', 'B 挂钩'),
-              value: deviceFeature(device, 'hooks').verified
-                  ? view.hookB
-                  : '待联调',
+              value: view.hookB,
             ),
             DetailField(label: 'B 原始值', value: view.raw('hangerBStatus')),
           ],
           if (deviceFeature(device, 'height').supported)
             DetailField(
               label: deviceFeatureLabel(device, 'height'),
-              value: !deviceFeature(device, 'height').verified
-                  ? '待联调'
-                  : view.current && device['relativeAltitude'] != null
+              value: view.current && device['relativeAltitude'] != null
                   ? '${device['relativeAltitude']} m'
                   : '暂无最新上报',
             ),

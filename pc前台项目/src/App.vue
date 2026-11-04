@@ -1,15 +1,27 @@
 <script setup>
 import { computed, onUnmounted, watchEffect } from "vue";
 import { pageFamily } from "@/components/layout/navigation";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import AppModal from "@/components/ui/AppModal.vue";
 import AppShell from "@/components/layout/AppShell.vue";
 import { modal, modalFooter, modalProps, modalView } from "@/stores/modal";
 import { toasts } from "@/stores/notify";
-import { connection, refreshSnapshot } from "@/mock/runtime";
+import { db, tick, connection, refreshSnapshot } from "@/mock/runtime";
 
-const route = useRoute();
+import { clearWorkSelection, withoutWorkQuery } from '@/lib/work-business';
+import { session } from '@/stores/session';
+const route = useRoute(), router = useRouter();
+watchEffect(() => {
+  tick.value;
+  if (db.state.businessConfig?.workBusinessEnabled !== false) return;
+  clearWorkSelection(session);
+  if (['works', 'work'].includes(route.name)) router.replace({ name: 'overview' });
+  else {
+    const query = withoutWorkQuery(route.query);
+    if (Object.keys(query).length !== Object.keys(route.query).length) router.replace({ path: route.path, query });
+  }
+});
 const bare = computed(() => route.name === "login" || route.name === "screen");
 watchEffect(() => {
   if (!route.name || route.name === 'login') {

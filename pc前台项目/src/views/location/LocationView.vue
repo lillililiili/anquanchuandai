@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled } from '@/lib/work-business';
 import { computed, reactive, watch } from "vue";
 import AppField from "@/components/ui/AppField.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -16,6 +17,7 @@ import { filtersOf, session } from "@/stores/session";
 import { people, revision, search, works } from "@/lib/queries";
 import { locationPresentation } from './location-presentation';
 
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
 const draft = reactive({ q: "", workId: "" });
 
 function readDraft() {
@@ -25,6 +27,7 @@ function readDraft() {
 }
 
 readDraft();
+watch(() => { revision(); return db.state.businessConfig?.workBusinessEnabled; }, enabled => { if (enabled === false) draft.workId = ""; }, { immediate: true });
 
 const layers = [
   { key: "people", label: "人员" },
@@ -41,7 +44,7 @@ const locatedPeople = computed(() => {
   const query = filtersOf("location");
   return people().filter((person) => {
     const devices = db.currentDevices(person.id).map((device) => device.id).join(" ");
-    const inWork = !query.workId || db.currentWork(person.id)?.id === query.workId;
+    const inWork = !workEnabled.value || !query.workId || db.currentWork(person.id)?.id === query.workId;
     return search(person.name + " " + devices, query.q) && inWork;
   });
 });
@@ -79,7 +82,7 @@ const cards = computed(() => {
 const position = person => locationPresentation(db, person);
 
 function applyFilters() {
-  session.filters.location = { q: draft.q, workId: draft.workId };
+  session.filters.location = { q: draft.q, workId: workEnabled.value ? draft.workId : "" };
 }
 
 function resetFilters() {
@@ -107,7 +110,7 @@ function choose(id) {
           <AppIcon name="search-line" />
           <AppInput v-model="draft.q" name="q" placeholder="姓名 / 设备编号" />
         </div>
-        <AppField label="作业分组">
+        <AppField v-if="workEnabled" label="作业分组">
           <AppSelect v-model="draft.workId" name="workId" :options="workOptions" />
         </AppField>
       </FilterBar>

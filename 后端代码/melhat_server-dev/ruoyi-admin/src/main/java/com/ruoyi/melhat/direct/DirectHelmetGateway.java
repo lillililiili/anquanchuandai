@@ -53,7 +53,9 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
             if(capabilities==null){capabilities=new com.alibaba.fastjson2.JSONArray();status.put("capabilities",capabilities);}
             if(status.getBooleanValue("voiceAvailable"))capabilities.add("intercom");
             if(status.getBooleanValue("broadcastAvailable"))capabilities.add("tts");
-            if(status.getBooleanValue("mediaAvailable"))capabilities.add("video");}
+            if(status.getBooleanValue("mediaAvailable"))capabilities.addAll(java.util.Arrays.asList(
+                    "video","take_photo","start_video","stop_video","list_recordings","upload_recording",
+                    "start_recording","stop_recording"));}
         if(status.getBooleanValue("mediaAvailable"))status.remove("mediaUnavailableReason");
         else status.put("mediaUnavailableReason","unconfigured".equals(status.getString("mediaStatus"))?"媒体服务尚未配置":"媒体服务当前未就绪；设备定位和告警可继续上报");
         return status;
@@ -78,6 +80,11 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
                 return response(message.act, false, "设备未登记或已停用");
             }
             HelmetMediaService media=mediaProvider==null?null:mediaProvider.getIfAvailable();
+            if("ca_sending_message".equals(message.act)) {
+                if(reports==null)return response(message.act,false,"设备语音消息持久接收尚未就绪");
+                reports.helmetVoiceMessage(deviceId,json);sessions.heard(session,message);
+                return response(message.act,true,"语音消息已保存，音频文件关联待核实；不代表已播放");
+            }
             if(java.util.Arrays.asList("ca_upload_photo","upload_video_success","push_to_client").contains(message.act)) {
                 if(reports!=null) {
                     reports.helmetMedia(deviceId,json);
@@ -90,7 +97,7 @@ public class DirectHelmetGateway implements DirectHelmetAccess {
                 }
             }
             if (!"ca_report_location".equals(message.act) && !"ca_sos".equals(message.act)
-                    && !"ca_sip_sos".equals(message.act))
+                    && !"ca_sip_sos".equals(message.act) && !"toggle_localrecord".equals(message.act))
                 return response(message.act, false, "当前接入尚不支持此设备消息");
             boolean processed=true;
             if(reports==null)telemetry.receive(hat,message);else processed=reports.helmet(deviceId,json);

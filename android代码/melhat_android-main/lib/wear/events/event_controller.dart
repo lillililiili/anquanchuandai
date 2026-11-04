@@ -41,6 +41,7 @@ class EventController extends ChangeNotifier {
     this.initialStatus,
     this.initialType,
     this.initialSeverity,
+    this.workBusinessEnabled,
   }) : _store = store,
        _scopeKey = scopeKey,
        _actor = actor;
@@ -55,6 +56,8 @@ class EventController extends ChangeNotifier {
   final String? initialStatus;
   final String? initialType;
   final String? initialSeverity;
+  final bool Function()? workBusinessEnabled;
+  bool get worksEnabled => workBusinessEnabled?.call() ?? true;
 
   EventStateStore _store;
   String _scopeKey;
@@ -138,12 +141,19 @@ class EventController extends ChangeNotifier {
       }
       filters = filters.copyWith(
         personId: initialPersonId ?? filters.personId,
-        taskId: initialTaskId ?? filters.taskId,
+        taskId: worksEnabled ? initialTaskId ?? filters.taskId : '',
         claimantUserId: initialClaimantUserId ?? filters.claimantUserId,
         escalated: initialEscalated ?? filters.escalated,
         status: initialStatus,
         type: initialType,
       );
+    }
+    if (!worksEnabled) {
+      filters = filters.copyWith(taskId: '');
+      for (final id in _drafts.keys.toList()) {
+        _drafts[id] = _drafts[id]!.copyWith(taskId: '');
+      }
+      await _persist();
     }
     final target = applyInitial
         ? initialEventId ??
@@ -256,7 +266,7 @@ class EventController extends ChangeNotifier {
       total = 0;
       scrollOffset = 0;
     }
-    filters = value;
+    filters = worksEnabled ? value : value.copyWith(taskId: '');
     current = 1;
     await _persist();
     await reload(current: 1);
@@ -382,6 +392,7 @@ class EventController extends ChangeNotifier {
   }
 
   Future<void> updateDraft(String eventId, EventDraft draft) async {
+    if (!worksEnabled) draft = draft.copyWith(taskId: '');
     if (draft.isEmpty) {
       _drafts.remove(eventId);
     } else {
@@ -579,16 +590,33 @@ class EventController extends ChangeNotifier {
     EventCommand.confirm => '设备提醒已确认',
     EventCommand.handle => '现场情况已补充，事件状态保持不变',
     EventCommand.saveVerification => '核验草稿已保存',
-    EventCommand.verify => '平台核验已完成，外部结案未同步',
+    EventCommand.verify =>
+      worksEnabled && selected?.sourceEventId.isNotEmpty == true
+          ? '平台核验已完成，外部结案未同步'
+          : '核验记录已提交',
     EventCommand.joinAssistance => '已加入协助；未自动建立语音通话',
     EventCommand.endAssistance => '协助已结束，事件核验状态保持不变',
     EventCommand.transfer => '事件已转交',
-    EventCommand.close => '平台核验已完成，外部结案未同步',
+    EventCommand.close =>
+      worksEnabled && selected?.sourceEventId.isNotEmpty == true
+          ? '平台核验已完成，外部结案未同步'
+          : '核验记录已提交',
     EventCommand.reopen => '事件已重开',
     EventCommand.assignTask => '事件关联任务已确认',
   };
 
   bool _acceptScope(int scope) => !_disposed && scope == _scopeGeneration;
+  Future<void> clearWorkContext() async {
+    if (worksEnabled) return;
+    filters = filters.copyWith(taskId: '');
+    taskCandidates = const [];
+    taskCandidateTotal = 0;
+    for (final id in _drafts.keys.toList()) {
+      _drafts[id] = _drafts[id]!.copyWith(taskId: '');
+    }
+    await _persist();
+  }
+
   bool _acceptPage(int scope, int request) =>
       _acceptScope(scope) && request == _pageGeneration;
   bool _acceptDetail(int scope, int request) =>

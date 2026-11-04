@@ -67,7 +67,7 @@ public class DirectBeltGateway implements DirectBeltAccess {
             }
             if (sos) {
                 result.put("media_status", "unavailable");
-                result.put("msg", "SOS 已记录；SIP 通话未接入");
+                result.put("msg", "SOS 已记录");
             }
             return result;
         } catch (IllegalArgumentException error) {

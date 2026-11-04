@@ -217,6 +217,7 @@ class PersonPage extends StatefulWidget {
 
 class _PersonPageState extends State<PersonPage> {
   WearSession? _session;
+  bool? _workMode;
   JsonMap? _person;
   JsonMap? _location;
   bool _locationLoading = true;
@@ -254,7 +255,16 @@ class _PersonPageState extends State<PersonPage> {
     final session = WearScope.of(context);
     if (!identical(session, _session)) {
       _session = session;
+      _workMode = session.workBusinessEnabled;
       _load();
+    } else if (_workMode != session.workBusinessEnabled) {
+      _workMode = session.workBusinessEnabled;
+      _activeTasks = [];
+      _tasksFailed = false;
+      _tasksLoading = session.workBusinessEnabled;
+      if (session.workBusinessEnabled) {
+        _loadActiveTasks(session, _request, session.scopeKey);
+      }
     }
   }
 
@@ -567,17 +577,21 @@ class _PersonSiteContext extends StatelessWidget {
             icon: const Icon(Icons.route_outlined),
             label: const Text('查看历史轨迹'),
           ),
-          DetailField(
-            label: '当前作业',
-            value: tasksLoading
-                ? '获取中'
-                : tasksFailed
-                ? '未获取'
-                : activeTasks.isEmpty
-                ? '暂无进行中的作业'
-                : '${activeTasks.length} 项',
-          ),
-          for (final task in activeTasks)
+          if (WearScope.of(context).workBusinessEnabled)
+            DetailField(
+              label: '当前作业',
+              value: tasksLoading
+                  ? '获取中'
+                  : tasksFailed
+                  ? '未获取'
+                  : activeTasks.isEmpty
+                  ? '暂无进行中的作业'
+                  : '${activeTasks.length} 项',
+            ),
+          for (final task
+              in WearScope.of(context).workBusinessEnabled
+                  ? activeTasks
+                  : <JsonMap>[])
             TextButton.icon(
               onPressed: () => context.push('/tasks/${idOf(task['id'])}'),
               icon: const Icon(Icons.assignment_outlined, size: 18),

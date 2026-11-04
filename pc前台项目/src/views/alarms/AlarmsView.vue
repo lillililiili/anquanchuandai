@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled, eventSource } from '@/lib/work-business';
 import { computed, reactive, ref, watchEffect } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
@@ -18,9 +19,10 @@ import { db } from "@/mock/runtime";
 import { session, filtersOf } from "@/stores/session";
 import { events, personName, revision, search, statusColor } from "@/lib/queries";
 import { toast } from "@/stores/notify";
-import { externalStatusPresentation } from '@/lib/external-status';
-import { personFeature } from '@/lib/person-equipment';
+import { externalStatusPresentation, hasExternalSource } from '@/lib/external-status';
+import { eventVideoSupported } from '@/lib/person-equipment';
 
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
 const typeOptions = [["", "全部"], "人员求助", "电子围栏", "设备通信", "低电量", "位置异常", "安全带挂接", "生命体征"];
 const statusOptions = [["", "全部"], "待现场核验", "待认领", "处理中", "已核验"];
 const columns = ["事件编号", "类型", "人员", "设备编号", "发生时间", "状态", "操作"];
@@ -213,12 +215,16 @@ function rowClass(item) {
         <dl class="info compact">
           <dt>人员 · 设备</dt>
           <dd>{{ selectedAlarm.snapshot?.personName || '未关联人员' }} · {{ selectedAlarm.deviceId }}</dd>
+          <template v-if="workEnabled">
           <dt>作业名称</dt>
           <dd>{{ selectedAlarm.snapshot.workName }}</dd>
           <dt>作业编号</dt>
           <dd>{{ selectedAlarm.workId || "—" }}</dd>
-          <dt>当前监护人</dt>
-          <dd>{{ personName(selectedWork?.supervisor) }}</dd>
+          <dt>事发作业监护人</dt>
+          <dd>{{ selectedAlarm.snapshot?.supervisorName || '历史未记录' }}</dd>
+          </template>
+          <dt>告警认领人</dt><dd>{{ selectedAlarm.claimedByName || '待认领' }}</dd>
+          <dt>核验人</dt><dd>{{ selectedAlarm.verification?.actorName || '尚未核验' }}</dd>
           <dt>发生时间</dt>
           <dd>{{ selectedAlarm.date }} {{ selectedAlarm.time }}</dd>
         </dl>
@@ -228,9 +234,10 @@ function rowClass(item) {
         </div>
         <div class="detail-section">
           <h3>事件来源</h3>
-          <dl class="info compact">
+          <dl class="info compact"><dt>上报来源</dt><dd>{{ eventSource(selectedAlarm, db.device(selectedAlarm.deviceId)) }}</dd></dl>
+          <dl v-if="workEnabled && hasExternalSource(selectedAlarm)" class="info compact">
             <dt>原安监事件</dt>
-            <dd>{{ selectedAlarm.externalId || '未关联外部记录' }}</dd>
+            <dd>{{ selectedAlarm.externalId || selectedAlarm.externalRecordId || selectedAlarm.externalSource || selectedAlarm.externalSystem }}</dd>
             <dt>当前状态</dt>
             <dd :class="externalStatusPresentation(selectedAlarm).color">{{ externalStatusPresentation(selectedAlarm).label }}</dd>
           </dl>
@@ -239,12 +246,12 @@ function rowClass(item) {
           <h3>事件发生时位置</h3>
           <EventLocation :event="selectedAlarm" />
         </div>
-        <div v-if="personFeature(db, selectedAlarm.personId, 'video').supported" class="detail-section">
+        <div v-if="eventVideoSupported(db, selectedAlarm)" class="detail-section">
           <h3>现场视频</h3>
           <VideoFrame :person-id="selectedAlarm.personId" preview /><a class="text-link" :href="'#/single/' + selectedAlarm.personId">单路监看</a>
         </div>
         <div class="form-actions">
-          <a :class="['btn', 'wide', sosSelected ? 'danger sos-action' : 'primary']" :href="'#/event/' + selectedAlarm.id">{{ sosSelected ? "立即响应 SOS" : "进入现场核验" }}</a>
+          <a :class="['btn', 'wide', sosSelected ? 'danger sos-action' : 'primary']" :href="'#/event/' + selectedAlarm.id">{{ sosSelected ? "立即响应 SOS" : "去核验" }}</a>
         </div>
         <p class="note"><AppIcon :name="selectedAlarm.verification ? 'checkbox-circle-fill' : 'information-line'" />本平台核验 · {{ selectedAlarm.verification ? "核验记录已提交" : "核验记录未提交" }}</p>
       </template>

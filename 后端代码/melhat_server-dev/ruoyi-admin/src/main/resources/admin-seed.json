@@ -224,6 +224,26 @@
           "areaIds": "*"
         }
       ]
+    },
+    {
+      "id": "mobile-user",
+      "name": "普通用户（本人业务）",
+      "builtin": true,
+      "enabled": true,
+      "version": 1,
+      "grants": [
+        {
+          "operations": [
+            "self:read",
+            "events:observe",
+            "sos:create",
+            "works:read"
+          ],
+          "siteIds": [
+            "site-1"
+          ]
+        }
+      ]
     }
   ],
   "accounts": [

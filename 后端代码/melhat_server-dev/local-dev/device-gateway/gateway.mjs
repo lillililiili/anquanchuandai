@@ -4,6 +4,7 @@ import { validateConfig } from './config.mjs';
 import { createGpsDiagnostics } from './gps-diagnostics.mjs';
 import { createMediaUpload } from './media-upload.mjs';
 import { forwardBackup } from './backup-upload.mjs';
+import { classifyHttpRoute, observeHttp, markHttpStage, markHttpReply } from './http-diagnostics.mjs';
 
 const DEFAULT_LIMITS = Object.freeze({
   maxPayload: 65536, maxBuffered: 262144, maxQueued: 65536,
@@ -11,7 +12,7 @@ const DEFAULT_LIMITS = Object.freeze({
   requestsPerMinute: 60, authTimeoutMs: 5000, upstreamTimeoutMs: 5000,
   idleTimeoutMs: 90000, closeTimeoutMs: 1000,
 });
-const ACTIONS = new Set(['ca_login', 'ca_report_location', 'ca_sos', 'ca_sip_sos', 'ca_upload_photo', 'upload_video_success', 'push_to_client', 'toggle_localrecord']);
+const ACTIONS = new Set(['ca_login', 'ca_report_location', 'ca_sos', 'ca_sip_sos', 'ca_upload_photo', 'upload_video_success', 'push_to_client', 'toggle_localrecord', 'ca_sending_message']);
 const LOCAL_RECORD_SYNC_KEYS = new Set(['act', 'device_id', 'type']);
 const QUERY_KEYS = new Set(['ctl', 'act', 'device_id', 'app_version', 'ic', 'ca_ver']);
 
@@ -24,6 +25,7 @@ function counter(max, period) {
 }
 
 function jsonReply(response, status, body) {
+  if(status >= 400)markHttpReply(response,body.msg_code);
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store', 'Connection': 'close', 'X-Content-Type-Options': 'nosniff' });
   response.end(JSON.stringify(body));
@@ -35,7 +37,7 @@ function rejectUpgrade(socket, status = 404) {
   socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 }
 
-export function createDeviceGateway(input, { testOnly = false, limits: testLimits = {}, onGpsReport, mediaFetch } = {}) {
+export function createDeviceGateway(input, { testOnly = false, limits: testLimits = {}, onGpsReport, mediaFetch, onHttpDiagnostic } = {}) {
   const config = validateConfig(input, { testOnly });
   if (!testOnly && Object.keys(testLimits).length) throw new Error('Runtime limits are fixed.');
   if (!testOnly && mediaFetch) throw new Error('Runtime media transport is fixed.');
@@ -58,12 +60,17 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
     const separator = raw.indexOf('?');
     const path = separator === -1 ? raw : raw.slice(0, separator);
     if (path !== bootstrapPath && path !== uploadPath) return failure(response, 404);
-    if (!allowRequest()) return failure(response, 429);
+    if (!allowRequest()) { markHttpStage(response,'rate_limit'); return failure(response, 429); }
+    markHttpStage(response,'validation');
     if (request.method === 'POST') {
       const rawQuery = separator === -1 ? '' : raw.slice(separator + 1);
       const allowedKeys=path===uploadPath?new Set(['device_id','X-Progress-ID','app_version','ic','ca_ver']):new Set([...QUERY_KEYS,'user_id']);
+      // Firmware OkHttp 4.9.1 serializes postForm("upload?") plus addQuery as
+      // "?&device_id=...". Accept exactly that one leading empty component on
+      // this upload route; all remaining keys and values retain their checks.
+      const keyQuery=path===uploadPath&&rawQuery.startsWith('&')?rawQuery.slice(1):rawQuery;
       if (rawQuery.length > 2048 || rawQuery.includes('#') || /%(?![0-9a-fA-F]{2})/.test(rawQuery)
-        || rawQuery.split('&').some(p => !allowedKeys.has(p.slice(0, p.indexOf('='))))) return failure(response, 400);
+        || keyQuery.split('&').some(p => !allowedKeys.has(p.slice(0, p.indexOf('='))))) return failure(response, 400);
       const query=new URLSearchParams(rawQuery);
       if(path===bootstrapPath&&query.get('ctl')==='lowcaps'&&query.get('act')==='ca_backup_data')return forwardBackup(request,response,query,config,jsonReply,failure);
       return mediaUpload(request, response, query, jsonReply, failure, path===uploadPath);
@@ -97,8 +104,10 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
     try {
       const url = new URL('/api/index.php', config.upstreamOrigin);
       url.search = new URLSearchParams({ ctl: 'config', act: 'get_config', device_id: config.deviceId }).toString();
+      markHttpStage(response,'forwarding_backend');
       const upstream = await fetch(url, { redirect: 'error', signal: abort.signal,
         headers: { Accept: 'application/json' } });
+      markHttpStage(response,'backend_responded');
       if (!upstream.ok || Number(upstream.headers.get('content-length') ?? 0) > limits.maxPayload) throw new Error('Upstream unavailable');
       const chunks = [];
       let bytes = 0;
@@ -116,7 +125,7 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
         ws_url: `${config.publicOrigin.replace(/^https:/, 'wss:')}${websocketPath}` }) } };
       // This gateway has no authority to reset paired accessory configuration.
       delete rewritten.data.extra;
-      if (!response.destroyed) jsonReply(response, 200, rewritten);
+      if (!response.destroyed) { markHttpStage(response,'acknowledged'); jsonReply(response, 200, rewritten); }
     } catch {
       if (!response.destroyed && !response.headersSent) failure(response, 502);
     } finally {
@@ -128,6 +137,7 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
   }
 
   const server = http.createServer({ maxHeaderSize: 8192 }, (request, response) => {
+    observeHttp(request,response,classifyHttpRoute(request.url ?? '',bootstrapPath,uploadPath),onHttpDiagnostic);
     if (closing) return failure(response, 503);
     void bootstrap(request, response).catch(() => {
       if (!response.destroyed && !response.headersSent) failure(response, 502);
@@ -228,6 +238,18 @@ export function createDeviceGateway(input, { testOnly = false, limits: testLimit
             || !['0', '1'].includes(message.type)
             || Object.keys(message).some(key => !LOCAL_RECORD_SYNC_KEYS.has(key)))) {
         cleanup(1008); return;
+      }
+      if (message.act === 'ca_sending_message') {
+        let audio;
+        try { audio = new URL(message.message); } catch { /* Reject non-URL low-end payloads on this high-end gateway. */ }
+        if (!loginAccepted || typeof message.message !== 'string' || message.message.length > 2048
+          || /[\u0000-\u0020\u007f]/.test(message.message) || !audio || !config.mediaControlOrigin
+          || audio.origin !== new URL(config.mediaControlOrigin).origin || audio.username || audio.password || audio.hash
+          || !/^\/helmet-media\/files\/[A-Za-z0-9_-]{1,80}$/.test(audio.pathname)
+          || [...audio.searchParams.keys()].some(key => key !== 'token') || audio.searchParams.getAll('token').length > 1
+          || Object.keys(message).some(key => !['act', 'device_id', 'message'].includes(key))) {
+          cleanup(1008); return;
+        }
       }
       if (message.act === 'push_to_client') {
         if (!(pendingReceipts.get(message.talkback_id) > Date.now()) || !message.res || typeof message.res.status !== 'boolean'

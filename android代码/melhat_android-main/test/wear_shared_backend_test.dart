@@ -249,9 +249,15 @@ void main() {
               'identity': nativeIdentity(),
             }, raw: true);
           }
-          expect(r.path, '$root/mobile/identity');
           expect(r.headers['X-Wearable-Token'], 'native-token');
           expect(r.headers.containsKey('Authorization'), false);
+          if (r.path == '$root/business-config') {
+            return reply({
+              'version': 1,
+              'workBusinessEnabled': true,
+            }, raw: true);
+          }
+          expect(r.path, '$root/mobile/identity');
           return reply(nativeIdentity(), raw: true);
         }),
       );
@@ -264,7 +270,12 @@ void main() {
       expect(session.can('wear:event:review'), false);
       expect(session.canRequestSos, true);
       expect(session.permissions.contains('*:*:*'), false);
-      expect(seen.length, 2);
+      expect(session.workBusinessEnabled, true);
+      expect(seen.map((r) => r.path), [
+        '$root/mobile/login',
+        '$root/mobile/identity',
+        '$root/business-config',
+      ]);
     },
   );
   test(

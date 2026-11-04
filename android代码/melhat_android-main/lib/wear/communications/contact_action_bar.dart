@@ -11,16 +11,10 @@ class ContactActionBar extends StatelessWidget {
     this.showVoice = true,
     this.showVideo = true,
     this.showBroadcast = true,
-    this.voicePending = false,
-    this.voicePendingLabel = '待联调',
-    this.videoPending = false,
-    this.broadcastPending = false,
   });
 
   final VoidCallback? onVoice, onVideo, onBroadcast;
   final bool showVoice, showVideo, showBroadcast;
-  final bool voicePending, videoPending, broadcastPending;
-  final String voicePendingLabel;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -32,30 +26,14 @@ class ContactActionBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          if (showVoice)
-            _button(
-              context,
-              '设备语音${voicePending ? ' · $voicePendingLabel' : ''}',
-              Icons.call_outlined,
-              onVoice,
-            ),
+          if (showVoice) _button(context, '设备语音', Icons.call_outlined, onVoice),
           if (showVoice && (showVideo || showBroadcast))
             const SizedBox(width: 8),
           if (showVideo)
-            _button(
-              context,
-              '视频通话${videoPending ? ' · 待联调' : ''}',
-              Icons.videocam_outlined,
-              onVideo,
-            ),
+            _button(context, '视频通话', Icons.videocam_outlined, onVideo),
           if (showVideo && showBroadcast) const SizedBox(width: 8),
           if (showBroadcast)
-            _button(
-              context,
-              '文字播报${broadcastPending ? ' · 待联调' : ''}',
-              Icons.volume_up_outlined,
-              onBroadcast,
-            ),
+            _button(context, '文字播报', Icons.volume_up_outlined, onBroadcast),
         ],
       ),
     ),

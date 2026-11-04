@@ -8,6 +8,7 @@ import { Readable } from 'node:stream';
 import { Store } from './store.mjs';
 import { readTicket, ticket } from './auth.mjs';
 import { eslCommand } from './esl.mjs';
+import { prepareDeviceAudio, AUDIO_MAX_BYTES } from './device-audio.mjs';
 
 export const CONTROL = '/helmet-media/control/v1';
 export const PUBLIC = '/helmet-media';
@@ -30,6 +31,8 @@ export class MediaService {
     this.command = dependencies.command ?? (command => eslCommand(config, command));
     this.fetch = dependencies.fetch ?? fetch;
     this.spawn = dependencies.spawn ?? spawn;
+    this.prepareAudio = dependencies.prepareAudio ?? prepareDeviceAudio;
+    this.processingAudio = 0;
     this.probe = dependencies.probe ?? (async filename => {
       const {stdout}=await promisify(execFile)('ffprobe',['-v','error','-show_entries','format=duration:stream=codec_type,codec_name','-of','json',filename],{timeout:30000,maxBuffer:1024*1024});
       const parsed=JSON.parse(stdout);
@@ -278,15 +281,28 @@ export class MediaService {
     return 0;
   }
   assetPublic(asset) {
-    const { filename, ...data } = asset;
-    return { ...data, url: `${this.config.publicOrigin}${PUBLIC}/files/${asset.assetId}?token=${this.token('asset', asset.assetId)}` };
+    const { filename, playbackFilename, ...data } = asset;
+    const playback = asset.kind === 'audio' && asset.status === 'ready' && asset.playbackVerified === true && playbackFilename && asset.playbackMime === 'audio/mpeg'
+      ? { playbackUrl: `${this.config.publicOrigin}${PUBLIC}/files/${asset.assetId}?variant=playback&token=${this.token('asset-playback', asset.assetId, 30)}`, playbackExpiresAt: new Date(Date.now() + 30000).toISOString() } : {};
+    return { ...data, ...playback, url: `${this.config.publicOrigin}${PUBLIC}/files/${asset.assetId}?token=${this.token('asset', asset.assetId)}` };
   }
   registerAsset(assetId, filename, meta) {
     const info = fs.statSync(filename);
     if(process.platform!=='win32'){const directory=fs.openSync(path.dirname(filename),'r');try{fs.fsyncSync(directory);}finally{fs.closeSync(directory);}}
     const asset = { assetId, filename: path.basename(filename), ...meta, size: info.size, status: 'ready', createdAt: new Date().toISOString() };
-    this.store.data.assets[assetId] = asset; this.store.event('asset.ready', { assetId, deviceId: asset.deviceId ?? null, kind: asset.kind, requestId: asset.requestId ?? null,
-      ...(asset.kind==='photo'?{requestIdSource:asset.requestIdSource??null,correlationStatus:asset.correlationStatus??'MISSING_DEVICE_REQUEST_ID'}:{}) });
+    const previous=this.store.data.assets[assetId],sequence=this.store.data.sequence,events=this.store.data.events.slice();
+    this.store.data.assets[assetId] = asset;
+    try {this.store.event('asset.ready', { assetId, deviceId: asset.deviceId ?? null, kind: asset.kind, requestId: asset.requestId ?? null,
+      ...(asset.kind==='photo'?{requestIdSource:asset.requestIdSource??null,correlationStatus:asset.correlationStatus??'MISSING_DEVICE_REQUEST_ID'}:{}) });}
+    catch(error){
+      // save() may fail before its rename, or after rename while syncing the
+      // directory. Delete files only when disk state proves it did not commit.
+      let persisted;try{persisted=JSON.parse(fs.readFileSync(this.store.filename,'utf8')).assets?.[assetId];}
+      catch{error.preserveAssetFiles=true;asset.status='storage-unconfirmed';throw error;}
+      if(persisted && JSON.stringify(persisted)===JSON.stringify(asset)){error.preserveAssetFiles=true;}
+      else {if(previous)this.store.data.assets[assetId]=previous;else delete this.store.data.assets[assetId];this.store.data.sequence=sequence;this.store.data.events=events;}
+      throw error;
+    }
     return this.assetPublic(asset);
   }
   async tts(input) {
@@ -311,9 +327,10 @@ export class MediaService {
     const prior = metadata.progressId && Object.values(this.store.data.assets).find(a => a.deviceId === deviceId && a.progressId === metadata.progressId);
     if (prior) return this.assetPublic(prior);
     const assetId = randomUUID(), temporary = this.store.assetPath(assetId, 'partial');
+    let assetFilename,playbackPath,registered=false,preserveAssetFiles=false;
     let parser, error, fileCount = 0, originalName = '', writing, photoRequest = null, photoRequestSeen = false;
     const fieldNames=[];
-    try { parser = Busboy({ headers: { 'content-type': contentType }, limits: { files: 1, fileSize: 255 * 1024 * 1024, fields: 16, fieldSize: 4096, parts: 18 } }); }
+    try { parser = Busboy({ headers: { 'content-type': contentType }, limits: { files: 1, fileSize: kind === 'audio' ? AUDIO_MAX_BYTES : 255 * 1024 * 1024, fields: 16, fieldSize: 4096, parts: 18 } }); }
     catch { throw fault(400, 'INVALID_MULTIPART'); }
     const finished = new Promise((resolve,reject) => {
       parser.on('field',(name,value,info)=>{
@@ -341,19 +358,29 @@ export class MediaService {
     try {
       await finished; if(writing)await writing; if(error)throw error; if(fileCount!==1)throw fault(400,'FILE_REQUIRED');
       const handle=await fs.promises.open(temporary,'r'),head=Buffer.alloc(16);await handle.read(head,0,16,0);await handle.close();
-      let extension,mime;
+      let extension,mime,audioMetadata={};
       if(kind==='photo'&&head[0]===255&&head[1]===216&&head[2]===255){extension='jpg';mime='image/jpeg';}
       else if(kind==='photo'&&head.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex'))){extension='png';mime='image/png';}
-      else if(kind==='audio'&&(head.subarray(0,3).toString()==='ID3'||head[0]===255&&(head[1]&224)===224)){extension='mp3';mime='audio/mpeg';}
+      else if(kind==='audio'){
+        if(this.processingAudio>=2)throw fault(429,'AUDIO_PROCESSING_BUSY');
+        this.processingAudio++;
+        const playbackFilename=playbackPath=this.store.assetPath(assetId,'playback.mp3');
+        try{const prepared=await this.prepareAudio(temporary,playbackFilename);({extension}=prepared);mime=prepared.originalMime;
+          const {extension:ignored,...audio}=prepared;audioMetadata={...audio,playbackFilename:path.basename(playbackFilename)};
+        }finally{this.processingAudio--;}
+      }
       else if(kind==='video'&&head.subarray(4,8).toString()==='ftyp'){extension='mp4';mime='video/mp4';}
       else throw fault(415,'UNSUPPORTED_FILE_CONTENT');
       if(kind==='video' && !await this.probe(temporary))throw fault(415,'INVALID_VIDEO');
       if(kind==='photo'&&metadata.requestId&&metadata.requestId!==photoRequest)throw fault(400,'UNVERIFIED_PHOTO_REQUEST_ID');
       const correlation=kind==='photo'?{requestId:photoRequest,requestIdSource:photoRequest?'multipart.talkback_id':null,
         correlationStatus:photoRequest?'DEVICE_REQUEST_ID':'MISSING_DEVICE_REQUEST_ID',receiptFieldNames:receiptFields(fieldNames)}:{};
-      const filename=this.store.assetPath(assetId,extension);await fs.promises.rename(temporary,filename);
-      return this.registerAsset(assetId,filename,{deviceId,kind,mime,originalName,...metadata,...correlation});
-    } finally {source.destroy();await fs.promises.unlink(temporary).catch(()=>{});}
+      const filename=assetFilename=this.store.assetPath(assetId,extension);await fs.promises.rename(temporary,filename);
+      const result=this.registerAsset(assetId,filename,{deviceId,kind,mime,originalName,...metadata,...correlation,...audioMetadata});registered=true;return result;
+    } catch(error){preserveAssetFiles=error.preserveAssetFiles===true;throw error;}
+    finally {source.destroy();await fs.promises.unlink(temporary).catch(()=>{});
+      if(kind==='audio'&&!registered&&!preserveAssetFiles)for(const candidate of [assetFilename,playbackPath])if(candidate)await fs.promises.unlink(candidate).catch(()=>{});
+    }
   }
   bindPhoto(input) {
     const deviceId=id(input.deviceId);let url;

@@ -1,3 +1,4 @@
+import { workBusinessEnabled, workStatus } from '@/lib/work-business';
 import { iconMarkup } from "@ui-spec/icons";
 import { DATE } from "@/mock/data";
 import { beijingDate, beijingTime } from "@/lib/location";
@@ -120,12 +121,14 @@ export function mountScreen(root, { onVideos = () => {} } = {}) {
       .filter((item) => item.status !== "已核验" && item.type === "安全带挂接")
       .map((item) => item.id)
       .join();
-    const signature = JSON.stringify(stats) + wearKey;
+    const enabled = workBusinessEnabled(db);
+    const signature = JSON.stringify(stats) + wearKey + enabled;
     if (signature === state.statsSignature) return;
     state.statsSignature = signature;
+    query(".screen-stats").style.gridTemplateColumns = `repeat(${enabled ? 4 : 3}, 1fr)`;
     query(".screen-stats").innerHTML = [
-      [symbols.worker, "在册人员", `${stats.people.length}<span class="unit">人</span><span class="detail">作业关联 ${stats.assigned} · 待分配 ${stats.people.length - stats.assigned}</span>`, ""],
-      [symbols.document, "台账作业", `${stats.works.filter((work) => work.status !== "已结束").length}<span class="unit">项</span>`, "hex cyan"],
+      [symbols.worker, "在册人员", `${stats.people.length}<span class="unit">人</span>${enabled ? `<span class="detail">作业关联 ${stats.assigned} · 待分配 ${stats.people.length - stats.assigned}</span>` : ""}`, ""],
+      ...(enabled ? [[symbols.document, "台账作业", `${stats.works.filter((work) => workStatus(work) === "进行中").length}<span class="unit">项</span>`, "hex cyan"]] : []),
       [symbols.antenna, "真实领用装备在线", `<span class="fraction">${stats.online} / ${stats.devices.length}</span><span class="unit">台</span>`, "hex"],
       [symbols.warning, "待核验事件", `${stats.unresolved}<span class="unit">项</span>`, "hex warn"],
     ]
@@ -211,7 +214,7 @@ export function mountScreen(root, { onVideos = () => {} } = {}) {
     const online = current.filter(d => d.online).length;
     const offline = factory.filter(d => d.online === false).length;
     const footer = query("[data-platform-summary]");
-    if (footer) footer.textContent = `真实设备资产：共 ${factory.length} 台 · 在线 ${online} · 离线 ${offline} · 待刷新 ${factory.length - online - offline}；人员、作业、事件为保留台账；实时状态仅使用真实上报`;
+    if (footer) footer.textContent = `真实设备资产：共 ${factory.length} 台 · 在线 ${online} · 离线 ${offline} · 待刷新 ${factory.length - online - offline}；${workBusinessEnabled(db) ? "人员、作业、事件" : "人员、事件"}为保留台账；实时状态仅使用真实上报`;
     renderPerson();
     renderEvents();
     renderVideos();

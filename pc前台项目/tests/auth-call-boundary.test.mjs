@@ -35,3 +35,41 @@ test('a 401 triggers synchronous local auth listeners and logout even when clean
     await new Promise(resolve=>setImmediate(resolve));
   } finally { unsubscribe();globalThis.sessionStorage=originalStorage;globalThis.fetch=originalFetch;globalThis.window=originalWindow; }
 });
+
+test('a late 401 from the previous account cannot clear a newly authenticated session', async () => {
+  const originalStorage=globalThis.sessionStorage, originalFetch=globalThis.fetch, originalWindow=globalThis.window;
+  const values=new Map(); const requests=[]; let cleanups=0;
+  globalThis.sessionStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
+  globalThis.window={location:{hash:'#/overview'}};
+  globalThis.fetch=(url,options)=>new Promise(resolve=>requests.push({url,token:options.headers['X-Wearable-Token'],resolve}));
+  const unsubscribe=onAuthCleared(()=>{cleanups++;});
+  try {
+    saveAuth('previous-token','previous-account');
+    const previous=authFetch('/previous/snapshot');
+    saveAuth('current-token','current-account');
+    const current=authFetch('/current/snapshot');
+    requests[0].resolve({status:401});
+    assert.equal((await previous).status,401,'the caller still receives its failed response');
+    assert.equal(values.get('wearable-guardian-token'),'current-token');
+    assert.equal(values.get('rolling-session'),'current-account');
+    assert.equal(window.location.hash,'#/overview');
+    assert.equal(cleanups,0,'old requests must not terminate the new account call or media session');
+    requests[1].resolve({status:200}); await current;
+    assert.deepEqual(requests.map(request=>request.token),['previous-token','current-token']);
+  } finally { unsubscribe();globalThis.sessionStorage=originalStorage;globalThis.fetch=originalFetch;globalThis.window=originalWindow; }
+});
+
+test('a pending anonymous request cannot invalidate a login completed before its 401 arrives', async () => {
+  const originalStorage=globalThis.sessionStorage, originalFetch=globalThis.fetch, originalWindow=globalThis.window;
+  const values=new Map(); let finish;
+  globalThis.sessionStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
+  globalThis.window={location:{hash:'#/overview'}};
+  globalThis.fetch=()=>new Promise(resolve=>{finish=resolve;});
+  try {
+    const anonymous=authFetch('/pre-login/snapshot');
+    saveAuth('current-token','current-account');
+    finish({status:401}); await anonymous;
+    assert.equal(values.get('wearable-guardian-token'),'current-token');
+    assert.equal(window.location.hash,'#/overview');
+  } finally { globalThis.sessionStorage=originalStorage;globalThis.fetch=originalFetch;globalThis.window=originalWindow; }
+});

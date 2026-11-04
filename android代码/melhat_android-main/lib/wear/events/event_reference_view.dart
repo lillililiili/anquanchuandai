@@ -64,6 +64,8 @@ class _EventReferenceViewState extends State<EventReferenceView> {
   EventController get c => widget.controller;
   WearEvent get e => c.selected!;
   bool get sos => e.type == 'sos';
+  bool get worksEnabled => WearScope.of(context).workBusinessEnabled;
+  bool get externalLinked => worksEnabled && e.sourceEventId.isNotEmpty;
   Color get levelColor => e.isEmergency
       ? _red
       : e.isWarning
@@ -194,7 +196,9 @@ class _EventReferenceViewState extends State<EventReferenceView> {
           title: Text(command == EventCommand.verify ? '提交最终核验？' : '结束本次协助？'),
           content: Text(
             command == EventCommand.verify
-                ? '提交后核验记录只读；平台核验不代表外部系统正式结案。'
+                ? externalLinked
+                      ? '提交后核验记录只读；平台核验不代表外部系统正式结案。'
+                      : '提交后核验记录只读，请确认现场情况和结论。'
                 : '协助记录将保留，事件仍需单独完成核验。',
           ),
           actions: [
@@ -395,24 +399,42 @@ class _EventReferenceViewState extends State<EventReferenceView> {
               ? '手机手动求助'
               : e.demo
               ? '模拟设备上报'
+              : e.deviceType == 'belt'
+              ? '安全带直连'
+              : e.deviceType == 'helmet'
+              ? '安全帽直连'
               : '设备上报',
         ),
         infoRow(Icons.devices_outlined, '关联设备', known(e.sn, '未关联设备，仍可文字跟进')),
-        infoRow(
-          Icons.assignment_outlined,
-          '关联作业',
-          known(e.taskId, '未关联作业'),
-          onTap: e.taskId.isEmpty
-              ? null
-              : () => context.push('/tasks/${e.taskId}'),
-        ),
+        if (worksEnabled)
+          infoRow(
+            Icons.assignment_outlined,
+            '关联作业',
+            known(e.taskId, '未关联作业'),
+            onTap: e.taskId.isEmpty
+                ? null
+                : () => context.push('/tasks/${e.taskId}'),
+          ),
         infoRow(Icons.schedule, '发生时间', formatTime(e.occurredAt)),
+        if (e.claimantUserId.isNotEmpty)
+          infoRow(
+            Icons.assignment_ind_outlined,
+            '告警认领人',
+            known(e.claimantName, e.claimantUserId),
+          ),
+        if (e.isPlatformComplete)
+          infoRow(
+            Icons.fact_check_outlined,
+            '核验人',
+            textOf(e.verification['actor']),
+          ),
         if (e.locationDescription.isNotEmpty)
           infoRow(Icons.place_outlined, '位置说明', e.locationDescription),
-        const Text(
-          '平台核验不代表外部告警已解除或正式结案。',
-          style: TextStyle(color: _muted, fontSize: 12),
-        ),
+        if (externalLinked)
+          const Text(
+            '平台核验不代表外部告警已解除或正式结案。',
+            style: TextStyle(color: _muted, fontSize: 12),
+          ),
       ],
     ),
   );

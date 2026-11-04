@@ -60,6 +60,7 @@ public class AdminAssignmentService {
         if (actor == null) throw AdminQueryService.fail(401, "IDENTITY_INVALID", "请先登录");
         if (input == null) input = new JSONObject();
         String operationId = input.getString("operationId");
+        requireCurrentScope(state, actor, input);
         if(businessPolicy!=null&&!businessPolicy.config().getBooleanValue("simulatedWatchVisible")&&input.getJSONArray("items")!=null) {
             for(Object raw:input.getJSONArray("items")) {
                 JSONObject device=find(state,"devices",((JSONObject)raw).getString("deviceId"));
@@ -234,6 +235,32 @@ public class AdminAssignmentService {
         output.put("history", history);
         output.put("maintenanceOrderIds", orderIds);
         return output;
+    }
+
+    /** Idempotency does not preserve an authorization after its role/site is revoked. */
+    private void requireCurrentScope(JSONObject state, JSONObject actor, JSONObject input) {
+        queries.requireRead(state, actor, input);
+        JSONObject person = find(state, "people", input.getString("personId"));
+        if (person == null || !java.util.Objects.equals(input.getString("siteId"), person.getString("siteId")))
+            throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "人员不存在或不可见");
+        if (!queries.allows(state, actor, "assets:write", person.getString("siteId"), person.getString("areaId")))
+            throw AdminQueryService.fail(403, "PERMISSION_DENIED", "人员及每台设备均须在资产办理授权范围内");
+        JSONArray items = input.getJSONArray("items");
+        if (items == null || items.isEmpty() || items.size() > 3)
+            throw AdminQueryService.fail(400, "INVALID_ITEMS", "请选择1至3件装备");
+        for (int i = 0; i < items.size(); i++) {
+            // Jackson supplies map items at the HTTP boundary; preserve object-only validation.
+            if (!(items.get(i) instanceof Map)) throw AdminQueryService.fail(400, "INVALID_ITEMS", "装备参数无效");
+            JSONObject item = items.getJSONObject(i);
+            items.set(i, item);
+            JSONObject device = find(state, "devices", item.getString("deviceId"));
+            if (device == null || !java.util.Objects.equals(input.getString("siteId"), device.getString("siteId")))
+                throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "设备不存在或不可见");
+            if (!queries.allows(state, actor, "assets:write", device.getString("siteId"), device.getString("areaId")))
+                throw AdminQueryService.fail(403, "PERMISSION_DENIED", "人员及每台设备均须在资产办理授权范围内");
+        }
+        // getJSONArray may wrap a Jackson list; downstream policy checks need the normalized list too.
+        input.put("items", items);
     }
 
     private int appendRepair(JSONObject state, int next, JSONObject device, JSONObject actor, String now, JSONObject order) {
@@ -492,7 +519,7 @@ public class AdminAssignmentService {
             communication = remote.getBooleanValue("online") ? "ONLINE" : "OFFLINE";
             freshness = "CURRENT";
         }
-        if (!"ONLINE".equals(communication)) list.add("通信离线、未知或未接入");
+        if (!"ONLINE".equals(communication)) list.add("设备离线或通信状态未知");
         if ("STALE".equals(freshness)) list.add("设备数据过期");
         String manufacturer = device.getString("manufacturer");
         String sn = device.getString("sn");

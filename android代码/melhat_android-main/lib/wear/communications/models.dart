@@ -1,5 +1,6 @@
 import '../device_status.dart';
 import '../device_features.dart' as features;
+import '../person_equipment_context.dart' show hasEquipmentContext;
 
 typedef JsonMap = Map<String, dynamic>;
 
@@ -253,6 +254,7 @@ class CommunicationDevice {
     this.personName,
     this.typeCode = '',
     this.modelName = '',
+    this.source = '',
     this.online = 'unknown',
     this.connectionQuality = '',
     this.simulationStatus = '',
@@ -272,10 +274,20 @@ class CommunicationDevice {
     return CommunicationDevice(
       id: _stringOf(json['id'] ?? assignment?['deviceId']),
       sn: _stringOf(json['sn'] ?? assignment?['sn']),
-      personId: _nullableString(assignment?['personId']),
+      personId: _nullableString(
+        assignment?['personId'] ??
+            (json['equipmentContext'] is Map
+                ? json['equipmentContext']['personId']
+                : null),
+      ),
       personName: _nullableString(assignment?['personName']),
-      typeCode: _stringOf(json['typeCode'] ?? assignment?['typeCode']),
+      typeCode: _stringOf(
+        json['typeCode'] ??
+            assignment?['typeCode'] ??
+            const {'H': 'helmet', 'B': 'belt', 'W': 'watch'}[json['type']],
+      ),
       modelName: _stringOf(json['modelName']),
+      source: _stringOf(json['source']),
       online: devicePresence(json),
       connectionQuality: _stringOf(json['connectionQuality']),
       simulationStatus: _stringOf(json['simulationStatus']),
@@ -298,6 +310,7 @@ class CommunicationDevice {
   final String? personName;
   final String typeCode;
   final String modelName;
+  final String source;
   final String online;
   final String connectionQuality;
   final String simulationStatus;
@@ -308,10 +321,35 @@ class CommunicationDevice {
   final JsonMap equipmentContext;
   final bool demo;
 
-  features.DeviceFeatureState feature(String action) => features.actionFeature({
-    'featureStates': featureStates,
-    'capabilities': {'actions': actions.toList()},
-  }, action);
+  features.DeviceFeatureState feature(String action) {
+    final state = features.actionFeature({
+      'source': source,
+      'online': online,
+      'connectionQuality': connectionQuality,
+      'featureStates': featureStates,
+      'capabilities': {'actions': actions.toList()},
+    }, action);
+    if (source != 'DIRECT_HELMET' || !state.supported) return state;
+    final reason = typeCode != 'helmet'
+        ? '请选择安全帽进行通讯'
+        : !isNormalOnline
+        ? '安全帽$stateLabel'
+        : !hasEquipmentContext(equipmentContext) ||
+              equipmentContext['personId']?.toString() != personId ||
+              equipmentContext['deviceId']?.toString() != id
+        ? '请先办理安全帽领用并刷新人员装备'
+        : '';
+    return reason.isEmpty
+        ? state
+        : features.DeviceFeatureState(
+            supported: state.supported,
+            verified: state.verified,
+            available: false,
+            reason: reason,
+            integrationStatus: state.integrationStatus,
+          );
+  }
+
   bool supports(String action) => feature(action).supported;
   bool available(String action) => feature(action).available;
 

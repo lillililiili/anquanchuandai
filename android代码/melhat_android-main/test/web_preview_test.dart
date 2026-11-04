@@ -10,30 +10,33 @@ import 'package:rolling_intelligence_headband/wear/communications/policy.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
-  test('preview equipment supports the current communication policy', () async {
-    final session = createPreviewSession();
-    addTearDown(session.dispose);
-    await session.login('demo', '123456', code: 'demo');
-    await session.selectSite('1');
-    final policy = CommunicationsPolicy(
-      userId: session.userId,
-      permissions: session.permissions,
-    );
-    final device = CommunicationDevice.fromJson(
-      jsonMap(await session.api.get('/api/v1/devices/201')),
-    );
-    expect(policy.canStartVoice(device), isTrue);
-    expect(policy.canStartVideo(device), isFalse);
-    expect(policy.canSendTts(device), isTrue);
-    final call = jsonMap(
-      await session.api.post(
-        '/api/v1/calls',
-        data: {'deviceId': device.id, 'kind': 'single', 'video': false},
-      ),
-    );
-    expect(call['demo'], isTrue);
-    expect(call['requesterUserId'], session.userId);
-  });
+  test(
+    'unverified preview capabilities cannot imply real communication readiness',
+    () async {
+      final session = createPreviewSession();
+      addTearDown(session.dispose);
+      await session.login('demo', '123456', code: 'demo');
+      await session.selectSite('1');
+      final policy = CommunicationsPolicy(
+        userId: session.userId,
+        permissions: session.permissions,
+      );
+      final device = CommunicationDevice.fromJson(
+        jsonMap(await session.api.get('/api/v1/devices/201')),
+      );
+      expect(policy.canStartVoice(device), isFalse);
+      expect(policy.canStartVideo(device), isFalse);
+      expect(policy.canSendTts(device), isFalse);
+      final call = jsonMap(
+        await session.api.post(
+          '/api/v1/calls',
+          data: {'deviceId': device.id, 'kind': 'single', 'video': false},
+        ),
+      );
+      expect(call['demo'], isTrue);
+      expect(call['requesterUserId'], session.userId);
+    },
+  );
   test('preview login, site selection and actions are local', () async {
     final session = createPreviewSession();
     addTearDown(session.dispose);
@@ -79,7 +82,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('sites-enter')));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('东区高处检修作业'), findsWidgets);
+    // This dated preview work is historical and must not be shown as current.
+    expect(find.text('东区高处检修作业'), findsNothing);
     await tester.tap(find.text('通讯').last);
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);

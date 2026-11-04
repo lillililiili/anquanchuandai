@@ -46,6 +46,7 @@ def isolated_command(command, mysql, redis, password):
         '--spring.quartz.auto-startup': 'false', '--melhat.demo-mode': 'false',
         '--melhat.direct.enabled': 'false', '--melhat.belt.enabled': 'false',
         '--melhat.helmet-media.enabled': 'false',
+        '--fuda.api.enabled': 'false', '--fuda.gb.internal-enabled': 'false',
     }
     return [value for value in command if value.split('=', 1)[0] not in values] + [key + '=' + value for key, value in values.items()]
 

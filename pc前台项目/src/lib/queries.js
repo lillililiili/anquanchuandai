@@ -1,4 +1,5 @@
 import { db, tick } from "@/mock/runtime";
+import { workBusinessEnabled } from './work-business.js';
 import { session } from "@/stores/session";
 
 export function revision() {
@@ -6,7 +7,7 @@ export function revision() {
 }
 
 export function scope(extra = {}) {
-  return { station: session.station, ...extra };
+  return { station: session.station, ...extra, ...(!workBusinessEnabled(db) ? { workId: "" } : {}) };
 }
 
 export function people() {
@@ -14,7 +15,7 @@ export function people() {
 }
 
 export function works() {
-  return db.filter(db.state.works, scope());
+  return workBusinessEnabled(db) ? db.filter(db.state.works, scope()) : [];
 }
 
 export function events() {

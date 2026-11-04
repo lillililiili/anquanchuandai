@@ -19,7 +19,21 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
   int _page = 1;
   int? _personVersion;
   Object? _error;
+  int _request = 0;
   final Map<String, String> _keys = {};
+  @override
+  void didUpdateWidget(covariant PersonEquipmentPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id) {
+      _assigned = [];
+      _devices = [];
+      _personVersion = null;
+      _keys.clear();
+      _search.clear();
+      _load();
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -36,23 +50,27 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
   }
 
   Future<void> _load({int page = 1}) async {
+    final session = _session!;
+    final personId = widget.id;
+    final scopeKey = session.scopeKey;
+    final request = ++_request;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final assigned = jsonList(
-        await _session!.api.get('/api/v1/people/${widget.id}/equipment'),
+        await session.api.get('/api/v1/people/$personId/equipment'),
       );
-      final devices = await _session!.api.page(
+      final devices = await session.api.page(
         '/api/v1/devices',
         current: page,
         query: {'assetStatus': 'in_stock', 'sn': _search.text.trim()},
       );
       final person = jsonMap(
-        await _session!.api.get('/api/v1/people/${widget.id}'),
+        await session.api.get('/api/v1/people/$personId'),
       );
-      if (mounted) {
+      if (mounted && request == _request && scopeKey == session.scopeKey) {
         setState(() {
           _assigned = assigned;
           _devices = devices.records;
@@ -63,7 +81,7 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && request == _request && scopeKey == session.scopeKey) {
         setState(() {
           _error = e;
           _loading = false;
@@ -73,12 +91,17 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
   }
 
   Future<void> _assign(JsonMap row, bool returning) async {
+    final personId = widget.id;
+    final scopeKey = _session!.scopeKey;
     if (!await confirmManagement(
       context,
       returning ? '确认归还装备？' : '确认分配装备？',
       '${deviceTypeLabel(row['typeCode'])} · ${textOf(row['sn'])}'
           '${returning ? '\n请确认装备完好，可正常入库；损坏装备请在 PC 后台办理异常归还。' : ''}',
     )) {
+      return;
+    }
+    if (!mounted || widget.id != personId || _session!.scopeKey != scopeKey) {
       return;
     }
     final action = '${returning ? 'return' : 'issue'}-${row['id']}';
@@ -100,7 +123,7 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
             if (returning) 'assignmentVersion': row['version'],
           },
           if (returning) 'reason': '人员档案装备归还',
-          if (!returning) 'personId': widget.id,
+          if (!returning) 'personId': personId,
           if (!returning) 'deviceId': row['id'],
         },
       );

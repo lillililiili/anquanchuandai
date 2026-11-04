@@ -1,5 +1,6 @@
 <script setup>
-import { computed, reactive } from "vue";
+import { workBusinessEnabled, workStatus } from '@/lib/work-business';
+import { computed, reactive, watch } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppField from "@/components/ui/AppField.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -18,10 +19,11 @@ import { deviceStatus, deviceStatusTone } from "@/lib/device-telemetry";
 import { filtersOf, session } from "@/stores/session";
 import { personName, revision, scope, statusColor, works } from "@/lib/queries";
 import { previewCsv } from "@/lib/dialogs";
-import { externalStatusPresentation } from '@/lib/external-status';
+import { externalStatusPresentation, hasExternalSource } from '@/lib/external-status';
 import { statisticsView, personRealEquipmentCount } from './statistics-model';
 
-const statTabs = ["综合", "人员", "装备", "任务", "事件"].map((label) => ({ id: label, label }));
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
+const statTabs = computed(() => ["综合", "人员", "装备", ...(workEnabled.value ? ["任务"] : []), "事件"].map((label) => ({ id: label, label })));
 const typeKeys = computed(() => { revision(); return ['H','B', ...(stats.value.byType.W?.total > 0 ? ['W'] : [])]; });
 const typeLabels = { H: "安全帽", B: "安全带", W: "手表" };
 const verifyStates = ["待现场核验", "待认领", "处理中", "已核验"];
@@ -31,16 +33,18 @@ const segmentColors = {
   处理中: "var(--theme-primary)",
   已核验: "var(--theme-green)",
 };
-const peopleColumns = ["人员", "班组", "当前作业", "当前真实领用装备", "操作"];
+const peopleColumns = computed(() => ["人员", "班组", ...(workEnabled.value ? ["当前作业"] : []), "当前真实领用装备", "操作"]);
 const deviceColumns = ["设备", "类型", "当前领用人", "电量", "状态"];
 const workColumns = ["作业名称", "编号", "监护人", "人数", "状态", "操作"];
-const eventColumns = ["人员", "设备", "关联作业", "事件", "核验状态", "回传状态", "操作"];
+const showExternal = computed(() => workEnabled.value && stats.value.events.some(hasExternalSource));
+const eventColumns = computed(() => ["人员", "设备", ...(workEnabled.value ? ["关联作业"] : []), "事件", "核验状态", ...(showExternal.value ? ["外部系统状态"] : []), "操作"]);
 
 const stored = filtersOf("statistics");
 const draft = reactive({
   date: stored.date || "",
   workId: stored.workId || "",
 });
+watch(() => { revision(); return db.state.businessConfig?.workBusinessEnabled; }, enabled => { if (enabled === false) draft.workId = ""; }, { immediate: true });
 
 const workOptions = computed(() => {
   revision();
@@ -57,7 +61,7 @@ const detailKind = computed(() => {
   revision();
   if (session.statsTab === "人员") return "人员";
   if (session.statsTab === "装备") return "装备";
-  if (session.statsTab === "任务") return "任务";
+  if (workEnabled.value && session.statsTab === "任务") return "任务";
   return "事件";
 });
 
@@ -67,7 +71,7 @@ const summaryCards = computed(() => {
   return [
     { icon: "user-line", label: "当前在册人员", value: current.people.length, unit: "人", color: "blue" },
     { icon: "shield-user-line", label: "当前真实领用装备", value: current.devices.length, unit: "件", color: "cyan" },
-    { icon: "clipboard-line", label: "台账作业", value: current.works.length, unit: "项", color: "cyan" },
+    ...(workEnabled.value ? [{ icon: "clipboard-line", label: "台账作业", value: current.works.length, unit: "项", color: "cyan" }] : []),
     { icon: "alarm-warning-line", label: "待处理事件", value: current.unresolved, unit: "起", color: "yellow" },
   ];
 });
@@ -105,7 +109,7 @@ function barWidth(count) {
 function applyFilters() {
   session.filters.statistics = {
     date: draft.date,
-    workId: draft.workId,
+    workId: workEnabled.value ? draft.workId : "",
   };
   if (!draft.date) draft.date = "";
 }
@@ -115,11 +119,11 @@ function exportStatistics() {
   if (session.statsTab === "人员") {
     previewCsv(
       "人员当前状态.csv",
-      ["姓名", "班组", "当前作业", "当前真实领用装备数量"],
+      ["姓名", "班组", ...(workEnabled.value ? ["当前作业"] : []), "当前真实领用装备数量"],
       current.people.map((person) => [
         person.name,
         person.team,
-        db.currentWork(person.id)?.name || "待分配",
+        ...(workEnabled.value ? [db.currentWork(person.id)?.name || "待分配"] : []),
         personRealEquipmentCount(db, current, person.id),
       ]),
     );
@@ -139,7 +143,7 @@ function exportStatistics() {
     );
     return;
   }
-  if (session.statsTab === "任务") {
+  if (workEnabled.value && session.statsTab === "任务") {
     previewCsv(
       "作业追溯.csv",
       ["名称", "编号", "监护人", "人数", "状态"],
@@ -148,35 +152,35 @@ function exportStatistics() {
         work.id,
         db.person(work.supervisor)?.name,
         work.members.length,
-        work.status,
+        workStatus(work),
       ]),
     );
     return;
   }
   previewCsv(
     "事件追溯.csv",
-    ["人员", "设备", "关联作业", "事件", "发生时间", "核验状态", "外部系统状态"],
+    ["人员", "设备", ...(workEnabled.value ? ["关联作业"] : []), "事件", "发生时间", "核验状态", ...(showExternal.value ? ["外部系统状态"] : [])],
     current.events.map((item) => [
       item.snapshot?.personName || '未关联人员',
       item.deviceId,
-      item.snapshot?.workName || '无关联作业',
+      ...(workEnabled.value ? [item.snapshot?.workName || '无关联作业'] : []),
       item.title,
       item.date + " " + item.time,
       item.status,
-      externalStatusPresentation(item).label,
+      ...(showExternal.value ? [hasExternalSource(item) ? externalStatusPresentation(item).label : '—'] : []),
     ]),
   );
 }
 </script>
 
 <template>
-  <PageHeading title="统计与追溯" subtitle="按人员、装备、作业与事件追溯监护记录">
+  <PageHeading title="统计与追溯" :subtitle="workEnabled ? '按人员、装备、作业与事件追溯监护记录' : '按人员、装备与事件追溯监护记录'">
     <template #actions>
       <form class="filters" data-form="filters" style="margin:0" @submit.prevent="applyFilters">
-        <AppField label="作业 / 事件日期">
+        <AppField :label="workEnabled ? '作业 / 事件日期' : '事件日期'">
           <AppInput v-model="draft.date" name="date" type="date" />
         </AppField>
-        <AppField label="作业范围">
+        <AppField v-if="workEnabled" label="作业范围">
           <AppSelect v-model="draft.workId" name="workId" :options="workOptions" />
         </AppField>
         <AppButton type="submit" tone="primary">查询</AppButton>
@@ -186,7 +190,7 @@ function exportStatistics() {
   </PageHeading>
   <div class="row space-between">
     <AppTabs v-model="session.statsTab" box :tabs="statTabs" />
-    <small class="stats-notice"><AppIcon name="information-line" />日期筛选作业和事件记录；人员、领用装备及在线状态为当前状态。</small>
+    <small class="stats-notice"><AppIcon name="information-line" />{{ workEnabled ? '日期筛选作业和事件记录' : '日期筛选事件记录' }}；人员、领用装备及在线状态为当前状态。</small>
   </div>
   <AppStatCards :items="summaryCards" />
   <p v-if="stats.simulatedWatches.length" class="note">模拟手表 {{ stats.simulatedWatches.length }} 块 · 非实时测量，未计入真实装备统计</p>
@@ -237,7 +241,7 @@ function exportStatistics() {
         <tr v-for="person in pageRows" :key="person.id">
           <td>{{ personName(person.id) }}</td>
           <td>{{ person.team }}</td>
-          <td>{{ db.currentWork(person.id)?.name || "待分配" }}</td>
+          <td v-if="workEnabled">{{ db.currentWork(person.id)?.name || "待分配" }}</td>
           <td>{{ personRealEquipmentCount(db, stats, person.id) }}</td>
           <td><a class="btn small" :href="'#/person/' + person.id">查看</a></td>
         </tr>
@@ -257,7 +261,7 @@ function exportStatistics() {
           <td>{{ work.id }}</td>
           <td>{{ personName(work.supervisor) }}</td>
           <td>{{ work.members.length }}</td>
-          <td><AppTag>{{ work.status }}</AppTag></td>
+          <td><AppTag>{{ workStatus(work) }}</AppTag></td>
           <td><a class="btn small" :href="'#/work/' + work.id">查看</a></td>
         </tr>
       </AppTable>
@@ -265,16 +269,14 @@ function exportStatistics() {
         <tr v-for="item in pageRows" :key="item.id">
           <td>{{ item.snapshot?.personName || '未关联人员' }}</td>
           <td>{{ item.deviceId }}</td>
-          <td>{{ item.snapshot?.workName || '无关联作业' }}</td>
+          <td v-if="workEnabled">{{ item.snapshot?.workName || '无关联作业' }}</td>
           <td>{{ item.title }} {{ item.time }}</td>
           <td><AppTag :color="statusColor(item.status)">{{ item.status }}</AppTag></td>
-          <td>
-            <AppStatus :color="externalStatusPresentation(item).color">{{ externalStatusPresentation(item).label }}</AppStatus>
-          </td>
+          <td v-if="showExternal"><AppStatus v-if="hasExternalSource(item)" :color="externalStatusPresentation(item).color">{{ externalStatusPresentation(item).label }}</AppStatus><span v-else>—</span></td>
           <td><a class="btn small" :href="'#/event/' + item.id">查看</a></td>
         </tr>
       </AppTable>
     </AppPanel>
   </div>
-  <p class="note">当前口径：所选厂站与作业成员范围内，在册 {{ stats.people.length }} 人，真实已领用装备 {{ stats.devices.length }} 件。日期仅筛选实际作业和事件记录，无日期记录不计入指定日；不据当前状态推算历史在线率。本平台核验与外部回传状态分别展示。</p>
+  <p class="note">当前口径：{{ workEnabled ? '所选厂站与作业成员范围内' : '所选厂站范围内' }}，在册 {{ stats.people.length }} 人，真实已领用装备 {{ stats.devices.length }} 件。日期仅筛选{{ workEnabled ? '实际作业和事件' : '事件' }}记录，无日期记录不计入指定日；不据当前状态推算历史在线率。<template v-if="showExternal">本平台核验与外部回传状态分别展示。</template></p>
 </template>

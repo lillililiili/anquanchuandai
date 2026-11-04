@@ -2,10 +2,12 @@ import 'data.dart';
 import 'demo_visibility.dart';
 import 'device_features.dart';
 import 'person_equipment_context.dart';
+import 'work_business.dart';
 
 /// Only a presentation projection. Identifiers and versions always come from Spring.
 class SharedModels {
-  SharedModels(JsonMap state) : state = visibleBusinessState(state);
+  SharedModels(JsonMap state)
+    : state = projectWorkBusiness(visibleBusinessState(state));
   final JsonMap state;
   List<JsonMap> rows(String key) => jsonList(state[key]);
   JsonMap find(String key, Object? id) =>
@@ -118,9 +120,7 @@ class SharedModels {
       features[key] = contextualFeature(d, equipmentContext, key);
       if (!current || d['online'] != true || d['active'] == false) {
         features[key]!['available'] = false;
-        if (features[key]!['verified'] == true) {
-          features[key]!['reason'] = '设备离线或状态已过期';
-        }
+        features[key]!['reason'] = '设备离线或状态已过期';
       }
     }
     final actions =
@@ -132,6 +132,7 @@ class SharedModels {
               .where(
                 (action) =>
                     actionFeature({
+                      'source': d['source'],
                       'featureStates': features,
                     }, idOf(action)).available &&
                     (action == 'tts' ||
@@ -288,6 +289,8 @@ class SharedModels {
     'title': w['name'],
     'status': w['status'] == '已结束'
         ? 'ended'
+        : w['status'] == '已取消'
+        ? 'cancelled'
         : w['status'] == '待开始'
         ? 'ready'
         : 'in_progress',
@@ -302,17 +305,21 @@ class SharedModels {
     'guardianName':
         jsonMap(w['participantNames'])[idOf(w['supervisor'])] ??
         find('people', w['supervisor'])['name'],
-    'ticketNo': w['id'],
-    'ticketRequired': true,
-    'ticketStatus': w['source'] == '工作票' ? 'provided' : 'unverified',
-    'sourceName': w['source'],
-    'sourceStatus': textOf(
-      w['externalStatus'],
-      textOf(w['sourceStatus'], '未接入'),
-    ),
+    'ticketNo': localWork(w) ? '' : w['id'],
+    'ticketRequired': !localWork(w),
+    'ticketStatus': localWork(w)
+        ? 'local'
+        : w['source'] == '工作票'
+        ? 'provided'
+        : 'unverified',
+    'sourceName': localWork(w) ? '本地登记' : w['source'],
+    'sourceStatus': localWork(w)
+        ? ''
+        : textOf(w['externalStatus'], textOf(w['sourceStatus'], '暂无同步状态')),
     'demo': idOf(w['sync']).contains('示例'),
-    'plannedStartAt': '${w['date']}T${w['start']}:00+08:00',
-    'plannedEndAt': '${w['date']}T${w['end']}:00+08:00',
+    'plannedStartAt':
+        w['plannedStartAt'] ?? '${w['date']}T${w['start']}:00+08:00',
+    'plannedEndAt': w['plannedEndAt'] ?? '${w['date']}T${w['end']}:00+08:00',
     'members': [
       (w['members'] as List? ?? []).map(
         (id) => {
@@ -327,6 +334,9 @@ class SharedModels {
     ].expand((r) => r).toList(),
   };
   JsonMap event(JsonMap e) {
+    if (jsonMap(state['businessConfig'])['workBusinessEnabled'] == false) {
+      e = withoutWorkBusiness(e);
+    }
     final a = jsonMap(
       e['assistance'] ?? jsonMap(state['assistance'])[idOf(e['id'])],
     );
@@ -342,11 +352,21 @@ class SharedModels {
           snapshot['personName'] ?? find('people', e['personId'])['name'],
       'personCode': find('people', e['personId'])['code'] ?? e['personId'],
       'sn': e['sn'] ?? snapshot['deviceSn'] ?? e['deviceId'],
-      'deviceType': type(find('devices', e['deviceId'])['type']),
+      'deviceType': type(
+        find('devices', e['deviceId'])['type'] ??
+            (e['protocol'] == 'direct-belt'
+                ? 'B'
+                : e['protocol'] == 'direct-helmet'
+                ? 'H'
+                : null),
+      ),
       'taskId': e['workId'],
       'claimantUserId': e['claimedBy'],
+      'claimantName': e['claimedByName'],
       'sourceEventId': e['externalId'],
-      'externalClosureStatus': 'not_synced',
+      'externalClosureStatus': idOf(e['externalId']).isEmpty
+          ? ''
+          : 'not_synced',
       'alarmCode': eventTypes[e['type']] ?? e['type'],
       'alarmName': e['title'],
       'alarmDescription': e['description'] ?? e['title'],

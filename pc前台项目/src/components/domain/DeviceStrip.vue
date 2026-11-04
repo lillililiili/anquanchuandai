@@ -3,6 +3,8 @@ import { computed } from "vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import AppStatus from "@/components/ui/AppStatus.vue";
 import AppTag from "@/components/ui/AppTag.vue";
+import DeviceLocalRecording from './DeviceLocalRecording.vue';
+import DeviceControlsReference from './DeviceControlsReference.vue';
 import { typeNames } from "@/mock/data";
 import { db, tick } from "@/mock/runtime";
 import { deviceStatus, deviceStatusTone, projectDevice } from "@/lib/device-telemetry";
@@ -39,7 +41,7 @@ function label(device) {
 }
 function statusValue(device, key, value) {
   const feature = featureState(device, key);
-  if (!feature.verified) return '待联调';
+  if (!feature.available) return feature.reason || '暂无有效上报';
   return value == null ? '暂无有效上报' : value;
 }
 function reportTime(device) {
@@ -83,7 +85,11 @@ const hooks = value => value === true ? '已挂接' : value === false ? '未挂�
             <span>相对高度</span>
             <strong>{{ statusValue(deviceOf(type), 'height', (deviceOf(type).relativeHeight ?? deviceOf(type).height) == null ? null : (deviceOf(type).relativeHeight ?? deviceOf(type).height) + ' m') }}</strong>
           </div>
+          <div v-if="deviceOf(type).source === 'DIRECT_HELMET'" class="device-fact device-fact-wide">
+            <DeviceLocalRecording :device="deviceOf(type)" />
+          </div>
         </div>
+        <DeviceControlsReference v-if="deviceOf(type)" :device="deviceOf(type)" />
       </div>
       <div v-else>
         <b v-if="large">{{ typeNames[type] }}</b>

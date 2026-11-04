@@ -29,6 +29,9 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
   String? _viewerSessionId;
   String? _recordingSourceCommandId;
   Future<dynamic> Function()? _viewerRelease;
+  DialogRoute<void>? _previewRoute;
+  NavigatorState? _previewNavigator;
+  String? _previewAssetId;
   String? _recordingStartKey;
   bool _viewing = false;
   Object? _error;
@@ -43,6 +46,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     super.didChangeDependencies();
     final session = WearScope.of(context);
     if (!identical(session, _session) || _scope != session.scopeKey) {
+      _closePreview();
       _releaseView();
       _session = session;
       _scope = session.scopeKey;
@@ -77,6 +81,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
         _viewerSessionId != null &&
         !actionFeature(widget.device, 'start_video').available;
     if (changedDevice || changedIssuance || unavailable) {
+      _closePreview();
       _releaseView();
       _live = {};
       ++_generation;
@@ -99,6 +104,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
   @override
   void dispose() {
     _timer?.cancel();
+    _closePreview();
     _releaseView();
     ++_generation;
     super.dispose();
@@ -157,6 +163,12 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
         live = {};
         if (!releasedCurrentView) liveError = '';
       }
+      if (_previewAssetId != null &&
+          !jsonList(data['items']).any(
+            (row) => idOf(row['id'] ?? row['assetId']) == _previewAssetId,
+          )) {
+        _closePreview();
+      }
       setState(() {
         _data = data;
         _live = live;
@@ -170,6 +182,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
       }
       setState(() {
         if (e is WearApiException && [401, 403, 404].contains(e.code)) {
+          _closePreview();
           _releaseView();
           _data = {};
         }
@@ -400,11 +413,11 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                     _button('实时观看', Icons.videocam_outlined, 'start_video'),
                     _button('停止观看', Icons.stop_circle_outlined, 'stop_video'),
                     _button(
-                      '开始录像',
+                      '开始平台录制',
                       Icons.fiber_manual_record_outlined,
                       'start_recording',
                     ),
-                    _button('停止录像', Icons.stop_outlined, 'stop_recording'),
+                    _button('停止平台录制', Icons.stop_outlined, 'stop_recording'),
                     if (actionFeature(_features, 'list_recordings').supported)
                       OutlinedButton.icon(
                         onPressed: _allowed('list_recordings')
@@ -528,54 +541,89 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
       leading: Icon(
         row['kind'] == 'photo' ? Icons.photo_outlined : Icons.movie_outlined,
       ),
-      title: Text(
-        textOf(row['name'], row['kind'] == 'photo' ? '设备照片' : '设备录像'),
+      title: Text(textOf(row['name'], row['kind'] == 'photo' ? '照片' : '录像')),
+      subtitle: Text(
+        '${_mediaOriginLabel(row)} · ${formatTime(row['createdAt'] ?? row['created'])}',
       ),
-      subtitle: Text(formatTime(row['createdAt'] ?? row['created'])),
       trailing: const Icon(Icons.chevron_right),
-      onTap: !valid
-          ? null
-          : () => showDialog<void>(
-              context: context,
-              builder: (context) => Dialog(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: row['kind'] == 'photo'
-                            ? Image.network(
-                                url,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, error, stack) =>
-                                    const Padding(
-                                      padding: EdgeInsets.all(24),
-                                      child: Text('照片加载失败或链接已过期，请刷新列表后重试'),
-                                    ),
-                              )
-                            : HelmetVideoPlayer(url: url),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('关闭'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+      onTap: valid ? () => _openPreview(row, url) : null,
     );
   }
+
+  void _closePreview() {
+    final route = _previewRoute, navigator = _previewNavigator;
+    _previewRoute = null;
+    _previewNavigator = null;
+    _previewAssetId = null;
+    if (route == null || navigator == null) return;
+    // Scope/issuance changes can arrive during a build. Remove only this
+    // preview after that frame; never pop a newer dialog or the business page.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (navigator.mounted && route.isActive) navigator.removeRoute(route);
+    });
+  }
+
+  Future<void> _openPreview(JsonMap row, String url) async {
+    if (_previewRoute != null) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final route = DialogRoute<void>(
+      context: context,
+      builder: (context) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: row['kind'] == 'photo'
+                    ? Image.network(
+                        url,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, error, stack) => const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text('照片加载失败或链接已过期，请刷新列表后重试'),
+                        ),
+                      )
+                    : HelmetVideoPlayer(url: url),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('关闭'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    _previewRoute = route;
+    _previewNavigator = navigator;
+    _previewAssetId = idOf(row['id'] ?? row['assetId']);
+    try {
+      await navigator.push(route);
+    } finally {
+      if (identical(_previewRoute, route)) {
+        _previewRoute = null;
+        _previewNavigator = null;
+        _previewAssetId = null;
+      }
+    }
+  }
 }
+
+String _mediaOriginLabel(JsonMap row) => switch (row['mediaOrigin']) {
+  'PLATFORM_RECORDING' => '平台录制',
+  'DEVICE_RECORDING' => '设备内录像',
+  'DEVICE_PHOTO' => '设备照片',
+  _ => '来源未确认',
+};
 
 String _actionLabel(String value) =>
     const {
       'take_photo': '拍照',
       'start_video': '实时观看',
       'stop_video': '停止观看',
-      'start_recording': '平台录像',
-      'stop_recording': '停止录像',
+      'start_recording': '开始平台录制',
+      'stop_recording': '停止平台录制',
       'list_recordings': '查询本地录像',
       'upload_recording': '上传录像',
     }[value] ??

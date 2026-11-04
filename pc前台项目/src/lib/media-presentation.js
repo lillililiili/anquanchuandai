@@ -22,7 +22,15 @@ export function mediaSourceLabel(media) {
 }
 
 export function mediaTime(media) {
+  if (!media?.capturedAt && media?.timeBasis === 'RECEIVED_AT' && media?.receivedAt)
+    return { label: '接收时间', value: formatRecordedDateTime(media.receivedAt) };
   return { label: media?.capturedAt ? '拍摄时间' : '资料生成时间', value: formatRecordedDateTime(media?.capturedAt || media?.createdAt || media?.created) };
+}
+
+export function mediaPerson(media) {
+  if (!media?.personId && !media?.personName && (media?.receivedPersonId || media?.receivedPersonName))
+    return { label: media.scopeBasis === 'UPLOAD_REQUEST' ? '上传时领用人' : '接收时领用人', value: media.receivedPersonName || `${media.receivedPersonId}（历史姓名未提供）` };
+  return { label: '关联人员', value: media?.snapshot?.personName || media?.personName || (media?.personId ? `${media.personId}（历史姓名未提供）` : '未关联人员') };
 }
 
 export function normalizeMedia(media, station = media.station) {

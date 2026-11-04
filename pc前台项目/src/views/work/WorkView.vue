@@ -1,4 +1,5 @@
 <script setup>
+import { workStatus, workSource, workPeriodText } from '@/lib/work-business';
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import AppButton from "@/components/ui/AppButton.vue";
@@ -93,16 +94,16 @@ function openRecords() {
   <template v-else>
     <PageHeading>
       <template #title>
-        <a class="text-link" href="#/works"><AppIcon name="arrow-left-line" /> 返回作业列表</a>　{{ record.name }}　<AppTag>{{ record.status }}</AppTag>
+        <a class="text-link" href="#/works"><AppIcon name="arrow-left-line" /> 返回作业列表</a>　{{ record.name }}　<AppTag>{{ workStatus(record) }}</AppTag>
       </template>
       <template #actions>
         <AppStatCards :items="stats" variant="mini" />
       </template>
     </PageHeading>
     <div class="row muted" style="margin-bottom:18px">
-      工作票编号　{{ record.id }}　<AppTag color="muted">台账记录 · 只读 · {{ record.date || '日期待核对' }}</AppTag>
+      作业编号　{{ record.id }}　<AppTag color="muted">{{ workSource(record) }} · 只读</AppTag>
       <span class="spacer"></span>
-      负责人　{{ personName(record.leader) }}　|　监护人　{{ personName(record.supervisor) }}　|　作业时间　{{ record.date }} {{ record.start }} – {{ record.end }}
+      负责人　{{ personName(record.leader) }}　|　监护人　{{ personName(record.supervisor) }}　|　作业时间　{{ workPeriodText(record) }}
     </div>
     <div class="grid cols-2">
       <div class="stack">
@@ -127,7 +128,7 @@ function openRecords() {
               <td>
                 <div class="inline-buttons">
                   <a class="btn small" :href="'#/tracks/' + pid">查看轨迹</a>
-                  <AppButton v-if="personFeature(db,pid,'voice').supported" :disabled="!personFeature(db,pid,'voice').available" tone="small" @click="runGuarded(() => callPerson(pid))">{{ personFeature(db,pid,'voice').verified ? '发起对讲' : '对讲 · 待联调' }}</AppButton>
+                  <AppButton v-if="personFeature(db,pid,'voice').supported" :disabled="!personFeature(db,pid,'voice').available" :title="personFeature(db,pid,'voice').reason" tone="small" @click="runGuarded(() => callPerson(pid))">前往语音通话</AppButton>
                 </div>
               </td>
             </tr>
@@ -164,7 +165,7 @@ function openRecords() {
         <AppPanel title="作业人员位置">
           <template #extra>以设备实际定位上报为准</template>
           <div style="height:220px"><PlantMap :work="record" :legend="false" /></div>
-          <div class="detail-section">
+          <div v-if="record.source !== 'LOCAL'" class="detail-section">
             <h3>来源风险提示　<AppTag color="yellow">来源摘要</AppTag></h3>
             <p class="note">{{ workRisks(record).riskFactors || '尚未取得来源系统的风险信息' }}</p>
             <AppButton tone="plain blue" @click="openRisk">查看完整风险信息 <UiIcon name="chevron-right" /></AppButton>

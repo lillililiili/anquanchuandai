@@ -150,6 +150,9 @@ class _EventsPageState extends State<EventsPage> {
       _dutySummary = null;
       unawaited(_loadDutySummary());
     }
+    if (!session.workBusinessEnabled) {
+      unawaited(_controller!.clearWorkContext());
+    }
   }
 
   Future<void> _loadDutySummary() async {
@@ -193,6 +196,7 @@ class _EventsPageState extends State<EventsPage> {
     initialEventId: widget.eventId,
     initialPersonId: widget.personId,
     initialTaskId: widget.taskId,
+    workBusinessEnabled: () => session.workBusinessEnabled,
     initialClaimantUserId: widget.initialClaimantUserId,
     initialEscalated: widget.initialEscalated,
     initialStatus: widget.initialStatus,
@@ -510,7 +514,9 @@ class _EventsPageState extends State<EventsPage> {
     return WearCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: InlineFilters(
-        key: ValueKey('event-filters-${_session?.scopeKey}'),
+        key: ValueKey(
+          'event-filters-${_session?.scopeKey}-${_session?.workBusinessEnabled}',
+        ),
         title: '事件筛选',
         enabled: !controller.writing,
         groups: [
@@ -571,10 +577,13 @@ class _EventsPageState extends State<EventsPage> {
               'mine',
           },
         },
-        fields: const {'person': '人员 ID（可选）', 'task': '任务 ID（可选）'},
+        fields: {
+          'person': '人员 ID（可选）',
+          if (_session!.workBusinessEnabled) 'task': '任务 ID（可选）',
+        },
         fieldValues: {
           'person': filters.personId,
-          'task': filters.taskId,
+          if (_session!.workBusinessEnabled) 'task': filters.taskId,
           'claimant': filters.claimantUserId == _session?.userId
               ? ''
               : filters.claimantUserId,
@@ -613,7 +622,7 @@ class _EventsPageState extends State<EventsPage> {
               deviceTypes: (selected['device'] ?? {}).toList(),
               escalated: selected['flags']?.contains('escalated') ?? false,
               personId: fields['person'] ?? '',
-              taskId: fields['task'] ?? '',
+              taskId: _session!.workBusinessEnabled ? fields['task'] ?? '' : '',
               claimantUserId: selected['flags']?.contains('mine') == true
                   ? _session!.userId
                   : fields['claimant'] ?? '',
@@ -865,7 +874,7 @@ class _EventsPageState extends State<EventsPage> {
         _line(Icons.schedule_outlined, '发生时间', formatTime(event.occurredAt)),
         if (event.alarmCode.isNotEmpty)
           _line(Icons.info_outline, '告警编码', event.alarmCode),
-        if (event.sourceEventId.isNotEmpty)
+        if (_session!.workBusinessEnabled && event.sourceEventId.isNotEmpty)
           _line(Icons.link, '来源编号', event.sourceEventId),
         _line(
           Icons.location_on_outlined,
@@ -898,7 +907,7 @@ class _EventsPageState extends State<EventsPage> {
             ),
           ),
         ],
-        if (event.taskId.isNotEmpty)
+        if (_session!.workBusinessEnabled && event.taskId.isNotEmpty)
           _line(
             Icons.assignment_outlined,
             '关联任务',
@@ -977,7 +986,8 @@ class _EventsPageState extends State<EventsPage> {
           icon: const Icon(Icons.restart_alt),
           label: const Text('重开'),
         ),
-      if (controller.can(EventCommand.assignTask))
+      if (_session!.workBusinessEnabled &&
+          controller.can(EventCommand.assignTask))
         OutlinedButton.icon(
           key: const ValueKey('event-assign-task'),
           onPressed: controller.writing ? null : () => _assignTask(controller),

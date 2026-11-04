@@ -29,7 +29,7 @@ class PersonEquipmentContextTest {
         GuardianEvents events=new GuardianEvents(store,access,mock(GuardianFiles.class));ReflectionTestUtils.setField(events,"equipment",service);
         JSONObject snapshot=events.snapshot(actor),person=snapshot.getJSONObject("personEquipmentContext").getJSONObject("P1");
         assertEquals(2,person.getJSONArray("devices").size());JSONObject video=person.getJSONObject("features").getJSONObject("video");assertTrue(video.getBooleanValue("supported"));assertFalse(video.getBooleanValue("available"));assertEquals("设备离线",video.getString("reason"));assertEquals("a-hat",video.getString("assignmentId"));
-        assertEquals("866652023095053",person.getJSONObject("features").getJSONObject("hooks").getString("deviceId"));assertEquals("待接入",person.getJSONArray("devices").getJSONObject(1).getJSONObject("featureStates").getJSONObject("voice").getString("reason"));
+        assertEquals("866652023095053",person.getJSONObject("features").getJSONObject("hooks").getString("deviceId"));assertFalse(person.getJSONArray("devices").getJSONObject(1).getJSONObject("featureStates").getJSONObject("voice").getBooleanValue("supported"));
         assertEquals("RECEIVED_AT",person.getJSONObject("location").getString("locationTimeBasis"));
         master.getJSONArray("assignments").clear();service.decorate(access.context(actor),snapshot);assertTrue(snapshot.getJSONObject("personEquipmentContext").getJSONObject("P1").getJSONArray("devices").isEmpty());
     }
@@ -39,9 +39,11 @@ class PersonEquipmentContextTest {
         request.put("assignmentVersion",3);request.put("acceptanceTest",true);master.getJSONArray("assignments").getJSONObject(0).put("active",false);assertEquals("ASSIGNMENT_REQUIRED",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"photo","communications:voice")).errorCode);
         master.getJSONArray("assignments").getJSONObject(0).put("active",true);state.getJSONArray("devices").getJSONObject(0).put("online",false);assertEquals("DEVICE_OFFLINE",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"photo","communications:voice")).errorCode);
     }
-    @Test void liveVideoAcceptanceDoesNotAuthorizeVideoCallsAndPendingAdminStillNeedsIntegration(){
+    @Test void runtimeVideoCallsNeedBothMediaAndSipWithoutCreatingAcceptanceEvidence(){
         JSONObject hat=state.getJSONArray("devices").getJSONObject(0),features=policy.features(hat);assertTrue(features.getJSONObject("video").getBooleanValue("verified"));assertFalse(features.getJSONObject("videoCall").getBooleanValue("verified"));
-        assertEquals("FEATURE_PENDING_ACCEPTANCE",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"videoCall","communications:voice")).errorCode);
+        assertDoesNotThrow(()->service.require(access.context(actor),"866652021714127",request,"videoCall","communications:voice"));
+        hat.put("mediaAvailable",false);assertEquals("FEATURE_NOT_CONNECTED",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"videoCall","communications:voice")).errorCode);
+        hat.put("mediaAvailable",true);
         request.put("acceptanceTest",true);hat.put("voiceAvailable",false);assertEquals("FEATURE_NOT_CONNECTED",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"voice","communications:voice")).errorCode);
     }
     @Test void pendingAcceptanceCannotBypassAssignmentContextOrSwitchTarget(){
@@ -50,6 +52,27 @@ class PersonEquipmentContextTest {
     }
     private javax.servlet.http.HttpServletRequest http(){org.springframework.mock.web.MockHttpServletRequest request=new org.springframework.mock.web.MockHttpServletRequest();request.setAttribute("wearable.actor",actor);return request;}
     private GuardianHelmetMediaController mediaController(com.ruoyi.melhat.direct.HelmetMediaService media){GuardianHelmetMediaController controller=new GuardianHelmetMediaController(access,media);ReflectionTestUtils.setField(controller,"equipment",service);return controller;}
+    @Test void materialPersonFilterIncludesFrozenReceptionPersonWithoutClaimingTheyCapturedIt(){
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);GuardianHelmetMediaController controller=mediaController(media);
+        when(media.assets("866652021714127")).thenReturn(JSONArray.of(
+                object("id","received","siteId","site-1","receivedPersonId","P1","timeBasis","RECEIVED_AT"),
+                object("id","captured","siteId","site-1","personId","P1"),
+                object("id","unrelated","siteId","site-1","receivedPersonId","P2"),
+                object("id","forbidden","siteId","not-authorized","receivedPersonId","P1")));
+        JSONArray rows=controller.allMedia("866652021714127","P1",http()).getJSONArray("items");
+        assertEquals(2,rows.size());assertEquals("received",rows.getJSONObject(0).getString("id"));assertNull(rows.getJSONObject(0).get("personId"));
+    }
+    @Test void uploadRetryUsesCurrentRecordingAuthorityAndRejectsReturnedEquipment(){
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);GuardianHelmetMediaController controller=mediaController(media);
+        request.put("retryKey","retry-original-001");request.put("siteId","forged-site");
+        when(media.retryUpload(eq("demo-system"),eq("866652021714127"),eq("HC-original"),any())).thenAnswer(call->{
+            JSONObject authority=call.getArgument(3);assertEquals("site-1",authority.getString("siteId"));assertEquals("d-hat",authority.getString("ledgerDeviceId"));
+            assertEquals("a-hat",authority.getString("assignmentId"));return object("id","HC-original");});
+        assertEquals("HC-original",controller.retryUpload("866652021714127","HC-original",request,http()).getString("id"));
+        master.getJSONArray("assignments").getJSONObject(0).put("active",false);
+        assertEquals("ASSIGNMENT_REQUIRED",assertThrows(AdminQueryService.QueryFailed.class,()->controller.retryUpload("866652021714127","HC-original",request,http())).errorCode);
+        verify(media,times(1)).retryUpload(anyString(),anyString(),anyString(),any());
+    }
     @Test void historyRemainsVisibleAfterReturnAndDisableWithoutLiveCredentials(){
         com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);GuardianHelmetMediaController controller=mediaController(media);
         master.getJSONArray("devices").getJSONObject(0).put("lifecycle","DISABLED");master.getJSONArray("assignments").clear();state.getJSONArray("devices").getJSONObject(0).put("online",false);
@@ -66,11 +89,24 @@ class PersonEquipmentContextTest {
         assertEquals("completed",controller.command("866652021714127",stop,http()).getString("status"));
         captured.put("siteId","not-authorized");assertEquals(403,assertThrows(AdminQueryService.QueryFailed.class,()->controller.command("866652021714127",stop,http())).code);
     }
-    @Test void mobileVideoCallNeedsIndependentAcceptanceAndOldWritesAreGone(){
+    @Test void normalCameraCommandsReachTheRealServiceWithValidatedAssignmentAuthority(){
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);GuardianHelmetMediaController controller=mediaController(media);
+        when(media.command(eq("demo-system"),eq("866652021714127"),any())).thenReturn(object("status","sent"));
+        for(String action:new String[]{"take_photo","start_recording","list_recordings","upload_recording"}){
+            JSONObject input=copy(request);input.put("action",action);input.put("idempotencyKey","normal-"+action+"-001");
+            assertEquals("sent",controller.command("866652021714127",input,http()).getString("status"));
+        }
+        verify(media,times(4)).command(eq("demo-system"),eq("866652021714127"),argThat(input->"a-hat".equals(input.getString("assignmentId"))&&input.getIntValue("assignmentVersion")==3&&!input.getBooleanValue("acceptanceTest")));
+        request.put("assignmentVersion",2);JSONObject stale=copy(request);stale.put("action","take_photo");
+        assertEquals("ASSIGNMENT_CHANGED",assertThrows(AdminQueryService.QueryFailed.class,()->controller.command("866652021714127",stale,http())).errorCode);
+        verifyNoMoreInteractions(media);
+    }
+    @Test void mobileVideoCallStillRequiresMediaReadinessAndOldWritesAreGone(){
         GuardianVoiceService voice=mock(GuardianVoiceService.class);GuardianMobileCommunications calls=new GuardianMobileCommunications(store,access,voice);ReflectionTestUtils.setField(calls,"equipment",service);
         jdbc.update("INSERT INTO wearable_feature_acceptance(device_id,feature_key,evidence) VALUES(?,?,?)","866652021714127","voice","test fixture only");
         JSONObject input=copy(request);input.put("deviceId","866652021714127");input.put("video",true);input.put("idempotencyKey","video-call-request-001");
-        assertEquals("FEATURE_PENDING_ACCEPTANCE",assertThrows(AdminQueryService.QueryFailed.class,()->calls.start(input,http())).errorCode);verifyNoInteractions(voice);
+        state.getJSONArray("devices").getJSONObject(0).put("mediaAvailable",false);
+        assertEquals("FEATURE_NOT_CONNECTED",assertThrows(AdminQueryService.QueryFailed.class,()->calls.start(input,http())).errorCode);verifyNoInteractions(voice);
         GuardianController legacy=new GuardianController(null,null,store,null,access,voice);assertEquals(410,assertThrows(AdminQueryService.QueryFailed.class,()->legacy.call(input,http())).code);assertEquals(410,assertThrows(AdminQueryService.QueryFailed.class,()->legacy.broadcast(input,http())).code);
         state.put("voiceSessions",object("old-call",object("ownerId","demo-system","hats",JSONArray.of(object("siteId","site-1")))));
         master.getJSONArray("assignments").clear();assertTrue(legacy.end(object("channel","old-call"),http()).getBooleanValue("ok"));verify(voice).end("old-call");
@@ -93,5 +129,22 @@ class PersonEquipmentContextTest {
         state.put("sharedCommunications",JSONArray.of(row));doAnswer(i->{GuardianStore.Edit edit=i.getArgument(0);edit.apply(state);return null;}).when(store).update(any());
         master.getJSONArray("assignments").clear();doThrow(new IllegalStateException("test unavailable")).when(voice).end("SIP-active");calls.reconcileInvalidSessions();
         JSONObject saved=state.getJSONArray("sharedCommunications").getJSONObject(0);assertEquals("unknown",saved.getString("status"));assertFalse(saved.containsKey("credentials"));assertEquals("P1",saved.getString("personId"));verify(voice).end("SIP-active");
+    }
+    @Test void normalVoiceCallUsesCurrentHelmetContextWithoutAcceptanceTest(){
+        actor=object("id","operator","enabled",true,"roleIds",JSONArray.of("voice-role"));master.getJSONArray("accounts").add(actor);
+        master.getJSONArray("roles").add(object("id","voice-role","enabled",true,"grants",JSONArray.of(object("siteIds",JSONArray.of("site-1"),"operations",JSONArray.of("communications:voice","people:read","assets:read")))));
+        GuardianVoiceService voice=mock(GuardianVoiceService.class);
+        com.ruoyi.melhat.direct.HelmetMediaService media=mock(com.ruoyi.melhat.direct.HelmetMediaService.class);
+        when(voice.isDirect("866652021714127")).thenReturn(true);when(voice.directMedia()).thenReturn(media);
+        when(voice.call(any(JSONArray.class),eq("operator"),eq(false))).thenReturn(object("protocol","SIP","channel","SIP-test-call","expiresAt",java.time.Instant.now().plusSeconds(300).toString(),"demo",false));
+        doAnswer(i->{GuardianStore.Edit edit=i.getArgument(0);edit.apply(state);return null;}).when(store).update(any());
+        GuardianMobileCommunications calls=new GuardianMobileCommunications(store,access,voice);ReflectionTestUtils.setField(calls,"equipment",service);
+        JSONObject input=copy(request);input.put("deviceId","866652021714127");input.put("idempotencyKey","normal-voice-request-001");
+        JSONObject result=calls.start(input,http());assertEquals("offered",result.getString("status"));assertEquals("SIP",result.getString("protocol"));assertFalse(result.getBooleanValue("demo"));
+        verify(media).requireCallReady(java.util.Collections.singletonList("866652021714127"));
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM wearable_feature_acceptance WHERE device_id=? AND feature_key='voice'",Integer.class,"866652021714127"));
+        master.getJSONArray("assignments").getJSONObject(0).put("active",false);input.put("idempotencyKey","normal-voice-request-002");
+        assertEquals("ASSIGNMENT_REQUIRED",assertThrows(AdminQueryService.QueryFailed.class,()->calls.start(input,http())).errorCode);
+        verify(voice,times(1)).call(any(JSONArray.class),eq("operator"),eq(false));
     }
 }

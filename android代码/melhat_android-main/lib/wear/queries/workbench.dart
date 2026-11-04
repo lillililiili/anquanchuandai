@@ -64,7 +64,9 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
       JsonMap? currentTask;
       var taskUnavailable = false;
       try {
-        currentTask = await loadCurrentWork(session);
+        if (session.workBusinessEnabled) {
+          currentTask = await loadCurrentWork(session);
+        }
       } on StaleSessionException {
         rethrow;
       } catch (_) {
@@ -167,8 +169,10 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                             child: Column(
                               children: [
                                 HomeSosBanner(refreshVersion: _request),
-                                _currentWorkCard(),
-                                const SizedBox(height: 12),
+                                if (_session!.workBusinessEnabled) ...[
+                                  _currentWorkCard(),
+                                  const SizedBox(height: 12),
+                                ],
                                 if (_session!.canRequestSos) _manualSosEntry(),
                                 const SizedBox(height: 12),
                                 if (_session!.personId.isNotEmpty)
@@ -487,6 +491,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
   }
 
   String _ticketLine(JsonMap task) {
+    if (task['source'] == 'LOCAL') return '${textOf(task['id'])} · 本地登记';
     if (task['ticketRequired'] != true) {
       return textOf(task['ticketNo'], '无需工作票');
     }
@@ -647,20 +652,29 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const WearSectionTitle('作业与事件'),
+        WearSectionTitle(_session!.workBusinessEnabled ? '作业与事件' : '事件记录'),
         const SizedBox(height: 10),
-        _workToolRow(
-          icon: Icons.assignment_outlined,
-          title: '我的任务',
-          subtitle: '查看作业票、人员和装备',
-          highlighted: true,
-          onTap: () => context.push('/tasks'),
-        ),
+        if (_session!.workBusinessEnabled)
+          _workToolRow(
+            icon: Icons.assignment_outlined,
+            title: '我的任务',
+            subtitle: '查看作业安排、人员和装备',
+            highlighted: true,
+            onTap: () => context.push('/tasks'),
+          ),
         _workToolRow(
           icon: Icons.fact_check_outlined,
-          title: '作业事件记录',
-          subtitle: _recordTask == null ? '当前暂无作业' : '查看当前作业关联事件及核验记录',
-          onTap: _recordTask == null ? null : _openWorkEvents,
+          title: _session!.workBusinessEnabled ? '作业事件记录' : '我的事件记录',
+          subtitle: !_session!.workBusinessEnabled
+              ? '查看告警及核验记录'
+              : _recordTask == null
+              ? '当前暂无作业'
+              : '查看当前作业关联事件及核验记录',
+          onTap: !_session!.workBusinessEnabled
+              ? () => context.push('/events?status=all')
+              : _recordTask == null
+              ? null
+              : _openWorkEvents,
         ),
       ],
     ),
@@ -752,13 +766,14 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
           Icons.devices_other_outlined,
           '/devices',
         ),
-        _tool(
-          'tasks',
-          '全部作业',
-          '查看作业安排与执行进度',
-          Icons.assignment_outlined,
-          '/tasks',
-        ),
+        if (_session!.workBusinessEnabled)
+          _tool(
+            'tasks',
+            '全部作业',
+            '查看作业安排与执行进度',
+            Icons.assignment_outlined,
+            '/tasks',
+          ),
       ],
     ),
   );
@@ -913,7 +928,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
     child: Align(
       alignment: Alignment.centerRight,
       child: Text(
-        '待核验 ${jsonList(summary['pendingEvents']).length}  ·  作业 ${jsonList(summary['activeTasks']).length}  ·  装备 ${intOf(summary['deviceCount'])}',
+        '待核验 ${jsonList(summary['pendingEvents']).length}${_session!.workBusinessEnabled ? '  ·  作业 ${jsonList(summary['activeTasks']).length}' : ''}  ·  装备 ${intOf(summary['deviceCount'])}',
         style: const TextStyle(color: WearColors.muted, fontSize: 11),
       ),
     ),

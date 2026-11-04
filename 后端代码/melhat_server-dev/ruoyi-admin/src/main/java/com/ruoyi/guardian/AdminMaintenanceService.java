@@ -86,6 +86,7 @@ public class AdminMaintenanceService {
         String fingerprint = input.toJSONString();
         if (previous != null) {
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
+            authorizedTarget(state, actor, type, input);
             return previous.getJSONObject("result");
         }
         JSONObject output = apply(state, actor, type, input);
@@ -108,7 +109,7 @@ public class AdminMaintenanceService {
         return envelope;
     }
 
-    private JSONObject apply(JSONObject state, JSONObject actor, String type, JSONObject input) {
+    private JSONObject authorizedTarget(JSONObject state, JSONObject actor, String type, JSONObject input) {
         boolean existingOrder = type.startsWith("maintenance.") && !"maintenance.create".equals(type);
         JSONObject order = null;
         JSONObject device;
@@ -123,6 +124,17 @@ public class AdminMaintenanceService {
         if (!queries.allows(state, actor, "assets:write", device.getString("siteId"), device.getString("areaId"))) throw AdminQueryService.fail(403, "PERMISSION_DENIED", "没有本设备资产办理权限");
         if (Arrays.asList("maintenance.assign", "devices.scrap", "maintenance.scrap").contains(type) && !manager(state, actor, device)) throw AdminQueryService.fail(403, "ADMIN_REQUIRED", "仅授权范围内系统／厂站管理员可办理");
         if (Arrays.asList("maintenance.start", "maintenance.inspect").contains(type) && (order == null || !actor.getString("id").equals(order.getString("handlerId")))) throw AdminQueryService.fail(403, "HANDLER_REQUIRED", "仅当前指定处理人可办理");
+        JSONObject target = new JSONObject();
+        target.put("order", order);
+        target.put("device", device);
+        return target;
+    }
+
+    private JSONObject apply(JSONObject state, JSONObject actor, String type, JSONObject input) {
+        boolean existingOrder = type.startsWith("maintenance.") && !"maintenance.create".equals(type);
+        JSONObject target = authorizedTarget(state, actor, type, input);
+        JSONObject order = target.getJSONObject("order");
+        JSONObject device = target.getJSONObject("device");
         rejectExtra(input);
         if (device.getIntValue("version") != input.getIntValue("deviceVersion") || (order != null && order.getIntValue("version") != input.getIntValue("orderVersion"))) throw AdminQueryService.fail(409, "VERSION_CONFLICT", "设备或工单已变化，请重新读取");
         String blocked = reason(state, actor, device, queries.relationshipOf(state, device).getString("state"), type, order);

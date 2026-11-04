@@ -1,4 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
+import { db, guardianReady } from '@/mock/runtime';
+import { workBusinessEnabled } from '@/lib/work-business';
 import { closeModal } from "@/stores/modal";
 
 const auth = { auth: true };
@@ -28,8 +30,9 @@ export const router = createRouter({
   ],
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if (to.meta.auth && !sessionStorage.getItem("rolling-session")) return { name: "login" };
+  if (["works", "work"].includes(to.name)) { await guardianReady; if (!workBusinessEnabled(db)) return { name: "overview" }; }
 });
 
 router.afterEach(() => closeModal());

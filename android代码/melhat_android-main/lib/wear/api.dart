@@ -58,6 +58,10 @@ class WearApi {
   }
 
   bool get isMock => dio.httpClientAdapter is MockBackend;
+  bool get usesSharedBackend => _real;
+  bool get workBusinessEnabled => shared.businessConfig.isNotEmpty
+      ? shared.businessConfig['workBusinessEnabled'] != false
+      : !_real;
 
   /// An in-memory, single-record cleanup capability. It cannot inherit a later
   /// login or expire that login when the original credentials are rejected.

@@ -157,9 +157,10 @@ public class GuardianMobileCommunications {
     private void event(GuardianAccess.Context ctx,String id){if(id!=null&&!id.isEmpty())ctx.requireEvent(find(store.snapshot(),"events",id),null);}
     private void requireCall(GuardianAccess.Context ctx,JSONObject row){equipment.require(ctx,row.getString("deviceId"),row,"voice","communications:voice");if(row.getBooleanValue("video"))equipment.require(ctx,row.getString("deviceId"),row,"videoCall","communications:voice");}
     static boolean visible(GuardianAccess.Context ctx,JSONObject row){
+        if("deviceVoiceMessage".equals(row.getString("operationType")))return GuardianDeviceVoiceMessages.visible(ctx,row);
         if("call".equals(row.getString("operationType")))return ctx.can("communications:voice",row.getString("siteId"),row.getString("areaId"));
         for(Object raw:rows(row,"recipients"))if(!ctx.can("communications:broadcast",row.getString("siteId"),((JSONObject)raw).getString("areaId")))return false;return ctx.site(row.getString("siteId"));
     }
-    static JSONObject publicRow(JSONObject row){JSONObject out=copy(row);out.remove("credentials");out.remove("requestId");out.remove("fingerprint");out.remove("correctionAudit");return out;}
+    static JSONObject publicRow(JSONObject row){if("deviceVoiceMessage".equals(row.getString("operationType")))return GuardianDeviceVoiceMessages.publicRow(row);JSONObject out=copy(row);out.remove("credentials");out.remove("requestId");out.remove("fingerprint");out.remove("correctionAudit");return out;}
     private static AdminQueryService.QueryFailed fail(int status,String code,String text){return AdminQueryService.fail(status,code,text);}
 }

@@ -9,7 +9,7 @@ void main() {
   runApp(const MyApp());
 }
 
-/// The Android entry always uses the offline app, even with old build defines.
+/// Android uses the shared backend unless WEAR_MOCK is explicitly enabled.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override

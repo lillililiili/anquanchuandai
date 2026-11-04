@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { MENU, menuPath } from '../navigation'
+import { MENU, menuPath, navigationFor } from '../navigation'
 import { fitAdminNavigation } from '../adminNavigation'
 import { usePopup } from '@ui-spec/usePopup'
 import { TEST_SITE_MODE, TEST_SITE } from '../../shared/test-site.mjs'
@@ -15,8 +15,9 @@ const { open: accountOpen, panel: accountPanel, target: accountTarget, position:
 const name = computed(() => props.identity?.name?.trim() || '当前账号')
 const initial = computed(() => Array.from(name.value)[0])
 const station = computed(() => props.sites?.find(s => s.id === props.siteId)?.name || '无授权厂站')
-const left = computed(() => MENU.slice(0, leftCount.value)), right = computed(() => MENU.slice(leftCount.value, visibleCount.value))
-const overflow = computed(() => MENU.slice(visibleCount.value)), overflowActive = computed(() => overflow.value.find(item => item.path === active.value))
+const menu = computed(() => navigationFor(props.identity))
+const left = computed(() => menu.value.slice(0, leftCount.value)), right = computed(() => menu.value.slice(leftCount.value, visibleCount.value))
+const overflow = computed(() => menu.value.slice(visibleCount.value)), overflowActive = computed(() => overflow.value.find(item => item.path === active.value))
 const target = path => ({ path, query: props.siteId ? { siteId: props.siteId } : {} })
 let observer, frame, disposed = false
 function close(restore = false) { opened.value = false; if (restore) more.value?.focus() }
@@ -46,6 +47,7 @@ function menuKey(event) {
 async function openAccount() { close(); if (accountOpen.value) account.close(true); else { await account.show(); await nextTick(); accountPanel.value?.querySelector('button')?.focus() } }
 function outside(event) { if (!root.value?.contains(event.target)) close() }
 watch(() => route.fullPath, () => { close(); account.close() })
+watch(menu, async () => { await nextTick(); if (!disposed) resize() })
 onMounted(() => {
   observer = new ResizeObserver(resize); observer.observe(root.value); observer.observe(measure.value)
   document.addEventListener('pointerdown', outside)
@@ -75,7 +77,7 @@ onBeforeUnmount(() => { disposed = true; observer?.disconnect(); cancelAnimation
       </div>
     </div>
     <div class="admin-nav-tools admin-nav-tools-right"><button ref="accountTrigger" class="admin-tool admin-avatar" :aria-label="'账号：'+name" :data-tooltip="name" aria-haspopup="true" :aria-expanded="accountOpen" @click="openAccount" @keydown.down.prevent="openAccount">{{initial}}</button></div>
-    <div ref="measure" class="admin-nav-measure" aria-hidden="true" inert><span v-for="item in MENU" :key="item.path" class="admin-nav-item" data-measure-item>{{item.title}}</span><span class="admin-nav-item" data-measure-more>更多<UiIcon name="chevron-down" /></span></div>
+    <div ref="measure" class="admin-nav-measure" aria-hidden="true" inert><span v-for="item in menu" :key="item.path" class="admin-nav-item" data-measure-item>{{item.title}}</span><span class="admin-nav-item" data-measure-more>更多<UiIcon name="chevron-down" /></span></div>
   </nav>
   <Teleport :to="accountTarget"><div v-if="accountOpen" ref="accountPanel" class="ui-popup admin-account-popup" :style="accountPosition"><strong>{{name}}</strong><span class="muted">{{identity?.loginName}}</span><button class="button text-button" @click="account.close(true); emit('logout')"><UiIcon name="arrow-right" />退出登录</button></div></Teleport>
 </template>

@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled, eventSource } from '@/lib/work-business';
 import { computed, ref, watch, watchEffect } from "vue";
 import { useFieldErrors } from "@ui-spec/useFieldErrors";
 import { useRoute } from "vue-router";
@@ -26,9 +27,10 @@ import { blobPut } from "@/lib/files";
 import { openModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
 import { externalStatusPresentation, hasExternalSource } from '@/lib/external-status';
-import { personFeature } from '@/lib/person-equipment';
+import { eventVideoSupported } from '@/lib/person-equipment';
 import { formatBeijingDateTime } from '@/lib/date-time';
 
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
 const route = useRoute();
 const formError = ref("");
 const busy = ref(false);
@@ -222,19 +224,23 @@ function openMaterials() {
           <small>{{ eventRecord.snapshot?.personName || '未关联人员' }} · {{ eventRecord.deviceId }} · {{ eventRecord.date }} {{ eventRecord.time }}</small>
         </div>
         <AppPanel title="事件关联信息">
-          <div class="grid equal">
+          <div class="grid equal" :style="workEnabled ? undefined : { gridTemplateColumns: '1fr' }">
             <dl class="info compact">
-              <dt>上报来源</dt><dd>{{ eventRecord.source === "manual_sos" ? "手机手动求助" : "设备上报" }} · {{ eventRecord.deviceId || "未关联设备" }}</dd><dt>位置说明</dt><dd>{{ eventRecord.locationDescription || "暂无有效位置说明" }}</dd>
+              <dt>上报来源</dt><dd>{{ eventSource(eventRecord, db.device(eventRecord.deviceId)) }} · {{ eventRecord.deviceId || "未关联设备" }}</dd><dt>位置说明</dt><dd>{{ eventRecord.locationDescription || "暂无有效位置说明" }}</dd>
+              <template v-if="workEnabled">
               <dt>关联作业</dt>
               <dd>{{ eventRecord.snapshot.workName }}</dd>
-              <dt>工作票</dt>
+              <dt>作业编号</dt>
               <dd>{{ eventRecord.workId || "—" }}（只读）</dd>
+              </template>
+              <dt>告警认领人</dt><dd>{{ eventRecord.claimedByName || '待认领' }}</dd>
+              <dt>核验人</dt><dd>{{ eventRecord.verification?.actorName || '尚未核验' }}</dd>
             </dl>
-            <dl class="info compact">
-              <dt>当前监护人</dt>
-              <dd>{{ personName(relatedWork?.supervisor) }}</dd>
-              <dt>当前负责人</dt>
-              <dd>{{ personName(relatedWork?.leader) }}</dd>
+            <dl v-if="workEnabled" class="info compact">
+              <dt>事发作业监护人</dt>
+              <dd>{{ eventRecord.snapshot?.supervisorName || '历史未记录' }}</dd>
+              <dt>事发作业负责人</dt>
+              <dd>{{ eventRecord.snapshot?.leaderName || '历史未记录' }}</dd>
             </dl>
           </div>
         </AppPanel>
@@ -256,7 +262,7 @@ function openMaterials() {
             </div>
           </AppPanel>
         </div>
-        <AppPanel v-if="personFeature(db, eventRecord.personId, 'video').supported" title="当前现场视频">
+        <AppPanel v-if="eventVideoSupported(db, eventRecord)" title="当前现场视频">
           <p class="note">当前领用安全帽的现场画面，不作为事件发生时的影像证据。</p>
           <VideoFrame :person-id="eventRecord.personId" preview />
         </AppPanel>
@@ -324,7 +330,7 @@ function openMaterials() {
             <p v-else class="form-error" role="alert"></p>
           </form>
         </AppPanel>
-        <AppPanel v-if="hasExternalSource(eventRecord)" title="原安监系统">
+        <AppPanel v-if="workEnabled && hasExternalSource(eventRecord)" title="原安监系统">
           <dl class="info compact">
             <dt><AppIcon name="lock-fill" /> {{ eventRecord.externalId || '外部关联记录' }}</dt>
             <dd :class="externalStatusPresentation(eventRecord).color">状态：{{ externalStatusPresentation(eventRecord).label }}</dd>

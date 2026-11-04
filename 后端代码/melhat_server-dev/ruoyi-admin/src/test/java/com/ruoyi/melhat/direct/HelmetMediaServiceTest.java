@@ -24,6 +24,16 @@ class HelmetMediaServiceTest {
         ReflectionTestUtils.setField(service,"healthy",true);
         return new Fixture(service,cloud,gateway,store);
     }
+    @Test void temporaryMediaFailureIsNotAnAuthoritativeEmptyMaterialList(){
+        Fixture f=fixture();ReflectionTestUtils.setField(f.service,"healthy",false);
+        assertEquals(503,assertThrows(com.ruoyi.guardian.AdminQueryService.QueryFailed.class,()->f.service.assets("helmet-a")).code);
+        assertFalse(f.service.media("helmet-a").getBooleanValue("itemsAvailable"));
+        ReflectionTestUtils.setField(f.service,"healthy",true);when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenThrow(new IllegalStateException("temporary cloud failure"));
+        assertEquals(503,assertThrows(com.ruoyi.guardian.AdminQueryService.QueryFailed.class,()->f.service.assets("helmet-a")).code);
+        assertFalse(f.service.media("helmet-a").getBooleanValue("itemsAvailable"));
+        doReturn(obj("items",new JSONArray())).when(f.cloud).request("GET","/assets?deviceId=helmet-a",null);
+        assertTrue(f.service.media("helmet-a").getBooleanValue("itemsAvailable"));
+    }
     @Test void commandRetriesDoNotResendAndAnotherDeviceCannotAcknowledge() throws Exception {
         Fixture f=fixture();JSONObject input=obj("action","take_photo","idempotencyKey","test-request-001");
         JSONObject first=f.service.command("operator","helmet-a",input);
@@ -150,9 +160,12 @@ class HelmetMediaServiceTest {
         assertEquals("recording-1",stream.getString("recordingId"));assertTrue(stream.getBooleanValue("recordRequested"));assertTrue(stream.getBooleanValue("watchRequested"));assertEquals("renewed",stream.getString("pushUrl"));
         verify(f.cloud,never()).request(eq("POST"),eq("/streams"),any());
     }
-    @Test void firmwareRecordingDatesAreCompactAndInvalidDatesAreRejected(){
+    @Test void firmwareRecordingQuerySelectsHighDefinitionWithCompactDatesAndRejectsInvalidDates(){
         JSONObject wire=HelmetMediaService.wire("list_recordings",obj("startTime","2026-10-23 08:01:02","endTime","2026-10-23 10:00:00"));
+        assertEquals("server_push_get_local_video_list",wire.getString("cmd"));
         assertEquals("20261023080102",wire.getString("start_time"));
+        assertEquals("20261023100000",wire.getString("end_time"));
+        assertEquals("1",wire.get("video_type"));
         assertThrows(IllegalArgumentException.class,()->HelmetMediaService.wire("list_recordings",obj("startTime","2026-02-30 00:00:00","endTime","2026-03-03 00:00:00")));
     }
     @Test void arbitraryLocalFilesCannotBeRequestedFromDevice() throws Exception {
@@ -214,7 +227,12 @@ class HelmetMediaServiceTest {
         f.store.update(s->{s.put("commands",obj("HC-upload",obj("id","HC-upload","deviceId","helmet-a","action","upload_recording","createdAt",java.time.Instant.now().minusSeconds(30).toString(),"personId","new-wearer","siteId","new-site","requestedFiles",JSONArray.of(obj("fileName","old.mp4","progressId","abc123")))));return null;});
         when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("assets",JSONArray.of(obj("assetId","asset-old","kind","video","status","ready","deviceId","helmet-a","originalName","old.mp4","progressId","abc123","createdAt",now))));
         JSONObject asset=f.service.assets("helmet-a").getJSONObject(0);
-        assertEquals("HC-upload",asset.getString("requestId"));assertTrue(asset.getBooleanValue("unassigned"));assertNull(asset.get("personId"));assertNull(asset.get("siteId"));
+        assertEquals("HC-upload",asset.getString("requestId"));assertFalse(asset.getBooleanValue("unassigned"));assertNull(asset.get("personId"));assertEquals("new-site",asset.get("siteId"));
+        assertEquals("new-wearer",asset.getString("receivedPersonId"));assertEquals("UPLOAD_REQUEST",asset.getString("scopeBasis"));
+        assertEquals("RECEIVED_AT",asset.getString("timeBasis"));assertEquals(now,asset.getString("receivedAt"));
+        JSONObject different=obj("assetId","another","kind","video","status","ready","deviceId","helmet-a","originalName","old.mp4","progressId","unmatched","createdAt",now);
+        when(f.cloud.request("GET","/assets?deviceId=helmet-a",null)).thenReturn(obj("assets",JSONArray.of(different)));
+        JSONObject unmatched=f.service.assets("helmet-a").getJSONObject(0);assertNull(unmatched.get("siteId"));assertNull(unmatched.get("receivedPersonId"));
     }
     @Test void batchUploadIsCompleteOnlyAfterAllRequestedFilesArrive(){
         Fixture f=fixture();JSONObject command=obj("id","HC-batch","deviceId","helmet-a","action","upload_recording","requestedFiles",JSONArray.of(obj("fileName","one.mp4"),obj("fileName","two.mp4")));

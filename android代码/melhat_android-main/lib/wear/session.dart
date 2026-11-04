@@ -48,6 +48,7 @@ class WearSession extends ChangeNotifier {
   bool initialized = false;
   String? error;
   bool _disposed = false;
+  bool _readingBusinessConfig = false;
   Future<void> _credentialWrite = Future.value();
   Future<void> Function()? beforeLogout;
   Future<void> Function()? terminateCall;
@@ -68,12 +69,37 @@ class WearSession extends ChangeNotifier {
       onUnauthorized: expire,
     );
     callActive.addListener(_emit);
+    api.shared.onBusinessConfigChanged = (modeChanged) {
+      _emit();
+      if (modeChanged) requestRefresh();
+    };
   }
   String get personId => idOf(me?['personId']);
   String get userId => idOf(me?['userId']);
   String get scopeKey => '$userId.${siteId ?? "none"}.$_epoch';
   bool get simulatedWatchVisible =>
       api.shared.businessConfig['simulatedWatchVisible'] != false;
+  bool get workBusinessEnabled => api.workBusinessEnabled;
+  Future<void> refreshBusinessConfig() async {
+    if (_disposed ||
+        _readingBusinessConfig ||
+        token == null ||
+        me == null ||
+        !api.usesSharedBackend) {
+      return;
+    }
+    _readingBusinessConfig = true;
+    try {
+      await api.shared.refreshBusinessConfig();
+    } on StaleSessionException {
+      return;
+    } catch (_) {
+      /* Keep the last confirmed mode; business writes remain server-authorized. */
+    } finally {
+      _readingBusinessConfig = false;
+    }
+  }
+
   Set<String> get roles =>
       (me?['roles'] as List? ?? []).map((e) => e.toString()).toSet();
   Set<String> get permissions =>
@@ -271,6 +297,7 @@ class WearSession extends ChangeNotifier {
       siteId = id;
       me!['currentSiteId'] = id;
     }
+    await refreshBusinessConfig();
   }
 
   Future<void> selectSite(String id) async {

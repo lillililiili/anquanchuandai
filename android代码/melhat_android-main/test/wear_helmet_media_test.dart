@@ -14,8 +14,9 @@ void main() {
       dio.interceptors.add(
         InterceptorsWrapper(
           onRequest: (r, h) {
-            if (r.method == 'POST')
+            if (r.method == 'POST') {
               writes.add(Map<String, dynamic>.from(r.data));
+            }
             h.resolve(
               Response(
                 requestOptions: r,
@@ -66,11 +67,11 @@ void main() {
       );
       await tester.pumpWidget(panel(1));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('开始录像'));
+      await tester.tap(find.text('开始平台录制'));
       await tester.pumpAndSettle();
       await tester.pumpWidget(panel(2));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('停止录像'));
+      await tester.tap(find.text('停止平台录制'));
       await tester.pumpAndSettle();
       expect(writes.last['action'], 'stop_recording');
       expect(writes.last['sourceCommandId'], 'record-command-1');

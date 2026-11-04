@@ -23,6 +23,7 @@ import GroupForm from "./GroupForm.vue";
 import InviteForm from "./InviteForm.vue";
 import { db, refreshSnapshot } from "@/mock/runtime";
 import PersonCall from './PersonCall.vue';
+import DeviceVoiceMessages from './DeviceVoiceMessages.vue';
 import { personFeature, personDevice, operationContext } from '@/lib/person-equipment';
 import { authFetch } from '@/lib/auth';
 import { sharedCalls, sharedBroadcasts } from '@/lib/shared-communications';
@@ -34,7 +35,7 @@ import { openModal } from "@/stores/modal";
 import { toast } from "@/stores/notify";
 import { runGuarded } from "@/lib/actions";
 import { helmetOf, people, personName, revision, search } from "@/lib/queries";
-import { featureState } from '../../../../shared/device-features.mjs';
+import { featureState, featureUnavailableReason } from '../../../../shared/device-features.mjs';
 const route = useRoute();
 const selectedPerson = computed(() => { revision(); const ids=session.selectedMembers.filter(id=>people().some(p=>p.id===id));return ids.length===1?ids[0]:''; });
 const voice = computed(()=>personFeature(db,selectedPerson.value,'voice'));
@@ -42,7 +43,7 @@ const broadcastFeature = computed(()=>{
   revision();const group=groups.value.find(g=>g.id===broadcastGroupId.value);
   const list=(group?.members||[]).map(id=>personFeature(db,id,'broadcast'));
   const supported=people().some(p=>personFeature(db,p.id,'broadcast').supported);
-  return {supported,verified:list.length>0&&list.every(f=>f.verified),available:list.length>0&&list.every(f=>f.available),reason:!list.length?'请选择接收分组':list.find(f=>!f.available)?.reason||'',recipients:list};
+  return {supported,verified:list.length>0&&list.every(f=>f.verified),available:list.length>0&&list.every(f=>f.available),reason:!list.length?'请选择接收分组':(list.find(f=>!f.available)?.reason||''),recipients:list};
 });
 watch(()=>{revision();const id=route.query.personId;return typeof id==='string'&&db.person(id)?id:'';},id=>{if(id)session.selectedMembers=[id];},{immediate:true});
 
@@ -288,7 +289,7 @@ async function sendBroadcast() {
       if(broadcastRequest?.identity!==identity)broadcastRequest={identity,key:crypto.randomUUID()};
       const response=await authFetch('/api/guardian/v1/mobile/broadcast',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,idempotencyKey:broadcastRequest.key})});
       const result=await response.json().catch(()=>({}));
-      if(!response.ok)throw Error(result.message||'广播请求失败');
+      if(!response.ok)throw Error(featureUnavailableReason(result.message, 'broadcast')||'广播请求失败');
       if(!Array.isArray(result)||result.some(row=>!['accepted','completed'].includes(row.status)))throw Error('广播结果未确认，可重试查询同一请求');
       broadcastRequest=null;await refreshSnapshot();
     }
@@ -348,7 +349,7 @@ async function sendBroadcast() {
       </div>
     </AppPanel>
     <div class="stack">
-      <PersonCall v-if="!db.demoMode" :person-id="selectedPerson" />
+      <PersonCall v-if="!db.demoMode" :person-id="selectedPerson" :selected-count="selectedCount" />
       <AppPanel v-else :title="'当前通话：' + (activeCall ? activeCall.kind : '未发起')">
         <template v-if="activeCall">
           <div class="call-status">
@@ -373,10 +374,10 @@ async function sendBroadcast() {
         </template>
         <template v-else>
           <AppEmpty text="选择人员后发起单呼或群呼" />
-          <p class="note">通信通道兼容性待联调。</p>
         </template>
       </AppPanel>
-      <AppPanel v-if="broadcastFeature.supported" :title="broadcastFeature.verified ? '文字广播' : '文字广播 · 待联调'">
+      <DeviceVoiceMessages v-if="!db.demoMode" />
+      <AppPanel v-if="broadcastFeature.supported" title="文字广播">
         <form ref="broadcastFormRef" novalidate class="broadcast-box" data-form="broadcast" @submit.prevent="sendBroadcast">
           <AppField label="广播对象" vertical data-field="groupId" :error="broadcastErrors.groupId">
             <AppSelect v-model="broadcastGroupId" name="groupId" :options="groupOptions" />

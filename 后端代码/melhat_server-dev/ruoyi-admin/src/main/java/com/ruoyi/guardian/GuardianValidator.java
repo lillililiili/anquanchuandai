@@ -40,7 +40,7 @@ public final class GuardianValidator {
                 }
             }
         }
-        checkWorks(state.getJSONArray("works"), people, demoMode);
+        if(WorkBusiness.enabled(state))checkWorks(state.getJSONArray("works"), people, demoMode);
         checkFences(state.getJSONArray("fences"));
         checkEvents(state.getJSONArray("events"), state.getJSONArray("media"));
         checkCapturedMedia(state);
@@ -171,7 +171,7 @@ public final class GuardianValidator {
                 throw new IllegalArgumentException("该人员未绑定安全帽");
             }
             String workId = item.getString("workId");
-            if (workId != null && !workId.isEmpty() && !workIncludes(works, workId, personId)) {
+            if (WorkBusiness.enabled(state) && workId != null && !workId.isEmpty() && !workIncludes(works, workId, personId)) {
                 throw new IllegalArgumentException("资料与作业人员不一致");
             }
             String kind = item.getString("kind");
@@ -349,9 +349,18 @@ public final class GuardianValidator {
     private static void checkWorks(JSONArray works, JSONArray people, boolean demoMode) {
         if (works == null) return;
         Set<String> assigned = new HashSet<String>();
+        JSONObject personnel = new JSONObject();personnel.put("people",people);
         for (int i = 0; i < works.size(); i++) {
             JSONObject work = works.getJSONObject(i);
             if (work == null || !demoMode && GuardianDemoData.confirmed(work)) continue;
+            if("LOCAL".equals(work.getString("source"))) {
+                java.time.Instant from=WorkBusiness.start(work),to=WorkBusiness.end(work);
+                if(from==null||to==null||!from.isBefore(to))throw new IllegalArgumentException("作业计划时间无效");
+                // The work command validates participants and conflicts. Other business writes
+                // must remain possible after a work was archived, expired, or disabled.
+                continue;
+            }
+            if(!demoMode&&(!WorkBusiness.current(work,java.time.Instant.now())||!WorkBusiness.validPeople(personnel,work)))continue;
             String start = work.getString("start");
             String end = work.getString("end");
             if (start != null && !start.isEmpty() && end != null && !end.isEmpty() && start.compareTo(end) >= 0) {

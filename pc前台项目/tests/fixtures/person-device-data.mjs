@@ -4,10 +4,53 @@ export const SCENARIOS = Object.freeze([
   ['unassigned', '未领用'], ['offline', '已领用但离线'], ['revoked', '权限已撤销'],
   ['watch_visible', '模拟手表显示'], ['watch_hidden', '模拟手表隐藏'],
   ['video_many', '20 路视频分页与轮播'],
+  ['works_many', '13 条作业与联系跳转（隔离）'], ['fences', '地理围栏内存保存与旧围栏保护'],
 ]);
 
 export function fixtureState(scenario = 'belt', now = new Date()) {
   if (!SCENARIOS.some(([id]) => id === scenario)) throw Error('Unknown isolated scenario');
+  if (scenario === 'works_many') {
+    const state = fixtureState('helmet', now);
+    const person = state.people[0], device = state.devices[0], binding = state.bindings[0];
+    const context = state.personEquipmentContext['QA-PERSON'], work = state.works[0];
+    state.people = []; state.devices = []; state.bindings = []; state.works = []; state.personEquipmentContext = {};
+    for (let index = 0; index < 13; index++) {
+      const suffix = String(index + 1).padStart(2, '0');
+      const personId = index ? `QA-WORKER-${suffix}` : 'QA-PERSON';
+      const workId = index ? `QA-WORK-${suffix}` : 'QA-WORK';
+      const deviceId = `QA-WORK-HELMET-${suffix}`, assignmentId = `QA-WORK-BINDING-${suffix}`;
+      state.people.push({ ...structuredClone(person), id: personId, name: `隔离作业人员 ${suffix}`, workId: index < 10 ? workId : '', locationDeviceId: deviceId, locationAssignmentId: assignmentId });
+      const target = { ...structuredClone(device), id: deviceId };
+      // Allows only the business navigation success path. Authentication/API
+      // stubs still refuse every actual call and command in this isolated app.
+      target.featureStates.voice = { supported: true, verified: true, available: true, reason: '' };
+      Object.assign(target, { communicationProtocol: 'SIP', voiceAvailable: true });
+      state.devices.push(target);
+      state.bindings.push({ ...structuredClone(binding), id: assignmentId, assignmentId, personId, deviceId });
+      const equipment = structuredClone(context);
+      equipment.personId = personId;
+      for (const feature of Object.values(equipment.features)) Object.assign(feature, { deviceId, assignmentId });
+      Object.assign(equipment.features.voice, target.featureStates.voice);
+      state.personEquipmentContext[personId] = equipment;
+      state.works.push({ ...structuredClone(work), id: workId, name: `隔离作业 ${suffix}（非真实业务）`,
+        area: `隔离区域 ${suffix}`, status: index < 10 ? '监护中' : '已结束', members: [personId], leader: personId, supervisor: personId });
+    }
+    state.events[0].deviceId = state.devices[0].id;
+    return state;
+  }
+  if (scenario === 'fences') {
+    const state = fixtureState('helmet', now);
+    state.events = [];
+    state.fences = [
+      { id: 'QA-FENCE-GEO', name: '隔离地理围栏（可编辑）', station: 'S1', coordinateSystem: 'GCJ02',
+        points: [[117.0869,36.6541],[117.0881,36.6541],[117.0881,36.6551],[117.0869,36.6551]],
+        members: ['QA-PERSON'], enabled: true, enter: false, leave: true, department: '隔离验收', owner: '隔离验收人员' },
+      { id: 'QA-FENCE-LEGACY', name: '隔离旧示意围栏（必须重绘）', station: 'S1',
+        points: [[10,10],[25,10],[25,25],[10,25]], members: [], enabled: false, enter: false, leave: true,
+        department: '隔离验收', owner: '', source: 'LEGACY_SCHEMATIC' },
+    ];
+    return state;
+  }
   if (scenario === 'video_many') {
     const state = fixtureState('helmet', now);
     const originalPerson = state.people[0], originalDevice = state.devices[0], originalBinding = state.bindings[0];
@@ -28,6 +71,7 @@ export function fixtureState(scenario = 'belt', now = new Date()) {
       for (const feature of Object.values(context.features)) Object.assign(feature, { deviceId, assignmentId });
       state.personEquipmentContext[personId] = context;
       work.members.push(personId);
+      if (work.members.length === 1) { work.leader = personId; work.supervisor = personId; }
     }
     state.events = [];
     return state;
@@ -78,12 +122,12 @@ export function fixtureState(scenario = 'belt', now = new Date()) {
     };
   }
   return {
-    version: 1, seq: 1, stations: [{ id: 'S1', name: '隔离验收厂站' }], people: [person], devices, bindings,
-    works: [{ id: 'QA-WORK', station: 'S1', name: '隔离验收作业（非真实业务）', date, start: '08:00', end: '17:00', status: '监护中', members: ['QA-PERSON'], leader: 'QA-PERSON', supervisor: 'QA-PERSON', timeline: [], risks: [], safetyMeasures: '', source: 'ISOLATED_BROWSER_FIXTURE' }],
+    version: 1, seq: 1, clock: 0, audit: [], stations: [{ id: 'S1', name: '隔离验收厂站' }], people: [person], devices, bindings,
+    works: [{ id: 'QA-WORK', station: 'S1', name: '隔离验收作业（非真实业务）', date, plannedStartAt: start, plannedEndAt: new Date(now.getTime() + 3600000).toISOString(), start: '08:00', end: '17:00', status: '监护中', members: ['QA-PERSON'], leader: 'QA-PERSON', supervisor: 'QA-PERSON', timeline: [], risks: [], safetyMeasures: '', source: 'ISOLATED_BROWSER_FIXTURE' }],
     events: [{ id: 'QA-SOS', station: 'S1', deviceId: devices.at(-1).id, personId: scenario === 'unassigned' ? '' : 'QA-PERSON', workId: scenario === 'unassigned' ? '' : 'QA-WORK', type: '人员求助', title: '隔离验收 SOS（非真实事件）', date, time: '10:00:00', occurredAt: observed, status: '待认领', version: 1, snapshot: {}, timeline: [], photos: [], permissions: { 'events:claim': true, 'sos:assist': true } }],
     calls: [], broadcasts: [], media: [], groups: [], fences: [], fenceRecords: [], vitals: watchScenario ? [{ id: 'QA-VITAL', deviceId: 'RL-W001', personId: 'QA-PERSON', bindingId: 'QA-BINDING-WATCH', source: 'DEMO_WATCH', observedAt: observed, heartRate: 75, oxygen: 98, temperature: 36.5, systolic: 120, diastolic: 80 }] : [], commands: [], communications: [],
     assistance: { 'QA-SOS': { status: 'waiting', members: [], timeline: [] } }, sos: { status: 'ended', members: [], timeline: [] },
-    operator: { id: 'qa-operator', name: '隔离验收操作员' }, businessConfig: { dataVersion: 'isolated-browser-fixture', simulatedWatchVisible: scenario === 'watch_visible' },
+    operator: { id: 'qa-operator', name: '隔离验收操作员' }, businessConfig: { workBusinessEnabled: true, version: 1, dataVersion: 'isolated-browser-fixture', simulatedWatchVisible: scenario === 'watch_visible' },
     personEquipmentContext: { 'QA-PERSON': { personId: 'QA-PERSON', features } },
   };
 }

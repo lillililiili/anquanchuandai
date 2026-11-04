@@ -516,7 +516,7 @@ class _InlineFiltersState extends State<InlineFilters> {
               child: Text(
                 _more
                     ? '收起补充条件'
-                    : '人员、任务等条件${_fields.values.any((v) => v.isNotEmpty) ? ' · 已设置' : ''}',
+                    : '${widget.fields.containsKey('task') ? '人员、任务等条件' : '补充筛选条件'}${_fields.values.any((v) => v.isNotEmpty) ? ' · 已设置' : ''}',
                 style: const TextStyle(fontSize: 12),
               ),
             ),

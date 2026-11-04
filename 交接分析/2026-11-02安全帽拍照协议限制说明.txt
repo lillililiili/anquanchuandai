@@ -1,0 +1,57 @@
+安全帽远程拍照请求关联限制说明
+核对日期：2026-11-02。结论依据：厂家协议、先前USB归档实机固件、本次真实HTTP上传字段及后端命令记录。
+
+一、结论
+照片文件可以真实生成并上传。目前设备的照片上报未提供原拍照指令编号，无法确定某个文件对应哪一次远程拍照，也不能可靠继承该次指令发生时的人员、厂站和领用关系。
+本轮平台已实现真实编号透传、严格关联与缺失诊断，但厂家文档和归档固件没有支持远程照片原请求号回传的实现。没有证据支持仅修改服务端参数即可补齐这一能力。
+正式拍照仍为待联调，未因图片生成而将验收状态改成通过。不按时间相近、当前领用人或单个在途指令猜关联。
+
+二、厂家协议证据
+文件：D:\沉积岩\智能穿戴平台相关文档\安全帽安全带设备对接\帽子源码\1020源码\对接设备端接口文档250916.pdf
+SHA256：7cc8fb7781c07fb351c757a2f8dd0c5eaa30c13710f7434317237615b9490c63
+第22页，6.2：远程拍照指令只有 cmd=server_push_take_photo；7.1：image/save_image 的 multipart 只有 file。
+第23–24页，7.1.2：report/add_image 的照片绑定字段为 device_id、image_url、x_point、y_point；ca_upload_photo 长连接通知使用相同字段，没有请求编号。
+第24–28页：talkback_id 明确用于设备本地录像列表查询、录像上传事务，不是拍照事务。上述22–24页已渲染逐页核对。
+
+三、归档固件证据与适用边界
+归档APK：D:\沉积岩\anquanchuandai\后端代码\melhat_server-dev\build\helmet-usb\RundeCapSip_m6811runde.apk
+归档版本：M6811_58，versionCode=58
+APK SHA256：136e72135e0b6a6f4d5a6930640ebbd789b8bdfba1f4bb93daafb535f75edce9
+classes2.dex SHA256：1b5ae30aae55b29c9134f963b5c877ad4c873379c941443c8c9c5dc9c2525da7
+本次已验证提取的 classes2.dex 与该APK中同名条目逐字节一致。本次未重新从设备提取、安装或改写固件；归档不能单独证明设备当前二进制未更换，但本次实际HTTP字段与该实现吻合。
+
+CapActivityMsgReciever.smali.txt 第419–467行：server_push_take_photo 分支设置 takePhotoType=0，执行 doVideoShot(2)，不读取或保存 talkback_id。
+CapActivity.smali.txt 第16915–16936行：原 type 传入 takePicture。
+classes2.disasm.txt 第149800–149838行：UploadImageApi.doUploadImage 仅添加 file。
+同文件第135693–135757行：DeliverImageApi.deliverImage 只添加 device_id、image_url、x_point、y_point、type。
+同文件第149722–149782行：上传成功后执行HTTP绑定；仅 type==1 才发送 ca_upload_photo。远程拍照 type=2 不进入该分支，因此本次没有照片WebSocket回执并不证明网关上报链路故障。
+同文件第105615–105645行：getImgMsg 即使调用，也只有 image_url、act、device_id、x_point、y_point，没有 talkback_id。
+上述反汇编文件均在：D:\沉积岩\anquanchuandai\后端代码\melhat_server-dev\build\helmet-usb
+
+四、本次真实请求结果
+指令ID：HC-5be556c9-cc69-481a-b5c2-6966c0741943
+页面幂等请求号：ACCEPT-55b66c6bd1ab4951909bc843f7753dd6
+发送时间：2026-11-02T03:48:31.588647206Z（北京时间11:48:31）
+最终命令状态：timeout；没有该命令的 receiptAt 或 assetId。
+真实文件ID：25faf80c-6a1b-464c-b935-ad6afe559b4d
+文件名：20261102114832.jpg，大小716907字节，平台接收并登记时间03:48:36.377Z；不将其当作设备实际拍摄时间。
+云端状态ready，设备绑定已确认；multipart字段只有file，HTTP绑定字段只有device_id/image_url/type/x_point/y_point，均未带talkback_id。
+文件保留 MISSING_DEVICE_REQUEST_ID、unassigned=true；未强行归属于本次远程命令或当前人员。
+本次代码发送路径确实构造 talkback_id=原HC命令ID：HelmetMediaService.java:149 → DirectHelmetGateway.java:161 的 sendText → gateway.mjs:207 下行原样转发。依据是代码与sent状态，不声称已捕获本次设备侧网络原始帧。
+
+五、平台可完成与厂家必须提供的部分
+已完成的平台部分：实际请求号透传；资产缺失编号诊断；同设备、同原始HC拍照命令、有效时间等条件严格核验；历史姓名/人员/厂站沿用命令保存的上下文；重复回执幂等；归属不可被后来请求覆盖。
+厂家需要确认或升级的部分：设备收到远程拍照时，将talkback_id保存到这一次拍照上下文，并在对应multipart或report/add_image（以及需要时的ca_upload_photo）原样回传；手动拍照不能借用上一次远程编号，重试须保持原编号，失败回执也须带原编号。也可提供具有同等确定性的官方关联接口。
+待厂家能力具备后，使用真实文件重新验收：远程命令准确关联、手动拍照不误关联、重试幂等、换人归还不改历史、失败超时不显示成功、授权普通用户预览下载。
+未尝试修改设备固件，未重新触发拍照，未修改历史资产或告警数据。
+
+六、正式能力与会话检查
+2026-11-02T04:01:40Z读取统一上下文：安全帽直播video为VERIFIED且available=true；photo、recording、voice、broadcast、videoCall均为PENDING且available=false。本说明不将平台录像的单次成功自动提升为所有录像功能验收通过。
+2026-11-02T04:07:26Z只读检查保存的实时会话：观看流0、录像0、设备通话0、平台共享通话0。此检查未发指令、未改会话。
+
+详细脱敏证据：
+D:\沉积岩\anquanchuandai\output\person-device-acceptance-20261102\photo-protocol-firmware-audit-20261102.json
+D:\沉积岩\anquanchuandai\output\person-device-acceptance-20261102\photo-request-HC-5be556c9-observations.json
+D:\沉积岩\anquanchuandai\output\person-device-acceptance-20261102\photo-exact-receipt-HC-5be556c9.json
+D:\沉积岩\anquanchuandai\output\person-device-acceptance-20261102\photo-video-official-capability-20261102.json
+D:\沉积岩\anquanchuandai\output\person-device-acceptance-20261102\idle-after-overview-20261102.json

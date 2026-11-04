@@ -36,7 +36,7 @@ public class DirectBeltConfigController {
             @RequestParam(value = "device_id", required = false) String deviceId) {
         if ("config".equals(ctl) && "get_config".equals(act)) return configuration(ctl, act, deviceId);
         JSONObject result = failure(properties.isEnabled()
-                ? "当前支持 WebSocket 实时数据和告警；离线补传及媒体上传尚未接入" : "安全带直连接入未启用");
+                ? "支持实时状态、定位和设备告警" : "安全带直连接入未启用");
         result.put("msg_code", "Unsupported");
         return result;
     }

@@ -1,4 +1,5 @@
-export const COMMAND_LABELS = { take_photo:'拍照', start_recording:'开始录像', stop_recording:'停止录像', start_video:'开启直播', stop_video:'关闭直播', list_recordings:'查询设备录像', upload_recording:'上传选中录像', configure_sip:'同步语音配置' };
+import { featureUnavailableReason } from '../../../shared/device-features.mjs';
+export const COMMAND_LABELS = { take_photo:'平台拍照请求', start_recording:'开始平台录制', stop_recording:'停止平台录制', start_video:'开启直播', stop_video:'关闭直播', list_recordings:'查询设备录像', upload_recording:'上传选中录像', configure_sip:'同步语音配置' };
 export const COMMAND_STATUSES = { queued:'等待发送', requesting:'正在请求', configured:'配置已保存，设备下次登录生效', waiting_media:'等待设备视频，尚未开始录像', recording:'正在录制实际视频', finalizing:'录像文件正在封装', accepted:'平台已受理', sent:'已发送，设备待回执', acknowledged:'设备已回执', completed:'设备已完成', failed:'执行失败', timeout:'等待回执超时', rejected:'设备拒绝', pending:'等待设备处理', unknown:'执行状态待确认' };
 
 export function mediaUrl(value) {
@@ -25,7 +26,7 @@ export function createHelmetMediaApi(fetchImpl) {
   async function request(deviceId, suffix, options = {}) {
     const response = await fetchImpl(`/api/guardian/v1/devices/${encodeURIComponent(deviceId)}/${suffix}`, options);
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw Object.assign(Error(body.message || '设备请求失败，请重试'), { status: response.status, code: body.code });
+    if (!response.ok) throw Object.assign(Error(featureUnavailableReason(body.message) || '设备请求失败，请重试'), { status: response.status, code: body.code });
     return body;
   }
   return {

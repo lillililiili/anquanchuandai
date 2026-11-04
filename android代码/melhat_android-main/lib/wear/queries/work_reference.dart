@@ -276,8 +276,10 @@ class TaskReferenceView extends StatelessWidget {
                         _line(),
                         _field(
                           Icons.description_outlined,
-                          '来源工作票',
-                          task['ticketRequired'] == false
+                          task['source'] == 'LOCAL' ? '作业编号' : '来源工作票',
+                          task['source'] == 'LOCAL'
+                              ? '${textOf(task['id'])} · 本地登记'
+                              : task['ticketRequired'] == false
                               ? '无需工作票'
                               : textOf(
                                   task['ticketNo'],
@@ -305,9 +307,14 @@ class TaskReferenceView extends StatelessWidget {
                               size: 18,
                               color: muted,
                             ),
-                            title: const Text(
-                              '许可与审批以原工作票系统为准',
-                              style: TextStyle(fontSize: 10, color: muted),
+                            title: Text(
+                              task['source'] == 'LOCAL'
+                                  ? '由系统管理员在后台登记和维护'
+                                  : '许可与审批以原工作票系统为准',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: muted,
+                              ),
                             ),
                             subtitle: const Text(
                               '更多作业信息',

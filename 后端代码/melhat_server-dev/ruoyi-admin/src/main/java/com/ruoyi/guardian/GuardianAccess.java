@@ -31,12 +31,23 @@ public class GuardianAccess {
         public String id() { return actor.getString("id"); }
         public String name() { return actor.getString("name"); }
         public String personId() { return person==null?null:person.getString("portalId"); }
+        private boolean roleSite(JSONObject role,String site) {
+            if (!"mobile-user".equals(role.getString("id"))) return true;
+            // This shared ordinary-user role never grants another user's home
+            // station. Management roles retain their explicit multi-site grants.
+            String home=text(actor,"siteId");
+            JSONObject linked=find(data,"people",actor.getString("personId"));
+            String linkedSite=linked==null?"":text(linked,"siteId");
+            if (!home.isEmpty() && !linkedSite.isEmpty() && !home.equals(linkedSite)) return false;
+            if (home.isEmpty()) home=person==null?"":linkedSite;
+            return !home.isEmpty() && home.equals(site);
+        }
         public boolean can(String op,String site,String area) {
             JSONObject s=find(data,"sites",site);
             if(s==null || !s.getBooleanValue("enabled")) return false;
             if("demo-system".equals(id())) return true;
             for(Object raw:rows(data,"roles")) { JSONObject role=(JSONObject)raw;
-                if(!role.getBooleanValue("enabled") || !has(actor.getJSONArray("roleIds"),role.getString("id"))) continue;
+                if(!role.getBooleanValue("enabled") || !has(actor.getJSONArray("roleIds"),role.getString("id")) || !roleSite(role,site)) continue;
                 for(Object value:rows(role,"grants")) { JSONObject grant=(JSONObject)value;
                     if(!has(grant.getJSONArray("siteIds"),site) || !(has(grant.getJSONArray("operations"),op)||has(grant.getJSONArray("operations"),"*"))) continue;
                     return true;
@@ -49,7 +60,7 @@ public class GuardianAccess {
             if(s==null || !s.getBooleanValue("enabled")) return false;
             if("demo-system".equals(id())) return true;
             for(Object raw:rows(data,"roles")) { JSONObject role=(JSONObject)raw;
-                if(!has(actor.getJSONArray("roleIds"),role.getString("id")) || !role.getBooleanValue("enabled")) continue;
+                if(!has(actor.getJSONArray("roleIds"),role.getString("id")) || !role.getBooleanValue("enabled") || !roleSite(role,id)) continue;
                 for(Object g:rows(role,"grants")) {
                     JSONObject grant=(JSONObject)g;
                     if(has(grant.getJSONArray("siteIds"),id)) return true;
@@ -76,7 +87,7 @@ public class GuardianAccess {
             if(operation!=null && !can(operation,eventSite(event),eventArea(event))) throw AdminQueryService.fail(403,"PERMISSION_DENIED","没有此事件的操作权限");
         }
         boolean person(JSONObject p) {
-            return p!=null && site(p.getString("siteId")) && (can("people:read",p.getString("siteId"),p.getString("areaId")) || Objects.equals(p.getString("portalId"),personId()) && can("self:read",p.getString("siteId"),p.getString("areaId")));
+            return p!=null && site(p.getString("siteId")) && (can("people:read",p.getString("siteId"),p.getString("areaId")) || personId()!=null && Objects.equals(p.getString("portalId"),personId()) && can("self:read",p.getString("siteId"),p.getString("areaId")));
         }
         public boolean work(JSONObject work) {
             String site=siteId(data,work.getString("station"));
@@ -101,6 +112,38 @@ public class GuardianAccess {
             return result;
         }
         public boolean operational(JSONObject row) { return demoMode || !GuardianDemoData.confirmed(row); }
+        // Historical rows keep the site captured when they were produced. A person's
+        // current visibility must never grant access to records from another site.
+        private boolean historicalPersonRow(JSONObject row) {
+            String captured = row.getString("siteId");
+            String station = row.getString("station");
+            String mapped = station == null || station.isEmpty() ? null : siteId(data, station);
+            if (captured != null && !captured.isEmpty() && station != null && !station.isEmpty()
+                    && !Objects.equals(captured, mapped)) return false;
+            String site = captured == null || captured.isEmpty() ? mapped : captured;
+            if (site == null) return "demo-system".equals(id());
+            return can("people:read", site, row.getString("areaId"))
+                    || own(row) && can("self:read", site, row.getString("areaId"));
+        }
+        private boolean capturedSite(JSONObject row) {
+            return !text(row,"siteId").isEmpty() || !text(row,"station").isEmpty();
+        }
+        private boolean historicalAssignmentRow(JSONObject row) {
+            if (capturedSite(row)) return historicalPersonRow(row);
+            // Older bindings did not capture a site. Their immutable assignment
+            // can supply it, but only after both participant identities match.
+            JSONObject assignment=find(data,"assignments",row.getString("assignmentId"));
+            if (assignment==null) return "demo-system".equals(id());
+            JSONObject assignedPerson=find(data,"people",assignment.getString("personId"));
+            JSONObject assignedDevice=find(data,"devices",assignment.getString("deviceId"));
+            if (assignedPerson==null || assignedDevice==null
+                    || text(row,"personId").isEmpty() || text(row,"deviceId").isEmpty()
+                    || !Objects.equals(assignedPerson.getString("portalId"),row.getString("personId"))
+                    || !Objects.equals(assignedDevice.getString("portalDeviceId"),row.getString("deviceId"))) return false;
+            JSONObject attributed=copy(row);
+            attributed.put("siteId",assignment.getString("siteId"));
+            return historicalPersonRow(attributed);
+        }
         public JSONObject snapshot(JSONObject source) {
             JSONObject out=safe(source);
             out.put("demoMode",demoMode);
@@ -117,16 +160,29 @@ public class GuardianAccess {
                 JSONObject master=null;for(Object raw:rows(data,"devices")) if(Objects.equals(((JSONObject)raw).getString("portalDeviceId"),d.getString("id"))) master=(JSONObject)raw;
                 if(master!=null && can("assets:read",site,master.getString("areaId"))) return true;
                 if(personId()==null || !can("self:read",site,person==null?null:person.getString("areaId"))) return false;
-                for(Object raw:rows(source,"bindings")) { JSONObject b=(JSONObject)raw;if(b.get("end")==null && personId().equals(b.getString("personId")) && d.getString("id").equals(b.getString("deviceId"))) return true; }
+                for(Object raw:rows(source,"bindings")) { JSONObject b=(JSONObject)raw;if(b.get("end")==null && personId().equals(b.getString("personId")) && d.getString("id").equals(b.getString("deviceId")) && historicalAssignmentRow(b)) return true; }
                 return false;
             });
             Set<String> devices=new HashSet<>();for(Object raw:rows(out,"devices")) devices.add(((JSONObject)raw).getString("id"));
-            filter(out,"bindings",b->peopleIds.contains(b.getString("personId")) && devices.contains(b.getString("deviceId")));
-            filter(out,"media",m->operational(m) && (m.getString("eventId")!=null&&!m.getString("eventId").isEmpty()?ids.contains(m.getString("eventId")):peopleIds.contains(m.getString("personId"))));
-            for(String key:Arrays.asList("locations","fenceRecords")) filter(out,key,p->operational(p) && peopleIds.contains(p.getString("personId")));
+            // This nested observation retains reception-time ownership, including after
+            // a later issue/site change. Current asset visibility cannot expose old owners.
+            for(Object raw:rows(out,"devices")) {
+                JSONObject device=(JSONObject)raw,local=device.getJSONObject("localRecording");
+                if(local==null)continue;
+                boolean own=personId()!=null&&personId().equals(local.getString("personId"))
+                        &&can("self:read",local.getString("siteId"),local.getString("areaId"));
+                if(!own&&!can("assets:read",local.getString("siteId"),local.getString("areaId")))device.remove("localRecording");
+            }
+            filter(out,"bindings",b->peopleIds.contains(b.getString("personId")) && devices.contains(b.getString("deviceId")) && historicalAssignmentRow(b));
+            // Event-linked media inherits the trusted event ACL, including older
+            // uploads with no site field. Standalone history requires captured scope.
+            filter(out,"media",m->operational(m) && (m.getString("eventId")!=null&&!m.getString("eventId").isEmpty()?ids.contains(m.getString("eventId")):peopleIds.contains(m.getString("personId")) && historicalPersonRow(m)));
+            for(String key:Arrays.asList("locations","fenceRecords")) filter(out,key,p->operational(p) && peopleIds.contains(p.getString("personId")) && historicalPersonRow(p));
             filter(out,"vitals",v->{
                 if (!peopleIds.contains(v.getString("personId"))) return false;
-                if (demoMode || !GuardianDemoData.simulatedVital(v)) return true;
+                boolean simulated=GuardianDemoData.simulatedVital(v);
+                if ((!simulated || capturedSite(v)) && !historicalAssignmentRow(v)) return false;
+                if (demoMode || !simulated) return true;
                 if (!devices.contains(v.getString("deviceId"))) return false;
                 for (Object raw : rows(out,"bindings")) {
                     JSONObject binding=(JSONObject)raw;

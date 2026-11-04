@@ -38,18 +38,18 @@ export async function toggleRecording(personId) {
   if (session.recording?.real && session.recording.person === personId) return stopRecording();
   const device = db.currentDevices(personId).find((item) => item.type === "H");
   if (isRealDevice(device)) {
-    if (session.recording) throw Error('请先结束正在进行的录像请求');
+    if (session.recording) throw Error('请先结束正在进行的平台录制请求');
     const feature = personFeature(db, personId, 'recording');
     if (!feature.available) throw Error(feature.reason);
     const context = operationContext(feature);
     const result = await mediaOperations.start(context);
-    toast(result.status === 'recording' ? '正在录制现场视频' : '录像请求已提交，等待实际视频与录制回执');return;
+    toast(result.status === 'recording' ? '平台正在录制现场视频' : '平台录制请求已提交，等待实际视频与录制回执');return;
   }
   if (!db.demoMode) throw Error('暂无真实设备视频，不能生成示例录像');
   if (!session.recording && (!device || device.video !== "available")) {
     throw Error("视频通道不可用，暂时无法录像");
   }
-  if (session.recording?.real) throw Error('请在对应真实安全帽页面停止录像');
+  if (session.recording?.real) throw Error('请在对应真实安全帽页面停止平台录制');
   if (session.recording) {
     const current = session.recording;
     session.media = db.capture(current.person, "video", Math.max(1, Math.floor((Date.now() - current.start) / 1000)));
@@ -64,12 +64,13 @@ export async function toggleRecording(personId) {
 export async function stopRecording() {
   const result = await mediaOperations.stop();
   if (!result) return;
-  toast(result.status === 'completed' ? '录像请求已结束，请在现场资料查看结果' : result.status === 'finalizing' ? '录像正在封装，文件生成后可在现场资料查看' : '结束请求已提交，等待实际停止回执');
+  toast(result.status === 'completed' ? '平台录制请求已结束，请在现场资料查看结果' : result.status === 'finalizing' ? '平台录像正在封装，文件生成后可在现场资料查看' : '停止平台录制请求已提交，等待实际停止回执');
 }
 
 export async function callPerson(personId) {
   const person = db.person(personId);
   if (!person || !person.active) throw Error("人员不可用");
+  if (!db.demoMode) { const feature = personFeature(db, personId, 'voice'); if (!feature.available) throw Error(feature.reason || '当前无法发起语音通话'); }
   session.selectedMembers = [personId];
   go('dispatch?personId=' + encodeURIComponent(personId));
 }

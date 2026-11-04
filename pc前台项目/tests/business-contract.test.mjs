@@ -8,7 +8,7 @@ import { createStore, seed } from '../src/mock/data.js';
 test('hardware support, acceptance and availability remain separate', () => {
   const d = { featureStates: { video: { supported: true, verified: true, available: true }, photo: { supported: true, verified: false, available: true }, voice: { supported: false, verified: true, available: true } } };
   assert.equal(actionFeatureState(d, 'start_video').available, true);
-  assert.deepEqual(actionFeatureState(d, 'take_photo'), { supported: true, verified: false, available: false, reason: '待联调' });
+  assert.deepEqual(actionFeatureState(d, 'take_photo'), { supported: true, verified: false, available: false, reason: '拍照服务不可用，请检查设备网络和媒体服务' });
   assert.equal(featureState(d, 'voice').supported, false);
   assert.equal(featureState(d, 'voice').available, false);
   assert.equal(actionFeatureState({ capabilities: ['intercom'] }, 'intercom').available, false);

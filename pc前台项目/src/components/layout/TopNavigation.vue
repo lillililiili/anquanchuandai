@@ -2,15 +2,18 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import AppIcon from '@/components/ui/AppIcon.vue';
-import { fitNavigation, navigationItems as items, navigationOwner } from './navigation';
+import { fitNavigation, navigationItems, navigationOwner } from './navigation';
 
+import { db, tick } from '@/mock/runtime';
+import { workBusinessEnabled } from '@/lib/work-business';
+const items = computed(() => { tick.value; return navigationItems.filter(item => item.id !== 'works' || workBusinessEnabled(db)); });
 const route = useRoute();
 const active = computed(() => navigationOwner(route.name));
-const visibleCount = ref(items.length);
+const visibleCount = ref(items.value.length);
 const leftCount = ref(4);
-const left = computed(() => items.slice(0, leftCount.value));
-const right = computed(() => items.slice(leftCount.value, visibleCount.value));
-const overflow = computed(() => items.slice(visibleCount.value));
+const left = computed(() => items.value.slice(0, leftCount.value));
+const right = computed(() => items.value.slice(leftCount.value, visibleCount.value));
+const overflow = computed(() => items.value.slice(visibleCount.value));
 const overflowActive = computed(() => overflow.value.find(item => item.id === active.value));
 const root = ref(); const leftSlot = ref(); const rightSlot = ref(); const measure = ref();
 const more = ref(); const popup = ref(); const opened = ref(false);
@@ -50,6 +53,7 @@ function onMenuKey(event) {
 function onOutside(event) { if (!root.value?.contains(event.target)) close(); }
 function onFocusOut(event) { if (!root.value?.contains(event.relatedTarget)) close(); }
 watch(() => route.fullPath, () => close());
+watch(items, async () => { close(); await nextTick(); resize(); });
 onMounted(() => {
   observer = new ResizeObserver(resize);
   observer.observe(root.value);

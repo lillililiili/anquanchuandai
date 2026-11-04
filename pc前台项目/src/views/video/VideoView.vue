@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled } from '@/lib/work-business';
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
@@ -22,6 +23,7 @@ import { personDutyPresentation } from '@/lib/person-duty';
 import { personFeature, videoPeople } from '@/lib/person-equipment';
 import { videoGridPage, nextVideoFocus } from './video-wall';
 
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
 const layouts = ["1+7", "2\u00d74", "3\u00d73"];
 const draft = reactive({ workId: "" });
 const page = ref(0);
@@ -35,6 +37,8 @@ watch(
   { immediate: true },
 );
 
+watch(() => { revision(); return db.state.businessConfig?.workBusinessEnabled; }, enabled => { if (enabled === false) draft.workId = ""; }, { immediate: true });
+
 const workOptions = computed(() => {
   revision();
   return [["", "全部作业"], ...works().map((work) => [work.id, work.name])];
@@ -43,7 +47,7 @@ const cameras = computed(() => {
   revision();
   const query = filtersOf("video");
   return videoPeople(db, people()).filter(
-    (person) => !query.workId || db.currentWork(person.id)?.id === query.workId,
+    (person) => !workEnabled.value || !query.workId || db.currentWork(person.id)?.id === query.workId,
   );
 });
 const focus = computed(() => cameras.value.find((person) => person.id === session.person) || cameras.value[0] || null);
@@ -58,7 +62,7 @@ const cards = computed(() => {
   return [
     { icon: 'vidicon-line', label: '已领用视频设备', value: cameras.value.length, unit: '路', color: 'cyan' },
     { icon: 'record-circle-fill', label: '可实时操作', value: available, unit: '路', color: 'green' },
-    { icon: 'record-circle-fill', label: '离线 / 待联调', value: cameras.value.length - available, unit: '路', color: 'muted' },
+    { icon: 'record-circle-fill', label: '暂不可用', value: cameras.value.length - available, unit: '路', color: 'muted' },
   ];
 });
 
@@ -95,7 +99,7 @@ watch([() => session.rotation, () => session.layout, canRotate], () => {
 onUnmounted(() => clearInterval(rotateTimer));
 
 function applyFilters() {
-  session.filters.video = { workId: draft.workId };
+  session.filters.video = { workId: workEnabled.value ? draft.workId : "" };
 }
 
 function toggleSound() {
@@ -126,7 +130,7 @@ function workOf(personId) {
   </PageHeading>
   <div class="video-toolbar">
     <div class="layout-control">布局切换：<AppButton v-for="layout in layouts" :key="layout" :tone="session.layout === layout ? 'active' : ''" @click="session.layout = layout">{{ layout }}</AppButton></div>
-    <form class="filters" data-form="filters" style="margin:0" @submit.prevent="applyFilters">
+    <form v-if="workEnabled" class="filters" data-form="filters" style="margin:0" @submit.prevent="applyFilters">
       <AppField label="作业筛选">
         <AppSelect v-model="draft.workId" name="workId" :options="workOptions" />
       </AppField>
@@ -145,7 +149,7 @@ function workOf(personId) {
             <h3>{{ focus.name }}　<small>{{ helmetOf(focus.id)?.id || "未绑定" }}</small></h3>
             <AppStatus :color="duty.color" :title="duty.title">{{ duty.label }}</AppStatus>
           </div>
-          <dl class="info">
+          <dl v-if="workEnabled" class="info">
             <dt>关联作业</dt>
             <dd>{{ workOf(focus.id)?.name || "待分配" }}</dd>
             <dt>监护人</dt>

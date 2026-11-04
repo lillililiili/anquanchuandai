@@ -24,6 +24,7 @@ public class AdminAccessService {
     private static final Map<String, Preview> PREVIEWS = Collections.synchronizedMap(new LinkedHashMap<String, Preview>());
 
     private final AdminLedgerStore ledger;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private GuardianStore guardian;
 
     public AdminAccessService(AdminLedgerStore ledger) { this.ledger = ledger; }
 
@@ -55,7 +56,13 @@ public class AdminAccessService {
         String fingerprint = org.apache.commons.codec.digest.DigestUtils.sha256Hex(input.toJSONString());
         if (previous != null) {
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
-            if ("accounts.delete".equals(type) || "roles.delete".equals(type)) authorize(state, actor, type.startsWith("roles.") ? "roles" : "accounts", "delete", previous.getJSONObject("result").getJSONObject("data"), input);
+            // A cached response is still protected data. Resolve current grants and
+            // target ownership again, without repeating the original mutation.
+            String entity = type.startsWith("roles.") ? "roles" : "accounts";
+            JSONObject captured = previous.getJSONObject("result").getJSONObject("data");
+            boolean deleted = type.endsWith(".delete");
+            JSONObject target = deleted ? captured : find(state, entity, captured.getString("id"));
+            authorize(state, actor, entity, deleted ? "delete" : "update", target, input);
             return previous.getJSONObject("result");
         }
         if (needsPreview(state, actor, type, input)) checkPreview(state, actor, type, input);
@@ -373,6 +380,12 @@ public class AdminAccessService {
         if (!can(state, actor, "audit:read", input.getString("siteId"), null)) throw AdminQueryService.fail(403, "PERMISSION_DENIED", "无权查看此厂站操作日志");
         List<JSONObject> visible = new ArrayList<JSONObject>();
         for (JSONObject row : rows(state, "audit")) if (input.getString("siteId").equals(row.getString("siteId")) && can(state, actor, "audit:read", row.getString("siteId"), row.getString("areaId"))) visible.add(redact(row));
+        if(guardian!=null)for(Object raw:WearableModel.rows(guardian.snapshot(),"audit")) {
+            JSONObject row=(JSONObject)raw;String action=row.getString("action");
+            if(action==null||!action.startsWith("works.")&&!"businessConfig.update".equals(action))continue;
+            if(!input.getString("siteId").equals(row.getString("siteId"))&&!("businessConfig.update".equals(action)&&"demo-system".equals(actor.getString("id"))))continue;
+            JSONObject out=WearableModel.copy(row);if(out.get("occurredAt")==null)out.put("occurredAt",out.get("time"));if(out.get("result")==null)out.put("result","SUCCESS");visible.add(redact(out));
+        }
         if ("auditDetail".equals(kind)) {
             for (JSONObject row : visible) if (input.getString("id").equals(row.getString("id"))) {
                 Map<String, Object> body = new LinkedHashMap<String, Object>();
@@ -466,7 +479,7 @@ public class AdminAccessService {
     private boolean can(JSONObject state, JSONObject actor, String operation, String siteId, String areaId) {
         if (actor == null || !actor.getBooleanValue("enabled")) return false;
         JSONObject site = find(state, "sites", siteId);
-        if (site != null && !site.getBooleanValue("enabled") && !"sites:write".equals(operation)) return false;
+        if (site == null || !site.getBooleanValue("enabled") && !"sites:write".equals(operation)) return false;
         if ("demo-system".equals(actor.getString("id"))) return true;
         JSONArray roleIds = actor.getJSONArray("roleIds");
         if (roleIds == null) return false;

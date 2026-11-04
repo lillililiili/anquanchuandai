@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { ConfigError, validateConfig } from './config.mjs';
 import { createDeviceGateway } from './gateway.mjs';
 import { createGpsDiagnosticWriter } from './gps-diagnostics.mjs';
+import { createHttpDiagnosticWriter } from './http-diagnostics.mjs';
 
 try {
   if (process.argv.slice(2).some(arg => arg !== '--check')) throw new ConfigError('Unsupported argument.');
@@ -11,7 +12,10 @@ try {
   } else {
     const onGpsReport = process.env.HELMET_GPS_DIAGNOSTICS === '1'
       ? await createGpsDiagnosticWriter(new URL('./.local/gps-report-diagnostics.jsonl', import.meta.url)) : undefined;
-    const gateway = createDeviceGateway(config, { onGpsReport });
+    let onHttpDiagnostic;
+    try { onHttpDiagnostic=createHttpDiagnosticWriter(new URL('./.local/http-diagnostics/',import.meta.url)); }
+    catch { console.error('Safe HTTP diagnostics unavailable; device forwarding remains enabled.'); }
+    const gateway = createDeviceGateway(config, { onGpsReport, onHttpDiagnostic });
     await gateway.listen();
     console.log(`Device gateway is listening only on loopback port ${config.listenPort}. No public tunnel was started.`);
     let closing = false;

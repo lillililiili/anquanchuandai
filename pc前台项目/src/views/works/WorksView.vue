@@ -1,4 +1,5 @@
 <script setup>
+import { workOnDate, workPeriod, workPeriodText, workStatus, workSource } from '@/lib/work-business';
 import { computed, reactive, watch } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
@@ -19,11 +20,10 @@ import { beijingDate } from "@/lib/location";
 import { db } from "@/mock/runtime";
 import { filtersOf, session } from "@/stores/session";
 import { events, personName, revision, search, works } from "@/lib/queries";
-import { externalStatusPresentation } from '@/lib/external-status';
 import { isRealDevice, isCurrentDevice } from '@/lib/device-telemetry';
 
-const hours = ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"];
-const statusOptions = [["", "全部"], "监护中", "已结束"];
+const hours = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00", "24:00"];
+const statusOptions = [["", "全部"], "待开始", "进行中", "已结束", "已取消"];
 
 const today = () => db.demoMode ? DATE : beijingDate();
 const draft = reactive({ q: "", date: today(), status: "" });
@@ -45,8 +45,8 @@ const list = computed(() => {
   return works().filter(
     (work) =>
       search(work.name + " " + work.id, query.q) &&
-      work.date === (query.date || today()) &&
-      (!query.status || work.status === query.status),
+      workOnDate(work, query.date || today()) &&
+      (!query.status || workStatus(work) === query.status),
   );
 });
 const selected = computed(() => list.value.find((work) => work.id === session.work) || list.value[0] || null);
@@ -81,18 +81,12 @@ function deviceSummary(members) {
   return devices.filter(item => item.online === true && isCurrentDevice(item)).length + " / " + devices.length;
 }
 
-function minutes(value) {
-  const [hour, minute] = String(value || "0:0").split(":");
-  return Number(hour) * 60 + Number(minute);
-}
-
 function barStyle(work) {
-  const start = minutes(work.start);
-  const end = minutes(work.end);
-  return {
-    left: ((start - 360) / 720) * 100 + "%",
-    width: ((end - start) / 720) * 100 + "%",
-  };
+  const { start, end } = workPeriod(work);
+  const day = Date.parse(`${windowDate.value}T00:00:00+08:00`);
+  const from = Math.max(0, Math.min(1, (Date.parse(start) - day) / 86400000));
+  const to = Math.max(from, Math.min(1, (Date.parse(end) - day) / 86400000));
+  return { left: `${from * 100}%`, width: `${(to - from) * 100}%` };
 }
 
 </script>
@@ -101,8 +95,8 @@ function barStyle(work) {
   <PageHeading title="作业监护" subtitle="对现场作业进行人员、装备和状态的实时监护" />
   <div class="works-toolbar">
     <FilterBar @submit="applyFilters" @reset="resetFilters">
-      <AppField label="作业名 / 工作票号">
-        <AppInput v-model="draft.q" name="q" placeholder="请输入作业名或工作票号" />
+      <AppField label="作业名 / 编号">
+        <AppInput v-model="draft.q" name="q" placeholder="请输入作业名或编号" />
       </AppField>
       <AppField label="日期">
         <AppInput v-model="draft.date" name="date" type="date" />
@@ -117,7 +111,7 @@ function barStyle(work) {
       <AppPanel extra-class="work-list list-detail-table">
         <template #title>作业列表 <small>（共 {{ list.length }} 条）</small></template>
         <AppTable :rows="list" :reset-key="[session.station, session.filters.works]" v-slot="{ rows: pageRows }"
-          :columns="['作业名称', '来源编号', '监护人', '作业地点', '人员数', '装备在线', '待核验数', '来源状态', '操作']"
+          :columns="['作业名称', '作业编号', '监护人', '作业地点', '人员数', '装备在线', '待核验数', '登记来源', '操作']"
           :empty="!list.length"
         >
           <tr
@@ -135,7 +129,7 @@ function barStyle(work) {
             <td>{{ work.members.length }} 人</td>
             <td>{{ deviceSummary(work.members) }}</td>
             <td><b class="yellow">{{ pendingCount(work.id) }}</b></td>
-            <td><AppStatus :color="externalStatusPresentation(work).color">{{ externalStatusPresentation(work).label }}</AppStatus></td>
+            <td><AppStatus>{{ workSource(work) }}</AppStatus></td>
             <td><a class="btn small" :href="'#/work/' + work.id" @click.stop>查看</a></td>
           </tr>
         </AppTable>
@@ -150,7 +144,7 @@ function barStyle(work) {
           <div v-for="work in list" :key="work.id" class="work-time-row">
             <span>{{ work.name }}（{{ work.members.length }}人）</span>
             <div class="work-time-track">
-              <a :href="'#/work/' + work.id" :style="barStyle(work)">{{ work.start }} – {{ work.end }}</a>
+              <a :href="'#/work/' + work.id" :style="barStyle(work)">{{ workPeriodText(work) }}</a>
             </div>
           </div>
         </div>
@@ -161,13 +155,13 @@ function barStyle(work) {
         <a class="btn primary" :href="'#/work/' + selected.id">进入作业监护　<UiIcon name="chevron-right" /></a>
       </template>
       <template v-if="selected">
-        <h3>{{ selected.name }}　<AppTag>{{ selected.status }}</AppTag></h3>
+        <h3>{{ selected.name }}　<AppTag>{{ workStatus(selected) }}</AppTag></h3>
         <WorkInfo :work="selected" />
         <div class="detail-section">
           <h3>作业人员位置</h3>
           <div style="height:220px"><PlantMap :work="selected" :person="selected.members[0] || ''" :legend="false" :fences="false" /></div>
         </div>
-        <p class="note"><AppIcon name="information-line" />许可及摘要以原工作票系统为准。</p>
+        <p class="note"><AppIcon name="information-line" />{{ selected.source === 'LOCAL' ? '本地登记资料由系统管理员维护。' : '来源资料只读。' }}</p>
       </template>
       <AppEmpty v-else />
     </AppPanel>

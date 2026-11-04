@@ -49,7 +49,7 @@ public class GuardianIngest {
                 "bindingId",binding==null?null:binding.getString("id"),"bindingStart",binding==null?null:binding.getString("start"),
                 "bindingEnd",binding==null?null:binding.getString("end"),
                 "siteId",h.device.getString("siteId"),"areaId",h.person==null?h.device.getString("areaId"):h.person.getString("areaId"),
-                "work",currentWork(state,h.personId,day(new Date())));
+                "work",WorkBusiness.match(state,h.personId,h.station,java.time.Instant.now()));
     }
 
     public void directLocation(JSONObject point) {
@@ -123,9 +123,8 @@ public class GuardianIngest {
             event.put("coordinateSystem",envelope.get("coordinateSystem"));event.put("locationQuality",envelope.get("locationQuality"));
             event.put("locationSource",envelope.get("locationSource"));event.put("accuracyMeters",envelope.get("accuracyMeters"));
             event.put("locationReportedAt",envelope.get("locationReportedAt"));
-            JSONObject work=envelope.getJSONObject("work");
-            event.put("workId",work==null?"":work.getString("id"));
-            event.getJSONObject("snapshot").put("workName",work==null?"待分配":work.getString("name"));
+            JSONObject work=WorkBusiness.enabled(state)?envelope.getJSONObject("work"):null;
+            WorkBusiness.capture(state,event,work);
             state.put("seq",state.getIntValue("seq")+1);
             return true;
         });
@@ -277,9 +276,10 @@ public class GuardianIngest {
         Date when = parseTime(timestamp);
         if (when == null) when = new Date();
         String code = rawType == null ? "" : rawType.substring(0, Math.min(64, rawType.length()));
-        addEvent(state, belt, when, sos ? "安全带发起 SOS" : "安全带告警" + (code.isEmpty() ? "" : "（" + code + "）"),
+        JSONObject event=addEvent(state, belt, when, sos ? "安全带发起 SOS" : "安全带告警" + (code.isEmpty() ? "" : "（" + code + "）"),
                 sos ? "人员求助" : "设备通信", timestamp == null ? null
                         : deviceId + ":belt:" + (sos ? "sos:" : "alarm:") + code + ":" + timestamp, code);
+        if(event!=null&&captured!=null)WorkBusiness.capture(state,event,WorkBusiness.enabled(state)?captured.getJSONObject("work"):null);
         return true;
     }
     private static Helmet capturedBelt(JSONObject state,JSONObject captured){
@@ -306,6 +306,30 @@ public class GuardianIngest {
                 || !java.util.Objects.equals(device.getString("siteId"), person.getString("siteId")))
             throw new IllegalArgumentException("安全带领用人员或厂站无效");
         return new Helmet(device, person.getString("id"), person.getString("name"), device.getString("station"), person);
+    }
+
+    /** Last device-reported local recorder state. Reception time is not capture time. */
+    public void directLocalRecording(String deviceId,String rawType,JSONObject context) {
+        if(!"0".equals(rawType)&&!"1".equals(rawType))throw new IllegalArgumentException("设备本地录像状态无效");
+        if(context==null||context.getString("receivedAt")==null)throw new IllegalArgumentException("缺少原始接收上下文");
+        java.time.Instant receivedAt=java.time.Instant.parse(context.getString("receivedAt"));
+        store.update(state->{
+            Helmet h=helmet(state,deviceId);
+            if(h==null||!"DIRECT_HELMET".equals(h.device.getString("source")))throw new IllegalArgumentException("安全帽登记已变化");
+            JSONObject previous=h.device.getJSONObject("localRecording");
+            if(previous!=null&&previous.getString("receivedAt")!=null
+                    && !receivedAt.isAfter(java.time.Instant.parse(previous.getString("receivedAt"))))return false;
+            JSONObject report=WearableModel.object("state","0".equals(rawType)?"RECORDING":"STOPPED",
+                    "rawType",rawType,"source","DIRECT_HELMET","reportAct","toggle_localrecord",
+                    "receivedAt",receivedAt.toString(),"timeBasis","RECEIVED_AT");
+            for(String key:new String[]{"personId","personName","siteId","areaId"})report.put(key,context.get(key));
+            // An ended previous binding is not the owner of a new unassigned report.
+            report.put("bindingId",context.get("bindingEnd")==null&&context.getString("personId")!=null
+                    &&!context.getString("personId").isEmpty()?context.get("bindingId"):null);
+            h.device.put("localRecording",report);
+            state.put("seq",state.getIntValue("seq")+1);
+            return true;
+        });
     }
 
     public void directTelemetry(final String deviceId, final JSONObject telemetry) {
@@ -384,11 +408,11 @@ public class GuardianIngest {
         addEvent(state, helmet, when, title, type, sourceKey, null);
     }
 
-    private static void addEvent(JSONObject state, Helmet helmet, Date when, String title, String type, String sourceKey, String rawType) {
-        if (sourceKey != null) for (Object raw : WearableModel.rows(state, "events")) if (sourceKey.equals(((JSONObject)raw).getString("sourceKey"))) return;
+    private static JSONObject addEvent(JSONObject state, Helmet helmet, Date when, String title, String type, String sourceKey, String rawType) {
+        if (sourceKey != null) for (Object raw : WearableModel.rows(state, "events")) if (sourceKey.equals(((JSONObject)raw).getString("sourceKey"))) return null;
         String day = day(when);
         String clock = minute(when);
-        JSONObject work = currentWork(state, helmet.personId, day);
+        JSONObject work = WorkBusiness.match(state, helmet.personId, helmet.station, when.toInstant());
         int seq = nextSeq(state);
         String mmdd = day.length() >= 10 ? day.substring(5, 7) + day.substring(8, 10) : "0000";
         JSONObject event = new JSONObject();
@@ -407,7 +431,7 @@ public class GuardianIngest {
         event.put("version", 1);
         event.put("createdAt", java.time.Instant.now().toString());
         event.put("time", clock);
-        event.put("externalStatus", "未接入外部系统");
+        event.put("externalStatus", "未关联外部工单");
         event.put("station", helmet.station);
         event.put("date", day);
         event.put("externalId", "");
@@ -425,6 +449,7 @@ public class GuardianIngest {
             snapshot.put("sn", helmet.device.getString("sn"));
         }
         event.put("snapshot", snapshot);
+        WorkBusiness.capture(state,event,work);
         event.put("draft", null);
         event.put("verification", null);
         JSONArray timeline = new JSONArray();
@@ -436,6 +461,7 @@ public class GuardianIngest {
         JSONArray events = array(state, "events");
         events.add(0, event);
         GuardianEvents.normalize(state);
+        return event;
     }
 
     private static boolean move(JSONObject state, Helmet helmet, String longitude, String latitude, Date when) {
@@ -477,6 +503,8 @@ public class GuardianIngest {
         fix.put("id", "LOC" + nextSeq(state));
         fix.put("personId", helmet.personId);
         fix.put("deviceId", helmet.deviceId);
+        fix.put("siteId", helmet.device.getString("siteId"));
+        fix.put("station", helmet.station);
         fix.put("lng", longitude);
         fix.put("lat", latitude);
         fix.put("time", stamp(when));

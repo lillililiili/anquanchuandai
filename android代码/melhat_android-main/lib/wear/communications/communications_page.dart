@@ -11,6 +11,7 @@ import 'contact_filters.dart';
 import 'contact_action_bar.dart';
 import 'contact_favorites.dart';
 import 'contact_video_request.dart';
+import 'device_voice_messages.dart';
 import '../inline_filters.dart';
 import 'lab_calls.dart';
 import 'models.dart' hide JsonMap;
@@ -111,6 +112,15 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final session = WearScope.of(context);
+    if (!session.workBusinessEnabled) {
+      _filters = ContactFilters(
+        teams: _filters.teams,
+        types: _filters.types,
+        presences: _filters.selectedPresence,
+      );
+      _tasks = const [];
+      _tasksUnavailable = false;
+    }
     final favorites = ContactFavorites(
       server: session.api.dio.options.baseUrl,
       userId: session.userId,
@@ -537,7 +547,8 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                       ),
                                     ),
                                   if (_refreshWarning != null ||
-                                      _tasksUnavailable)
+                                      (_session?.workBusinessEnabled == true &&
+                                          _tasksUnavailable))
                                     Padding(
                                       padding: const EdgeInsets.only(top: 8),
                                       child: Text(
@@ -589,6 +600,8 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                     ),
                                   const SizedBox(height: 14),
                                   _historyCard(controller),
+                                  const SizedBox(height: 14),
+                                  const DeviceVoiceMessages(),
                                 ],
                               ),
                             ),
@@ -604,10 +617,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 showVoice: _supportsAction('intercom'),
                 showVideo: _supportsAction('video'),
                 showBroadcast: _supportsAction('tts'),
-                voicePending: _pendingAction('intercom'),
-                voicePendingLabel: _voicePendingLabel,
-                videoPending: _pendingAction('video'),
-                broadcastPending: _pendingAction('tts'),
                 onVoice: _canUseActions && _hasSelectedCapability('intercom')
                     ? () => unawaited(_startCallForSelection())
                     : null,
@@ -645,20 +654,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   bool _supportsAction(String action) => _actionDevices.any(
     (d) => d.supports(action == 'video' ? 'video_call' : action),
   );
-  bool _pendingAction(String action) =>
-      _supportsAction(action) &&
-      !_actionDevices.any(
-        (d) => d.feature(action == 'video' ? 'video_call' : action).verified,
-      );
-  String get _voicePendingLabel {
-    final voices = _actionDevices
-        .map((device) => device.feature('intercom'))
-        .where((feature) => feature.supported);
-    return voices.isNotEmpty &&
-            voices.every((feature) => feature.reason == '待接入')
-        ? '待接入'
-        : '待联调';
-  }
 
   String? get _capabilityNotice {
     final policy = _controller?.policy;
@@ -828,7 +823,9 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   Widget _filterBar() => WearCard(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     child: InlineFilters(
-      key: ValueKey('contact-filters-${_session?.scopeKey}'),
+      key: ValueKey(
+        'contact-filters-${_session?.scopeKey}-${_session?.workBusinessEnabled}',
+      ),
       title: '联系对象筛选 · ${_visibleContacts.length} 项',
       groups: [
         const InlineFilterGroup('presence', '状态', {
@@ -840,10 +837,11 @@ class _CommunicationsPageState extends State<CommunicationsPage>
             if (p.teamId.isNotEmpty)
               p.teamId: p.teamName.isEmpty ? '班组 ${p.teamId}' : p.teamName,
         }),
-        InlineFilterGroup('task', '作业', {
-          for (final t in _tasks)
-            idOf(t['id']): textOf(t['title'], '作业 ${idOf(t['id'])}'),
-        }),
+        if (_session!.workBusinessEnabled)
+          InlineFilterGroup('task', '作业', {
+            for (final t in _tasks)
+              idOf(t['id']): textOf(t['title'], '作业 ${idOf(t['id'])}'),
+          }),
       ],
       value: {
         'team': _filters.teams,
@@ -855,7 +853,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         _filters = ContactFilters(
           teams: selected['team'] ?? {},
           types: selected['device'] ?? {},
-          tasks: selected['task'] ?? {},
+          tasks: _session!.workBusinessEnabled ? selected['task'] ?? {} : {},
           presences: selected['presence'] ?? {},
         );
         _pruneSelection();
@@ -1119,9 +1117,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       ..._devices,
       ..._equipment,
     ].where((d) => d.personId == contact.person.id && d.supports('intercom'));
-    final voicePending =
-        voiceDevices.isNotEmpty &&
-        !voiceDevices.any((d) => d.feature('intercom').verified);
     final canCall =
         _refreshWarning == null &&
         !_batchBusy &&
@@ -1194,7 +1189,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                               const SizedBox(width: 5),
                               Expanded(
                                 child: Text(
-                                  '$statusLabel${(helmet.device?.simulatedPresence ?? false) ? ' · 联调' : ''}',
+                                  '$statusLabel${(helmet.device?.simulatedPresence ?? false) ? ' · 模拟状态' : ''}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -1230,11 +1225,18 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 if (voiceDevices.isNotEmpty)
                   IconButton(
                     key: ValueKey('contact-call-${contact.key}'),
-                    tooltip: voicePending
-                        ? '设备语音 · ${voiceDevices.every((device) => device.feature('intercom').reason == '待接入') ? '待接入' : '待联调'}'
-                        : canCall
+                    tooltip: canCall
                         ? '呼叫'
-                        : '暂无可用设备语音或权限',
+                        : _controller?.policy.canStartCalls != true
+                        ? '当前账号无通话权限'
+                        : voiceDevices
+                                  .map(
+                                    (device) =>
+                                        device.feature('intercom').reason,
+                                  )
+                                  .where((reason) => reason.isNotEmpty)
+                                  .firstOrNull ??
+                              '当前不可呼叫，请刷新设备状态',
                     onPressed: canCall
                         ? () => unawaited(_callContact(contact))
                         : null,
@@ -1481,7 +1483,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 ),
                 subtitle: Text(
                   call.demo
-                      ? '演示会话 · 未接入真实设备'
+                      ? '演示会话 · 模拟数据'
                       : controller.remotePresent
                       ? '远端已加入'
                       : '等待远端加入',
@@ -1719,7 +1721,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
     if (!mounted || scope != _session?.scopeKey) return;
     controller.selectDevice(resolved.first);
     if (resolved.length > 1) {
-      _snack('当前真实通话接口仅支持单呼，请仅选择一个设备；群呼可在联调模式验证。');
+      _snack('请仅选择一位人员发起语音通话。');
       return;
     }
     final eventId = _clean(widget.eventId);

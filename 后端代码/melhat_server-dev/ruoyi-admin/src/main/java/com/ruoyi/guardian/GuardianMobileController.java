@@ -57,7 +57,7 @@ public class GuardianMobileController {
     }
     @GetMapping("/home") public JSONObject home(@RequestParam String siteId,HttpServletRequest r){
         JSONObject state=siteSnapshot(r,siteId);long pending=rows(state,"events").stream().filter(e->!"已核验".equals(((JSONObject)e).getString("status"))).count();
-        return object("siteId",siteId,"counts",object("pendingEvents",pending,"works",rows(state,"works").size(),"devices",rows(state,"devices").size()),"works",state.get("works"),"events",state.get("events"),"devices",state.get("devices"),"bindings",state.get("bindings"),"identity",state.get("operator"));
+        return object("siteId",siteId,"counts",object("pendingEvents",pending,"works",rows(state,"works").size(),"devices",rows(state,"devices").size()),"works",state.get("works"),"events",state.get("events"),"devices",state.get("devices"),"bindings",state.get("bindings"),"identity",state.get("operator"),"businessConfig",state.get("businessConfig"));
     }
     @GetMapping("/{resource:people|devices|works}") public JSONObject list(@PathVariable String resource,@RequestParam String siteId,HttpServletRequest r){JSONObject state=siteSnapshot(r,siteId);JSONArray result=rows(state,resource);return object("rows",result,"total",result.size());}
     @GetMapping("/{resource:people|devices|works}/{id}") public JSONObject detail(@PathVariable String resource,@PathVariable String id,@RequestParam String siteId,HttpServletRequest r){JSONObject state=siteSnapshot(r,siteId),row=find(state,resource,id);if(row==null)throw AdminQueryService.fail(404,"NOT_FOUND","资料不存在或不在授权范围");return row;}

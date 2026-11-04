@@ -11,7 +11,7 @@ export function sharedCalls(station) {
 }
 export function sharedBroadcasts(station) {
   return sharedRecords('broadcast', station).map(row => ({...row,time:row.startedAt || row.createdAt || '',groupName:row.actorName || '设备广播',members:[],
-    recipientLabel:(row.deviceIds || []).join('、'),status:row.status === 'accepted'?'设备平台已受理（播放未确认）':'受理结果未确认'}));
+    recipientLabel:(row.deviceIds || []).join('、'),status:row.status === 'accepted'?'设备平台已受理':'受理结果未确认'}));
 }
 function sharedRecords(type, station) {
   const site=db.state.stations.find(s=>s.id===station)?.siteId;

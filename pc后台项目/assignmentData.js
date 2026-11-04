@@ -10,7 +10,7 @@ export const availableForIssue = (state, d) => d.lifecycle === 'STOCK' && relati
 const available = availableForIssue
 export function assignmentWarnings(d) {
   const missingModel = Object.hasOwn(d, 'modelName') ? !String(d.modelName || '').trim() : d.modelId?.startsWith('unknown-')
-  return [d.communication !== 'ONLINE' ? '通信离线、未知或未接入' : '', d.freshness === 'STALE' ? '设备数据过期' : '', !d.manufacturer || !d.sn || missingModel ? '资料或型号待补充' : '', d.verification !== 'VERIFIED' ? '能力未经过真实验证' : ''].filter(Boolean)
+  return [d.communication !== 'ONLINE' ? '设备离线或通信状态未知' : '', d.freshness === 'STALE' ? '设备数据过期' : '', !d.manufacturer || !d.sn || missingModel ? '资料或型号待补充' : '', d.verification !== 'VERIFIED' ? '能力未经过真实验证' : ''].filter(Boolean)
 }
 function person(state, actor, siteId, id, fail) {
   const p = state.people.find(p => p.id === id && p.siteId === siteId)

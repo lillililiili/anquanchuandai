@@ -8,7 +8,7 @@ defineProps({
 </script>
 
 <template>
-  <div :class="['stats', variant]">
+  <div :class="['stats', variant]" :style="{ '--stat-count': items.length || 1 }">
     <div v-for="item in items" :key="item.label" class="stat">
       <AppIcon v-if="item.icon" :name="item.icon" :color="item.color" />
       <div>

@@ -81,6 +81,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/device-controls.json
     - assets/field-brand/
     - assets/field-brand/cargo-v2/
     - assets/field-brand/cargo-tools/

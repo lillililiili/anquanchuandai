@@ -40,6 +40,8 @@ function changeStation(value) {
   session.station = value;
   localStorage.setItem("rolling-station", value);
   session.fenceDraft = null;
+  session.fenceUndo = [];
+  session.fenceMode = "select";
   session.filters = {};
   session.selectedMembers = [];
   session.person = people()[0]?.id || "";

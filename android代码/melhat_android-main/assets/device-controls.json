@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "profiles": {
+    "DIRECT_HELMET": {
+      "deviceType": "H",
+      "model": "RD-D1+",
+      "title": "RD-D1+ 安全帽按键参考",
+      "description": "以下是设备上的操作说明，不是远程控制。实际能力及上报情况以当前设备验收结果为准。",
+      "source": {"document": "RD-D1+智能安全帽产品说明书.pdf", "page": 7},
+      "controls": [
+        {"id": "power", "key": "电源键", "gesture": "长按 3 秒", "deviceEffect": "开机或关机。", "platformEffect": "上线后更新通信状态；离线后禁用实时操作，保留历史记录。离线本身不能证明已关机。"},
+        {"id": "local_recording", "key": "电源键", "gesture": "开机时短按", "deviceEffect": "开启或关闭设备本地录像；说明书标注开机默认循环录制。", "platformEffect": "显示设备本地录像最后上报。与平台录制分开，开启状态不代表已有录像文件上传。"},
+        {"id": "ptt", "key": "麦克风键", "gesture": "长按 1 秒录音，松开发送", "deviceEffect": "设备对讲录音。", "platformEffect": "实际收到的录音在调度通信的设备语音消息中收听；本机按键链路待实测，不等同于已接通双向语音通话。"},
+        {"id": "photo", "key": "相机键", "gesture": "开机时短按", "deviceEffect": "设备拍照。", "platformEffect": "实际上传的文件进入现场资料；按设备上报保留来源，缺少拍摄时人员归属时不补绑当前人员。"},
+        {"id": "sos", "key": "SOS 键", "gesture": "开机时短按", "deviceEffect": "发出求助提示并向后台反馈。", "platformEffect": "收到真实求助报文后进入 SOS 处置；认领、处理、核验与语音是否接通分别记录。"},
+        {"id": "light", "key": "照明 / 激光键", "gesture": "短按照明，长按激光", "deviceEffect": "开启或关闭相应灯光，说明书未规定长按秒数。", "platformEffect": "设备本地操作；目前不提供远程灯光按钮。"},
+        {"id": "volume", "key": "音量循环键", "gesture": "短按", "deviceEffect": "循环调节设备音量。", "platformEffect": "只改变设备音量，不等同于电脑麦克风静音或结束通话。"}
+      ]
+    },
+    "DIRECT_BELT": {
+      "deviceType": "B",
+      "model": "RD-1102",
+      "title": "RD-1102 智能挂钩按键参考",
+      "description": "以下是设备上的操作说明，不是远程控制。选配功能仍以本机已确认配置和验收结果为准。",
+      "source": {"document": "RD-1102智能挂钩产品规格书.pdf", "page": "1–3"},
+      "controls": [
+        {"id": "power", "key": "电源键", "gesture": "长按", "deviceEffect": "开机或关机，规格书未规定长按秒数。", "platformEffect": "按实际上报和连接更新状态；不把开机、在线、领用、佩戴视为同一状态。"},
+        {"id": "battery", "key": "电源键", "gesture": "在线时短按", "deviceEffect": "播报电量；规格书描述会发送电量查询记录。", "platformEffect": "页面只展示实际收到的电量及时间；未收到查询记录时不生成操作记录。"},
+        {"id": "silence", "key": "电源键", "gesture": "相应报警响起时短按", "deviceEffect": "取消撞击 / 跌落报警音效。", "platformEffect": "停止设备声音不表示风险消除，也不自动处理或核验平台告警。"},
+        {"id": "height_reset", "key": "电源键", "gesture": "双击", "deviceEffect": "重置高度，不是重启设备。", "platformEffect": "本机测高尚待验收；平台不把该操作当作风险解除，不提供远程重置按钮。"},
+        {"id": "sos", "key": "SOS 键", "gesture": "短按", "deviceEffect": "发起紧急求助；规格书说明离线会提示设备不在线。", "platformEffect": "收到求助报文后进入 SOS 处置。当前安全带仅支持求助上报，语音通话请使用已领用且在线的安全帽。"},
+        {"id": "optional_proximity", "key": "SOS 键", "gesture": "长按（选配）", "deviceEffect": "规格书描述切换近电功能，长按秒数未规定。", "platformEffect": "本机近电选配尚未确认，不作为已可用功能开放。"},
+        {"id": "restart", "key": "隐藏复位键", "gesture": "长按 5–7 秒", "deviceEffect": "设备重启。", "platformEffect": "重启不清除平台历史和未处理事件，不与电源双击重置高度混用。"}
+      ]
+    }
+  }
+}

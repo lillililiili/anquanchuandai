@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled } from '@/lib/work-business';
 import { computed, reactive, watch } from "vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import FilterBar from "@/components/layout/FilterBar.vue";
@@ -10,7 +11,6 @@ import AppInput from "@/components/ui/AppInput.vue";
 import AppSelect from "@/components/ui/AppSelect.vue";
 import AppStatus from "@/components/ui/AppStatus.vue";
 import AppTable from "@/components/ui/AppTable.vue";
-import AppTabs from "@/components/ui/AppTabs.vue";
 import AppTag from "@/components/ui/AppTag.vue";
 import DeviceStrip from "@/components/domain/DeviceStrip.vue";
 import PersonAvatar from "@/components/domain/PersonAvatar.vue";
@@ -22,13 +22,13 @@ import { events, people, personName, revision, search, statusColor } from "@/lib
 import { personFeature } from '@/lib/person-equipment';
 import { callPerson, runGuarded } from "@/lib/actions";
 
-const columns = ["序号", "人员信息", "当前作业", "装备状态", "最近更新时间", "操作"];
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
+const columns = computed(() => ["序号", "人员信息", ...(workEnabled.value ? ["当前作业"] : []), "装备状态", "最近更新时间", "操作"]);
 const workStatusOptions = [
   ["", "全部"],
   ["assigned", "作业中"],
   ["idle", "待分配"],
 ];
-const detailTabs = ["人员信息", "装备信息", "作业信息", "事件信息"].map((label) => ({ id: label, label }));
 
 const saved = filtersOf("personnel");
 const draft = reactive({
@@ -36,10 +36,13 @@ const draft = reactive({
   team: saved.team || "",
   workStatus: saved.workStatus || "",
 });
+watch(() => { revision(); return db.state.businessConfig?.workBusinessEnabled; }, enabled => { if (enabled === false) draft.workStatus = ""; }, { immediate: true });
 
 const teamOptions = computed(() => {
   revision();
-  const teams = [...new Set(people().map((person) => person.team))];
+  const teams = [...new Set(people()
+    .map((person) => person.team)
+    .filter((team) => typeof team === "string" && team.trim()))];
   return [["", "全部"], ...teams.map((team) => [team, team])];
 });
 
@@ -59,7 +62,7 @@ const rows = computed(() => {
     .filter((row) => {
       const identity = `${row.person.name} ${row.person.id} ${row.devices.map((device) => device.id).join(" ")}`;
       const teamOk = !query.team || row.person.team === query.team;
-      const statusOk = !query.workStatus || (query.workStatus === "assigned" ? !!row.work : !row.work);
+      const statusOk = !workEnabled.value || !query.workStatus || (query.workStatus === "assigned" ? !!row.work : !row.work);
       return search(identity, query.q) && teamOk && statusOk;
     });
 });
@@ -89,7 +92,7 @@ function applyFilters() {
   session.filters.personnel = {
     q: draft.q,
     team: draft.team,
-    workStatus: draft.workStatus,
+    workStatus: workEnabled.value ? draft.workStatus : "",
   };
 }
 
@@ -115,7 +118,7 @@ function talk() {
 <template>
   <div class="split-detail bounded-split" :style="session.hidePerson ? 'grid-template-columns:1fr' : null">
     <div class="list-detail-column">
-      <PageHeading title="在册人员与装备" subtitle="以人员查看三类装备与当前作业" />
+      <PageHeading title="在册人员与装备" :subtitle="workEnabled ? '以人员查看三类装备与当前作业' : '以人员查看领用装备与事件'" />
       <FilterBar @submit="applyFilters" @reset="resetFilters">
         <div class="searchbox">
           <AppIcon name="search-line" />
@@ -124,7 +127,7 @@ function talk() {
         <AppField label="班组">
           <AppSelect v-model="draft.team" name="team" :options="teamOptions" />
         </AppField>
-        <AppField label="作业状态">
+        <AppField v-if="workEnabled" label="作业状态">
           <AppSelect v-model="draft.workStatus" name="workStatus" :options="workStatusOptions" />
         </AppField>
       </FilterBar>
@@ -133,7 +136,7 @@ function talk() {
           <template #head>
             <th>序号</th>
             <th>人员信息</th>
-            <th>当前作业</th>
+            <th v-if="workEnabled">当前作业</th>
             <th>装备状态<br /><small>（安全帽 / 安全带 / 智能手表）</small></th>
             <th>最近更新时间</th>
             <th>操作</th>
@@ -157,7 +160,7 @@ function talk() {
                   </div>
                 </div>
               </td>
-              <td>
+              <td v-if="workEnabled">
                 {{ row.work?.name || "待分配" }}<small>{{ row.work ? "（监护人：" + personName(row.work.supervisor) + "）" : "" }}</small>
               </td>
               <td><DeviceStrip :person-id="row.person.id" /></td>
@@ -168,24 +171,19 @@ function talk() {
         </AppTable>
       </div>
     </div>
-    <aside
-      v-if="!session.hidePerson"
-      :class="['panel', { 'person-detail-focused': session.personTab !== '人员信息' }]"
-      :data-detail-tab="session.personTab"
-    >
+    <aside v-if="!session.hidePerson" class="panel">
       <div class="panel-body">
         <template v-if="current">
           <div class="detail-heading">
             <PersonAvatar :person="current.person" />
             <div>
               <h3>{{ current.person.name }} <small>{{ current.helmet?.id || "未绑定" }}</small></h3>
-              <small>{{ current.person.team }}　|　手机：{{ current.person.phone || "—" }}</small>
+              <small v-if="current.person.team">{{ current.person.team }}</small>
             </div>
             <AppButton tone="icon-only" icon="close-line" aria-label="关闭人员详情" @click="session.hidePerson = true" />
           </div>
-          <AppTabs v-model="session.personTab" :tabs="detailTabs" />
-          <div class="detail-scroll" tabindex="0" role="region" :aria-label="session.personTab + '，可滚动'">
-            <dl v-if="session.personTab === '人员信息'" class="info compact">
+          <div class="detail-scroll" tabindex="0" role="region" aria-label="人员详情，可滚动">
+            <dl v-if="workEnabled" class="info compact">
               <dt>当前作业</dt>
               <dd>{{ current.work?.name || "待分配" }}</dd>
               <dt>当前监护人</dt>
@@ -193,12 +191,12 @@ function talk() {
               <dt>当前负责人</dt>
               <dd>{{ personName(current.work?.leader) }}</dd>
             </dl>
-            <div v-if="session.personTab === '人员信息' || session.personTab === '装备信息'" class="detail-section">
+            <div class="detail-section">
               <h3>装备状态 <small>（以领用记录为准）</small></h3>
               <DeviceStrip :person-id="current.person.id" large />
               <a class="text-link" :href="'#/person/' + current.person.id">查看领用记录 <UiIcon name="chevron-right" /></a>
             </div>
-            <div v-if="session.personTab === '人员信息' || session.personTab === '作业信息'" class="detail-section">
+            <div v-if="workEnabled" class="detail-section">
               <h3>关联作业</h3>
               <template v-if="current.work">
                 <b>{{ current.work.name }}</b>
@@ -209,7 +207,7 @@ function talk() {
               </template>
               <AppEmpty v-else text="待分配作业" />
             </div>
-            <div v-if="session.personTab === '人员信息' || session.personTab === '事件信息'" class="detail-section">
+            <div class="detail-section">
               <h3>待核验事件（{{ pending.length }}）</h3>
               <template v-if="related">
                 <a :href="'#/event/' + related.id"><AppIcon name="error-warning-fill" color="yellow" />　{{ related.title }}</a>
@@ -220,12 +218,15 @@ function talk() {
             <div v-if="videoFeature.supported || voiceFeature.supported" class="detail-section detail-media">
               <div class="grid equal">
                 <div v-if="videoFeature.supported" class="detail-video">
-                  <h3>现场视频</h3>
-                  <VideoFrame :person-id="current.person.id" preview /><a class="text-link" :href="'#/single/' + current.person.id">单路监看</a>
+                  <div class="detail-video-heading">
+                    <h3>现场视频</h3>
+                    <a class="text-link" :href="'#/single/' + current.person.id">单路监看 <UiIcon name="chevron-right" /></a>
+                  </div>
+                  <VideoFrame :person-id="current.person.id" preview />
                 </div>
                 <div v-if="voiceFeature.supported" class="detail-call">
-                  <h3>语音对讲</h3>
-                  <AppButton :disabled="!voiceFeature.available" :title="voiceFeature.reason" tone="primary wide" icon="mic-line" @click="talk">{{ voiceFeature.verified ? '前往语音调度' : '对讲 · 待联调' }}</AppButton>
+                  <h3>语音通话</h3>
+                  <AppButton :disabled="!voiceFeature.available" :title="voiceFeature.reason" tone="primary wide" icon="mic-line" @click="talk">前往语音通话</AppButton>
                   <small>{{ voiceFeature.reason || ('联系 ' + current.person.name) }}</small>
                 </div>
               </div>

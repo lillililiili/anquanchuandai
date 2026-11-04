@@ -104,10 +104,12 @@ class ContactRoster {
     final detailed = <JsonMap>[];
     var tasksUnavailable = false;
     try {
-      final tasks = await allPages(
-        api,
-        allTasks ? '/api/v1/work-tasks' : '/api/v1/work-tasks/mine',
-      );
+      final tasks = !api.workBusinessEnabled
+          ? <JsonMap>[]
+          : await allPages(
+              api,
+              allTasks ? '/api/v1/work-tasks' : '/api/v1/work-tasks/mine',
+            );
       for (var i = 0; i < tasks.length; i += 6) {
         detailed.addAll(
           await Future.wait(
@@ -172,6 +174,7 @@ class ContactRoster {
         personName: d.personName,
         typeCode: d.typeCode,
         modelName: d.modelName,
+        source: d.source,
         online: 'unknown',
         connectionQuality: 'unknown',
         simulatedPresence: d.simulatedPresence,

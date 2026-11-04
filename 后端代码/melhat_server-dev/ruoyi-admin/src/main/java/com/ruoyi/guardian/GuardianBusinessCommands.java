@@ -25,7 +25,7 @@ public class GuardianBusinessCommands {
             if(fields==null)throw AdminQueryService.fail(400,"INVALID_COMMAND","缺少围栏内容");
             String station=prior==null?text(fields,"station"):text(prior,"station"),site=siteId(ctx.data,station);
             String permission="groups".equals(collection)?"groups:write":"assets:write";
-            if(!ctx.can(permission,site,null))throw AdminQueryService.fail(403,"PERMISSION_DENIED","没有该厂区的业务维护权限");
+            if(!ctx.can(permission,site,null))throw AdminQueryService.fail(403,"PERMISSION_DENIED","groups".equals(collection)?"没有当前厂站的分组维护权限":"没有当前厂站的围栏维护权限");
             if(prior!=null&&fields.containsKey("station")&&!station.equals(fields.getString("station")))throw AdminQueryService.fail(400,"SITE_MISMATCH","不能通过此操作变更厂区");
             JSONObject memory=state.getJSONObject("businessOperations");if(memory==null){memory=new JSONObject();state.put("businessOperations",memory);}JSONObject previous=memory.getJSONObject(key);
             if(previous!=null){if(!fingerprint.equals(previous.getString("fingerprint")))throw AdminQueryService.fail(409,"IDEMPOTENCY_CONFLICT","相同操作编号不能用于不同内容");result[0]=previous.getJSONObject("result");return false;}

@@ -1,9 +1,9 @@
 package com.ruoyi.web.controller.business;
 
-import com.alibaba.fastjson2.JSON;
 import com.ruoyi.common.core.domain.R;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.guardian.GuardianIngest;
+import com.ruoyi.guardian.LegacyCallbackAccess;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.headband.pojo.param.GnssNotifyParam;
@@ -21,8 +21,6 @@ import com.ruoyi.helmet.vo.SafetyHatListVO;
 import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.system.service.ISysDictTypeService;
 import com.ruoyi.system.service.ISysUserService;
-import com.ruoyi.system.websocket.WebSocketSever;
-import com.ruoyi.system.websocket.WebsocktMsg;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +31,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 
 @RestController
@@ -64,7 +60,7 @@ public class ExternalController {
     private GuardianIngest guardianIngest;
 
     @Autowired
-    private ExecutorService executorService = Executors.newCachedThreadPool();
+    private LegacyCallbackAccess callbackAccess;
 
     /**
      * 安全帽报警通知
@@ -74,6 +70,7 @@ public class ExternalController {
     @PostMapping("/helmetAlarm")
     @ApiOperation(value = "安全帽报警推送")
     public ResponseVO helmetAlarm(@RequestBody HelmatAlarm param) {
+        callbackAccess.requireDevice(param == null ? null : param.getHelmetSn());
         ResponseVO back = null;
         String type = param == null ? null : param.getType();
         String helmetSn = param == null ? null : param.getHelmetSn();
@@ -114,8 +111,7 @@ public class ExternalController {
         realTimeAlarmService.save(alarm);
         rememberAlarm(helmetSn, type, startTime);
 
-        //推送到前端
-        WebSocketSever.sendAllMessage(JSON.toJSONString(new WebsocktMsg("alarm", alarm)));
+        // The Guardian snapshot exposes this event only to authorized stations.
 
         back = new ResponseVO(200, "success", null);
         return back;
@@ -129,6 +125,7 @@ public class ExternalController {
     @PostMapping("/notifyGnss")
     @ApiOperation(value = "安全帽定位推送")
     public ResponseVO gnss(@RequestBody GnssNotifyParam param) {
+        callbackAccess.requireDevice(param == null ? null : param.getHelmetSn());
         ResponseVO back = null;
         String helmetSn = param == null ? null : param.getHelmetSn();
         String latitude = param == null ? null : param.getLatitude();
@@ -178,8 +175,7 @@ public class ExternalController {
         safetyHatLocationRecordService.save(record);
         rememberLocation(helmetSn, longitude, latitude, timestamp);
 
-        //推送到前端
-//        WebSocketSever.sendAllMessage(JSON.toJSONString(new WebsocktMsg("location",record)));
+
         back = new ResponseVO(200, "success", null);
         return back;
     }
@@ -192,6 +188,7 @@ public class ExternalController {
     @PostMapping("/sosCall")
     @ApiOperation(value = "安全帽SOS呼叫")
     public ResponseVO sosCall(@RequestBody GnssNotifyParam param) {
+        callbackAccess.requireDevice(param == null ? null : param.getHelmetSn());
         ResponseVO back = null;
         String helmetSn = param == null ? null : param.getHelmetSn();
         String latitude = param == null ? null : param.getLatitude();
@@ -223,11 +220,14 @@ public class ExternalController {
         rememberSos(helmetSn, longitude, latitude, param.getTimestamp());
 
         back = new ResponseVO(200, "success", null);
-        //呼叫帽子
-        executorService.execute(() -> callHat(helmetSn));
+        // SOS stays an event; an authorized operator starts an owned communications session.
         return back;
 
     }
+
+    /** Retired ABI shim for unchanged callers; never start an unowned call or broadcast credentials. */
+    @Deprecated
+    public void callHat(String helmetSn) { }
 
     private SafetyHatListVO findHat(String helmetSn) {
         try {
@@ -261,21 +261,5 @@ public class ExternalController {
             log.error("安全帽 SOS 未写入监护快照", error);
         }
     }
-
-    public void callHat(String helmetSn){
-        try {
-            List<String> allNumbers = new ArrayList<>();
-            allNumbers.add(helmetSn);
-            Map<String, Object> callparam = new HashMap<>();
-            callparam.put("helmetSnList", allNumbers);
-            ResponseVO responseVO = headbandService.agoraToken(callparam);
-            //推送到前端
-            WebSocketSever.sendAllMessage(JSON.toJSONString(new WebsocktMsg("sos", responseVO)));
-        } catch (Exception e) {
-            log.error("呼叫安全帽时异常", e);
-            throw new ServiceException("呼叫安全帽时异常");
-        }
-    }
-
 
 }

@@ -186,7 +186,11 @@ void main() {
         await t.tap(find.byType(NavigationDestination).at(1));
         await t.pumpAndSettle();
         expect(find.text('视频群聊'), findsNothing);
-        expect(find.text('设备语音'), findsOneWidget);
+        // The member fixture has only a watch; unsupported voice is hidden.
+        expect(
+          find.text('设备语音'),
+          role == 'demo' ? findsOneWidget : findsNothing,
+        );
         await t.tap(find.byType(NavigationDestination).at(3));
         await t.pumpAndSettle();
         expect(find.byType(NavigationBar), findsOneWidget);

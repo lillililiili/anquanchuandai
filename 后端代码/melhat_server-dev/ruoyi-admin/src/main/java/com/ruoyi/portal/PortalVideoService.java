@@ -28,7 +28,7 @@ public class PortalVideoService {
         d.unavailableReason="MEDIA_ACCESS_NOT_ENABLED";
     }
     private void filter(Section<List<Option>> s,String value,String a,String site,String kind){section(s);if(s.state==State.AVAILABLE){Set<String> ids=new HashSet<>();for(Option o:s.data)if(o==null||!PortalQuery.id(o.id)||o.name==null||!ids.add(o.id))throw fault();s.data=s.data.stream().filter(o->visible(a,site,kind,o.id,READ)).collect(Collectors.toList());}
-        if(value!=null){if(s.state!=State.AVAILABLE)throw new PortalException(400,"FILTER_NOT_SUPPORTED","该筛选来源尚未接入");if(s.data.stream().noneMatch(o->value.equals(o.id)))throw PortalException.invalid();}}
+        if(value!=null){if(s.state!=State.AVAILABLE)throw new PortalException(400,"FILTER_NOT_SUPPORTED","当前数据源不支持此筛选条件");if(s.data.stream().noneMatch(o->value.equals(o.id)))throw PortalException.invalid();}}
     public VideoPage list(PortalVideoQuery q){
         String a=authorize(q);Filters f=read(()->source.filters(a,q.siteId));if(f==null)throw fault();filter(f.areas,q.areaId,a,q.siteId,"area");filter(f.works,q.workId,a,q.siteId,"work");
         Section<List<VideoDevice>> s=section(read(()->source.devices(a,q.siteId)));if(s.state==State.FORBIDDEN)throw PortalException.forbidden();

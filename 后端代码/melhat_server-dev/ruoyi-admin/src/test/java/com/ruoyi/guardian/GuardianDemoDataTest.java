@@ -111,7 +111,7 @@ class GuardianDemoDataTest {
         assertEquals(ids(rows(pc,"events")),ids(rows(mobile,"events")));assertEquals(7,read("/api/guardian/v1/events").getIntValue("total"));
         assertEquals(3,read("/api/guardian/v1/mobile/home?siteId=site-1").getJSONObject("counts").getIntValue("works"));
         assertTrue(rows(pc,"events").stream().allMatch(raw->GuardianDemoData.confirmed((JSONObject)raw)));
-        assertTrue((Boolean)ReflectionTestUtils.invokeMethod(masters,"openWork",find(master,"people","person-1-0")));
+        assertFalse((Boolean)ReflectionTestUtils.invokeMethod(masters,"openWork",find(master,"people","person-1-0")),"Expired demo work cannot constrain current personnel maintenance");
     }
 
     @Test void realModeKeepsOneWatchSimulationAcrossThreeClientsAndItsCurrentWearerVitals() throws Exception {
@@ -216,17 +216,19 @@ class GuardianDemoDataTest {
         assertFalse((Boolean)ReflectionTestUtils.invokeMethod(masters,"openWork",person));
         JSONObject impact=JSONObject.parseObject(JSONObject.toJSONString(queries.query("demo-system","impacts",object("entity","people","siteId","site-1","id",person.getString("id")))));
         assertFalse(impact.toJSONString().contains("GL-20260915-018"));
-        assertNull(ReflectionTestUtils.invokeMethod(GuardianIngest.class,"currentWork",state,"P1","2026-09-15"));
+        assertNull(WorkBusiness.match(state,"P1","S1",java.time.Instant.now()));
         addRealRecords();
+        assertFalse((Boolean)ReflectionTestUtils.invokeMethod(masters,"openWork",person),"Expired historical work is not an active constraint");
+        store.update(next->{JSONObject active=find(next,"works","historic-work");active.put("plannedStartAt",java.time.Instant.now().minusSeconds(3600).toString());active.put("plannedEndAt",java.time.Instant.now().plusSeconds(3600).toString());return true;});
         assertTrue((Boolean)ReflectionTestUtils.invokeMethod(masters,"openWork",person));
-        JSONObject work=ReflectionTestUtils.invokeMethod(GuardianIngest.class,"currentWork",store.snapshot(),"P1","2026-09-15");assertEquals("historic-work",work.getString("id"));
+        JSONObject work=WorkBusiness.match(store.snapshot(),"P1","S1",java.time.Instant.now());assertEquals("historic-work",work.getString("id"));
         impact=JSONObject.parseObject(JSONObject.toJSONString(queries.query("demo-system","impacts",object("entity","people","siteId","site-1","id",person.getString("id")))));
         assertTrue(impact.toJSONString().contains("historic-work"));assertFalse(impact.toJSONString().contains("GL-20260915-018"));
     }
 
     @Test void realWorkValidationSkipsOnlyConfirmedSeedAndRetainsRealConflictChecks() throws Exception {
         addRealRecords();
-        store.update(state->{find(state,"works","historic-work").put("name","更新真实历史作业");return true;});
+        store.update(state->{JSONObject work=find(state,"works","historic-work");work.put("name","更新真实历史作业");work.put("plannedStartAt",java.time.Instant.now().minusSeconds(3600).toString());work.put("plannedEndAt",java.time.Instant.now().plusSeconds(3600).toString());return true;});
         assertEquals("更新真实历史作业",find(store.snapshot(),"works","historic-work").getString("name"));
         assertThrows(IllegalArgumentException.class,()->store.update(state->{
             JSONObject duplicate=copy(find(state,"works","historic-work"));duplicate.put("id","real-overlap");

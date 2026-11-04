@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { createStore } from "./data.js";
-import { authFetch, authHeaders, clearAuth } from "../lib/auth.js";
+import { authFetch, authHeaders, clearAuth, onAuthCleared } from "../lib/auth.js";
 import { createEventApi } from "../lib/guardian-events.js";
 import { createLocationApi } from "../lib/guardian-location.js";
 import { DEMO_MODE } from "../lib/data-mode.js";
@@ -10,6 +10,9 @@ export const tick = ref(0);
 export const connection = ref({ status: "connecting", message: "正在连接后端，暂不能办理业务" });
 const storage = typeof localStorage === "undefined" ? null : localStorage;
 export const db = createStore(storage, { demoMode: DEMO_MODE, requiredDataVersion: 'wearable-person-v2' });
+// Cached work configuration is not authoritative until this login refreshes it.
+if (!DEMO_MODE) db.state.businessConfig = {};
+onAuthCleared(() => { db.state.businessConfig = {}; tick.value++; });
 let writes = 0;
 let pulling = false;
 function unavailable(message = "后端未连接，当前显示缓存台账；实时状态以有效上报为准，恢复连接后自动刷新，暂不能办理业务") {
@@ -53,6 +56,7 @@ db.subscribe(() => { tick.value++; });
 export async function refreshSnapshot() {
   if (!storage || writes || pulling) return false;
   if (!authHeaders()["X-Wearable-Token"]) { unavailable("请先登录后连接业务数据"); return false; }
+  const token = authHeaders()['X-Wearable-Token'];
   pulling = true;
   const before = db.revision();
   const controller = new AbortController();
@@ -62,8 +66,8 @@ export async function refreshSnapshot() {
     if (!response.ok) throw Error("后端读取失败");
     const body = await response.json();
     if (!readable(body.state)) throw Error("后端数据格式错误");
-    if (writes || db.revision() !== before) return false;
-    db.replaceRemote(body.state);
+    if (writes || db.revision() !== before || token !== authHeaders()['X-Wearable-Token']) return false;
+    if (!db.replaceRemote(body.state)) return false;
     connection.value = { status: "online", message: "" };
     await refreshCallStatuses(controller.signal);
     return true;
@@ -71,6 +75,21 @@ export async function refreshSnapshot() {
   finally { clearTimeout(timer); pulling = false; }
 }
 
+let configPulling = false;
+export async function refreshBusinessConfig() {
+  if (configPulling || !authHeaders()['X-Wearable-Token']) return false;
+  const token = authHeaders()['X-Wearable-Token'];
+  configPulling = true;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await authFetch('/api/guardian/v1/business-config', { signal: controller.signal });
+    if (!response.ok) return false;
+    const config = await response.json();
+    return token === authHeaders()['X-Wearable-Token'] && db.applyBusinessConfig(config);
+  } catch { return false; }
+  finally { clearTimeout(timer); configPulling = false; }
+}
 export const guardianReady = refreshSnapshot();
 export const locationApi = createLocationApi(authFetch);
 async function refreshCallStatuses(signal) {
@@ -90,7 +109,8 @@ db.addEventPhoto = (id, blobId, name, expectedVersion) => eventApi.command(id, "
 db.observe = (id, form) => eventApi.command(id, "observations", form);
 db.sos = (action, eventId) => eventApi.command(eventId, action === "join" ? "assist-join" : "assist-end");
 if (typeof window !== "undefined") {
-  window.setInterval(refreshSnapshot, 5000);
+  window.setInterval(() => { refreshBusinessConfig(); refreshSnapshot(); }, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshBusinessConfig(); refreshSnapshot(); } });
   window.addEventListener("online", refreshSnapshot);
 }
 if (typeof XMLHttpRequest !== "undefined") db.setVoice(guardianVoice);

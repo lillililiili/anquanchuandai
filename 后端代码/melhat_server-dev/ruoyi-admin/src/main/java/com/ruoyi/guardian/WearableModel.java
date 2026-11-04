@@ -73,12 +73,30 @@ final class WearableModel {
                 }
             }
             if(find(state,"roles","mobile-user")==null) {
-                JSONArray sites=new JSONArray(); for(Object raw:rows(state,"sites")) sites.add(((JSONObject)raw).getString("id"));
+                // A newly introduced role has no station authority until explicitly
+                // configured. Never infer authorization from the list of existing sites.
+                JSONArray sites=new JSONArray();
                 JSONArray ops=new JSONArray(); ops.addAll(Arrays.asList("self:read","events:observe","sos:create","works:read"));
                 JSONArray grants=new JSONArray(); grants.add(object("operations",ops,"siteIds",sites));
                 rows(state,"roles").add(object("id","mobile-user","name","普通用户（本人业务）","enabled",true,"builtin",true,"version",1,"grants",grants));
             }
             state.put("sharedBusinessV2",true);
+        }
+        // The built-in dispatch roles can broadcast, but older ledgers omitted the
+        // permission needed to maintain their recipient groups. Repair only those
+        // existing grants, once; never widen site scope or custom-role permissions.
+        if(!state.getBooleanValue("dispatchGroupsV1")) {
+            for(Object raw:rows(state,"roles")) { JSONObject role=(JSONObject)raw;
+                if(!role.getBooleanValue("builtin") || !Arrays.asList("duty","site").contains(role.getString("id"))) continue;
+                boolean changed=false;
+                for(Object value:rows(role,"grants")) {
+                    JSONArray ops=rows((JSONObject)value,"operations");
+                    if(ops.contains("communications:broadcast") && ops.contains("people:read") && ops.contains("events:read")
+                            && !ops.contains("*") && !ops.contains("groups:write")) { ops.add("groups:write");changed=true; }
+                }
+                if(changed) { role.put("version",role.getIntValue("version")+1);role.put("updatedAt",java.time.Instant.now().toString()); }
+            }
+            state.put("dispatchGroupsV1",true);
         }
         return !before.equals(state.toJSONString());
     }

@@ -3,7 +3,7 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { routeLocationKey } from 'vue-router'
 import { fitAdminNavigation, changeSiteAfterConfirmation } from './adminNavigation'
-import { menuPath, MENU } from './navigation'
+import { menuPath, MENU, navigationFor } from './navigation'
 import { router } from './router'
 import App from './App.vue'
 
@@ -21,9 +21,10 @@ describe('top navigation and guarded site changes', () => {
   it('places assets and people left of the title, access and audit right', () => {
     const { visibleCount, leftCount } = fitAdminNavigation([120,120,120,120],500,500,100)
     expect({ visibleCount, leftCount }).toEqual({ visibleCount:4,leftCount:2 })
-    expect(MENU.map(m=>m.title)).toEqual(['装备资产','人员组织','权限协作','操作日志'])
-    expect(MENU.slice(0, leftCount).map(item => item.title)).toEqual(['装备资产', '人员组织'])
-    expect(MENU.slice(leftCount, visibleCount).map(item => item.title)).toEqual(['权限协作', '操作日志'])
+    const menu = navigationFor({ id: 'ordinary-admin' })
+    expect(menu.map(m=>m.title)).toEqual(['装备资产','人员组织','权限协作','操作日志'])
+    expect(menu.slice(0, leftCount).map(item => item.title)).toEqual(['装备资产', '人员组织'])
+    expect(menu.slice(leftCount, visibleCount).map(item => item.title)).toEqual(['权限协作', '操作日志'])
   })
   it('does not move the left pair across the title on asymmetric widths', () => {
     expect(fitAdminNavigation([120,120,120,120],130,500,80)).toEqual({ visibleCount:1,leftCount:1 })
@@ -91,6 +92,18 @@ describe('top navigation and guarded site changes', () => {
     await router.push('/admin/assets/devices/RL-H001?siteId=site-1&token=secret')
     expect(router.currentRoute.value.path).toBe('/login')
     expect(router.currentRoute.value.query).toEqual({ redirect: '/devices/RL-H001?siteId=site-1' })
+  })
+  it('guards work management links by system identity, including links retained before login', async () => {
+    session.identity = { id: 'ordinary-admin' }
+    await router.push('/workbusiness?siteId=site-1')
+    expect(router.currentRoute.value.fullPath).toBe('/401?siteId=site-1')
+    session.identity = null
+    await router.push('/workbusiness?siteId=site-1')
+    expect(router.currentRoute.value.query.redirect).toBe('/workbusiness?siteId=site-1')
+    session.identity = { id: 'demo-system' }
+    await router.push('/workbusiness?siteId=site-1')
+    expect(router.currentRoute.value.path).toBe('/workbusiness')
+    expect(router.currentRoute.value.meta.systemOnly).toBe(true)
   })
   it('resumes an authenticated login at the short URL from a legacy saved destination', async () => {
     await router.push({ path: '/login', query: { redirect: '/admin/assets/assignments?siteId=site-1&tab=history&token=secret' } })

@@ -1,27 +1,26 @@
-import { deviceActions, isCurrentDevice, supportsDeviceAction } from './device-telemetry.js';
+import { featureUnavailableReason } from '../../../shared/device-features.mjs';
+import { isCurrentDevice, supportsDeviceAction } from './device-telemetry.js';
 import { communicationGuard } from './communication-guard.js';
 import { authFetch, captureAuthRequest, onAuthCleared } from './auth.js';
 import * as rtcSession from './rtc.js';
 
 export function deviceCallUnavailable(device, feature, otherActive = false, assignment, options = {}) {
   const testing = options.acceptanceTest === true;
-  if (testing && (options.operator?.id !== 'demo-system' || options.operator?.enabled === false)) return '仅系统管理员可发起语音联调测试';
+  if (testing && (options.operator?.id !== 'demo-system' || options.operator?.enabled === false)) return '仅系统管理员可发起语音测试';
   if (!assignment?.personId || !assignment?.assignmentId || assignment.assignmentVersion == null || assignment.deviceId !== device?.id) return '人员领用关系未就绪，请刷新';
   if (otherActive) return '请先结束当前人员通话或 SOS 通话';
   if (!device?.id || device.source !== 'DIRECT_HELMET' || device.type !== 'H' || device.active === false) return '此设备没有已启用的直连安全帽语音能力';
   if (!isCurrentDevice(device) || device.online !== true) return '设备离线或状态已过期，请等待最新上报';
-  if (!feature?.supported || feature.integrationStatus !== 'CONNECTED') return feature?.reason || '人员语音接入服务尚未就绪';
-  // Only the explicit administrator test can bypass PENDING acceptance. A
-  // permission, connection or assignment failure must never become testable.
-  const pendingTest = testing && feature.verified === false && feature.reason === '待联调';
-  if (!pendingTest && (!feature.verified || !feature.available)) return feature?.reason || '人员语音能力尚未就绪';
+  if (!feature?.supported || feature.integrationStatus !== 'CONNECTED') return featureUnavailableReason(feature?.reason, 'voice') || '语音服务不可用，请检查设备注册和服务连接';
+  // Runtime availability is authoritative for voice. Acceptance metadata
+  // neither enables a denied call nor disables an operational SIP channel.
+  if (!feature.available) return featureUnavailableReason(feature.reason, 'voice') || '语音服务不可用，请检查设备注册和服务连接';
   if (['personId','deviceId','assignmentId','assignmentVersion'].some(key => feature[key] !== assignment[key])) return '人员领用关系已变化，请刷新';
   // The guardian snapshot exposes per-device voiceAvailable, derived on the
   // server from SIP registration. Older projections omit sipRegistered itself.
-  if (device.sipRegistered === false || !(device.voiceAvailable === true || device.sipRegistered === true || device.capabilities?.sipRegistered === true)) return '设备语音服务尚未就绪';
-  if (pendingTest) {
-    if (device.featureStates?.voice?.supported !== true || !deviceActions(device).includes('intercom') || device.communicationProtocol !== 'SIP') return '该设备未接入可联调的 SIP 语音';
-  } else if (!supportsDeviceAction(device, 'intercom')) return '设备当前没有可用的语音对讲能力';
+  if (device.sipRegistered === false || !(device.voiceAvailable === true || device.sipRegistered === true || device.capabilities?.sipRegistered === true)) return '安全帽语音未注册，请检查设备网络和语音服务';
+  if (String(device.communicationProtocol).toUpperCase() !== 'SIP') return '安全帽语音配置异常，请检查 SIP 设置';
+  if (!supportsDeviceAction(device, 'intercom')) return '设备当前没有可用的语音通话能力';
   return '';
 }
 
@@ -69,7 +68,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
         ...(body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
       const value = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const error = Error(value.message || '设备通话请求失败');
+        const error = Error(featureUnavailableReason(value.message, 'voice') || '设备通话请求失败');
         error.errorCode = value.errorCode || value.code;
         error.httpStatus = response.status;
         error.definitive = response.status >= 400 && response.status < 500 && response.status !== 408;
@@ -120,7 +119,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
       serverStatus: row.status || 'unknown', serverConnected: row.status === 'connected' && row.serverConnected === true && row.connectedDeviceIds?.includes(ctx.deviceId) === true,
       deviceAnswered: ['answered','connected'].includes(row.status) && row.connectedDeviceIds?.includes(ctx.deviceId) === true,
       localJoined: false, clientStatus: 'not_joined', pending: false, phase: ctx.endRequested ? 'ending' : 'unknown',
-      error: row.failReason || (ctx.callId ? '' : '原请求结果待核实，尚未取得设备会话编号；本页不会重新拨号') });
+      error: (row.failReason ? featureUnavailableReason(row.failReason, 'voice') : '') || (ctx.callId ? '' : '原请求结果待核实，尚未取得设备会话编号；本页不会重新拨号') });
   }
   async function recover({ operatorId = accountId || getOperatorId(), deviceId = '' } = {}) {
     if (!operatorId) { update({ recoveryError: '当前账号未就绪，无法核对已有通话' }); return false; }
@@ -235,7 +234,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
       }
       if (!row.id) throw Error('未取得可核对的通话编号');
       ctx.recordId = row.id; ctx.callId = row.channelName || '';
-      if (terminal(row.status)) { update({ recordId: row.id, error: row.failReason || '' }); await finish(ctx, row.status); return; }
+      if (terminal(row.status)) { update({ recordId: row.id, error: (row.failReason ? featureUnavailableReason(row.failReason, 'voice') : '') || '' }); await finish(ctx, row.status); return; }
       if (ctx.recoveryOnly || row.recoveryOnly === true || !ctx.callId || ['requesting','unknown','ending'].includes(row.status)) {
         await leave(ctx); if (!active(ctx)) return;
         recoveredRow(ctx, row); later(ctx);

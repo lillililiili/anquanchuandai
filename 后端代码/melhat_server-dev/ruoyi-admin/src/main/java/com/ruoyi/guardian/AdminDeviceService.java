@@ -52,6 +52,8 @@ public class AdminDeviceService {
         }
         if (!queries.allows(state, actor, "assets:write", input.getString("siteId"), null))
             throw AdminQueryService.fail(403, "PERMISSION_DENIED", "当前身份无此操作或数据范围权限");
+        if (!"devices.create".equals(type) && existing == null)
+            throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "设备不存在或不可见");
         String operationId = input.getString("operationId");
         if (operationId == null || operationId.trim().isEmpty() || operationId.length() > 100) {
             throw AdminQueryService.fail(400, "OPERATION_REQUIRED", "操作标识无效");
@@ -161,7 +163,7 @@ public class AdminDeviceService {
             result.put("portalDeviceId", number);
             result.put("communicationProtocol", belt ? "WEBSOCKET" : "SIP");
             result.put("capabilities", new JSONArray());
-            result.put("capabilitySource", (belt ? "安全带" : "一体帽") + "直连预登记；能力以真实设备联调结果为准");
+            result.put("capabilitySource", (belt ? "安全带" : "一体帽") + "直连设备；功能状态由设备和服务实时确认");
             result.put("online", null);
             result.put("battery", null);
             if (!data.containsKey("code")) result.put("code", number);

@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled } from '@/lib/work-business';
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import MissingRecord from "@/components/layout/MissingRecord.vue";
@@ -29,6 +30,7 @@ import VitalHistoryModal from "./VitalHistoryModal.vue";
 import ModalCloseFooter from "./ModalCloseFooter.vue";
 import PersonEventsModal from "./PersonEventsModal.vue";
 
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
 const route = useRoute();
 const historyColumns = ["序号", "操作类型", "装备类型", "设备编号", "经办人", "开始时间", "结束时间", "状态"];
 
@@ -144,7 +146,7 @@ function openEvents() {
             <div>
               <h1>{{ person.name }}</h1>
               <p>{{ person.team }}　|　{{ stationName }}</p>
-              <p><AppStatus :color="duty.color" :title="duty.title">{{ duty.label }}</AppStatus>　当前在：{{ work?.name || "待分配" }} {{ work ? "（" + work.id + "）" : "" }}</p>
+              <p><AppStatus :color="duty.color" :title="duty.title">{{ duty.label }}</AppStatus><template v-if="workEnabled">　当前在：{{ work?.name || "待分配" }} {{ work ? "（" + work.id + "）" : "" }}</template></p>
             </div>
           </div>
         </section>
@@ -187,7 +189,7 @@ function openEvents() {
         </AppPanel>
       </div>
       <div class="stack">
-        <AppPanel title="作业信息">
+        <AppPanel v-if="workEnabled" title="作业信息">
           <WorkInfo :work="work" />
         </AppPanel>
         <AppPanel title="待现场核验事件">
@@ -211,8 +213,8 @@ function openEvents() {
             <VideoFrame v-if="videoFeature.supported" :person-id="person.id" preview />
             <div class="stack">
               <a v-if="videoFeature.available" class="btn primary" :href="'#/single/' + person.id"><AppIcon name="play-circle-fill" /> 查看视频</a>
-              <AppButton v-else-if="videoFeature.supported" disabled>{{ videoFeature.verified ? '视频暂不可用' : '视频 · 待联调' }}</AppButton>
-              <AppButton v-if="voiceFeature.supported" icon="mic-line" :disabled="!voiceFeature.available" :title="voiceFeature.reason" @click="talk">{{ voiceFeature.verified ? '发起对讲' : '对讲 · 待联调' }}</AppButton>
+              <AppButton v-else-if="videoFeature.supported" disabled :title="videoFeature.reason">查看视频</AppButton>
+              <AppButton v-if="voiceFeature.supported" icon="mic-line" :disabled="!voiceFeature.available" :title="voiceFeature.reason" @click="talk">前往语音通话</AppButton>
               <a v-if="related" class="btn" :href="'#/event/' + related.id"><AppIcon name="file-list-line" /> 查看事件</a>
               <AppButton v-else icon="file-list-line" @click="openEvents">查看事件</AppButton>
             </div>

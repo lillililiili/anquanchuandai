@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled, workSource, workStatus, workPeriodText } from '@/lib/work-business';
 import { computed } from "vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -17,12 +18,13 @@ import { go } from "@/lib/actions";
 import { videoPeople } from "@/lib/person-equipment";
 import { formatRecordedDateTime } from '@/lib/date-time';
 
+const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
 const summary = computed(() => {
   revision();
   return db.stats(scope());
 });
-const openEvents = computed(() => events().filter((item) => item.status !== "已核验"));
-const jobList = computed(() => works());
+const openEvents = computed(() => { revision(); return events().filter((item) => item.status !== "已核验"); });
+const jobList = computed(() => { revision(); return works(); });
 const cameras = computed(() => { revision(); return videoPeople(db, people()); });
 const focus = computed(() => cameras.value.find((item) => item.id === session.person) || cameras.value[0]);
 const sidePeople = computed(() => cameras.value.filter(person => person.id !== focus.value?.id).slice(0, 2));
@@ -40,7 +42,7 @@ const cards = computed(() => {
     },
     { icon: "wifi-line", label: "真实领用装备在线", value: stats.online + " / " + stats.devices.length, unit: "", color: "cyan" },
     { icon: "alarm-warning-line", label: "待核验事件", value: stats.unresolved, unit: "起", color: "yellow" },
-  ];
+  ].filter(card => workEnabled.value || card.label !== "台账作业");
 });
 const equipment = computed(() => Object.entries(summary.value.byType).filter(([key, count]) => key !== 'W' || count.total > 0));
 
@@ -85,15 +87,15 @@ function eventIcon(item) {
       </AppPanel>
     </div>
   </div>
-  <div class="overview-bottom">
-    <AppPanel title="作业台账">
-      <AppTable :reset-key="session.station" :rows="jobList" v-slot="{ rows: pageRows }" :columns="['作业名称', '人数', '负责人', '来源', '同步状态', '操作']" table-class="compact" :empty="!jobList.length">
+  <div class="overview-bottom" :style="!workEnabled ? { gridTemplateColumns: '1fr' } : undefined">
+    <AppPanel v-if="workEnabled" title="作业台账">
+      <AppTable :reset-key="session.station" :rows="jobList" v-slot="{ rows: pageRows }" :columns="['作业名称', '人数', '负责人', '来源', '登记状态', '操作']" table-class="compact" :empty="!jobList.length">
         <tr v-for="work in pageRows" :key="work.id">
           <td>{{ work.name }}</td>
           <td>{{ work.members.length }} 人</td>
           <td>{{ personName(work.leader) }}</td>
-          <td>{{ work.source }}　{{ work.id }}</td>
-          <td><AppStatus color="yellow">台账记录 · {{ work.date || '日期待核对' }}</AppStatus></td>
+          <td>{{ workSource(work) }}　{{ work.id }}</td>
+          <td><AppStatus color="yellow">{{ workStatus(work) }} · {{ workPeriodText(work) }}</AppStatus></td>
           <td><a class="btn small" :href="'#/work/' + work.id">查看监护</a></td>
         </tr>
       </AppTable>

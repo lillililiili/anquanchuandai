@@ -3,7 +3,7 @@ html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) > .
   flex:0 0 auto;
   height:auto;
   min-height:88px;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(var(--stat-count,4),minmax(0,1fr));
   margin-bottom:12px;
 }
 html[data-portal-theme='business'] .main:is(.overview-page,.statistics-page) .stat {

@@ -37,7 +37,7 @@ public class PortalEventService {
         if(f.deviceId==null||!visible(a,site,"device",f.deviceId,READ)){f.deviceId=null;f.deviceCode=null;}
     }
     private Filters filters(String a,PortalEventQuery q){Filters f=read(()->source.filters(a,q.siteId));if(f==null)throw fault();section(f.eventTypes);
-        if(q.keyword!=null&&!q.keyword.isEmpty()&&!f.keyword||q.from!=null&&!f.timeRange||q.phase!=null&&!f.phase||q.eventType!=null&&f.eventTypes.state!=State.AVAILABLE)throw new PortalException(400,"FILTER_NOT_SUPPORTED","该筛选来源尚未接入");
+        if(q.keyword!=null&&!q.keyword.isEmpty()&&!f.keyword||q.from!=null&&!f.timeRange||q.phase!=null&&!f.phase||q.eventType!=null&&f.eventTypes.state!=State.AVAILABLE)throw new PortalException(400,"FILTER_NOT_SUPPORTED","当前数据源不支持此筛选条件");
         if(f.eventTypes.state==State.AVAILABLE){Set<String> values=new HashSet<>();for(Option o:f.eventTypes.data)if(o==null||!PortalQuery.id(o.value)||o.label==null||!values.add(o.value))throw fault();if(q.eventType!=null&&!values.contains(q.eventType))throw PortalException.invalid();}return f;
     }
     private Section<List<Fact>> rows(String a,PortalEventQuery q){Section<List<Fact>>s=main(read(()->source.events(a,q.siteId)));if(s.state!=State.AVAILABLE)return s;Map<String,Fact> ids=new TreeMap<>();Map<String,String> origins=new HashMap<>();

@@ -24,6 +24,7 @@ export const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: '', redirect: inventoryRedirect },
     { path: '/overview/:pathMatch(.*)*', redirect: inventoryRedirect },
     { path: '/audit', component: () => import('./views/Audit.vue') },
+    { path: '/workbusiness', component: () => import('./views/WorkBusiness.vue'), meta: { systemOnly: true } },
     { path: '/devices', component: () => import('./views/Devices.vue') },
     { path: '/devices/:deviceId', component: () => import('./views/DeviceDetail.vue'), meta: { adminFamily: 'detail' } },
     { path: '/maintenance/:pathMatch(.*)*', redirect: inventoryRedirect },
@@ -41,5 +42,6 @@ router.beforeEach(async (to, from) => {
   const identity = getAdminProvider().identity()
   if (identity && to.fullPath !== from.fullPath && !await useAdminStore().confirmLeave()) return false
   if (to.path !== '/login' && !identity) return { path: '/login', query: { redirect: safeTarget(to.fullPath) } }
+  if (to.meta.systemOnly && identity?.id !== 'demo-system') return { path: '/401', query: cleanQuery({ siteId: to.query.siteId }) }
   if (to.path === '/login' && identity) return safeTarget(to.query.redirect)
 })

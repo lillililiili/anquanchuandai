@@ -93,11 +93,16 @@ export function createServer(config, dependencies = {}) {
       if (pathname === `/internal/srs/${config.hookKey}` && request.method === 'POST') return reply(response, 200, service.handleSrs(json(await readBody(request))));
       const file = pathname.match(/^\/helmet-media\/files\/([A-Za-z0-9_-]+)$/);
       if (file && ['GET', 'HEAD'].includes(request.method)) {
-        if (!service.authorize(url.searchParams.get('token'), 'asset', file[1])) throw fault(403, 'INVALID_TICKET');
+        const playback=url.searchParams.has('variant');
+        if(playback&&(url.searchParams.getAll('variant').length!==1||url.searchParams.get('variant')!=='playback'))throw fault(400,'INVALID_ASSET_VARIANT');
+        if (!service.authorize(url.searchParams.get('token'), playback ? 'asset-playback' : 'asset', file[1])) throw fault(403, 'INVALID_TICKET');
         const download=url.searchParams.has('download');
         if(download&&(url.searchParams.getAll('download').length!==1||url.searchParams.get('download')!=='1'))throw fault(400,'INVALID_DOWNLOAD_MODE');
         const asset = service.store.data.assets[file[1]]; if (!asset) throw fault(404, 'ASSET_NOT_FOUND');
-        const filename = path.join(service.store.directory, 'assets', asset.filename), stat = fs.statSync(filename);
+        if(asset.kind==='audio'&&asset.status!=='ready')throw fault(404,'AUDIO_STORAGE_UNCONFIRMED');
+        if(playback&&(asset.kind!=='audio'||asset.playbackVerified!==true||!asset.playbackFilename||asset.playbackMime!=='audio/mpeg'))throw fault(404,'AUDIO_PLAYBACK_UNAVAILABLE');
+        const mime=playback?asset.playbackMime:asset.mime;
+        const filename = path.join(service.store.directory, 'assets', playback?asset.playbackFilename:asset.filename), stat = fs.statSync(filename);
         const range = request.headers.range;
         let start = 0, end = stat.size - 1, status = 200;
         if (range) {
@@ -105,12 +110,14 @@ export function createServer(config, dependencies = {}) {
           start = Number(match[1]); end = match[2] ? Number(match[2]) : end;
           if (start > end || start >= stat.size || end >= stat.size) throw fault(416, 'INVALID_RANGE'); status = 206;
         }
-        const extension=({'image/jpeg':'jpg','image/png':'png','video/mp4':'mp4','audio/mpeg':'mp3'})[asset.mime]??'bin';
-        response.writeHead(status, { 'Content-Type': asset.mime, 'Content-Length': end - start + 1, 'Accept-Ranges': 'bytes',
+        const extension=({'image/jpeg':'jpg','image/png':'png','video/mp4':'mp4','audio/mpeg':'mp3','audio/amr':'amr','audio/amr-wb':'amr','audio/3gpp':'3gp','audio/mp4':'m4a'})[mime]??'bin';
+        response.writeHead(status, { 'Content-Type': mime, 'Content-Length': end - start + 1, 'Accept-Ranges': 'bytes',
           ...(download?{'Content-Disposition':`attachment; filename="${file[1]}.${extension}"`}:{}),
           'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', ...(status === 206 ? { 'Content-Range': `bytes ${start}-${end}/${stat.size}` } : {}) });
         if (request.method === 'HEAD') return response.end();
-        fs.createReadStream(filename, { start, end }).on('error', () => response.destroy()).pipe(response); return;
+        const stream=fs.createReadStream(filename, { start, end });
+        response.once('close',()=>stream.destroy());
+        stream.on('error', () => response.destroy()).pipe(response); return;
       }
       const whep = pathname.match(/^\/helmet-media\/whep\/([A-Za-z0-9_-]+)$/);
       if (whep && request.method === 'POST') {

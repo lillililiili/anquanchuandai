@@ -263,7 +263,7 @@ void main() {
       addTearDown(session.dispose);
       await tester.pumpWidget(panel(session, id: 'h1', recording: true));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('开始录像'));
+      await tester.tap(find.text('开始平台录制'));
       await tester.pumpAndSettle();
       expect(requests.where((r) => r.method == 'POST'), hasLength(1));
       await tester.pumpWidget(panel(session, id: 'h2', recording: true));
@@ -272,7 +272,7 @@ void main() {
       await tester.pumpAndSettle();
       final stop = tester.widget<OutlinedButton>(
         find.ancestor(
-          of: find.text('停止录像'),
+          of: find.text('停止平台录制'),
           matching: find.byType(OutlinedButton),
         ),
       );

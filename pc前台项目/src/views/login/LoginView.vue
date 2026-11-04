@@ -5,7 +5,7 @@ import AppButton from "@/components/ui/AppButton.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import { session } from "@/stores/session";
 import { go } from "@/lib/actions";
-import { saveAuth } from "@/lib/auth";
+import { authHeaders, clearAuth, saveAuth } from "@/lib/auth";
 import { db, refreshSnapshot } from "@/mock/runtime";
 import { TEST_SITE_MODE, TEST_SITE } from '../../../../shared/test-site.mjs';
 
@@ -21,6 +21,7 @@ async function submit() {
   error.value = "";
   if (!validate({ account: !account.value.trim() && "请输入工作账号", password: !password.value && "请输入密码" })) return;
   busy.value = true;
+  let loginToken = "";
   try {
     const response = await fetch("/api/guardian/v1/login", {
       method: "POST",
@@ -43,11 +44,13 @@ async function submit() {
     }
     const body = await response.json();
     saveAuth(body.token, account.value);
+    loginToken = body.token;
     if (!await refreshSnapshot()) throw Error("业务数据读取失败");
     if (TEST_SITE_MODE) session.station = TEST_SITE.stationId;
     else if (!db.state.stations.some(site => site.id === session.station)) session.station = db.state.stations[0]?.id || "";
     session.formDrafts = {};
   } catch {
+    if (loginToken && authHeaders()["X-Wearable-Token"] === loginToken) clearAuth();
     error.value = "后端未连接，修改未保存";
     return;
   } finally { busy.value = false; }
@@ -60,7 +63,7 @@ async function submit() {
     <div class="login-logo rl-brand rl-brand-light" role="img" aria-label="融瓴 ROLLING"><img class="rl-brand-mark" src="/assets/brand-mark.svg" alt="" width="42" height="42" /><span class="rl-brand-type" aria-hidden="true"><b class="rl-brand-name">融瓴</b><span class="rl-brand-en">ROLLING</span></span></div>
     <div class="login-copy">
       <h1>智能穿戴安全监护平台</h1>
-      <p>现场人员 · 智能装备 · 作业监护</p>
+      <p>现场人员 · 智能装备 · 安全监护</p>
     </div>
     <form ref="formRef" class="login-card" novalidate :aria-busy="busy" @submit.prevent="submit">
       <h2>工作账号登录</h2>

@@ -167,7 +167,7 @@ void main() {
   );
 
   testWidgets(
-    'real communications explains missing permission and disables device actions',
+    'real communications explains missing permission and hides unsupported actions',
     (t) async {
       await launch(
         t,
@@ -182,21 +182,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('未获设备语音或广播权限'), findsOneWidget);
-      expect(
-        t.widget<TextButton>(find.widgetWithText(TextButton, '设备语音')).onPressed,
-        isNull,
-      );
-      expect(
-        t.widget<TextButton>(find.widgetWithText(TextButton, '文字播报')).onPressed,
-        isNull,
-      );
+      expect(find.widgetWithText(TextButton, '设备语音'), findsNothing);
+      expect(find.widgetWithText(TextButton, '文字播报'), findsNothing);
       expect(find.text('视频群聊'), findsNothing);
-      expect(
-        t
-            .widget<IconButton>(find.byKey(const ValueKey('contact-call-p:P1')))
-            .onPressed,
-        isNull,
-      );
+      expect(find.byKey(const ValueKey('contact-call-p:P1')), findsNothing);
       expect(t.takeException(), isNull);
     },
   );

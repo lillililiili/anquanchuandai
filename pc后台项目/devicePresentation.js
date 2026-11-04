@@ -1,4 +1,4 @@
-const ACTIONS = { location: '定位上报', telemetry: '设备状态', sos: 'SOS求助', tts: '语音播报', broadcast: '语音播报', intercom: '语音对讲', video: '实时视频', take_photo: '拍照', start_recording: '录像', list_recordings: '录像列表', upload_recording: '录像上传', set_config: '参数设置' }
+const ACTIONS = { location: '定位上报', telemetry: '设备状态', sos: 'SOS求助', tts: '语音播报', broadcast: '语音播报', intercom: '语音对讲', video: '实时视频', take_photo: '拍照', start_recording: '开始平台录制', stop_recording: '停止平台录制', list_recordings: '录像列表', upload_recording: '录像上传', set_config: '参数设置' }
 import { featureState, supportedFeatures, featureLabel } from '../shared/device-features.mjs'
 import { beijingTime } from './tablePresentation'
 
@@ -16,7 +16,7 @@ export function deviceBatteryPresentation(device, now = Date.now()) {
 }
 export function verifiedDeviceSummary(device) {
   if (device?.type === 'WATCH' && device.source === 'DEMO_WATCH') return {
-    identity: '智能手表模拟数据，仅用于功能演示，尚未接入真实手表。',
+    identity: '智能手表演示数据',
     capabilities: '模拟展示', worn: '模拟数据', battery: '模拟数据（非设备上报）',
   }
   const real = ['DIRECT_HELMET', 'DIRECT_BELT', 'PLATFORM'].includes(device?.source)

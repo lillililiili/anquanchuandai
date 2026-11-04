@@ -39,8 +39,10 @@ export const MENU = [
   { path: '/devices', title: '装备资产', permission: 'assets:read', description: '设备台账、领用与归还' },
   { path: '/people', title: '人员组织', permission: 'people:read', description: '人员档案、组织班组、厂站资料与当班名册' },
   { path: '/accounts', title: '权限协作', permission: 'access:read', description: '登录账号与角色范围' },
+  { path: '/workbusiness', title: '作业与外部业务', systemOnly: true, description: '业务总开关与本地作业登记' },
   { path: '/audit', title: '操作日志', permission: 'audit:read', description: '查看谁在何时修改了什么，以及处理结果' },
 ]
+export function navigationFor(identity) { return MENU.filter(item => !item.systemOnly || identity?.id === 'demo-system') }
 export const WORKSPACES = [
   { path: '/people', title: '人员与组织', entity: 'people', group: 'people' },
   { path: '/sites', title: '厂站资料', entity: 'sites', group: 'people' },

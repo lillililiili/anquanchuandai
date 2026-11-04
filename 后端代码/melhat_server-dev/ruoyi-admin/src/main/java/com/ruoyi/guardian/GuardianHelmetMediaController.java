@@ -24,13 +24,14 @@ public class GuardianHelmetMediaController {
         if(deviceId!=null){historicalDevice(ctx,deviceId);items.addAll(media.assets(deviceId));}
         else for(Object raw:rows(ctx.data,"devices")){JSONObject d=(JSONObject)raw;
             if("DIRECT_HELMET".equals(d.getString("source")))items.addAll(media.assets(d.getString("portalDeviceId")));}
-        JSONArray visible=historical(ctx,items);if(personId!=null)visible.removeIf(raw->!personId.equals(((JSONObject)raw).getString("personId")));
+        JSONArray visible=historical(ctx,items);if(personId!=null)visible.removeIf(raw->!personId.equals(((JSONObject)raw).getString("personId"))&&!personId.equals(((JSONObject)raw).getString("receivedPersonId")));
         return object("items",visible);
     }
     @GetMapping("/devices/{id}/media") public JSONObject media(@PathVariable String id,HttpServletRequest request){
         GuardianAccess.Context ctx=access.context(WearableSessions.actor(request));JSONObject device=historicalDevice(ctx,id), result=media.media(id);
         result.remove("live");result.put("actions",new JSONArray());result.remove("capabilities");
         result.put("items",historical(ctx,result.getJSONArray("items")));
+        result.put("autoSyncTasks",historical(ctx,result.getJSONArray("autoSyncTasks")));
         JSONArray commands=historical(ctx,result.getJSONArray("commands"));result.put("commands",commands);
         // A cached file list belongs to the query's original scope, not the device's current scope.
         JSONArray recordings=new JSONArray();
@@ -57,10 +58,17 @@ public class GuardianHelmetMediaController {
         }
         String op=Arrays.asList("set_config","configure_sip").contains(action)?"assets:write":"broadcast".equals(action)?"communications:broadcast":"communications:voice";
         boolean setup=Arrays.asList("set_config","configure_sip").contains(action);
-        if(setup&&!("demo-system".equals(ctx.id())&&input.getBooleanValue("acceptanceTest")))throw AdminQueryService.fail(403,"ACCEPTANCE_REQUIRED","设备配置仅供系统管理员显式联调使用");
+        if(setup&&!("demo-system".equals(ctx.id())&&input.getBooleanValue("acceptanceTest")))throw AdminQueryService.fail(403,"ACCEPTANCE_REQUIRED","请由系统管理员确认并修改设备配置");
         String feature=setup?null:"take_photo".equals(action)?"photo":"broadcast".equals(action)?"broadcast":"start_video".equals(action)?"video":"recording";
         device(ctx,id,op);JSONObject target=equipment.require(ctx,id,input,feature,op);JSONObject authority=copy(input);authority.putAll(target);
         return media.command(ctx.id(),id,authority);});
+    }
+    @PostMapping("/devices/{id}/commands/{commandId}/retry") public JSONObject retryUpload(@PathVariable String id,@PathVariable String commandId,@RequestBody JSONObject input,HttpServletRequest request){
+        return equipment.execute(WearableSessions.actor(request),ctx->{
+            device(ctx,id,"communications:voice");
+            JSONObject authority=copy(input);authority.putAll(equipment.require(ctx,id,input,"recording","communications:voice"));
+            return media.retryUpload(ctx.id(),id,commandId,authority);
+        });
     }
     @GetMapping("/helmet/calls/{id}") public JSONObject call(@PathVariable String id,HttpServletRequest r){
         owned(id,r);JSONObject state=media.callState(id);state.put("serverConnected","connected".equals(state.getString("status")));return state;

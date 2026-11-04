@@ -50,7 +50,7 @@ onUnmounted(()=>{clearInterval(recordingTimer);unsubscribe();if(!props.voiceOnly
 <template>
   <div v-if="active || (!voiceOnly && session.recording?.real)" class="device-session-bar" role="status">
     <template v-if="active"><span>{{ db.person(state.personId)?.name || '人员' }}的语音会话：{{ deviceCallStatus(state) }}</span><a class="btn small" :href="'#/dispatch?personId='+encodeURIComponent(state.personId || '')">调度通信</a><AppButton tone="small" @click="runGuarded(() => call.refresh())">刷新状态</AppButton><AppButton tone="small" @click="runGuarded(() => call.end())">{{ state.recovered ? '结束已有会话' : '结束通话' }}</AppButton></template>
-    <template v-if="!voiceOnly && session.recording?.real"><span>{{ db.person(session.recording.person)?.name }}的录像请求：{{ COMMAND_STATUSES[session.recording.status] || '等待录制回执' }}</span><AppButton v-if="session.recording.status !== 'finalizing'" tone="small" @click="runGuarded(stopRecording)">结束录像请求</AppButton></template>
+    <template v-if="!voiceOnly && session.recording?.real"><span>{{ db.person(session.recording.person)?.name }}的平台录制：{{ COMMAND_STATUSES[session.recording.status] || '等待录制回执' }}</span><AppButton v-if="session.recording.status !== 'finalizing'" tone="small" @click="runGuarded(stopRecording)">停止平台录制</AppButton></template>
   </div>
 </template>
 <style scoped>.device-session-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:8px 20px;background:var(--theme-card);border-bottom:1px solid var(--theme-border)}</style>

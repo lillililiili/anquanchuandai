@@ -8,6 +8,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -18,7 +19,8 @@ BUILD = ROOT / 'build'
 LIVE, MYSQL, DATABASE = 'melhat-backend', 'melhat-mysql', 'new-helmet'
 STABLE_TABLES = ('wearable_device', 'wearable_person', 'wearable_account', 'wearable_role', 'wearable_assignment')
 HISTORY_TABLES = ('wearable_event', 'wearable_location', 'helmet_location_fix',
-                  'wearable_device_report', 'external_integration', 'external_data_record', 'wearable_assignment_history')
+                  'wearable_device_report', 'external_integration', 'external_data_record', 'wearable_assignment_history', 'wearable_work')
+READ_ONLY_CONFIG_MOUNTS = {'/run/secrets/fuda-api.yml'}
 
 
 def now():
@@ -35,7 +37,7 @@ def read_json(path):
 
 def docker(*args, data=None, output=None, timeout=120):
     try:
-        result = subprocess.run(['docker', *args], input=data, stdout=output or subprocess.PIPE,
+        result = subprocess.run([os.environ.get('MELHAT_DOCKER_CLI', 'docker'), *args], input=data, stdout=output or subprocess.PIPE,
                                 stderr=subprocess.PIPE, timeout=timeout)
     except subprocess.TimeoutExpired:
         # TimeoutExpired includes argv; deployment arguments can contain opaque secrets.
@@ -63,6 +65,7 @@ def snapshot():
         "'reportWatermark',(SELECT COALESCE(MAX(sequence),0) FROM wearable_device_report),"
         "'pendingReports',(SELECT COUNT(*) FROM wearable_device_report WHERE processed_at IS NULL),"
         "'watchVisible',(SELECT JSON_EXTRACT(body,'$.simulatedWatchVisible') FROM wearable_business_config WHERE id=1),"
+        "'workBusinessEnabled',(SELECT JSON_EXTRACT(body,'$.workBusinessEnabled') FROM wearable_business_config WHERE id=1),"
         "'dataVersion',(SELECT JSON_UNQUOTE(JSON_EXTRACT(body,'$.dataVersion')) FROM wearable_business_config WHERE id=1),"
         "'inventory',(SELECT GROUP_CONCAT(id ORDER BY id SEPARATOR ',') FROM wearable_device),"
         "'activeAssignments',(SELECT GROUP_CONCAT(CONCAT_WS('|',id,JSON_UNQUOTE(JSON_EXTRACT(body,'$.deviceId')),"
@@ -78,6 +81,10 @@ def verify_preservation(before, after):
     for key in ('watchVisible', 'dataVersion', 'inventory', 'activeAssignments'):
         if before[key] != after[key]:
             raise RuntimeError('Preserved business configuration changed: ' + key)
+    if before.get('workBusinessEnabled') is not None and before['workBusinessEnabled'] != after.get('workBusinessEnabled'):
+        raise RuntimeError('Preserved work business setting changed')
+    if before.get('workBusinessEnabled') is None and after.get('workBusinessEnabled') not in (None, True, 'true'):
+        raise RuntimeError('New work business setting must default to enabled')
     for table in STABLE_TABLES:
         if before['counts'][table] != after['counts'][table]:
             raise RuntimeError('Protected business row count changed: ' + table)
@@ -144,6 +151,8 @@ def require_standard_deployment(previous):
         if network.get('IPAMConfig') or network.get('DriverOpts') or network.get('Links'):
             raise RuntimeError('Static network settings require an explicit preservation rule')
     for mount in previous.get('Mounts', []):
+        if mount['Destination'] in READ_ONLY_CONFIG_MOUNTS and mount['Type'] == 'bind' and mount['RW'] is False:
+            continue
         if mount['Destination'] != '/data' and not mount['Destination'].startswith('/data/'):
             raise RuntimeError('Persistent content outside /data requires an additional backup rule')
     hostname = previous['Config'].get('Hostname')
@@ -157,9 +166,11 @@ def anonymous_health():
     deadline = time.monotonic() + 100
     while time.monotonic() < deadline:
         try:
-            value = json.loads(docker('exec', LIVE, 'curl', '--silent', '--fail', '--max-time', '3',
-                                      'http://127.0.0.1:18084/captchaImage'))
-            if value.get('code') == 200:
+            # The root welcome response is read-only and exists in both compatible versions.
+            response = docker('exec', LIVE, 'curl', '--silent', '--fail', '--max-time', '3',
+                              '--write-out', '\n%{http_code}', 'http://127.0.0.1:18084/')
+            body, status = response.rsplit(b'\n', 1)
+            if status == b'200' and body.strip():
                 break
         except Exception:
             pass
@@ -228,6 +239,10 @@ def patch(evidence_directory, release_directory):
     previous = inspect(LIVE)
     if not previous['State']['Running'] or previous['Image'] != receipt['newImageId']:
         raise RuntimeError('Daily backend does not match the previous compatible release')
+    if receipt.get('baselineJarSha256'):
+        current_jar = docker('exec', LIVE, 'sha256sum', '/app/fdc-admin.jar').decode().split()[0]
+        if current_jar.lower() != receipt['baselineJarSha256'].lower():
+            raise RuntimeError('Running JAR changed since the candidate baseline was captured')
     if target['Config']['Entrypoint'] != previous['Config']['Entrypoint']:
         raise RuntimeError('Image entrypoint changed beyond this compatible patch')
     require_standard_deployment(previous)
@@ -262,8 +277,18 @@ def patch(evidence_directory, release_directory):
                    'wearable-container-patch', DATABASE, output=output, timeout=600)
         with (directory / 'backend-data.tar').open('wb') as output:
             docker('cp', LIVE + ':/data', '-', output=output, timeout=600)
+        config_backups = []
+        for mount in previous.get('Mounts', []):
+            if mount['Destination'] not in READ_ONLY_CONFIG_MOUNTS:
+                continue
+            archive = directory / ('readonly-config-' + str(len(config_backups)) + '.private.tar')
+            with archive.open('wb') as output:
+                docker('cp', LIVE + ':' + mount['Destination'], '-', output=output)
+            config_backups.append({'destination': mount['Destination'], 'archive': archive.name,
+                                   'sha256': hashlib.sha256(archive.read_bytes()).hexdigest()})
         record.update(status='backed-up', stopped=stopped,
-                      databaseSha256=hashlib.sha256((directory / 'database.sql').read_bytes()).hexdigest())
+                      databaseSha256=hashlib.sha256((directory / 'database.sql').read_bytes()).hexdigest(),
+                      readOnlyConfigBackups=config_backups)
         write_json(directory / 'receipt.json', record)
         docker('rename', LIVE, retained)
         docker(*recreate_args(previous, target['Id']))

@@ -143,7 +143,8 @@ public class HelmetMediaService {
         if(Arrays.asList("take_photo","start_video","start_recording","set_config").contains(action)&&hasActiveCall(deviceId))
             throw new IllegalStateException("设备正在通话，请结束后再操作摄像头或参数");
         JSONObject params=input.getJSONObject("parameters"); if(params==null)params=new JSONObject();
-        if("broadcast".equals(action)&&(!ttsHealthy||text(params,"text").isEmpty()||text(params,"text").length()>200))throw new IllegalArgumentException("广播服务尚未就绪或内容不在1至200字范围内");
+        if("broadcast".equals(action)&&!ttsHealthy)throw new IllegalStateException("文字转语音服务暂不可用，请稍后重试");
+        if("broadcast".equals(action)&&(text(params,"text").isEmpty()||text(params,"text").length()>200))throw new IllegalArgumentException("广播内容需为1至200字");
         JSONObject wire=wire(action,params);
         JSONArray requestedFiles="upload_recording".equals(action)?validateListedFiles(deviceId,params.getJSONArray("files")):null;
         String id="HC-"+UUID.randomUUID(); wire.put("talkback_id",id);
@@ -206,14 +207,73 @@ public class HelmetMediaService {
         }
         saveCommand(row); return publicCommand(row);
     }
+    /** Explicit recovery of an upload, never a second command or a new attribution. */
+    public synchronized JSONObject retryUpload(String actorId,String deviceId,String commandId,JSONObject input) {
+        String key=text(input,"retryKey");
+        if(!key.matches("[A-Za-z0-9_-]{8,100}"))throw new IllegalArgumentException("请提供稳定的重试编号");
+        JSONObject row=map(store.snapshot(),"commands").getJSONObject(commandId);
+        if(row==null||!actorId.equals(row.getString("actorId"))||!deviceId.equals(row.getString("deviceId"))
+                ||!"upload_recording".equals(row.getString("action")))
+            throw com.ruoyi.guardian.AdminQueryService.fail(404,"UPLOAD_NOT_FOUND","原上传记录不存在或不属于当前账号");
+        com.ruoyi.guardian.PersonEquipmentContext.sameContext(row,input);
+        for(String field:Arrays.asList("siteId","areaId","ledgerDeviceId"))
+            if(!Objects.equals(row.get(field),input.get(field)))throw com.ruoyi.guardian.AdminQueryService.fail(409,"SESSION_CONTEXT_CHANGED","领用或授权范围已变化，不能重试原上传");
+        if(text(row,"siteId").isEmpty()||text(row,"ledgerDeviceId").isEmpty())throw new IllegalArgumentException("原上传缺少可核验的授权范围");
+        // Idempotency survives an unknown socket result and a process restart. A replay
+        // of the same intent never sends again, even when the cloud is temporarily down.
+        if(uploadRetry(row,key)!=null)return publicCommand(row);
+        JSONArray requested=row.getJSONArray("requestedFiles");
+        if(requested==null||requested.isEmpty())throw new IllegalArgumentException("原上传缺少设备确认的文件信息");
+        if(requested.size()!=1)throw new IllegalArgumentException("此重试入口仅支持单个录像，请核对多文件上传记录后分别处理");
+        JSONArray names=new JSONArray();Set<String> distinct=new HashSet<>();
+        for(Object value:requested){JSONObject file=(JSONObject)value;String name=text(file,"fileName");
+            if(!text(file,"progressId").matches("[A-Za-z0-9_-]{8,128}")||!distinct.add(name))throw new IllegalArgumentException("原录像文件无法唯一核验");
+            names.add(name);}
+        JSONObject wire=wire("upload_recording",obj("files",names));wire.put("talkback_id",commandId);
+        JSONArray existing=assets(deviceId);boolean alreadyAvailable=false;
+        for(Object value:existing){JSONObject asset=(JSONObject)value;
+            if(!deviceId.equals(asset.getString("deviceId"))||!"video".equals(asset.getString("kind"))||!uploadReceptionMatches(row,asset))continue;
+            if(!"ready".equals(asset.getString("status")))throw new IllegalStateException("此录像仍在入库，请稍后查看");
+            if(!commandId.equals(asset.getString("requestId")))throw new IllegalStateException("此录像已有其他上传记录，请核对资料，不重复发送");
+            recordAsset(row,asset);alreadyAvailable=true;
+        }
+        Instant now=Instant.now();JSONObject attempt=obj("retryKey",key,"requestedAt",now.toString(),"actorId",actorId,
+                "status",alreadyAvailable?"already_available":"requesting");
+        if(alreadyAvailable){appendUploadRetry(row,attempt);saveCommand(row);return publicCommand(row);}
+        if("completed".equals(row.getString("status"))||row.getJSONObject("receivedFiles")!=null&&!row.getJSONObject("receivedFiles").isEmpty())
+            throw new IllegalStateException("原上传已保存文件，请刷新资料，不重复发送");
+        Instant last=Instant.parse(text(row,"createdAt"));
+        for(String field:Arrays.asList("sentAt","receiptAt"))if(!text(row,field).isEmpty()){Instant at=Instant.parse(text(row,field));if(at.isAfter(last))last=at;}
+        JSONArray retries=row.getJSONArray("uploadRetries");
+        if(retries!=null)for(Object value:retries){Instant at=Instant.parse(text((JSONObject)value,"requestedAt"));if(at.isAfter(last))last=at;}
+        if(last.plusSeconds(120).isAfter(now))throw new IllegalStateException("上传请求仍在处理，请至少间隔两分钟后核对资料再重试");
+        if(!gateway().isOnline(deviceId))throw new IllegalStateException("设备不在线，未重试上传");
+        appendUploadRetry(row,attempt);row.put("activeUploadRetryKey",key);row.put("status","requesting");
+        row.put("message","正在重试原录像上传，等待文件入库");row.put("expiresAt",now.plusSeconds(properties.getCommandTimeoutSeconds()).toString());
+        saveCommand(row); // Persist the unique intent before any socket write.
+        boolean sent=false;
+        try{gateway().sendCommand(deviceId,wire);sent=true;}catch(Exception ignored){/* Unknown is not permission to repeat this intent. */}
+        final boolean written=sent;
+        return store.update(state->{JSONObject current=map(state,"commands").getJSONObject(commandId),audit=uploadRetry(current,key);
+            if("requesting".equals(text(audit,"status"))){audit.put("status",written?"sent":"unknown");audit.put("sentAt",Instant.now().toString());}
+            if("requesting".equals(current.getString("status"))){current.put("status",written?"sent":"unknown");
+                current.put("message",written?"原上传已重试，等待设备确认和文件入库":"重试结果未确认，请核对资料；不会自动重复下发");}
+            return publicCommand(current);});
+    }
+    private static JSONObject uploadRetry(JSONObject row,String key){JSONArray retries=row.getJSONArray("uploadRetries");
+        if(retries!=null)for(Object value:retries){JSONObject attempt=(JSONObject)value;if(key.equals(attempt.getString("retryKey")))return attempt;}return null;}
+    private static void appendUploadRetry(JSONObject row,JSONObject attempt){JSONArray retries=row.getJSONArray("uploadRetries");
+        if(retries==null){retries=new JSONArray();row.put("uploadRetries",retries);}retries.add(attempt);}
+    private static void uploadRetryEvidence(JSONObject row,String status,String at){JSONObject attempt=uploadRetry(row,text(row,"activeUploadRetryKey"));
+        if(attempt!=null){attempt.put("status",status);attempt.put("updatedAt",at);}}
     public JSONObject media(String deviceId) {
         JSONObject state=store.snapshot();
         JSONArray commands=new JSONArray();
         for(Object raw:map(state,"commands").values())if(deviceId.equals(((JSONObject)raw).getString("deviceId")))commands.add(publicCommand((JSONObject)raw));
         commands.sort((a,b)->text((JSONObject)b,"createdAt").compareTo(text((JSONObject)a,"createdAt")));
-        JSONArray assets=new JSONArray(); String mediaState=capabilities().getString("mediaStatus");
+        JSONArray assets=new JSONArray(); String mediaState=capabilities().getString("mediaStatus");boolean itemsAvailable=false;
         if(available())try {
-            assets=assets(deviceId);
+            assets=assets(deviceId);itemsAvailable=true;
         }catch(RuntimeException error){mediaState="unavailable";}
         JSONArray actions=new JSONArray(),recordings=new JSONArray();
         if(available()&&gateway().isOnline(deviceId))actions.addAll(Arrays.asList("configure_sip","take_photo","start_video","stop_video","list_recordings","upload_recording","start_recording","stop_recording"));
@@ -221,7 +281,11 @@ public class HelmetMediaService {
         for(Object raw:commands){JSONObject c=(JSONObject)raw;if("list_recordings".equals(c.getString("action"))&&c.getJSONArray("result")!=null){
             for(Object value:c.getJSONArray("result")){if(value instanceof String)recordings.add(obj("fileName",value,"name",value));else if(value instanceof JSONObject){JSONObject file=(JSONObject)value;String filename=text(file,"fileName");if(filename.isEmpty())filename=text(file,"file_name");if(filename.isEmpty())filename=text(file,"name");if(!filename.isEmpty())recordings.add(obj("fileName",filename,"name",filename,"createdAt",file.get("createdAt")));}}
             break;}}
-        return obj("deviceId",deviceId,"status",mediaState,"items",assets,"recordings",recordings,"commands",commands,"actions",actions,"capabilities",capabilities());
+        JSONArray autoSyncTasks=new JSONArray();
+        for(Object raw:map(state,"autoSyncTasks").values()){JSONObject task=(JSONObject)raw;if(!deviceId.equals(task.getString("deviceId")))continue;
+            JSONObject visible=new JSONObject();for(String key:Arrays.asList("id","deviceId","kind","status","updatedAt","message","fileCount","receivedCount","assetIds","siteId","areaId","receivedPersonId","receivedPersonName"))if(task.containsKey(key))visible.put(key,task.get(key));autoSyncTasks.add(visible);}
+        autoSyncTasks.sort((a,b)->text((JSONObject)b,"updatedAt").compareTo(text((JSONObject)a,"updatedAt")));
+        return obj("deviceId",deviceId,"status",mediaState,"items",assets,"itemsAvailable",itemsAvailable,"autoSyncTasks",autoSyncTasks,"recordings",recordings,"commands",commands,"actions",actions,"capabilities",capabilities());
     }
     /** Only an authenticated, still-assigned viewer can renew its lease and obtain live tickets. */
     public synchronized JSONObject live(String actorId,String deviceId,JSONObject input) {
@@ -258,25 +322,88 @@ public class HelmetMediaService {
         }
         return new JSONObject(captured);
     }
+    /** Parse only our configured upload reference; never fetch a device-supplied URL. */
+    public String audioReference(String reference) {
+        try{return platformAssetReference(reference);}
+        catch(RuntimeException invalid){throw new IllegalArgumentException("语音消息必须引用本平台音频文件");}
+    }
+    private String platformAssetReference(String reference) {
+        try {
+            if(reference==null||reference.length()>4096)throw new IllegalArgumentException();
+            java.net.URI uri=java.net.URI.create(reference),base=java.net.URI.create(properties.getControlUrl());
+            if(!"https".equals(uri.getScheme())||uri.getUserInfo()!=null||uri.getFragment()!=null
+                    ||!Objects.equals(uri.getHost(),base.getHost())||effectivePort(uri)!=effectivePort(base))throw new IllegalArgumentException();
+            String path=uri.getRawPath();
+            if(path==null||!path.matches("/helmet-media/files/[0-9a-fA-F-]{36}"))throw new IllegalArgumentException();
+            String asset=path.substring("/helmet-media/files/".length());
+            if(!UUID.fromString(asset).toString().equalsIgnoreCase(asset))throw new IllegalArgumentException();
+            String query=uri.getRawQuery();if(query!=null&&!query.matches("token=[A-Za-z0-9_.%~-]{1,4096}"))throw new IllegalArgumentException();
+            return asset;
+        }catch(RuntimeException invalid){throw new IllegalArgumentException("文件必须引用本平台上传地址");}
+    }
+    private static int effectivePort(java.net.URI uri){return uri.getPort()<0?443:uri.getPort();}
+    /** Server-authenticated metadata, separate from current device online/issue state. */
+    public JSONObject deviceAudioAsset(String deviceId,String assetId) {
+        if(deviceId==null||!deviceId.matches("[A-Za-z0-9._-]{1,64}")||assetId==null||!assetId.matches("[0-9a-fA-F-]{36}"))
+            throw new IllegalArgumentException("音频关联编号无效");
+        JSONObject response=cloud.request("GET","/assets?deviceId="+deviceId,null);
+        JSONArray files=response.getJSONArray("items");if(files==null)files=response.getJSONArray("assets");
+        if(files!=null)for(Object raw:files){JSONObject asset=(JSONObject)raw;
+            if(assetId.equals(asset.getString("assetId"))){
+                if(!deviceId.equals(asset.getString("deviceId"))||!"audio".equals(asset.getString("kind"))||!"ready".equals(asset.getString("status")))
+                    throw new IllegalArgumentException("音频来源或文件状态不匹配");
+                return JSONObject.parseObject(asset.toJSONString());
+            }}
+        throw new IllegalArgumentException("未找到该设备的音频文件");
+    }
+    public JSONObject deviceAudioPlayback(JSONObject asset) {
+        try {
+            String url=asset.getString("playbackUrl"),expiry=asset.getString("playbackExpiresAt"),id=asset.getString("assetId");
+            if(url==null||url.length()>4096||!"audio/mpeg".equals(asset.getString("playbackMime")))return null;
+            java.net.URI uri=java.net.URI.create(url),base=java.net.URI.create(properties.getControlUrl());
+            String query=uri.getRawQuery();
+            if(!"https".equals(uri.getScheme())||uri.getUserInfo()!=null||uri.getFragment()!=null
+                    ||!Objects.equals(uri.getHost(),base.getHost())||effectivePort(uri)!=effectivePort(base)
+                    ||!("/helmet-media/files/"+id).equals(uri.getRawPath())||query==null
+                    ||!query.matches("variant=playback&token=[A-Za-z0-9_.%~-]{1,4096}"))return null;
+            Instant expires=Instant.parse(expiry),now=Instant.now();
+            if(!expires.isAfter(now)||expires.isAfter(now.plusSeconds(60)))return null;
+            return obj("assetId",id,"url",url,"mime","audio/mpeg","expiresAt",expiry);
+        }catch(RuntimeException invalid){return null;}
+    }
     public JSONArray assets(String deviceId){
-        if(!available())return new JSONArray();
-        JSONObject files=cloud.request("GET","/assets?deviceId="+deviceId,null);
+        if(!available())throw com.ruoyi.guardian.AdminQueryService.fail(503,"MEDIA_SERVICE_UNAVAILABLE","媒体服务暂不可用，请稍后刷新");
+        JSONObject files;
+        try{files=cloud.request("GET","/assets?deviceId="+deviceId,null);if(files==null)throw new IllegalStateException();}
+        catch(RuntimeException unavailable){throw com.ruoyi.guardian.AdminQueryService.fail(503,"MEDIA_SERVICE_UNAVAILABLE","媒体资料暂时无法读取，请稍后刷新");}
         JSONArray values=files.getJSONArray("items");if(values==null)values=files.getJSONArray("assets");
-        JSONArray out=new JSONArray();if(values==null)return out;
+        JSONArray out=new JSONArray();if(values==null)throw com.ruoyi.guardian.AdminQueryService.fail(503,"MEDIA_SERVICE_UNAVAILABLE","媒体资料暂时无法读取，请稍后刷新");
         for(Object raw:values){JSONObject file=new JSONObject((JSONObject)raw);if(!Arrays.asList("photo","video").contains(file.getString("kind")))continue;
+            for(String key:Arrays.asList("personId","personName","siteId","areaId","assignmentId","assignmentVersion","receivedPersonId","receivedPersonName","receivedAt","timeBasis","scopeBasis","scopeCapturedAt","commandAction"))file.remove(key);
             file.put("id",file.get("assetId"));file.put("source","DIRECT_HELMET");file.put("created",file.get("createdAt"));file.put("name",file.getOrDefault("originalName",file.get("assetId")));
             JSONObject command=assetCommand(deviceId,file);
             if(command!=null){file.put("requestId",command.get("id"));
                 file.put("commandAction",command.get("action"));
                 // Uploading an older on-device recording does not establish who wore it when filmed.
-                if(!"upload_recording".equals(command.getString("action")))for(String key:Arrays.asList("personId","personName","siteId","areaId","assignmentId","assignmentVersion"))file.put(key,command.get(key));}
-            else file.remove("requestId"); // An unvalidated upstream identifier cannot complete or authorize a local command.
+                if(!"upload_recording".equals(command.getString("action")))for(String key:Arrays.asList("personId","personName","siteId","areaId","assignmentId","assignmentVersion"))file.put(key,command.get(key));
+                else if(uploadReceptionMatches(command,file)){for(String key:Arrays.asList("siteId","areaId"))file.put(key,command.get(key));
+                    file.put("receivedPersonId",command.get("personId"));file.put("receivedPersonName",command.get("personName"));
+                    file.put("receivedAt",file.get("createdAt"));file.put("timeBasis","RECEIVED_AT");
+                    file.put("scopeBasis","UPLOAD_REQUEST");file.put("scopeCapturedAt",command.get("createdAt"));}}
+            else {file.remove("requestId");applyPhotoReception(deviceId,file);} // Reception scope never completes or identifies a remote command.
             String action=command==null?"":text(command,"action");
             file.put("mediaOrigin","photo".equals(file.getString("kind"))?"DEVICE_PHOTO":
                     "start_recording".equals(action)?"PLATFORM_RECORDING":"upload_recording".equals(action)?"DEVICE_RECORDING":"UNKNOWN");
             file.put("unassigned",text(file,"siteId").isEmpty());
             out.add(file);
         }return out;
+    }
+    private static boolean uploadReceptionMatches(JSONObject command,JSONObject file) {
+        JSONArray requested=command.getJSONArray("requestedFiles");if(requested==null)return false;
+        String name=text(file,"originalName"),progress=text(file,"progressId");if(name.isEmpty()||progress.isEmpty())return false;
+        for(Object raw:requested){JSONObject expected=(JSONObject)raw;
+            if(name.equals(text(expected,"fileName"))&&progress.equals(text(expected,"progressId")))return true;}
+        return false;
     }
     public synchronized JSONObject call(String actorId,List<String> devices,boolean video) {
         return call(actorId,devices,video,new JSONArray());
@@ -329,8 +456,12 @@ public class HelmetMediaService {
     }
     public boolean receipt(String deviceId,JSONObject message) { return receipt(deviceId,message,null); }
     public synchronized boolean receipt(String deviceId,JSONObject message,String receivedAt) {
+        return receipt(deviceId,message,receivedAt,null);
+    }
+    public synchronized boolean receipt(String deviceId,JSONObject message,String receivedAt,JSONObject captured) {
         String act=text(message,"act");
         if(!Arrays.asList("ca_upload_photo","upload_video_success","push_to_client").contains(act))return false;
+        if("ca_upload_photo".equals(act))rememberPhotoReception(deviceId,message,receivedAt,captured);
         String id=text(message,"talkback_id"); JSONObject res=message.getJSONObject("res");
         if(id.isEmpty()&&res!=null)id=text(res,"talkback_id");
         JSONObject row=map(store.snapshot(),"commands").getJSONObject(id);
@@ -340,10 +471,42 @@ public class HelmetMediaService {
         row.put("receiptAt",receivedAt==null?Instant.now().toString():Instant.parse(receivedAt).toString());
         boolean success=res!=null?res.getBooleanValue("status"):message.getBooleanValue("status");
         row.put("status",success?"acknowledged":"rejected");
+        uploadRetryEvidence(row,success?"acknowledged":"rejected",row.getString("receiptAt"));
         row.put("message",success?"设备已确认；上传文件是否入库请查看媒体列表":"设备拒绝了此操作");
         if("list_recordings".equals(row.getString("action"))&&res!=null)row.put("result",res.getJSONArray("data"));
         if(externalData!=null)externalData.record("helmet-media","安全帽媒体服务",row.getString("siteId"),"MEDIA",id+":"+act,message,id);
         saveCommand(row);return true;
+    }
+    private void rememberPhotoReception(String deviceId,JSONObject message,String receivedAt,JSONObject captured) {
+        if(!(message.get("image_url") instanceof String))return;
+        final String assetId;
+        try{assetId=platformAssetReference(message.getString("image_url"));}catch(IllegalArgumentException invalid){return;}
+        if(map(store.snapshot(),"photoReceptions").containsKey(assetId))return;
+        JSONObject receipt=obj("assetId",assetId,"deviceId",deviceId);
+        // A context-free legacy receipt is a tombstone, never an opportunity to use today's wearer.
+        if(captured!=null&&receivedAt!=null)try {
+            Instant at=Instant.parse(receivedAt);receipt.put("receivedAt",at.toString());
+            receipt.put("siteId",captured.get("siteId"));
+            JSONObject device=captured.getJSONObject("device");
+            receipt.put("areaId",device==null?null:device.get("areaId"));
+            boolean current=!text(captured,"bindingId").isEmpty()&&captured.get("bindingEnd")==null
+                    &&!text(captured,"personId").isEmpty()&&!Instant.parse(text(captured,"bindingStart")).isAfter(at);
+            if(current){receipt.put("receivedPersonId",captured.get("personId"));receipt.put("receivedPersonName",captured.get("personName"));receipt.put("areaId",captured.get("areaId"));}
+        }catch(java.time.DateTimeException invalid){/* Retain only the valid reception scope; never invent a wearer or date. */}
+        store.update(s->{JSONObject receipts=map(s,"photoReceptions");if(!receipts.containsKey(assetId))receipts.put(assetId,receipt);return null;});
+    }
+    private void applyPhotoReception(String deviceId,JSONObject file) {
+        if(!deviceId.equals(file.getString("deviceId"))||!"photo".equals(file.getString("kind"))
+                ||!"ready".equals(file.getString("status"))||!Boolean.TRUE.equals(file.get("deviceBindingConfirmed")))return;
+        JSONObject receipt=map(store.snapshot(),"photoReceptions").getJSONObject(text(file,"assetId"));
+        if(receipt==null||!deviceId.equals(receipt.getString("deviceId"))||text(receipt,"siteId").isEmpty())return;
+        try {
+            Instant received=Instant.parse(text(receipt,"receivedAt")),uploaded=Instant.parse(text(file,"createdAt"));
+            // Upload time is not capture time. Allow small cross-server clock skew; reject stale/replayed files.
+            if(uploaded.isAfter(received.plusSeconds(30))||uploaded.isBefore(received.minusSeconds(300)))return;
+        }catch(java.time.DateTimeException invalid){return;}
+        for(String key:Arrays.asList("siteId","areaId","receivedAt","receivedPersonId","receivedPersonName"))if(receipt.containsKey(key))file.put(key,receipt.get(key));
+        file.put("timeBasis","RECEIVED_AT");file.put("scopeBasis","DEVICE_RECEIPT");
     }
     @Scheduled(fixedDelay=15000,initialDelay=5000)
     public void reconcile() {
@@ -610,7 +773,7 @@ public class HelmetMediaService {
             boolean all=true;for(Object raw:requested)if(!received.containsKey(((JSONObject)raw).getString("fileName")))all=false;
             command.put("status",all?"completed":"receiving_files");command.put("message",all?"所选录像已全部保存，可查看或回放":"部分录像已保存，仍在等待其他文件");
         }else{command.put("status","completed");command.put("message","文件已保存，可查看或回放");}
-        command.put("assetId",asset.get("id"));saveCommand(command);
+        command.put("assetId",asset.get("id"));uploadRetryEvidence(command,command.getString("status"),Instant.now().toString());saveCommand(command);
     }
     private boolean hasActiveCall(String device) {
         for(Object raw:map(store.snapshot(),"calls").values()){JSONObject call=(JSONObject)raw;if(!Arrays.asList("ended","failed").contains(call.getString("status"))&&call.getJSONArray("deviceIds").contains(device))return true;}return false;
@@ -626,7 +789,7 @@ public class HelmetMediaService {
                 if(!from.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")||!to.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")||from.compareTo(to)>=0)throw new IllegalArgumentException("请填写正确的录像起止时间");
                 java.time.format.DateTimeFormatter inputFormat=java.time.format.DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss").withResolverStyle(java.time.format.ResolverStyle.STRICT);
                 java.time.format.DateTimeFormatter wireFormat=java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-                try{return obj("cmd","server_push_get_local_video_list","start_time",java.time.LocalDateTime.parse(from,inputFormat).format(wireFormat),"end_time",java.time.LocalDateTime.parse(to,inputFormat).format(wireFormat));}
+                try{return obj("cmd","server_push_get_local_video_list","start_time",java.time.LocalDateTime.parse(from,inputFormat).format(wireFormat),"end_time",java.time.LocalDateTime.parse(to,inputFormat).format(wireFormat),"video_type","1");}
                 catch(java.time.DateTimeException error){throw new IllegalArgumentException("录像日期无效");}
             case "upload_recording":
                 JSONArray files=p.getJSONArray("files");if(files==null||files.isEmpty()||files.size()>20)throw new IllegalArgumentException("请选择1至20个设备录像");

@@ -53,6 +53,7 @@ class WearEvent {
     required this.fenceAction,
     required this.version,
     this.externalClosureStatus = 'not_synced',
+    this.claimantName = '',
     this.fieldReportStatus = '',
     this.verificationStatus = '',
     this.reviewStatus = '',
@@ -126,6 +127,7 @@ class WearEvent {
       locationLng: _text(json['locationLng']),
       locationQuality: _text(json['locationQuality']),
       claimantUserId: _text(json['claimantUserId']),
+      claimantName: _text(json['claimantName']),
       repeatCount: _integer(json['repeatCount']),
       escalated: _boolean(json['escalated']),
       demo: _boolean(json['demo']),
@@ -171,6 +173,7 @@ class WearEvent {
   final String locationLng;
   final String locationQuality;
   final String claimantUserId;
+  final String claimantName;
   final int repeatCount;
   final bool escalated;
   final bool demo;

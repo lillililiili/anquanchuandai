@@ -73,19 +73,144 @@ void main() {
                 onBroadcast: null,
                 showVideo: false,
                 showBroadcast: false,
-                voicePending: true,
               ),
             ),
           ),
         ),
       );
-      expect(find.text('设备语音 · 待联调'), findsOneWidget);
+      expect(find.text('设备语音'), findsOneWidget);
       expect(find.text('视频通话'), findsNothing);
       expect(
         tester.widget<TextButton>(find.byType(TextButton)).onPressed,
         isNull,
       );
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  test(
+    'connected helmet services honor runtime availability independently of acceptance evidence',
+    () {
+      for (final key in [
+        'voice',
+        'video',
+        'videoCall',
+        'photo',
+        'recording',
+        'broadcast',
+      ]) {
+        final device = <String, dynamic>{
+          'source': 'DIRECT_HELMET',
+          'featureStates': {
+            key: {
+              'supported': true,
+              'verified': false,
+              'available': true,
+              'integrationStatus': 'CONNECTED',
+            },
+          },
+        };
+        final ready = deviceFeature(device, key);
+        expect(ready.available, true, reason: key);
+        expect(
+          ready.verified,
+          false,
+          reason: 'do not invent acceptance evidence',
+        );
+        expect(ready.toJson()['integrationStatus'], 'CONNECTED');
+        expect(
+          deviceFeature({...device, 'source': 'DIRECT_BELT'}, key).available,
+          false,
+        );
+        expect(
+          deviceFeature({...device, 'source': 'UNKNOWN'}, key).available,
+          false,
+        );
+        for (final patch in [
+          {'available': false},
+          {'supported': false},
+          {'integrationStatus': 'NOT_CONNECTED'},
+        ]) {
+          expect(
+            deviceFeature({
+              ...device,
+              'featureStates': {
+                key: {
+                  ...Map<String, dynamic>.from(
+                    (device['featureStates'] as Map)[key],
+                  ),
+                  ...patch,
+                },
+              },
+            }, key).available,
+            false,
+            reason: '$key $patch',
+          );
+        }
+      }
+    },
+  );
+
+  test(
+    'real helmet calls require a current wearer, online device, runtime ready service and permission',
+    () {
+      const policy = CommunicationsPolicy(
+        userId: 'u',
+        permissions: {'wear:call:start'},
+      );
+      final raw = <String, dynamic>{
+        'id': 'h',
+        'source': 'DIRECT_HELMET',
+        'typeCode': 'helmet',
+        'online': 1,
+        'currentAssignment': {'personId': 'p'},
+        'equipmentContext': {
+          'deviceId': 'h',
+          'personId': 'p',
+          'assignmentId': 'a',
+          'assignmentVersion': 2,
+        },
+        'featureStates': {
+          'voice': {
+            'supported': true,
+            'verified': false,
+            'available': true,
+            'integrationStatus': 'CONNECTED',
+          },
+        },
+      };
+      final ready = CommunicationDevice.fromJson(raw);
+      expect(policy.canStartVoice(ready), true);
+      expect(ready.feature('intercom').verified, false);
+      expect(
+        const CommunicationsPolicy(
+          userId: 'u',
+          permissions: {},
+        ).canStartVoice(ready),
+        false,
+      );
+      for (final patch in [
+        {'online': 0},
+        {'connectionQuality': 'stale'},
+        {'typeCode': 'belt'},
+        {'equipmentContext': <String, dynamic>{}},
+        {
+          'currentAssignment': {'personId': 'other-person'},
+        },
+        {
+          'equipmentContext': {
+            ...raw['equipmentContext'] as Map,
+            'deviceId': 'other-device',
+          },
+        },
+      ]) {
+        final unavailable = CommunicationDevice.fromJson({...raw, ...patch});
+        expect(policy.canStartVoice(unavailable), false, reason: '$patch');
+        expect(unavailable.feature('intercom').reason, isNotEmpty);
+      }
+      final stale = ContactRoster.unavailableDevices([ready]).single;
+      expect(stale.source, 'DIRECT_HELMET');
+      expect(policy.canStartVoice(stale), false);
     },
   );
 
@@ -125,6 +250,67 @@ void main() {
       expect(model.rows('bindings'), isEmpty);
       expect(model.rows('vitals').single['id'], 'real');
       expect(model.rows('events').single['id'], 'real-history');
+    },
+  );
+
+  test(
+    'shared snapshot projection preserves runtime-ready service and issuance identity through the contact model',
+    () {
+      final ready = {
+        'supported': true,
+        'verified': false,
+        'available': true,
+        'integrationStatus': 'CONNECTED',
+      };
+      final device = <String, dynamic>{
+        'id': 'h',
+        'ledgerId': 'LH',
+        'type': 'H',
+        'source': 'DIRECT_HELMET',
+        'active': true,
+        'online': true,
+        'freshness': 'CURRENT',
+        'sourceTime': DateTime.now()
+            .subtract(const Duration(seconds: 1))
+            .toIso8601String(),
+        'communicationProtocol': 'SIP',
+        'capabilities': ['intercom'],
+        'featureStates': {'voice': ready},
+      };
+      final identity = {
+        'deviceId': 'h',
+        'personId': 'p',
+        'assignmentId': 'a',
+        'assignmentVersion': 2,
+      };
+      final projection = SharedModels({
+        'devices': [device],
+        'personEquipmentContext': {
+          'p': {
+            'personId': 'p',
+            'devices': [identity],
+            'features': {
+              'voice': {...ready, ...identity},
+            },
+          },
+        },
+      }).device(device);
+      expect(projection['capabilities']['actions'], ['intercom']);
+      expect(projection['featureStates']['voice']['verified'], false);
+      expect(
+        projection['featureStates']['voice']['integrationStatus'],
+        'CONNECTED',
+      );
+      final contact = CommunicationDevice.fromJson(projection);
+      expect(contact.source, 'DIRECT_HELMET');
+      expect(contact.personId, 'p');
+      expect(
+        const CommunicationsPolicy(
+          userId: 'u',
+          permissions: {'wear:call:start'},
+        ).canStartVoice(contact),
+        true,
+      );
     },
   );
 

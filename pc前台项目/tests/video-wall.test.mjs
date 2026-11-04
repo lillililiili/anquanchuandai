@@ -1,3 +1,4 @@
+import * as workBusiness from '../src/lib/work-business.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -22,9 +23,10 @@ test('grid capacity is eight or nine real channels with no duplicate padding and
 
 async function fixture(count=20) {
   const tick=Vue.ref(0), session=Vue.reactive({layout:'2×4',person:'P1',station:'S1',rotation:false,filters:{video:{}}});
-  const db={people:channels(count),currentWork(id){const person=this.people.find(person=>person.id===id);return person?{id:person.workId}:null;}};
+  const db={state:{businessConfig:{workBusinessEnabled:true}},people:channels(count),currentWork(id){const person=this.people.find(person=>person.id===id);return person?{id:person.workId}:null;}};
   const timers=new Map(), cleanups=[];let timerId=0;
   const modules={
+    '@/lib/work-business': workBusiness,
     vue:{...Vue,onUnmounted:fn=>cleanups.push(fn)},'@/mock/runtime':{db},'@/stores/notify':{toast(){}},
     '@/stores/session':{session,filtersOf:key=>session.filters[key]},
     '@/lib/queries':{revision(){tick.value;},people:()=>db.people,works:()=>[{id:'work-one',name:'隔离作业一'},{id:'work-two',name:'隔离作业二'}],helmetOf:()=>({id:'offline-test-device'}),personName:()=>''},

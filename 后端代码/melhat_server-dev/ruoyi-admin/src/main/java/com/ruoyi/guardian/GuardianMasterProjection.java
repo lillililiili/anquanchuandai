@@ -49,7 +49,7 @@ final class GuardianMasterProjection {
             for(Object b:rows(snapshot,"bindings")) {JSONObject binding=(JSONObject)b;if(!id.equals(binding.getString("deviceId"))||binding.get("end")!=null)continue;
                 if(held!=null&&held.equals(binding.getString("personId"))&&bindingId.equals(binding.getString("id"))&&kept==null)kept=binding;
                 else binding.put("end",java.time.Instant.now().toString()); }
-            if(held!=null&&kept==null) {kept=object("id",bindingId,"deviceId",id,"personId",held,"start",assignment.getString("startedAt"),"end",null,"operator","后台领用台账");rows(snapshot,"bindings").add(kept);}
+            if(held!=null&&kept==null) {kept=object("id",bindingId,"deviceId",id,"personId",held,"siteId",assignment.getString("siteId"),"start",assignment.getString("startedAt"),"end",null,"operator","后台领用台账");rows(snapshot,"bindings").add(kept);}
             if(kept!=null&&assignment!=null){kept.put("assignmentId",assignment.get("id"));kept.put("assignmentVersion",assignment.get("version"));}
         }
     }

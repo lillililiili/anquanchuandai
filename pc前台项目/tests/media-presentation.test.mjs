@@ -34,6 +34,19 @@ test('recording origin comes from explicit origin or correlated command, never f
   assert.equal(presentation.normalizeMedia({ ...asset, snapshot:{personName:'冻结姓名'}, personName:'其他字段姓名' }).snapshot.personName, '冻结姓名');
 });
 
+test('physical photos show the frozen recipient and receipt time without inventing a photographer or capture time', () => {
+  const photo = presentation.normalizeMedia({ kind:'photo', createdAt:'2026-11-03T08:20:00Z', receivedAt:'2026-11-03T08:21:00Z', timeBasis:'RECEIVED_AT', receivedPersonId:'original-recipient', receivedPersonName:'接收时姓名' });
+  assert.deepEqual(presentation.mediaPerson(photo), { label:'接收时领用人', value:'接收时姓名' });
+  assert.deepEqual(presentation.mediaTime(photo), { label:'接收时间', value:'2026-11-03 16:21:00' });
+  assert.equal(photo.personId, undefined);
+  assert.equal(photo.personName, undefined);
+  assert.equal(photo.capturedAt, undefined);
+  assert.equal(photo.snapshot.personName, '未关联人员');
+  assert.deepEqual(presentation.mediaPerson({ ...photo, receivedPersonName:null }), { label:'接收时领用人', value:'original-recipient（历史姓名未提供）' });
+  assert.deepEqual(presentation.mediaPerson({ ...photo, kind:'video', scopeBasis:'UPLOAD_REQUEST' }), { label:'上传时领用人', value:'接收时姓名' });
+  assert.deepEqual(presentation.mediaPerson(presentation.normalizeMedia({ ...photo, personId:'photographer', personName:'拍摄时姓名', snapshot:{} })), { label:'关联人员', value:'拍摄时姓名' });
+});
+
 test('unknown, zero, fractional and long durations are not confused', () => {
   for (const value of [undefined,null,'',' ',NaN,Infinity,-1,true,'bad']) assert.equal(presentation.durationText(value), '时长未提供');
   assert.equal(presentation.durationText(0), '00:00');

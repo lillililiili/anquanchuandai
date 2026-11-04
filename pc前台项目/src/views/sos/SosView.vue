@@ -59,9 +59,9 @@ function memberName(id) { if (id === operatorId.value) return db.state.operator?
       <AppPanel title="求助位置">
         <EventLocation :event="linkedEvent" /><p>{{ linkedEvent.locationDescription || linkedEvent.description || '现场情况待补充' }}</p>
       </AppPanel>
-      <AppPanel v-if="voiceFeature.supported" :title="voiceFeature.verified ? '设备语音' : '设备语音 · 待联调'">
-        <p>{{ voiceFeature.reason || '可前往语音调度联系当前领用人员；仍可独立接警和文字跟进' }}</p>
-        <AppButton :disabled="!voiceFeature.available || readonly" @click="runGuarded(() => callPerson(linkedEvent.personId))">前往语音调度</AppButton>
+      <AppPanel v-if="voiceFeature.supported" title="语音通话">
+        <p>{{ voiceFeature.reason || '可前往语音通话联系当前领用人员；仍可独立接警和文字跟进' }}</p>
+        <AppButton :disabled="!voiceFeature.available || readonly" @click="runGuarded(() => callPerson(linkedEvent.personId))">前往语音通话</AppButton>
         <p class="note">语音通话与本条协助、最终核验分别处理。</p><a class="btn" :href="'#/event/' + linkedEvent.id">补充现场情况 / 查看核验</a>
       </AppPanel>
       <AppPanel title="协助人员">

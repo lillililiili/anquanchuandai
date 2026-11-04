@@ -1,5 +1,6 @@
 import '../core.dart';
 import '../device_status.dart';
+import '../work_business.dart';
 
 String personStatusLabel(Object? value) => switch (value?.toString()) {
   '0' => '在职',
@@ -30,6 +31,7 @@ String taskStatusLabel(Object? value) => switch (value?.toString()) {
   'in_progress' => '进行中',
   'paused' => '已暂停',
   'ended' => '已结束',
+  'cancelled' => '已取消',
   _ => '未知',
 };
 
@@ -37,6 +39,7 @@ String taskGroup(Object? value) => switch (value?.toString()) {
   'in_progress' || 'paused' => '进行中',
   'draft' || 'ready' => '待开始',
   'ended' => '已结束',
+  'cancelled' => '已取消',
   _ => '状态未知',
 };
 
@@ -129,6 +132,7 @@ Future<List<JsonMap>> loadPersonActiveTasks(
   String personId, {
   bool allSite = false,
 }) async {
+  if (!api.workBusinessEnabled) return [];
   final rows = <String, JsonMap>{};
   for (final status in allSite ? ['in_progress', 'paused'] : [null]) {
     final seen = <String>{};
@@ -142,7 +146,8 @@ Future<List<JsonMap>> loadPersonActiveTasks(
       final before = seen.length;
       for (final row in page.records) {
         seen.add(idOf(row['id']));
-        if (row['status'] == 'in_progress' || row['status'] == 'paused') {
+        if ((row['status'] == 'in_progress' || row['status'] == 'paused') &&
+            currentWorkTime(row)) {
           rows[idOf(row['id'])] = row;
         }
       }
@@ -163,6 +168,7 @@ Future<List<JsonMap>> loadPersonActiveTasks(
       details.where(
         (task) =>
             (task['status'] == 'in_progress' || task['status'] == 'paused') &&
+            currentWorkTime(task) &&
             (idOf(task['guardianPersonId']) == personId ||
                 jsonList(
                   task['members'],

@@ -187,6 +187,8 @@ test('current work and new audit timestamps use today while historic dates stay 
   db.replaceRemote(snapshot);
   assert.equal(db.currentWork('P1'), undefined);
   db.state.works[0].date = beijingDate();
+  db.state.works[0].plannedStartAt = new Date(Date.now() - 3600000).toISOString();
+  db.state.works[0].plannedEndAt = new Date(Date.now() + 3600000).toISOString();
   assert.equal(db.currentWork('P1').id, snapshot.works[0].id);
   assert.equal(db.now().slice(0,10), beijingDate());
   assert.match(db.now(), /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);

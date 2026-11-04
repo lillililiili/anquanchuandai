@@ -27,37 +27,31 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('belt voice keeps the backend pending-integration reason', (
-    tester,
-  ) async {
-    final belt = SharedModels({}).device({
-      'id': 'h',
-      'type': 'B',
-      'source': 'DIRECT_BELT',
-      'featureStates': {
-        'voice': {
-          'supported': true,
-          'verified': false,
-          'available': false,
-          'reason': '待接入',
+  testWidgets(
+    'belt details omit voice controls without a supported call path',
+    (tester) async {
+      final belt = SharedModels({}).device({
+        'id': 'h',
+        'type': 'B',
+        'source': 'DIRECT_BELT',
+        'featureStates': {
+          'voice': {
+            'supported': true,
+            'verified': false,
+            'available': false,
+            'reason': '待接入',
+          },
         },
-      },
-    });
-    await mount(tester, belt);
-    await tester.scrollUntilVisible(find.text('对讲 · 待接入'), 300);
-    expect(find.text('对讲 · 待联调'), findsNothing);
-    expect(find.textContaining('实时观看'), findsNothing);
-    expect(find.textContaining('拍照'), findsNothing);
-    expect(find.textContaining('视频通话'), findsNothing);
-    final button = tester.widget<OutlinedButton>(
-      find.ancestor(
-        of: find.text('对讲 · 待接入'),
-        matching: find.byType(OutlinedButton),
-      ),
-    );
-    expect(button.onPressed, isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+      });
+      await mount(tester, belt);
+      await tester.scrollUntilVisible(find.text('历史领用记录（0）'), 300);
+      expect(find.text('对讲'), findsNothing);
+      expect(find.textContaining('实时观看'), findsNothing);
+      expect(find.textContaining('拍照'), findsNothing);
+      expect(find.textContaining('视频通话'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 }
 
 Future<void> mount(WidgetTester tester, JsonMap device) async {

@@ -12,6 +12,7 @@ export function createBusinessConfigApi({ fetchImpl = fetch, token = () => sessi
   return {
     read: signal => request('business-config', { signal }),
     save: (visible, expectedVersion, signal) => request('business-config', { method: 'PATCH', body: { simulatedWatchVisible: visible, expectedVersion }, signal }),
+    configure: (patch, expectedVersion, signal) => request('business-config', { method: 'PATCH', body: { ...patch, expectedVersion }, signal }),
     state: signal => request('state', { signal })
   };
 }

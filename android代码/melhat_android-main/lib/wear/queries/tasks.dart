@@ -97,7 +97,7 @@ class _TasksPageState extends State<TasksPage> {
     for (final task in _records) {
       groups.putIfAbsent(taskGroup(task['status']), () => []).add(task);
     }
-    const order = ['进行中', '有异常', '已完成', '待开始', '已结束', '状态未知'];
+    const order = ['进行中', '有异常', '已完成', '待开始', '已结束', '已取消', '状态未知'];
     return QueryPage(
       title: _session!.isDutyAdmin ? '作业任务' : '我的任务',
       onBack: _session!.isDutyAdmin
@@ -149,11 +149,10 @@ class _TasksPageState extends State<TasksPage> {
                       value: _status ?? '',
                       values: const [
                         '',
-                        'draft',
                         'ready',
                         'in_progress',
-                        'paused',
                         'ended',
+                        'cancelled',
                       ],
                       labelOf: (value) =>
                           value.isEmpty ? '全部状态' : taskStatusLabel(value),
@@ -291,6 +290,19 @@ class _TaskPageState extends State<TaskPage> {
   Object? _error;
   int _request = 0;
   bool _preview = false;
+  @override
+  void didUpdateWidget(covariant TaskPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id) {
+      _task = null;
+      _equipment = const [];
+      _memberEquipment = const {};
+      _events = const [];
+      _preview = false;
+      _load();
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -502,7 +514,12 @@ class _TaskPageState extends State<TaskPage> {
                 value:
                     '${formatTime(task['actualStart'])} 至 ${formatTime(task['actualEnd'])}',
               ),
-              DetailField(label: '工作票', value: _ticketLabel(task)),
+              DetailField(
+                label: task['source'] == 'LOCAL' ? '作业编号' : '工作票',
+                value: _ticketLabel(task),
+              ),
+              if (task['source'] == 'LOCAL')
+                const DetailField(label: '登记来源', value: '本地登记'),
               if (task['demo'] == true)
                 const DetailField(label: '数据标识', value: '演示作业，不作为生产依据'),
               for (final person in jsonList(task['members']))
@@ -543,6 +560,7 @@ class _TaskPageState extends State<TaskPage> {
   }
 
   String _ticketLabel(JsonMap task) {
+    if (task['source'] == 'LOCAL') return textOf(task['id']);
     if (task['ticketRequired'] != true) return '无需工作票';
     return switch (task['ticketStatus']?.toString()) {
       'provided' => textOf(task['ticketNo']),

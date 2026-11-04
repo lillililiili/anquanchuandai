@@ -44,6 +44,8 @@ public class AdminMasterService {
         if (state == null) throw AdminQueryService.fail(503, "SOURCE_FAILURE", "后台台账尚未保存");
         JSONObject actor = account(state, accountId);
         if (input == null) input = new JSONObject();
+        String entity = type.substring(0, type.indexOf('.'));
+        String action = type.substring(type.indexOf('.') + 1);
         // Replays must still be authorized against the current person and grants.
         if ("people.dutyStatus".equals(type)) requireDutyStatusAccess(state, actor, input);
         String operationId = input.getString("operationId");
@@ -55,6 +57,12 @@ public class AdminMasterService {
         String fingerprint = input.toJSONString();
         if (previous != null) {
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
+            requireCurrentScope(state, actor, entity, input);
+            JSONObject captured = previous.getJSONObject("result").getJSONObject("data");
+            JSONObject current = captured == null ? null : find(state, entity, captured.getString("id"));
+            JSONObject target = current == null ? captured : current;
+            if (!"sites".equals(entity) && (target == null || !java.util.Objects.equals(input.getString("siteId"), target.getString("siteId"))))
+                throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "对象不存在或不可见");
             if ("people.delete".equals(type)) {
                 JSONObject deleted = previous.getJSONObject("result").getJSONObject("data");
                 if (!java.util.Objects.equals(input.getString("siteId"), deleted.getString("siteId"))) throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "对象不存在或不可见");
@@ -62,8 +70,6 @@ public class AdminMasterService {
             }
             return previous.getJSONObject("result");
         }
-        String entity = type.substring(0, type.indexOf('.'));
-        String action = type.substring(type.indexOf('.') + 1);
         JSONObject before = null;
         JSONObject output = apply(state, actor, entity, action, input);
         if (!"create".equals(action)) before = output.getJSONObject("_before");
@@ -101,6 +107,16 @@ public class AdminMasterService {
         if ("status".equals(action)) return status(state, actor, entity, row, input);
         if ("dutyStatus".equals(action)) return dutyStatus(actor, row, input);
         return save(state, actor, entity, action, row, input, siteId);
+    }
+
+    private void requireCurrentScope(JSONObject state, JSONObject actor, String entity, JSONObject input) {
+        if ("sites".equals(entity) && !"demo-system".equals(actor.getString("id")))
+            throw AdminQueryService.fail(403, "PERMISSION_DENIED", "仅系统管理员可维护厂站或角色");
+        String site = "sites".equals(entity) ? input.getString("id") : input.getString("siteId");
+        if (!queries.allows(state, actor, writeOperation(entity), site, null))
+            throw AdminQueryService.fail(403, "PERMISSION_DENIED", "当前身份无此操作或数据范围权限");
+        if (!"sites".equals(entity) && !siteEnabled(state, site))
+            throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择启用的厂站");
     }
 
     private void requireDutyStatusAccess(JSONObject state, JSONObject actor, JSONObject input) {
@@ -293,12 +309,12 @@ public class AdminMasterService {
 
     private boolean openWork(JSONObject person) {
         JSONObject snapshot = guardian.snapshot();
-        if (snapshot == null) return false;
+        if (snapshot == null || !WorkBusiness.enabled(snapshot)) return false;
         String portalId = person.getString("portalId");
         if (portalId == null || portalId.isEmpty()) portalId = person.getString("id");
         if (portalId == null) return false;
         for (JSONObject work : rows(snapshot, "works")) {
-            if (!guardian.isOperational(work) || "已结束".equals(work.getString("status"))) continue;
+            if (!guardian.isOperational(work) || !WorkBusiness.current(work,Instant.now()) || !WorkBusiness.validPeople(snapshot,work)) continue;
             JSONArray members = work.getJSONArray("members");
             if (members != null && members.contains(portalId)) return true;
         }

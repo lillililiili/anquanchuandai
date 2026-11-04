@@ -1,4 +1,5 @@
 <script setup>
+import { workBusinessEnabled } from '@/lib/work-business';
 import { computed } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppIcon from "@/components/ui/AppIcon.vue";
@@ -56,6 +57,7 @@ function fullscreen(event) {
     }
   });
 }
+const workEnabled = computed(() => { tick.value; return workBusinessEnabled(db); });
 </script>
 
 <template>
@@ -70,7 +72,7 @@ function fullscreen(event) {
     <span v-if="demo" class="video-label">{{ label }} · 示例画面</span>
     <div v-if="showName" class="video-name">
       <b>{{ person?.name }}</b>　{{ helmet?.id || "未绑定" }}
-      <small>{{ db.currentWork(personId)?.name || "待分配" }}</small>
+      <small v-if="workEnabled">{{ db.currentWork(personId)?.name || "待分配" }}</small>
     </div>
     <span v-if="demo" class="video-time">{{ DATE }} 10:42:18</span>
     <div v-if="controls" class="video-controls">
@@ -79,10 +81,10 @@ function fullscreen(event) {
       <input v-if="demo" aria-label="音量" type="range" min="0" max="100" :value="session.volume" @input="session.volume = Number($event.target.value)" />
       <span v-if="demo" data-video-time>{{ playClock }}</span>
       <div class="spacer"></div>
-      <AppButton v-if="demo || feature('photo').supported" :disabled="!demo && !feature('photo').available" tone="plain" icon="camera-line" @click="runGuarded(() => capturePhoto(personId))">{{ !demo && !feature('photo').verified ? '抓拍 · 待联调' : '抓拍' }}</AppButton>
-      <AppButton v-if="demo || feature('recording').supported" :disabled="!demo && !feature('recording').available && session.recording?.person !== personId" :tone="session.recording?.person === personId ? 'red plain' : 'plain'" icon="record-circle-line" @click="runGuarded(() => toggleRecording(personId))">{{ session.recording?.person === personId ? '结束录像请求' : !demo && !feature('recording').verified ? '录像 · 待联调' : '录制现场视频' }}</AppButton>
+      <AppButton v-if="demo || feature('photo').supported" :disabled="!demo && !feature('photo').available" :title="!demo ? feature('photo').reason : ''" tone="plain" icon="camera-line" @click="runGuarded(() => capturePhoto(personId))">抓拍</AppButton>
+      <AppButton v-if="demo || feature('recording').supported" :disabled="!demo && !feature('recording').available && session.recording?.person !== personId" :tone="session.recording?.person === personId ? 'red plain' : 'plain'" icon="record-circle-line" @click="runGuarded(() => toggleRecording(personId))">{{ demo ? session.recording?.person === personId ? '停止模拟录像' : '开始模拟录像' : session.recording?.person === personId ? '停止平台录制' : '开始平台录制' }}</AppButton>
       <a class="btn plain" :href="'#/tracks/' + personId"><AppIcon name="map-pin-line" />轨迹</a>
-      <AppButton v-if="demo || feature('voice').supported" tone="plain" icon="mic-line" @click="runGuarded(() => callPerson(personId))">调度通信</AppButton>
+      <AppButton v-if="demo || feature('voice').supported" :disabled="!demo && !feature('voice').available" :title="feature('voice').reason" tone="plain" icon="mic-line" @click="runGuarded(() => callPerson(personId))">调度通信</AppButton>
       <AppButton tone="plain" icon="fullscreen-line" @click="fullscreen">全屏</AppButton>
     </div>
   </div>

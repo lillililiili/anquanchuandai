@@ -6,6 +6,7 @@ import '../core.dart';
 import '../device_location.dart';
 import '../device_features.dart';
 import 'belt_telemetry.dart';
+import 'device_local_operations.dart';
 import 'helmet_media.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
@@ -240,6 +241,16 @@ class _DevicePageState extends State<DevicePage> {
   int _request = 0;
   Timer? _telemetryTimer;
   @override
+  void didUpdateWidget(covariant DevicePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id) {
+      _device = null;
+      _history = const [];
+      _load();
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
     _telemetryTimer = Timer.periodic(const Duration(seconds: 15), (_) {
@@ -347,9 +358,7 @@ class _DevicePageState extends State<DevicePage> {
                           if (deviceFeature(device, 'battery').supported)
                             DetailField(
                               label: deviceFeatureLabel(device, 'battery'),
-                              value: deviceFeature(device, 'battery').verified
-                                  ? batteryLabel(device['battery'])
-                                  : '待联调',
+                              value: batteryLabel(device['battery']),
                             ),
                           DetailField(
                             label: '最后上报',
@@ -358,9 +367,7 @@ class _DevicePageState extends State<DevicePage> {
                           if (deviceFeature(device, 'location').supported) ...[
                             DetailField(
                               label: '设备上报位置',
-                              value: deviceFeature(device, 'location').verified
-                                  ? location.position
-                                  : '待联调',
+                              value: location.position,
                             ),
                             DetailField(
                               label: '位置上报状态',
@@ -377,15 +384,6 @@ class _DevicePageState extends State<DevicePage> {
                               style: TextStyle(color: WearColors.muted),
                             ),
                           ],
-                          for (final key in ['wear', 'alarm', 'sos'])
-                            if (device['source'] != 'DIRECT_BELT' &&
-                                deviceFeature(device, key).supported)
-                              DetailField(
-                                label: deviceFeatureLabels[key]!,
-                                value: deviceFeature(device, key).verified
-                                    ? '已接入'
-                                    : '待联调',
-                              ),
                           if (device['demo'] == true)
                             const DetailField(label: '数据标识', value: '演示数据'),
                         ],
@@ -394,6 +392,10 @@ class _DevicePageState extends State<DevicePage> {
                     if (device['source'] == 'DIRECT_BELT') ...[
                       const SizedBox(height: 18),
                       BeltTelemetryPanel(device: device),
+                    ],
+                    if (localDeviceProfile(device) == 'DIRECT_HELMET') ...[
+                      const SizedBox(height: 18),
+                      LocalRecordingReport(device: device),
                     ],
                     if (device['source'] == 'DIRECT_HELMET' &&
                         ['photo', 'video', 'recording'].any(
@@ -407,6 +409,10 @@ class _DevicePageState extends State<DevicePage> {
                         deviceId: widget.id,
                         device: device,
                       ),
+                    ],
+                    if (localDeviceProfile(device) != null) ...[
+                      const SizedBox(height: 18),
+                      DeviceLocalControlsHelp(device: device),
                     ],
                     if (_session!.isAdmin) ...[
                       const SizedBox(height: 18),

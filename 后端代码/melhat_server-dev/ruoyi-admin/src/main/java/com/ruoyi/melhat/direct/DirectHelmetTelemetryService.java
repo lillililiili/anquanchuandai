@@ -39,6 +39,12 @@ public class DirectHelmetTelemetryService {
         receiveCaptured(hat,message,null);
     }
     public void receiveCaptured(SafetyHatInfo hat,DirectHelmetMessage message,JSONObject context){
+        if("toggle_localrecord".equals(message.act)) {
+            JSONObject captured=context==null?ingest.captureDirect(hat.getHatNumber()):context;
+            if(context==null)captured.put("receivedAt",java.time.Instant.now().toString());
+            ingest.directLocalRecording(hat.getHatNumber(),message.alarmType,captured);
+            return; // No position, alarm, media file, or platform recorder is implied.
+        }
         if("ca_sos".equals(message.act) || "ca_sip_sos".equals(message.act)) {
             com.ruoyi.guardian.HelmetEventLifecycle.coordinate(() -> {
                 if(eventDelivery!=null) eventDelivery.reconcileVerifiedBeforeAdmission();

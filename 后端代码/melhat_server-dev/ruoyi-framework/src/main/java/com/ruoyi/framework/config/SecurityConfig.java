@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.filter.CorsFilter;
 import com.ruoyi.framework.config.properties.PermitAllUrlProperties;
 import com.ruoyi.framework.security.filter.JwtAuthenticationTokenFilter;
+import com.ruoyi.framework.security.filter.LegacyEndpointBoundaryFilter;
 import com.ruoyi.framework.security.handle.AuthenticationEntryPointImpl;
 import com.ruoyi.framework.security.handle.LogoutSuccessHandlerImpl;
 
@@ -63,6 +64,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
      */
     @Autowired
     private PermitAllUrlProperties permitAllUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${melhat.legacy-callback.enabled:false}")
+    private boolean legacyCallbacksEnabled;
+    @org.springframework.beans.factory.annotation.Value("${melhat.legacy-callback.key:}")
+    private String legacyCallbackKey;
 
     /**
      * 解决 无法直接注入 AuthenticationManager
@@ -111,14 +117,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 // 过滤请求
                 .authorizeRequests()
                 // 对于登录login 注册register 验证码captchaImage 允许匿名访问
-                .antMatchers("/login", "/register", "/captchaImage","/api/melhat/**","/api/guardian/**","/api/admin/**","/wsHat","/ws/**","/ext/**","/monitor/job/**","/test/**","test2/**").permitAll()
+                .antMatchers("/api/guardian/**", "/api/admin/**", "/wsHat", "/ext/**").permitAll()
                 // The device firmware has a fixed bootstrap path; do not open all /api routes.
-                .antMatchers("/api/index.php", "/api/belt/index.php", "/api/belt/config/index.php", "/wsBelt").permitAll()
+                .antMatchers("/api/index.php", "/api/melhat/index.php", "/api/melhat/config/index.php", "/api/belt/index.php", "/api/belt/config/index.php", "/wsBelt").permitAll()
                 // These isolated endpoints verify service HMAC credentials themselves; human JWT is insufficient.
                 .antMatchers(HttpMethod.POST, "/openapi/wearables/v2/positions/query", "/openapi/wearables/v2/statuses/query", "/openapi/wearables/v2/alarms/query").permitAll()
                 .antMatchers("/internal/fuda-gb/v1/devices/*/status", "/internal/fuda-gb/v1/leases/*").permitAll()
                 // 静态资源，可匿名访问
-                .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js").permitAll()
                 //设置白名单
                 .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**", "/*/api-docs", "/druid/**","/doc.html").permitAll()
                 .antMatchers("/modeler/**","/activiti/definition/upload","/activiti/definition/readResource","/activiti/process/read-resource").permitAll()
@@ -128,6 +134,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 .anyRequest().authenticated()
                 .and()
                 .headers().frameOptions().disable();
+        // Retired APIs are blocked before legacy JWT/logout processing, including administrator tokens.
+        httpSecurity.addFilterBefore(new LegacyEndpointBoundaryFilter(legacyCallbacksEnabled, legacyCallbackKey), LogoutFilter.class);
         // 添加Logout filter
         httpSecurity.logout().logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler);
         // 添加JWT filter

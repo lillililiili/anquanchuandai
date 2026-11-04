@@ -82,7 +82,8 @@ class PersonDeletionTest {
         find(saved.get(), "people", "person").put("accountId", "missing-account");assertTrue(remove(command()).getBooleanValue("deleted"));
     }
     @Test void openWorkBlocksDeletionAndIsReported() {
-        rows(projection.get(), "works").add(object("id", "open-work", "name", "正在作业", "status", "作业中", "members", JSONArray.of("P-DELETE")));
+        find(projection.get(),"people","P-DELETE").put("active",true);find(projection.get(),"people","P-DELETE").put("station","S1");
+        rows(projection.get(), "works").add(object("id", "open-work", "name", "正在作业", "status", "进行中", "station","S1","leader","P-DELETE","supervisor","P-DELETE","plannedStartAt",java.time.Instant.now().minusSeconds(3600).toString(),"plannedEndAt",java.time.Instant.now().plusSeconds(3600).toString(),"members", JSONArray.of("P-DELETE")));
         assertEquals(1, impacts().getJSONArray("rows").size());assertEquals("REFERENCED", assertThrows(AdminQueryService.QueryFailed.class, () -> remove(command())).errorCode);
     }
     @Test void permissionsSiteVersionAndPermissionChangesOnReplayAreEnforced() {

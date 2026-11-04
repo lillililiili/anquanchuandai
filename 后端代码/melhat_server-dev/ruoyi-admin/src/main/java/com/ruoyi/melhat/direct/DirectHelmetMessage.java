@@ -30,6 +30,10 @@ public final class DirectHelmetMessage {
         if (deviceId != null && !deviceId.matches("[A-Za-z0-9._-]+"))
             throw new IllegalArgumentException("device_id 格式无效");
         alarmType = text(data, "type", 64);
+        // Manufacturer 250916, section 6.1.1: this is an observation of the
+        // device's local recorder, not a platform recording command/receipt.
+        if ("toggle_localrecord".equals(act) && !"0".equals(alarmType) && !"1".equals(alarmType))
+            throw new IllegalArgumentException("设备本地录像状态 type 必须为 0 或 1");
         battery = number(data, "bat_l", BigDecimal.ZERO, new BigDecimal("100"));
         BigDecimal wear = number(data, "is_weared", BigDecimal.ZERO, new BigDecimal("2"));
         if (wear != null && wear.stripTrailingZeros().scale() > 0)

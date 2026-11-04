@@ -13,6 +13,34 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class DirectHelmetProtocolTest {
+    @Test void deviceVoiceMessageAcknowledgesOnlyDurableReceiptAndDoesNotChangeLocationOrStartCalls() {
+        Fixture f=new Fixture();Session device=session();f.gateway.receive(device,login("helmet-a"));f.gateway.receive(device,locationReport(1,1).toJSONString());
+        com.ruoyi.guardian.WearableReportDelivery reports=mock(com.ruoyi.guardian.WearableReportDelivery.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(f.gateway,"reports",reports);
+        JSONObject before=f.gateway.status("helmet-a");f.clock.advance(5);
+        String raw="{\"act\":\"ca_sending_message\",\"message\":\"https://media.example/helmet-media/files/11111111-2222-4333-8444-555555555555?token=opaque\"}";
+        JSONObject ack=f.gateway.receive(device,raw);assertTrue(ack.getBooleanValue("status"));assertFalse(ack.containsKey("room_id"));
+        verify(reports).helmetVoiceMessage("helmet-a",raw);JSONObject after=f.gateway.status("helmet-a");
+        assertEquals(f.clock.instant().toString(),after.getString("lastSeenAt"));
+        for(String field:new String[]{"locationReportedAt","latitude","longitude","batteryReportedAt"})assertEquals(before.get(field),after.get(field));
+        doThrow(new IllegalStateException("database failed")).when(reports).helmetVoiceMessage("helmet-a",raw);
+        f.clock.advance(5);assertFalse(f.gateway.receive(device,raw).getBooleanValue("status"));assertEquals(after.get("lastSeenAt"),f.gateway.status("helmet-a").get("lastSeenAt"));
+    }
+    @Test void localRecordingReportAdvancesOnlyCommunicationAndRequiresPersistenceBeforeAck() {
+        Fixture f=new Fixture();Session device=session();f.gateway.receive(device,login("helmet-a"));
+        f.gateway.receive(device,locationReport(1,1).toJSONString());
+        JSONObject before=f.gateway.status("helmet-a");f.clock.advance(5);
+        String raw="{\"act\":\"toggle_localrecord\",\"device_id\":\"helmet-a\",\"type\":\"0\",\"bat_l\":1,\"x_point\":30,\"y_point\":120}";
+        assertTrue(f.gateway.receive(device,raw).getBooleanValue("status"));
+        JSONObject after=f.gateway.status("helmet-a");assertEquals(f.clock.instant().toString(),after.getString("lastSeenAt"));
+        for(String key:new String[]{"latitude","longitude","locationReportedAt","batteryReportedAt","isWearedReportedAt"})assertEquals(before.get(key),after.get(key));
+        verify(f.telemetry).receive(any(),argThat(m->"toggle_localrecord".equals(m.act)&&"0".equals(m.alarmType)));
+        doThrow(new IllegalStateException("storage unavailable")).when(f.telemetry).receive(any(),argThat(m->"toggle_localrecord".equals(m.act)));
+        f.clock.advance(5);assertFalse(f.gateway.receive(device,raw).getBooleanValue("status"));
+        assertEquals(after.getString("lastSeenAt"),f.gateway.status("helmet-a").getString("lastSeenAt"));
+        assertFalse(f.gateway.receive(device,raw.replace("helmet-a","helmet-b")).getBooleanValue("status"));
+    }
+
     @Test void parsesManufacturerCoordinatesWearAndMissingFixWithoutInventingValues() {
         DirectHelmetMessage data = DirectHelmetMessage.parse("{\"act\":\"ca_report_location\",\"x_point\":\"35.466123\","
                 + "\"y_point\":\"112.574204\",\"bat_l\":\"85\",\"is_weared\":\"2\"}");

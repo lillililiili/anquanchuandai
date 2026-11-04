@@ -14,11 +14,11 @@ import LocationTabs from "@/components/layout/LocationTabs.vue";
 import PageHeading from "@/components/layout/PageHeading.vue";
 import PlantMap from "@/components/domain/PlantMap.vue";
 import { db, locationApi, guardianReady } from "@/mock/runtime";
-import { beijingDate, trackSegments, trackBreakLabel, trackEvents, trackQueryContext } from "@/lib/location";
+import { beijingDate, trackSegments, trackBreakLabel, trackQueryContext } from "@/lib/location";
 import { formatBeijingDateTime } from '@/lib/date-time';
 import { filtersOf, session } from "@/stores/session";
 import { toast } from "@/stores/notify";
-import { events, people, revision } from "@/lib/queries";
+import { revision } from "@/lib/queries";
 import { go } from "@/lib/actions";
 import { previewCsv } from "@/lib/dialogs";
 
@@ -67,12 +67,6 @@ const segments = computed(() => {
   const points = session.trackPoints;
   const groups = trackSegments(points);
   return { groups, hasGap: groups.length > 1 };
-});
-
-const related = computed(() => {
-  revision();
-  const query=filtersOf('tracks');
-  return trackEvents(events(), { ...trackWindow.value, ...(query.mode === 'device' ? { deviceId: query.deviceId } : { personId: query.personId || session.person }) });
 });
 
 const currentPoint = computed(() => {
@@ -232,7 +226,7 @@ function exportTracks() {
     <p v-if="truncated" class="yellow" role="status">记录较多，当前显示前 20000 条，请缩短查询时段查看完整轨迹。</p>
   </form>
   <div class="tracks-layout" :aria-busy="loading">
-    <AppPanel title="轨迹片段与事件">
+    <AppPanel title="轨迹片段">
       <template v-if="session.trackPoints.length">
         <template v-for="(group, index) in segments.groups" :key="index">
           <div v-if="index && segments.hasGap" class="track-segment">
@@ -246,17 +240,6 @@ function exportTracks() {
             <small>轨迹点　{{ group.length }} 个 · {{ group[0].deviceId }}</small>
           </div>
         </template>
-        <div class="detail-section">
-          <h3>事件记录</h3>
-          <template v-if="related.length">
-            <div v-for="item in related" :key="item.id" class="track-segment">
-              <p class="yellow">{{ item.date }} {{ item.time }}　{{ item.title }}</p>
-              <p><small>关联事件　{{ item.id }} · {{ item.status }}</small></p>
-              <a class="btn wide" :href="'#/event/' + item.id">查看核验</a>
-            </div>
-          </template>
-          <AppEmpty v-else text="无关联事件" />
-        </div>
       </template>
       <AppEmpty v-else :text="loading ? '正在读取设备轨迹…' : trackError ? '轨迹读取失败，请重新查询' : '所选时段无可绘制轨迹'" />
     </AppPanel>

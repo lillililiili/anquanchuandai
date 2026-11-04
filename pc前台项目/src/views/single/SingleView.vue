@@ -47,6 +47,10 @@ const recent = computed(() => {
 const joined = computed(() => activeCall.value?.status === "通话中");
 
 function openCall() {
+  if (!db.demoMode) {
+    go('dispatch?personId=' + encodeURIComponent(person.value.id));
+    return;
+  }
   if (activeCall.value) {
     go("dispatch");
     return;
@@ -86,24 +90,26 @@ async function fullscreen(event) {
         <VideoFrame :person-id="person.id" controls />
       </AppPanel>
       <AppStatus v-else>该人员当前未领用支持视频的安全帽。<a :href="'#/person/' + person.id">查看人员装备</a></AppStatus>
-      <AppPanel v-if="voiceFeature.supported || activeCall" :title="voiceFeature.verified ? '远程指导' : '远程指导 · 待联调'">
+      <AppPanel v-if="voiceFeature.supported || activeCall" title="语音通话">
         <div class="remote-box">
           <AppIcon name="vidicon-off-line" />
-          <h3>{{ activeCall ? activeCall.status : "未发起通话" }}</h3>
-          <p>{{ voiceFeature.reason || '前往语音调度，确认当前领用人员后发起联络。' }}</p>
-          <AppButton tone="primary wide" icon="mic-line" :disabled="!activeCall && !voiceFeature.available" @click="openCall">{{ activeCall ? "查看当前通话" : "前往语音调度" }}</AppButton>
+          <h3>{{ db.demoMode ? activeCall ? activeCall.status : '未发起通话' : '联系现场人员' }}</h3>
+          <p>{{ voiceFeature.reason || '前往语音通话，查看当前会话或发起联络。' }}</p>
+          <AppButton tone="primary wide" icon="mic-line" :disabled="db.demoMode && !activeCall && !voiceFeature.available" @click="openCall">{{ db.demoMode && activeCall ? "查看当前通话" : "前往语音通话" }}</AppButton>
         </div>
+        <template v-if="db.demoMode">
         <h3>参与者</h3>
         <div class="participant">
           <PersonAvatar :person="{ name: '值守' }" />
           <div>值守员（我）<small style="display:block">调度中心</small></div>
-          <AppStatus :color="joined ? 'green' : 'yellow'">{{ joined ? "已接入" : "待接入" }}</AppStatus>
+          <AppStatus :color="joined ? 'green' : 'yellow'">{{ joined ? "已接通" : "等待接听" }}</AppStatus>
         </div>
         <div class="participant">
           <PersonAvatar :person="person" />
           <div>{{ person.name }}<small style="display:block">{{ person.team }}</small></div>
-          <AppStatus :color="joined ? 'green' : 'yellow'">{{ joined ? "已接入" : "待接入" }}</AppStatus>
+          <AppStatus :color="joined ? 'green' : 'yellow'">{{ joined ? "已接通" : "等待接听" }}</AppStatus>
         </div>
+        </template>
         <div v-if="related" class="warning-box" style="margin-top:15px">
           <a :href="'#/event/' + related.id"><AppIcon name="error-warning-fill" />　{{ related.title }}　<UiIcon name="chevron-right" /></a>
           <small style="display:block;margin-top:8px">{{ related.time }} 发生，{{ related.status }}</small>

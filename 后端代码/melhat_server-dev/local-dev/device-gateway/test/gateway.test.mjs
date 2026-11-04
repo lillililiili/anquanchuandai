@@ -11,6 +11,23 @@ import { DEFAULTS, DEVICE_ID, validateConfig } from '../config.mjs';
 const login = { act: 'ca_login', device_id: DEVICE_ID };
 const report = { act: 'ca_report_location', device_id: DEVICE_ID, bat_l: 51, is_weared: 1 };
 
+test('device PTT forwards only a logged-in high-end same-media asset reference',async t=>{
+ const f=await fixture(t,{mediaFetch:async()=>{throw Error('No HTTP expected');}}),ws=await connect(f.wsUrl);
+ await exchange(ws,login);
+ const message={act:'ca_sending_message',message:f.config.mediaControlOrigin+'/helmet-media/files/audio-1?token=unprinted-test-ticket'};
+ assert.equal((await exchange(ws,message)).status,true);assert.deepEqual(f.state.messages.at(-1),message);
+ assert.equal((await exchange(ws,{...message,device_id:DEVICE_ID})).status,true);
+});
+
+for(const [label,change] of [['foreign URL',{message:'https://foreign.invalid/helmet-media/files/a'}],['wrong path',{message:'https://helmet.example.com/private'}],['low-end base64',{message:'IyFBTVIK'}],['foreign device',{device_id:'other'}],['untrusted extra field',{personId:'forged'}],['variant playback',{message:'https://helmet.example.com/helmet-media/files/a?variant=playback'}],['credentials',{message:'https://user:pass@helmet.example.com/helmet-media/files/a'}]]){
+ test('device PTT rejects '+label,async t=>{const f=await fixture(t,{mediaFetch:async()=>{}}),ws=await connect(f.wsUrl);await exchange(ws,login);const done=closed(ws);ws.send(JSON.stringify({act:'ca_sending_message',message:'https://helmet.example.com/helmet-media/files/a',...change}));assert.equal(await done,1008);assert.deepEqual(f.state.messages,[login]);});
+}
+
+test('device PTT cannot arrive before the backend accepts login',async t=>{
+ const f=await fixture(t,{upgradeDelay:100,mediaFetch:async()=>{}}),ws=await connect(f.wsUrl),done=closed(ws);
+ ws.send(JSON.stringify(login));ws.send(JSON.stringify({act:'ca_sending_message',message:'https://helmet.example.com/helmet-media/files/a'}));assert.equal(await done,1008);assert.deepEqual(f.state.messages,[]);
+});
+
 test('photo callback forwards only exact firmware command echo and safe field names',async t=>{
  const calls=[];
  const f=await fixture(t,{mediaFetch:async(url,options)=>{calls.push(JSON.parse(options.body.toString()));return new Response(JSON.stringify({code:200,data:{status:'ready'}}));}});
@@ -30,7 +47,7 @@ async function waitFor(check, timeout = 1500) {
   const deadline = Date.now() + timeout;
   while (!check()) { if (Date.now() > deadline) throw new Error('Timed out waiting for isolated fixture'); await delay(5); }
 }
-async function fixture(t, { limits = {}, mode = 'valid', upgradeDelay = 0, onGpsReport, mediaFetch } = {}) {
+async function fixture(t, { limits = {}, mode = 'valid', upgradeDelay = 0, onGpsReport, mediaFetch, onHttpDiagnostic } = {}) {
   const state = { requests: 0, upgrades: 0, messages: [], requestUrls: [], mode };
   const sockets = new Set();
   const upstream = http.createServer(async (_request, response) => {
@@ -78,7 +95,7 @@ async function fixture(t, { limits = {}, mode = 'valid', upgradeDelay = 0, onGps
   const config = { ...DEFAULTS, listenPort: 0, pathToken: randomBytes(32).toString('base64url'),
     upstreamOrigin: `http://127.0.0.1:${upstreamPort}`, publicOrigin: 'https://helmet.example.com' };
   if (mediaFetch) { config.mediaControlOrigin=config.publicOrigin; config.mediaSigningKey=randomBytes(32).toString('base64url'); }
-  const gateway = createDeviceGateway(config, { testOnly: true, limits: { closeTimeoutMs: 30, ...limits }, onGpsReport, mediaFetch });
+  const gateway = createDeviceGateway(config, { testOnly: true, limits: { closeTimeoutMs: 30, ...limits }, onGpsReport, mediaFetch, onHttpDiagnostic });
   const address = await gateway.listen();
   const origin = `http://127.0.0.1:${address.port}`;
   const basePath = `/${config.pathToken}/api/index.php`;
@@ -250,7 +267,7 @@ test('later identity switching is rejected before upstream receives it', async t
 
 test('firmware local-record synchronization preserves login and subsequent telemetry', { timeout: 5000 }, async t => {
   const f = await fixture(t);
-  // The current Java backend returns unsupported; that acknowledgement must
+  // A compatible older backend may return unsupported; that acknowledgement must
   // not turn this harmless firmware state report into a disconnected socket.
   f.state.localRecordAck = false;
   const ws = await connect(f.wsUrl);
@@ -266,6 +283,18 @@ test('firmware local-record synchronization preserves login and subsequent telem
   }
   assert.equal(ws.readyState, WebSocket.OPEN);
   assert.deepEqual(f.state.messages, expected);
+});
+
+test('accepted local-recorder observations are forwarded unchanged, not turned into commands',async t=>{
+  const f=await fixture(t),ws=await connect(f.wsUrl);
+  await exchange(ws,login);
+  for(const type of ['0','1']){
+    const value={act:'toggle_localrecord',device_id:DEVICE_ID,type};
+    assert.deepEqual(await exchange(ws,value),{status:true,cmd:'toggle_localrecord'});
+    assert.deepEqual(f.state.messages.at(-1),value);
+  }
+  assert.equal((await exchange(ws,report)).status,true);
+  assert.equal(ws.readyState,WebSocket.OPEN);
 });
 
 test('local-record synchronization cannot authenticate a socket', async t => {
@@ -464,4 +493,48 @@ test('offline collection timestamps are preserved and cannot impersonate another
  assert.equal(r.status,200);assert.equal((await r.json()).status,true);assert.deepEqual(f.state.lastBody,{device_id:DEVICE_ID,data});
  const denied=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:'other',data})});
  assert.equal(denied.status,400);assert.equal(f.state.requests,1);
+});
+
+test('HTTP diagnostics distinguish shared rate rejection without logging request secrets',async t=>{
+ const diagnostics=[];const f=await fixture(t,{limits:{requestsPerMinute:2},mediaFetch:async()=>{throw Error('must not run');},onHttpDiagnostic:row=>diagnostics.push(row)});
+ for(let i=0;i<2;i++)assert.equal((await fetch(f.origin+f.basePath+f.query)).status,200);
+ const upload=f.basePath.replace('index.php','upload')+'?device_id='+DEVICE_ID+'&X-Progress-ID=private-progress';
+ assert.equal((await fetch(f.origin+upload,{method:'POST',headers:{'Content-Type':'application/octet-stream','Authorization':'private-header'},body:'private-bytes'})).status,429);
+ await waitFor(()=>diagnostics.length===3);
+ assert.deepEqual(diagnostics.map(r=>r.route),['config/get_config','config/get_config','media/video']);
+ assert.equal(diagnostics[2].uploadStage,'rate_limit');assert.equal(diagnostics[2].errorCode,'Unavailable');assert.equal(diagnostics[2].declaredBodyBytes,13);
+ assert.ok(!JSON.stringify(diagnostics).includes('private'));assert.ok(!JSON.stringify(diagnostics).includes(f.config.pathToken));
+});
+
+test('HTTP diagnostics record header rejection and cloud-forwarding failure stages',async t=>{
+ const diagnostics=[];const f=await fixture(t,{mediaFetch:async()=>{throw Error('sensitive cloud failure');},onHttpDiagnostic:r=>diagnostics.push(r)});
+ const endpoint=f.origin+f.basePath+'?ctl=image&act=save_image';
+ assert.equal((await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:'secret'})).status,415);
+ assert.equal((await fetch(endpoint,{method:'POST',headers:{'Content-Type':'multipart/form-data; boundary=x'},body:'--x--\r\n'})).status,502);
+ await waitFor(()=>diagnostics.length===2);
+ assert.equal(diagnostics[0].uploadStage,'validation');assert.equal(diagnostics[0].errorCode,'InvalidUpload');
+ assert.equal(diagnostics[1].uploadStage,'forwarding_cloud');assert.equal(diagnostics[1].errorCode,'UploadUnavailable');
+ assert.ok(!JSON.stringify(diagnostics).includes('sensitive'));
+});
+
+test('diagnostic sink failures cannot change HTTP success or WebSocket heartbeats',async t=>{
+ const f=await fixture(t,{onHttpDiagnostic:()=>{throw Error('disk unavailable');}});
+ assert.equal((await fetch(f.origin+f.basePath+f.query)).status,200);
+ const ws=await connect(f.wsUrl);assert.equal((await exchange(ws,login)).status,true);assert.equal((await exchange(ws,report)).status,true);
+});
+
+test('real firmware OkHttp upload? serialization accepts one leading separator and preserves all upload guards',async t=>{
+ const calls=[],diagnostics=[];const f=await fixture(t,{mediaFetch:async(url,options)=>{
+  calls.push(url);for await(const _ of options.body){}
+  return new Response(JSON.stringify({code:200,data:{deviceId:DEVICE_ID,kind:'video',status:'ready',url:'https://helmet.example.com/helmet-media/files/video?token=test-only'}}));
+ },onHttpDiagnostic:row=>diagnostics.push(row)});
+ const upload=f.origin+f.basePath.replace('index.php','upload');
+ const query='&device_id='+DEVICE_ID+'&X-Progress-ID=5f4qtla9cu9qfrpf9igv3o4ha2';
+ const send=q=>fetch(upload+'?'+q,{method:'POST',headers:{'Content-Type':'multipart/form-data; boundary=x'},body:'--x--\r\n'});
+ assert.equal((await send(query)).status,200);assert.equal(calls.length,1);
+ await waitFor(()=>diagnostics.length===1);assert.equal(diagnostics[0].queryEmptySegment,true);assert.equal(diagnostics[0].uploadStage,'durable_ack');
+ for(const bad of ['&'+query,query+'&',query+'&unknown=value',query+'&device_id='+DEVICE_ID,query+'&X-Progress-ID=another-valid-id',query.replace(DEVICE_ID,'other-device'),query+'&app_version=%zz',query+'&app_version='+('a'.repeat(2050))])assert.equal((await send(bad)).status,400);
+ assert.equal(calls.length,1,'Rejected variants must never reach cloud storage');
+ const photo=await fetch(f.origin+f.basePath+'?&ctl=image&act=save_image',{method:'POST',headers:{'Content-Type':'multipart/form-data; boundary=x'},body:'--x--\r\n'});
+ assert.equal(photo.status,400,'Compatibility is limited to the firmware video upload route');
 });

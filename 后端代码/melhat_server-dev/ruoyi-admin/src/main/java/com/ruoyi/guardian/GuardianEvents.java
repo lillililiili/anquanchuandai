@@ -62,7 +62,8 @@ public class GuardianEvents {
             JSONObject prior=replay(state,key,input); if(prior!=null) { ctx.requireEvent(prior,null);result[0]=present(state,prior,ctx);return false; }
             String description=bounded(input,"description",500,false), location=bounded(input,"locationDescription",200,false);
             String id="SOS-"+UUID.randomUUID();LocalDateTime now=LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
-            JSONObject event=object("id",id,"personId",ctx.personId(),"deviceId","","workId","","siteId",site,"areaId",ctx.person.getString("areaId"),"station",find(ctx.data,"sites",site).getString("portalStation"),"title","手机发起 SOS","type","人员求助","status","待认领","source","manual_sos","description",description,"locationDescription",location,"date",now.toLocalDate().toString(),"time",now.toLocalTime().withNano(0).toString(),"createdAt",Instant.now().toString(),"createdBy",ctx.id(),"version",1,"externalId","","externalStatus","未接入外部系统","snapshot",object("personName",ctx.person.getString("name"),"deviceId","","workName","未关联作业"),"observations",new JSONArray(),"timeline",new JSONArray());
+            JSONObject event=object("id",id,"personId",ctx.personId(),"deviceId","","workId","","siteId",site,"areaId",ctx.person.getString("areaId"),"station",find(ctx.data,"sites",site).getString("portalStation"),"title","手机发起 SOS","type","人员求助","status","待认领","source","manual_sos","description",description,"locationDescription",location,"date",now.toLocalDate().toString(),"time",now.toLocalTime().withNano(0).toString(),"createdAt",Instant.now().toString(),"createdBy",ctx.id(),"version",1,"externalId","","externalStatus","未关联外部工单","snapshot",object("personName",ctx.person.getString("name"),"deviceId","","workName","未关联作业"),"observations",new JSONArray(),"timeline",new JSONArray());
+            WorkBusiness.capture(state,event,WorkBusiness.match(state,ctx.personId(),event.getString("station"),Instant.now()));
             rows(state,"events").add(0,event);normalize(state);line(event,ctx,"手机发起求助");
             remember(state,key,input,id);bump(state);result[0]=present(state,event,ctx);return true;
         });
@@ -154,6 +155,8 @@ public class GuardianEvents {
     private static JSONObject assistance(JSONObject state,String id) {normalize(state);return state.getJSONObject("assistance").getJSONObject(id);}
     private JSONObject present(JSONObject state,JSONObject event,GuardianAccess.Context ctx) {
         JSONObject out=safe(event);out.put("permissions",ctx.permissions(event));
+        if(!WorkBusiness.enabled(state))WorkBusiness.stripRecord(out);
+        if(state.getJSONObject("businessConfig")!=null)out.put("businessConfig",copy(state.getJSONObject("businessConfig")));
         if("人员求助".equals(event.getString("type"))) out.put("assistance",safe(assistance(state,event.getString("id"))));return out;
     }
     private static String permission(String action) {

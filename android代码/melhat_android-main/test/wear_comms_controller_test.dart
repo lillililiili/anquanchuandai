@@ -531,11 +531,38 @@ void main() {
   test(
     'SIP registration, answered, confirmation and media never substitute for server connected',
     () async {
+      controller.selectDevice(
+        CommunicationDevice.fromJson({
+          'id': '9',
+          'sn': 'MH-009',
+          'source': 'DIRECT_HELMET',
+          'typeCode': 'helmet',
+          'online': 1,
+          'equipmentContext': {
+            'personId': '21',
+            'deviceId': '9',
+            'assignmentId': 'a',
+            'assignmentVersion': 2,
+          },
+          'featureStates': {
+            'voice': {
+              'supported': true,
+              'verified': false,
+              'available': true,
+              'integrationStatus': 'CONNECTED',
+            },
+          },
+        }),
+      );
       gateway.protocol = 'SIP';
       gateway.serverConnected = false;
       gateway.joinResult = Future.value(gateway.call(status: 'answered'));
       final starting = controller.startCall();
       await rtc.joinStarted.future;
+      expect(gateway.startCount, 1);
+      expect(rtc.prepareCount, 1);
+      expect(rtc.joinCount, 1);
+      expect(controller.selectedDevice!.feature('intercom').verified, false);
       rtc.callbacks!.onRegistered!();
       expect(controller.sipRegistered, isTrue);
       expect(controller.isConnected, isFalse);

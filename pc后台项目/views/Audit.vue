@@ -70,7 +70,7 @@ async function download() {
   try {
     const result = await getAdminProvider().query('auditExport', { ...applied.value, siteId }, { signal: exportController.signal })
     if (version !== exportVersion || siteId !== store.siteId || identity !== store.identity?.id) return
-    if (typeof result.data?.csv !== 'string') throw new Error('当前日志来源未接入，无法导出')
+    if (typeof result.data?.csv !== 'string') throw new Error('日志服务未返回导出文件，请稍后重试')
     const url = URL.createObjectURL(new Blob([result.data.csv], { type: 'text/csv;charset=utf-8' })), link = document.createElement('a')
     try { link.href = url; link.download = result.data.filename; document.body.appendChild(link); link.click(); exportNotice.value = `已生成 ${result.data.total} 条操作日志。` } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000) }
   } catch (error) { if (version === exportVersion && error.name !== 'AbortError') { exportError.value = error; if (error.code === 401) getAdminProvider().invalidate() } } finally { if (version === exportVersion) exporting.value = false }

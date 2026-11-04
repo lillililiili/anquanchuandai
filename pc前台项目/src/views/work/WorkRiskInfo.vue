@@ -18,7 +18,7 @@ const work = computed(() => {
 <template>
   <p><AppTag color="yellow">来源摘要 · 只读</AppTag></p>
   <dl class="info">
-    <dt>工作票编号</dt>
+    <dt>作业编号</dt>
     <dd>{{ workId }}</dd>
     <dt>风险因素</dt>
     <dd>{{ workRisks(work).riskFactors || '尚未取得来源风险信息' }}</dd>
@@ -29,5 +29,5 @@ const work = computed(() => {
     <dt>监护人</dt>
     <dd>{{ personName(work?.supervisor) }}</dd>
   </dl>
-  <p class="note">本页为来源系统摘要，不在本系统进行作业审批。</p>
+  <p class="note">{{ work?.source === 'LOCAL' ? '本地登记资料由系统管理员维护。' : '本页为来源系统摘要，不在本系统进行作业审批。' }}</p>
 </template>

@@ -1,7 +1,9 @@
 import '../core.dart';
+import '../work_business.dart';
 
 /// The work source and membership remain read-only; no inspection progress API.
 Future<JsonMap?> loadCurrentWork(WearSession session) async {
+  if (!session.workBusinessEnabled) return null;
   final seen = <String>{};
   JsonMap? pending;
   for (var current = 1; ; current++) {
@@ -17,7 +19,7 @@ Future<JsonMap?> loadCurrentWork(WearSession session) async {
         .where((task) => seen.add(idOf(task['id'])))
         .toList();
     for (final task in rows) {
-      if (task['status'] == 'in_progress') return task;
+      if (task['status'] == 'in_progress' && currentWorkTime(task)) return task;
       if (['ready', 'draft', 'paused'].contains(task['status'])) {
         pending ??= task;
       }

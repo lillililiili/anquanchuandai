@@ -21,37 +21,64 @@ public class WearableReportDelivery {
     private final ObjectProvider<DirectBeltTelemetryService> belts;
     private final Object recoveryLock=new Object();
     @org.springframework.beans.factory.annotation.Autowired(required=false) private ObjectProvider<HelmetMediaService> media;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private ObjectProvider<GuardianDeviceVoiceMessages> voiceMessages;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.melhat.direct.HelmetLocalRecordingSync localRecordingSync;
     public WearableReportDelivery(WearableBusinessStore journal,GuardianIngest ingest,ObjectProvider<DirectHelmetTelemetryService> helmets,ObjectProvider<DirectBeltTelemetryService> belts){this.journal=journal;this.ingest=ingest;this.helmets=helmets;this.belts=belts;}
     public boolean helmet(String deviceId,String raw){return HelmetEventLifecycle.coordinate(()->{synchronized(WearableBusinessStore.transactionLock()){
         JSONObject context=ingest.captureDirect(deviceId);context.put("receivedAt",Instant.now().toString());
         SafetyHatInfo device=helmets.getObject().registered(deviceId);if(device==null)throw new IllegalStateException("设备登记已变化");context.put("rawUserId",device.getBindUserId());context.put("rawUserName",device.getBindUserName());
-        return receive("direct-helmet",deviceId,object("raw",JSONObject.parseObject(raw),"context",context));
+        JSONObject message=JSONObject.parseObject(raw),payload=object("raw",message,"context",context);
+        // Only reports first received by this version opt in; replay never scans old recorder observations.
+        if("toggle_localrecord".equals(message.getString("act")))payload.put("autoSyncEligible",true);
+        return receive("direct-helmet",deviceId,payload);
     }});}
     public boolean belt(String deviceId,String raw,JSONObject status,String rawType,String timestamp,boolean sos){synchronized(WearableBusinessStore.transactionLock()){
         return receive("direct-belt",deviceId,object("raw",JSONObject.parseObject(raw),"context",ingest.captureBelt(deviceId),"status",status,"rawType",rawType,"timestamp",timestamp,"sos",sos));
     }}
     public boolean paused(){return maintenance!=null&&maintenance.paused();}
+    /** The fixed cloud asset reference is validated before ACK; metadata is resolved asynchronously. */
+    public void helmetVoiceMessage(String deviceId,String raw) {
+        if(voiceMessages==null)throw new IllegalStateException("设备语音消息接收尚未就绪");
+        JSONObject message=JSONObject.parseObject(raw);
+        if(!"ca_sending_message".equals(message.getString("act"))||!(message.get("message") instanceof String))
+            throw new IllegalArgumentException("设备语音消息格式无效");
+        String assetId=voiceMessages.getObject().reference(message.getString("message"));
+        HelmetEventLifecycle.coordinate(()->{synchronized(WearableBusinessStore.transactionLock()){
+            JSONObject captured=ingest.captureDirect(deviceId);captured.put("receivedAt",Instant.now().toString());
+            journal.appendDeviceReport("WR-"+UUID.randomUUID(),"direct-helmet-voice-message",deviceId,
+                    object("raw",message,"assetId",assetId,"context",captured));return true;
+        }});
+        // No network wait while acknowledging an upload notification. The durable consumer retries outages.
+    }
     /** Media acknowledgements are durable even while maintenance or media processing is unavailable. */
     public void helmetMedia(String deviceId,String raw) {
         JSONObject message=JSONObject.parseObject(raw);
         if(!java.util.Arrays.asList("ca_upload_photo","upload_video_success","push_to_client").contains(message.getString("act")))
             throw new IllegalArgumentException("未知的设备媒体回执");
         synchronized(WearableBusinessStore.transactionLock()) {
+            String receivedAt=Instant.now().toString();
+            JSONObject payload=object("raw",message,"receivedAt",receivedAt);
+            if("ca_upload_photo".equals(message.getString("act"))) {
+                JSONObject captured=ingest.captureDirect(deviceId);
+                if(captured!=null){captured=JSONObject.parseObject(captured.toJSONString());captured.put("receivedAt",receivedAt);payload.put("context",captured);}
+            }
             journal.appendDeviceReport("WR-"+UUID.randomUUID(),"direct-helmet-media",deviceId,
-                    object("raw",message,"receivedAt",Instant.now().toString()));
+                    payload);
         }
         // Never acquire the media service's monitor while holding the business or lifecycle lock.
         // The receiver acknowledges persistence; failures below stay pending for ordered recovery.
         recover();
     }
-    private boolean receive(String protocol,String deviceId,JSONObject payload){String receipt="WR-"+UUID.randomUUID();journal.appendDeviceReport(receipt,protocol,deviceId,payload);if(paused())return false;deliver(object("receiptId",receipt,"protocol",protocol,"deviceId",deviceId,"payload",payload));return true;}
+    private boolean receive(String protocol,String deviceId,JSONObject payload){String receipt="WR-"+UUID.randomUUID();journal.appendDeviceReport(receipt,protocol,deviceId,payload);if(paused()||payload.getBooleanValue("autoSyncEligible"))return false;deliver(object("receiptId",receipt,"protocol",protocol,"deviceId",deviceId,"payload",payload));return true;}
     void deliver(JSONObject report){
         String receipt=report.getString("receiptId"),deviceId=report.getString("deviceId"),protocol=report.getString("protocol");JSONObject payload=report.getJSONObject("payload");
         if("direct-helmet".equals(protocol))HelmetEventLifecycle.coordinate(()->{synchronized(WearableBusinessStore.transactionLock()){if(paused())return false;return journal.processReport(receipt,()->{
             DirectHelmetTelemetryService service=helmets.getObject();SafetyHatInfo device=service.registered(deviceId);
             if(device==null)throw new IllegalStateException("待恢复报文的设备登记需要核对");
             service.receiveCaptured(device,DirectHelmetMessage.parse(payload.getJSONObject("raw").toJSONString()),payload.getJSONObject("context"));
+            if(payload.getBooleanValue("autoSyncEligible")&&localRecordingSync!=null&&"toggle_localrecord".equals(payload.getJSONObject("raw").getString("act")))
+                localRecordingSync.observe(receipt,deviceId,payload.getJSONObject("raw").getString("type"),payload.getJSONObject("context"));
         });}});
         else if("direct-belt".equals(protocol)){synchronized(WearableBusinessStore.transactionLock()){if(!paused())journal.processReport(receipt,()->belts.getObject().receiveCaptured(deviceId,payload.getJSONObject("status"),payload.getString("rawType"),payload.getString("timestamp"),payload.getBooleanValue("sos"),payload.getJSONObject("context")));}}
         else if("direct-helmet-media".equals(protocol)) {
@@ -61,20 +88,36 @@ public class WearableReportDelivery {
             synchronized(service) { synchronized(WearableBusinessStore.transactionLock()) {
                 if(paused())return;
                 journal.processReport(receipt,()->{
-                    if(!service.receipt(deviceId,payload.getJSONObject("raw"),payload.getString("receivedAt")))throw new IllegalArgumentException("媒体回执与设备指令不匹配");
+                    if(!service.receipt(deviceId,payload.getJSONObject("raw"),payload.getString("receivedAt"),payload.getJSONObject("context")))throw new IllegalArgumentException("媒体回执与设备指令不匹配");
                 });
             }}
+        } else if("direct-helmet-voice-message".equals(protocol)) {
+            if(voiceMessages==null)throw new IllegalStateException("设备语音消息处理尚未就绪");
+            GuardianDeviceVoiceMessages service=voiceMessages.getObject();String assetId=payload.getString("assetId");
+            // Remote access never holds the guardian transaction or media-session monitor.
+            JSONObject prepared=service.alreadyReceived(deviceId,assetId)?new JSONObject():service.prepare(deviceId,assetId);
+            synchronized(WearableBusinessStore.transactionLock()) {
+                if(paused())return;
+                journal.processReport(receipt,()->service.accept(deviceId,assetId,payload.getJSONObject("context"),prepared));
+            }
         } else throw new IllegalArgumentException("未知的设备接收协议");
     }
     @Scheduled(fixedDelay=10000,initialDelay=10000) public void recover(){
         synchronized(recoveryLock) {
             if(paused())return;
-            boolean mediaBlocked=false;
+            boolean mediaBlocked=false,voiceBlocked=false;
+            java.util.Set<String> localRecordingBlocked=new java.util.HashSet<>();
             for(JSONObject report:journal.pendingReports(0,100)) {
                 boolean mediaReport="direct-helmet-media".equals(report.getString("protocol"));
+                boolean voiceReport="direct-helmet-voice-message".equals(report.getString("protocol"));
+                boolean localRecording="direct-helmet".equals(report.getString("protocol"))&&report.getJSONObject("payload").getBooleanValue("autoSyncEligible");
                 if(mediaReport&&mediaBlocked)continue;
+                if(voiceReport&&voiceBlocked)continue;
+                if(localRecording&&localRecordingBlocked.contains(report.getString("deviceId")))continue;
                 try{deliver(report);}catch(RuntimeException error){
                     if(mediaReport)mediaBlocked=true;
+                    if(voiceReport)voiceBlocked=true;
+                    if(localRecording)localRecordingBlocked.add(report.getString("deviceId"));
                     org.slf4j.LoggerFactory.getLogger(getClass()).warn("设备接收记录等待恢复，receiptId={},errorType={}",report.getString("receiptId"),error.getClass().getSimpleName());
                 }
             }

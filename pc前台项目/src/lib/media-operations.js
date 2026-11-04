@@ -22,16 +22,16 @@ export function createMediaOperations({ api, state, makeId = () => crypto.random
   }
   function start(context) {
     if (starting) return starting;
-    if (state.recording) return Promise.reject(Error('请先结束正在进行的录像请求'));
+    if (state.recording) return Promise.reject(Error('请先结束正在进行的平台录制请求'));
     const recording = { real: true, deviceId: context.deviceId, person: context.personId, start: now(), context: { ...context }, startKey: makeId(), status: 'requesting' };
     state.recording = recording;
     starting = api.command(context.deviceId, 'start_recording', {}, recording.startKey, undefined, recording.context)
       .then(result => {
         Object.assign(state.recording || recording, { commandId: result.id, status: result.status, message: result.message });
-        if (rejected(result)) { state.recording = null; throw Error(result.message || '录像请求失败'); }
+        if (rejected(result)) { state.recording = null; throw Error(result.message || '平台录制请求失败'); }
         return result;
       }).catch(error => {
-        if (state.recording) { state.recording.status = 'unknown'; state.recording.message = '录像请求结果待确认，可查询回执或结束请求'; }
+        if (state.recording) { state.recording.status = 'unknown'; state.recording.message = '平台录制请求结果待确认，可查询回执或结束请求'; }
         if (definitive(error)) state.recording = null;
         throw error;
       }).finally(() => { starting = null; });
@@ -63,11 +63,11 @@ export function createMediaOperations({ api, state, makeId = () => crypto.random
       if (!state.recording.commandId) await refresh();
       const recording = state.recording;
       if (!recording) return;
-      if (!recording.commandId) throw Error('开始录像的结果尚未确认，请查询回执后重试结束');
+      if (!recording.commandId) throw Error('开始平台录制的结果尚未确认，请查询回执后重试结束');
       recording.stopKey ||= makeId();
       const result = await api.command(recording.deviceId, 'stop_recording', {}, recording.stopKey, undefined, { ...recording.context, sourceCommandId: recording.commandId });
       Object.assign(recording, { stopCommandId: result.id, status: result.status, message: result.message, stopRequested: true });
-      if (['unknown', 'requesting', 'failed', 'rejected', 'timeout'].includes(result.status)) throw Error(result.message || '停止录像尚未确认，请重试');
+      if (['unknown', 'requesting', 'failed', 'rejected', 'timeout'].includes(result.status)) throw Error(result.message || '停止平台录制尚未确认，请重试');
       if (result.status === 'completed') state.recording = null;
       return result;
     })().finally(() => { stopping = null; });

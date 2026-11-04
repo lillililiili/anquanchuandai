@@ -11,6 +11,34 @@ spec.loader.exec_module(module)
 
 
 class CompatiblePatchTests(unittest.TestCase):
+    def test_docker_cli_can_be_selected_without_changing_path(self):
+        executable = 'C:/Program Files/Docker/Docker/resources/bin/docker.exe'
+        with patch.dict(module.os.environ, {'MELHAT_DOCKER_CLI': executable}), \
+             patch.object(module.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, b'ok')) as run:
+            self.assertEqual(module.docker('version'), b'ok')
+            self.assertEqual(run.call_args.args[0], [executable, 'version'])
+
+    def test_anonymous_health_uses_read_only_root_and_requires_protected_requests_to_reject(self):
+        with patch.object(module, 'docker', side_effect=[b'welcome\n200', b'401', b'401']) as docker:
+            self.assertEqual(module.anonymous_health(), {
+                '/api/admin/v1/state': 401,
+                '/api/guardian/v1/mobile/context?siteId=site-1': 401})
+            self.assertEqual(docker.call_args_list[0].args[-1], 'http://127.0.0.1:18084/')
+            self.assertNotIn('captchaImage', str(docker.call_args_list))
+        with patch.object(module, 'docker', side_effect=[b'welcome\n200', b'200']):
+            with self.assertRaisesRegex(RuntimeError, 'did not require authentication'):
+                module.anonymous_health()
+
+    def test_anonymous_health_rejects_empty_body_redirect_and_malformed_response(self):
+        for response in (b'\n200', b' \n200', b'welcome\n302', b'welcome\n204', b'welcome'):
+            with self.subTest(response=response), \
+                 patch.object(module, 'docker', return_value=response) as docker, \
+                 patch.object(module.time, 'monotonic', side_effect=[0, 1, 101]), \
+                 patch.object(module.time, 'sleep'):
+                with self.assertRaisesRegex(RuntimeError, 'Anonymous backend health did not pass'):
+                    module.anonymous_health()
+                docker.assert_called_once()
+
     def baseline(self):
         return {'mode': 'ACTIVE', 'namespaces': 'guardian,media', 'watchVisible': True,
                 'dataVersion': 'wearable-clean-v1', 'inventory': 'RL-W001,device-12,device-13',
@@ -45,6 +73,16 @@ class CompatiblePatchTests(unittest.TestCase):
             after[key] = changed
             with self.assertRaises(RuntimeError):
                 module.verify_preservation(before, after)
+
+    def test_work_history_and_initial_enabled_migration_are_preserved(self):
+        before=self.baseline();after=copy.deepcopy(before);after['workBusinessEnabled']=True
+        module.verify_preservation(before,after)
+        after['workBusinessEnabled']=False
+        with self.assertRaisesRegex(RuntimeError,'default to enabled'):module.verify_preservation(before,after)
+        before['workBusinessEnabled']=False;after['workBusinessEnabled']=True
+        with self.assertRaisesRegex(RuntimeError,'work business setting changed'):module.verify_preservation(before,after)
+        after['workBusinessEnabled']=False;after['counts']['wearable_work']-=1
+        with self.assertRaisesRegex(RuntimeError,'history count decreased'):module.verify_preservation(before,after)
 
     def test_runtime_preserves_opaque_settings_mounts_ports_network(self):
         previous = {'Config': {'Env': ['UNCHANGED_SETTING=value', 'OPAQUE_KEY=retain'], 'Cmd': ['--server.port=18084'],
@@ -104,6 +142,17 @@ class CompatiblePatchTests(unittest.TestCase):
         protected['Mounts'].append({'Destination': '/configuration'})
         with self.assertRaisesRegex(RuntimeError, 'outside /data'):
             module.require_standard_deployment(protected)
+
+    def test_only_known_readonly_configuration_mount_is_preserved(self):
+        standard = {'Id': '123456789012abcdef', 'Config': {'Hostname': '123456789012'},
+                    'HostConfig': {}, 'Mounts': [{'Destination': '/run/secrets/fuda-api.yml', 'Type': 'bind', 'RW': False}],
+                    'NetworkSettings': {'Networks': {'daily': {}}}}
+        module.require_standard_deployment(standard)
+        for changed in ({'RW': True}, {'Type': 'volume'}, {'Destination': '/run/secrets/unknown.yml'}):
+            altered = copy.deepcopy(standard)
+            altered['Mounts'][0].update(changed)
+            with self.assertRaisesRegex(RuntimeError, 'outside /data'):
+                module.require_standard_deployment(altered)
 
 
 if __name__ == '__main__':

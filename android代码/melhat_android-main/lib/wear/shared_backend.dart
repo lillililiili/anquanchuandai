@@ -6,6 +6,7 @@ import 'api.dart' show WearApiException, StaleSessionException;
 import 'data.dart';
 import 'shared_models.dart';
 import 'person_equipment_context.dart';
+import 'work_business.dart';
 import '../config/backend_config.dart';
 import 'test_site.dart';
 
@@ -34,6 +35,31 @@ class SharedBackend {
   static const root = '/api/guardian/v1';
   JsonMap _identity = {};
   JsonMap businessConfig = {};
+  void Function(bool modeChanged)? onBusinessConfigChanged;
+  bool applyBusinessConfig(JsonMap value) {
+    if (value.isEmpty) return false;
+    if (businessConfig.isNotEmpty &&
+        intOf(value['version']) <= intOf(businessConfig['version'])) {
+      return false;
+    }
+    final before = businessConfig['workBusinessEnabled'];
+    businessConfig = {
+      ...value,
+      'workBusinessEnabled': value['workBusinessEnabled'] != false,
+    };
+    onBusinessConfigChanged?.call(
+      before != businessConfig['workBusinessEnabled'],
+    );
+    return true;
+  }
+
+  Future<void> refreshBusinessConfig() async {
+    final scope = epoch();
+    final value = jsonMap(await send('GET', '$root/business-config'));
+    if (scope != epoch()) throw const StaleSessionException();
+    applyBusinessConfig(value);
+  }
+
   Future<SharedModels>? _reading;
   final Map<String, _Pending> _pending = {};
   final Map<String, Future<dynamic>> _running = {};
@@ -84,8 +110,8 @@ class SharedBackend {
           );
           if (scope != epoch()) throw const StaleSessionException();
           _identity = jsonMap(data['operator']);
-          businessConfig = jsonMap(data['businessConfig']);
-          return SharedModels(data);
+          applyBusinessConfig(jsonMap(data['businessConfig']));
+          return SharedModels({...data, 'businessConfig': businessConfig});
         })().whenComplete(() {
           if (identical(_reading, future)) _reading = null;
         });
@@ -205,7 +231,7 @@ class SharedBackend {
       return SharedModels.identity(_identity, selected);
     }
     if (path == '/api/v1/events/manual-sos') {
-      return SharedModels({}).event(
+      return SharedModels({'businessConfig': businessConfig}).event(
         jsonMap(
           await send(
             'POST',
@@ -280,7 +306,7 @@ class SharedBackend {
         'activeTasks': model
             .rows('works')
             .map(model.work)
-            .where((w) => w['status'] != 'ended')
+            .where((w) => w['status'] == 'in_progress' && currentWorkTime(w))
             .toList(),
         'recentEvents': events,
         'pendingEvents': events
@@ -545,7 +571,9 @@ class SharedBackend {
         data: pending.body,
       );
       _pending.remove(key);
-      return SharedModels({}).event(jsonMap(result));
+      return SharedModels({
+        'businessConfig': businessConfig,
+      }).event(jsonMap(result));
     } on WearApiException catch (e) {
       if (e.code >= 400 && e.code < 500) _pending.remove(key);
       rethrow;

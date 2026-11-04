@@ -81,7 +81,10 @@ void main() {
       userId: 'u',
       permissions: {'wear:call:start'},
     );
-    final d = CommunicationDevice.fromJson(device());
+    final d = CommunicationDevice.fromJson({
+      ...device(),
+      'equipmentContext': {...context()['devices'][0], 'personId': 'P1'},
+    });
     expect(policy.canStartVoice(d), true);
     expect(policy.canStartVideo(d), false);
   });

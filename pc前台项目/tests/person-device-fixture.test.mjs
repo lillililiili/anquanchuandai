@@ -6,12 +6,13 @@ import config from '../vite.person-device-qa.config.mjs';
 import { fixtureState, SCENARIOS } from './fixtures/person-device-data.mjs';
 import { createStore } from '../src/mock/data.js';
 import { personFeature } from '../src/lib/person-equipment.js';
+import { allowFixtureFenceCommit } from './fixtures/person-device-writes.mjs';
 
 test('隔离夹具各场景使用真实能力计算，不产生额外人员、实机编号或存储连接', () => {
   const db = createStore(null, { demoMode: false });
   for (const [scenario] of SCENARIOS) {
     const state = fixtureState(scenario);
-    assert.equal(state.people.length, scenario === 'video_many' ? 20 : 1);
+    assert.equal(state.people.length, scenario === 'video_many' ? 20 : scenario === 'works_many' ? 13 : 1);
     assert.ok(state.devices.every(device => device.id.startsWith('QA-') || device.id === 'RL-W001' && device.source === 'DEMO_WATCH'));
     assert.deepEqual(state.broadcasts, []);
     assert.doesNotMatch(JSON.stringify(state), /866652021714127|866652023095053/);
@@ -34,6 +35,61 @@ test('隔离夹具各场景使用真实能力计算，不产生额外人员、�
     }
   }
   assert.throws(() => fixtureState('real-device'), /Unknown isolated scenario/);
+});
+
+test('非空作业夹具支持13条分页、状态筛选和正确人员联系上下文，能力只存在隔离数据中', () => {
+  const db = createStore(null, { demoMode: false });
+  const state = fixtureState('works_many');
+  assert.equal(db.replaceRemote(state), true);
+  assert.equal(state.works.length, 13);
+  assert.equal(new Set(state.works.map(work => work.date)).size, 1);
+  assert.deepEqual(['监护中','已结束'].map(status => state.works.filter(work => work.status === status).length), [10,3]);
+  assert.ok(state.events.every(event => state.devices.some(device => device.id === event.deviceId)));
+  for (const work of state.works) {
+    const person = db.person(work.members[0]);
+    assert.equal(person.workId, work.status === '监护中' ? work.id : '');
+    assert.equal(db.currentWork(person.id)?.id, work.status === '监护中' ? work.id : undefined);
+    assert.equal(personFeature(db, person.id, 'voice').available, true);
+    assert.equal(personFeature(db, person.id, 'voice').deviceId, db.currentDevices(person.id)[0].id);
+    assert.deepEqual(work.timeline, []);
+    assert.deepEqual(work.risks, []);
+  }
+  assert.equal(fixtureState('helmet').devices[0].featureStates.voice.verified, false);
+});
+
+test('地理围栏在隔离内存完成新增、停启和归档，旧示意不能启用且刷新还原', () => {
+  const db = createStore(null, { demoMode: false });
+  db.replaceRemote(fixtureState('fences'));
+  db.setRemoteCommit(next => allowFixtureFenceCommit(db.state, next, 'fences'));
+  const points = [[117.087,36.654],[117.088,36.654],[117.088,36.655],[117.087,36.655]];
+  const id = db.saveFence(null, {name:'隔离新围栏',points,coordinateSystem:'GCJ02',members:['QA-PERSON'],enabled:true,station:'S1'});
+  assert.deepEqual(db.state.fences.find(f => f.id === id).points,points);
+  db.toggleFence(id,false);
+  assert.equal(db.state.fences.find(f => f.id === id).enabled,false);
+  db.toggleFence(id,true);
+  assert.equal(db.state.fences.find(f => f.id === id).enabled,true);
+  const before=JSON.stringify(db.state);
+  assert.throws(()=>db.toggleFence('QA-FENCE-LEGACY',true),/旧版示意坐标/);
+  assert.equal(JSON.stringify(db.state),before);
+  db.deleteFence(id);
+  assert.equal(db.state.fences.find(f => f.id === id).archived,true);
+  db.deleteFence('QA-FENCE-LEGACY');
+  assert.equal(db.state.fences.find(f => f.id === 'QA-FENCE-LEGACY').archived,true);
+  assert.deepEqual(db.state.fenceRecords,[]);
+  db.replaceRemote(fixtureState('fences'));
+  assert.equal(db.state.fences.length,2);
+  assert.equal(db.state.fences.some(f => f.id === id),false);
+});
+
+test('围栏内存门禁拒绝其他场景、其他业务及伪装成围栏操作的跨范围写入', () => {
+  const db=createStore(null,{demoMode:false});db.replaceRemote(fixtureState('fences'));
+  const before=structuredClone(db.state),next=structuredClone(db.state);
+  next.audit.push({text:'保存电子围栏'});
+  assert.throws(()=>allowFixtureFenceCommit(before,next,'helmet'),/不允许/);
+  next.people[0].name='不应修改的人员';
+  assert.throws(()=>allowFixtureFenceCommit(before,next,'fences'),/只允许围栏/);
+  next.people[0].name=before.people[0].name;next.audit.at(-1).text='发起单呼';
+  assert.throws(()=>allowFixtureFenceCommit(before,next,'fences'),/未允许/);
 });
 
 test('多镜头夹具有二十个独立人员领用上下文及两个真实筛选集合，仍只存在隔离内存', () => {

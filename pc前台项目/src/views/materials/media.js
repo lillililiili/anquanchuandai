@@ -1,3 +1,4 @@
+import { workBusinessEnabled } from '@/lib/work-business';
 import { db } from "@/mock/runtime";
 import { toast } from "@/stores/notify";
 import { blobGet, download, imageBlob } from "@/lib/files";
@@ -12,7 +13,7 @@ function recordBody(media) {
       资料编号: media.id,
       人员: media.snapshot?.personName,
       设备: media.deviceId,
-      作业: media.snapshot?.workName,
+      ...(workBusinessEnabled(db) ? { 作业: media.snapshot?.workName } : {}),
       拍摄时间: media.created,
       时长秒: media.duration,
     },

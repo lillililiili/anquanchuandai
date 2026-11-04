@@ -7,10 +7,11 @@ import 'package:rolling_intelligence_headband/wear/events/event_models.dart';
 
 void main() {
   test('displays every core scenario without an Android alarm dictionary', () {
+    final project = Directory(Directory.current.resolveSymbolicLinksSync());
     final state = Map<String, dynamic>.from(
       jsonDecode(
             File(
-              '../../后端代码/melhat_server-dev/ruoyi-admin/src/main/resources/guardian-seed.json',
+              '${project.parent.parent.path}/后端代码/melhat_server-dev/ruoyi-admin/src/main/resources/guardian-seed.json',
             ).readAsStringSync(),
           )
           as Map,

@@ -5,6 +5,8 @@
   import { beijingDate, beijingTime } from "../lib/location.js";
   import { communicationGuard } from "../lib/communication-guard.js";
 
+  import { currentWorkFor, workBusinessEnabled, workOnDate } from "../lib/work-business.js";
+
   "use strict";
   const DATE = "2026-09-15",
     KEY = "rolling-native-v1";
@@ -304,6 +306,7 @@
     return {
       version: 1,
       seq: 100,
+      businessConfig: { workBusinessEnabled: true, version: 1 },
       clock: 10 * 3600 + 42 * 60 + 18,
       stations: [
         { id: "S1", name: "临江示范电厂" },
@@ -417,6 +420,7 @@
     if (!demoMode) {
       // A first visit waits for the backend. Existing saved ledgers are loaded intact below.
       for (const key of Object.keys(state)) if (Array.isArray(state[key]) && key !== 'stations') state[key] = [];
+      state.businessConfig = {};
       state.sos = { status: 'ended', members: [], timeline: [] };
     }
     try {
@@ -510,6 +514,7 @@
       return displayDevice(state.devices.find((d) => d.id === id), demoMode);
     }
     function work(id) {
+      if (!workBusinessEnabled({ state })) return null;
       return state.works.find((w) => w.id === id);
     }
     function event(id) {
@@ -576,12 +581,11 @@
       return b ? device(b.deviceId) : null;
     }
     function currentWork(pid) {
-      return state.works.find(
-        (w) =>
-          w.date === (demoMode ? DATE : beijingDate()) && w.members.includes(pid) && w.status !== "已结束",
-      );
+      if (demoMode && state.businessConfig?.workBusinessEnabled !== false) return state.works.find(w => w.date === DATE && w.members.includes(pid) && !['已结束','已取消'].includes(w.status));
+      return currentWorkFor(state, pid) || undefined;
     }
     function filter(list, scope = {}) {
+      if (!workBusinessEnabled({ state })) scope = { ...scope, workId: "" };
       return list.filter(
         (x) =>
           (!scope.station || x.station === scope.station) &&
@@ -593,7 +597,8 @@
       );
     }
     function stats(scope = {}) {
-      const works = filter(state.works, scope);
+      if (!workBusinessEnabled({ state })) scope = { ...scope, workId: "" };
+      const works = workBusinessEnabled({ state }) ? filter(state.works, { ...scope, date: "" }).filter(w => workOnDate(w, scope.date)) : [];
       const members = new Set(works.flatMap((w) => w.members));
       const dateValid = !demoMode || !scope.date || scope.date === DATE;
       const people = state.people.filter(
@@ -1119,7 +1124,7 @@
           station: g.station,
           date: demoMode ? DATE : beijingDate(),
           time: now(s),
-          status: voice ? "设备平台已受理（播放未确认）" : "已发送",
+          status: voice ? "设备平台已受理" : "已发送",
         });
       });
     }
@@ -1298,8 +1303,16 @@
       tracks,
       reset,
       revision: () => state.seq || 0,
+      applyBusinessConfig(config) {
+        if (!config || typeof config.workBusinessEnabled !== 'boolean' || !Number.isFinite(config.version)) return false;
+        if (config.version < (state.businessConfig?.version || 0)) return false;
+        state.businessConfig = { ...config };
+        listeners.forEach(fn => fn(state));
+        return true;
+      },
       replaceRemote(next) {
         if (!next || next.version !== 1) return false;
+        if ((next.businessConfig?.version || 0) < (state.businessConfig?.version || 0)) return false;
         if (!/[\u4e00-\u9fff]/.test(next.stations?.[0]?.name || "")) return false;
         state = withoutAdministrativeAreas(demoMode ? next : projectSingleSimulatedWatch(next));
         if (storage) {

@@ -129,7 +129,7 @@ public class AdminQueryService {
         boolean belt = "DIRECT_BELT".equals(device.getString("source")) && "BELT".equals(device.getString("type"));
         if ((!helmet && !belt)
                 || deviceId == null || deviceId.isEmpty() || !deviceId.equals(device.getString("deviceNumber")))
-            throw fail(400, "UNSUPPORTED_DEVICE", "此设备尚未接入真实设备报警查询");
+            throw fail(400, "UNSUPPORTED_DEVICE", "此设备不支持设备报警查询");
         String protocol = helmet ? "direct-helmet" : "direct-belt";
         // Validate pagination before reading the shared business snapshot.
         page(new ArrayList<JSONObject>(), input, false);
@@ -335,6 +335,9 @@ public class AdminQueryService {
 
         copy.put("writable", !"SCRAPPED".equals(device.getString("lifecycle")));
         applyTelemetry(copy, telemetry);
+        JSONObject localRecording=copy.getJSONObject("localRecording");
+        if(localRecording!=null&&!can(state,actor,"assets:read",localRecording.getString("siteId"),localRecording.getString("areaId")))
+            copy.remove("localRecording");
         if(businessPolicy!=null)businessPolicy.decorateDevice(copy);
         return copy;
     }
@@ -352,6 +355,8 @@ public class AdminQueryService {
                 device.put("isWearedFreshness", "UNKNOWN");
             }
             if (remote == null || !device.getString("source").equals(remote.getString("source"))) return;
+            if("DIRECT_HELMET".equals(device.getString("source"))&&remote.getJSONObject("localRecording")!=null)
+                device.put("localRecording",WearableModel.copy(remote.getJSONObject("localRecording")));
             for (String key : Arrays.asList("online", "battery", "batteryReportedAt", "batteryFreshness", "freshness", "isWeared", "isWearedReportedAt", "isWearedFreshness", "worn", "latitude", "longitude", "lat", "lng", "locationReportedAt", "locationFreshness", "sourceTime", "capabilities", "hangerAStatus", "hangerBStatus", "relativeAltitude", "relativeAltitudeReportedAt", "relativeAltitudeFreshness", "altitude", "gpsAltitude", "ignoreHookAlarm", "deviceReportedAt", "lastSeenAt", "inUse", "inUseReportedAt", "inUseFreshness", "networkType", "networkTypeReportedAt", "networkTypeFreshness", "networkStrength", "networkStrengthReportedAt", "networkStrengthFreshness", "hookState", "hookAEngaged", "hookBEngaged", "wearMappingConfirmed", "hookMappingConfirmed", "telemetryReportedAt", "telemetryFreshness","mediaAvailable","voiceAvailable","broadcastAvailable","mediaStatus","mediaVerification")) {
                 if (remote.containsKey(key)) device.put(key, remote.get(key));
             }
@@ -468,9 +473,9 @@ public class AdminQueryService {
             JSONObject snapshot = guardian.snapshot();
             String portalId = row.getString("portalId");
             if (portalId == null || portalId.isEmpty()) portalId = row.getString("id");
-            if (snapshot != null && portalId != null) {
+            if (snapshot != null && portalId != null && WorkBusiness.enabled(snapshot)) {
                 for (JSONObject work : array(snapshot, "works")) {
-                    if (!guardian.isOperational(work) || "已结束".equals(work.getString("status"))) continue;
+                    if (!guardian.isOperational(work) || !WorkBusiness.current(work,java.time.Instant.now()) || !WorkBusiness.validPeople(snapshot,work)) continue;
                     JSONArray members = work.getJSONArray("members");
                     if (members != null && members.contains(portalId)) results.add(impact(work.getString("id"), work.getString("name"), "未结束作业"));
                 }
@@ -607,7 +612,7 @@ public class AdminQueryService {
 
     private boolean scopedCan(JSONObject state, JSONObject actor, String operation, String siteId, String areaId) {
         JSONObject site = find(state, "sites", siteId);
-        if (site != null && !site.getBooleanValue("enabled") && !"sites:write".equals(operation)) return false;
+        if (site == null || !site.getBooleanValue("enabled") && !"sites:write".equals(operation)) return false;
         for (ScopeGrant grant : grantsOf(state, actor)) {
             if (grant.operations == null || grant.siteIds == null || !grant.siteIds.contains(siteId)) continue;
             if (!(grant.operations.contains("*") || grant.operations.contains(operation))) continue;
@@ -724,7 +729,7 @@ public class AdminQueryService {
     }
 
     private static String declaration(String type) {
-        if ("HELMET".equals(type)) return "前台使用视频通道和定位。这里只登记资产，上报接入前通信为未接入。";
+        if ("HELMET".equals(type)) return "设备通信、视频和定位状态由实时上报更新。";
         if ("BELT".equals(type)) return "没有设备上报，不记录受力或生命体征。";
         if ("WATCH".equals(type)) return "没有设备上报，不记录心率和血氧。";
         return "待确认";
