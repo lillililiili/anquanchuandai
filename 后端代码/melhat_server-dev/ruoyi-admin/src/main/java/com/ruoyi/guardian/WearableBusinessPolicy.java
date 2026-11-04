@@ -11,31 +11,46 @@ import static com.ruoyi.guardian.WearableModel.*;
 @Service
 public class WearableBusinessPolicy {
     public static final String DATA_VERSION = "wearable-person-v2";
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final JdbcTemplate jdbc;
     public WearableBusinessPolicy(JdbcTemplate jdbc) {
         this.jdbc=jdbc;
         com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261026_wearable_business");
-        if(jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_config WHERE id=1",Integer.class)==0) {
-            // These are acceptance records of the existing physical units, never generated assets or telemetry.
-            accept("866652021714127", "output/device-ready/helmet-media-acceptance-20261026/cloud-findings.json", "battery","wear","location","alarm","sos","video");
-            accept("866652023095053", "output/device-ready/belt-acceptance-20261025/physical-stage-record.json; belt-sos-20261026/4g-sos-success.json", "battery","hooks","location","alarm","sos");
-            jdbc.update("INSERT INTO wearable_business_config(id,version,body) VALUES(1,1,?)", defaults().toJSONString());
+        if(com.ruoyi.database.SchemaLifecycle.validateOnly(jdbc)) {
+            if(jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_config WHERE id=1",Integer.class)!=1)
+                throw new IllegalStateException("Business policy requires explicit initialization before validate-only startup");
+            return;
         }
+        org.springframework.transaction.support.TransactionTemplate tx=new org.springframework.transaction.support.TransactionTemplate(new org.springframework.jdbc.datasource.DataSourceTransactionManager(jdbc.getDataSource()));
+        tx.setTimeout(10);
+        tx.execute(status->{
+            jdbc.queryForObject("SELECT version_id FROM wearable_schema_history WHERE version_id=? FOR UPDATE",String.class,"20261026_wearable_business");
+            if(jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_config WHERE id=1",Integer.class)==0) {
+                // Evidence and the initialization marker commit together under the stable schema row lock.
+                accept("866652021714127", "output/device-ready/helmet-media-acceptance-20261026/cloud-findings.json", "battery","wear","location","alarm","sos","video");
+                accept("866652023095053", "output/device-ready/belt-acceptance-20261025/physical-stage-record.json; belt-sos-20261026/4g-sos-success.json", "battery","hooks","location","alarm","sos");
+                jdbc.update("INSERT INTO wearable_business_config(id,version,body) VALUES(1,1,?)",defaults().toJSONString());
+            }
+            return null;
+        });
     }
     private void accept(String device,String evidence,String... features) {
         for(String feature:features) if(jdbc.queryForObject("SELECT COUNT(*) FROM wearable_feature_acceptance WHERE device_id=? AND feature_key=?",Integer.class,device,feature)==0)
-            jdbc.update("INSERT INTO wearable_feature_acceptance(device_id,feature_key,evidence) VALUES(?,?,?)",device,feature,evidence);
+            com.ruoyi.common.database.DatabaseDialect.of(jdbc).insertIfAbsent(jdbc,"wearable_feature_acceptance",Arrays.asList("device_id","feature_key","evidence"),Arrays.asList("device_id","feature_key"),device,feature,evidence);
     }
     public static JSONObject defaults(){return object("dataVersion",DATA_VERSION,"simulatedWatchVisible",true,"version",1);}
     public JSONObject config(){JSONObject result=JSONObject.parseObject(jdbc.queryForObject("SELECT body FROM wearable_business_config WHERE id=1",String.class));result.put("dataVersion",DATA_VERSION);return result;}
-    public synchronized JSONObject configure(JSONObject input,GuardianAccess.Context ctx) {
+    public JSONObject configure(JSONObject input,GuardianAccess.Context ctx) {
+        return coordinator==null?configureFenced(input,ctx):coordinator.fenced(()->configureFenced(input,ctx));
+    }
+    private JSONObject configureFenced(JSONObject input,GuardianAccess.Context ctx) {
         if(!"demo-system".equals(ctx.id()))throw AdminQueryService.fail(403,"PERMISSION_DENIED","仅系统管理员可修改全局业务配置");
         if(input==null||!(input.get("simulatedWatchVisible") instanceof Boolean))throw AdminQueryService.fail(400,"INVALID_CONFIG","模拟手表显示设置必须为布尔值");
         JSONObject before=config();
         if(input.containsKey("expectedVersion")&&input.getIntValue("expectedVersion")!=before.getIntValue("version"))throw AdminQueryService.fail(409,"VERSION_CONFLICT","配置已变化，请刷新后重试");
         JSONObject next=copy(before);next.put("simulatedWatchVisible",input.getBooleanValue("simulatedWatchVisible"));next.put("version",before.getIntValue("version")+1);
         next.put("updatedBy",ctx.id());next.put("updatedAt",java.time.Instant.now().toString());
-        jdbc.update("UPDATE wearable_business_config SET version=?,body=? WHERE id=1",next.getIntValue("version"),next.toJSONString());return next;
+        if(jdbc.update("UPDATE wearable_business_config SET version=?,body=? WHERE id=1 AND version=?",next.getIntValue("version"),next.toJSONString(),before.getIntValue("version"))!=1)throw AdminQueryService.fail(409,"VERSION_CONFLICT","配置已变化，请刷新后重试");return next;
     }
     public JSONObject features(JSONObject device) {
         String source=text(device,"source"),id=text(device,"portalDeviceId");if(id.isEmpty())id=text(device,"deviceNumber");if(id.isEmpty())id=text(device,"id");

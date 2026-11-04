@@ -34,7 +34,7 @@ public final class WearableBusinessImport {
         TransactionTemplate transaction=new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
         transaction.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_SERIALIZABLE);
         JSONObject result=transaction.execute(status->{
-            boolean paused=lockMaintenance(jdbc);
+            boolean paused=lockMaintenance(jdbc,importMedia);
             Long current=jdbc.queryForObject("SELECT COALESCE(MAX(sequence),0) FROM wearable_device_report",Long.class);
             Long pending=jdbc.queryForObject("SELECT COUNT(*) FROM wearable_device_report WHERE processed_at IS NULL",Long.class);
             if(current==null||pending==null || (paused?current<watermark:current!=watermark||pending!=0))throw new IllegalStateException("设备报文水位不符合维护条件，禁止覆盖业务数据");
@@ -46,7 +46,7 @@ public final class WearableBusinessImport {
         Files.write(directory.resolve("import-result.json"),result.toJSONString().getBytes(StandardCharsets.UTF_8),StandardOpenOption.CREATE_NEW);
         return result;
     }
-    private static boolean lockMaintenance(JdbcTemplate jdbc) {
+    private static boolean lockMaintenance(JdbcTemplate jdbc,boolean importMedia) {
         Boolean exists=jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<Boolean>)connection->{
             try(java.sql.ResultSet tables=connection.getMetaData().getTables(connection.getCatalog(),null,"%",new String[]{"TABLE","BASE TABLE"})) {
                 while(tables.next())if("wearable_runtime_control".equalsIgnoreCase(tables.getString("TABLE_NAME")))return true;
@@ -54,8 +54,23 @@ public final class WearableBusinessImport {
             }
         });
         if(!Boolean.TRUE.equals(exists))return false; // Older/offline databases retain the strict drained-journal path.
+        boolean cluster=com.ruoyi.common.database.DatabaseDialect.tableExists(jdbc,"wearable_cluster_operation");
+        if(cluster) {
+            jdbc.queryForObject("SELECT id FROM wearable_cluster_control WHERE id=1 FOR UPDATE",Integer.class);
+            long operations=jdbc.queryForObject("SELECT COUNT(*) FROM wearable_cluster_operation WHERE state='ACTIVE'",Long.class);
+            long effects=jdbc.queryForObject("SELECT COUNT(*) FROM wearable_media_effect WHERE state IN ('IN_FLIGHT','UNKNOWN')",Long.class);
+            long commands=jdbc.queryForObject("SELECT COUNT(*) FROM wearable_transport_command WHERE delivery_status IN ('DISPATCHING','UNKNOWN')",Long.class);
+            if(importMedia&&jdbc.queryForObject("SELECT COUNT(*) FROM wearable_transport_command WHERE delivery_status IN ('QUEUED','PREPARING','SENT')",Long.class)>0)
+                throw new IllegalStateException("媒体仍有待发送或待业务回执的命令，禁止替换媒体数据；须先完成或明确终结命令");
+            long push=jdbc.queryForObject("SELECT COUNT(*) FROM fuda_push_outbox WHERE status='IN_FLIGHT'",Long.class);
+            if(operations+effects+commands+push>0)throw new IllegalStateException("全局尚未排空或存在未知副作用，禁止导入；必须先核对未决操作");
+        }
         java.util.List<String> modes=jdbc.query("SELECT mode FROM wearable_runtime_control WHERE control_key='global' FOR UPDATE",(rs,n)->rs.getString(1));
         if(modes.size()!=1)throw new IllegalStateException("维护状态缺失，禁止导入");
+        if(cluster&&!"PAUSED".equals(modes.get(0))) {
+            long now=com.ruoyi.common.database.DatabaseDialect.of(jdbc).dbTimeMillis(jdbc);
+            if(jdbc.queryForObject("SELECT COUNT(*) FROM wearable_cluster_node WHERE lease_until>?",Integer.class,now)>0)throw new IllegalStateException("在线集群必须先全局暂停并排空，禁止导入");
+        }
         return "PAUSED".equals(modes.get(0));
     }
     private static JSONObject read(Path path) throws Exception { JSONObject value=JSONObject.parseObject(new String(Files.readAllBytes(path),StandardCharsets.UTF_8));if(value==null)throw new IllegalArgumentException("导入文件为空");return value; }

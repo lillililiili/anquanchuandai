@@ -29,7 +29,7 @@ class OrganizationLifecycleTest {
                 "accounts", JSONArray.of(actor), "roles", new JSONArray(),
                 "organizations", JSONArray.of(org("legacy", "site-1", null, false), org("normal", "site-1", null, true), org("foreign", "site-2", null, false)),
                 "people", new JSONArray()));
-        AdminLedgerStore ledger = mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(call -> copy(saved.get()));
         doAnswer(call -> { saved.set(copy(call.getArgument(0))); return null; }).when(ledger).write(any());
         GuardianStore guardian = mock(GuardianStore.class);

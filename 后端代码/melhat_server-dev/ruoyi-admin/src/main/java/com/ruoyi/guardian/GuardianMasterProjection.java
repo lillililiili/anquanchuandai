@@ -7,7 +7,13 @@ import static com.ruoyi.guardian.WearableModel.*;
 /** Rebuild only a read projection from the existing authoritative ledger. */
 final class GuardianMasterProjection {
     static void apply(JSONObject snapshot,JSONObject admin) {
+        long revision=admin.getLongValue("revision");
+        if(snapshot.containsKey("appliedLedgerRevision")&&snapshot.getLongValue("appliedLedgerRevision")>revision)return;
         WearableModel.migrate(admin);
+        Set<String> peopleIds=new HashSet<>();for(Object raw:rows(admin,"people"))peopleIds.add(((JSONObject)raw).getString("id"));
+        rows(snapshot,"people").removeIf(raw->{JSONObject p=(JSONObject)raw;return p.getString("ledgerId")!=null&&!peopleIds.contains(p.getString("ledgerId"));});
+        if(!snapshot.containsKey("appliedLedgerRevision")||snapshot.getLongValue("appliedLedgerRevision")!=revision)snapshot.remove("mapAreas");
+        snapshot.put("appliedLedgerRevision",revision);
         for(Object raw:rows(admin,"sites")) { JSONObject s=(JSONObject)raw;JSONObject target=find(snapshot,"stations",s.getString("portalStation"));
             if(target==null){target=object("id",s.getString("portalStation"));rows(snapshot,"stations").add(target);} target.put("name",s.getString("name"));target.put("siteId",s.getString("id"));target.put("enabled",s.getBooleanValue("enabled")); }
         for(Object raw:rows(admin,"people")) { JSONObject p=(JSONObject)raw,s=find(admin,"sites",p.getString("siteId"));if(s==null)continue;

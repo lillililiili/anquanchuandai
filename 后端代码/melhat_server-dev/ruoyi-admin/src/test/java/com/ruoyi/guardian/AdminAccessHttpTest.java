@@ -22,14 +22,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Exercises real HTTP/Jackson deserialization rather than constructing Fastjson arrays in tests. */
 class AdminAccessHttpTest {
-    MockMvc http;AtomicReference<JSONObject> saved;AdminAccessService access;JSONObject actor;ObjectMapper json=new ObjectMapper();
+    AdminLedgerStore ledger;MockMvc http;AtomicReference<JSONObject> saved;AdminAccessService access;JSONObject actor;ObjectMapper json=new ObjectMapper();
     @BeforeEach void setup() throws Exception {
         JSONObject seed=JSONObject.parseObject(StreamUtils.copyToString(new ClassPathResource("admin-seed.json").getInputStream(),StandardCharsets.UTF_8));
         migrate(seed);saved=new AtomicReference<>(seed);actor=find(seed,"accounts","demo-system");
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);
+        ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(call->copy(saved.get()));
         doAnswer(call->{saved.set(copy(call.getArgument(0)));return null;}).when(ledger).write(any());
-        access=spy(new AdminAccessService(ledger));
+        access=spy(new AdminAccessService(ledger));RedisPreviewFixture.attach(access);
         AdminQueryService queries=new AdminQueryService(ledger,mock(GuardianStore.class),mock(ObjectProvider.class));
         AdminLedgerController controller=new AdminLedgerController(ledger,queries,mock(AdminDeviceService.class),
                 mock(AdminAssignmentService.class),mock(AdminMaintenanceService.class),mock(AdminMasterService.class),access);
@@ -230,5 +230,11 @@ class AdminAccessHttpTest {
         createAccount("delegated-site-viewer",Collections.singletonList(binding("viewer")));
         actor=find(saved.get(),"accounts","demo-site");
         createAccount("delegated-viewer",Collections.singletonList(viewer));
+    }
+    @Test void consumedPreviewCommitFailureImmediatelyExplainsRecovery() {
+        JSONObject row=find(saved.get(),"accounts","demo-duty");JSONObject input=object("operationId","preview-failure","siteId","site-1","id","demo-duty","expectedVersion",row.getIntValue("version"),"data",object("name",row.getString("name"),"loginName",row.getString("loginName"),"personId",row.get("personId"),"bindings",new com.alibaba.fastjson2.JSONArray()));
+        Map<String,Object> preview=access.query("demo-system","authorizationPreview",object("siteId","site-1","type","accounts.update","command",input));input.put("previewId",preview.get("previewId"));
+        doAnswer(call->{((java.util.function.Supplier<?>)call.getArgument(0)).get();throw new IllegalStateException("commit response lost");}).when(ledger).mutate(any());
+        AdminQueryService.QueryFailed failure=assertThrows(AdminQueryService.QueryFailed.class,()->access.execute("demo-system","accounts.update",input));assertEquals("PREVIEW_CONFIRMATION_UNCERTAIN",failure.errorCode);assertTrue(failure.getMessage().contains("原操作标识"));assertTrue(failure.getMessage().contains("重新预览"));
     }
 }

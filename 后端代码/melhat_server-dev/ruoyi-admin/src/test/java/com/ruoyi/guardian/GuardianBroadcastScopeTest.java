@@ -19,7 +19,7 @@ class GuardianBroadcastScopeTest {
         rows(master,"people").add(object("id","person-ledger","portalId","P-old","name","原人员"));
         rows(master,"assignments").add(object("active",true,"deviceId","asset-a","personId","person-ledger"));
         JSONObject device=object("id","asset-a","portalDeviceId","helmet-a","siteId","site-old","areaId","area-old");
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenReturn(master);
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenReturn(master);
         GuardianAccess access=new GuardianAccess(ledger,mock(AdminQueryService.class));
         JSONObject recipient=GuardianHelmetRecipient.capture(access.context(object("id","operator")),device);
         device.put("siteId","site-new");rows(master,"people").getJSONObject(0).put("portalId","P-new");

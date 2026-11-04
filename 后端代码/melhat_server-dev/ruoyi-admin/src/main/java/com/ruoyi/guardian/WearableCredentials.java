@@ -12,7 +12,7 @@ public class WearableCredentials {
     private final AdminLedgerStore ledger;
     public WearableCredentials(AdminLedgerStore ledger) { this.ledger=ledger; }
     public JSONObject authenticate(String username,String password) {
-        synchronized(ledger) {
+        {
             JSONObject state=ledger.read();
             JSONObject found=null;
             for(Object raw:rows(state,"accounts")) { JSONObject row=(JSONObject)raw;

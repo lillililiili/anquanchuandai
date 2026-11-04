@@ -25,7 +25,7 @@ class AdminQueryPerformanceTest {
 
     @BeforeEach void setup() throws Exception {
         state = seed("admin-seed.json"); snapshot = seed("guardian-seed.json");
-        AdminLedgerStore ledger = mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(i -> JSON.parseObject(state.toJSONString()));
         guardian = mock(GuardianStore.class);
         when(guardian.snapshot()).thenAnswer(i -> JSON.parseObject(snapshot.toJSONString()));

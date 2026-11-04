@@ -19,6 +19,7 @@ public class AdminMasterService {
     private static final List<String> ENTITIES = Arrays.asList("people", "organizations", "sites", "dutyShifts");
     private static final List<String> ACTIONS = Arrays.asList("create", "update", "status", "delete");
     private static final Pattern CJK = Pattern.compile("[\\u4e00-\\u9fff]");
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final AdminLedgerStore ledger;
     private final GuardianStore guardian;
     private final AdminQueryService queries;
@@ -37,7 +38,18 @@ public class AdminMasterService {
         return ENTITIES.contains(entity) && (ACTIONS.contains(action) || "people".equals(entity) && "dutyStatus".equals(action)) && !("organizations".equals(entity) && "status".equals(action));
     }
 
+    private final ThreadLocal<JSONObject> workSnapshot=new ThreadLocal<>();
     public JSONObject execute(String accountId, String type, JSONObject input) {
+        if(coordinator!=null&&coordinator.enabled())return coordinator.run("media",false,()->executeProtected(accountId,type,input));
+        return executeProtected(accountId,type,input);
+    }
+    private JSONObject executeProtected(String accountId,String type,JSONObject input){
+        // Capture read-only work evidence before entering the ledger lock; no reverse store lock.
+        workSnapshot.set(guardian.snapshot());
+        try{return ledger.mutate(() -> executeMutation(accountId,type,input));}finally{workSnapshot.remove();}
+    }
+
+    private JSONObject executeMutation(String accountId, String type, JSONObject input) {
         if (type != null && type.startsWith("areas.")) throw AdminQueryService.fail(410, "FEATURE_REMOVED", "行政区域功能已取消");
         if (!handles(type)) throw AdminQueryService.fail(400, "UNKNOWN_COMMAND", "未开放此操作");
         JSONObject state = ledger.read();
@@ -54,6 +66,10 @@ public class AdminMasterService {
         JSONObject previous = memory.getJSONObject(key);
         String fingerprint = input.toJSONString();
         if (previous != null) {
+            String replayEntity=type.substring(0,type.indexOf('.'));
+            JSONObject replayTarget=find(state,replayEntity,input.getString("id"));if(replayTarget==null)replayTarget=previous.getJSONObject("result").getJSONObject("data");
+            if(!queries.allows(state,actor,writeOperation(replayEntity),"sites".equals(replayEntity)?input.getString("id"):input.getString("siteId"),replayTarget==null?null:replayTarget.getString("areaId")))
+                throw AdminQueryService.fail(403,"PERMISSION_DENIED","当前身份无此操作或数据范围权限");
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
             if ("people.delete".equals(type)) {
                 JSONObject deleted = previous.getJSONObject("result").getJSONObject("data");
@@ -68,13 +84,7 @@ public class AdminMasterService {
         JSONObject output = apply(state, actor, entity, action, input);
         if (!"create".equals(action)) before = output.getJSONObject("_before");
         output.remove("_before");
-        try {
-            publish(state, "people".equals(entity) && "delete".equals(action) ? output : null);
-        } catch (AdminQueryService.QueryFailed error) {
-            throw error;
-        } catch (RuntimeException error) {
-            throw AdminQueryService.fail(400, "PORTAL_REJECTED", error.getMessage() == null ? "监护数据保存失败" : error.getMessage());
-        }
+        // Guardian rebuilds this projection only from committed ledger revisions.
         state.put("revision", state.getIntValue("revision") + 1);
         audit(state, actor, type, input, before, output);
         JSONObject envelope = new JSONObject();
@@ -292,7 +302,8 @@ public class AdminMasterService {
     }
 
     private boolean openWork(JSONObject person) {
-        JSONObject snapshot = guardian.snapshot();
+        JSONObject snapshot = workSnapshot.get();
+        if(snapshot==null&&!ledger.inMutation())snapshot=guardian.snapshot();
         if (snapshot == null) return false;
         String portalId = person.getString("portalId");
         if (portalId == null || portalId.isEmpty()) portalId = person.getString("id");
@@ -303,25 +314,6 @@ public class AdminMasterService {
             if (members != null && members.contains(portalId)) return true;
         }
         return false;
-    }
-
-    private void publish(JSONObject admin, JSONObject deletedPerson) {
-        WearableModel.migrate(admin);
-        guardian.update(snapshot -> {
-            GuardianMasterProjection.apply(snapshot, admin);
-            if (deletedPerson != null) {
-                String portalId = deletedPerson.getString("portalId");
-                if (portalId == null || portalId.isEmpty()) portalId = deletedPerson.getString("id");
-                JSONArray people = snapshot.getJSONArray("people");
-                if (people != null) for (int i = people.size() - 1; i >= 0; i--) {
-                    JSONObject person = people.getJSONObject(i);
-                    if (portalId.equals(person.getString("id")) || deletedPerson.getString("id").equals(person.getString("ledgerId"))) people.remove(i);
-                }
-            }
-            snapshot.remove("mapAreas");
-            snapshot.put("seq", snapshot.getIntValue("seq") + 1);
-            return true;
-        });
     }
 
     private JSONObject requireEnabled(JSONObject state, JSONObject actor, String key, String id, String siteId, JSONObject input) {

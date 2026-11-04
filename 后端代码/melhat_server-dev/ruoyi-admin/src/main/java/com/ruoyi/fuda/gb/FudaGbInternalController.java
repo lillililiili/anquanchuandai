@@ -23,7 +23,7 @@ public class FudaGbInternalController {
     private final boolean enabled;
     private final String secret;
     private final Set<String> allowed;
-    private final Map<String,Long> nonces=new HashMap<>();
+    @org.springframework.beans.factory.annotation.Autowired private org.springframework.data.redis.core.StringRedisTemplate redis;
     public FudaGbInternalController(HelmetMediaService media,
             @Value("${fuda.gb.internal-enabled:false}") boolean enabled,
             @Value("${fuda.gb.internal-secret:}") String secret,
@@ -38,12 +38,13 @@ public class FudaGbInternalController {
         String time=request.getHeader("X-GB-Time"),nonce=request.getHeader("X-GB-Nonce"),sig=request.getHeader("X-GB-Signature");
         if(time==null||!time.matches("[0-9]{10}")||nonce==null||!nonce.matches("[A-Za-z0-9_-]{16,100}")||sig==null||!sig.matches("[a-f0-9]{64}"))return false;
         long now=Instant.now().getEpochSecond();if(Math.abs(now-Long.parseLong(time))>60)return false;
-        nonces.entrySet().removeIf(e->e.getValue()<now);
-        if(nonces.containsKey(nonce)||nonces.size()>10000||request.getQueryString()!=null||body.length()>4096)return false;
+        if(request.getQueryString()!=null||body.length()>4096)return false;
         try{String expected=HelmetCloudClient.signature(secret,time,nonce,request.getMethod(),request.getRequestURI(),body.getBytes(StandardCharsets.UTF_8));
             if(!MessageDigest.isEqual(expected.getBytes(StandardCharsets.US_ASCII),sig.getBytes(StandardCharsets.US_ASCII)))return false;
-            nonces.put(nonce,now+120);return true;
-        }catch(Exception ignored){return false;}
+            if(redis==null)throw new IllegalStateException("Authentication storage unavailable");
+            return Boolean.TRUE.equals(redis.opsForValue().setIfAbsent("wearable:gb:nonce:"+nonce,"1",java.time.Duration.ofSeconds(121)));
+        }catch(org.springframework.dao.DataAccessException unavailable){throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,"Authentication storage unavailable");}
+        catch(Exception ignored){return false;}
     }
     @RequestMapping(value="/devices/{deviceId}/status",method=RequestMethod.GET)
     public ResponseEntity<JSONObject> status(@PathVariable String deviceId,HttpServletRequest request){

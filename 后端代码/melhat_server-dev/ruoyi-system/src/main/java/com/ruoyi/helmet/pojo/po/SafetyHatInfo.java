@@ -26,6 +26,7 @@ public class SafetyHatInfo extends Model<SafetyHatInfo> {
     /**
      *
      */
+    @com.baomidou.mybatisplus.annotation.TableId(type = com.baomidou.mybatisplus.annotation.IdType.AUTO)
     private Long id;
     /**
      * 安全帽编号

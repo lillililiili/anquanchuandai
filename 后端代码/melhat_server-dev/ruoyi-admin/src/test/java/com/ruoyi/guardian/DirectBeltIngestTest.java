@@ -30,7 +30,7 @@ class DirectBeltIngestTest {
         rows(admin, "devices").add(device);
         admin.put("assignments", JSONArray.of(object("id", "belt-assignment", "deviceId", "belt-test",
                 "personId", person.getString("id"), "active", true, "version", 1, "startedAt", "2026-10-20T11:00:00Z")));
-        ledger = mock(AdminLedgerStore.class);
+        ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(i -> copy(admin));
         hats = mock(GuardianHatArchive.class);
         store = new GuardianStore(hats);

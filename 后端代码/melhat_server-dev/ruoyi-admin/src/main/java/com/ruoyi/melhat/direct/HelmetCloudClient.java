@@ -16,6 +16,7 @@ import java.util.UUID;
 @Component
 public class HelmetCloudClient {
     private final HelmetMediaProperties properties;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.MediaOperationJournal journal;
     public HelmetCloudClient(HelmetMediaProperties properties) { this.properties = properties; }
     public boolean configured() {
         try {
@@ -26,6 +27,9 @@ public class HelmetCloudClient {
         } catch (RuntimeException error) { return false; }
     }
     public JSONObject request(String method, String path, JSONObject body) {
+        return journal==null?requestOnce(method,path,body):journal.execute(method,path,body,()->requestOnce(method,path,body),fingerprint->requestOnce("GET","/operations/"+fingerprint,null));
+    }
+    private JSONObject requestOnce(String method,String path,JSONObject body) {
         if (!configured()) throw new IllegalStateException("自有云媒体服务尚未配置");
         if (!path.matches("/[A-Za-z0-9_/?=&.-]*") || path.contains(".."))
             throw new IllegalArgumentException("媒体请求路径无效");

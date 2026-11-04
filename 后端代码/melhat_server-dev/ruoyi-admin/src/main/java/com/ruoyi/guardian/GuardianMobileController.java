@@ -31,7 +31,7 @@ public class GuardianMobileController {
     @GetMapping("/sites") public JSONArray sites(HttpServletRequest r){return identity(r).getJSONArray("sites");}
     /** A scoped read model, including the versions needed by existing assignment commands. */
     @GetMapping("/context") public JSONObject context(@RequestParam String siteId,HttpServletRequest r){
-        synchronized(ledger){
+        {
             GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));
             JSONObject state=siteSnapshot(r,siteId);
             for(Object raw:rows(state,"people")){
@@ -68,7 +68,7 @@ public class GuardianMobileController {
         return object("rows",result,"history",history);
     }
     @PostMapping("/assignments/{action:issue|return}") public JSONObject assignment(@PathVariable String action,@RequestBody JSONObject input,HttpServletRequest r){
-        synchronized(ledger){
+        {
             GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));
             JSONObject person=find(ctx.data,"people",input.getString("personId"));String site=input.getString("siteId");
             if(person==null||!Objects.equals(site,person.getString("siteId"))||!ctx.can("assets:write",site,person.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","无权办理此人员装备");

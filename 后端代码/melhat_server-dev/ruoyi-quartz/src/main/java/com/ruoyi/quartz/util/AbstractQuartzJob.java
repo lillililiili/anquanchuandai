@@ -40,7 +40,10 @@ public abstract class AbstractQuartzJob implements Job
             before(context, sysJob);
             if (sysJob != null)
             {
-                doExecute(context, sysJob);
+                com.ruoyi.common.core.ClusterJobExecution coordinator=null;
+                try{coordinator=SpringUtils.getBean(com.ruoyi.common.core.ClusterJobExecution.class);}catch(org.springframework.beans.factory.NoSuchBeanDefinitionException standalone){}
+                if(coordinator==null)doExecute(context,sysJob);
+                else if(!coordinator.execute(String.valueOf(sysJob.getJobId()),String.valueOf(context.getScheduledFireTime().getTime()),()->doExecute(context,sysJob))){threadLocal.remove();log.info("任务本次执行已由其他节点持有或已执行，jobId={}",sysJob.getJobId());return;}
             }
             after(context, sysJob, null);
         }

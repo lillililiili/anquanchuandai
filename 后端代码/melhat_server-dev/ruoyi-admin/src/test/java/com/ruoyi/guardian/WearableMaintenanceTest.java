@@ -42,7 +42,7 @@ class WearableMaintenanceTest {
             assertTrue(gate.paused());assertFalse(pause.isDone());assertFalse(gate.tryBeginWrite());
             assertFalse(gate.status().getBooleanValue("quiescent"));gate.endWrite();
             assertTrue(pause.get(3,TimeUnit.SECONDS).getBooleanValue("quiescent"));
-        } finally {gate.endWrite();executor.shutdownNow();}
+        } finally {if(gate.status().getIntValue("activeWrites")>0)gate.endWrite();executor.shutdownNow();}
     }
     @RestController static class Probe {
         int writes;

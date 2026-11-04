@@ -7,18 +7,23 @@ import org.springframework.stereotype.Component;
 @Component
 @org.springframework.scheduling.annotation.EnableScheduling
 public class PlatformStatusPoller {
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final AdminLedgerStore ledger;private final AdminPlatformService platform;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
     public PlatformStatusPoller(AdminLedgerStore ledger,AdminPlatformService platform){this.ledger=ledger;this.platform=platform;}
     @Scheduled(initialDelay=120000,fixedDelay=120000)
-    public void refresh() {
+    public void refresh(){
+        if(coordinator!=null&&coordinator.enabled()){coordinator.runPeriodic("platform","platform-status",120000,()->{refreshCoordinated();return null;});return;}
+        refreshCoordinated();
+    }
+    private void refreshCoordinated(){
         if(maintenance!=null && !maintenance.tryBeginWrite())return;
         try { refreshActive(); } finally { if(maintenance!=null)maintenance.endWrite(); }
     }
     private void refreshActive() {
         JSONObject state=ledger.read();if(state==null)return;
         JSONObject sources=state.getJSONObject("platformSync");if(sources==null)return;
-        for(String site:sources.keySet())try { synchronized(ledger) { platform.sync("demo-system",site,true); } }
+        for(String site:sources.keySet())try { { platform.sync("demo-system",site,true); } }
         catch(Exception error) { org.slf4j.LoggerFactory.getLogger(getClass()).warn("厂站 {} 厂家状态刷新失败，保留上次结果",site); }
     }
 }

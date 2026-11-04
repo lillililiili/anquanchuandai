@@ -56,6 +56,8 @@ import java.util.concurrent.ConcurrentHashMap;
         this.ownership=ownership;
     }
     public java.time.Instant now() {return java.time.Instant.ofEpochMilli(db.now());}
+    /** Durable successful logins also retain pending SIP provisioning after worker death. */
+    public java.util.List<String> knownHelmetDevices(){return db.jdbc.query("SELECT device_id FROM wearable_device_owner WHERE device_type='helmet'",(r,n)->r.getString(1));}
     public boolean enabled() {
         return identity.enabled();
     }
@@ -218,7 +220,10 @@ import java.util.concurrent.ConcurrentHashMap;
                 db.jdbc.update("UPDATE wearable_transport_command SET delivery_status='CANCELLED',reason='目标连接已变化，未发送',updated_at=? WHERE command_id=? AND delivery_status='QUEUED'",now,id);
                 return null;
             }
-            if(guard!=null)guard.dispatch(id);
+            try{if(guard!=null)guard.dispatch(id);}catch(com.ruoyi.guardian.AdminQueryService.QueryFailed rejected){
+                if(rejected.code!=403&&rejected.code!=401)throw rejected;
+                db.jdbc.update("UPDATE wearable_transport_command SET delivery_status='CANCELLED',reason='权限或领用关系已变化，未发送',updated_at=? WHERE command_id=? AND delivery_status='QUEUED'",now,id);return null;
+            }
             String claim=UUID.randomUUID().toString();
             db.jdbc.update("UPDATE wearable_transport_command SET delivery_status='DISPATCHING',claim_token=?,attempt_until=?,updated_at=? WHERE command_id=? AND delivery_status='QUEUED'",claim,now+properties.getSendTimeoutMillis(),now,id);
             a.put("claim",claim);

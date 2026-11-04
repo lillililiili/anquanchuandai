@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { verifier, signedHeaders, signedDigestHeaders, ticket, readTicket } from '../auth.mjs';
 import { Store } from '../store.mjs';
 import { MediaService, CONTROL } from '../service.mjs';
-import { createServer } from '../server.mjs';
+import { createServer, operationFingerprint } from '../server.mjs';
 import { frameDecoder } from '../esl.mjs';
 
 function fixture(t) {
@@ -404,4 +404,31 @@ test('streamed upload verifies signed digest before durable success and rejects 
  assert.equal(ok.status,200);const asset=(await ok.json()).data;assert.equal(asset.status,'ready');assert.equal(new Store(config.dataDir).data.assets[asset.assetId].deviceId,'d1');
  const bad=await fetch(origin+route,{method:'POST',headers:signed(),body:Buffer.concat([body,Buffer.from('tampered')])});
  assert.equal(bad.status,400);assert.equal((await bad.json()).error,'BODY_DIGEST_MISMATCH');assert.equal(Object.keys(service.store.data.assets).length,1);
+});
+
+
+test('confirmed operation evidence is durable, read-only and unavailable for missing outcomes', async t => {
+  const { config, service } = fixture(t);
+  let writes = 0; const original = service.putAccount.bind(service);
+  service.putAccount = async (...args) => { writes++; return original(...args); };
+  const { server } = createServer(config, { service });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  t.after(() => { server.closeAllConnections(); return new Promise(resolve => server.close(resolve)); });
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const body = { password: 'p'.repeat(32), kind: 'helmet', deviceId: 'd1' };
+  const path = CONTROL + '/accounts/h1', bytes = Buffer.from(JSON.stringify(body));
+  const response = await fetch(origin + path, { method: 'PUT', headers: signedHeaders(config.signingKey, 'PUT', path, bytes), body: bytes });
+  assert.equal(response.status, 200); const expected = (await response.json()).data;
+  const fingerprint = operationFingerprint('PUT', '/accounts/h1', body);
+  assert.equal(fingerprint, operationFingerprint('PUT', '/accounts/h1', { deviceId: 'd1', kind: 'helmet', password: 'p'.repeat(32) }));
+  const evidencePath = CONTROL + '/operations/' + fingerprint;
+  for (let i = 0; i < 2; i++) {
+    const read = await fetch(origin + evidencePath, { headers: signedHeaders(config.signingKey, 'GET', evidencePath) });
+    assert.equal(read.status, 200); assert.deepEqual((await read.json()).data.result, expected);
+  }
+  assert.equal(writes, 1);
+  const restored = new Store(config.dataDir); assert.deepEqual(restored.data.operationEvidence[fingerprint].result, expected);
+  const missing = CONTROL + '/operations/' + '0'.repeat(64);
+  assert.equal((await fetch(origin + missing, { headers: signedHeaders(config.signingKey, 'GET', missing) })).status, 404);
+  assert.equal(writes, 1);
 });

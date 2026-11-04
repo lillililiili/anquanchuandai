@@ -25,7 +25,7 @@ class AdminHelmetTelemetryTest {
                 "assignments", new JSONArray(), "people", new JSONArray());
         remote = object("id", "helmet-physical", "source", "DIRECT_HELMET", "active", true);
         snapshot = object("devices", JSONArray.of(remote));
-        AdminLedgerStore store = mock(AdminLedgerStore.class);
+        AdminLedgerStore store = mock(AdminLedgerStore.class);org.mockito.Mockito.when(store.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(store.read()).thenAnswer(i -> JSON.parseObject(ledger.toJSONString()));
         GuardianStore guardian = mock(GuardianStore.class);
         when(guardian.snapshot()).thenAnswer(i -> JSON.parseObject(snapshot.toJSONString()));

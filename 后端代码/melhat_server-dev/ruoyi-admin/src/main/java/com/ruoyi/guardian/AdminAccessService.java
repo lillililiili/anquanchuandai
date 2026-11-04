@@ -21,8 +21,9 @@ public class AdminAccessService {
     private static final List<String> DELEGATE = Arrays.asList("viewer", "people-editor", "asset-operator", "mobile-user");
     private static final List<String> OPERATIONS = Arrays.asList("overview:read", "assets:read", "people:read", "people:write", "organization:read", "organization:write", "sites:read", "sites:write", "duty:read", "duty:write", "access:read", "accounts:write", "roles:write", "audit:read", "integrations:read", "integrations:write", "assets:write", "groups:write", "self:read", "events:read", "events:claim", "events:observe", "events:verify", "sos:create", "sos:assist", "works:read", "communications:voice", "communications:broadcast");
     private static final Pattern SECRET = Pattern.compile("password|passwd|token|secret|credential|authorization|cookie", Pattern.CASE_INSENSITIVE);
-    private static final Map<String, Preview> PREVIEWS = Collections.synchronizedMap(new LinkedHashMap<String, Preview>());
+    @org.springframework.beans.factory.annotation.Autowired private org.springframework.data.redis.core.StringRedisTemplate redis;
 
+    private final ThreadLocal<Boolean> previewConsumed = new ThreadLocal<>();
     private final AdminLedgerStore ledger;
 
     public AdminAccessService(AdminLedgerStore ledger) { this.ledger = ledger; }
@@ -42,6 +43,18 @@ public class AdminAccessService {
     }
 
     public JSONObject execute(String accountId, String type, JSONObject input) {
+        previewConsumed.set(false);
+        try { return ledger.mutate(() -> executeMutation(accountId,type,input)); }
+        catch(RuntimeException failure) {
+            if(Boolean.TRUE.equals(previewConsumed.get())) {
+                AdminQueryService.QueryFailed result=new AdminQueryService.QueryFailed(503,"PREVIEW_CONFIRMATION_UNCERTAIN","授权预览已消费，提交结果需先刷新核对；保留原操作标识，未生效时请重新预览后确认");
+                result.initCause(failure);throw result;
+            }
+            throw failure;
+        } finally { previewConsumed.remove(); }
+    }
+
+    private JSONObject executeMutation(String accountId, String type, JSONObject input) {
         if (!handles(type)) throw AdminQueryService.fail(400, "UNKNOWN_COMMAND", "未开放此操作");
         JSONObject state = read();
         JSONObject actor = account(state, accountId);
@@ -54,6 +67,11 @@ public class AdminAccessService {
         JSONObject previous = memory.getJSONObject(key);
         String fingerprint = org.apache.commons.codec.digest.DigestUtils.sha256Hex(input.toJSONString());
         if (previous != null) {
+            String entity=type.startsWith("roles.")?"roles":"accounts";
+            String action=type.substring(type.indexOf('.')+1);if("resetCredential".equals(action))action="update";
+            JSONObject target=find(state,entity,input.getString("id"));
+            if(target==null&&"delete".equals(action))target=previous.getJSONObject("result").getJSONObject("data");
+            authorize(state,actor,entity,action,target,input);
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
             if ("accounts.delete".equals(type) || "roles.delete".equals(type)) authorize(state, actor, type.startsWith("roles.") ? "roles" : "accounts", "delete", previous.getJSONObject("result").getJSONObject("data"), input);
             return previous.getJSONObject("result");
@@ -86,11 +104,11 @@ public class AdminAccessService {
         JSONObject draft = copy(state);
         change(draft, actor, type, command);
         boolean required = "roles.status".equals(type) || changedAccess(state, draft, type, command);
-        String previewId = "preview-" + System.nanoTime();
-        synchronized (PREVIEWS) {
-            while (PREVIEWS.size() >= 50) PREVIEWS.remove(PREVIEWS.keySet().iterator().next());
-            PREVIEWS.put(previewId, new Preview(actor.getString("id"), state.getIntValue("revision"), type, command.toJSONString()));
-        }
+        String previewId = "preview-" + java.util.UUID.randomUUID();
+        JSONObject evidence=new JSONObject();evidence.put("actorId",actor.getString("id"));evidence.put("revision",state.getLongValue("revision"));
+        evidence.put("type",type);evidence.put("fingerprint",org.apache.commons.codec.digest.DigestUtils.sha256Hex(com.ruoyi.cluster.MediaOperationJournal.canonical(command)));
+        try{redis.opsForValue().set("wearable:authorization-preview:"+previewId,evidence.toJSONString(),java.time.Duration.ofMinutes(5));}
+        catch(RuntimeException unavailable){throw AdminQueryService.fail(503,"PREVIEW_UNAVAILABLE","授权预览存储不可用，请稍后重试");}
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("availability", "AVAILABLE");
         body.put("previewId", previewId);
@@ -101,12 +119,18 @@ public class AdminAccessService {
     }
 
     private void checkPreview(JSONObject state, JSONObject actor, String type, JSONObject input) {
-        Preview preview = PREVIEWS.get(input.getString("previewId"));
-        JSONObject command = copy(input);
-        command.remove("previewId");
-        if (preview == null || !actor.getString("id").equals(preview.actorId) || preview.revision != state.getIntValue("revision") || !type.equals(preview.type) || !preview.fingerprint.equals(command.toJSONString())) {
-            throw AdminQueryService.fail(409, "PREVIEW_EXPIRED", "授权预览缺失或已失效，请重新预览后确认");
-        }
+        JSONObject command=copy(input);command.remove("previewId");
+        String key="wearable:authorization-preview:"+input.getString("previewId"),encoded;
+        try{encoded=redis.opsForValue().get(key);}catch(RuntimeException unavailable){throw AdminQueryService.fail(503,"PREVIEW_UNAVAILABLE","授权预览存储不可用");}
+        JSONObject preview=encoded==null?null:JSONObject.parseObject(encoded);
+        if(preview==null||!actor.getString("id").equals(preview.getString("actorId"))||preview.getLongValue("revision")!=state.getLongValue("revision")||!type.equals(preview.getString("type"))
+                ||!org.apache.commons.codec.digest.DigestUtils.sha256Hex(com.ruoyi.cluster.MediaOperationJournal.canonical(command)).equals(preview.getString("fingerprint")))
+            throw AdminQueryService.fail(409,"PREVIEW_EXPIRED","授权预览缺失或已失效，请重新预览后确认");
+        // Ledger meta is already locked. SQL failure after consumption explicitly requires a new preview.
+        try{Long consumed=redis.execute(new org.springframework.data.redis.core.script.DefaultRedisScript<Long>("if redis.call('get',KEYS[1]) == ARGV[1] then return redis.call('del',KEYS[1]) else return 0 end",Long.class),java.util.Collections.singletonList(key),encoded);
+            if(!Long.valueOf(1).equals(consumed))throw AdminQueryService.fail(409,"PREVIEW_EXPIRED","授权预览已被消费，请重新预览");
+            previewConsumed.set(true);
+        }catch(org.springframework.dao.DataAccessException unavailable){throw AdminQueryService.fail(503,"PREVIEW_UNAVAILABLE","授权预览存储不可用");}
     }
 
     private boolean needsPreview(JSONObject state, JSONObject actor, String type, JSONObject input) {
@@ -645,16 +669,4 @@ public class AdminAccessService {
         return list;
     }
 
-    private static final class Preview {
-        private final String actorId;
-        private final int revision;
-        private final String type;
-        private final String fingerprint;
-        private Preview(String actorId, int revision, String type, String fingerprint) {
-            this.actorId = actorId;
-            this.revision = revision;
-            this.type = type;
-            this.fingerprint = fingerprint;
-        }
-    }
 }

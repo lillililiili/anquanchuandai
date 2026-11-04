@@ -33,7 +33,7 @@ class PeopleOrganizationQueryTest {
                         person("grandchild-person", "site-1", "grandchild", false), person("sibling-person", "site-1", "sibling", true),
                         person("unassigned-person", "site-1", null, true), person("foreign-person", "site-2", "foreign", true),
                         person("corrupt-foreign-person", "site-1", "foreign", true), person("bridged-person", "site-1", "bridged", true)));
-        AdminLedgerStore ledger = mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(call -> copy(state));
         queries = new AdminQueryService(ledger, mock(GuardianStore.class), mock(ObjectProvider.class));
     }

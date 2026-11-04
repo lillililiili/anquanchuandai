@@ -44,11 +44,11 @@ class PersonDutyStatusTest {
         migrate(saved.get());
         projection = new AtomicReference<>(new JSONObject());
         GuardianMasterProjection.apply(projection.get(), saved.get());
-        AdminLedgerStore ledger = mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(call -> copy(saved.get()));
         doAnswer(call -> { saved.set(copy(call.getArgument(0))); return null; }).when(ledger).write(any());
         guardian = mock(GuardianStore.class);
-        when(guardian.snapshot()).thenAnswer(call -> copy(projection.get()));
+        when(guardian.snapshot()).thenAnswer(call -> {if(!failPublish)GuardianMasterProjection.apply(projection.get(),saved.get());return copy(projection.get());});
         doAnswer(call -> {
             JSONObject draft = copy(projection.get());
             ((GuardianStore.Edit) call.getArgument(0)).apply(draft);
@@ -90,11 +90,12 @@ class PersonDutyStatusTest {
         assertEquals("OFF_DUTY", row.getString("dutyStatus"));assertTrue(row.getBooleanValue("enabled"));
         assertEquals("MANUAL", row.getString("dutyStatusSource"));assertEquals("值班管理员", row.getString("dutyStatusUpdatedBy"));
         assertNotNull(Instant.parse(row.getString("dutyStatusUpdatedAt")));
+        GuardianMasterProjection.apply(projection.get(),saved.get());
         JSONObject portal = find(projection.get(), "people", "P-person");
         assertTrue(portal.getBooleanValue("active"));assertEquals("OFF_DUTY", portal.getString("dutyStatus"));
         assertEquals(row.getString("dutyStatusUpdatedAt"), portal.getString("dutyStatusUpdatedAt"));
         assertEquals("MANUAL", portal.getString("dutyStatusSource"));assertEquals("值班管理员", portal.getString("dutyStatusUpdatedBy"));
-        assertEquals(assignments, rows(saved.get(), "assignments"));assertEquals(devices, rows(saved.get(), "devices"));assertEquals(bindings, rows(projection.get(), "bindings"));
+        assertEquals(assignments, rows(saved.get(), "assignments"));assertEquals(devices, rows(saved.get(), "devices"));assertEquals(bindings.toJSONString(), rows(projection.get(), "bindings").toJSONString());
         JSONObject audit = rows(saved.get(), "audit").getJSONObject(0);
         assertEquals("people.dutyStatus", audit.getString("action"));assertEquals("UNKNOWN", audit.getJSONObject("before").getString("dutyStatus"));
         assertEquals("OFF_DUTY", audit.getJSONObject("after").getString("dutyStatus"));
@@ -102,8 +103,9 @@ class PersonDutyStatusTest {
         input.put("dutyStatus", "ON_DUTY");
         assertEquals("IDEMPOTENCY_CONFLICT", assertThrows(AdminQueryService.QueryFailed.class, () -> run(input)).errorCode);
         run(command("ON_DUTY"));
+        GuardianMasterProjection.apply(projection.get(),saved.get());
         assertEquals("ON_DUTY", find(projection.get(), "people", "P-person").getString("dutyStatus"));
-        assertEquals(bindings, rows(projection.get(), "bindings"));assertEquals(2, rows(saved.get(), "audit").size());
+        assertEquals(bindings.toJSONString(), rows(projection.get(), "bindings").toJSONString());assertEquals(2, rows(saved.get(), "audit").size());
     }
 
     @Test void missingStatusesStayUnknownAndTheNewFilterDoesNotDependOnArchiveEnabledState() {
@@ -113,6 +115,7 @@ class PersonDutyStatusTest {
         assertEquals(0, query("master", object("dutyStatus", "ON_DUTY")).getIntValue("total"));
         assertEquals(before, saved.get().toJSONString());
         run(command("ON_DUTY"));
+        GuardianMasterProjection.apply(projection.get(),saved.get());
         assertEquals(1, query("master", object("dutyStatus", "ON_DUTY", "status", "enabled")).getIntValue("total"));
         assertEquals(1, query("master", object("dutyStatus", "UNKNOWN", "status", "disabled")).getIntValue("total"));
         assertEquals(0, query("master", object("dutyStatus", "OFF_DUTY")).getIntValue("total"));
@@ -167,10 +170,11 @@ class PersonDutyStatusTest {
         assertEquals("PERMISSION_DENIED", assertThrows(AdminQueryService.QueryFailed.class, () -> run(input)).errorCode);
     }
 
-    @Test void failedPublishLeavesStatusAuditAndPortalUnchanged() {
+    @Test void projectionFailureCannotUndoCommittedDutyStatusAndRebuildIsMonotone() {
         String before = saved.get().toJSONString(), portal = projection.get().toJSONString();failPublish = true;
-        assertEquals("PORTAL_REJECTED", assertThrows(AdminQueryService.QueryFailed.class, () -> run(command("OFF_DUTY"))).errorCode);
-        assertEquals(before, saved.get().toJSONString());assertEquals(portal, projection.get().toJSONString());
+        JSONObject old=copy(saved.get());run(command("OFF_DUTY"));assertNotEquals(before,saved.get().toJSONString());assertEquals(portal,projection.get().toJSONString());
+        GuardianMasterProjection.apply(projection.get(),saved.get());String applied=projection.get().toJSONString();
+        GuardianMasterProjection.apply(projection.get(),old);assertEquals(applied,projection.get().toJSONString());
     }
 
     @Test void dutyStatusAndAuditSurviveRealLedgerReloadWithoutASchemaChange() {

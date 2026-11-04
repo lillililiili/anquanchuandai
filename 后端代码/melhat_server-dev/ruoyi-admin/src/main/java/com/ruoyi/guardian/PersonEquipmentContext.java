@@ -21,11 +21,11 @@ public class PersonEquipmentContext {
     }
     /** Uses the same monitor as the two assignment HTTP entry points. */
     public <T> T execute(JSONObject actor,Function<GuardianAccess.Context,T> operation) {
-        synchronized(ledger){return operation.apply(access.context(actor));}
+        {return operation.apply(access.context(actor));}
     }
     /** Ledger is always acquired before the media monitor; the predicate performs no I/O. */
     public void withSessionAuthority(Consumer<BiPredicate<String,JSONObject>> operation) {
-        synchronized(ledger) {
+        {
             JSONObject data=ledger.read();
             operation.accept((actorId,captured)->sessionAuthorized(data,actorId,captured));
         }

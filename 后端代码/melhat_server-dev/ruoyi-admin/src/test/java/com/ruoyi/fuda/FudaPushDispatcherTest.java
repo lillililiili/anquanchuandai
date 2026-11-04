@@ -94,6 +94,19 @@ class FudaPushDispatcherTest {
         createDispatcher(false); report("paused"); p.setEnabled(false); assertEquals(0,dispatcher.drain()); assertEquals("PENDING",queueStatus());
         p.setEnabled(true); assertEquals(1,dispatcher.drain()); assertEquals("DELIVERED",queueStatus());
     }
+    @Test void pauseAfterClaimReturnsKnownUnsentRowToPending() {
+        AtomicInteger calls=new AtomicInteger();receiver.createContext("/receive",e->{calls.incrementAndGet();e.close();});receiver.start();createDispatcher(false);report("pause-after-claim");
+        com.ruoyi.guardian.WearableMaintenance gate=mock(com.ruoyi.guardian.WearableMaintenance.class);when(gate.tryBeginWrite()).thenReturn(true);when(gate.paused()).thenReturn(true);
+        org.springframework.test.util.ReflectionTestUtils.setField(dispatcher,"maintenance",gate);
+        assertEquals(0,dispatcher.drain());assertEquals("PENDING",queueStatus());assertEquals(0,calls.get());
+    }
+    @Test void fenceRejectionAfterClaimReturnsKnownUnsentRowToPending() {
+        AtomicInteger calls=new AtomicInteger();receiver.createContext("/receive",e->{calls.incrementAndGet();e.close();});receiver.start();createDispatcher(false);report("fence-after-claim");
+        com.ruoyi.cluster.ClusterWorkCoordinator work=mock(com.ruoyi.cluster.ClusterWorkCoordinator.class);doThrow(new IllegalStateException("fenced")).when(work).beforeEffect();
+        org.springframework.test.util.ReflectionTestUtils.setField(dispatcher,"coordinator",work);
+        assertThrows(IllegalStateException.class,()->dispatcher.drain());assertEquals("PENDING",queueStatus());assertEquals(0,calls.get());
+    }
+    @Test void knownUnsentReleaseAfterExpiryStillFencesChangedToken(){createDispatcher(false);report("expired-not-sent");FudaPushOutbox.Delivery first=box.claim(p.getDestinationId(),clock.millis(),100);clock.advance(101);assertTrue(box.releaseUnsent(first,"NOT_SENT",clock.millis()));FudaPushOutbox.Delivery second=box.claim(p.getDestinationId(),clock.millis(),100);clock.advance(101);FudaPushOutbox.Delivery third=box.claim(p.getDestinationId(),clock.millis(),100);assertFalse(box.releaseUnsent(second,"NOT_SENT",clock.millis()));assertTrue(box.releaseUnsent(third,"NOT_SENT",clock.millis()));assertEquals("PENDING",queueStatus());}
     static final class MutableClock extends Clock {
         final AtomicLong millis=new AtomicLong(Instant.parse("2026-11-02T12:00:00Z").toEpochMilli());
         void advance(long delta) { millis.addAndGet(delta); }

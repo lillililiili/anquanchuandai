@@ -33,6 +33,7 @@ public class WearableBusinessStore {
         public final long revision;
         Snapshot(JSONObject state, long revision) { this.state = state; this.revision = revision; }
     }
+    @Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final JdbcTemplate jdbc;
     private final com.ruoyi.common.database.DatabaseDialect dialect;
     private final TransactionTemplate transactions;
@@ -75,6 +76,7 @@ public class WearableBusinessStore {
         this.jdbc = jdbc;
         this.dialect = com.ruoyi.common.database.DatabaseDialect.of(jdbc);
         this.transactions = new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
+        transactions.setTimeout(10);
         try { this.mediaKey = encodedKey == null || encodedKey.trim().isEmpty() ? null : Base64.getDecoder().decode(encodedKey.trim()); }
         catch (IllegalArgumentException error) { throw new IllegalStateException("媒体数据库加密密钥必须为 Base64 编码", error); }
         if (mediaKey != null && mediaKey.length != 32) throw new IllegalStateException("媒体数据库加密密钥必须包含32字节");
@@ -102,6 +104,7 @@ public class WearableBusinessStore {
         requireNamespace(namespace);
         List<String> existing = jdbc.query("SELECT namespace FROM wearable_business_meta WHERE namespace=?", (rs,n)->rs.getString(1), namespace);
         if (existing.isEmpty()) {
+            if(com.ruoyi.database.SchemaLifecycle.validateOnly(jdbc))throw new IllegalStateException("Business namespace requires explicit initialization before validate-only startup");
             Integer orphaned=jdbc.queryForObject("SELECT COUNT(*) FROM wearable_business_document WHERE namespace=?",Integer.class,namespace);
             if(orphaned!=null && orphaned>0)throw new IllegalStateException("业务迁移标记缺失但数据库已有数据，禁止重新导入");
             JSONObject initial;
@@ -186,8 +189,17 @@ public class WearableBusinessStore {
         return result;
     }
 
+    /** Groups local SQL projections and their cursor; callers must perform all network reads first. */
+    public <T>T atomic(java.util.function.Supplier<T> action){
+        java.util.function.Supplier<T> sql=()->transactions.execute(status->action.get());
+        return coordinator==null?sql.get():coordinator.fenced(sql);
+    }
+
     /** Optimistic storage revision prevents another instance or a stale cache from overwriting accepted data. */
     public long save(String namespace, long expectedRevision, JSONObject next, Runnable dependentWrite) {
+        return coordinator==null?saveFenced(namespace,expectedRevision,next,dependentWrite):coordinator.fenced(()->saveFenced(namespace,expectedRevision,next,dependentWrite));
+    }
+    private long saveFenced(String namespace,long expectedRevision,JSONObject next,Runnable dependentWrite) {
         requireNamespace(namespace);
         return transactions.execute(status -> {
             JSONObject meta=lock(namespace);
@@ -312,6 +324,9 @@ public class WearableBusinessStore {
     public void markReportProcessed(String receiptId) { jdbc.update("UPDATE wearable_device_report SET processed_at=? WHERE receipt_id=? AND processed_at IS NULL",System.currentTimeMillis(),receiptId); }
     /** Business SQL and the delivery marker commit together; retries lock the same receipt. */
     public boolean processReport(String receiptId,Runnable handler) {
+        return coordinator==null?processReportFenced(receiptId,handler):coordinator.fenced(()->processReportFenced(receiptId,handler));
+    }
+    private boolean processReportFenced(String receiptId,Runnable handler) {
         if(receiptId==null || handler==null)throw new IllegalArgumentException("缺少设备报文处理参数");
         synchronized(BUSINESS_LOCK) {
         return transactions.execute(status->{
@@ -349,6 +364,7 @@ public class WearableBusinessStore {
         }
         return null;
     }
+    static Set<String> storageTables(){Set<String> tables=new LinkedHashSet<>(GUARDIAN.values());tables.addAll(MEDIA.values());tables.add("wearable_business_extra");tables.add("wearable_event_action");return tables;}
     private static String table(String ns,String collection) {
         if("$eventActions".equals(collection))return "wearable_event_action";
         String result=("guardian".equals(ns)?GUARDIAN:MEDIA).get(collection);

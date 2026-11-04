@@ -13,7 +13,7 @@ import java.util.*;
 /** DDL is an operator action on DM8 and cluster deployments. No DDL runs during validation. */
 public final class SchemaLifecycle {
  private static final Map<DataSource,String> MODES=Collections.synchronizedMap(new WeakHashMap<>());
- public static final String[] BUSINESS={"20261003_wearable_master","20261023_helmet_business","20261026_wearable_business","20261027_fuda_alarm_journal","20261102_fuda_push_outbox","20261103_shared_files","20261103_cluster_routing"};
+ public static final String[] BUSINESS={"20261003_wearable_master","20261023_helmet_business","20261026_wearable_business","20261027_fuda_alarm_journal","20261102_fuda_push_outbox","20261103_shared_files","20261103_cluster_routing","20261103_cluster_coordination","20261103_cluster_recovery"};
  private final JdbcTemplate jdbc;
  public SchemaLifecycle(JdbcTemplate jdbc){this.jdbc=jdbc;}
  public static void configure(DataSource source,String product,String mode) {
@@ -22,8 +22,12 @@ public final class SchemaLifecycle {
   configured.requireProduct(new JdbcTemplate(source).execute((org.springframework.jdbc.core.ConnectionCallback<String>)c->c.getMetaData().getDatabaseProductName()));
   if(!Arrays.asList("legacy","validate").contains(mode))throw new IllegalStateException("Application schema mode must be legacy or validate; use SchemaMigration for migrate");
   if(configured==DatabaseDialect.DM8&&"legacy".equals(mode))throw new IllegalStateException("DM8 startup is validate-only; run SchemaMigration before application startup");
+  JdbcTemplate startup=new JdbcTemplate(source);
+  if(DatabaseDialect.tableExists(startup,"wearable_schema_lock")&&startup.queryForObject("SELECT COUNT(*) FROM wearable_schema_lock WHERE id=1 AND owner IS NOT NULL",Integer.class)>0)
+   throw new IllegalStateException("Schema migration/import is still owned; application startup is prohibited until reconciliation completes");
   MODES.put(source,mode);
  }
+ public static boolean validateOnly(JdbcTemplate jdbc){return "validate".equals(MODES.get(jdbc.getDataSource()))||DatabaseDialect.of(jdbc)==DatabaseDialect.DM8;}
  public static void ensure(JdbcTemplate jdbc,String resource) {
   DatabaseDialect d=DatabaseDialect.of(jdbc);
   String mode=MODES.get(jdbc.getDataSource());

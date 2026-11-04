@@ -34,7 +34,7 @@ class GuardianDemoDataTest {
     }
     @BeforeEach void setup() throws Exception {
         master=seed("admin-seed.json");migrate(master);actor=find(master,"accounts","demo-system");
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(call->copy(master));
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenAnswer(call->copy(master));
         store=new GuardianStore(mock(GuardianHatArchive.class));ReflectionTestUtils.setField(store,"file",directory.resolve("guardian-state.json"));
         queries=new AdminQueryService(ledger,store,null);masters=new AdminMasterService(ledger,store,queries);
         access=new GuardianAccess(ledger,queries);

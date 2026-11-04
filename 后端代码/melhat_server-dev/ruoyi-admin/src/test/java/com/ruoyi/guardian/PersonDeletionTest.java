@@ -31,7 +31,7 @@ class PersonDeletionTest {
         projection = new AtomicReference<>(object("people", JSONArray.of(object("id", "P-DELETE", "ledgerId", "person", "name", "待删除人员"), object("id", "P-KEEP", "ledgerId", "other", "name", "保留人员")),
                 "events", JSONArray.of(object("id", "past-event", "personId", "P-DELETE")), "works", JSONArray.of(object("id", "ended-work", "status", "已结束", "members", JSONArray.of("P-DELETE"))),
                 "bindings", JSONArray.of(object("id", "returned-binding", "personId", "P-DELETE", "end", "2020-01-01T00:00:00Z"))));
-        AdminLedgerStore ledger = mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(call -> copy(saved.get()));
         doAnswer(call -> { saved.set(copy(call.getArgument(0))); return null; }).when(ledger).write(any());
         GuardianStore guardian = mock(GuardianStore.class);
@@ -55,6 +55,7 @@ class PersonDeletionTest {
         JSONObject before = copy(saved.get()), beforeProjection = copy(projection.get()), input = command();
         JSONObject result = send(input, 200);assertTrue(result.getJSONObject("data").getBooleanValue("deleted"));
         assertNull(find(saved.get(), "people", "person"));assertNotNull(find(saved.get(), "people", "other"));
+        GuardianMasterProjection.apply(projection.get(),saved.get());
         assertNull(find(projection.get(), "people", "P-DELETE"));assertNotNull(find(projection.get(), "people", "P-KEEP"));
         for (String key : new String[]{"works", "events", "bindings"}) assertEquals(beforeProjection.getJSONArray(key), projection.get().getJSONArray(key));
         assertEquals(before.getJSONArray("history"), saved.get().getJSONArray("history"));assertEquals(before.getJSONArray("assignments"), saved.get().getJSONArray("assignments"));
@@ -96,9 +97,10 @@ class PersonDeletionTest {
         find(saved.get(), "roles", "writer-role").getJSONArray("grants").getJSONObject(0).getJSONArray("operations").remove("people:write");
         assertEquals("PERMISSION_DENIED", assertThrows(AdminQueryService.QueryFailed.class, () -> remove(input)).errorCode);
     }
-    @Test void failedProjectionPublishLeavesBothRecordsAndHistoryUntouched() {
+    @Test void projectionFailureCannotUndoCommittedLedgerAndCanBeRebuilt() {
         String before = saved.get().toJSONString(), beforeProjection = projection.get().toJSONString();failPublish = true;
-        assertEquals("PORTAL_REJECTED", assertThrows(AdminQueryService.QueryFailed.class, () -> remove(command())).errorCode);
-        assertEquals(before, saved.get().toJSONString());assertEquals(beforeProjection, projection.get().toJSONString());
+        remove(command());assertNotEquals(before,saved.get().toJSONString());assertEquals(beforeProjection,projection.get().toJSONString());
+        GuardianMasterProjection.apply(projection.get(),saved.get());assertNull(find(projection.get(),"people","P-DELETE"));
+        assertEquals(saved.get().getLongValue("revision"),projection.get().getLongValue("appliedLedgerRevision"));
     }
 }

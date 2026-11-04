@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 /** Recovery across the SQL/file-store boundary. Never nests GuardianStore under an SQL transaction. */
 @Service
 public class HelmetEventDelivery {
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final HelmetBusinessJournal journal;
     private final GuardianIngest ingest;
     private final GuardianStore store;
@@ -15,7 +16,11 @@ public class HelmetEventDelivery {
         this.journal=journal;this.ingest=ingest;this.store=store;
     }
     @Scheduled(fixedDelay=10000,initialDelay=15000)
-    public void retry() {
+    public void retry(){
+        if(coordinator!=null&&coordinator.enabled()){coordinator.run("media",true,()->{retryCoordinated();return null;});return;}
+        retryCoordinated();
+    }
+    private void retryCoordinated(){
         if(maintenance!=null && !maintenance.tryBeginWrite())return;
         try { HelmetEventLifecycle.coordinate(() -> { retryOrdered();return null; }); }
         finally { if(maintenance!=null)maintenance.endWrite(); }

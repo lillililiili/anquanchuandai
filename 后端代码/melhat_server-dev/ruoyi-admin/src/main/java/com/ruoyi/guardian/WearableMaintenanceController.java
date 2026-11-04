@@ -10,6 +10,7 @@ public class WearableMaintenanceController {
     private final WearableMaintenance maintenance;
     public WearableMaintenanceController(WearableMaintenance maintenance){this.maintenance=maintenance;}
     @GetMapping public JSONObject status(HttpServletRequest request){WearableMaintenance.requireSystem(WearableSessions.actor(request));return maintenance.status();}
+    @PostMapping("/reconcile") public JSONObject reconcile(@RequestBody JSONObject body,HttpServletRequest request){return maintenance.reconcile(body.getString("reason"),WearableSessions.actor(request));}
     @PostMapping public JSONObject change(@RequestBody JSONObject body,HttpServletRequest request){
         WearableMaintenance.requireSystem(WearableSessions.actor(request));
         String mode=body.getString("mode");

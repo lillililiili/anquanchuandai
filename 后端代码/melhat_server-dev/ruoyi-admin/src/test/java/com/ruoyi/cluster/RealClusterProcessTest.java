@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
         }
         new SchemaLifecycle(jdbc).migrate(SchemaLifecycle.all(dialect));
         for(String table:Arrays.asList("wearable_transport_command","wearable_device_owner","wearable_cluster_node","wearable_device_report"))jdbc.update("DELETE FROM "+table);
-        dir=Files.createTempDirectory(Paths.get("D:/DevTools/dm8-tmp"),"cluster-process-");
+        dir=Files.createTempDirectory(Paths.get(System.getenv().getOrDefault("COORDINATION_OUTPUT","D:/DevTools/dm8-tmp")),"cluster-process-");
         ws=ContainerProvider.getWebSocketContainer();
         try {
             Node a=start("route-a"),b=start("route-b");
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
             assertNotEquals(a.process.pid(),b.process.pid());
             Path duplicateDir=Files.createDirectory(dir.resolve("duplicate-node"));
             String classpath=System.getProperty("surefire.test.class.path",System.getProperty("java.class.path"));
-            Process duplicate=new ProcessBuilder(Paths.get(System.getProperty("java.home"),"bin","java.exe").toString(),"-Djava.io.tmpdir=D:/DevTools/dm8-tmp","-cp",classpath,ClusterProcessNode.class.getName(),"route-a",duplicateDir.toString()).redirectErrorStream(true).redirectOutput(duplicateDir.resolve("duplicate.log").toFile()).start();
+            Process duplicate=new ProcessBuilder(Paths.get(System.getProperty("java.home"),"bin","java.exe").toString(),"-Xmx256m","-Djdk.net.unixdomain.tmpdir=D:/DevTools/dm8-tmp","-Djava.io.tmpdir=D:/DevTools/dm8-tmp","-cp",classpath,ClusterProcessNode.class.getName(),"route-a",duplicateDir.toString()).redirectErrorStream(true).redirectOutput(duplicateDir.resolve("duplicate.log").toFile()).start();
             processes.add(duplicate);assertTrue(duplicate.waitFor(20,TimeUnit.SECONDS));assertNotEquals(0,duplicate.exitValue());assertFalse(Files.exists(duplicateDir.resolve("route-a-ready.json")));assertTrue(new String(Files.readAllBytes(duplicateDir.resolve("duplicate.log")),StandardCharsets.UTF_8).contains("already active"));
             Device helmet=connect(a,"/wsHat");
             assertTrue(helmet.send("{\"act\":\"ca_login\",\"device_id\":\"h\"}").getBooleanValue("status"));

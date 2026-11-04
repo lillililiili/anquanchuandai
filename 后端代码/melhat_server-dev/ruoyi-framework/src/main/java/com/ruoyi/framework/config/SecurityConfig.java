@@ -116,6 +116,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 .antMatchers("/api/index.php", "/api/belt/index.php", "/api/belt/config/index.php", "/wsBelt").permitAll()
                 // These isolated endpoints verify service HMAC credentials themselves; human JWT is insufficient.
                 .antMatchers(HttpMethod.POST, "/openapi/wearables/v2/positions/query", "/openapi/wearables/v2/statuses/query", "/openapi/wearables/v2/alarms/query").permitAll()
+                .antMatchers(HttpMethod.GET, "/internal/cluster/live", "/internal/cluster/ready", "/internal/cluster/drain").permitAll()
+                .antMatchers(HttpMethod.POST, "/internal/cluster/drain").permitAll()
                 .antMatchers("/internal/fuda-gb/v1/devices/*/status", "/internal/fuda-gb/v1/leases/*").permitAll()
                 // 静态资源，可匿名访问
                 .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()

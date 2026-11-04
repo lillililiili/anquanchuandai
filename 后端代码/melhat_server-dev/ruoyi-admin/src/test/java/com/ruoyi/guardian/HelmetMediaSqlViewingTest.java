@@ -40,7 +40,7 @@ class HelmetMediaSqlViewingTest {
                 "people",JSONArray.of(object("id","ledger-person","portalId","P1","siteId","site-1","enabled",true)),
                 "devices",JSONArray.of(object("id","ledger-helmet","portalDeviceId","helmet-a","source","DIRECT_HELMET","type","HELMET","siteId","site-1","lifecycle","IN_USE")),
                 "assignments",JSONArray.of(object("id","assignment-a","personId","ledger-person","deviceId","ledger-helmet","active",true,"version",1)));
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(i->copy(master));
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenAnswer(i->copy(master));
         GuardianAccess access=new GuardianAccess(ledger,mock(AdminQueryService.class));
         PersonEquipmentContext equipment=new PersonEquipmentContext(ledger,access,mock(GuardianStore.class),mock(WearableBusinessPolicy.class));
         ObjectProvider<PersonEquipmentContext> contexts=mock(ObjectProvider.class);when(contexts.getIfAvailable()).thenReturn(equipment);ReflectionTestUtils.setField(media,"equipmentContexts",contexts);

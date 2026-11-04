@@ -6,7 +6,7 @@
       <p v-if="contextError" class="notice error" role="alert">{{ contextError }} <button class="button" @click="initialize">重新加载</button></p>
       <p v-else-if="initializing" class="query-state" role="status">正在加载授权厂站…</p>
       <p v-else-if="!store.siteId" class="query-state">尚未分配授权。请退出后选择管理员，为此用户账号分配角色和范围。</p>
-      <router-view v-else :key="route.path" />
+      <template v-else><ClusterMaintenancePanel v-if="store.identity?.id === 'demo-system'" /><router-view :key="route.path" /></template>
     </main>
     <AssignmentPanel />
 
@@ -21,6 +21,7 @@ import { getAdminProvider } from '@admin-provider'
 import { useAdminStore } from '../store'
 import { trustedPortal, safeTarget } from '../navigation'
 import AssignmentPanel from '../components/AssignmentPanel.vue'
+import ClusterMaintenancePanel from '../components/ClusterMaintenancePanel.vue'
 import { finishConfirmation } from '../confirmation'
 import { TEST_SITE_MODE, TEST_SITE, testSiteChoices } from '../../shared/test-site.mjs'
 const provider = getAdminProvider(), store = useAdminStore(), route = useRoute(), router = useRouter()

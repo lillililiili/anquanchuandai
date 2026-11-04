@@ -45,39 +45,125 @@ public class AdminLedgerStore {
         ensureSchema();
     }
 
+    @org.springframework.beans.factory.annotation.Value("${melhat.cluster.enabled:false}") private boolean clusterEnabled;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
+    private final ThreadLocal<Mutation> current = new ThreadLocal<>();
+    private static final class Mutation {
+        final JSONObject state; final long revision; boolean changed;
+        Mutation(JSONObject state) { this.state=state; this.revision=state.getLongValue("revision"); }
+    }
+    public static final class LedgerSnapshot {
+        public final JSONObject state; public final long revision;
+        LedgerSnapshot(JSONObject state) { this.state=state; this.revision=state.getLongValue("revision"); }
+    }
+    private <T>T fenced(java.util.function.Supplier<T> write){return coordinator==null?write.get():coordinator.fenced(write);}
+    public LedgerSnapshot readSnapshot() { return new LedgerSnapshot(read()); }
+
+    /** Lock order: maintenance/control fence -> ledger meta -> associated SQL. No network or Guardian callback. */
+    public boolean inMutation(){return current.get()!=null;}
+    public <T> T mutate(java.util.function.Supplier<T> edit) {
+        if(coordinator!=null&&coordinator.enabled()&&current.get()==null)return coordinator.run("media",false,()->mutateProtected(edit));
+        return mutateProtected(edit);
+    }
+    private <T>T mutateProtected(java.util.function.Supplier<T> edit) {
+        if(current.get()!=null)return edit.get();
+        if(maintenance!=null)maintenance.beginWrite();
+        try {
+            return fenced(() -> transactions().execute(status -> {
+                initializeIfAllowed();
+                lockMeta();
+                Mutation mutation=new Mutation(assemble());current.set(mutation);
+                try {
+                    T result=edit.get();
+                    if(mutation.changed) {
+                        mutation.state.put("revision",mutation.revision+1);
+                        replaceExpectedInTransaction(mutation.revision,mutation.state);
+                    }
+                    return result;
+                } finally { current.remove(); }
+            }));
+        } finally { if(maintenance!=null)maintenance.endWrite(); }
+    }
     public JSONObject read() {
-        synchronized (lock) {
-            ensureSchema();
-            if (!imported()) importInitial();
-            JSONObject state = assemble();
-            if (readable(state)) {
-                boolean changed = WearableModel.migrate(state);
-                changed = WearableCredentials.migrate(state) || changed;
-                if (changed) { state.put("revision", state.getIntValue("revision") + 1); write(state); }
+        Mutation mutation=current.get();if(mutation!=null)return mutation.state;
+        return transactions().execute(status -> {
+            initializeIfAllowed();lockMeta();JSONObject state=assemble();
+            JSONObject migrated=JSON.parseObject(state.toJSONString());
+            boolean changed=WearableModel.migrate(migrated);changed=WearableCredentials.migrate(migrated)||changed;
+            if(changed) {
+                if(clusterEnabled)throw new IllegalStateException("台账需要显式升级；集群运行时禁止隐式迁移");
+                if(maintenance!=null&&maintenance.paused())throw new IllegalStateException("维护期间禁止台账隐式迁移");
+                migrated.put("revision",state.getLongValue("revision")+1);
+                replaceExpectedInTransaction(state.getLongValue("revision"),migrated);state=migrated;
             }
-            return readable(state) ? state : null;
-        }
+            return readable(state)?state:null;
+        });
     }
-
+    private long lockMeta() {
+        return jdbc.queryForObject("SELECT revision FROM wearable_meta WHERE id=1 FOR UPDATE",Long.class);
+    }
+    /** Compatibility only for local fixtures; production writers must call mutate. */
     public void write(JSONObject state) {
-        if (!readable(state)) throw new GuardianRejected("后台台账无法保存");
-        synchronized (lock) {
-            ensureSchema();
-            transactions().execute(status -> {
-                replace(state);
-                return null;
-            });
+        if(!readable(state))throw new GuardianRejected("后台台账无法保存");
+        Mutation mutation=current.get();
+        if(mutation!=null) {
+            if(state!=mutation.state)throw new IllegalArgumentException("台账写入必须使用当前事务状态");
+            mutation.changed=true;return;
         }
+        if(clusterEnabled)throw new IllegalStateException("集群禁止裸快照写入；必须使用 mutate 或 replaceExpected");
+        transactions().execute(status->{ initializeIfAllowed();long revision=lockMeta();
+            if(maintenance!=null&&maintenance.paused())throw new IllegalStateException("维护期间禁止台账写入");
+            JSONObject copy=JSON.parseObject(state.toJSONString());copy.put("revision",revision+1);
+            replaceExpectedInTransaction(revision,copy);return null; });
+    }
+    public void replaceExpected(long expectedRevision,JSONObject next) {
+        if(!readable(next))throw new GuardianRejected("后台台账无法保存");
+        if(maintenance!=null)maintenance.beginWrite();
+        try { fenced(()->transactions().execute(status->{long actual=lockMeta();if(actual!=expectedRevision)throw conflict();
+            JSONObject copy=JSON.parseObject(next.toJSONString());copy.put("revision",actual+1);
+            replaceExpectedInTransaction(actual,copy);return null;}));
+        } finally {if(maintenance!=null)maintenance.endWrite();}
+    }
+    private void replaceExpectedInTransaction(long revision,JSONObject state) {
+        // New domain rows acquire canonical model fields inside their explicit mutation, never on a later GET.
+        WearableModel.migrate(state);
+        if(jdbc.update("UPDATE wearable_meta SET revision=?,next_id=? WHERE id=1 AND revision=?",revision+1,number(state,"nextId"),revision)!=1)throw conflict();
+        replace(state);
+    }
+    private RuntimeException conflict(){return AdminQueryService.fail(409,"VERSION_CONFLICT","台账已变化，请刷新后重试");}
+    private void initializeIfAllowed() {
+        if(imported())return;
+        if(clusterEnabled||com.ruoyi.database.SchemaLifecycle.validateOnly(jdbc))throw new IllegalStateException("集群台账未初始化；请先执行显式迁移");
+        if(maintenance!=null&&maintenance.paused())throw new IllegalStateException("维护期间禁止隐式初始化");
+        // Schema history is present before this store starts; serialize legacy imports on its stable row.
+        jdbc.queryForObject("SELECT version_id FROM wearable_schema_history WHERE version_id='20261003_wearable_master' FOR UPDATE",String.class);
+        if(imported())return;
+        for(String table:TABLES.values())if(jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class)>0)
+            throw new IllegalStateException("台账迁移标记缺失但业务表已有数据，请先核对；禁止回填或清空");
+        for(String table:Arrays.asList("wearable_document","wearable_idempotency"))if(jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class)>0)
+            throw new IllegalStateException("台账迁移标记缺失但业务表已有数据，禁止覆盖");
+        JSONObject initial=legacy();if(!readable(initial))initial=demoMode?seed():empty();
+        WearableModel.migrate(initial);WearableCredentials.migrate(initial);
+        jdbc.update("INSERT INTO wearable_meta(id,revision,next_id) VALUES(1,?,?)",number(initial,"revision"),number(initial,"nextId"));
+        replace(initial);
     }
 
-    private void importInitial() {
-        for (String table : TABLES.values()) {
-            Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Integer.class);
-            if (count != null && count > 0) throw new IllegalStateException("台账迁移标记缺失但业务表已有数据，请先核对；禁止回填或清空");
-        }
-        JSONObject initial = legacy();
-        if (!readable(initial)) initial = demoMode ? seed() : empty();
-        write(initial);
+    /** Offline bootstrap only; no endpoint calls this. Caller owns the schema startup gate. */
+    void initializeEmpty(JSONObject supplied) {
+        transactions().execute(status->{
+            jdbc.queryForObject("SELECT version_id FROM wearable_schema_history WHERE version_id='20261003_wearable_master' FOR UPDATE",String.class);
+            if(imported())throw new IllegalStateException("Ledger is already initialized");
+            for(String table:TABLES.values())if(jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class)>0)throw new IllegalStateException("Unmarked ledger data; bootstrap refused");
+            for(String table:Arrays.asList("wearable_document","wearable_idempotency","admin_ledger"))if(jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class)>0)throw new IllegalStateException("Existing ledger data; bootstrap refused");
+            JSONObject initial=JSON.parseObject(supplied.toJSONString());
+            if(!readable(initial))throw new IllegalArgumentException("Invalid initial ledger");
+            for(Object raw:WearableModel.rows(initial,"accounts")){JSONObject account=(JSONObject)raw;
+                String hash=account.getString("passwordHash");if(hash==null||!hash.matches("\\$2[aby]\\$[0-9]{2}\\$[./A-Za-z0-9]{53}"))throw new IllegalArgumentException("Bootstrap requires an explicit BCrypt hash for every account; no default credentials");
+            }
+            WearableModel.migrate(initial);WearableCredentials.migrate(initial);initial.put("revision",1);
+            jdbc.update("INSERT INTO wearable_meta(id,revision,next_id) VALUES(1,1,?)",number(initial,"nextId"));replace(initial);return null;
+        });
     }
 
     private static JSONObject empty() {
@@ -152,7 +238,6 @@ public class AdminLedgerStore {
     }
 
     private void replace(JSONObject state) {
-        dialect.upsert(jdbc,"wearable_meta",Arrays.asList("id","revision","next_id"),Arrays.asList("id"),1,number(state,"revision"),number(state,"nextId"));
         replaceRows("wearable_site", "INSERT INTO wearable_site (id, code, name, time_zone, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?)", state.getJSONArray("sites"), new SiteBinder());
         replaceRows("wearable_organization", "INSERT INTO wearable_organization (id, site_id, code, name, area_id, parent_id, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?,?)", state.getJSONArray("organizations"), new OrganizationBinder());
         replaceRows("wearable_area", "INSERT INTO wearable_area (id, site_id, code, name, parent_id, enabled, version, sort_order, body) VALUES (?,?,?,?,?,?,?,?,?)", state.getJSONArray("areas"), new AreaBinder());
@@ -215,6 +300,7 @@ public class AdminLedgerStore {
         if (transactions != null) return;
         com.ruoyi.database.SchemaLifecycle.ensure(jdbc,"20261003_wearable_master");
         transactions = new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
+        transactions.setTimeout(10);
     }
 
     private TransactionTemplate transactions() {

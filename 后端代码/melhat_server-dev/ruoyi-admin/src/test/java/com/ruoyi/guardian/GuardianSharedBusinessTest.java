@@ -30,7 +30,7 @@ class GuardianSharedBusinessTest {
         member=object("id","mobile-one","name","现场甲","enabled",true,"personId","person-1-0","roleIds",JSONArray.parseArray("[\"mobile-user\"]"));
         other=object("id","mobile-two","name","现场乙","enabled",true,"personId","person-1-1","roleIds",JSONArray.parseArray("[\"mobile-user\"]"));
         rows(master,"accounts").add(member);rows(master,"accounts").add(other);
-        ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(i->copy(master));
+        ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenAnswer(i->copy(master));
         access=new GuardianAccess(ledger,mock(AdminQueryService.class));
         store=new GuardianStore(mock(GuardianHatArchive.class));ReflectionTestUtils.setField(store,"file",directory.resolve("guardian-state.json"));
         JSONObject state=seed("guardian-seed.json");GuardianMasterProjection.apply(state,master);GuardianEvents.normalize(state);store.replace(state);

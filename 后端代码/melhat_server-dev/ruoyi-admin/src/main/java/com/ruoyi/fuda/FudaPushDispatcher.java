@@ -22,6 +22,11 @@ public class FudaPushDispatcher {
     private final FudaPushHttpSender sender;
     private final FudaPushProperties properties;
     private final Clock clock;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterDatabase clusterDb;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterIdentity clusterIdentity;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.guardian.WearableMaintenance maintenance;
+    private long now(){return clusterIdentity!=null&&clusterIdentity.enabled()?clusterDb.now():clock.millis();}
     private final ObjectProvider<GuardianStore> guardian;
     private final AtomicBoolean queued=new AtomicBoolean();
     private final ExecutorService worker=Executors.newSingleThreadExecutor(r->{
@@ -56,18 +61,31 @@ public class FudaPushDispatcher {
 
     /** Package-visible deterministic entry for isolated end-to-end tests. */
     synchronized int drain() {
+        if(maintenance!=null&&!maintenance.tryBeginWrite())return 0;
+        try{return drainActive();}finally{if(maintenance!=null)maintenance.endWrite();}
+    }
+    private int drainActive() {
         int completed=0;
         for(int i=0;i<properties.getBatchSize()&&properties.isEnabled()&&!Thread.currentThread().isInterrupted();i++) {
-            FudaPushOutbox.Delivery row=outbox.claim(properties.getDestinationId(),clock.millis(),properties.getLeaseMillis());
+            FudaPushOutbox.Delivery row=outbox.claim(properties.getDestinationId(),now(),properties.getLeaseMillis());
             if(row==null)break;
             if(!properties.isEnabled()) {
-                outbox.finish(row,"PENDING","PAUSED",0,clock.millis(),clock.millis()); break;
+                outbox.releaseUnsent(row,"NOT_SENT_PAUSED",now()); break;
             }
             if(!capture.maySend(row)) {
-                outbox.finish(row,"CANCELLED","AUTHORIZATION_REVOKED",0,clock.millis(),0); continue;
+                outbox.finish(row,"CANCELLED","AUTHORIZATION_REVOKED",0,now(),0); continue;
+            }
+            try {
+                if(maintenance!=null&&maintenance.paused()) {
+                    outbox.releaseUnsent(row,"NOT_SENT_PAUSED",now());break;
+                }
+                if(coordinator!=null)coordinator.beforeEffect();
+            } catch(RuntimeException notSent) {
+                // Conditional claim-token finish: this live invocation has not called the sender.
+                outbox.releaseUnsent(row,"NOT_SENT_FENCED",now());throw notSent;
             }
             FudaPushHttpSender.Result result=sender.send(row.eventType,row.body.getBytes(StandardCharsets.UTF_8));
-            long now=clock.millis();
+            long now=now();
             long retry=now+Math.max(backoff(row.attempts),result.retryAfterMillis);
             boolean recorded=outbox.finish(row,result.success?"DELIVERED":"PENDING",result.outcome,result.httpStatus,now,retry);
             if(recorded&&result.success)completed++;

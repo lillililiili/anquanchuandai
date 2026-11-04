@@ -16,7 +16,7 @@ class GuardianHelmetMediaPrivacyTest {
         JSONObject master=JSONObject.parseObject(StreamUtils.copyToString(new ClassPathResource("admin-seed.json").getInputStream(),StandardCharsets.UTF_8));migrate(master);
         JSONObject duty=find(master,"accounts","demo-duty"),admin=find(master,"accounts","demo-system");
         duty.put("roleScopes",object("duty",object("siteIds",JSONArray.parseArray("[\"site-1\"]"),"areaIds",JSONArray.parseArray("[\"area-boiler\"]"))));
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenReturn(master);
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenReturn(master);
         GuardianAccess access=new GuardianAccess(ledger,mock(AdminQueryService.class));
         JSONArray items=new JSONArray();
         items.add(object("id","allowed","siteId","site-1","areaId","area-boiler"));

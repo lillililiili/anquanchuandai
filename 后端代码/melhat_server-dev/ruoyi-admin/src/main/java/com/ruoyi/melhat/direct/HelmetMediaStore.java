@@ -15,6 +15,7 @@ import java.util.function.Function;
 public class HelmetMediaStore {
     private final Path file;
     private final com.ruoyi.guardian.WearableBusinessStore business;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private long durableRevision;
     private JSONObject state;
     @org.springframework.beans.factory.annotation.Autowired
@@ -27,8 +28,12 @@ public class HelmetMediaStore {
     }
     public HelmetMediaStore(String path, String publicDirectory) { this(path,publicDirectory,null); }
     public HelmetMediaStore(String path) { file = Paths.get(path); business = null; }
+    public <T>T atomic(java.util.function.Supplier<T> action){synchronized(com.ruoyi.guardian.WearableBusinessStore.transactionLock()){return business==null?action.get():business.atomic(action);}}
     public JSONObject snapshot() { synchronized(com.ruoyi.guardian.WearableBusinessStore.transactionLock()) { ensure(); return JSON.parseObject(state.toJSONString()); } }
     public <T> T update(Function<JSONObject,T> edit) {
+        return coordinator==null?updateFenced(edit):coordinator.fenced(()->updateFenced(edit));
+    }
+    private <T>T updateFenced(Function<JSONObject,T> edit) {
         synchronized(com.ruoyi.guardian.WearableBusinessStore.transactionLock()) {
         ensure(); JSONObject next = JSON.parseObject(state.toJSONString()); T result = edit.apply(next);
         if (business != null) {

@@ -14,10 +14,12 @@ public class WearableSessions {
     public static final String HEADER = "X-Wearable-Token";
     private final RedisCache redis;
     private final AdminLedgerStore ledger;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterIdentity identity;
     private final SecureRandom random = new SecureRandom();
     public WearableSessions(RedisCache redis, AdminLedgerStore ledger) { this.redis = redis; this.ledger = ledger; }
 
     public String issue(JSONObject account, String audience) {
+        if(identity!=null)identity.requireAdmission();
         byte[] bytes = new byte[32]; random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         JSONObject session = new JSONObject();

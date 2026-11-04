@@ -15,7 +15,7 @@ import static org.mockito.Mockito.*;
 class WearableSecurityTest {
     @Test void opaqueSessionsRejectForgeryAudienceRevocationAndDisabledAccount() {
         RedisCache redis = mock(RedisCache.class);
-        AdminLedgerStore ledger = mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         JSONObject state = JSONObject.parseObject("{\"accounts\":[{\"id\":\"demo-system\",\"enabled\":true,\"credentialVersion\":1}]}");
         when(ledger.read()).thenReturn(state);
         Map<String,String> cache = new HashMap<>();
@@ -36,7 +36,7 @@ class WearableSecurityTest {
     }
 
     @Test void readonlyDeviceWriteIsRejectedBeforeIdempotencyReplay() {
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         JSONObject state = JSONObject.parseObject("{\"accounts\":[{\"id\":\"demo-audit\",\"enabled\":true}],\"devices\":[],\"idempotency\":{}}");
         when(ledger.read()).thenReturn(state);
         AdminDeviceService service=new AdminDeviceService(ledger,mock(GuardianHatArchive.class));
@@ -47,7 +47,7 @@ class WearableSecurityTest {
     }
 
     @Test void deviceCreationIgnoresRetiredAreasAndRejectsAnotherSite() {
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         JSONObject state=new JSONObject();
         JSONObject actor=new JSONObject();actor.put("id","area-editor");actor.put("enabled",true);
         com.alibaba.fastjson2.JSONArray accounts=new com.alibaba.fastjson2.JSONArray();accounts.add(actor);state.put("accounts",accounts);

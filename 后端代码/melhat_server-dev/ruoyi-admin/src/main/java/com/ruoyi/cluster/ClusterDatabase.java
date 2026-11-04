@@ -15,6 +15,7 @@ import java.util.function.Supplier;
         this.jdbc=jdbc;
         dialect=DatabaseDialect.of(jdbc);
         tx=new TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
+        tx.setTimeout(10);
     }
     public long now() {
         return dialect.dbTimeMillis(jdbc);

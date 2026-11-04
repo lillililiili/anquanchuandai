@@ -21,7 +21,7 @@ class GuardianLocationsTest {
         master=JSONObject.parseObject(StreamUtils.copyToString(new ClassPathResource("admin-seed.json").getInputStream(),StandardCharsets.UTF_8));migrate(master);
         admin=find(master,"accounts","demo-system");duty=find(master,"accounts","demo-duty");
         member=object("id","mobile-one","name","测试员工","enabled",true,"personId","person-1-0","roleIds",JSONArray.parseArray("[\"mobile-user\"]"));rows(master,"accounts").add(member);
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(i->copy(master));
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenAnswer(i->copy(master));
         access=new GuardianAccess(ledger,mock(AdminQueryService.class));
         journal=new HelmetBusinessJournal(new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1","sa","")));
         service=new GuardianLocations(access,mock(GuardianStore.class),journal);

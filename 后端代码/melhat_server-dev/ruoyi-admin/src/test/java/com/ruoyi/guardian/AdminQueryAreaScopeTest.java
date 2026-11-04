@@ -35,7 +35,7 @@ class AdminQueryAreaScopeTest {
                         object("id", "area-B", "siteId", "site-1", "enabled", true)),
                 "devices", JSONArray.of(device("A", "area-A"), device("B", "area-B"), device("UNASSIGNED", null)),
                 "assignments", new JSONArray(), "people", new JSONArray(), "maintenanceOrders", new JSONArray());
-        ledger = mock(AdminLedgerStore.class);
+        ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(i -> JSONObject.parseObject(state.toJSONString()));
         guardian = mock(GuardianStore.class);
         when(guardian.snapshot()).thenReturn(object("devices", new JSONArray()));

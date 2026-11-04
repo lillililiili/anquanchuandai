@@ -12,6 +12,7 @@ import java.util.*;
 /** 厂家列表是身份及通信状态来源；人员、领用、维修和厂站归属由本地台账管理。 */
 @Service
 public class AdminPlatformService {
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final AdminLedgerStore ledger;
     private final AdminQueryService queries;
     private final PlatformDeviceSyncService platform;
@@ -19,21 +20,29 @@ public class AdminPlatformService {
     public AdminPlatformService(AdminLedgerStore ledger, AdminQueryService queries, PlatformDeviceSyncService platform) {
         this.ledger=ledger;this.queries=queries;this.platform=platform;
     }
-    @Transactional(rollbackFor=Exception.class)
-    public synchronized JSONObject sync(String accountId, String siteId) throws Exception {
+    public JSONObject sync(String accountId, String siteId) throws Exception {
         // Unknown external assets stay in the external data inbox until explicitly registered locally.
         return sync(accountId,siteId,false);
     }
-    @Transactional(rollbackFor=Exception.class)
-    public synchronized JSONObject sync(String accountId, String siteId, boolean automatic) throws Exception {
-        synchronized (ledger) {
+    public JSONObject sync(String accountId, String siteId, boolean automatic) throws Exception {
+        if(coordinator==null||!coordinator.enabled())return syncCoordinated(accountId,siteId,automatic);
+        return coordinator.run("platform",false,()->{try{return syncCoordinated(accountId,siteId,automatic);}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("平台同步未完成",e);}});
+    }
+    private JSONObject syncCoordinated(String accountId,String siteId,boolean automatic)throws Exception {
         JSONObject initial=ledger.read();
         JSONObject actor=find(initial.getJSONArray("accounts"),"id",accountId);
         if(actor==null || !actor.getBooleanValue("enabled") || !queries.allows(initial,actor,"assets:write",siteId,null))
             throw AdminQueryService.fail(403,"PERMISSION_DENIED","需要当前厂站的设备管理权限");
-        String station=station(initial,siteId);
+        station(initial,siteId);
         List<HeadbandVO> incoming=platform.preview();
+        return ledger.mutate(()->merge(accountId,siteId,automatic,incoming));
+    }
+    private JSONObject merge(String accountId,String siteId,boolean automatic,List<HeadbandVO> incoming) {
         JSONObject state=ledger.read();
+        JSONObject actor=find(state.getJSONArray("accounts"),"id",accountId);
+        if(actor==null || !actor.getBooleanValue("enabled") || !queries.allows(state,actor,"assets:write",siteId,null))
+            throw AdminQueryService.fail(403,"PERMISSION_DENIED","需要当前厂站的设备管理权限");
+        String station=station(state,siteId);
         JSONArray devices=state.getJSONArray("devices");
         int added=0, updated=0, skipped=0;
         String now=Instant.now().toString();
@@ -81,7 +90,6 @@ public class AdminPlatformService {
         audit.put("actorName",actor.getString("name"));audit.put("occurredAt",now);audit.put("action","devices.platformSync");audit.put("result","SUCCESS");
         audit.put("objectId","platform-helmets");audit.put("summary","厂家安全帽同步：新增 "+added+"，更新 "+updated);if(!automatic)state.getJSONArray("audit").add(audit);
         state.put("revision",state.getIntValue("revision")+1);ledger.write(state);return info;
-        }
     }
     static String station(JSONObject state,String siteId) {
         JSONObject site=find(state.getJSONArray("sites"),"id",siteId);

@@ -32,7 +32,7 @@ public class GuardianIngest {
     }
     public JSONObject captureBelt(String deviceId) {return captureDevice(deviceId,true);}
     private JSONObject captureDevice(String deviceId,boolean isBelt) {
-        JSONObject state = store.snapshot();
+        JSONObject state = store.receptionSnapshot();
         Helmet h = isBelt?belt(state,deviceId):helmet(state,deviceId);
         if(h==null || !(isBelt?"DIRECT_BELT":"DIRECT_HELMET").equals(h.device.getString("source")))
             throw new IllegalArgumentException("设备登记或领用已变化");

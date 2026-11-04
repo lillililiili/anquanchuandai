@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class ExternalDataStoreTest {
     JdbcTemplate jdbc(){return new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1","sa",""));}
-    GuardianAccess.Context actor(boolean admin){JSONObject data=object("sites",JSONArray.of(object("id","site-1","enabled",true)),"accounts",JSONArray.of(object("id",admin?"demo-system":"readonly","enabled",true)),"roles",new JSONArray());AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenReturn(data);return new GuardianAccess(ledger,mock(AdminQueryService.class)).context(object("id",admin?"demo-system":"readonly"));}
+    GuardianAccess.Context actor(boolean admin){JSONObject data=object("sites",JSONArray.of(object("id","site-1","enabled",true)),"accounts",JSONArray.of(object("id",admin?"demo-system":"readonly","enabled",true)),"roles",new JSONArray());AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenReturn(data);return new GuardianAccess(ledger,mock(AdminQueryService.class)).context(object("id",admin?"demo-system":"readonly"));}
     @Test void removedConfigurationWritesDoNotReachStorage() throws Exception {
         JdbcTemplate db=jdbc();ExternalDataStore store=new ExternalDataStore(db);
         GuardianAccess access=mock(GuardianAccess.class);

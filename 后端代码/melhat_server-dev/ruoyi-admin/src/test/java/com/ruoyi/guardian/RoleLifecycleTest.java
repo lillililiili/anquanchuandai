@@ -33,10 +33,10 @@ class RoleLifecycleTest {
         saved = new AtomicReference<>(object("revision", 1, "nextId", 100,
                 "sites", JSONArray.of(object("id", "site-1", "name", "一厂", "enabled", true)),
                 "accounts", JSONArray.of(actor), "roles", new JSONArray()));
-        AdminLedgerStore ledger = mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(call -> copy(saved.get()));
         doAnswer(call -> { saved.set(copy(call.getArgument(0))); return null; }).when(ledger).write(any());
-        access = new AdminAccessService(ledger);
+        access = new AdminAccessService(ledger);RedisPreviewFixture.attach(access);
         queries = new AdminQueryService(ledger, mock(GuardianStore.class), mock(ObjectProvider.class));
         http = MockMvcBuilders.standaloneSetup(new AdminLedgerController(ledger, queries, mock(AdminDeviceService.class),
                 mock(AdminAssignmentService.class), mock(AdminMaintenanceService.class), mock(AdminMasterService.class), access)).build();

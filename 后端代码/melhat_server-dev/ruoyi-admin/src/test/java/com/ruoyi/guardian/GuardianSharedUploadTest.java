@@ -32,7 +32,7 @@ class GuardianSharedUploadTest {
         JSONObject master=object("sites",JSONArray.of(object("id","site-1","enabled",true)),
                 "roles",JSONArray.of(object("id","uploader","enabled",true,"grants",JSONArray.of(object("siteIds",JSONArray.of("site-1"),"operations",JSONArray.of("events:observe"))))));
         master.put("accounts",JSONArray.of(actor("actor-a"),actor("actor-b")));
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenReturn(master);
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenReturn(master);
         return new GuardianEvents(store,new GuardianAccess(ledger,mock(AdminQueryService.class)),files);
     }
     private JSONObject actor(String id){return object("id",id,"name",id,"enabled",true,"roleIds",JSONArray.of("uploader"));}

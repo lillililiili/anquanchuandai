@@ -43,6 +43,7 @@ public class WearableReportDelivery {
     private final GuardianIngest ingest;
     private final ObjectProvider<DirectHelmetTelemetryService> helmets;
     private final ObjectProvider<DirectBeltTelemetryService> belts;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final Object recoveryLock=new Object();
     @org.springframework.beans.factory.annotation.Autowired(required=false) private ObjectProvider<HelmetMediaService> media;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
@@ -71,6 +72,10 @@ public class WearableReportDelivery {
     }
     private boolean receive(String protocol,String deviceId,JSONObject payload){String receipt="WR-"+UUID.randomUUID();journal.appendDeviceReport(receipt,protocol,deviceId,payload);if(paused())return false;deliver(object("receiptId",receipt,"protocol",protocol,"deviceId",deviceId,"payload",payload));return true;}
     void deliver(JSONObject report){
+        if(coordinator!=null&&coordinator.enabled()){coordinator.runRecovery("media",false,()->{deliverFenced(report);return null;});return;}
+        deliverFenced(report);
+    }
+    private void deliverFenced(JSONObject report){
         String receipt=report.getString("receiptId"),deviceId=report.getString("deviceId"),protocol=report.getString("protocol");JSONObject payload=report.getJSONObject("payload");
         if("direct-helmet".equals(protocol))HelmetEventLifecycle.coordinate(()->{synchronized(WearableBusinessStore.transactionLock()){if(paused())return false;return journal.processReport(receipt,()->{
             DirectHelmetTelemetryService service=helmets.getObject();SafetyHatInfo device=service.registered(deviceId);
@@ -91,6 +96,11 @@ public class WearableReportDelivery {
         } else throw new IllegalArgumentException("未知的设备接收协议");
     }
     @Scheduled(fixedDelay=10000,initialDelay=10000) public void recover(){
+        if(paused())return;
+        if(coordinator!=null&&coordinator.enabled()){coordinator.runRecovery("media",true,()->{recoverOrdered();return null;});return;}
+        recoverOrdered();
+    }
+    private void recoverOrdered(){
         synchronized(recoveryLock) {
             if(paused())return;
             boolean mediaBlocked=false;

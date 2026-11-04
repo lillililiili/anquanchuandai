@@ -23,6 +23,7 @@ public class GuardianStore {
 
     private static final Logger log = LoggerFactory.getLogger(GuardianStore.class);
 
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final Object lock = WearableBusinessStore.transactionLock();
     private final Path file = storeFile();
     private final GuardianHatArchive hats;
@@ -62,7 +63,23 @@ public class GuardianStore {
 
     public boolean isOperational(JSONObject row) { return demoMode || !GuardianDemoData.confirmed(row); }
 
+    /** Reception must not acquire a work lease, create permits, or publish projections.
+     * The caller may already hold BUSINESS_LOCK; use current SQL authority only. */
+    public JSONObject receptionSnapshot() {
+        if(coordinator==null||!coordinator.enabled())return snapshot();
+        synchronized(lock) {
+            JSONObject captured=business.read("guardian").state;
+            if(!readable(captured))throw new IllegalStateException("数据库监护数据格式无效");
+            if(ledger!=null)PlatformProjection.apply(captured,ledger.read());
+            return captured;
+        }
+    }
+
     public JSONObject snapshot() {
+        if(coordinator!=null&&coordinator.enabled()&&(maintenance==null||!maintenance.paused()))return coordinator.run("media",false,this::snapshotCoordinated);
+        return snapshotCoordinated();
+    }
+    private JSONObject snapshotCoordinated() {
         synchronized (lock) {
             ensure();
             if(maintenance!=null&&maintenance.paused())return JSON.parseObject(state.toJSONString());
@@ -101,6 +118,10 @@ public class GuardianStore {
 
     /** Dependent publication joins save's SQL transaction after the business revision lock. */
     void update(Edit edit,Runnable dependentWrite) {
+        if(coordinator!=null&&coordinator.enabled()){coordinator.run("media",false,()->{updateCoordinated(edit,dependentWrite);return null;});return;}
+        updateCoordinated(edit,dependentWrite);
+    }
+    private void updateCoordinated(Edit edit,Runnable dependentWrite) {
         synchronized (lock) {
             if(maintenance!=null&&maintenance.paused())throw new IllegalStateException("业务正在维护，设备上报已进入持久接收队列");
             ensure();
@@ -205,7 +226,7 @@ public class GuardianStore {
     private void mirrorHats() {
         if (hatsMirrored || state == null) return;
         try {
-            hats.sync(state);
+            if(coordinator==null)hats.sync(state);else coordinator.fenced(()->{hats.sync(state);return null;});
             hatsMirrored = true;
         } catch (RuntimeException error) {
             log.warn("安全帽档案尚未对齐: {}", error.getMessage());

@@ -1,0 +1,1 @@
+CREATE TABLE wearable_cluster_recovery (recovery_id VARCHAR(36) PRIMARY KEY,node_id VARCHAR(80) NOT NULL,generation VARCHAR(36) NOT NULL,actor_id VARCHAR(128) NOT NULL,reason VARCHAR(500) NOT NULL,summary_json CLOB NOT NULL,created_at BIGINT NOT NULL);

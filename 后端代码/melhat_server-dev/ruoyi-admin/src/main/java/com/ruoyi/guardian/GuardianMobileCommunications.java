@@ -12,6 +12,7 @@ import static com.ruoyi.guardian.WearableModel.*;
 @RestController
 @RequestMapping("/api/guardian/v1/mobile")
 public class GuardianMobileCommunications {
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
     private final GuardianStore store;
     private final GuardianAccess access;
     private final GuardianVoiceService voice;
@@ -20,7 +21,11 @@ public class GuardianMobileCommunications {
     public GuardianMobileCommunications(GuardianStore store,GuardianAccess access,GuardianVoiceService voice){this.store=store;this.access=access;this.voice=voice;}
     @ModelAttribute public void privateResponses(javax.servlet.http.HttpServletResponse response){response.setHeader("Cache-Control","no-store, private");response.setHeader("Pragma","no-cache");}
 
-    @PostMapping("/calls") public synchronized JSONObject start(@RequestBody JSONObject input,HttpServletRequest request){
+    @PostMapping("/calls") public JSONObject start(@RequestBody JSONObject input,HttpServletRequest request){
+        if(coordinator!=null&&coordinator.enabled())return coordinator.run("media",false,()->startCoordinated(input,request));
+        return startCoordinated(input,request);
+    }
+    private synchronized JSONObject startCoordinated(JSONObject input,HttpServletRequest request){
         return equipment.execute(WearableSessions.actor(request),ctx->start(ctx,input));
     }
     private JSONObject start(GuardianAccess.Context ctx,JSONObject input){
@@ -68,7 +73,11 @@ public class GuardianMobileCommunications {
     @GetMapping("/calls/{id}") public JSONObject details(@PathVariable String id,HttpServletRequest r){return publicRow(owned(id,r));}
     /** Same controller -> ledger -> media order as start(); no browser heartbeat is needed to revoke a call. */
     @org.springframework.scheduling.annotation.Scheduled(fixedDelay=15000,initialDelay=10000)
-    public synchronized void reconcileInvalidSessions(){
+    public void reconcileInvalidSessions(){
+        if(coordinator!=null&&coordinator.enabled()){coordinator.run("media",true,()->{reconcileInvalidSessionsCoordinated();return null;});return;}
+        reconcileInvalidSessionsCoordinated();
+    }
+    private void reconcileInvalidSessionsCoordinated(){
         if(maintenance!=null&&!maintenance.tryBeginWrite())return;
         try { equipment.withSessionAuthority(authority->{
             for(Object raw:rows(store.snapshot(),"sharedCommunications")){
@@ -88,18 +97,30 @@ public class GuardianMobileCommunications {
     @GetMapping("/calls/{id}/credentials") public JSONObject credentials(@PathVariable String id,HttpServletRequest r){
         return equipment.execute(WearableSessions.actor(r),ctx->{JSONObject row=owned(id,r);requireCall(ctx,row);offered(row,false);return copy(row.getJSONObject("credentials"));});
     }
-    @PostMapping("/calls/{id}/joined") public synchronized JSONObject joined(@PathVariable String id,@RequestBody JSONObject body,HttpServletRequest r){
+    @PostMapping("/calls/{id}/joined") public JSONObject joined(@PathVariable String id,@RequestBody JSONObject body,HttpServletRequest r){
+        if(coordinator!=null&&coordinator.enabled())return coordinator.run("media",false,()->joinedCoordinated(id,body,r));
+        return joinedCoordinated(id,body,r);
+    }
+    private synchronized JSONObject joinedCoordinated(String id,JSONObject body,HttpServletRequest r){
         JSONObject row=owned(id,r);requireCall(access.context(WearableSessions.actor(r)),row);offered(row,false);
         if("SIP".equals(row.getString("protocol"))){row.put("clientJoinedAt",Instant.now().toString());save(row);return publicRow(row);}
         if(!Objects.equals(String.valueOf(row.getJSONObject("credentials").get("agoraUid")),body.getString("agoraUid")))throw fail(400,"UID_MISMATCH","通话身份不匹配");
         row.put("status","connected");row.put("connectedAt",Instant.now().toString());row.put("connectionQuality","local_joined");save(row);return publicRow(row);
     }
-    @PostMapping("/calls/{id}/end") public synchronized JSONObject end(@PathVariable String id,HttpServletRequest r){
+    @PostMapping("/calls/{id}/end") public JSONObject end(@PathVariable String id,HttpServletRequest r){
+        if(coordinator!=null&&coordinator.enabled())return coordinator.run("media",false,()->endCoordinated(id,r));
+        return endCoordinated(id,r);
+    }
+    private synchronized JSONObject endCoordinated(String id,HttpServletRequest r){
         JSONObject row=owned(id,r);if("ended".equals(row.getString("status")))return publicRow(row);
         if(text(row,"channelName").isEmpty())throw fail(409,"PLATFORM_UNCONFIRMED","未取得设备频道，无法确认挂断，请核实设备状态");
         voice.end(row.getString("channelName"));row.put("status","SIP".equals(row.getString("protocol"))?"ending":"ended");row.put("endedAt",Instant.now().toString());row.remove("credentials");save(row);return publicRow(row);
     }
-    @PostMapping("/broadcast") public synchronized JSONArray broadcast(@RequestBody JSONObject input,HttpServletRequest r){
+    @PostMapping("/broadcast") public JSONArray broadcast(@RequestBody JSONObject input,HttpServletRequest r){
+        if(coordinator!=null&&coordinator.enabled())return coordinator.run("media",false,()->broadcastCoordinated(input,r));
+        return broadcastCoordinated(input,r);
+    }
+    private synchronized JSONArray broadcastCoordinated(JSONObject input,HttpServletRequest r){
         return equipment.execute(WearableSessions.actor(r),ctx->broadcast(ctx,input));
     }
     private JSONArray broadcast(GuardianAccess.Context ctx,JSONObject input){

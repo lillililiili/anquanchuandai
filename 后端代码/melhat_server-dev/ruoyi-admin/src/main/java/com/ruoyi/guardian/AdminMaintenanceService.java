@@ -73,6 +73,10 @@ public class AdminMaintenanceService {
     }
 
     public JSONObject execute(String accountId, String type, JSONObject input) {
+        return ledger.mutate(() -> executeMutation(accountId,type,input));
+    }
+
+    private JSONObject executeMutation(String accountId, String type, JSONObject input) {
         if (!handles(type)) throw AdminQueryService.fail(400, "COMMAND_NOT_AVAILABLE", "不支持此运维操作");
         JSONObject state = readState();
         JSONObject actor = actor(state, accountId);
@@ -85,17 +89,14 @@ public class AdminMaintenanceService {
         JSONObject previous = memory.getJSONObject(key);
         String fingerprint = input.toJSONString();
         if (previous != null) {
+            JSONObject replayDevice=find(state,"devices",input.getString("deviceId"));
+            if(replayDevice==null){JSONObject order=find(state,"maintenanceOrders",input.getString("id"));if(order!=null)replayDevice=find(state,"devices",order.getString("deviceId"));}
+            if(replayDevice==null||!queries.allows(state,actor,"assets:write",replayDevice.getString("siteId"),replayDevice.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","当前身份无设备运维权限");
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
             return previous.getJSONObject("result");
         }
         JSONObject output = apply(state, actor, type, input);
-        try {
-            assignments.publish(state);
-        } catch (AdminQueryService.QueryFailed error) {
-            throw error;
-        } catch (RuntimeException error) {
-            throw AdminQueryService.fail(400, "PORTAL_REJECTED", error.getMessage() == null ? "监护数据保存失败" : error.getMessage());
-        }
+        // Guardian rebuilds this projection only from committed ledger revisions.
         state.put("revision", state.getIntValue("revision") + 1);
         JSONObject envelope = new JSONObject();
         envelope.put("code", 200);

@@ -73,6 +73,12 @@ public class FudaPushOutbox {
         });
     }
 
+    /** Live caller proves sender was never invoked. Expiry alone must not retain uncertainty;
+     * a changed claim token still fences this completion after takeover. */
+    public boolean releaseUnsent(Delivery row,String outcome,long now) {
+        return jdbc.update("UPDATE fuda_push_outbox SET status='PENDING',last_outcome=?,last_http_status=0,next_attempt_at=?,completed_at=NULL,lease_token=NULL,lease_until=NULL WHERE sequence=? AND status='IN_FLIGHT' AND lease_token=?",outcome,now,row.sequence,row.leaseToken)==1;
+    }
+
     public boolean finish(Delivery row, String status, String outcome, int httpStatus, long now, long retryAt) {
         if (!Arrays.asList("DELIVERED", "PENDING", "CANCELLED").contains(status)) throw new IllegalArgumentException("非法投递状态");
         return jdbc.update("UPDATE fuda_push_outbox SET status=?,last_outcome=?,last_http_status=?,next_attempt_at=?,completed_at=?,lease_token=NULL,lease_until=NULL"

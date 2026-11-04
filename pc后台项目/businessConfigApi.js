@@ -10,6 +10,9 @@ export function createBusinessConfigApi({ fetchImpl = fetch, token = () => sessi
     return result;
   };
   return {
+    reconcileMaintenance: (reason, signal) => request('maintenance/reconcile', { method: 'POST', body: { reason }, signal }),
+    maintenance: signal => request('maintenance', { signal }),
+    setMaintenance: (paused, signal) => request('maintenance', { method: 'POST', body: { mode: paused ? 'PAUSED' : 'ACTIVE' }, signal }),
     read: signal => request('business-config', { signal }),
     save: (visible, expectedVersion, signal) => request('business-config', { method: 'PATCH', body: { simulatedWatchVisible: visible, expectedVersion }, signal }),
     state: signal => request('state', { signal })

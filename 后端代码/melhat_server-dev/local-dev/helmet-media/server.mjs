@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +7,12 @@ import { verifier } from './auth.mjs';
 import { MediaService, CONTROL, PUBLIC, fault, id } from './service.mjs';
 import { subscribeEsl } from './esl.mjs';
 import { spool } from './spool.mjs';
+
+export function operationFingerprint(method, path, body) {
+  const normalize = value => Array.isArray(value) ? value.map(normalize) : value && typeof value === 'object'
+    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, normalize(value[key])])) : value;
+  return createHash('sha256').update(`${method}\n${path}\n${JSON.stringify(normalize(body))}`).digest('hex');
+}
 
 export function configuration(env = process.env) {
   const config = { publicOrigin: env.MEDIA_PUBLIC_ORIGIN ?? 'https://lingzhiaide.com', publicIp: env.MEDIA_PUBLIC_IP ?? '39.106.212.138',
@@ -158,7 +165,13 @@ export function createServer(config, dependencies = {}) {
       if (!verify(request, body)) throw fault(401, 'INVALID_SIGNATURE');
       const suffix = pathname.slice(CONTROL.length), input = upload ? {} : json(body);
       let result;
-      if (request.method === 'GET' && suffix === '/health') result = await service.health();
+      if (request.method === 'GET' && /^\/operations\/[a-f0-9]{64}$/.test(suffix)) {
+        const fingerprint = suffix.split('/')[2];
+        const saved = service.store.data.operationEvidence?.[fingerprint];
+        if (!saved) throw fault(404, 'OPERATION_EVIDENCE_UNAVAILABLE');
+        result = { fingerprint, result: saved.result, confirmedAt: saved.confirmedAt };
+      }
+      else if (request.method === 'GET' && suffix === '/health') result = await service.health();
       else if (request.method === 'PUT' && /^\/accounts\/[A-Za-z0-9_-]+$/.test(suffix)) result = await service.putAccount(suffix.split('/')[2], input);
       else if (request.method === 'POST' && suffix === '/streams') result = service.createStream(input);
       else if (request.method === 'GET' && /^\/streams\/[A-Za-z0-9_-]+$/.test(suffix)) result = await service.streamState(suffix.split('/')[2]);
@@ -186,6 +199,14 @@ export function createServer(config, dependencies = {}) {
         result = { assets: Object.values(service.store.data.assets).filter(a => a.deviceId === deviceId).map(a => service.assetPublic(a)) };
       } else if (request.method === 'POST' && upload) result = await service.ingestUpload(body, request.headers['content-type'], url.searchParams.get('deviceId'), url.searchParams.get('kind'));
       else throw fault(404, 'NOT_FOUND');
+      // Persist confirmed responses before the HTTP response. A lost response can then be queried
+      // without invoking the original write. Missing evidence never authorizes a retry.
+      if (request.method !== 'GET' && suffix !== '/device-stream-status' && !upload) {
+        const fingerprint = operationFingerprint(request.method, suffix, body.length ? input : null);
+        service.store.data.operationEvidence ??= {};
+        service.store.data.operationEvidence[fingerprint] = { result, confirmedAt: new Date().toISOString() };
+        service.store.save();
+      }
       return reply(response, 200, { code: 200, data: result });
     } catch (error) { if (!response.headersSent) reply(response, error.status ?? 500, { code: error.status ?? 500, error: error.code ?? 'MEDIA_UNAVAILABLE' }); else response.destroy(); }
   });

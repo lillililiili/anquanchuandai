@@ -19,6 +19,10 @@ public class HelmetMediaService {
     @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.guardian.WearableMaintenance maintenance;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.guardian.ExternalDataStore externalData;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private ObjectProvider<com.ruoyi.guardian.PersonEquipmentContext> equipmentContexts;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.ClusterWorkCoordinator coordinator;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.MediaOperationJournal journal;
+    private <T>T coordinated(boolean background,java.util.function.Supplier<T> action){return coordinator==null?action.get():coordinator.run("media",background,action);}
+    private volatile long healthCheckedAt;
     private volatile boolean healthy;
     private volatile boolean ttsHealthy;
     private final Set<String> pendingAccounts=java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -27,13 +31,14 @@ public class HelmetMediaService {
             ObjectProvider<DirectHelmetGateway> gateways) {
         this.cloud=cloud; this.store=store; this.properties=properties; this.gateways=gateways;
     }
-    public boolean available() { return cloud.configured() && healthy; }
+    public boolean available() { return cloud.configured() && healthy && (coordinator==null||!coordinator.enabled()||System.nanoTime()-healthCheckedAt<java.util.concurrent.TimeUnit.SECONDS.toNanos(45)); }
     /** Device-authorized service leases remain separate from person-authorized viewer sessions. */
     public synchronized JSONObject gbDeviceStatus(String deviceId) {
         if(!gateway().supports(deviceId))throw new IllegalArgumentException("GB_HELMET_NOT_FOUND");
         return obj("deviceId",deviceId,"online",gateway().isOnline(deviceId),"busy",hasActiveCall(deviceId),"mediaAvailable",available());
     }
-    public synchronized JSONObject gbAcquire(String leaseId,String deviceId,int ttlSeconds) {
+    public JSONObject gbAcquire(String leaseId,String deviceId,int ttlSeconds) { return coordinated(false,()->gbAcquireCoordinated(leaseId,deviceId,ttlSeconds)); }
+    private synchronized JSONObject gbAcquireCoordinated(String leaseId,String deviceId,int ttlSeconds) {
         if(!leaseId.matches("[A-Za-z0-9_-]{16,100}")||ttlSeconds<30||ttlSeconds>180)throw new IllegalArgumentException("GB_INVALID_LEASE");
         JSONObject status=gbDeviceStatus(deviceId);
         if(!status.getBooleanValue("online"))throw new IllegalStateException("GB_DEVICE_OFFLINE");
@@ -56,7 +61,8 @@ public class HelmetMediaService {
         catch(Exception error){gbRelease(leaseId);throw new IllegalStateException("GB_DEVICE_COMMAND_UNCONFIRMED");}
         return gbLeaseStatus(leaseId);
     }
-    public synchronized JSONObject gbLeaseStatus(String leaseId) {
+    public JSONObject gbLeaseStatus(String leaseId) { return coordinated(false,()->gbLeaseStatusCoordinated(leaseId)); }
+    private synchronized JSONObject gbLeaseStatusCoordinated(String leaseId) {
         JSONObject lease=map(store.snapshot(),"gbLeases").getJSONObject(leaseId);
         if(lease==null||lease.getBooleanValue("released"))throw new IllegalArgumentException("GB_LEASE_NOT_FOUND");
         if(!Instant.parse(lease.getString("expiresAt")).isAfter(now())){gbRelease(leaseId);throw new IllegalArgumentException("GB_LEASE_EXPIRED");}
@@ -74,7 +80,8 @@ public class HelmetMediaService {
         if(clusteredCommands()&&lease.getString("commandId")!=null){JSONObject command=commandRouter.read(lease.getString("commandId"));if(command!=null){result.put("deliveryStatus",command.get("deliveryStatus"));result.put("deliveryReason",command.get("deliveryReason"));}}
         return result;
     }
-    public synchronized JSONObject gbRelease(String leaseId) {
+    public JSONObject gbRelease(String leaseId) { return coordinated(false,()->gbReleaseCoordinated(leaseId)); }
+    private synchronized JSONObject gbReleaseCoordinated(String leaseId) {
         JSONObject lease=map(store.snapshot(),"gbLeases").getJSONObject(leaseId);
         if(lease==null||lease.getBooleanValue("released"))return obj("released",true);
         String deviceId=lease.getString("deviceId");JSONObject current=map(store.snapshot(),"streams").getJSONObject(deviceId);
@@ -86,7 +93,8 @@ public class HelmetMediaService {
         return obj("released",true);
     }
     @Scheduled(fixedDelay=10000)
-    public void expireGbLeases(){
+    public void expireGbLeases() { coordinated(true,()->{expireGbLeasesCoordinated();return null;}); }
+    private void expireGbLeasesCoordinated() {
         if(maintenance!=null&&!maintenance.tryBeginWrite())return;
         try{synchronized(this){expireGbLeasesActive();}}
         finally{if(maintenance!=null)maintenance.endWrite();}
@@ -112,7 +120,8 @@ public class HelmetMediaService {
         return account == null || !available() ? null : obj("sip_id",account.getString("sipId"),
                 "sip_pwd",account.getString("password"),"sip_host",account.getString("sipHost"));
     }
-    public synchronized JSONObject provision(String deviceId) {
+    public JSONObject provision(String deviceId) { return coordinated(false,()->provisionCoordinated(deviceId)); }
+    private synchronized JSONObject provisionCoordinated(String deviceId) {
         requireCloud();
         JSONObject account = map(store.snapshot(),"accounts").getJSONObject(deviceId);
         if (account == null) {
@@ -127,7 +136,8 @@ public class HelmetMediaService {
     @org.springframework.beans.factory.annotation.Autowired(required=false) private com.ruoyi.cluster.DeviceCommandRouter commandRouter;
     private Instant now(){return clusteredCommands()?commandRouter.now():Instant.now();}
     private boolean clusteredCommands(){return commandRouter!=null&&commandRouter.enabled();}
-    public synchronized JSONObject command(String actorId,String deviceId,JSONObject input) {
+    public JSONObject command(String actorId,String deviceId,JSONObject input) { return coordinated(false,()->commandCoordinated(actorId,deviceId,input)); }
+    private synchronized JSONObject commandCoordinated(String actorId,String deviceId,JSONObject input) {
         String action=text(input,"action"), key=text(input,"idempotencyKey");
         if(!key.matches("[A-Za-z0-9_-]{8,100}"))throw new IllegalArgumentException("请提供稳定的请求编号");
         if(!Arrays.asList("take_photo","start_video","stop_video","list_recordings","upload_recording",
@@ -222,7 +232,7 @@ public class HelmetMediaService {
         // Confirmed cloud phase cleanup/readback must not enter the preparation-failure catch above.
         if(recordingStopStream!=null)return finishRecordingStop(row,recordingStopStream);
         if(clusteredCommands()&&Arrays.asList("configured","completed","accepted").contains(row.getString("status")))commandRouter.completeWithoutSend(id);
-        saveCommand(row); return publicCommand(row);
+        saveCommand(row); return commandState(row.getString("id"));
     }
     /** Cloud recording phase and the optional device cleanup delivery have separate outcomes. */
     private JSONObject finishRecordingStop(JSONObject row,JSONObject stream) {
@@ -259,7 +269,8 @@ public class HelmetMediaService {
         return obj("deviceId",deviceId,"status",mediaState,"items",assets,"recordings",recordings,"commands",commands,"actions",actions,"capabilities",capabilities());
     }
     /** Only an authenticated, still-assigned viewer can renew its lease and obtain live tickets. */
-    public synchronized JSONObject live(String actorId,String deviceId,JSONObject input) {
+    public JSONObject live(String actorId,String deviceId,JSONObject input) { return coordinated(false,()->liveCoordinated(actorId,deviceId,input)); }
+    private synchronized JSONObject liveCoordinated(String actorId,String deviceId,JSONObject input) {
         if(maintenance!=null)maintenance.beginWrite();
         try{return liveActive(actorId,deviceId,input);}finally{if(maintenance!=null)maintenance.endWrite();}
     }
@@ -313,10 +324,12 @@ public class HelmetMediaService {
             out.add(file);
         }return out;
     }
-    public synchronized JSONObject call(String actorId,List<String> devices,boolean video) {
+    public JSONObject call(String actorId,List<String> devices,boolean video) { return coordinated(false,()->callCoordinated(actorId,devices,video)); }
+    private synchronized JSONObject callCoordinated(String actorId,List<String> devices,boolean video) {
         return call(actorId,devices,video,new JSONArray());
     }
-    public synchronized JSONObject call(String actorId,List<String> devices,boolean video,JSONArray recipients) {
+    public JSONObject call(String actorId,List<String> devices,boolean video,JSONArray recipients) { return coordinated(false,()->callCoordinated(actorId,devices,video,recipients)); }
+    private synchronized JSONObject callCoordinated(String actorId,List<String> devices,boolean video,JSONArray recipients) {
         requireCallReady(devices);
         String id="SIP-"+UUID.randomUUID(),room="r"+random().substring(0,20),operator="o"+random().substring(0,20);
         JSONObject row=obj("id",id,"actorId",actorId,"deviceIds",new JSONArray(devices),"status","requesting","createdAt",now().toString());
@@ -350,7 +363,8 @@ public class HelmetMediaService {
             if(!registeredDevices.contains(device))throw com.ruoyi.guardian.AdminQueryService.fail(409,"SIP_NOT_REGISTERED","设备尚未注册SIP，尚未发起呼叫");
         }
     }
-    public synchronized void endCall(String id) {
+    public void endCall(String id) { coordinated(false,()->{endCallCoordinated(id);return null;}); }
+    private synchronized void endCallCoordinated(String id) {
         JSONObject row=map(store.snapshot(),"calls").getJSONObject(id);
         if(row==null)throw new IllegalArgumentException("通话不存在");if("ended".equals(row.getString("status")))return;
         cloud.request("DELETE","/calls/"+id,null);row.put("status","ending");row.remove("credentials");saveCall(row);
@@ -363,8 +377,10 @@ public class HelmetMediaService {
         if(!Arrays.asList("offered","answered","connected").contains(row.getString("status"))||credentials==null||!Instant.parse(credentials.getString("expiresAt")).isAfter(now()))throw new IllegalArgumentException("通话凭据已失效");
         return new JSONObject(credentials);
     }
-    public boolean receipt(String deviceId,JSONObject message) { return receipt(deviceId,message,null); }
-    public synchronized boolean receipt(String deviceId,JSONObject message,String receivedAt) {
+    public boolean receipt(String deviceId,JSONObject message) { return coordinated(false,()->receiptCoordinated(deviceId,message)); }
+    private boolean receiptCoordinated(String deviceId,JSONObject message) { return receipt(deviceId,message,null); }
+    public boolean receipt(String deviceId,JSONObject message,String receivedAt) { return coordinated(false,()->receiptCoordinated(deviceId,message,receivedAt)); }
+    private synchronized boolean receiptCoordinated(String deviceId,JSONObject message,String receivedAt) {
         String act=text(message,"act");
         if(!Arrays.asList("ca_upload_photo","upload_video_success","push_to_client").contains(act))return false;
         String id=text(message,"talkback_id"); JSONObject res=message.getJSONObject("res");
@@ -383,7 +399,8 @@ public class HelmetMediaService {
         saveCommand(row);return true;
     }
     @Scheduled(fixedDelay=15000,initialDelay=5000)
-    public void reconcile() {
+    public void reconcile() { refreshHealth(); coordinated(true,()->{reconcileCoordinated();return null;}); }
+    private void reconcileCoordinated() {
         if(maintenance!=null && !maintenance.tryBeginWrite())return;
         try {
             com.ruoyi.guardian.PersonEquipmentContext equipment=equipmentContexts==null?null:equipmentContexts.getIfAvailable();
@@ -430,22 +447,32 @@ public class HelmetMediaService {
             try{cloud.request("DELETE","/calls/"+call.getString("id"),null);call.put("status","ending");saveCall(call);}catch(RuntimeException ignored){}
         }
     }
+    public void refreshHealth(){
+        if(!cloud.configured()){healthy=false;return;}
+        try{
+            JSONObject health=cloud.request("GET","/health",null);healthy=health.getBooleanValue("ready");
+            ttsHealthy=health.getJSONObject("components")!=null&&health.getJSONObject("components").getBooleanValue("tts");
+            if(!healthy){healthCheckedAt=System.nanoTime();return;}
+            Set<String> registered=new HashSet<>();JSONArray registrations=health.getJSONArray("devices");
+            if(registrations!=null)for(Object raw:registrations){JSONObject row=(JSONObject)raw;if(row.getBooleanValue("registered")&&row.getString("deviceId")!=null)registered.add(row.getString("deviceId"));}
+            registeredDevices=registered;
+            healthCheckedAt=System.nanoTime();
+        }catch(RuntimeException unavailable){healthy=false;ttsHealthy=false;registeredDevices=Collections.emptySet();}
+    }
     private void reconcileActive() {
         expireViewers();
         if(!cloud.configured()){healthy=false;return;}
         try {
-            JSONObject health=cloud.request("GET","/health",null);healthy=health.getBooleanValue("ready");
-            ttsHealthy=health.getJSONObject("components")!=null&&health.getJSONObject("components").getBooleanValue("tts");
-            if(!healthy)return;
-            Set<String> registered=new HashSet<>();JSONArray registrations=health.getJSONArray("devices");
-            if(registrations!=null)for(Object raw:registrations){JSONObject row=(JSONObject)raw;if(row.getBooleanValue("registered")&&row.getString("deviceId")!=null)registered.add(row.getString("deviceId"));}
-            registeredDevices=registered;
-            for(String device:new HashSet<>(pendingAccounts)){provision(device);pendingAccounts.remove(device);}
+            refreshHealth();if(!healthy)return;
+            if(journal!=null&&coordinator!=null&&coordinator.enabled())journal.reconcile(hash->cloud.request("GET","/operations/"+hash,null));
+            if(clusteredCommands())for(String device:commandRouter.knownHelmetDevices())if(gateway().supports(device)&&map(store.snapshot(),"accounts").getJSONObject(device)==null)pendingAccounts.add(device);
+            for(Map.Entry<String,Object> entry:map(store.snapshot(),"accounts").entrySet())if(((JSONObject)entry.getValue()).getString("sipHost")==null)pendingAccounts.add(entry.getKey());
+            for(String device:new HashSet<>(pendingAccounts)){try{provision(device);pendingAccounts.remove(device);}catch(RuntimeException pending){/* Durable claim/account remains pending; unrelated streams and receipts must still recover. */}}
             JSONObject state=store.snapshot();
             JSONObject events=cloud.request("GET","/events?after="+state.getLongValue("eventCursor")+"&limit=100",null);
             JSONArray entries=events.getJSONArray("events");if(entries==null)entries=events.getJSONArray("items");
             if(entries!=null)for(Object raw:entries)applyEvent((JSONObject)raw);
-            reconcileCalls();
+            reconcileCalls();resumeCompletedCalls();
             startPendingRecordings();
             reconcileRecordings();
             store.update(s->{for(Object raw:map(s,"commands").values()) {JSONObject c=(JSONObject)raw;
@@ -454,18 +481,24 @@ public class HelmetMediaService {
         } catch(RuntimeException error){healthy=false;}
     }
     private void applyEvent(JSONObject event) {
+        if(event.getLongValue("sequence")<=store.snapshot().getLongValue("eventCursor"))return;
+        JSONArray evidence=Arrays.asList("asset.ready","asset.bound").contains(text(event,"type"))&&!text(event,"deviceId").isEmpty()?assets(event.getString("deviceId")):new JSONArray();
+        store.atomic(()->{applyEventSaved(event,evidence);return null;});
+        resumeCompletedCalls();
+    }
+    private void applyEventSaved(JSONObject event,JSONArray evidence) {
         String callId=text(event,"callId"),type=text(event,"type");
         JSONObject call=map(store.snapshot(),"calls").getJSONObject(callId);
         if(call!=null&&Arrays.asList("call.answered","call.connected","call.ended","call.failed","call.participant-ended").contains(type)
                 &&event.getLongValue("sequence")>call.getLongValue("lastCloudEventSequence")) {
             String status="call.participant-ended".equals(type)?call.getString("status"):type.substring(5);
             if(mergeCallEvidence(call,status,event)){
-                call.put("lastCloudEventSequence",event.getLongValue("sequence"));saveCall(call);
-                if(Arrays.asList("ended","failed").contains(status))resumeStreams(call);
+                call.put("lastCloudEventSequence",event.getLongValue("sequence"));
+                if(Arrays.asList("ended","failed").contains(status))call.put("resumePending",true);saveCall(call);
             }
         }
         if(Arrays.asList("asset.ready","asset.bound").contains(type)&&!text(event,"deviceId").isEmpty()&&!text(event,"assetId").isEmpty()) {
-            for(Object raw:assets(event.getString("deviceId"))){JSONObject asset=(JSONObject)raw;
+            for(Object raw:evidence){JSONObject asset=(JSONObject)raw;
                 if(!event.getString("assetId").equals(asset.getString("id")))continue;
                 String requestId=asset.getString("requestId");JSONObject command=map(store.snapshot(),"commands").getJSONObject(requestId);
                 if(command!=null){recordAsset(command,asset);
@@ -486,23 +519,31 @@ public class HelmetMediaService {
             }catch(RuntimeException error){command.put("message","录像启动结果待确认，正在核对同一请求");saveCommand(command);}
         }
     }
-    private void resumeStreams(JSONObject call) {
-        JSONArray devices=call.getJSONArray("deviceIds");if(devices==null)return;
+    private void resumeCompletedCalls(){
+        for(Object raw:map(store.snapshot(),"calls").values()){JSONObject call=(JSONObject)raw;
+            if(call.getBooleanValue("resumePending")&&resumeStreams(call)){call.put("resumePending",false);saveCall(call);}
+        }
+    }
+    private boolean resumeStreams(JSONObject call) {
+        boolean accepted=true;JSONArray devices=call.getJSONArray("deviceIds");if(devices==null)return true;
         for(Object raw:devices) {
             String device=String.valueOf(raw);JSONObject stream=map(store.snapshot(),"streams").getJSONObject(device);
             if(stream!=null&&(stream.getBooleanValue("watchRequested")||stream.getBooleanValue("recordRequested")))
-                try{sendDevice(device,obj("cmd","server_push_open_rtsp","push_url",stream.getString("pushUrl")),"call-resume:"+call.getString("id"));}catch(Exception ignored){}
+                try{sendDevice(device,obj("cmd","server_push_open_rtsp","push_url",stream.getString("pushUrl")),"call-resume:"+call.getString("id"));}catch(com.ruoyi.cluster.DeviceCommandRouter.Pending durable){/* Persisted intent is recoverable. */}catch(Exception failed){accepted=false;}
         }
+        return accepted;
     }
     private JSONObject stream(String deviceId) {
         JSONObject old=map(store.snapshot(),"streams").getJSONObject(deviceId);
         if(old!=null&&!text(old,"expiresAt").isEmpty()&&Instant.parse(old.getString("expiresAt")).isAfter(now().plusSeconds(30)))return old;
-        if(old!=null){
+        if(old!=null&&!text(old,"streamId").isEmpty()){
             JSONObject fresh=cloud.request("GET","/streams/"+old.getString("streamId"),null);
             // Refresh signed URLs without abandoning an existing recorder or its owner intentions.
             old.putAll(fresh);saveStream(deviceId,old);return old;
         }
-        JSONObject stream=cloud.request("POST","/streams",obj("deviceId",deviceId,"sessionId",UUID.randomUUID().toString()));saveStream(deviceId,stream);return stream;
+        String sessionId=old==null?null:old.getString("pendingSessionId");
+        if(sessionId==null){sessionId=UUID.randomUUID().toString();saveStream(deviceId,obj("pendingSessionId",sessionId,"deviceId",deviceId));}
+        JSONObject stream=cloud.request("POST","/streams",obj("deviceId",deviceId,"sessionId",sessionId));saveStream(deviceId,stream);return stream;
     }
     /** Human expiry/assignment cleanup and GB release each remove only their own demand. */
     private static void refreshWatching(JSONObject stream){
@@ -679,7 +720,15 @@ public class HelmetMediaService {
         }
     }
     private void sent(JSONObject row){row.put("status","sent");row.put("message","指令已发送，等待设备确认");row.put("sentAt",now().toString());}
-    private void saveCommand(JSONObject row){store.update(s->{map(s,"commands").put(row.getString("id"),new JSONObject(row));return null;});}
+    private void saveCommand(JSONObject row){store.update(s->{
+        JSONObject old=map(s,"commands").getJSONObject(row.getString("id")),next=new JSONObject(row);
+        if(old!=null){
+            for(String key:Arrays.asList("receiptAt","result","receipt","assetId"))if(old.containsKey(key)&&!next.containsKey(key))next.put(key,old.get(key));
+            if(Arrays.asList("acknowledged","rejected","completed","finalizing","recording").contains(old.getString("status"))
+                    &&Arrays.asList("requesting","queued","sent","unknown","timeout").contains(next.getString("status"))&&!next.containsKey("sessionInvalidatedAt"))
+                for(String key:Arrays.asList("status","message","receiptAt","result"))if(old.containsKey(key))next.put(key,old.get(key));
+        }
+        map(s,"commands").put(row.getString("id"),next);return null;});}
     private void saveCall(JSONObject row){store.update(s->{map(s,"calls").put(row.getString("id"),new JSONObject(row));return null;});}
     private void saveStream(String id,JSONObject row){store.update(s->{map(s,"streams").put(id,new JSONObject(row));return null;});}
     private void sendDevice(String device,JSONObject wire,String purpose) throws java.io.IOException {if(clusteredCommands())gateway().sendCommand(device,wire,purpose);else gateway().sendCommand(device,wire);}

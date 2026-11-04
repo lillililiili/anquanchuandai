@@ -24,7 +24,7 @@ public class AdminLedgerController {
 
     @PostMapping("/platform/helmets/sync")
     public JSONObject syncHelmets(@RequestBody JSONObject body, javax.servlet.http.HttpServletRequest request) {
-        synchronized(store) {
+        {
         try { return platform.sync(WearableSessions.actor(request).getString("id"),body.getString("siteId")); }
         catch (AdminQueryService.QueryFailed error) { throw error; }
         catch (Exception error) { throw AdminQueryService.fail(502,"PLATFORM_UNAVAILABLE","厂家同步失败，已保留上次数据，请稍后重试"); }
@@ -75,7 +75,8 @@ public class AdminLedgerController {
     public Map<String, Object> write(@RequestBody JSONObject state, javax.servlet.http.HttpServletRequest request) {
         if (!testFixtures || !"demo-system".equals(WearableSessions.actor(request).getString("id")))
             throw AdminQueryService.fail(403, "SNAPSHOT_READ_ONLY", "台账只能通过业务接口修改");
-        store.write(state);
+        if(!state.containsKey("revision"))throw AdminQueryService.fail(400,"VERSION_REQUIRED","快照必须包含预期版本");
+        store.replaceExpected(state.getLongValue("revision"),state);
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("ok", true);
         return body;
@@ -83,7 +84,7 @@ public class AdminLedgerController {
 
     @PostMapping("/execute")
     public JSONObject execute(@RequestBody JSONObject body, javax.servlet.http.HttpServletRequest request) {
-        synchronized (store) {
+        {
         String accountId = authenticatedId(body, request);
         String type = body == null ? "" : body.getString("type");
         JSONObject input = body == null ? new JSONObject() : body.getJSONObject("input");

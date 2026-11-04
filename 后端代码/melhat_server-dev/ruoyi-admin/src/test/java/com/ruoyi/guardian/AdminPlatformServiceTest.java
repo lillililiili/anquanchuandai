@@ -16,7 +16,7 @@ class AdminPlatformServiceTest {
     HeadbandVO hat(String sn,String online){HeadbandVO h=new HeadbandVO();h.setHelmetSn(sn);h.setOnline(online);h.setUid_device("uid-"+sn);return h;}
     JSONObject registered(String sn){return WearableModel.object("id","registered-"+sn,"code",sn,"sn",sn,"portalDeviceId",sn,"source","PLATFORM","name","已登记安全帽","type","HELMET","siteId","site-1","portalStation","S1","lifecycle","STOCK","version",1);}
     @Test void refreshRegisteredDevicesNeverCreatesVendorAssetsAndPreservesLifecycle()throws Exception {
-        JSONObject state=seed("admin-seed.json");AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(i->JSON.parseObject(state.toJSONString()));
+        JSONObject state=seed("admin-seed.json");AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenAnswer(i->JSON.parseObject(state.toJSONString()));
         doAnswer(i->{JSONObject saved=i.getArgument(0);state.clear();state.putAll(saved);return null;}).when(ledger).write(any());
         AdminQueryService query=mock(AdminQueryService.class);when(query.allows(any(),any(),eq("assets:write"),eq("site-1"),isNull())).thenReturn(true);
         PlatformDeviceSyncService platform=mock(PlatformDeviceSyncService.class);when(platform.preview()).thenReturn(Arrays.asList(hat("SIMQA-H-1","0"),hat("SIMQA-H-2","1")));
@@ -37,7 +37,7 @@ class AdminPlatformServiceTest {
         remote=AdminPlatformService.find(snapshot.getJSONArray("devices"),"id","SIMQA-H-1");assertNull(remote.get("online"));assertEquals("STALE",remote.getString("freshness"));
     }
     @Test void permissionsAndUpstreamFailureNeverWrite()throws Exception {
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenReturn(seed("admin-seed.json"));
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenReturn(seed("admin-seed.json"));
         AdminQueryService query=mock(AdminQueryService.class);PlatformDeviceSyncService platform=mock(PlatformDeviceSyncService.class);
         AdminPlatformService service=new AdminPlatformService(ledger,query,platform);
         assertEquals(403,assertThrows(AdminQueryService.QueryFailed.class,()->service.sync("demo-audit","site-1")).code);verifyNoInteractions(platform);
@@ -45,7 +45,7 @@ class AdminPlatformServiceTest {
         assertThrows(RuntimeException.class,()->service.sync("demo-system","site-1"));verify(ledger,never()).write(any());
     }
     @Test void duplicateOrDifferentTypeCannotPartiallyImport()throws Exception {
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(i->seed("admin-seed.json"));
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenAnswer(i->seed("admin-seed.json"));
         AdminQueryService query=mock(AdminQueryService.class);when(query.allows(any(),any(),anyString(),anyString(),isNull())).thenReturn(true);
         PlatformDeviceSyncService platform=mock(PlatformDeviceSyncService.class);AdminPlatformService service=new AdminPlatformService(ledger,query,platform);
         when(platform.preview()).thenReturn(Arrays.asList(hat("SIMQA-H-1","0"),hat("SIMQA-H-1","1")));
@@ -54,7 +54,7 @@ class AdminPlatformServiceTest {
         assertThrows(AdminQueryService.QueryFailed.class,()->service.sync("demo-system","site-1"));verify(ledger,never()).write(any());verify(platform,never()).syncRecords(anyList(),any());
     }
     @Test void scheduledRefreshDoesNotAssignNewDevicesOrMoveOtherSite()throws Exception {
-        JSONObject state=seed("admin-seed.json");AdminLedgerStore ledger=mock(AdminLedgerStore.class);when(ledger.read()).thenAnswer(i->JSON.parseObject(state.toJSONString()));
+        JSONObject state=seed("admin-seed.json");AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());when(ledger.read()).thenAnswer(i->JSON.parseObject(state.toJSONString()));
         doAnswer(i->{JSONObject s=i.getArgument(0);state.clear();state.putAll(s);return null;}).when(ledger).write(any());
         AdminQueryService query=mock(AdminQueryService.class);when(query.allows(any(),any(),anyString(),anyString(),isNull())).thenReturn(true);
         PlatformDeviceSyncService platform=mock(PlatformDeviceSyncService.class);when(platform.preview()).thenReturn(Arrays.asList(hat("SIMQA-H-1","0")));

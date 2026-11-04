@@ -1,0 +1,5 @@
+CREATE TABLE wearable_cluster_work (resource_key VARCHAR(160) PRIMARY KEY,node_id VARCHAR(80),generation VARCHAR(36),token VARCHAR(36),epoch BIGINT NOT NULL,lease_until BIGINT NOT NULL);
+CREATE TABLE wearable_cluster_operation (operation_id VARCHAR(36) PRIMARY KEY,node_id VARCHAR(80) NOT NULL,generation VARCHAR(36) NOT NULL,operation_kind VARCHAR(32) NOT NULL,state VARCHAR(24) NOT NULL,lease_until BIGINT NOT NULL,created_at BIGINT NOT NULL,finished_at BIGINT);
+CREATE INDEX wearable_operation_active ON wearable_cluster_operation(state,node_id,generation);
+CREATE TABLE wearable_media_effect (effect_key CHAR(64) PRIMARY KEY,operation_id VARCHAR(128) NOT NULL,fingerprint CHAR(64) NOT NULL,method VARCHAR(8) NOT NULL,effect_path VARCHAR(512) NOT NULL,node_id VARCHAR(80) NOT NULL,generation VARCHAR(36) NOT NULL,claim_token VARCHAR(36) NOT NULL,state VARCHAR(24) NOT NULL,response_json CLOB,created_at BIGINT NOT NULL,updated_at BIGINT NOT NULL);
+CREATE INDEX wearable_effect_state ON wearable_media_effect(state,node_id,generation);

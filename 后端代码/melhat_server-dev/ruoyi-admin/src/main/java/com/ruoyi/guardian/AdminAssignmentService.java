@@ -52,6 +52,10 @@ public class AdminAssignmentService {
     }
 
     public JSONObject execute(String accountId, String type, JSONObject input) {
+        return ledger.mutate(() -> executeMutation(accountId,type,input));
+    }
+
+    private JSONObject executeMutation(String accountId, String type, JSONObject input) {
         RemovedAssetFeatures.requireCommand(type, input);
         if (!"assignments.issue".equals(type) && !"assignments.return".equals(type)) throw AdminQueryService.fail(400, "COMMAND_NOT_AVAILABLE", "不支持此领用操作");
         JSONObject state = ledger.read();
@@ -73,6 +77,9 @@ public class AdminAssignmentService {
         JSONObject previous = memory.getJSONObject(key);
         String fingerprint = input.toJSONString();
         if (previous != null) {
+            JSONObject replayPerson=find(state,"people",input.getString("personId"));
+            if(replayPerson==null||!queries.allows(state,actor,"assets:write",replayPerson.getString("siteId"),replayPerson.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","当前身份无领用办理权限");
+            if(input.getJSONArray("items")!=null)for(Object raw:input.getJSONArray("items")){JSONObject d=find(state,"devices",((JSONObject)raw).getString("deviceId"));if(d==null||!queries.allows(state,actor,"assets:write",d.getString("siteId"),d.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","当前身份无设备办理权限");}
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
             return previous.getJSONObject("result");
         }
@@ -270,23 +277,6 @@ public class AdminAssignmentService {
         record.put("occurredAt", now);
         record.put("source", "前端内存本地");
         return record;
-    }
-
-    public void publish(JSONObject admin) {
-        syncPortal(admin);
-    }
-
-    private void syncPortal(JSONObject admin) {
-        final JSONObject snapshot = guardian.snapshot();
-        if (snapshot == null) throw AdminQueryService.fail(503, "SOURCE_FAILURE", "监护数据尚未保存");
-        guardian.update(new GuardianStore.Edit() {
-            @Override
-            public boolean apply(JSONObject next) {
-                GuardianMasterProjection.apply(next, admin);
-                  next.put("seq", next.getIntValue("seq") + 1);
-                return true;
-            }
-        });
     }
 
     private Map<String, Object> candidates(JSONObject state, JSONObject actor, JSONObject input) {

@@ -7,7 +7,7 @@ import java.util.Objects;
 final class PlatformProjection {
     private PlatformProjection() {}
     static boolean apply(JSONObject snapshot, JSONObject admin) {
-        if(admin==null)return false;
+        if(admin==null||snapshot.containsKey("appliedLedgerRevision")&&snapshot.getLongValue("appliedLedgerRevision")>admin.getLongValue("revision"))return false;
         String before=snapshot.toJSONString();
         GuardianMasterProjection.apply(snapshot, admin);
         JSONArray target=snapshot.getJSONArray("devices");

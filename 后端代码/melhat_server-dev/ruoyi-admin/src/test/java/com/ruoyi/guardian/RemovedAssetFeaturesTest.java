@@ -8,7 +8,7 @@ import static org.mockito.Mockito.*;
 
 class RemovedAssetFeaturesTest {
     @Test void rejectsAllRemovedCommandsBeforeDispatchOrStorage() {
-        AdminLedgerStore ledger=mock(AdminLedgerStore.class);
+        AdminLedgerStore ledger=mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         AdminQueryService queries=mock(AdminQueryService.class);
         AdminDeviceService devices=mock(AdminDeviceService.class);
         AdminAssignmentService assignments=mock(AdminAssignmentService.class);

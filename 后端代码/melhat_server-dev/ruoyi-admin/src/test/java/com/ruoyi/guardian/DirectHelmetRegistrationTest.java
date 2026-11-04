@@ -38,7 +38,7 @@ class DirectHelmetRegistrationTest {
     @BeforeEach void setup() throws Exception {
         state = seed("admin-seed.json");
         snapshot = seed("guardian-seed.json");
-        ledger = mock(AdminLedgerStore.class);
+        ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(i -> JSON.parseObject(state.toJSONString()));
         doAnswer(i -> {
             JSONObject next = i.getArgument(0);

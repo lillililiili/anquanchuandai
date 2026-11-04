@@ -24,11 +24,8 @@ public class AdminDeviceService {
         this.hats = hats;
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public JSONObject execute(String accountId, String type, JSONObject input) {
-        synchronized (ledger) {
-            return executeLocked(accountId, type, input);
-        }
+        return ledger.mutate(() -> executeLocked(accountId,type,input));
     }
 
     private JSONObject executeLocked(String accountId, String type, JSONObject input) {

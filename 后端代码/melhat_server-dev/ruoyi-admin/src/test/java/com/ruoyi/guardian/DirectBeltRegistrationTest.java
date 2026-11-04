@@ -26,7 +26,7 @@ class DirectBeltRegistrationTest {
         state = seed("admin-seed.json");
         snapshot = seed("guardian-seed.json");
         migrate(state);
-        ledger = mock(AdminLedgerStore.class);
+        ledger = mock(AdminLedgerStore.class);org.mockito.Mockito.when(ledger.mutate(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> ((java.util.function.Supplier<?>)invocation.getArgument(0)).get());
         when(ledger.read()).thenAnswer(i -> copy(state));
         doAnswer(i -> { JSONObject next = i.getArgument(0); state.clear(); state.putAll(next); return null; })
                 .when(ledger).write(any());
