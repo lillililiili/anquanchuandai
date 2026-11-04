@@ -357,7 +357,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		FROM
 			sys_user a
 				LEFT JOIN sys_user_role b ON a.user_id = b.user_id
-			#	left join sys_role c on c.role_id = b.role_id
+			<!-- left join sys_role c on c.role_id = b.role_id -->
 
 		WHERE b.role_id in (select c.role_id from sys_user_role c left join sys_role d on c.role_id=d.role_id  where c.user_id = #{id} and d.role_key=#{roleName})
 	</select>

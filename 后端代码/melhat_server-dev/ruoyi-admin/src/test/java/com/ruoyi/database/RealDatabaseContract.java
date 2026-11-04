@@ -3,6 +3,10 @@ import com.alibaba.fastjson2.*;
 import com.ruoyi.common.database.DatabaseDialect;
 import com.ruoyi.guardian.*;
 import com.ruoyi.fuda.FudaPushOutbox;
+import com.ruoyi.system.domain.SysNotice;
+import com.ruoyi.system.mapper.SysNoticeMapper;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -10,6 +14,8 @@ import org.springframework.jdbc.datasource.*;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,7 +42,8 @@ class RealDatabaseContract {
   }
   SchemaLifecycle schema=new SchemaLifecycle(jdbc);schema.migrate(SchemaLifecycle.all(product));schema.validate(SchemaLifecycle.all(product));
   SchemaLifecycle.configure(source,product.name().toLowerCase(Locale.ROOT),"validate");
-  org.apache.ibatis.session.SqlSessionFactory sf=DatabaseMapperContractTest.factory(source,product==DatabaseDialect.DM8?"dm8":"mysql");
+  SqlSessionFactory sf=DatabaseMapperContractTest.factory(source,product==DatabaseDialect.DM8?"dm8":"mysql");
+  verifyNoticeContent(sf);
   try(org.apache.ibatis.session.SqlSession session=sf.openSession(true)) {
    com.ruoyi.system.mapper.SysUserMapper mapper=session.getMapper(com.ruoyi.system.mapper.SysUserMapper.class);
    com.ruoyi.common.core.domain.entity.SysUser user=new com.ruoyi.common.core.domain.entity.SysUser();user.setUserName("contract-user");user.setNickName("Contract");user.setDeptId(1L);
@@ -107,6 +114,66 @@ class RealDatabaseContract {
    assertNotEquals(claimed.leaseToken,renewed.leaseToken);assertFalse(box.finish(claimed,"DELIVERED","OK",200,31002,0));assertTrue(box.finish(renewed,"DELIVERED","OK",200,31002,0));
   } finally {pool.shutdownNow();}
  }
+ private static void verifyNoticeContent(SqlSessionFactory factory) throws Exception {
+  try (SqlSession session = factory.openSession(false)) {
+   try {
+    SysNoticeMapper mapper = session.getMapper(SysNoticeMapper.class);
+    SysNotice notice = new SysNotice();
+    notice.setNoticeTitle("contract-notice");
+    notice.setNoticeType("1");
+    String html = "<p>公告正文🙂 &amp; 安全提示</p>";
+    notice.setNoticeContent(html);
+    assertEquals(1, mapper.insertNotice(notice));
+    SysNotice saved = mapper.selectNoticeList(notice).get(0);
+    assertEquals(html, saved.getNoticeContent(), "created notice list text");
+    notice.setNoticeId(saved.getNoticeId());
+    assertNoticeContent(session, mapper, notice, html);
+
+    String largeHtml = "<article>" + html.repeat(2500) + "</article>";
+    notice.setNoticeContent(largeHtml);
+    assertEquals(1, mapper.updateNotice(notice));
+    assertNoticeContent(session, mapper, notice, largeHtml);
+
+    notice.setNoticeContent(null);
+    assertEquals(1, mapper.updateNotice(notice));
+    assertNoticeContent(session, mapper, notice, largeHtml); // An omitted update leaves the content intact.
+    notice.setNoticeContent("");
+    assertEquals(1, mapper.updateNotice(notice));
+    assertNoticeContent(session, mapper, notice, "");
+
+    for (String absent : Arrays.asList(null, "")) {
+     SysNotice blank = new SysNotice();
+     blank.setNoticeTitle(absent == null ? "contract-notice-null" : "contract-notice-empty");
+     blank.setNoticeType("1");
+     blank.setNoticeContent(absent);
+     assertEquals(1, mapper.insertNotice(blank));
+     blank.setNoticeId(mapper.selectNoticeList(blank).get(0).getNoticeId());
+     assertNoticeContent(session, mapper, blank, null); // Create omits both null and empty input.
+    }
+   } finally {
+    session.rollback();
+   }
+  }
+ }
+
+ private static void assertNoticeContent(SqlSession session, SysNoticeMapper mapper, SysNotice notice, String expected)
+     throws Exception {
+  SysNotice listed = mapper.selectNoticeList(notice).get(0);
+  assertEquals(notice.getNoticeId(), listed.getNoticeId());
+  assertTrue(Objects.equals(expected, listed.getNoticeContent()), "notice list text differs");
+  assertTrue(Objects.equals(expected, mapper.selectNoticeById(notice.getNoticeId()).getNoticeContent()),
+      "notice detail text differs");
+  try (PreparedStatement query = session.getConnection()
+      .prepareStatement("SELECT notice_content FROM sys_notice WHERE notice_id = ?")) {
+   query.setLong(1, notice.getNoticeId());
+   try (ResultSet row = query.executeQuery()) {
+    assertTrue(row.next());
+    byte[] expectedBytes = expected == null ? null : expected.getBytes(StandardCharsets.UTF_8);
+    assertTrue(Arrays.equals(expectedBytes, row.getBytes(1)), "stored UTF-8 notice bytes differ");
+   }
+  }
+ }
+
  private static void await(CountDownLatch latch) {
   try{if(!latch.await(30,TimeUnit.SECONDS))throw new IllegalStateException("test release timeout");}
   catch(InterruptedException e){Thread.currentThread().interrupt();throw new IllegalStateException(e);}

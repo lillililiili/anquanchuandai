@@ -24,6 +24,9 @@ class DatabaseMapperContractTest {
   assertFalse(sql.contains("date_format"));assertFalse(sql.contains("find_in_set"));assertTrue(sql.contains("to_char"));assertTrue(sql.contains("instr"));
   String unique=f.getConfiguration().getMappedStatement("com.ruoyi.system.mapper.SysUserMapper.checkUserNameUnique").getBoundSql("test").getSql().toLowerCase(Locale.ROOT);
   assertTrue(unique.contains("fetch first 1 rows only"));assertFalse(unique.contains("limit"));
+  String group=f.getConfiguration().getMappedStatement("com.ruoyi.system.mapper.SysUserMapper.getUsersGroup")
+      .getBoundSql(Map.of("id",1L,"roleName","admin")).getSql();
+  assertFalse(group.contains("#"),"group SQL must not contain a MySQL-only comment");
  }
  @Test void mysqlRetainsItsDateAndPaginationContracts() throws Exception {
   SqlSessionFactory f=factory(new DriverManagerDataSource("jdbc:h2:mem:mysqlmapper","sa",""),"mysql");
