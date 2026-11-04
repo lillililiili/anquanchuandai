@@ -64,9 +64,11 @@ public class AdminAssignmentService {
         if (actor == null) throw AdminQueryService.fail(401, "IDENTITY_INVALID", "请先登录");
         if (input == null) input = new JSONObject();
         String operationId = input.getString("operationId");
-        if(businessPolicy!=null&&!businessPolicy.config().getBooleanValue("simulatedWatchVisible")&&input.getJSONArray("items")!=null) {
-            for(Object raw:input.getJSONArray("items")) {
-                JSONObject device=find(state,"devices",((JSONObject)raw).getString("deviceId"));
+        JSONArray requestedItems = input.getJSONArray("items");
+        if(businessPolicy!=null&&!businessPolicy.config().getBooleanValue("simulatedWatchVisible")&&requestedItems!=null) {
+            for(int i=0;i<requestedItems.size();i++) {
+                // Jackson @RequestBody stores nested rows as Maps, not Fastjson objects.
+                JSONObject device=find(state,"devices",requestedItems.getJSONObject(i).getString("deviceId"));
                 if(device!=null&&"DEMO_WATCH".equals(device.getString("source")))throw AdminQueryService.fail(409,"SIMULATION_HIDDEN","模拟手表当前已隐藏");
             }
         }
@@ -79,7 +81,10 @@ public class AdminAssignmentService {
         if (previous != null) {
             JSONObject replayPerson=find(state,"people",input.getString("personId"));
             if(replayPerson==null||!queries.allows(state,actor,"assets:write",replayPerson.getString("siteId"),replayPerson.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","当前身份无领用办理权限");
-            if(input.getJSONArray("items")!=null)for(Object raw:input.getJSONArray("items")){JSONObject d=find(state,"devices",((JSONObject)raw).getString("deviceId"));if(d==null||!queries.allows(state,actor,"assets:write",d.getString("siteId"),d.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","当前身份无设备办理权限");}
+            if(requestedItems!=null)for(int i=0;i<requestedItems.size();i++) {
+                JSONObject d=find(state,"devices",requestedItems.getJSONObject(i).getString("deviceId"));
+                if(d==null||!queries.allows(state,actor,"assets:write",d.getString("siteId"),d.getString("areaId")))throw AdminQueryService.fail(403,"PERMISSION_DENIED","当前身份无设备办理权限");
+            }
             if (!fingerprint.equals(previous.getString("fingerprint"))) throw AdminQueryService.fail(409, "IDEMPOTENCY_CONFLICT", "相同操作标识不能用于不同内容");
             return previous.getJSONObject("result");
         }
