@@ -11,6 +11,7 @@ fi
 [[ $# == 0 ]] || { echo 'Unexpected arguments' >&2; exit 2; }
 fail() { echo "FAIL: $*" >&2; exit 1; }
 for cmd in uname docker findmnt python3; do command -v "$cmd" >/dev/null || fail "Missing executable: $cmd"; done
+python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' || fail 'Python 3.9 or newer is required'
 [[ $(uname -m) == x86_64 ]] || fail 'An x86_64 host is required'
 [[ -r /etc/os-release ]] || fail '/etc/os-release is unavailable'
 # /etc/os-release is installed by the host OS, never sourced from the delivery bundle.

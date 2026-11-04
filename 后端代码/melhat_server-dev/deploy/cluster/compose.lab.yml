@@ -1,0 +1,31 @@
+# Deliberately separate from production; requires Compose >= 2.24.4 for !override.
+name: ${CLUSTER_PROJECT:?Set an independent wearable-lab-* project in .lab.env}
+services:
+  app-a:
+    env_file: !override [./private/lab/backend.env]
+  app-b:
+    env_file: !override [./private/lab/backend.env]
+  migrate:
+    env_file: !override [./private/lab/backend.env]
+  helmet-a:
+    volumes:
+      - ./private/lab/helmet-a.json:/run/private/helmet-a.json:ro
+  helmet-b:
+    volumes:
+      - ./private/lab/helmet-b.json:/run/private/helmet-b.json:ro
+  belt-a:
+    volumes:
+      - ./private/lab/belt-a.json:/run/private/belt-a.json:ro
+  belt-b:
+    volumes:
+      - ./private/lab/belt-b.json:/run/private/belt-b.json:ro
+  ingress:
+    ports: !override
+      - '127.0.0.1:${LAB_INGRESS_PORT:-18080}:80'
+    volumes:
+      - type: bind
+        source: ./private/lab/Caddy.lab
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind: {create_host_path: false}
+      - ./private/lab/Caddy.devices:/etc/caddy/Caddy.devices:ro

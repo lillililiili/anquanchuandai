@@ -22,8 +22,9 @@ class ConfigurationTest(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / 'private').mkdir()
         (self.root / 'shared' / 'files').mkdir(parents=True)
-        for name in ('compose.yml', 'application-cluster.yml', 'Caddyfile'):
+        for name in ('compose.yml', 'compose.lab.yml', 'application-cluster.yml', 'Caddyfile'):
             shutil.copyfile(DEPLOY / name, self.root / name)
+        shutil.copyfile(DEPLOY / 'Caddyfile', self.root / 'private' / 'Caddy.lab')
         secret = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('=')
         values = dict(MELHAT_DB_PRODUCT='dm8', MELHAT_DB_URL='jdbc:dm://test-db:5236', MELHAT_DB_USERNAME='TEST',
                       MELHAT_DB_PASSWORD=secret, CLUSTER_REDIS_HOST='test-redis', CLUSTER_REDIS_PASSWORD=secret,
@@ -39,13 +40,25 @@ class ConfigurationTest(unittest.TestCase):
         (self.root / 'private' / 'gateway-manifest.json').write_text(json.dumps(dict(generation='42bb991a-a149-4a82-94f3-62aca3b41fb1', files=files)))
         self.dotenv = f'BACKEND_IMAGE=wearable-backend:lab\nGATEWAY_IMAGE=wearable-gateway:lab\nMELHAT_DB_PRODUCT=dm8\nSHARED_DATA_DIR={self.root.as_posix()}/shared\nCADDY_SITE=http://:80\n'
         (self.root / '.env').write_text(self.dotenv)
+        lab = self.root / 'private' / 'lab'
+        lab.mkdir()
+        for item in (self.root / 'private').iterdir():
+            if item.is_file():
+                shutil.copyfile(item, lab / item.name)
+        (self.root / '.lab.env').write_text(self.dotenv + 'CLUSTER_PROJECT=wearable-lab-test\nCLUSTER_NETWORK=wearable-lab-test\n')
         ops.ROOT = self.root
         ops.COMPOSE = ['docker', 'compose', '--project-directory', str(self.root), '--env-file', str(self.root / '.env'), '-f', str(self.root / 'compose.yml')]
+        # Dependency identity checks have their own metadata tests; these exercise actual Compose rendering.
+        self.labCheckPatch = patch.object(ops, 'validate_lab_dependencies')
+        self.labCheckPatch.start()
+        self.addCleanup(self.labCheckPatch.stop)
 
     def test_real_compose_has_two_isolated_apps_and_no_public_backend_ports(self):
         config = ops.configuration(True)
         for service in ('app-a', 'app-b', 'helmet-a', 'helmet-b', 'belt-a', 'belt-b'):
             self.assertFalse(config['services'][service].get('ports'))
+        self.assertEqual(len(config['services']['ingress']['ports']), 1)
+        self.assertEqual(config['services']['ingress']['ports'][0]['host_ip'], '127.0.0.1')
         for service in ('helmet-a', 'helmet-b', 'belt-a', 'belt-b'):
             mounts = config['services'][service]['volumes']
             self.assertTrue(any(v['target'] == f'/run/private/{service}.json' for v in mounts))
@@ -54,17 +67,17 @@ class ConfigurationTest(unittest.TestCase):
     def test_duplicate_identity_and_floating_production_images_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'pinned'):
             ops.configuration(False)
-        (self.root / '.env').write_text(self.dotenv + 'NODE_B_ID=app-a\n')
+        (self.root / '.lab.env').write_text(self.dotenv + 'CLUSTER_PROJECT=wearable-lab-test\nCLUSTER_NETWORK=wearable-lab-test\nNODE_B_ID=app-a\n')
         with self.assertRaisesRegex(ValueError, 'identity'):
             ops.configuration(True)
 
     def test_interrupted_or_mixed_gateway_generation_is_rejected(self):
-        marker = self.root / 'private' / '.gateway-config.incomplete'
+        marker = self.root / 'private' / 'lab' / '.gateway-config.incomplete'
         marker.write_text('in progress')
         with self.assertRaisesRegex(ValueError, 'incomplete'):
             ops.configuration(True)
         marker.unlink()
-        (self.root / 'private' / 'Caddy.devices').write_text('# interrupted replacement\n')
+        (self.root / 'private' / 'lab' / 'Caddy.devices').write_text('# interrupted replacement\n')
         with self.assertRaisesRegex(ValueError, 'mixed'):
             ops.configuration(True)
 

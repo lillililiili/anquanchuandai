@@ -10,17 +10,24 @@ import subprocess
 import sys
 import time
 import uuid
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
 COMPOSE = ['docker', 'compose', '--project-directory', str(ROOT), '--env-file', str(ROOT / '.env'), '-f', str(ROOT / 'compose.yml')]
+PRIVATE = ROOT / 'private'
 
 def call(args, *, capture=False, timeout=120, env=None):
     return subprocess.run(args, cwd=ROOT, check=True, text=True, encoding='utf-8',
                           stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE,
                           timeout=timeout, env=env).stdout
 
-def configuration(lab=False):
-    private = ROOT / 'private'
+def configuration(lab=False, *, inventory=None):
+    global COMPOSE, PRIVATE
+    COMPOSE = ['docker', 'compose', '--project-directory', str(ROOT), '--env-file', str(ROOT / ('.lab.env' if lab else '.env')), '-f', str(ROOT / 'compose.yml')]
+    if lab:
+        COMPOSE.extend(['-f', str(ROOT / 'compose.lab.yml')])
+    PRIVATE = ROOT / 'private' / 'lab' if lab else ROOT / 'private'
+    private = PRIVATE
     if (private / '.gateway-config.incomplete').exists():
         raise ValueError('Gateway configuration replacement is incomplete. Restore or reconcile the entire generation before starting services.')
     manifest = json.loads((private / 'gateway-manifest.json').read_text(encoding='utf-8'))
@@ -55,7 +62,7 @@ def configuration(lab=False):
             raise ValueError('Production images must be pinned to a tested digest or immutable image ID.')
     for node in ('a', 'b'):
         for kind in ('helmet', 'belt'):
-            gateway = json.loads((ROOT / 'private' / f'{kind}-{node}.json').read_text(encoding='utf-8'))
+            gateway = json.loads((private / f'{kind}-{node}.json').read_text(encoding='utf-8'))
             if gateway['adminToken'] != apps[0]['environment']['MELHAT_CLUSTER_ADMIN_TOKEN']:
                 raise ValueError('Backend and gateway management credentials must match.')
             if gateway['upstreamOrigin'] != f'http://app-{node}:18084':
@@ -63,7 +70,78 @@ def configuration(lab=False):
     sources = [next(v['source'] for v in app['volumes'] if v['target'] == '/shared') for app in apps]
     if sources[0] != sources[1] or not Path(sources[0]).is_absolute() or Path(sources[0]) == Path('/'):
         raise ValueError('Both nodes must mount the same dedicated absolute shared directory.')
+    if lab:
+        validate_lab_dependencies(config, private, inventory)
     return config
+
+def container_identity(container):
+    # Only identity/network metadata, never Config.Env or credentials.
+    template = '{"id":{{json .Id}},"name":{{json .Name}},"networks":{{json .NetworkSettings.Networks}}}'
+    return json.loads(call(['docker', 'inspect', '--format', template, container], capture=True))
+
+def validate_lab_dependencies(config, private, inventory=None):
+    manifest = inventory if inventory is not None else json.loads((private / 'isolation.json').read_text(encoding='utf-8'))
+    project = config['name']
+    network = config['networks']['cluster']['name']
+    if not re.fullmatch(r'wearable-lab-[a-z0-9-]+', project) or not re.fullmatch(r'wearable-lab-[a-z0-9-]+', network):
+        raise ValueError('Laboratory mode requires independent wearable-lab-* project and network names.')
+    if manifest['project'] != project or manifest['network']['name'] != network:
+        raise ValueError('Laboratory project/network do not match the independently prepared inventory.')
+    network_id = call(['docker', 'network', 'inspect', '--format', '{{.Id}}', network], capture=True).strip()
+    if network_id != manifest['network']['id']:
+        raise ValueError('Laboratory network identity changed.')
+    env = config['services']['app-a']['environment']
+    if hashlib.sha256((private / 'backend.env').read_bytes()).hexdigest() != manifest['backendEnvSha256']:
+        raise ValueError('Laboratory backend configuration differs from its verified inventory.')
+    if hashlib.sha256((private / 'Caddy.lab').read_bytes()).hexdigest() != manifest['entrySha256']:
+        raise ValueError('Laboratory entry differs from its verified inventory.')
+    db = urlsplit(env['MELHAT_DB_URL'].removeprefix('jdbc:'))
+    schema = env['MELHAT_DB_USERNAME'] if env['MELHAT_DB_PRODUCT'] == 'dm8' else db.path.lstrip('/')
+    if db.scheme != ('dm' if env['MELHAT_DB_PRODUCT'] == 'dm8' else 'mysql') or schema != manifest['database']['schema']:
+        raise ValueError('Laboratory database/schema differs from the verified inventory.')
+    dependencies = {}
+    for kind, host in [('database', db.hostname), ('redis', env['CLUSTER_REDIS_HOST'])]:
+        expected = manifest[kind]['containerId']
+        if not re.fullmatch(r'[0-9a-f]{64}', expected):
+            raise ValueError('Laboratory inventory requires immutable dependency container IDs.')
+        actual = container_identity(expected)
+        name = actual['name'].lstrip('/')
+        if actual['id'] != expected or not (name.startswith('wearable-lab-') or name.startswith('wearable-') and name.endswith('-lab')):
+            raise ValueError('Laboratory dependency is not the designated isolated container.')
+        attachment = actual['networks'].get(network)
+        if not attachment or attachment['NetworkID'] != network_id:
+            raise ValueError('Laboratory dependency is outside the verified network.')
+        hosts = {name, attachment.get('IPAddress'), *(attachment.get('Aliases') or []), *(attachment.get('DNSNames') or [])}
+        if host not in hosts:
+            raise ValueError('Backend host resolves outside the designated laboratory dependency.')
+        dependencies[kind] = actual
+    if int(env.get('CLUSTER_REDIS_DATABASE', 0)) != manifest['redis']['database']:
+        raise ValueError('Laboratory Redis database differs from its inventory.')
+    shared = next(v['source'] for v in config['services']['app-a']['volumes'] if v['target'] == '/shared')
+    if str(Path(shared).resolve()) != str(Path(manifest['sharedDirectory']).resolve()) or env['MELHAT_FILES_STORE_ID'] != manifest['storeId']:
+        raise ValueError('Laboratory shared storage differs from its inventory.')
+    # If a normal deployment is configured here, compare actual dependencies as well as names.
+    if (ROOT / '.env').exists() or (ROOT / 'private' / 'backend.env').exists():
+        production = json.loads(call(['docker', 'compose', '--project-directory', str(ROOT), '--env-file', str(ROOT / '.env'),
+                                     '-f', str(ROOT / 'compose.yml'), 'config', '--format', 'json'], capture=True))
+        normal = production['services']['app-a']
+        normal_env = normal['environment']
+        normal_shared = next(v['source'] for v in normal['volumes'] if v['target'] == '/shared')
+        normal_db = urlsplit(normal_env['MELHAT_DB_URL'].removeprefix('jdbc:'))
+        normal_hosts = [normal_db.hostname, normal_env['CLUSTER_REDIS_HOST']]
+        for kind, host in zip(('database', 'redis'), normal_hosts):
+            actual = dependencies[kind]
+            aliases = {actual['name'].lstrip('/')}
+            for attachment in actual['networks'].values():
+                aliases.update(attachment.get('Aliases') or [])
+                aliases.update(attachment.get('DNSNames') or [])
+                aliases.add(attachment.get('IPAddress'))
+            if host in aliases:
+                raise ValueError('Laboratory cannot share the normal database or Redis container, even through another alias.')
+        if production['name'] == project or production['networks']['cluster']['name'] == network \
+                or Path(normal_shared).resolve() == Path(shared).resolve() \
+                or normal_env['MELHAT_FILES_STORE_ID'] == env['MELHAT_FILES_STORE_ID']:
+            raise ValueError('Laboratory cannot reuse normal project/network/shared storage identities.')
 
 def generation_window():
     current = os.environ['GATEWAY_CONFIG_GENERATION']
@@ -82,7 +160,7 @@ def generation_window():
         raise ValueError('Gateway generation changed. Drain and stop both node groups before applying the complete generation, including ingress.')
 
 def verify_loaded_generation():
-    manifest = json.loads((ROOT / 'private' / 'gateway-manifest.json').read_text(encoding='utf-8'))
+    manifest = json.loads((PRIVATE / 'gateway-manifest.json').read_text(encoding='utf-8'))
     for service in ('helmet-a', 'helmet-b', 'belt-a', 'belt-b', 'ingress'):
         container = call(COMPOSE + ['ps', '-q', service], capture=True).strip()
         loaded = call(['docker', 'inspect', '--format', '{{index .Config.Labels "org.wearable.gateway-generation"}}', container], capture=True).strip()

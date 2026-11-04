@@ -14,7 +14,7 @@
 
 ## 准备
 
-1. 在目标主机安装经过本项目验证的 Docker Engine、Compose V2、Python 3 与 bash。先运行 `kylin-preflight.sh`；默认必须是麒麟 V10 x86_64、hard NFS。`--lab` 仅用于开发，不能形成麒麟结论。
+1. 在目标主机安装经过本项目验证的 Docker Engine、Compose V2、Python 3.9 或更新版本与 bash。先运行 `kylin-preflight.sh`；默认必须是麒麟 V10 x86_64、hard NFS。`--lab` 仅用于开发，不能形成麒麟结论。
 2. 显式准备共享目录与权限；使用 `prepare-shared-store.py /mnt/wearable/files <UUID>` 创建唯一标记，重复执行不能更换已存在标记。记录 UUID，并在两个节点配置相同值。备份/恢复必须连标记、文件、数据库指针一起处理。
 3. 构建已经测试过的后端 jar，再从后端根目录构建 `deploy/cluster/backend.Dockerfile` 和 `gateway.Dockerfile`。镜像运行 Java 17、Node 24.16.0，基础镜像和 Caddy 2.10.2 固定摘要。正式 `.env` 的 BACKEND_IMAGE/GATEWAY_IMAGE 必须使用实际验收镜像摘要或本地不可变 image ID，不填写浮动标签。
 4. 创建权限 0700 的 `private/`。`backend.env` 权限 0600，设置下列参数。两节点共享 JWT/媒体加密密钥/Redis，不要重新生成已有数据使用的加密密钥。
@@ -46,11 +46,23 @@ MELHAT_CLUSTER_ADMIN_TOKEN=<32-byte-base64url-token>
 
 ## 操作
 
-`clusterctl.sh check` 进行配置与主机预检；`migrate` 在两个 app 都已停止时运行单独迁移进程；`up` 等待全部健康；`status`/`logs --node a` 查看状态/有限日志；`drain --node a`/`stop --node a`/`restart --node a` 先后端排空、网关关闭存量连接、确认真实 quiescent 后处理单节点。开发可加 `--lab`。没有无条件强制停止回退；未知外部执行结果必须先核对。排空不等同于全局维护暂停，不能用单节点排空授权数据库导入。
+`clusterctl.sh check` 进行配置与主机预检；`migrate` 在两个 app 都已停止时运行单独迁移进程；`up` 等待全部健康；`status`/`logs --node a` 查看状态/有限日志；`drain --node a`/`stop --node a`/`restart --node a` 先后端排空、网关关闭存量连接、确认真实 quiescent 后处理单节点。开发使用下述独立实验室配置后才可加 `--lab`。没有无条件强制停止回退；未知外部执行结果必须先核对。排空不等同于全局维护暂停，不能用单节点排空授权数据库导入。
 
 应用启动只校验迁移版本和校验和，缺表或版本不一致会失败。空数据库也要显式迁移；业务初始管理员/导入必须使用后续专用初始化与迁移工具，不使用旧实例自动回填示例数据。
 
 `versions.sh` 记录系统、运行时与镜像身份，不输出环境密钥。达梦版本、字符集/兼容/严格参数、JDBC 摘要以及媒体依赖版本另行记录。库迁移、最终对账、备份恢复和回滚手册完成后才可执行切换；新库产生写入后不能直接恢复旧备份。
+
+## 实验室独立配置
+
+`--lab` 不是在正式部署上放宽检查。它读取单独的 `.lab.env`、`private/lab/backend.env` 和四个 `private/lab/*.json`；不复用 `private/backend.env`。需要 Compose 2.24.4 或更新版本。所有命令从后端项目根目录运行。
+
+1. 创建独立 `wearable-lab-*` Docker 项目和网络、专用数据库/Redis容器及共享目录。依赖容器名称须为 `wearable-lab-*` 或 `wearable-*-lab`，并实际连接该实验室网络。容器名只是初筛，后续还会核对不可变容器/网络 ID 和真实网络别名。禁止使用生产数据或真实设备凭据。
+2. 在 `.lab.env` 填写独立 `CLUSTER_PROJECT/CLUSTER_NETWORK/SHARED_DATA_DIR` 和镜像配置；创建权限0700的 `private/lab`，写入实验室 `backend.env`、`gateway-input.json`，设置独立共享标记。按前述生成命令将输出目录改为 `deploy/cluster/private/lab`。Windows 同样须限制目录 ACL。
+3. 私有 `workload.json` 增加 `labId=wearable-lab-...` 和随机32-byte base64url `isolationProof`。用 `node deploy/cluster/prepare-lab-entry.mjs deploy/cluster/private/lab/workload.json deploy/cluster/private/lab/Caddy.lab` 生成单独入口。该入口只能绑定本机；证明值不得出现在公开日志。
+4. 运行 `python3 deploy/cluster/prepare-lab-inventory.py --database-container <专用数据库容器> --redis-container <专用Redis容器>`。它只登记现有依赖，核对库/schema、Redis database、共享标记、配置摘要与真实网络连接，生成新的私有 `isolation.json`。若此目录已有正式 `.env/backend.env`，通过不同网络别名复用同一依赖实例也会被拒绝。脚本不覆盖已有清单；修改配置或重建依赖时应保留旧清单，重新核对后显式准备新清单。
+5. 再运行 `clusterctl.sh --lab check/migrate/up` 等命令。每次操作重验清单；入口仅映射 `127.0.0.1:${LAB_INGRESS_PORT:-18080}`。跨主机负载测试需要另行配置受控专网，不能直接取消此本机限制。
+
+这套校验防止本目录实验室配置误指向已登记的正式依赖，不替代操作者核对其他机器或其他目录的生产资产。完整负载步骤与结果口径见 [CAPACITY.md](CAPACITY.md)。
 
 ## 已验证与边界
 

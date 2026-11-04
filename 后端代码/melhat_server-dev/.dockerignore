@@ -5,6 +5,7 @@
 **/.env
 **/.env.local
 **/.env.*
+**/.lab.env
 !**/.env.example
 **/*.pem
 **/*.key
