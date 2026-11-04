@@ -4,10 +4,11 @@ import { fileURLToPath } from 'node:url';
 
 const PREFIX = '/api/guardian/v1';
 const ID = '[A-Za-z0-9_-]{1,100}';
+const DEVICE_ID = '[A-Za-z0-9._-]{1,100}';
 const patterns = [
   ['POST', '/(?:mobile/)?login'], ['POST', '/logout'], ['GET', '/operator'],
   ['GET', '/mobile/(?:identity|sites|context|home|people|devices|works|assignments|calls)'],
-  ['GET', `/mobile/(?:people|devices|works)/${ID}`],
+  ['GET', `/mobile/(?:people|works)/${ID}`], ['GET', `/mobile/devices/${DEVICE_ID}`],
   ['POST', '/mobile/assignments/(?:issue|return)'],
   ['POST', '/mobile/(?:calls|broadcast)'],
   ['GET', `/mobile/calls/${ID}(?:/credentials)?`],
@@ -15,7 +16,7 @@ const patterns = [
   ['GET', `/events(?:/${ID})?`],
   ['POST', `/events/${ID}/(?:claim|observations|verification-draft|verification|photos|assist-join|assist-end)`],
   ['POST', '/sos'], ['GET', `/files/${ID}`], ['PUT', `/files/${ID}`],
-  ['GET', `/devices/${ID}/(?:media|live)`], ['POST', `/devices/${ID}/commands`],
+  ['GET', `/devices/${DEVICE_ID}/(?:media|live)`], ['POST', `/devices/${DEVICE_ID}/commands`],
   ['GET', `/helmet/calls/${ID}(?:/credentials)?`], ['GET', '/locations/history'], ['GET', `/locations/people/${ID}`],
   ['GET', '/helmet/media'],
   ['POST', '/(?:call|call/end|broadcast)'],
@@ -45,12 +46,16 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     const url = new URL(raw, 'http://localhost');
     if (!allowed(request.method, url.pathname)) return fail(response, 404, 'NOT_FOUND');
     const queryKeys = ['siteId', 'eventId', 'deviceId', 'personId', 'status', 'type', 'pageNum', 'pageSize', 'from', 'to', 'after', 'cursor', 'limit'];
-    const liveRoute = request.method === 'GET' && new RegExp(`^${PREFIX}/devices/${ID}/live$`).test(url.pathname);
+    const liveRoute = request.method === 'GET' && new RegExp(`^${PREFIX}/devices/${DEVICE_ID}/live$`).test(url.pathname);
+    const callsRoute = request.method === 'GET' && url.pathname === `${PREFIX}/mobile/calls`;
     if (liveRoute) {
-      queryKeys.push('assignmentId', 'assignmentVersion', 'viewerSessionId');
+      queryKeys.push('assignmentId', 'assignmentVersion', 'viewerSessionId', 'acceptanceTest');
     }
+    if (callsRoute) queryKeys.push('owned');
     if ([...url.searchParams.keys()].some(k => !queryKeys.includes(k))
       || [...url.searchParams.keys()].some(k => url.searchParams.getAll(k).length !== 1)) return fail(response, 400, 'INVALID_QUERY');
+    for (const key of ['owned', 'acceptanceTest']) if (url.searchParams.has(key)
+      && !['true', 'false'].includes(url.searchParams.get(key))) return fail(response, 400, 'INVALID_QUERY');
     if (liveRoute) {
       for (const key of ['personId', 'assignmentId']) if (url.searchParams.has(key)
         && !/^[A-Za-z0-9_-]{1,100}$/.test(url.searchParams.get(key))) return fail(response, 400, 'INVALID_QUERY');

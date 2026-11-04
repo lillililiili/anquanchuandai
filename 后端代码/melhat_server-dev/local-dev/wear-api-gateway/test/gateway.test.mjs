@@ -32,6 +32,26 @@ test('live lease context is forwarded only on the authenticated live route',asyn
     assert.equal((await fetch(origin+'/api/guardian/v1/devices/d1/live?'+query,{headers})).status,400);
   }
 });
+test('scoped call and live query parameters and dotted device IDs preserve the backend contract',async t=>{
+  const seen=[];
+  const backend=http.createServer((req,res)=>{seen.push(req.url);res.writeHead(204);res.end();});
+  backend.listen(0,'127.0.0.1');await once(backend,'listening');
+  const gateway=createWearGateway({testOnly:true,upstreamOrigin:`http://127.0.0.1:${backend.address().port}`});
+  gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
+  t.after(async()=>{await new Promise(r=>gateway.close(r));await new Promise(r=>backend.close(r));});
+  const origin=`http://127.0.0.1:${gateway.address().port}`,headers={'X-Wearable-Token':'a'.repeat(43)};
+  const valid=['/api/guardian/v1/mobile/calls?owned=true&status=active',
+    '/api/guardian/v1/mobile/calls?owned=false&deviceId=hat.1',
+    '/api/guardian/v1/devices/hat.1/live?personId=p1&assignmentId=a1&assignmentVersion=2&viewerSessionId=viewer-1&acceptanceTest=true',
+    '/api/guardian/v1/devices/hat.1/media','/api/guardian/v1/mobile/devices/hat.1?siteId=s1'];
+  for(const url of valid){assert.equal((await fetch(origin+url,{headers})).status,204,url);assert.equal(seen.at(-1),url);}
+  const invalid=['/api/guardian/v1/mobile/calls?owned=maybe','/api/guardian/v1/mobile/calls?owned=true&owned=false',
+    '/api/guardian/v1/mobile/home?owned=true','/api/guardian/v1/devices/hat.1/media?acceptanceTest=true',
+    '/api/guardian/v1/devices/hat.1/live?acceptanceTest=yes','/api/guardian/v1/devices/hat.1/live?acceptanceTest=true&acceptanceTest=false',
+    '/api/guardian/v1/devices/hat.1/live?unknown=x'];
+  for(const url of invalid)assert.equal((await fetch(origin+url,{headers})).status,400,url);
+  assert.equal(seen.length,valid.length);
+});
 test('absolute-form and authority-form request targets cannot change the fixed upstream',async t=>{
   let upstreamHits=0,externalHits=0;
   const backend=http.createServer((_req,res)=>{upstreamHits++;res.end();});
