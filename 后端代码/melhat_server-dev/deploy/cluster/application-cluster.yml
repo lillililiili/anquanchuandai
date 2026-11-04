@@ -1,0 +1,61 @@
+# Loaded after dev and the selected dm8/mysql profile; no credentials in this file.
+server:
+  port: 18084
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 160
+      min-spare: 8
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  datasource:
+    druid:
+      master:
+        url: ${MELHAT_DB_URL}
+        username: ${MELHAT_DB_USERNAME}
+        password: ${MELHAT_DB_PASSWORD}
+      slave:
+        enabled: false
+      initialSize: 2
+      minIdle: 2
+      maxActive: 20
+      maxWait: 5000
+      connectTimeout: 5000
+      socketTimeout: 10000
+      statViewServlet:
+        enabled: false
+  redis:
+    host: ${CLUSTER_REDIS_HOST}
+    port: ${CLUSTER_REDIS_PORT:6379}
+    database: ${CLUSTER_REDIS_DATABASE:0}
+    password: ${CLUSTER_REDIS_PASSWORD}
+    timeout: 3s
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 51MB
+ruoyi:
+  demoEnabled: false
+  profile: /shared/upload
+  hatfile: /shared/hatfile
+  taskPackageFile: /shared/tasks
+token:
+  secret: ${JWT_SECRET}
+  expireTime: 60
+melhat:
+  database:
+    product: ${MELHAT_DB_PRODUCT}
+    schema-mode: validate
+  cluster:
+    enabled: true
+    node-id: ${MELHAT_CLUSTER_NODE_ID}
+  files:
+    root: /shared/files
+    store-id: ${MELHAT_FILES_STORE_ID}
+  demo-mode: false
+swagger:
+  enabled: false
+logging:
+  level:
+    com.ruoyi: info

@@ -12,3 +12,9 @@
 **/*.log
 **/target/**
 !ruoyi-admin/target/fdc-admin.jar
+!local-dev/device-gateway/backup-upload.mjs
+deploy/cluster/private
+deploy/cluster/vendor
+deploy/cluster/backups
+deploy/cluster/evidence
+**/__pycache__

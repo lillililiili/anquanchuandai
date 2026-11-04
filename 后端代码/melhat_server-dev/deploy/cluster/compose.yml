@@ -1,0 +1,121 @@
+name: ${CLUSTER_PROJECT:-wearable-cluster}
+x-app: &app
+  image: ${BACKEND_IMAGE:?Set a tested backend image digest}
+  restart: unless-stopped
+  env_file: ./private/backend.env
+  read_only: true
+  tmpfs: [/tmp:size=128m,mode=1777]
+  volumes:
+    - type: bind
+      source: ./application-cluster.yml
+      target: /config/application-cluster.yml
+      read_only: true
+      bind: {create_host_path: false}
+    - type: bind
+      source: ${SHARED_DATA_DIR:?Set the mounted shared directory}
+      target: /shared
+      bind: {create_host_path: false}
+  environment: &app-env
+    SPRING_PROFILES_ACTIVE: dev,${MELHAT_DB_PRODUCT:?dm8 or mysql},cluster
+    SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/
+    JAVA_TOOL_OPTIONS: -Xms128m -Xmx512m -XX:MaxMetaspaceSize=192m
+  healthcheck:
+    test: [CMD, /app/probe.sh]
+    interval: 5s
+    timeout: 4s
+    retries: 2
+    start_period: 90s
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  mem_limit: 900m
+  cpus: 1.0
+  stop_grace_period: 40s
+  networks: [cluster]
+  logging: &logging
+    driver: json-file
+    options: {max-size: 10m, max-file: '3'}
+x-gateway: &gateway
+  image: ${GATEWAY_IMAGE:?Set a tested gateway image digest}
+  restart: unless-stopped
+  labels:
+    org.wearable.gateway-generation: ${GATEWAY_CONFIG_GENERATION:?Use clusterctl to validate the gateway generation}
+  read_only: true
+  tmpfs: [/tmp:size=16m,mode=1777]
+  healthcheck:
+    test: [CMD, node, -e, "fetch('http://127.0.0.1:8080/internal/gateway/ready').then(r=>{if(r.status!==200)process.exit(1)}).catch(()=>process.exit(1))"]
+    interval: 5s
+    timeout: 3s
+    retries: 2
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  mem_limit: 256m
+  cpus: 0.5
+  stop_grace_period: 35s
+  networks: [cluster]
+  logging: *logging
+services:
+  app-a:
+    <<: *app
+    environment: {<<: *app-env, MELHAT_CLUSTER_NODE_ID: '${NODE_A_ID:-app-a}'}
+  app-b:
+    <<: *app
+    environment: {<<: *app-env, MELHAT_CLUSTER_NODE_ID: '${NODE_B_ID:-app-b}'}
+  helmet-a:
+    <<: *gateway
+    command: [helmet, /run/private/helmet-a.json]
+    volumes:
+      - ./private/helmet-a.json:/run/private/helmet-a.json:ro
+      - helmet-spool-a:/opt/wearable/device-gateway/.local/upload-temp
+  helmet-b:
+    <<: *gateway
+    command: [helmet, /run/private/helmet-b.json]
+    volumes:
+      - ./private/helmet-b.json:/run/private/helmet-b.json:ro
+      - helmet-spool-b:/opt/wearable/device-gateway/.local/upload-temp
+  belt-a:
+    <<: *gateway
+    command: [belt, /run/private/belt-a.json]
+    volumes: [./private/belt-a.json:/run/private/belt-a.json:ro]
+  belt-b:
+    <<: *gateway
+    command: [belt, /run/private/belt-b.json]
+    volumes: [./private/belt-b.json:/run/private/belt-b.json:ro]
+  ingress:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    labels:
+      org.wearable.gateway-generation: ${GATEWAY_CONFIG_GENERATION:?Use clusterctl to validate the gateway generation}
+    environment:
+      CADDY_SITE: ${CADDY_SITE:?Set the approved HTTPS domain or local http address}
+    ports:
+      - '${INGRESS_BIND:-127.0.0.1}:${INGRESS_HTTP_PORT:-18080}:80'
+      - '${INGRESS_BIND:-127.0.0.1}:${INGRESS_HTTPS_PORT:-18443}:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./private/Caddy.devices:/etc/caddy/Caddy.devices:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [cluster]
+    mem_limit: 192m
+    cpus: 0.5
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+  migrate:
+    profiles: [tools]
+    image: ${BACKEND_IMAGE:?Set a tested backend image digest}
+    env_file: ./private/backend.env
+    entrypoint: [java, -Dfile.encoding=UTF-8, -Dloader.main=com.ruoyi.database.SchemaMigration, -cp, /app/fdc-admin.jar, org.springframework.boot.loader.PropertiesLauncher]
+    restart: 'no'
+    networks: [cluster]
+    mem_limit: 384m
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+networks:
+  cluster:
+    name: ${CLUSTER_NETWORK:-wearable-cluster}
+    external: true
+volumes:
+  helmet-spool-a:
+  helmet-spool-b:
+  caddy-data:
+  caddy-config:

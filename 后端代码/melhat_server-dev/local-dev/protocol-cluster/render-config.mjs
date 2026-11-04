@@ -1,6 +1,6 @@
 import {readFile,writeFile,mkdir,lstat,rename,unlink} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {validateClusterConfig} from './gateway.mjs';
 
@@ -28,25 +28,43 @@ export function renderConfigs(input) {
   return files;
 }
 
-async function main() {
-  const [source,destination,replace]=process.argv.slice(2);
-  if(!source||!destination||(replace&&replace!=='--replace')||process.argv.length>5)throw new Error('Expected inventory, private output directory, optional --replace.');
-  const files=renderConfigs(JSON.parse(await readFile(source,'utf8'))),root=resolve(destination);
+export async function requirePrivateDirectory(root) {
+  const stat=await lstat(root);
+  if(!stat.isDirectory()||stat.isSymbolicLink())throw new Error('Private directory must be a real directory.');
+  // Windows deployments must restrict the directory ACL separately; POSIX mode bits are not ACL evidence.
+  if(process.platform!=='win32'&&((stat.mode&0o077)!==0||stat.uid!==process.getuid()))
+    throw new Error('Use an owned private directory with mode 0700.');
+}
+
+export async function publishGeneration(root,files,replace=false,afterPublish=()=>{}) {
   await mkdir(root,{recursive:true,mode:0o700});
-  if((await lstat(root)).isSymbolicLink())throw new Error('Private directory must not be a symlink.');
+  await requirePrivateDirectory(root);
   for(const name of Object.keys(files)) {
     const target=join(root,name);
-    try {const stat=await lstat(target);if(!stat.isFile()||stat.isSymbolicLink()||replace!=='--replace')throw new Error('Existing output requires explicit replacement.');}
+    try {const stat=await lstat(target);if(!stat.isFile()||stat.isSymbolicLink()||!replace)throw new Error('Existing output requires explicit replacement.');}
     catch(error){if(error.code!=='ENOENT')throw error;}
   }
-  for(const [name,body] of Object.entries(files)) {
+  const marker=join(root,'.gateway-config.incomplete');
+  // An interrupted replacement remains visibly blocked. ops.py checks both marker and all hashes.
+  await writeFile(marker,'Generation in progress. Do not start/recreate services.\n',{flag:'wx',mode:0o600});
+  const manifest={generation:randomUUID(),files:Object.fromEntries(Object.entries(files).map(([name,body])=>
+    [name,createHash('sha256').update(body).digest('hex')]))};
+  for(const [name,body] of Object.entries({...files,'gateway-manifest.json':JSON.stringify(manifest,null,2)+'\n'})) {
     const target=join(root,name),temp=join(root,`.render-${randomUUID()}`);
     try {
       // Parent directory is private; each gateway mounts only its own readable file.
-      await writeFile(temp,body,{flag:'wx',mode:name.endsWith('.json')?0o644:0o600});
+      await writeFile(temp,body,{flag:'wx',mode:name.endsWith('.json')&&name!=='gateway-manifest.json'?0o644:0o600});
       await rename(temp,target);
+      await afterPublish(name);
     } finally {await unlink(temp).catch(()=>{});}
   }
+  await unlink(marker);
+}
+async function main() {
+  const [source,destination,replace]=process.argv.slice(2);
+  if(!source||!destination||(replace&&replace!=='--replace')||process.argv.length>5)throw new Error('Expected inventory, private output directory, optional --replace.');
+  const files=renderConfigs(JSON.parse(await readFile(source,'utf8')));
+  await publishGeneration(resolve(destination),files,replace==='--replace');
   console.log('Rendered four paired gateway configurations and private ingress routes. No device credentials were changed.');
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(()=>{

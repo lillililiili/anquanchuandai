@@ -1,0 +1,7 @@
+.private/
+private/
+.env
+__pycache__/
+evidence/
+vendor/
+backups/
