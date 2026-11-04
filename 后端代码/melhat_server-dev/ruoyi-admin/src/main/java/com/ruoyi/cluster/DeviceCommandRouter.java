@@ -257,12 +257,16 @@ import java.util.concurrent.ConcurrentHashMap;
             if(senderEntered) {
                 finish(id,attempt.getString("claim"),"UNKNOWN","结果未确认，不会自动重复下发");
             } else {
-                finish(id,attempt.getString("claim"),"FAILED_BEFORE_SEND","发送前检查未通过，未发送");
+                finishBeforeSend(id,attempt.getString("claim"));
             }
         }
     }
     private OwnerToken owner(JSONObject a) {
         return new OwnerToken(a.getString("type"),a.getString("device"),a.getString("node"),a.getString("generation"),a.getString("connection"));
+    }
+    private void finishBeforeSend(String id,String claim) {
+        // This worker can confirm it never entered the sender for this claim, even after timeout recovery.
+        db.jdbc.update("UPDATE wearable_transport_command SET delivery_status='FAILED_BEFORE_SEND',reason='发送前检查未通过，未发送',updated_at=? WHERE command_id=? AND claim_token=? AND delivery_status IN ('DISPATCHING','UNKNOWN')",db.now(),id,claim);
     }
     private void finish(String id,String claim,String state,String reason) {
         db.jdbc.update("UPDATE wearable_transport_command SET delivery_status=?,reason=?,updated_at=? WHERE command_id=? AND claim_token=? AND delivery_status='DISPATCHING' AND attempt_until>?",state,reason,db.now(),id,claim,db.now());

@@ -5,7 +5,7 @@ import com.ruoyi.common.database.DatabaseDialect;
 import com.ruoyi.guardian.ClusterMaintenanceGuard;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -108,8 +108,8 @@ class ClusterRoutingContractTest {
         assertEquals(0,count.get());
     }
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    void maintenanceAfterDurableClaimFinishesBeforeSend(boolean pauseGlobally) {
+    @CsvSource({"false, false, false", "true, false, false", "true, true, false", "true, true, true"})
+    void maintenanceAfterDurableClaimFinishesBeforeSend(boolean pauseGlobally,boolean expired,boolean recovered) {
         SchemaLifecycle.ensure(db.jdbc,"20261026_wearable_business");
         SchemaLifecycle.ensure(db.jdbc,"20261102_fuda_push_outbox");
         SchemaLifecycle.ensure(db.jdbc,"20261103_cluster_coordination");
@@ -120,6 +120,13 @@ class ClusterRoutingContractTest {
             @Override public void dispatch(String commandId) {
                 if(guardCalls.incrementAndGet()==2) {
                     assertEquals("DISPATCHING",rb.read(commandId).getString("deliveryStatus"));
+                    if(expired) {
+                        db.jdbc.update("UPDATE wearable_transport_command SET attempt_until=0 WHERE command_id=?",commandId);
+                    }
+                    if(recovered) {
+                        rb.recoverAttempts();
+                        assertEquals("UNKNOWN",rb.read(commandId).getString("deliveryStatus"));
+                    }
                     if(pauseGlobally) {
                         db.jdbc.update("UPDATE wearable_runtime_control SET mode='PAUSED' WHERE control_key='global'");
                     } else {
