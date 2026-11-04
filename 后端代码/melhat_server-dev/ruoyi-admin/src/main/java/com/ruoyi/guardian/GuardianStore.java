@@ -96,6 +96,11 @@ public class GuardianStore {
     }
 
     public void update(Edit edit) {
+        update(edit,null);
+    }
+
+    /** Dependent publication joins save's SQL transaction after the business revision lock. */
+    void update(Edit edit,Runnable dependentWrite) {
         synchronized (lock) {
             if(maintenance!=null&&maintenance.paused())throw new IllegalStateException("业务正在维护，设备上报已进入持久接收队列");
             ensure();
@@ -103,7 +108,7 @@ public class GuardianStore {
             JSONObject next = JSON.parseObject(state.toJSONString());
             if (edit == null || !edit.apply(next)) return;
             validate(next);
-            commit(next);
+            commit(next,dependentWrite);
         }
     }
 
@@ -169,13 +174,21 @@ public class GuardianStore {
     }
 
     private void commit(JSONObject next) {
+        commit(next,null);
+    }
+
+    private void commit(JSONObject next,Runnable dependentWrite) {
         GuardianEvents.normalize(next);
         if (business != null) {
             // The SQL event/projection write and legacy helmet archive participate in one transaction.
-            long revision = business.save("guardian", durableRevision, next, () -> hats.sync(next));
+            long revision = business.save("guardian", durableRevision, next, () -> {
+                if(dependentWrite!=null) dependentWrite.run();
+                hats.sync(next);
+            });
             state = next; durableRevision = revision; hatsMirrored = true;
             return;
         }
+        if(dependentWrite!=null) dependentWrite.run();
         hats.sync(next);
         JSONObject previous = state;
         state = next;

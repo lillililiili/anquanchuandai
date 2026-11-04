@@ -115,14 +115,22 @@ public class GuardianEvents {
     }
     public void upload(JSONObject actor,String id,String contentType,java.io.InputStream bytes) {
         GuardianAccess.Context ctx=access.context(actor);
-        // Serialize ownership registration and file creation with event writes; IDs are immutable after first save.
+        boolean allowed=false;
+        for(Object raw:rows(ctx.data,"sites")){
+            String site=((JSONObject)raw).getString("id");
+            if(ctx.anyArea("events:observe",site)||ctx.anyArea("events:verify",site)){
+                allowed=true;
+                break;
+            }
+        }
+        if(!allowed) throw fail(403,"PERMISSION_DENIED","没有照片上传权限");
+        // Consume/validate the request before taking business locks. Publication runs inside commit.
+        Runnable publication=files.prepareCreate(id,contentType,bytes);
         store.update(state->{
             JSONObject uploads=state.getJSONObject("uploads");if(uploads==null){uploads=new JSONObject();state.put("uploads",uploads);}
-            if(uploads.containsKey(id)||files.read(id)!=null) throw fail(409,"FILE_EXISTS","照片编号已使用，请使用新编号");
-            boolean allowed=false;for(Object raw:rows(ctx.data,"sites")){JSONObject s=(JSONObject)raw;String area=ctx.person==null?null:ctx.person.getString("areaId");if(ctx.anyArea("events:observe",s.getString("id"))||ctx.anyArea("events:verify",s.getString("id"))) allowed=true;}
-            if(!allowed) throw fail(403,"PERMISSION_DENIED","没有照片上传权限");
-            files.save(id,contentType,bytes);uploads.put(id,object("ownerId",ctx.id(),"createdAt",Instant.now().toString()));bump(state);return true;
-        });
+            if(uploads.containsKey(id)) throw fail(409,"FILE_EXISTS","照片编号已使用，请使用新编号");
+            uploads.put(id,object("ownerId",ctx.id(),"createdAt",Instant.now().toString()));bump(state);return true;
+        },publication);
     }
     public GuardianFiles.Stored file(JSONObject actor,String id) {
         GuardianAccess.Context ctx=access.context(actor);JSONObject state=store.snapshot();
