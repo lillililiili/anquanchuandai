@@ -27,6 +27,24 @@ export function mediaTime(media) {
   return { label: media?.capturedAt ? '拍摄时间' : '资料生成时间', value: formatRecordedDateTime(media?.capturedAt || media?.createdAt || media?.created) };
 }
 
+// A device filename supplies its own clock time, not a verified capturedAt.
+// Keep this separate from receipt time and event evidence timestamps.
+export function mediaCaptureTime(media) {
+  const captured = formatRecordedDateTime(media?.capturedAt);
+  if (captured !== '—') return { label: '拍摄时间', value: captured };
+  const missing = { label: '拍摄时间', value: '未提供' };
+  if (media?.source !== 'DIRECT_HELMET' || media.simulated === true || media.demo === true) return missing;
+  const kind = String(media.kind || '').toLowerCase();
+  if (kind === 'video' && !(media.mediaOrigin === 'DEVICE_RECORDING' || !media.mediaOrigin && media.commandAction === 'upload_recording')) return missing;
+  const name = media.originalName || media.name;
+  if (typeof name !== 'string') return missing;
+  const match = /^(?:[^/\\\r\n]{1,80}_)?(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\.(mp4|jpg|jpeg|png)$/i.exec(name);
+  if (!match || !(kind === 'video' && match[7].toLowerCase() === 'mp4' || kind === 'photo' && match[7].toLowerCase() !== 'mp4')) return missing;
+  const [, year, month, day, hour, minute, second] = match;
+  const value = formatRecordedDateTime(`${year}-${month}-${day}T${hour}:${minute}:${second}+08:00`);
+  return value === '—' ? missing : { label: '设备文件时间', value };
+}
+
 export function mediaPerson(media) {
   if (!media?.personId && !media?.personName && (media?.receivedPersonId || media?.receivedPersonName))
     return { label: media.scopeBasis === 'UPLOAD_REQUEST' ? '上传时领用人' : '接收时领用人', value: media.receivedPersonName || `${media.receivedPersonId}（历史姓名未提供）` };

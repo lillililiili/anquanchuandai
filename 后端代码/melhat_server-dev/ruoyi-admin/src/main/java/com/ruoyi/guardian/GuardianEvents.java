@@ -34,7 +34,8 @@ public class GuardianEvents {
         }
         return !before.equals(state.toJSONString());
     }
-    public JSONObject snapshot(JSONObject actor) { GuardianAccess.Context ctx=access.context(actor);JSONObject result=ctx.snapshot(store.snapshot());if(equipment!=null)equipment.decorate(ctx,result);return result; }
+    public JSONObject snapshot(JSONObject actor) { return snapshot(access.context(actor)); }
+    JSONObject snapshot(GuardianAccess.Context ctx) { JSONObject result=ctx.snapshot(store.snapshot());if(equipment!=null)equipment.decorate(ctx,result);return result; }
     public JSONObject detail(JSONObject actor,String id) {
         GuardianAccess.Context ctx=access.context(actor);JSONObject state=store.snapshot();JSONObject event=find(state,"events",id);ctx.requireEvent(event,null);
         return present(state,event,ctx);
@@ -154,7 +155,7 @@ public class GuardianEvents {
     private JSONArray verificationPhotos(JSONObject state,String id) {JSONArray ids=new JSONArray();for(Object raw:rows(state,"media")){JSONObject m=(JSONObject)raw;if(id.equals(m.getString("eventId"))&&"核验上传".equals(m.getString("source")))ids.add(m.getString("blobId"));}return ids;}
     private static JSONObject assistance(JSONObject state,String id) {normalize(state);return state.getJSONObject("assistance").getJSONObject(id);}
     private JSONObject present(JSONObject state,JSONObject event,GuardianAccess.Context ctx) {
-        JSONObject out=safe(event);out.put("permissions",ctx.permissions(event));
+        JSONObject out=safe(event);BeltAlarmNames.present(out);out.put("permissions",ctx.permissions(event));
         if(!WorkBusiness.enabled(state))WorkBusiness.stripRecord(out);
         if(state.getJSONObject("businessConfig")!=null)out.put("businessConfig",copy(state.getJSONObject("businessConfig")));
         if("人员求助".equals(event.getString("type"))) out.put("assistance",safe(assistance(state,event.getString("id"))));return out;

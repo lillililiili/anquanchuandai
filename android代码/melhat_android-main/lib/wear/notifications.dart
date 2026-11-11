@@ -321,11 +321,11 @@ class WearNotifications extends ChangeNotifier with WidgetsBindingObserver {
         if (_disposed || scope != session.scopeKey || session.busy) return;
         registered = true;
         _boundUser = user;
-        status = permissionGranted ? '推送已绑定，锁屏到达待真机验收' : '通知权限未开启，后台接警受限';
+        status = permissionGranted ? '通知服务已绑定' : '通知权限未开启，后台接警受限';
       });
     } on WearApiException catch (e) {
       if (e is! StaleSessionException) {
-        status = e.code == 404 ? '后台推送接口尚未就绪，仅前台接警' : '推送绑定失败，可重试';
+        status = e.code == 404 ? '推送服务暂不可用，请保持应用打开接收告警' : '推送绑定失败，可重试';
       }
     } catch (_) {
       status = '推送通道暂不可用，可重试';

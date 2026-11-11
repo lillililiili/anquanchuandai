@@ -33,7 +33,7 @@ const segmentColors = {
   处理中: "var(--theme-primary)",
   已核验: "var(--theme-green)",
 };
-const peopleColumns = computed(() => ["人员", "班组", ...(workEnabled.value ? ["当前作业"] : []), "当前真实领用装备", "操作"]);
+const peopleColumns = computed(() => ["人员", "班组", ...(workEnabled.value ? ["当前作业"] : []), "当前领用装备", "操作"]);
 const deviceColumns = ["设备", "类型", "当前领用人", "电量", "状态"];
 const workColumns = ["作业名称", "编号", "监护人", "人数", "状态", "操作"];
 const showExternal = computed(() => workEnabled.value && stats.value.events.some(hasExternalSource));
@@ -70,7 +70,7 @@ const summaryCards = computed(() => {
   const current = stats.value;
   return [
     { icon: "user-line", label: "当前在册人员", value: current.people.length, unit: "人", color: "blue" },
-    { icon: "shield-user-line", label: "当前真实领用装备", value: current.devices.length, unit: "件", color: "cyan" },
+    { icon: "shield-user-line", label: "当前领用装备", value: current.devices.length, unit: "件", color: "cyan" },
     ...(workEnabled.value ? [{ icon: "clipboard-line", label: "台账作业", value: current.works.length, unit: "项", color: "cyan" }] : []),
     { icon: "alarm-warning-line", label: "待处理事件", value: current.unresolved, unit: "起", color: "yellow" },
   ];
@@ -119,7 +119,7 @@ function exportStatistics() {
   if (session.statsTab === "人员") {
     previewCsv(
       "人员当前状态.csv",
-      ["姓名", "班组", ...(workEnabled.value ? ["当前作业"] : []), "当前真实领用装备数量"],
+      ["姓名", "班组", ...(workEnabled.value ? ["当前作业"] : []), "当前领用装备数量"],
       current.people.map((person) => [
         person.name,
         person.team,
@@ -195,7 +195,7 @@ function exportStatistics() {
   <AppStatCards :items="summaryCards" />
   <p v-if="stats.simulatedWatches.length" class="note">模拟手表 {{ stats.simulatedWatches.length }} 块 · 非实时测量，未计入真实装备统计</p>
   <div class="grid equal">
-    <AppPanel title="当前真实领用装备连接状态">
+    <AppPanel title="当前领用装备连接状态">
       <template #extra>
         <div class="legend"><span><b></b>已领用</span><span class="cyan"><b></b>在线</span><small>单位：件</small></div>
       </template>
@@ -278,5 +278,5 @@ function exportStatistics() {
       </AppTable>
     </AppPanel>
   </div>
-  <p class="note">当前口径：{{ workEnabled ? '所选厂站与作业成员范围内' : '所选厂站范围内' }}，在册 {{ stats.people.length }} 人，真实已领用装备 {{ stats.devices.length }} 件。日期仅筛选{{ workEnabled ? '实际作业和事件' : '事件' }}记录，无日期记录不计入指定日；不据当前状态推算历史在线率。<template v-if="showExternal">本平台核验与外部回传状态分别展示。</template></p>
+  <p class="note">当前口径：{{ workEnabled ? '所选厂站与作业成员范围内' : '所选厂站范围内' }}，在册 {{ stats.people.length }} 人，已领用装备 {{ stats.devices.length }} 件。日期仅筛选{{ workEnabled ? '实际作业和事件' : '事件' }}记录，无日期记录不计入指定日；不据当前状态推算历史在线率。<template v-if="showExternal">本平台核验与外部回传状态分别展示。</template></p>
 </template>

@@ -55,10 +55,6 @@ export function createSeed() {
   roster.forEach(([id, name, organizationId, areaId], index) => {
     state.people.push({ id, siteId: 'site-1', areaId, organizationId, name, code: `P${index + 1}`, accountId: null, version: 1 })
   })
-  state.dutyShifts.push({
-    id: 'shift-1', siteId: 'site-1', name: '当前当班', personIds: roster.map(([id]) => id),
-    startsAt: '2026-09-15T00:00:00+08:00', endsAt: '2026-12-31T15:59:00Z', source: 'MOCK'
-  })
   const issuedAt = '2026-09-15T00:00:00.000Z'
   roster.forEach(([personId, , , areaId], index) => {
     const n = String(index + 1).padStart(3, '0')

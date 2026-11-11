@@ -15,18 +15,27 @@ public class GuardianAccess {
     public GuardianAccess(AdminLedgerStore ledger,AdminQueryService queries) { this.ledger=ledger;this.queries=queries; }
     public Context context(JSONObject actor) {
         JSONObject view=GuardianDemoData.operationalLedger(ledger.read(),demoMode);
-        if(businessPolicy!=null)businessPolicy.decorate(view,true);
-        return new Context(view,actor==null?null:actor.getString("id"));
+        Map<String,Set<String>> accepted=businessPolicy==null?null:businessPolicy.featureAcceptance(rows(view,"devices"));
+        if(businessPolicy!=null)businessPolicy.decorate(view,true,accepted);
+        return new Context(view,actor==null?null:actor.getString("id"),accepted);
     }
     public final class Context {
         final JSONObject data;
         final JSONObject actor;
         final JSONObject person;
+        private final Map<String,Set<String>> acceptedFeatures;
         Context(JSONObject data,String accountId) {
+            this(data,accountId,null);
+        }
+        Context(JSONObject data,String accountId,Map<String,Set<String>> acceptedFeatures) {
             this.data=data; this.actor=find(data,"accounts",accountId);
+            this.acceptedFeatures=acceptedFeatures;
             if(actor==null || !actor.getBooleanValue("enabled")) throw AdminQueryService.fail(401,"IDENTITY_INVALID","登录已失效");
             JSONObject linked=find(data,"people",actor.getString("personId"));
             this.person=linked!=null && linked.getBooleanValue("enabled") ? linked : null;
+        }
+        JSONObject deviceFeatures(WearableBusinessPolicy policy,JSONObject device) {
+            return policy==businessPolicy&&acceptedFeatures!=null?policy.features(device,acceptedFeatures):policy.features(device);
         }
         public String id() { return actor.getString("id"); }
         public String name() { return actor.getString("name"); }
@@ -148,7 +157,7 @@ public class GuardianAccess {
             JSONObject out=safe(source);
             out.put("demoMode",demoMode);
             JSONArray events=new JSONArray(); Set<String> ids=new HashSet<>();
-            for(Object raw:rows(out,"events")) { JSONObject e=(JSONObject)raw; if(operational(e) && event(e)) { e.put("permissions",permissions(e));events.add(e);ids.add(e.getString("id")); } }
+            for(Object raw:rows(out,"events")) { JSONObject e=(JSONObject)raw; if(operational(e) && event(e)) { e.put("permissions",permissions(e));BeltAlarmNames.present(e);events.add(e);ids.add(e.getString("id")); } }
             out.put("events",events);
             filter(out,"stations",p->site(siteId(data,p.getString("id"))));
             filter(out,"people",p->person(WearableModel.person(data,p.getString("id"))));
@@ -201,7 +210,10 @@ public class GuardianAccess {
             JSONArray communications=new JSONArray();
             for(Object raw:rows(source,"sharedCommunications")){JSONObject row=(JSONObject)raw;if(GuardianMobileCommunications.visible(this,row))communications.add(GuardianMobileCommunications.publicRow(row));}
             out.put("communicationRecords",communications);
-            if(businessPolicy!=null)businessPolicy.decorate(out,false);
+            if(businessPolicy!=null) {
+                if(acceptedFeatures==null)businessPolicy.decorate(out,false);
+                else businessPolicy.decorate(out,false,acceptedFeatures);
+            }
             return out;
         }
     }

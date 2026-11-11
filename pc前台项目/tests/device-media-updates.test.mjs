@@ -6,6 +6,8 @@ import { parse, compileScript } from '@vue/compiler-sfc';
 import * as Vue from 'vue';
 import { mergeDeviceMedia } from '../src/lib/device-media-state.js';
 import * as dateTime from '../src/lib/date-time.js';
+import * as mediaPresentation from '../src/lib/media-presentation.js';
+import * as previewSource from '../src/lib/media-preview-source.js';
 
 const photo={id:'asset-photo',deviceId:'helmet-1',kind:'photo',status:'ready',source:'DIRECT_HELMET',createdAt:'2026-11-02T06:10:00Z'};
 test('device uploads merge independently of a platform request, keeping other devices and rejecting mismatched payloads',()=>{
@@ -92,7 +94,7 @@ async function library() {
   const modal={modalView,modalProps,closeModal(){closes++;modalView.value=null;modalProps.value={};},openModal(options){modalView.value=options.view;modalProps.value=options.props;}};
   const modules={
     '@/lib/work-business': workBusiness,vue:{...Vue,onUnmounted(){},watch(selector,callback,options){watchers.push(callback);if(options?.immediate)callback();}},'@/mock/runtime':{db,guardianReady:Promise.resolve()},
-    '@/lib/auth':{authFetch:()=>new Promise(resolve=>requests.push(resolve))},'@/lib/media-presentation':{normalizeMedia:identity=>identity,mediaKindLabel:()=>'',mediaSourceLabel:()=>'',mediaTime:()=>({}),mediaPerson:()=>({})},'@/lib/device-telemetry':{isRealDevice:()=>true},
+    '@/lib/auth':{authFetch:()=>new Promise(resolve=>requests.push(resolve))},'@/lib/media-presentation':{...mediaPresentation,normalizeMedia:identity=>identity,mediaKindLabel:()=>'',mediaSourceLabel:()=>'',mediaTime:()=>({}),mediaPerson:()=>({})},'@/lib/media-preview-source':previewSource,'@/lib/device-telemetry':{isRealDevice:()=>true},
     '@/stores/session':{session,filtersOf:()=>session.filters.materials||{}},'@/stores/modal':modal,'@/stores/notify':{toast(){}},'@/lib/queries':{revision(){},materials:()=>db.state.media,people:()=>[],works:()=>[]},'./media':{downloadMedia(){},durationText(){}},'@/lib/person-equipment':{personFeature:()=>({})},'@/lib/device-media-state':{mergeDeviceMedia}};
   const compiled=code.replace(/^import\s+([\s\S]*?)\s+from\s+(['"])([^'"]+)\2;?\s*$/gm,(_,names,_quote,from)=>{
     if(from.endsWith('.vue')) {if(!componentStubs.has(from))componentStubs.set(from,{});modules[from]={default:componentStubs.get(from)};}
@@ -116,6 +118,27 @@ test('an older library refresh cannot overwrite a newer passive upload or clear 
   f.requests.shift()(f.response([photo]));await pending;
   assert.deepEqual(f.instance.deviceMedia.value.map(item=>item.id),[photo.id,'new-upload']);
   assert.equal(f.modal.modalView.value,activePreview,'ordinary refresh preserves current playback');assert.equal(f.closeCount(),0);
+});
+
+test('measured durations survive file-ticket refresh and cannot move to a different asset or permission scope', async () => {
+  const f = await library();
+  const video = { ...photo, id: 'video-1', kind: 'video', url: 'https://media.example.test/helmet-media/files/video-1?token=first' };
+  f.instance.receiveDeviceMedia({ deviceId: 'helmet-1', items: [video] });
+  const key = previewSource.mediaPreviewKey(f.instance.mediaList.value[0]);
+  f.instance.receiveMediaMetadata({ key, duration: 22.933467 });
+  assert.equal(f.instance.mediaList.value[0].duration, 22.933467);
+  assert.equal(video.duration, undefined, 'measuring the video must not rewrite the server record');
+  f.instance.receiveDeviceMedia({ deviceId: 'helmet-1', items: [{ ...video, url: video.url.replace('first', 'renewed') }] });
+  assert.equal(f.instance.mediaList.value[0].duration, 22.933467);
+  f.instance.receiveDeviceMedia({ deviceId: 'helmet-1', items: [{ ...video, url: video.url.replace('/video-1?', '/replacement?') }] });
+  f.instance.receiveMediaMetadata({ key, duration: 99 });
+  assert.equal(f.instance.mediaList.value[0].duration, undefined);
+  f.instance.receiveDeviceMedia({ deviceId: 'helmet-1', items: [], accessDenied: true });
+  f.db.state.operator.permissionsBySite = { S1: [] }; f.watchers[0]();
+  assert.equal(f.instance.mediaDurations.value.size, 0);
+  f.instance.receiveMediaMetadata({ key, duration: 99 });
+  assert.equal(f.instance.mediaDurations.value.size, 0);
+  await f.flush(); f.requests.shift()(f.response([], 403)); await f.flush();
 });
 
 test('permission rejection closes the matching preview and removes both API and snapshot copies',async()=>{

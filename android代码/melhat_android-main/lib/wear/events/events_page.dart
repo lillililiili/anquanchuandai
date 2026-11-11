@@ -136,14 +136,33 @@ class _EventsPageState extends State<EventsPage> {
       _session = session;
       _scopeKey = session.scopeKey;
       session.refreshTick.addListener(_serverSignaled);
+      final controller = _controller!;
+      final scope = session.scopeKey;
       unawaited(
-        _controller!
+        controller
             .replaceScope(
-              scopeKey: session.scopeKey,
+              scopeKey: scope,
               actor: _actor(session),
               store: _store(session),
             )
-            .then((_) => _restoreScroll()),
+            .then((_) async {
+              bool currentScope() =>
+                  mounted &&
+                  identical(_session, session) &&
+                  identical(_controller, controller) &&
+                  session.scopeKey == scope &&
+                  _scopeKey == scope;
+              if (!currentScope()) return;
+              // Cache cleanup removes the saved selection; a retained branch
+              // still needs the detail identified by its current route.
+              final eventId = widget.eventId;
+              if (eventId != null &&
+                  eventId.isNotEmpty &&
+                  controller.selected?.id != eventId) {
+                await controller.select(eventId);
+              }
+              if (currentScope()) _restoreScroll();
+            }),
       );
     }
     if (_summaryScope != session.scopeKey) {

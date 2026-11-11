@@ -12,7 +12,6 @@ describe('short administration URLs', () => {
     ['/admin/assets/assignments', '/assignments'],
     ['/admin/people', '/people'],
     ['/admin/sites', '/sites'],
-    ['/admin/duty', '/duty'],
     ['/admin/access/accounts', '/accounts'],
     ['/admin/access/roles', '/roles'],
     ['/admin/audit', '/audit'],
@@ -21,6 +20,14 @@ describe('short administration URLs', () => {
     expect(safeTarget(legacy + query)).toBe(canonical + '?siteId=site-1&pageNum=2')
     expect(safeTarget(canonical + query)).toBe(canonical + '?siteId=site-1&pageNum=2')
     expect(menuPath(legacy)).toBe(menuPath(canonical))
+  })
+
+  it.each(['/duty', '/admin/duty', '/duty/old-shift', '/admin/duty/old-shift'])('retires %s without reusing a roster selection as a person', path => {
+    const source = path + '?siteId=site-1&selectedId=shift-1&organizationId=old-org&keyword=old&pageNum=3&status=disabled'
+    expect(safeTarget(source)).toBe('/people?siteId=site-1')
+    expect(peopleReturn(source)).toBe('/people?siteId=site-1')
+    expect(menuPath(path)).toBe('/people')
+    expect(WORKSPACES.some(item => item.entity === 'dutyShifts')).toBe(false)
   })
 
   it('combines personnel and organization into one workspace destination', () => {

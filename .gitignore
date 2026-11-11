@@ -16,6 +16,7 @@ audit-android-20260923/
 
 # Local runtime state and Python validation caches
 /后端代码/melhat_server-dev/ruoyi-admin/data/
+/后端代码/melhat_server-dev/local-dev/fuda-api-gateway/.local/
 **/__pycache__/
 
 # Generated local handover extracts, scan reports and release receipts

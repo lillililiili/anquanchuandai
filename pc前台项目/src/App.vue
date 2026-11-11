@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import AppIcon from "@/components/ui/AppIcon.vue";
 import AppModal from "@/components/ui/AppModal.vue";
 import AppShell from "@/components/layout/AppShell.vue";
+import GeofenceNotices from "@/components/layout/GeofenceNotices.vue";
 import { modal, modalFooter, modalProps, modalView } from "@/stores/modal";
 import { toasts } from "@/stores/notify";
 import { db, tick, connection, refreshSnapshot } from "@/mock/runtime";
@@ -52,6 +53,7 @@ onUnmounted(() => {
       <component :is="modalFooter" v-bind="modalProps" />
     </template>
   </AppModal>
+  <GeofenceNotices v-if="route.name && route.name !== 'login'" />
   <div id="toasts" role="status" aria-live="polite">
     <div v-for="item in toasts" :key="item.id" :class="['toast', item.error ? 'error' : '']">
       <AppIcon :name="item.error ? 'error-warning-line' : 'checkbox-circle-line'" />

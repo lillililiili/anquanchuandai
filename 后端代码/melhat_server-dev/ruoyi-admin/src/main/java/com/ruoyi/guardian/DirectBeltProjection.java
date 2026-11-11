@@ -71,5 +71,6 @@ final class DirectBeltProjection {
         device.put("hookBEngaged", current && device.getBooleanValue("hookMappingConfirmed")
                 ? status.getBoolean("hookBEngaged") : null);
         device.put("hookState", "UNKNOWN");
+        DeviceFeatureConfiguration.applyMappings(device);
     }
 }

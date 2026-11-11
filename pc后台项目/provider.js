@@ -1,24 +1,27 @@
 import { createSeed, TOKEN_KEY, SESSION_VERSION_KEY } from './seed'
 import { createAdminService } from './service'
 import { projectSingleSimulatedWatch } from '../shared/simulated-watch.mjs'
+import { syncServerTime, resetServerClock } from '../shared/server-clock.mjs'
 
 const REMOTE_QUERIES = new Set(['devices', 'device', 'deviceOptions', 'deviceHistory', 'deviceChanges', 'deviceEvents', 'master', 'person', 'record', 'options', 'impacts', 'assignments', 'assignmentHistory', 'assignmentCandidates', 'audit', 'auditDetail', 'auditExport', 'authorizationPreview', 'context'])
-const REMOTE_COMMANDS = new Set(['devices.create', 'devices.update', 'devices.configure', 'assignments.issue', 'assignments.return', 'people.dutyStatus'])
-const REMOTE_MASTER = /^(people|sites|dutyShifts)\.(create|update|status|delete)$|^organizations\.(create|update|delete)$/
+const REMOTE_COMMANDS = new Set(['devices.create', 'devices.update', 'devices.configure', 'devices.features', 'assignments.issue', 'assignments.return', 'people.dutyStatus'])
+const REMOTE_MASTER = /^(people|sites)\.(create|update|status|delete)$|^organizations\.(create|update|delete)$/
 const REMOTE_ACCESS = /^(accounts|roles)\.(create|update|status|delete)$|^accounts\.resetCredential$/
-const REMOTE_ENTITIES = new Set(['people', 'organizations', 'sites', 'dutyShifts', 'accounts', 'roles'])
+const REMOTE_ENTITIES = new Set(['people', 'organizations', 'sites', 'accounts', 'roles'])
 
 let provider
 const AUTH_KEY = 'wearable-admin-token'
 
 function request(method, url, body) {
+  const startedAt = performance.now()
   const xhr = new XMLHttpRequest()
   xhr.open(method, url, false)
   xhr.setRequestHeader('Content-Type', 'application/json; charset=utf-8')
   xhr.setRequestHeader('X-Wearable-Token', window.sessionStorage.getItem(AUTH_KEY) || '')
   try { xhr.send(body == null ? null : JSON.stringify(body)) }
-  catch { throw Error('后端未连接，修改未保存') }
-  if (xhr.status === 0) throw Error('后端未连接，修改未保存')
+  catch { throw Error('服务连接失败，修改未保存') }
+  if (xhr.status === 0) throw Error('服务连接失败，修改未保存')
+  if (xhr.status >= 200 && xhr.status < 300) syncServerTime(xhr.getResponseHeader?.('Date'), startedAt)
   let payload = {}
   try { payload = JSON.parse(xhr.responseText || '{}') } catch { payload = {} }
   return responsePayload(xhr.status, payload)
@@ -27,6 +30,7 @@ function request(method, url, body) {
 function responsePayload(status, payload) {
   if (status >= 400) {
     if (status === 401) {
+      resetServerClock()
       window.sessionStorage.removeItem(AUTH_KEY)
       window.sessionStorage.removeItem(TOKEN_KEY)
       window.sessionStorage.removeItem(SESSION_VERSION_KEY)
@@ -46,6 +50,7 @@ function responsePayload(status, payload) {
 // Page reads must yield to rendering and allow navigation to cancel the request.
 async function queryRequest(body, signal) {
   const token = window.sessionStorage.getItem(AUTH_KEY) || ''
+  const startedAt = performance.now()
   let response
   try {
     response = await fetch('/api/admin/v1/query', {
@@ -55,7 +60,10 @@ async function queryRequest(body, signal) {
     })
   } catch (error) {
     if (error.name === 'AbortError') throw error
-    throw Error('后端未连接，请稍后重试')
+    throw Error('服务连接失败，请稍后重试')
+  }
+  if (!signal?.aborted && token === (window.sessionStorage.getItem(AUTH_KEY) || '') && !response.redirected && response.status >= 200 && response.status < 300) {
+    syncServerTime(response.headers?.get?.('Date'), startedAt)
   }
   let payload = {}
   try { payload = await response.json() } catch (error) { if (error.name === 'AbortError') throw error }
@@ -83,10 +91,14 @@ export function getAdminProvider() {
     }
     const initial = projectSingleSimulatedWatch(remote) || Object.fromEntries(Object.entries(createSeed()).map(([key, value]) => [key, Array.isArray(value) ? [] : value]))
     provider = createAdminService({ storage: window.sessionStorage, initialState: initial })
+    // Real pages obtain context and current device telemetry from admin queries.
+    // Local-service hydration reads an unauthenticated guardian snapshot instead.
+    provider.hydrate = async () => false
     const replaceState = provider.replaceState.bind(provider)
     provider.replaceState = next => replaceState(projectSingleSimulatedWatch(next))
     provider.setRemoteSave(() => { throw Error('此操作尚未开放业务接口，修改未保存') })
     provider.setRemoteLogin((username, password) => {
+      resetServerClock()
       const result = request('POST', '/api/admin/v1/login', { username, password })
       if (!result.token) throw Error('登录响应缺少会话凭据')
       window.sessionStorage.setItem(AUTH_KEY, result.token)
@@ -96,7 +108,7 @@ export function getAdminProvider() {
     const localLogout = provider.logout.bind(provider)
     provider.logout = () => {
       try { request('POST', '/api/admin/v1/logout') }
-      finally { window.sessionStorage.removeItem(AUTH_KEY); localLogout() }
+      finally { window.sessionStorage.removeItem(AUTH_KEY); resetServerClock(); localLogout() }
     }
     const localQuery = provider.query.bind(provider)
     provider.execute = (type, input = {}, options) => {

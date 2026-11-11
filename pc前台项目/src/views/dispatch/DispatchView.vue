@@ -226,7 +226,7 @@ function startCall(kind) {
 function connectCall(id) {
   runGuarded(async () => {
     await db.updateCall(id, "connect");
-    toast("本端已加入，设备接通状态以服务端回执为准");
+    toast("已加入通话，设备连接状态请查看通话详情");
   });
 }
 
@@ -409,7 +409,7 @@ async function sendBroadcast() {
         <template #extra><AppButton tone="plain" @click="openBroadcasts">更多 <UiIcon name="chevron-right" /></AppButton></template>
         <template v-if="recentBroadcasts.length">
           <div v-for="item in recentBroadcasts" :key="item.id" class="record-entry">
-            <time>{{ item.time.slice(11, 16) }}</time>
+            <time>{{ formatBeijingDateTime(item.time) }}</time>
             <h3><AppIcon name="volume-up-fill" />{{ "　" + item.groupName }}</h3>
             <p>{{ item.text }}</p>
             <AppTag color="green">{{ item.status }}</AppTag>

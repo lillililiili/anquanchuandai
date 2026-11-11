@@ -78,7 +78,10 @@ public class WearableBusinessStore {
         try { this.mediaKey = encodedKey == null || encodedKey.trim().isEmpty() ? null : Base64.getDecoder().decode(encodedKey.trim()); }
         catch (IllegalArgumentException error) { throw new IllegalStateException("媒体数据库加密密钥必须为 Base64 编码", error); }
         if (mediaKey != null && mediaKey.length != 32) throw new IllegalStateException("媒体数据库加密密钥必须包含32字节");
-        if(initialize)new ResourceDatabasePopulator(new ClassPathResource("db/20261026_wearable_business.sql")).execute(jdbc.getDataSource());
+        if(initialize) {
+            new ResourceDatabasePopulator(new ClassPathResource("db/20261026_wearable_business.sql")).execute(jdbc.getDataSource());
+            WearableLocationIndex.ensure(jdbc);
+        }
         this.alarmJournal = lockingReads ? new FudaAlarmJournal(jdbc) : null;
         if(initialize) this.alarmJournal.initialize();
     }

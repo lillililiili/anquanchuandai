@@ -250,7 +250,7 @@ function openRecords() {
         <AppField label="围栏名称" data-field="name" :error="errors.name">
           <AppInput v-model="session.fenceDraft.name" name="name" placeholder="请输入名称" maxlength="40" required />
         </AppField>
-        <AppField label="围栏范围" data-field="points" :error="errors.points"><small>已绘制 {{ session.fenceDraft.points?.length || 0 }} 个节点 · {{ session.fenceDraft.coordinateSystem || '旧版示意坐标（不判定真实设备）' }}</small></AppField>
+        <AppField label="围栏范围" data-field="points" :error="errors.points"><small>已绘制 {{ session.fenceDraft.points?.length || 0 }} 个节点 · {{ session.fenceDraft.coordinateSystem || '尚未配置有效地理坐标' }}</small></AppField>
         <p class="muted">仅对坐标系一致、位置有效的设备判定进出。基站定位或精度未知时，请结合现场情况核验。</p>
         <AppField label="关联厂站">
           <AppSelect :model-value="session.station" name="station" :options="stationOptions" disabled />

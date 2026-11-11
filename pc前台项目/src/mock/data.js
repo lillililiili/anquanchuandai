@@ -4,6 +4,7 @@
   import { isSimulatedWatch, isSimulatedVital, projectCachedSamples, projectSingleSimulatedWatch } from "../lib/sample-data.js";
   import { beijingDate, beijingTime } from "../lib/location.js";
   import { communicationGuard } from "../lib/communication-guard.js";
+  import { beltAlarmTitle } from "../../../shared/belt-alarm-names.mjs";
 
   import { currentWorkFor, workBusinessEnabled, workOnDate } from "../lib/work-business.js";
 
@@ -19,6 +20,7 @@
   };
   function withoutAdministrativeAreas(snapshot) {
     const next = { ...snapshot };
+    if (Array.isArray(snapshot.events)) next.events = snapshot.events.map(event => ({ ...event, title: beltAlarmTitle(event) }));
     delete next.mapAreas;
     for (const kind of ['people', 'devices', 'groups', 'works']) {
       if (!Array.isArray(snapshot[kind])) continue;
@@ -1292,7 +1294,7 @@
         call.rtc.status = result.status;
         call.serverConnected = result.serverConnected === true;
         call.connectedDeviceIds = Array.isArray(result.connectedDeviceIds) ? result.connectedDeviceIds : [];
-        call.statusLabel = ({ offered:'设备正在振铃', answered:'设备已应答，等待双方接通', connected:'设备已接通（服务端确认）', ending:'正在结束通话', ended:'已结束', failed:'设备通话失败', unknown:'设备接通状态待确认' })[result.status] || '设备接通状态待确认';
+        call.statusLabel = ({ offered:'设备正在振铃', answered:'设备已应答，等待双方接通', connected:'设备已接通', ending:'正在结束通话', ended:'已结束', failed:'设备通话失败', unknown:'设备接通状态待确认' })[result.status] || '设备接通状态待确认';
         if (result.status === 'connected' && call.serverConnected) call.status = '通话中';
         if (result.status === 'ending') call.status = '正在结束';
         if (['ended','failed'].includes(result.status)) { call.status = '已结束'; callCredentials.delete(id); }

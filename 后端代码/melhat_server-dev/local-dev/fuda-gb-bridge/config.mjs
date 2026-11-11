@@ -11,12 +11,16 @@ export function configuration(env=process.env){
   if(!Array.isArray(channels)||!channels.length||channels.length>200)throw Error('Configure 1 to 200 helmet channels');
   const seen=new Set();for(const c of channels){if(!/^\d{20}$/.test(c.channelId??'')||!/[\s\S]/.test(c.name??'')||c.name.length>80||!/^[-A-Za-z0-9_]{1,100}$/.test(c.deviceId??'')||c.deviceType!=='HELMET'||seen.has(c.channelId))throw Error('Invalid helmet channel');seen.add(c.channelId);}
   const mediaPeers=(env.GB_MEDIA_PEERS??'').split(',').filter(Boolean);if(!mediaPeers.length||mediaPeers.some(x=>net.isIP(x)!==4))throw Error('GB_MEDIA_PEERS must contain explicit IPv4 addresses');
+  const extraTcpText=(env.GB_MEDIA_EXTRA_TCP_PORTS??'').trim(),extraTcpValues=extraTcpText?extraTcpText.split(',').map(x=>x.trim()):[];
+  if(extraTcpValues.length>64||extraTcpValues.some(x=>!/^\d{1,5}$/.test(x)||Number(x)<1||Number(x)>65534))throw Error('Invalid GB_MEDIA_EXTRA_TCP_PORTS');
+  const mediaExtraTcpPorts=[...new Set(extraTcpValues.map(Number))];
   const srs=new URL(env.GB_SRS_ORIGIN??'rtmp://127.0.0.1:1935');if(srs.protocol!=='rtmp:'||srs.username||srs.password||srs.search||srs.hash||srs.pathname)throw Error('Invalid GB_SRS_ORIGIN');
   const transport=env.GB_SIP_TRANSPORT??'UDP';if(!['UDP','TCP'].includes(transport))throw Error('Invalid GB_SIP_TRANSPORT');
-  const config={enabled:true,transport,upperIp:ip('GB_UPPER_IP'),upperPort:integer('GB_UPPER_PORT',5060,1,65535),upperId:id('GB_UPPER_ID'),
+  const charset=env.GB_CHARSET??'UTF-8';if(!['UTF-8','GB2312'].includes(charset))throw Error('Invalid GB_CHARSET');
+  const config={enabled:true,transport,charset,upperIp:ip('GB_UPPER_IP'),upperPort:integer('GB_UPPER_PORT',5060,1,65535),upperId:id('GB_UPPER_ID'),
     localId:id('GB_LOCAL_ID'),localIp:ip('GB_LOCAL_IP'),bindIp:env.GB_BIND_IP??'127.0.0.1',localPort:integer('GB_LOCAL_PORT',15060,1,65535),
     realm:env.GB_REALM||env.GB_UPPER_ID.slice(0,10),password:secret('GB_PASSWORD',1),username:env.GB_USERNAME||env.GB_LOCAL_ID,
-    channels,mediaPeers,mediaMinPort:integer('GB_MEDIA_MIN_PORT',1024,1,65535),mediaMaxPort:integer('GB_MEDIA_MAX_PORT',65535,1,65535),
+    channels,mediaPeers,mediaExtraTcpPorts,mediaMinPort:integer('GB_MEDIA_MIN_PORT',1024,1,65535),mediaMaxPort:integer('GB_MEDIA_MAX_PORT',65535,1,65535),
     mediaIp:ip('GB_MEDIA_IP'),rtpSourcePort:integer('GB_RTP_SOURCE_PORT',30000,1024,65000),requireAudio:env.GB_REQUIRE_AUDIO!=='false',registerSeconds:integer('GB_REGISTER_SECONDS',3600,60,86400),
     heartbeatSeconds:integer('GB_HEARTBEAT_SECONDS',60,10,3600),heartbeatFailures:integer('GB_HEARTBEAT_FAILURES',3,1,10),
     sourceTimeoutMs:integer('GB_SOURCE_TIMEOUT_MS',15000,1000,30000),ackTimeoutMs:integer('GB_ACK_TIMEOUT_MS',32000,1000,64000),
@@ -25,5 +29,6 @@ export function configuration(env=process.env){
     srsOrigin:srs.href.replace(/\/$/,''),transactionMs:32000,t1:500,leaseRenewMs:20000,
     journal:env.GB_JOURNAL??'./data/active-sessions.json'};
   if(net.isIP(config.bindIp)!==4||config.mediaMinPort>config.mediaMaxPort||!/^[A-Za-z0-9._-]{1,100}$/.test(config.realm)||!/^[A-Za-z0-9._-]{1,100}$/.test(config.username)||config.javaSecret.length<32)throw Error('Invalid GB configuration');
+  if(config.localId===config.upperId||channels.some(c=>c.channelId===config.localId||c.channelId===config.upperId))throw Error('Platform and channel IDs must be distinct');
   return config;
 }

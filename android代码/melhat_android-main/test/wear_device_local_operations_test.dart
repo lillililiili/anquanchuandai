@@ -78,7 +78,7 @@ void main() {
     expect(find.text('当前人员乙'), findsNothing);
     expect(find.text(formatTime(original['receivedAt'])), findsOneWidget);
     expect(find.text(formatTime(projected['sourceTime'])), findsNothing);
-    expect(find.textContaining('不代表当前仍在录制或文件已生成'), findsOneWidget);
+    expect(find.textContaining('显示最近一次上报状态'), findsOneWidget);
     await mountReport(tester, {
       ...projected,
       'localRecording': report({'state': 'STOPPED', 'rawType': '1'}),
@@ -214,7 +214,7 @@ void main() {
     await tester.tap(find.byType(ExpansionTile));
     await tester.pumpAndSettle();
     expect(find.textContaining('长按 3 秒'), findsOneWidget);
-    expect(find.textContaining('不是远程控制'), findsOneWidget);
+    expect(find.textContaining('请按以下说明操作设备按键'), findsOneWidget);
     expect(find.byType(OutlinedButton), findsNothing);
     expect(find.byType(FilledButton), findsNothing);
 
@@ -223,7 +223,7 @@ void main() {
     expect(find.textContaining('长按 3 秒'), findsNothing);
     await tester.tap(find.byType(ExpansionTile));
     await tester.pumpAndSettle();
-    expect(find.textContaining('近电选配尚未确认'), findsOneWidget);
+    expect(find.textContaining('需设备配备并启用近电功能'), findsOneWidget);
     expect(find.textContaining('当前安全带仅支持求助上报'), findsOneWidget);
     expect(find.textContaining('语音通话请使用已领用且在线的安全帽'), findsOneWidget);
 

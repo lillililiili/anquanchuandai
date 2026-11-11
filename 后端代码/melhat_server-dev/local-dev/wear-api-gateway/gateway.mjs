@@ -20,10 +20,26 @@ const patterns = [
   ['GET', '/helmet/media'],
   ['POST', '/(?:call|call/end|broadcast)'],
 ].map(([method, pattern]) => [method, new RegExp(`^${PREFIX}${pattern}$`)]);
-export function allowed(method, pathname) { return patterns.some(([m, pattern]) => m === method && pattern.test(pathname)); }
-const login = pathname => pathname === `${PREFIX}/login` || pathname === `${PREFIX}/mobile/login`;
+// PC access is opt-in. Never expose whole-state writers or legacy controllers.
+const pcPatterns = [
+  ['GET', `${PREFIX}/(?:snapshot|business-config)`],
+  ['POST', `${PREFIX}/business/commands`],
+  ['GET', `${PREFIX}/voice-messages(?:/${ID}/playback)?`],
+  ['POST', '/api/admin/v1/(?:login|logout|query|execute|platform/helmets/sync)'],
+  ['GET', '/api/admin/v1/(?:state|business-config)'],
+  ['PATCH', '/api/admin/v1/business-config'],
+  ['GET', `/api/admin/v1/works(?:/${ID})?`],
+  ['POST', '/api/admin/v1/works'],
+  ['PATCH', `/api/admin/v1/works/${ID}`],
+  ['POST', `/api/admin/v1/works/${ID}/actions`],
+].map(([method, pattern]) => [method, new RegExp(`^${pattern}$`)]);
+export function allowed(method, pathname, pcClients = false) {
+  return patterns.some(([m, pattern]) => m === method && pattern.test(pathname))
+    || (pcClients && pcPatterns.some(([m, pattern]) => m === method && pattern.test(pathname)));
+}
+const login = pathname => pathname === `${PREFIX}/login` || pathname === `${PREFIX}/mobile/login` || pathname === '/api/admin/v1/login';
 function fail(response, status, code) { response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); response.end(JSON.stringify({ code: status, error: code })); }
-export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false } = {}) {
+export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false, pcClients = false } = {}) {
   const upstream = new URL(upstreamOrigin);
   if (upstream.protocol !== 'http:' || upstream.hostname !== '127.0.0.1' || upstream.origin !== upstreamOrigin
     || (!testOnly && upstream.port !== '18084') || (testOnly && upstream.port === '18084')) throw Error('Expected isolated local backend');
@@ -39,14 +55,18 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     const raw = request.url ?? '';
     if (!raw.startsWith('/') || raw.startsWith('//') || raw.length > 4096 || /%2f|%5c|%00|\\|\.\.|#/i.test(raw)) return fail(response, 400, 'INVALID_PATH');
     const url = new URL(raw, 'http://localhost');
-    if (!allowed(request.method, url.pathname)) return fail(response, 404, 'NOT_FOUND');
+    if (!allowed(request.method, url.pathname, pcClients)) return fail(response, 404, 'NOT_FOUND');
     const queryKeys = ['siteId', 'eventId', 'deviceId', 'personId', 'status', 'type', 'pageNum', 'pageSize', 'from', 'to', 'after', 'cursor', 'limit'];
+    const callList = request.method === 'GET' && url.pathname === `${PREFIX}/mobile/calls`;
+    if (callList) queryKeys.push('owned');
+    if (pcClients && request.method === 'GET' && url.pathname === '/api/admin/v1/works') queryKeys.push('keyword', 'date');
     const liveRoute = request.method === 'GET' && new RegExp(`^${PREFIX}/devices/${ID}/live$`).test(url.pathname);
     if (liveRoute) {
       queryKeys.push('assignmentId', 'assignmentVersion', 'viewerSessionId');
     }
     if ([...url.searchParams.keys()].some(k => !queryKeys.includes(k))
       || [...url.searchParams.keys()].some(k => url.searchParams.getAll(k).length !== 1)) return fail(response, 400, 'INVALID_QUERY');
+    if (callList && url.searchParams.has('owned') && !['true', 'false'].includes(url.searchParams.get('owned'))) return fail(response, 400, 'INVALID_QUERY');
     if (liveRoute) {
       for (const key of ['personId', 'assignmentId']) if (url.searchParams.has(key)
         && !/^[A-Za-z0-9_-]{1,100}$/.test(url.searchParams.get(key))) return fail(response, 400, 'INVALID_QUERY');
@@ -56,7 +76,7 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     }
     const token = request.headers['x-wearable-token'];
     if (!login(url.pathname) && !/^[A-Za-z0-9_-]{43}$/.test(token ?? '')) return fail(response, 401, 'SESSION_REQUIRED');
-    // Caddy replaces X-Real-IP; the gateway binds loopback behind its exclusive tunnel.
+    // Caddy replaces X-Real-IP; this gateway and its relay remain on private listeners.
     const source = /^[0-9a-f:.]{3,64}$/i.test(request.headers['x-real-ip'] ?? '') ? request.headers['x-real-ip'] : 'local';
     if (!take(`${login(url.pathname) ? 'login' : token}:${source}`, login(url.pathname) ? 12 : 180)) return fail(response, 429, 'RATE_LIMIT');
     const maximum = request.method === 'PUT' && /\/files\//.test(url.pathname) ? 10 * 1024 * 1024 : 128 * 1024;
@@ -88,6 +108,7 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
   return server;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const server = createWearGateway(); server.listen(18088, '127.0.0.1', () => console.log('Wear API gateway listening on loopback 18088'));
+  const server = createWearGateway({ pcClients: process.argv.includes('--pc-clients') });
+  server.listen(18088, '127.0.0.1', () => console.log('Wear API gateway listening on loopback 18088'));
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close());
 }

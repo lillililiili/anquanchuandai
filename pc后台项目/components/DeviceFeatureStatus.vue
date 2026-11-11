@@ -1,25 +1,24 @@
 <template>
-  <section class="panel device-feature-panel" aria-label="设备功能与验收状态">
-    <h2>设备功能与验收状态</h2>
-    <p class="muted feature-intro">功能状态以当前设备的接入和验收记录为准。实时操作仍需有效领用、设备在线及操作权限。</p>
+  <section class="panel device-feature-panel" aria-label="设备功能状态">
+    <div class="feature-heading"><h2>设备功能状态</h2><slot name="actions" /></div>
     <template v-if="rows.length">
       <table class="feature-table">
-        <caption class="sr-only">各项设备功能的支持范围、接入、验收及当前可用状态</caption>
-        <colgroup><col class="feature-name-column"><col><col><col><col class="feature-availability-column"></colgroup>
-        <thead><tr><th scope="col">功能</th><th scope="col">设备支持</th><th scope="col">接入状态</th><th scope="col">验收状态</th><th scope="col">当前可用性</th></tr></thead>
+        <caption class="sr-only">各项设备功能的支持范围、接入及当前可用状态</caption>
+        <colgroup><col class="feature-name-column"><col><col><col class="feature-availability-column"></colgroup>
+        <thead><tr><th scope="col">功能</th><th scope="col">设备支持</th><th scope="col">接入状态</th><th scope="col">当前可用性</th></tr></thead>
         <tbody><tr v-for="row in rows" :key="row.key">
-          <th scope="row">{{ row.label }}<small v-if="row.code">{{ row.code }}</small></th>
+          <th scope="row">{{ row.label }}<small v-if="row.code">{{ row.code }}</small><small v-if="row.managed">手动配置</small></th>
           <td v-for="field in fields" :key="field.key"><span class="feature-status" :data-tone="row[field.key].tone">{{ row[field.key].label }}</span><small v-if="field.key === 'availability' && row.reason">{{ row.reason }}</small></td>
         </tr></tbody>
       </table>
       <ul class="feature-cards" aria-label="设备功能状态列表">
         <li v-for="row in rows" :key="row.key">
-          <h3>{{ row.label }}<small v-if="row.code">{{ row.code }}</small></h3>
+          <h3>{{ row.label }}<small v-if="row.code">{{ row.code }}</small><small v-if="row.managed">手动配置</small></h3>
           <dl><template v-for="field in fields" :key="field.key"><dt>{{ field.label }}</dt><dd><span class="feature-status" :data-tone="row[field.key].tone">{{ row[field.key].label }}</span><small v-if="field.key === 'availability' && row.reason">{{ row.reason }}</small></dd></template></dl>
         </li>
       </ul>
     </template>
-    <p v-else class="query-state">尚未提供本设备的功能与验收记录。</p>
+    <p v-else class="query-state">尚未提供本设备的功能状态信息。</p>
   </section>
 </template>
 
@@ -28,12 +27,12 @@ import { computed } from 'vue'
 import { deviceFeatureRows } from '../deviceFeaturePresentation'
 const props = defineProps({ device: { type: Object, required: true } })
 const rows = computed(() => deviceFeatureRows(props.device))
-const fields = [{ key: 'support', label: '设备支持' }, { key: 'integration', label: '接入状态' }, { key: 'verification', label: '验收状态' }, { key: 'availability', label: '当前可用性' }]
+const fields = [{ key: 'support', label: '设备支持' }, { key: 'integration', label: '接入状态' }, { key: 'availability', label: '当前可用性' }]
 </script>
 
 <style scoped>
 .device-feature-panel { margin-top: 20px; }
-.feature-intro { margin: 0 0 16px; line-height: 1.7; }
+.feature-heading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
 .feature-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .feature-name-column { width: 20%; }
 .feature-availability-column { width: 28%; }

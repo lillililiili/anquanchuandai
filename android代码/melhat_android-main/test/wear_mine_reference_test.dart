@@ -137,7 +137,7 @@ void main() {
         await tester.tap(find.byTooltip('返回我的'));
         await tester.pumpAndSettle();
         await open('通讯服务');
-        expect(find.textContaining('共用后端查询'), findsOneWidget);
+        expect(find.textContaining('通话连接状态可在通讯页查看'), findsOneWidget);
         expect(find.text('开启通知'), findsNothing);
         await tester.tap(find.byTooltip('返回我的'));
         await tester.pumpAndSettle();

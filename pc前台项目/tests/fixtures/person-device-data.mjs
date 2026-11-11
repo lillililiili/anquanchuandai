@@ -3,12 +3,25 @@ export const SCENARIOS = Object.freeze([
   ['belt', '仅安全带'], ['helmet', '仅安全帽'], ['both', '帽带同领'],
   ['unassigned', '未领用'], ['offline', '已领用但离线'], ['revoked', '权限已撤销'],
   ['watch_visible', '模拟手表显示'], ['watch_hidden', '模拟手表隐藏'],
+  ['screen_activity', '大屏告警时间趋势（隔离）'],
   ['video_many', '20 路视频分页与轮播'],
   ['works_many', '13 条作业与联系跳转（隔离）'], ['fences', '地理围栏内存保存与旧围栏保护'],
 ]);
 
 export function fixtureState(scenario = 'belt', now = new Date()) {
   if (!SCENARIOS.some(([id]) => id === scenario)) throw Error('Unknown isolated scenario');
+  if (scenario === 'screen_activity') {
+    const state = fixtureState('both', now);
+    const sample = state.events[0];
+    state.businessConfig.workBusinessEnabled = false;
+    state.events = [2, 5, 1, 7, 4, 3].flatMap((count, bucket) => Array.from({ length: count }, (_, index) => {
+      const occurredAt = new Date(now.getTime() - (22 - bucket * 4) * 3600000 + index * 60000).toISOString();
+      const [date, time] = new Date(Date.parse(occurredAt) + 8 * 3600000).toISOString().slice(0, 19).split('T');
+      return { ...structuredClone(sample), id: `QA-ACTIVITY-${bucket}-${index}`, occurredAt, date, time,
+        status: bucket < 3 ? '已核验' : '待认领' };
+    }));
+    return state;
+  }
   if (scenario === 'works_many') {
     const state = fixtureState('helmet', now);
     const person = state.people[0], device = state.devices[0], binding = state.bindings[0];

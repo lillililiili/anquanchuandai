@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS wearable_location (
  sort_order INT NOT NULL, body LONGTEXT NOT NULL,
  PRIMARY KEY(namespace,collection_key,record_key),
  INDEX wb_2_device(device_id,observed_at), INDEX wb_2_person(person_id,observed_at),
- INDEX wb_2_site(site_id,area_id), INDEX wb_2_event(event_id)
+ INDEX wb_2_site(site_id,area_id), INDEX wb_2_event(event_id),
+ INDEX wb_2_live(namespace,collection_key,device_id,observed_at DESC,record_key ASC)
 );
 CREATE TABLE IF NOT EXISTS wearable_event (
  namespace VARCHAR(32) NOT NULL, collection_key VARCHAR(64) NOT NULL, record_key VARCHAR(512) NOT NULL,

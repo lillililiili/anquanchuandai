@@ -63,7 +63,7 @@ void main() {
   });
 
   testWidgets(
-    'unassigned belt details expose all three raw states on a narrow large-text screen',
+    'belt details retain unknown states without diagnostic codes on a narrow large-text screen',
     (tester) async {
       tester.view.physicalSize = const Size(375, 850);
       tester.view.devicePixelRatio = 1;
@@ -95,8 +95,8 @@ void main() {
       expect(find.text('A 挂钩'), findsOneWidget);
       expect(find.text('B 挂钩'), findsOneWidget);
       expect(find.text('待确认'), findsNWidgets(3));
-      expect(find.text('1'), findsNWidgets(2));
-      expect(find.text('0'), findsOneWidget);
+      expect(find.text('1'), findsNothing);
+      expect(find.text('0'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

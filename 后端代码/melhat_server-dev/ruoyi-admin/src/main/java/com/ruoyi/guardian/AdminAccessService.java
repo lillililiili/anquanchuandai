@@ -141,7 +141,7 @@ public class AdminAccessService {
         if (!Arrays.asList("create", "update", "status", "delete").contains(action)) throw AdminQueryService.fail(400, "UNKNOWN_COMMAND", "未开放此操作");
         if (!"create".equals(action) && (row == null || !input.getString("siteId").equals(row.getString("siteId")) && !"roles".equals(entity))) throw AdminQueryService.fail(404, "OBJECT_NOT_FOUND", "对象不存在或不可见");
         if ("roles".equals(entity) && !"demo-system".equals(actor.getString("id"))) throw AdminQueryService.fail(403, "PERMISSION_DENIED", "仅系统管理员可维护厂站或角色");
-        if (row != null && (("roles".equals(entity) && row.getBooleanValue("builtin")) || ("accounts".equals(entity) && "demo-system".equals(row.getString("id"))))) throw AdminQueryService.fail(403, "BUILTIN_PROTECTED", "内置系统管理员或角色受保护");
+        if (row != null && "accounts".equals(entity) && "demo-system".equals(row.getString("id"))) throw AdminQueryService.fail(403, "BUILTIN_PROTECTED", "系统管理员账号受保护");
         String operation = "roles".equals(entity) ? "roles:write" : "accounts:write";
         if (!can(state, actor, operation, input.getString("siteId"), null)) throw AdminQueryService.fail(403, "PERMISSION_DENIED", "当前身份无此操作或数据范围权限");
         if ("accounts".equals(entity) && row != null && !manageable(state, actor, row)) throw AdminQueryService.fail(403, "DELEGATION_DENIED", "不能管理自身、上级权限或超出自身范围的账号");
@@ -234,16 +234,17 @@ public class AdminAccessService {
             if (!roleCovered(state, actor, role)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "角色完整权限或厂站范围超出可委派范围，或授权厂站未启用");
             record.getJSONArray("roleIds").add(roleId);
         }
-        record.put("description", record.getJSONArray("roleIds").isEmpty() ? "自定义用户账号 · 尚未分配授权" : "自定义用户账号 · 按角色范围访问");
+        record.put("description", "自定义用户账号 · 按角色范围访问");
         put(state, "accounts", record, creating);
         return record;
     }
 
     private JSONArray accountBindings(JSONObject data) {
-        if (!data.containsKey("bindings")) return new JSONArray();
+        if (!data.containsKey("bindings")) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择角色，账号必须分配一个角色");
         Object raw = data.get("bindings");
         if (!(raw instanceof List)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "角色绑定必须为数组");
         List<?> values = (List<?>) raw;
+        if (values.isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择角色，账号必须分配一个角色");
         if (values.size() > 1) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "一个用户只能绑定一个角色");
         JSONArray bindings = new JSONArray();
         bindings.addAll(values);
@@ -397,6 +398,7 @@ public class AdminAccessService {
         }
         String keyword = text(input, "keyword");
         String actorName = text(input, "actorName");
+        String recordId = text(input, "recordId");
         String objectId = text(input, "objectId");
         String action = text(input, "action");
         String result = text(input, "result");
@@ -409,9 +411,10 @@ public class AdminAccessService {
             if ((from > 0 || to > 0) && time == 0) continue;
             if (from > 0 && time < from || to > 0 && time > to) continue;
             if (!actorName.isEmpty() && !actorName.equals(row.getString("actorName"))) continue;
+            if (!recordId.isEmpty() && !recordId.equals(row.getString("id"))) continue;
             if (!objectId.isEmpty() && !objectId.equals(row.getString("objectId"))) continue;
             if (!action.isEmpty() && !action.equals(row.getString("action"))) continue;
-            if (!result.isEmpty() && !result.equals(row.getString("result"))) continue;
+            if (!auditResultMatches(result, row.getString("result"))) continue;
             String hay = String.valueOf(row.getString("id")) + " " + row.getString("actorName") + " " + row.getString("objectId") + " " + row.getString("action") + " " + row.getString("result") + " " + row.getString("requestId") + " " + row.getString("operationId");
             if (!keyword.isEmpty() && !hay.toLowerCase().contains(keyword.toLowerCase())) continue;
             rows.add(row);
@@ -424,14 +427,15 @@ public class AdminAccessService {
         String exportedAt = Instant.now().toString();
         List<String> columns = Arrays.asList("id", "siteId", "actorName", "action", "objectId", "occurredAt", "result", "requestId", "operationId", "before", "after", "source");
         StringBuilder csv = new StringBuilder().append('\uFEFF');
-        csv.append(cell("模拟数据")).append(',').append(cell("后台操作日志")).append("\r\n");
+        csv.append(cell("报表")).append(',').append(cell("后台操作日志")).append("\r\n");
         csv.append(cell("厂站")).append(',').append(cell(input.getString("siteId"))).append("\r\n");
         csv.append(cell("导出时间（UTC）")).append(',').append(cell(exportedAt)).append("\r\n");
         csv.append(cell("记录数")).append(',').append(cell(String.valueOf(rows.size()))).append("\r\n");
         for (int i = 0; i < columns.size(); i++) csv.append(i == 0 ? "" : ",").append(cell(columns.get(i)));
         csv.append("\r\n");
         for (JSONObject row : rows) {
-            for (int i = 0; i < columns.size(); i++) csv.append(i == 0 ? "" : ",").append(cell(row.get(columns.get(i))));
+            JSONObject exported = WearableModel.safe(row);
+            for (int i = 0; i < columns.size(); i++) csv.append(i == 0 ? "" : ",").append(cell(exported.get(columns.get(i))));
             csv.append("\r\n");
         }
         Map<String, Object> body = new LinkedHashMap<String, Object>();
@@ -440,6 +444,14 @@ public class AdminAccessService {
         body.put("total", rows.size());
         body.put("exportedAt", exportedAt);
         return body;
+    }
+
+    private static boolean auditResultMatches(String filter, String result) {
+        if (filter.isEmpty()) return true;
+        if ("FAILED".equals(filter) || "FAILURE".equals(filter))
+            return Arrays.asList("FAILED", "FAILURE", "SOURCE_FAILURE").contains(result);
+        if ("DENIED".equals(filter)) return Arrays.asList("DENIED", "BUSINESS_REJECTED").contains(result);
+        return filter.equals(result);
     }
 
     private void auditRow(JSONObject state, JSONObject actor, String type, JSONObject input, JSONObject before, JSONObject after) {
@@ -630,7 +642,7 @@ public class AdminAccessService {
 
     private static String cell(Object value) {
         String text = value == null ? "" : value instanceof String ? (String) value : String.valueOf(value);
-        if (text.matches("^[\\s\\u0000-\\u001f\\u007f-\\u009f]*[=+\\-@].*")) text = "'" + text;
+        if (text.matches("(?Us)^[\\s\\u0000-\\u001f\\u007f-\\u009f\\ufeff]*[=+\\-@].*")) text = "'" + text;
         return "\"" + text.replace("\"", "\"\"") + "\"";
     }
 

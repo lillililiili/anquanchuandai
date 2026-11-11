@@ -14,6 +14,7 @@ export const AUDIT_ACTIONS = Object.fromEntries([
   ['accounts.delete', '删除账号'], ['roles.delete', '删除角色'],
   ['people.dutyStatus', '维护人员在岗状态'],
   ['devices.create', '新增设备'], ['devices.update', '修改设备'], ['devices.configure', '配置设备型号'],
+  ['devices.features', '维护设备功能配置'],
   ['devices.platformSync', '同步厂家设备'], ['accounts.resetCredential', '重置账号密码'],
   ['assignments.issue', '发放设备'], ['assignments.return', '归还设备'],
   ['maintenance.create', '设备送修'], ['maintenance.assign', '指派维修人员'],
@@ -24,7 +25,8 @@ export const AUDIT_ACTIONS = Object.fromEntries([
   ['integrations.preview', '预览接口同步'], ['integrations.confirm', '确认接口同步'],
   ['integrations.retry', '重试接口同步'], ['integrations.receipt', '接收接口回执'],
   ['integrations.create', '同步新增资料'], ['integrations.skip', '跳过同步资料'],
-  ['integrationSettings.update', '修改接口设置']
+  ['integrationSettings.update', '修改接口设置'],
+  ['businessConfig.update', '更新业务配置']
 ])
 
 export function auditActionLabel(action) {
@@ -36,12 +38,16 @@ export function auditHistoricalName(row) {
     typeof value === 'string' && value.trim())?.trim() || ''
 }
 
-export function auditObjectLabel(row, currentDevice) {
+export function auditObjectTypeLabel(row, currentDevice) {
   const entity = String(row?.action || '').split('.')[0]
+  const type = entity === 'devices' ? row?.after?.type || row?.before?.type || currentDevice?.type : null
+  return ({ HELMET: '安全帽', BELT: '安全带', WATCH: '手表' })[type] || ENTITIES[entity] || '业务对象'
+}
+
+export function auditObjectLabel(row, currentDevice) {
   const historicalName = auditHistoricalName(row)
-  const device = entity === 'devices'
-  const type = device ? row?.after?.type || row?.before?.type || currentDevice?.type : null
-  const label = ({ HELMET: '安全帽', BELT: '安全带', WATCH: '手表' })[type] || ENTITIES[entity] || '业务对象'
+  const device = String(row?.action || '').startsWith('devices.')
+  const label = auditObjectTypeLabel(row, currentDevice)
   if (historicalName) return `${label}：${historicalName}`
   if (device && currentDevice?.id === row?.objectId && currentDevice?.name) return `${label}：${currentDevice.name}（当前名称）`
   if (row?.action === 'devices.platformSync') return '厂家设备台账'

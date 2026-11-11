@@ -54,6 +54,22 @@ test('unknown, zero, fractional and long durations are not confused', () => {
   assert.equal(presentation.durationText(3601), '60:01');
 });
 
+test('device filename time is presented separately from verified capture and receipt times', () => {
+  const file = { source: 'DIRECT_HELMET', kind: 'video', mediaOrigin: 'DEVICE_RECORDING', originalName: '20261104172858.mp4',
+    receivedAt: '2026-11-04T09:29:49Z', timeBasis: 'RECEIVED_AT' };
+  assert.deepEqual(presentation.mediaCaptureTime(file), { label: '设备文件时间', value: '2026-11-04 17:28:58' });
+  assert.deepEqual(presentation.mediaTime(file), { label: '接收时间', value: '2026-11-04 17:29:49' });
+  assert.equal(file.capturedAt, undefined);
+  assert.deepEqual(presentation.mediaCaptureTime({ ...file, capturedAt: '2026-11-04T09:28:59Z' }), { label: '拍摄时间', value: '2026-11-04 17:28:59' });
+  assert.equal(presentation.mediaCaptureTime({ ...file, originalName: 'abc_20240229120000.mp4' }).value, '2024-02-29 12:00:00');
+  assert.equal(presentation.mediaCaptureTime({ ...file, kind: 'photo', originalName: '20261104172902.jpg' }).value, '2026-11-04 17:29:02');
+  for (const changed of [
+    { originalName: '20260229172858.mp4' }, { originalName: '20261104242858.mp4' }, { originalName: '../20261104172858.mp4' },
+    { originalName: '20261104172858.jpg' }, { originalName: undefined, title: '20261104172858.mp4' },
+    { source: 'MANUAL' }, { simulated: true }, { mediaOrigin: 'PLATFORM_RECORDING' },
+  ]) assert.deepEqual(presentation.mediaCaptureTime({ ...file, ...changed }), { label: '拍摄时间', value: '未提供' });
+});
+
 async function previewHtml(demoMode, media) {
   const raw = await readFile(new URL('../src/views/event/EventMediaPreview.vue', import.meta.url),'utf8');
   const { descriptor } = parse(raw);

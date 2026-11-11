@@ -21,6 +21,7 @@ import * as locationPresentation from '../src/views/location/location-presentati
 import * as testSite from '../../shared/test-site.mjs';
 import * as vitalValues from '../src/views/person/vital-values.js';
 import * as navigation from '../src/components/layout/navigation.js';
+import * as beltAlarmNames from '../../shared/belt-alarm-names.mjs';
 
 function fixture(type = 'B', online = true) {
   const person = { id: 'P1', name: '现场人员', active: true, station: 'S1', team: '一班' };
@@ -54,6 +55,7 @@ async function render(path, f, components = {}) {
     '@/lib/queries': f.queries, '@/stores/session': { session: f.session, filtersOf: key => f.session.filters[key] || {} },
     '@/lib/media-presentation': mediaPresentation, './statistics-model': statisticsModel, './location-presentation': locationPresentation,
     '../../../../shared/test-site.mjs': testSite, './vital-values': vitalValues, './navigation': navigation,
+    '../../../../shared/belt-alarm-names.mjs': beltAlarmNames,
     '@/lib/dialogs': { previewCsv: (...args) => (f.exports ||= []).push(args) },
     '@/stores/notify': { toast() {} }, '@/stores/modal': { openModal() {} }, '@/lib/actions': { callPerson() {}, go() {}, runGuarded: fn => fn() },
     '@/lib/files': { blobPut() {} }, '@ui-spec/useFieldErrors': { useFieldErrors: () => ({ formRef: Vue.ref(null), errors: Vue.ref({}), validate: () => true }) },
@@ -287,6 +289,18 @@ test('安全帽告警在摘要和核验详情仍保留现场视频', async () =>
   for (const page of ['alarms/AlarmsView.vue', 'event/EventView.vue']) {
     const html = await render(page, f);
     assert.match(html, /data-component="VideoFrame"/, page);
+  }
+});
+
+test('围栏进出告警在列表和详情显示真实来源、方向与事发围栏', async () => {
+  const f = fixture('B'); f.route.params.id = 'E1';
+  f.db.state.events.push({ id: 'E1', station: 'S1', personId: 'P1', deviceId: f.device.id, source: 'PLATFORM_GEOFENCE', protocol: 'platform-geofence',
+    type: '电子围栏', title: '离开围栏：设备检修区', fenceName: '设备检修区', fenceDirection: '离开', locationDescription: '现场人员离开围栏：设备检修区',
+    status: '待认领', date: '2026-11-09', time: '17:30:00', snapshot: { personName: '现场人员' }, timeline: [], permissions: {} });
+  for (const page of ['alarms/AlarmsView.vue', 'event/EventView.vue']) {
+    const html = await render(page, f);
+    assert.match(html, /离开围栏：设备检修区/); assert.match(html, /平台电子围栏/);
+    if (page.startsWith('event/')) { assert.match(html, /关联围栏/); assert.match(html, /进出方向/); }
   }
 });
 

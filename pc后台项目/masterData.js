@@ -7,19 +7,14 @@ export const ENTITIES = {
   people: { read: 'people:read', write: 'people:write', title: '人员' },
   organizations: { read: 'organization:read', write: 'organization:write', title: '组织' },
   sites: { read: 'sites:read', write: 'sites:write', title: '厂站' },
-  dutyShifts: { read: 'duty:read', write: 'duty:write', title: '班次' },
   accounts: { read: 'access:read', write: 'accounts:write', title: '账号' },
   roles: { read: 'access:read', write: 'roles:write', title: '角色' }
 }
-const activeShift = (s, now) => s.enabled && Date.parse(s.endsAt) > Date.parse(now)
 export function visible(state, actor, entity, row) {
   if (entity === 'sites') return system(actor) || hasSite(state, actor, row.id, 'sites:read')
-  if (entity === 'roles') return system(actor) || (row.builtin && row.grants.some(g => g.siteIds.some(siteId => hasSite(state, actor, siteId, 'access:read'))))
+  if (entity === 'roles') return system(actor) || row.grants.some(g => g.siteIds.some(siteId => hasSite(state, actor, siteId, 'access:read')))
   if (entity === 'accounts') return system(actor) || accountManageable(state, actor, row) || row.id === actor.id
   if (entity === 'organizations') return can(state, actor, 'organization:read', row)
-  if (entity === 'dutyShifts') return can(state, actor, 'duty:read', row) || (row.personIds.length > 0 && row.personIds.every(id => {
-    const person = state.people.find(p => p.id === id); return person && can(state, actor, 'duty:read', person)
-  }))
   return can(state, actor, ENTITIES[entity].read, row)
 }
 export function impacts(state, entity, row, now, all = false) {
@@ -28,7 +23,6 @@ export function impacts(state, entity, row, now, all = false) {
   const enabled = r => all || r.enabled !== false
   if (entity === 'people') {
     add('有效领用关系（请到发放回收页面归还或核实）', state.assignments.filter(a => a.active && a.personId === row.id))
-    add(all ? '名册成员引用' : '当前或未来名册', state.dutyShifts.filter(s => s.personIds.includes(row.id) && (all || activeShift(s, now))))
     add('协助组成员（A5维护）', state.groups.filter(g => (g.personIds.includes(row.id) || all && g.leaderId === row.id) && enabled(g)))
     if (all) {
       add('绑定账号（请先解除人员关联）', state.accounts.filter(account => account.personId === row.id || account.id === row.accountId))
@@ -48,7 +42,6 @@ export function impacts(state, entity, row, now, all = false) {
   }
   if (entity === 'sites') {
     for (const key of ['organizations', 'people', 'devices', 'groups', 'integrations', 'accounts']) add(`${key}引用`, state[key].filter(r => r.siteId === row.id && (key === 'organizations' || enabled(r))))
-    add('有效名册', state.dutyShifts.filter(s => s.siteId === row.id && (all || activeShift(s, now))))
   }
   return results
 }
@@ -111,10 +104,9 @@ export function authorizeMaster(state, actor, type, input, fail) {
   const row = action === 'create' ? null : state[entity].find(r => r.id === input.id)
   if (action !== 'create' && (!row || !visible(state, actor, entity, row) || (entity !== 'sites' && entity !== 'roles' && row.siteId !== input.siteId))) throw fail(404, 'OBJECT_NOT_FOUND', '对象不存在或不可见')
   if (['sites', 'roles'].includes(entity) && !system(actor)) throw fail(403, 'PERMISSION_DENIED', '仅系统管理员可维护厂站或角色')
-  if (row && ((entity === 'roles' && row.builtin) || (entity === 'accounts' && row.id === 'demo-system'))) throw fail(403, 'BUILTIN_PROTECTED', '内置系统管理员或角色受保护')
+  if (row && entity === 'accounts' && row.id === 'demo-system') throw fail(403, 'BUILTIN_PROTECTED', '系统管理员账号受保护')
   const object = row || { siteId: input.siteId }
-  const scopedDuty = entity === 'dutyShifts' && (row?.personIds || input.data?.personIds || []).length > 0 && (row?.personIds || input.data.personIds).every(id => { const p = state.people.find(x => x.id === id && x.siteId === input.siteId); return p && can(state, actor, 'duty:write', p) })
-  if (!system(actor) && !scopedDuty && !can(state, actor, ENTITIES[entity].write, object)) throw fail(403, 'PERMISSION_DENIED', '当前身份无此操作或厂站权限')
+  if (!system(actor) && !can(state, actor, ENTITIES[entity].write, object)) throw fail(403, 'PERMISSION_DENIED', '当前身份无此操作或厂站权限')
   if (entity === 'accounts' && row && !accountManageable(state, actor, row)) throw fail(403, 'DELEGATION_DENIED', '不能管理自身、上级权限或超出自身范围的账号')
   return { entity, action, row }
 }
@@ -153,9 +145,6 @@ export function applyMaster(state, actor, type, input, { fail, now }) {
   }
   if (action === 'status') {
     if (typeof input.enabled !== 'boolean') fieldError('enabled', '启停状态无效')
-    if (entity === 'dutyShifts') {
-      if (input.enabled || Date.parse(row.startsAt) <= Date.parse(now)) throw fail(409, 'SHIFT_STARTED', '仅未来班次允许取消，不能恢复已取消班次')
-    }
     if (!input.enabled) {
       const refs = impacts(state, entity, row, now)
       if (refs.length) { const e = fail(409, 'REFERENCED', '存在活动引用，请先处理影响清单'); e.impacts = refs; throw e }
@@ -170,7 +159,7 @@ export function applyMaster(state, actor, type, input, { fail, now }) {
   const data = input.data || {}, creating = action === 'create'
   if (!creating && data.siteId && data.siteId !== siteId && entity !== 'sites') fieldError('siteId', '不支持跨厂站调动')
   const record = { ...(row || {}), id: row?.id || `${entity}-19007199254740993-${state.nextId++}`, siteId, name: text(data, 'name'), enabled: row?.enabled ?? true, version: (row?.version || 0) + 1 }
-  if (entity !== 'accounts' && entity !== 'roles' && entity !== 'dutyShifts') {
+  if (entity !== 'accounts' && entity !== 'roles') {
     record.code = text(data, 'code', 50)
     if (state[entity].some(r => r.id !== record.id && r.code.toLowerCase() === record.code.toLowerCase())) fieldError('code', '编号已存在，请使用其他编号', 409)
   }
@@ -198,14 +187,6 @@ export function applyMaster(state, actor, type, input, { fail, now }) {
     record.accountId = row?.accountId || null
     record.equipmentEvidence = row?.equipmentEvidence || (creating ? emptyEvidence() : {})
   }
-  if (entity === 'dutyShifts') {
-    if (row && (!row.enabled || Date.parse(row.startsAt) <= Date.parse(now))) throw fail(409, 'SHIFT_STARTED', '已开始或已取消班次不能普通编辑')
-    for (const key of ['startsAt', 'endsAt']) if (typeof data[key] !== 'string' || !data[key].endsWith('Z') || !Number.isFinite(Date.parse(data[key]))) fieldError(key, '请提供有效UTC时间')
-    if (Date.parse(data.startsAt) <= Date.parse(now) || Date.parse(data.endsAt) <= Date.parse(data.startsAt)) fieldError('endsAt', '班次必须在未来开始，结束晚于开始')
-    if (!Array.isArray(data.personIds) || !data.personIds.length || new Set(data.personIds).size !== data.personIds.length) fieldError('personIds', '请选择至少一名成员，且不能重复')
-    for (const id of data.personIds) { const p = enabledRef('people', id, siteId, 'personIds'); if (!p || !can(state, actor, 'duty:write', p)) fieldError('personIds', '成员不在可维护范围') }
-    Object.assign(record, { startsAt: new Date(data.startsAt).toISOString(), endsAt: new Date(data.endsAt).toISOString(), personIds: [...data.personIds], source: 'MOCK', memberSnapshots: data.personIds.map(id => ({ id, name: state.people.find(p => p.id === id).name })) })
-  }
   if (entity === 'accounts') {
     record.credentialVersion = row?.credentialVersion || 1
     record.loginName = text(data, 'loginName', 50)
@@ -222,6 +203,7 @@ export function applyMaster(state, actor, type, input, { fail, now }) {
     }
     const bindings = data.bindings === undefined ? [] : data.bindings
     if (!Array.isArray(bindings)) fieldError('bindings', '角色绑定数据格式无效')
+    if (!bindings.length) fieldError('bindings', '请选择角色，账号必须分配一个角色')
     if (bindings.length > 1) fieldError('bindings', '每个用户最多只能绑定一个角色')
     if (bindings.some(binding => !binding || typeof binding !== 'object' || Array.isArray(binding) || typeof binding.roleId !== 'string' || !binding.roleId.trim())) fieldError('bindings', '角色绑定数据格式无效')
     record.roleIds = []; delete record.roleScopes
@@ -239,7 +221,7 @@ export function applyMaster(state, actor, type, input, { fail, now }) {
       }
       record.roleIds.push(role.id)
     }
-    record.description = record.roleIds.length ? '自定义用户账号 · 按角色范围访问' : '自定义用户账号 · 尚未分配授权'
+    record.description = '自定义用户账号 · 按角色范围访问'
   }
   if (entity === 'roles') {
     const ops = data.operations, siteIds = data.siteIds

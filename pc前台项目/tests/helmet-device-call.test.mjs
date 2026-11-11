@@ -13,6 +13,25 @@ const media = { ...assignment, supported: true, verified: true, available: true,
 const credentials = { protocol: 'SIP', authorizationPassword: 'PRIVATE-TEST-SECRET', video: true };
 const offered = { id: 'COMM-test', channelName: 'SIP-test', status: 'offered', credentials };
 const flush = () => new Promise(resolve => setImmediate(resolve));
+test('call discovery gateway rejection is not misreported as SIP failure and retry clears both errors', async () => {
+  const requests = [];
+  const call = createHelmetDeviceCall({ rtc: {}, fetchImpl: async (url, options) => {
+    requests.push({ url, method: options.method || 'GET' });
+    return requests.length === 1
+      ? { ok: false, status: 400, json: async () => ({ code:400, error:'INVALID_QUERY' }) }
+      : { ok: true, status: 200, json: async () => [] };
+  } });
+  assert.equal(await call.recover({ operatorId:'qa-operator' }), false);
+  assert.match(call.getState().recoveryError, /未能核对/);
+  assert.match(call.getState().error, /HTTP 400/);
+  assert.doesNotMatch(call.getState().error, /语音服务不可用|设备注册/);
+  assert.equal(await call.recover({ operatorId:'qa-operator' }), true);
+  assert.equal(call.getState().recoveryError, '');
+  assert.equal(call.getState().error, '');
+  assert.equal(call.getState().phase, 'idle');
+  assert.equal(requests.length, 2);
+  assert.ok(requests.every(r => r.method === 'GET' && r.url === '/api/guardian/v1/mobile/calls?owned=true&status=active'));
+});
 function fixture({ create, join, prepare, recoveryRows = [], recoveryFailure, closeRequest, discover } = {}) {
   const requests = [], discoveries = [], rtcEvents = [], timers = new Map();
   let sequence = 0, time = 0, server = { status: 'offered', serverConnected: false, connectedDeviceIds: [] }, joined;
@@ -274,7 +293,7 @@ test('an answered helmet with an unjoined browser is not reported as missed devi
   f.setServer({ status: 'answered', serverConnected: false, connectedDeviceIds: [device().id] });
   await f.call.refresh();
   assert.equal(f.call.getState().deviceAnswered, true); assert.equal(f.call.getState().localJoined, false);
-  assert.match(deviceCallStatus(f.call.getState()), /设备已应答.*电脑已发出入会请求/);
+  assert.match(deviceCallStatus(f.call.getState()), /设备已应答.*正在连接通话/);
   assert.equal(f.requests.some(row => row.url.endsWith('/joined')), false);
   await f.timeout();
   assert.match(f.call.getState().error, /安全帽已应答.*电脑.*入会确认.*超时/);

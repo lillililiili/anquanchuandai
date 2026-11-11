@@ -33,7 +33,7 @@ public class GuardianMobileController {
     @GetMapping("/context") public JSONObject context(@RequestParam String siteId,HttpServletRequest r){
         synchronized(ledger){
             GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));
-            JSONObject state=siteSnapshot(r,siteId);
+            JSONObject state=siteSnapshot(ctx,siteId);
             for(Object raw:rows(state,"people")){
                 JSONObject p=(JSONObject)raw, master=find(ctx.data,"people",p.getString("ledgerId"));
                 if(master!=null){p.put("version",master.get("version"));p.put("code",master.get("code"));}
@@ -50,7 +50,7 @@ public class GuardianMobileController {
                 for(String id:ids){JSONObject person=WearableModel.person(ctx.data,id);if(person!=null)names.put(id,person.getString("name"));}
                 work.put("participantNames",names);
             }
-            JSONObject assignments=history(siteId,r);
+            JSONObject assignments=history(siteId,ctx);
             state.put("assignments",assignments.get("rows"));state.put("assignmentHistory",assignments.get("history"));
             return state;
         }
@@ -62,7 +62,10 @@ public class GuardianMobileController {
     @GetMapping("/{resource:people|devices|works}") public JSONObject list(@PathVariable String resource,@RequestParam String siteId,HttpServletRequest r){JSONObject state=siteSnapshot(r,siteId);JSONArray result=rows(state,resource);return object("rows",result,"total",result.size());}
     @GetMapping("/{resource:people|devices|works}/{id}") public JSONObject detail(@PathVariable String resource,@PathVariable String id,@RequestParam String siteId,HttpServletRequest r){JSONObject state=siteSnapshot(r,siteId),row=find(state,resource,id);if(row==null)throw AdminQueryService.fail(404,"NOT_FOUND","资料不存在或不在授权范围");return row;}
     @GetMapping("/assignments") public JSONObject history(@RequestParam String siteId,HttpServletRequest r){
-        GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));String site=WearableModel.siteId(ctx.data,siteId);if(!ctx.site(site))throw AdminQueryService.fail(403,"PERMISSION_DENIED","厂站不在授权范围");
+        return history(siteId,access.context(WearableSessions.actor(r)));
+    }
+    private JSONObject history(String siteId,GuardianAccess.Context ctx){
+        String site=WearableModel.siteId(ctx.data,siteId);if(!ctx.site(site))throw AdminQueryService.fail(403,"PERMISSION_DENIED","厂站不在授权范围");
         JSONArray result=new JSONArray();for(Object raw:rows(ctx.data,"assignments")){JSONObject row=(JSONObject)raw;JSONObject p=find(ctx.data,"people",row.getString("personId"));if(site.equals(row.getString("siteId"))&&p!=null&&(ctx.can("assets:read",site,p.getString("areaId"))||ctx.person!=null&&ctx.person.getString("id").equals(p.getString("id"))&&ctx.can("self:read",site,p.getString("areaId"))))result.add(copy(row));}
         JSONArray history=new JSONArray();for(Object raw:rows(ctx.data,"history")){JSONObject row=(JSONObject)raw,p=find(ctx.data,"people",row.getString("personId"));if(site.equals(row.getString("siteId"))&&p!=null&&(ctx.can("assets:read",site,p.getString("areaId"))||ctx.person!=null&&ctx.person.getString("id").equals(p.getString("id"))&&ctx.can("self:read",site,p.getString("areaId"))))history.add(copy(row));}
         return object("rows",result,"history",history);
@@ -81,8 +84,14 @@ public class GuardianMobileController {
     }
 
     private JSONObject siteSnapshot(HttpServletRequest r,String requested){
-        GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));String id=WearableModel.siteId(ctx.data,requested);if(!ctx.site(id))throw AdminQueryService.fail(403,"PERMISSION_DENIED","厂站不在授权范围");
-        String station=find(ctx.data,"sites",id).getString("portalStation");JSONObject state=events.snapshot(WearableSessions.actor(r));
+        return siteSnapshot(access.context(WearableSessions.actor(r)),requested,()->events.snapshot(WearableSessions.actor(r)));
+    }
+    private JSONObject siteSnapshot(GuardianAccess.Context ctx,String requested){
+        return siteSnapshot(ctx,requested,()->events.snapshot(ctx));
+    }
+    private JSONObject siteSnapshot(GuardianAccess.Context ctx,String requested,java.util.function.Supplier<JSONObject> snapshot){
+        String id=WearableModel.siteId(ctx.data,requested);if(!ctx.site(id))throw AdminQueryService.fail(403,"PERMISSION_DENIED","厂站不在授权范围");
+        String station=find(ctx.data,"sites",id).getString("portalStation");JSONObject state=snapshot.get();
         for(String key:Arrays.asList("people","devices","works","events")){JSONArray list=new JSONArray();for(Object raw:rows(state,key))if(station.equals(((JSONObject)raw).getString("station")))list.add(raw);state.put(key,list);}
         JSONObject equipment=state.getJSONObject("personEquipmentContext");if(equipment!=null){Set<String> visible=new HashSet<>();for(Object raw:rows(state,"people"))visible.add(((JSONObject)raw).getString("id"));equipment.keySet().retainAll(visible);}
         return state;

@@ -6,6 +6,7 @@ import { db } from "@/mock/runtime";
 import { session } from "@/stores/session";
 import { personName, revision } from "@/lib/queries";
 import { sharedBroadcasts } from '@/lib/shared-communications';
+import { formatBeijingDateTime } from '@/lib/date-time';
 
 const rows = computed(() => {
   revision();
@@ -20,7 +21,7 @@ function names(item) {
 <template>
   <AppTable :rows="rows" v-slot="{ rows: pageRows }" :columns="['时间', '分组', '内容', '接收人员', '状态']" :empty="!rows.length">
     <tr v-for="item in pageRows" :key="item.id">
-      <td>{{ item.time }}</td>
+      <td>{{ formatBeijingDateTime(item.time) }}</td>
       <td>{{ item.groupName }}</td>
       <td>{{ item.text }}</td>
       <td>{{ names(item) }}</td>

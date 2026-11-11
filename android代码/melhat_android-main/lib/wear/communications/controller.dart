@@ -920,7 +920,7 @@ class CommunicationsController extends ChangeNotifier {
     } else if (call.status == WearCallStatus.connected) {
       if (rtcPhase == WearRtcPhase.failed) return;
       statusMessage = isSip && !call.serverConnected
-          ? '设备连接结果尚待服务端确认'
+          ? '设备连接状态待确认'
           : !_rtcActive || rtcPhase != WearRtcPhase.localJoined
           ? '服务器已确认，RTC 尚未就绪'
           : remotePresent

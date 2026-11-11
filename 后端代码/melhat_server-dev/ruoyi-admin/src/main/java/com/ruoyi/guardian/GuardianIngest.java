@@ -174,12 +174,14 @@ public class GuardianIngest {
                     || !clearBoundary(previous.getDoubleValue("longitude"),previous.getDoubleValue("latitude"),oldAccuracy,polygon)) continue;
             boolean was=inside(previous.getDoubleValue("longitude"),previous.getDoubleValue("latitude"),polygon), now=inside(lon,lat,polygon);
             if(was==now || now&&!fence.getBooleanValue("enter") || !now&&!fence.getBooleanValue("leave")) continue;
-            array(state,"fenceRecords").add(0,WearableModel.object("id","FR"+nextSeq(state),"fenceId",fence.getString("id"),
+            JSONObject record=WearableModel.object("id","FR"+nextSeq(state),"fenceId",fence.getString("id"),
                     "fenceName",fence.getString("name"),"personId",h.personId,"personName",h.personName,"type",now?"进入":"离开",
                     "time",stamp(when),"station",h.station,"coordinateSystem",cs,"longitude",lon,"latitude",lat,
                     "source","PLATFORM_GEOFENCE","deviceId",h.deviceId,"bindingId",point.get("bindingId"),
                     "locationId",point.get("id"),"previousLocationId",previous.get("id"),"previousDeviceId",previous.get("deviceId"),
-                    "locationReportedAt",when.toInstant().toString(),"accuracyMeters",accuracy));
+                    "locationReportedAt",when.toInstant().toString(),"accuracyMeters",accuracy);
+            GeofenceAlarms.append(state,record,point,h.device,fence);
+            array(state,"fenceRecords").add(0,record);
         }
     }
 
@@ -276,9 +278,11 @@ public class GuardianIngest {
         Date when = parseTime(timestamp);
         if (when == null) when = new Date();
         String code = rawType == null ? "" : rawType.substring(0, Math.min(64, rawType.length()));
-        JSONObject event=addEvent(state, belt, when, sos ? "安全带发起 SOS" : "安全带告警" + (code.isEmpty() ? "" : "（" + code + "）"),
+        String configuredFeature = sos ? null : DeviceFeatureConfiguration.alarmFeature(belt.device, code);
+        JSONObject event=addEvent(state, belt, when, sos ? "安全带发起 SOS" : (configuredFeature == null ? "安全带告警" : DeviceFeatureConfiguration.alarmTitle(configuredFeature)) + (code.isEmpty() ? "" : "（" + code + "）"),
                 sos ? "人员求助" : "设备通信", timestamp == null ? null
                         : deviceId + ":belt:" + (sos ? "sos:" : "alarm:") + code + ":" + timestamp, code);
+        if (event != null && configuredFeature != null) event.put("alarmFeature", configuredFeature);
         if(event!=null&&captured!=null)WorkBusiness.capture(state,event,WorkBusiness.enabled(state)?captured.getJSONObject("work"):null);
         return true;
     }

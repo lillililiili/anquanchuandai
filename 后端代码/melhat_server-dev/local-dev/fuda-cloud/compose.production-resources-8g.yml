@@ -1,0 +1,64 @@
+# UNSELECTED DRAFT, not enabled. Current deployment planning keeps the 4 GiB host.
+# Retained only as an initial 8 GiB resource-budget reference; do not deploy it.
+# Required order: compose.yml, compose.production.yml, this file.
+# Run production_resources_check.py first. This does not relax preflight.py.
+# Do not add a project name, ports, networks, image/build or business switches here.
+services:
+  mysql:
+    labels: &resource-profile
+      com.wearables.resource-profile: production-8g-v1
+    mem_limit: 512m
+    memswap_limit: 512m
+    logging: &bounded-logs
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=128M
+      - --innodb-log-buffer-size=8M
+      - --max-connections=40
+      - --table-open-cache=400
+  redis:
+    labels: *resource-profile
+    mem_limit: 128m
+    memswap_limit: 128m
+    logging: *bounded-logs
+    # Leave room for process overhead and AOF rewrite; never evict auth nonces.
+    # Every write is fsynced; actual disk latency and rewrite peaks need testing.
+    command:
+      - sh
+      - -c
+      - exec redis-server --appendonly yes --appendfsync always --no-appendfsync-on-rewrite no --maxmemory 48mb --maxmemory-policy noeviction --requirepass "$$REDIS_PASSWORD"
+  backend:
+    labels: *resource-profile
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    logging: *bounded-logs
+    environment:
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError
+  query-gateway:
+    labels: *resource-profile
+    mem_limit: 64m
+    memswap_limit: 64m
+    logging: *bounded-logs
+  helmet-gateway:
+    labels: *resource-profile
+    mem_limit: 96m
+    memswap_limit: 96m
+    logging: *bounded-logs
+  belt-gateway:
+    labels: *resource-profile
+    mem_limit: 96m
+    memswap_limit: 96m
+    logging: *bounded-logs
+  phone-gateway:
+    labels: *resource-profile
+    mem_limit: 96m
+    memswap_limit: 96m
+    logging: *bounded-logs
+  private-relays:
+    labels: *resource-profile
+    mem_limit: 64m
+    memswap_limit: 64m
+    logging: *bounded-logs

@@ -55,7 +55,7 @@ public class PersonEquipmentContext {
                 if(assignment==null)continue;
                 JSONObject target=target(device,master,assignment);target.put("source",device.get("source"));target.put("type",device.get("type"));
                 target.put("online",observed.getBooleanValue("online"));target.put("name",device.get("name"));
-                JSONObject states=policy.features(observed);target.put("featureStates",states);devices.add(target);
+                JSONObject states=ctx.deviceFeatures(policy,observed);target.put("featureStates",states);devices.add(target);
                 for(String key:states.keySet()) {
                     JSONObject feature=copy(states.getJSONObject(key));feature.putAll(target(device,master,assignment));
                     String permission=permission(key);

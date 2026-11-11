@@ -6,10 +6,10 @@ export function effectiveGrants(state, actor) {
 }
 export function can(state, actor, operation, object) {
   if (state.sites.find(s => s.id === object.siteId)?.enabled === false && operation !== 'sites:write') return false
-  return effectiveGrants(state, actor).some(g => (g.operations.includes('*') || g.operations.includes(operation)) && g.siteIds.includes(object.siteId))
+  return system(actor) || effectiveGrants(state, actor).some(g => (g.operations.includes('*') || g.operations.includes(operation)) && g.siteIds.includes(object.siteId))
 }
 export function hasSite(state, actor, siteId, operation = 'overview:read') {
-  return state.sites.some(s => s.id === siteId && s.enabled !== false) && effectiveGrants(state, actor).some(g => g.siteIds.includes(siteId) && (g.operations.includes('*') || g.operations.includes(operation)))
+  return state.sites.some(s => s.id === siteId && s.enabled !== false) && (system(actor) || effectiveGrants(state, actor).some(g => g.siteIds.includes(siteId) && (g.operations.includes('*') || g.operations.includes(operation))))
 }
 export function system(actor) { return actor?.id === 'demo-system' && actor.enabled }
 export function accountManageable(state, actor, account) {

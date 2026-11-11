@@ -1,6 +1,6 @@
 <script setup>
 import { workBusinessEnabled, eventSource } from '@/lib/work-business';
-import { computed, reactive, ref, watchEffect } from "vue";
+import { computed, reactive, ref, watch, watchEffect } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
 import AppField from "@/components/ui/AppField.vue";
@@ -21,9 +21,15 @@ import { events, personName, revision, search, statusColor } from "@/lib/queries
 import { toast } from "@/stores/notify";
 import { externalStatusPresentation, hasExternalSource } from '@/lib/external-status';
 import { eventVideoSupported } from '@/lib/person-equipment';
+import { BELT_ALARM_NAMES } from '../../../../shared/belt-alarm-names.mjs';
 
 const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
-const typeOptions = [["", "全部"], "人员求助", "电子围栏", "设备通信", "低电量", "位置异常", "安全带挂接", "生命体征"];
+const typeOptions = computed(() => {
+  revision();
+  const names = new Set(Object.values(BELT_ALARM_NAMES));
+  const reported = [...new Set(events().map(item => item.title).filter(title => names.has(title)))];
+  return [["", "全部"], ...reported, "人员求助", "电子围栏", "设备通信", "低电量", "位置异常", "安全带挂接", "生命体征"];
+});
 const statusOptions = [["", "全部"], "待现场核验", "待认领", "处理中", "已核验"];
 const columns = ["事件编号", "类型", "人员", "设备编号", "发生时间", "状态", "操作"];
 
@@ -33,6 +39,11 @@ const draft = reactive({
   date: stored.date || "",
   type: stored.type || "",
   status: stored.status || "",
+});
+
+// A global notice can select fence alarms while this page is already open.
+watch(() => session.filters.alarms, (value = {}) => {
+  for (const field of ['q', 'date', 'type', 'status']) draft[field] = value[field] || '';
 });
 
 function urgency(item) {
@@ -51,7 +62,7 @@ const alarms = computed(() => {
       (item) =>
         search(item.deviceId, query.q) &&
         (!query.date || item.date === query.date) &&
-        (!query.type || item.type === query.type) &&
+        (!query.type || item.type === query.type || item.title === query.type) &&
         (!query.status || item.status === query.status),
     )
     .sort((a, b) => urgency(a) - urgency(b) || (b.date + b.time).localeCompare(a.date + a.time));

@@ -30,7 +30,7 @@ async function submit() {
     });
     if (!response.ok) {
       if (response.status >= 500) {
-        error.value = "后端未连接，修改未保存";
+        error.value = "服务连接失败，请稍后重试";
         return;
       }
       let message = "账号或密码错误。";
@@ -51,7 +51,7 @@ async function submit() {
     session.formDrafts = {};
   } catch {
     if (loginToken && authHeaders()["X-Wearable-Token"] === loginToken) clearAuth();
-    error.value = "后端未连接，修改未保存";
+    error.value = "服务连接失败，请稍后重试";
     return;
   } finally { busy.value = false; }
   go("overview");

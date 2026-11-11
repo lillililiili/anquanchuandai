@@ -87,6 +87,13 @@ function Get-TunnelStatus($Service) {
     if ($status.Count -eq 0) { return $null }
     return $status[0]
 }
+function Get-FudaQueryTunnel([string]$LocalDevRoot) {
+    # Only existing daily installations with assigned Fuda production access
+    # restore this route. Do not read credentials or enable a new installation.
+    $configuration = Join-Path $LocalDevRoot 'fuda-cloud/.private/production/fuda-api.yml'
+    if (-not (Test-Path -LiteralPath $configuration -PathType Leaf)) { return $null }
+    return @{ name='fuda-query'; root=(Join-Path $LocalDevRoot 'fuda-api-gateway'); prefix='fuda-query' }
+}
 function Start-NodeService($Service) {
     $running = Get-OwnedListener $Service
     if ($running) { Add-Result $Service.name 'reused' ('PID ' + $running.ProcessId + ', port ' + $Service.port); return }
@@ -116,6 +123,16 @@ function Start-NodeService($Service) {
 }
 
 try {
+    # Installed only by an explicit production handoff. Any marker blocks the
+    # old writer until a coordinated rollback accounts for new cloud data.
+    $migrationMarker = Join-Path $runtimeRoot 'production-cutover.json'
+    if (Test-Path -LiteralPath $migrationMarker) {
+        $report = [ordered]@{ checkedAtUtc=[DateTime]::UtcNow.ToString('o'); checkOnly=[bool]$CheckOnly;
+            ready=$false; localStartupBlocked=$true; productionMigrationMarkerPresent=$true;
+            message='Local production startup is blocked by output/runtime/production-cutover.json. Verify the active cloud writer before any rollback.' }
+        Write-Output ($report | ConvertTo-Json -Depth 4)
+        exit 1
+    }
     # Existing tunnel journals contain UTF-8 paths without a BOM. Their original
     # controllers must run in PowerShell 7 (5.1's default ANSI reader corrupts
     # those paths), rather than rewriting state/fingerprints to suit the shell.
@@ -173,7 +190,14 @@ try {
         if ($parts.Count -ne 3 -or $parts[0] -cne ('/' + $name)) { throw ('Unexpected container identity: ' + $name) }
         $containers += @{ name=$name; running=($parts[2] -eq 'true'); status=$parts[1] }
     }
-    foreach ($service in @($services | Where-Object kind -EQ 'gateway')) { $step = $service.prefix + '-tunnel preflight'; $service.tunnel = Get-TunnelStatus $service }
+    $tunnels = @($services | Where-Object kind -EQ 'gateway')
+    $fudaQueryTunnel = Get-FudaQueryTunnel $localDev
+    if ($null -ne $fudaQueryTunnel) {
+        $step = 'fuda-query-tunnel preflight'
+        Require-File (Join-Path $fudaQueryTunnel.root 'cloud/tunnel.ps1') 'Fuda query tunnel controller'
+        $tunnels += $fudaQueryTunnel
+    }
+    foreach ($service in $tunnels) { $step = $service.prefix + '-tunnel preflight'; $service.tunnel = Get-TunnelStatus $service }
     if (-not $SkipAndroid) {
         $step = 'android preflight'
         $adbCandidate = if ($env:ANDROID_DEV_HOME) { Join-Path $env:ANDROID_DEV_HOME 'android-sdk/platform-tools/adb.exe' } else { 'D:/AndroidDev/android-sdk/platform-tools/adb.exe' }
@@ -207,7 +231,7 @@ try {
         if (-not $ready) { throw 'Backend did not respond within 45 seconds; existing containers were retained.' }
         foreach ($service in $services) { $step = $service.name; Start-NodeService $service }
     }
-    foreach ($service in @($services | Where-Object kind -EQ 'gateway')) {
+    foreach ($service in $tunnels) {
         $step = $service.prefix + '-tunnel'
         $status = $service.tunnel
         if (-not $CheckOnly) {

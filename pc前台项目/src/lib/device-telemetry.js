@@ -1,18 +1,19 @@
 import { actionFeatureState } from '../../../shared/device-features.mjs';
+import { serverNow } from '../../../shared/server-clock.mjs';
 const REAL_SOURCES = new Set(["PLATFORM", "DIRECT_HELMET", "DIRECT_BELT"]);
 
 export function isRealDevice(device) {
   return REAL_SOURCES.has(device?.source);
 }
 
-export function isCurrentDevice(device, now = Date.now()) {
+export function isCurrentDevice(device, now = serverNow()) {
   const observed = Date.parse(device?.sourceTime || device?.updated || "");
   const age = now - observed;
   return isRealDevice(device) && String(device.freshness).toUpperCase() === "CURRENT" &&
     Number.isFinite(observed) && age >= 0 && age <= 300000;
 }
 
-export function hasCurrentLocation(device, now = Date.now()) {
+export function hasCurrentLocation(device, now = serverNow()) {
   const observed = Date.parse(device?.locationReportedAt || "");
   const age = now - observed;
   return isCurrentDevice(device, now) && device.online === true &&
@@ -20,7 +21,7 @@ export function hasCurrentLocation(device, now = Date.now()) {
     Number.isFinite(observed) && age >= 0 && age <= 300000;
 }
 
-export function projectDevice(device, now = Date.now()) {
+export function projectDevice(device, now = serverNow()) {
   if (!device || !isRealDevice(device)) return device;
   const current = isCurrentDevice(device, now);
   const rawBattery = device.battery;

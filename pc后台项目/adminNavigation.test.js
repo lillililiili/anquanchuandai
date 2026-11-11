@@ -62,7 +62,6 @@ describe('top navigation and guarded site changes', () => {
     ['/admin/people', '/people'],
     ['/admin/people/person-1-0', '/people/person-1-0'],
     ['/admin/sites', '/sites'],
-    ['/admin/duty', '/duty'],
     ['/admin/access/accounts', '/accounts'],
     ['/admin/access/roles', '/roles'],
     ['/admin/audit', '/audit'],
@@ -81,11 +80,24 @@ describe('top navigation and guarded site changes', () => {
     expect(router.currentRoute.value.fullPath).toBe(path)
     expect(router.currentRoute.value.query).toEqual({})
   })
-  it.each(['/devices', '/assignments', '/people', '/sites', '/duty', '/accounts', '/roles', '/audit'])('opens the short route %s under the administration layout', async path => {
+  it.each(['/devices', '/assignments', '/people', '/sites', '/accounts', '/roles', '/audit'])('opens the short route %s under the administration layout', async path => {
     await router.push(path + '?siteId=site-2')
     expect(router.currentRoute.value.path).toBe(path)
     expect(router.currentRoute.value.matched).toHaveLength(2)
     expect(router.currentRoute.value.matched.at(-1).meta.errorState).toBeUndefined()
+  })
+  it.each(['/duty', '/admin/duty', '/duty/old-shift', '/admin/duty/old-shift'])('redirects retired roster %s to personnel, including after login', async path => {
+    const source = path + '?siteId=site-1&selectedId=shift-1&keyword=old&pageNum=9&status=disabled'
+    await router.push(source)
+    expect(router.currentRoute.value.fullPath).toBe('/people?siteId=site-1')
+    expect(router.currentRoute.value.meta.entity).toBe('people')
+    session.identity = null
+    await router.push('/login')
+    await router.push(source)
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/people?siteId=site-1' })
+    session.identity = { id: 'test-system' }
+    await router.push({ path: '/login', query: { redirect: source } })
+    expect(router.currentRoute.value.fullPath).toBe('/people?siteId=site-1')
   })
   it('uses the short login URL and preserves a sanitized detail destination for anonymous users', async () => {
     session.identity = null
@@ -142,7 +154,7 @@ describe('top navigation and guarded site changes', () => {
 
 describe('theme preservation on short administration routes', () => {
   it('inherits the business theme on list routes independently of the parent path', () => {
-    for (const path of ['/devices', '/assignments', '/people', '/sites', '/duty', '/accounts', '/roles', '/audit']) {
+    for (const path of ['/devices', '/assignments', '/people', '/sites', '/accounts', '/roles', '/audit']) {
       const resolved = router.resolve(path)
       expect(resolved.meta.adminTheme, path).toBe('business')
       expect(resolved.meta.adminFamily, path).not.toBe('detail')

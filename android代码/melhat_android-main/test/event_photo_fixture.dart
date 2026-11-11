@@ -1,12 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rolling_intelligence_headband/wear/events/event_photos.dart';
+import 'png_fixture.dart';
 
-final _png = base64Decode(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+afo4AAAAASUVORK5CYII=',
-);
+final _png = validPngFixture();
 
 class _CameraFile implements File {
   _CameraFile(this.path);

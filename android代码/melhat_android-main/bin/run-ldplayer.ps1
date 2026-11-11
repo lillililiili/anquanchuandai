@@ -1,5 +1,5 @@
-# Real shared backend by default; -Mock is an explicit offline preview.
-param([string]$DeviceId, [switch]$Attach, [switch]$Watch, [switch]$Mock, [string]$BackendUrl = 'http://127.0.0.1:18084', [string]$ProxyUrl = $env:HTTPS_PROXY)
+# Cloud production backend by default; use -BackendUrl for an explicit local environment.
+param([string]$DeviceId, [switch]$Attach, [switch]$Watch, [switch]$Mock, [string]$BackendUrl = 'https://lingzhiaide.com/wear-api', [string]$ProxyUrl = $env:HTTPS_PROXY)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $devRoot = if ($env:ANDROID_DEV_HOME) { $env:ANDROID_DEV_HOME } else { 'D:/AndroidDev' }

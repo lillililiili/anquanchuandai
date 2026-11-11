@@ -19,7 +19,7 @@ export function deviceCallUnavailable(device, feature, otherActive = false, assi
   // The guardian snapshot exposes per-device voiceAvailable, derived on the
   // server from SIP registration. Older projections omit sipRegistered itself.
   if (device.sipRegistered === false || !(device.voiceAvailable === true || device.sipRegistered === true || device.capabilities?.sipRegistered === true)) return '安全帽语音未注册，请检查设备网络和语音服务';
-  if (String(device.communicationProtocol).toUpperCase() !== 'SIP') return '安全帽语音配置异常，请检查 SIP 设置';
+  if (String(device.communicationProtocol).toUpperCase() !== 'SIP') return '安全帽语音配置异常，请联系管理员';
   if (!supportsDeviceAction(device, 'intercom')) return '设备当前没有可用的语音通话能力';
   return '';
 }
@@ -27,13 +27,13 @@ export function deviceCallUnavailable(device, feature, otherActive = false, assi
 export function deviceCallStatus(state) {
   if (state.recovering) return '正在核对当前账号已有通话';
   if (state.recovered && !state.endRequested && !['ended','failed','timeout'].includes(state.phase)) {
-    const detail = state.serverConnected ? '服务端已接通' : state.deviceAnswered ? '设备已应答' : '状态待核实';
+    const detail = state.serverConnected ? '设备已接通' : state.deviceAnswered ? '设备已应答' : '状态待核实';
     return `已有会话（${detail}），本页未加入`;
   }
-  const terminal = { idle: '尚未发起通话', ending: '正在结束，等待服务端确认', unknown: '通话结果待确认', ended: '通话已结束', failed: '呼叫失败', timeout: '通话建立超时' };
+  const terminal = { idle: '尚未发起通话', ending: '正在结束通话…', unknown: '通话结果待确认', ended: '通话已结束', failed: '呼叫失败', timeout: '通话建立超时' };
   if (terminal[state.phase]) return terminal[state.phase];
-  if (state.serverConnected && state.localJoined) return '双方已接通（服务端及本端确认）';
-  const stages = { microphone_permission: '等待电脑麦克风授权，尚未呼叫设备', microphone_ready: '电脑麦克风已就绪，正在请求设备呼叫', connecting_service: '正在连接电脑语音服务', registering: '正在注册电脑语音身份', preparing_offer: '正在准备电脑音频与入会请求', invite_sent: '电脑已发出入会请求，等待入会确认' };
+  if (state.serverConnected && state.localJoined) return '双方已接通';
+  const stages = { microphone_permission: '等待电脑麦克风授权，尚未呼叫设备', microphone_ready: '电脑麦克风已就绪，正在请求设备呼叫', connecting_service: '正在连接电脑语音服务', registering: '正在连接语音服务', preparing_offer: '正在建立音频连接', invite_sent: '正在连接通话，请稍候' };
   if (state.localJoined) return state.deviceAnswered ? '电脑已入会、设备已应答，等待双方接通确认' : '电脑已入会，等待设备接听';
   const stage = stages[state.clientStatus] || '正在请求呼叫';
   return state.deviceAnswered ? '设备已应答；' + stage : stage;
@@ -68,8 +68,8 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
         ...(body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
       const value = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const error = Error(featureUnavailableReason(value.message, 'voice') || '设备通话请求失败');
-        error.errorCode = value.errorCode || value.code;
+        const error = Error(value.message ? featureUnavailableReason(value.message, 'voice') : `通话请求失败（HTTP ${response.status}），请刷新后重试`);
+        error.errorCode = value.errorCode || value.error || value.code;
         error.httpStatus = response.status;
         error.definitive = response.status >= 400 && response.status < 500 && response.status !== 408;
         throw error;
@@ -131,7 +131,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
     const task = (async () => {
       if (prior) await detach({ reason: '账号已变化，本页音频已退出', invalidateRecovery: false });
       if (operation !== recoveryGeneration || accountId !== operatorId) return false;
-      update({ recovering: true, recoveryError: '' });
+      update({ recovering: true, recoveryError: '', error: '' });
       try {
         const rows = await api('/mobile/calls?owned=true&status=active');
         if (operation !== recoveryGeneration || accountId !== operatorId) return false;
@@ -218,7 +218,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
         await end();
       }
     } catch (error) {
-      if (active(ctx)) update({ serverConnected: false, error: '服务端通话状态暂未确认，请刷新状态或请求结束',
+      if (active(ctx)) update({ serverConnected: false, error: '通话状态暂未确认，请刷新状态或结束通话',
         phase: ctx.endRequested ? 'ending' : 'unknown' });
     } finally { ctx.polling = false; later(ctx); }
   }
@@ -257,7 +257,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
           update({ clientStatus: value, localJoined: !!ctx.localJoined });
           if (ctx.localJoined && !ctx.endRequested) void reportLocalJoined(ctx);
           if (!ctx.endRequested && ['failed', 'ended'].includes(value)) {
-            update({ error: value === 'failed' ? '本机音频连接中断，正在请求结束' : '本机音频会话已结束，正在核对服务端状态' });
+            update({ error: value === 'failed' ? '本机音频连接中断，正在请求结束' : '本机音频已结束，正在确认通话状态' });
             void end();
           }
         },

@@ -8,6 +8,7 @@ import { db } from '@/mock/runtime';
 const props = defineProps({
   media: { type: Object, default: null },
 });
+const emit = defineEmits(['metadata']);
 
 const src = ref("");
 const alt = computed(() => props.media?.title || '');
@@ -16,6 +17,7 @@ const renderGeneration = ref(0);
 const previewElement = ref(null);
 let objectUrl = "";
 let generation = 0;
+let loadedKey = '';
 
 async function load() {
   const operation = ++generation;
@@ -25,6 +27,7 @@ async function load() {
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = "";
   const media = props.media;
+  loadedKey = mediaPreviewKey(media);
   if (!media) {
     src.value = "";
     return;
@@ -56,6 +59,13 @@ async function load() {
   }
 }
 
+function onMetadata(event) {
+  const video = event?.target;
+  if (!src.value || !video || video !== previewElement.value || Number(video.dataset?.previewGeneration) !== renderGeneration.value
+      || loadedKey !== mediaPreviewKey(props.media) || String(props.media?.kind).toLowerCase() !== 'video') return;
+  if (Number.isFinite(video.duration) && video.duration > 0) emit('metadata', { key: loadedKey, duration: video.duration });
+}
+
 function onError(event) {
   // Ignore an error queued by a previous file after switching the preview.
   if (event?.target && event.target !== previewElement.value) return;
@@ -78,7 +88,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <video v-if="src && media?.url && String(media.kind).toLowerCase()==='video'" :key="renderGeneration" ref="previewElement" :src="src" :aria-label="alt || '设备录像'" muted playsinline preload="metadata" @error="onError" />
+  <video v-if="src && media?.url && String(media.kind).toLowerCase()==='video'" :key="renderGeneration" ref="previewElement" :src="src" :data-preview-generation="renderGeneration" :aria-label="alt || '设备录像'" muted playsinline preload="metadata" @loadedmetadata="onMetadata" @durationchange="onMetadata" @error="onError" />
   <img v-else-if="src" :key="renderGeneration" ref="previewElement" :src="src" :alt="alt" @error="onError" />
   <div v-else class="empty-state media-preview-empty" role="status">
     <span>{{ error || '暂无影像文件' }}</span>

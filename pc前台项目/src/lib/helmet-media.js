@@ -1,4 +1,4 @@
-import { featureUnavailableReason } from '../../../shared/device-features.mjs';
+import { ACTION_FEATURES, featureUnavailableReason } from '../../../shared/device-features.mjs';
 export const COMMAND_LABELS = { take_photo:'平台拍照请求', start_recording:'开始平台录制', stop_recording:'停止平台录制', start_video:'开启直播', stop_video:'关闭直播', list_recordings:'查询设备录像', upload_recording:'上传选中录像', configure_sip:'同步语音配置' };
 export const COMMAND_STATUSES = { queued:'等待发送', requesting:'正在请求', configured:'配置已保存，设备下次登录生效', waiting_media:'等待设备视频，尚未开始录像', recording:'正在录制实际视频', finalizing:'录像文件正在封装', accepted:'平台已受理', sent:'已发送，设备待回执', acknowledged:'设备已回执', completed:'设备已完成', failed:'执行失败', timeout:'等待回执超时', rejected:'设备拒绝', pending:'等待设备处理', unknown:'执行状态待确认' };
 
@@ -23,16 +23,32 @@ export function mediaDownloadUrl(value) {
 }
 
 export function createHelmetMediaApi(fetchImpl) {
-  async function request(deviceId, suffix, options = {}) {
+  async function request(deviceId, suffix, options = {}, feature = '') {
     const response = await fetchImpl(`/api/guardian/v1/devices/${encodeURIComponent(deviceId)}/${suffix}`, options);
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw Object.assign(Error(featureUnavailableReason(body.message) || '设备请求失败，请重试'), { status: response.status, code: body.code });
+    if (!response.ok) {
+      // The gateway returns { error }, while business failures use { message }.
+      // A missing message is a request failure, not evidence of missing telemetry.
+      const fallback = ({
+        400: '设备请求未被接受，请刷新页面后重试',
+        401: '登录已失效，请重新登录',
+        403: '当前账号无权操作此设备',
+        404: '设备服务暂不可用，请刷新页面或联系管理员',
+        429: '请求过于频繁，请稍后重试',
+        502: '设备服务连接失败，请稍后重试',
+        503: '设备服务暂不可用，请稍后重试',
+        504: '设备服务响应超时，请稍后重试',
+      })[response.status] || '设备请求失败，请稍后重试';
+      const message = typeof body?.message === 'string' && body.message.trim()
+        ? featureUnavailableReason(body.message, feature) : fallback;
+      throw Object.assign(Error(message), { status: response.status, code: body?.errorCode || body?.error || body?.code });
+    }
     return body;
   }
   return {
     read: (deviceId, signal) => request(deviceId,'media',{signal}),
-    live: (deviceId, context, signal) => request(deviceId, 'live?' + new URLSearchParams(context), { signal }),
-    command: (deviceId, action, parameters, idempotencyKey, signal, context = {}) => request(deviceId,'commands',{method:'POST',signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({...context,action,parameters,idempotencyKey})}),
+    live: (deviceId, context, signal) => request(deviceId, 'live?' + new URLSearchParams(context), { signal }, 'video'),
+    command: (deviceId, action, parameters, idempotencyKey, signal, context = {}) => request(deviceId,'commands',{method:'POST',signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({...context,action,parameters,idempotencyKey})}, ACTION_FEATURES[action]),
   };
 }
 

@@ -24,7 +24,7 @@ export async function capturePhoto(personId) {
     toast(result.status === 'completed' ? '照片已返回，可在现场资料中查看' : ['unknown','requesting'].includes(result.status) ? '拍照结果待确认，可在现场资料查看回执' : '拍照请求已提交，照片返回后在现场资料中查看');
     return;
   }
-  if (!db.demoMode) throw Error('暂无真实设备视频，不能生成示例抓拍');
+  if (!db.demoMode) throw Error('暂无可用视频，无法抓拍');
   if (!device || device.video !== "available") throw Error("视频通道不可用，暂时无法抓拍");
   const asset = assetForPerson(personId);
   const blob = await imageBlob(asset);
@@ -45,7 +45,7 @@ export async function toggleRecording(personId) {
     const result = await mediaOperations.start(context);
     toast(result.status === 'recording' ? '平台正在录制现场视频' : '平台录制请求已提交，等待实际视频与录制回执');return;
   }
-  if (!db.demoMode) throw Error('暂无真实设备视频，不能生成示例录像');
+  if (!db.demoMode) throw Error('暂无可用视频，无法录像');
   if (!session.recording && (!device || device.video !== "available")) {
     throw Error("视频通道不可用，暂时无法录像");
   }

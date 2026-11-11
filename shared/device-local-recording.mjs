@@ -1,5 +1,5 @@
 export const LOCAL_RECORDING_TITLE = '设备本地录像 · 最后上报';
-export const LOCAL_RECORDING_NOTE = '仅表示设备最后一次上报，不代表当前仍在录制或文件已生成。';
+export const LOCAL_RECORDING_NOTE = '显示最近一次上报状态；已上传录像请到现场资料查看。';
 
 // This is a historical device observation, independent of platform recording
 // commands, online status, media assets and acceptance of remote operations.

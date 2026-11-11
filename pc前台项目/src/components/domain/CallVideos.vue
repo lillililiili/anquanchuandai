@@ -57,7 +57,7 @@ const tiles = computed(() => {
       poster,
       source: poster.replace("scene-", "call-").replace(".png", ".webm"),
       available: demoVideoAvailable(helmet, db.demoMode),
-      status: !helmet ? "未绑定安全帽" : isRealDevice(helmet) ? props.call.rtc?.video ? '等待设备视频回传' : '当前为语音通话' : !db.demoMode ? '暂无真实设备视频' : helmet.video === "off" ? "视频未开启" : "视频回传中断",
+      status: !helmet ? "未绑定安全帽" : isRealDevice(helmet) ? props.call.rtc?.video ? '等待设备视频回传' : '当前为语音通话' : !db.demoMode ? '暂无设备视频' : helmet.video === "off" ? "视频未开启" : "视频回传中断",
     };
   });
 });
@@ -67,7 +67,6 @@ const tiles = computed(() => {
   <div :class="['call-videos', call.members.length > 1 ? 'multiple' : '']">
     <figure v-if="hasRemoteVideo" class="call-video-tile">
       <div class="call-video-frame"><video ref="remoteVideo" autoplay muted playsinline controls aria-label="本次通话远端视频" /><span class="call-video-badge">通话远端画面</span></div>
-      <figcaption>设备接通身份以服务端回执为准；多人通话画面由媒体服务提供。</figcaption>
     </figure>
     <figure v-for="tile in tiles" :key="call.id + ':' + tile.personId" class="call-video-tile">
       <div class="call-video-frame">
@@ -101,7 +100,7 @@ const tiles = computed(() => {
       <figcaption>
         <strong>{{ personName(tile.personId) }}</strong>
         <small>{{ tile.helmet?.id || "未绑定" }}</small>
-        <span :class="call.serverConnected || !call.rtc && call.status === '通话中' ? 'green' : 'yellow'">{{ call.rtc ? call.serverConnected ? '设备已接通（服务端确认）' : '设备接通待确认' : call.status === "通话中" ? "已接通" : "等待接听 · 画面预览" }}</span>
+        <span :class="call.serverConnected || !call.rtc && call.status === '通话中' ? 'green' : 'yellow'">{{ call.rtc ? call.serverConnected ? '设备已接通' : '设备接通待确认' : call.status === "通话中" ? "已接通" : "等待接听 · 画面预览" }}</span>
       </figcaption>
     </figure>
   </div>

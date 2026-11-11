@@ -136,3 +136,66 @@ test('HLS network HTTP status and media decode failures are visible without leak
   video.error={code:3,message:'https://private/?token=SECRET'};player.mediaError();assert.match(states.at(-1).error,/解码/);
   assert.equal(JSON.stringify(states).includes('SECRET'),false);player.dispose();
 });
+
+function stalledHlsFixture() {
+  let time=Date.parse('2030-01-01T00:00:00Z'),sequence=0,shown=true;
+  const timers=new Map(),hls=fakeHls();
+  const result=fixture({loadHls:hls.loadHls,now:()=>time,visible:()=>shown,
+    schedule:(fn,delay)=>{const id=++sequence;timers.set(id,{fn,due:time+delay});return id;},
+    cancel:id=>timers.delete(id)});
+  Object.assign(result.video,{currentTime:1,paused:false});
+  return {...result,...hls,timers,setVisible:value=>{shown=value;},
+    async advance(milliseconds,progress=false) {
+      const until=time+milliseconds;
+      while(true) {
+        const next=[...timers].sort((a,b)=>a[1].due-b[1].due)[0];
+        if(!next||next[1].due>until)break;
+        if(progress)result.video.currentTime+=(next[1].due-time)/1000;
+        time=next[1].due;timers.delete(next[0]);next[1].fn();
+        await Promise.resolve();await Promise.resolve();
+      }
+      if(progress)result.video.currentTime+=(until-time)/1000;
+      time=until;
+    }};
+}
+
+test('a nonfatal HLS stall reopens the latest playlist after 30 seconds without device negotiation',async()=>{
+  const f=stalledHlsFixture();await f.player.update(live('first','stream1','HLS'));
+  await f.advance(10000);await f.player.update(live('renewed','stream1','HLS'));
+  await f.advance(15000);assert.equal(f.instances.length,1);
+  await f.advance(5000);
+  assert.equal(f.instances.length,2);assert.equal(f.instances[0].destroyed,1);
+  assert.match(f.instances[1].url,/token=renewed$/);assert.equal(f.calls.length,0);
+  f.player.dispose();assert.equal(f.timers.size,0);
+});
+
+test('healthy playback, user pause, and a hidden page never trigger stall recovery',async()=>{
+  const f=stalledHlsFixture();await f.player.update(live('first','stream1','HLS'));
+  await f.advance(60000,true);assert.equal(f.instances.length,1);
+  f.video.paused=true;await f.advance(120000);assert.equal(f.instances.length,1);
+  f.video.paused=false;f.setVisible(false);await f.advance(120000);assert.equal(f.instances.length,1);
+  f.setVisible(true);await f.advance(25000);assert.equal(f.instances.length,1);
+  await f.advance(5000);assert.equal(f.instances.length,2);
+  f.player.dispose();
+});
+
+test('repeated stalls stop after two reconnects and explicit retry restores the recovery budget',async()=>{
+  const f=stalledHlsFixture();await f.player.update(live('first','stream1','HLS'));
+  await f.advance(90000);
+  assert.equal(f.instances.length,3);assert.equal(f.instances[2].destroyed,1);
+  assert.equal(f.states.at(-1).state,'failed');assert.match(f.states.at(-1).error,/自动重连未恢复/);
+  await f.advance(120000);assert.equal(f.instances.length,3);
+  await f.player.retry();assert.equal(f.instances.length,4);
+  await f.advance(30000);assert.equal(f.instances.length,5);
+  f.player.dispose();
+});
+
+test('sustained recovered playback clears consecutive failure count and disposal cancels recovery',async()=>{
+  const f=stalledHlsFixture();await f.player.update(live('first','stream1','HLS'));
+  await f.advance(30000);assert.equal(f.instances.length,2);
+  await f.advance(30000,true);
+  await f.advance(60000);assert.equal(f.instances.length,4);
+  assert.notEqual(f.states.at(-1).state,'failed');
+  f.player.dispose();await f.advance(120000);
+  assert.equal(f.instances.length,4);assert.equal(f.timers.size,0);
+});

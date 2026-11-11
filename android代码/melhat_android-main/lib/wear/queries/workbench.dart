@@ -118,7 +118,7 @@ class _WorkbenchPageState extends State<WorkbenchPage> {
                 children: [
                   WearEmpty(
                     title: '现场信息加载失败',
-                    detail: '请检查网络后重试。仍可进入求助页面，提交结果以服务端确认为准。',
+                    detail: '请检查网络后重试，也可进入求助页面查看当前状态。',
                     onRetry: _load,
                   ),
                   const SizedBox(height: 16),

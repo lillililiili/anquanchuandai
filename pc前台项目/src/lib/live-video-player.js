@@ -15,14 +15,17 @@ function sourceIdentity(live) {
 export function createLiveVideoPlayer(video, {
   open = openWhep, loadHls = () => import('hls.js'), onChange = () => {},
   now = Date.now, schedule = setTimeout, cancel = clearTimeout,
+  visible = () => typeof document === 'undefined' || !document.hidden,
 } = {}) {
-  let latest, identity, session, hls, controller, renewal, generation = 0, disposed = false;
+  let latest, identity, session, hls, controller, renewal, watchdog, generation = 0, disposed = false;
+  let recoveryAttempts = 0;
   let fallback = false, state = 'loading', error = '';
   const notify = () => onChange({ state, error, fallback });
   const selected = () => fallback && latest?.hlsUrl
     ? { ...latest, protocol: 'HLS', url: latest.hlsUrl } : latest;
   function cleanup() {
     cancel(renewal); renewal = undefined;
+    cancel(watchdog); watchdog = undefined;
     controller?.abort(); controller = undefined;
     const previous = session; session = undefined;
     void Promise.resolve(previous?.close()).catch(() => {});
@@ -55,6 +58,30 @@ export function createLiveVideoPlayer(video, {
       notify();
     };
     const rejected = reason => { const result = mediaPlaybackRejection(reason); status(result.state, result.error); };
+    function monitorPlayback() {
+      let previousTime = Number(video.currentTime) || 0, lastProgress = now(), healthySeconds = 0;
+      const check = () => {
+        watchdog = undefined;
+        if (!active() || state === 'failed') return;
+        const currentTime = Number(video.currentTime) || 0;
+        if (video.paused || !visible()) {
+          lastProgress = now(); healthySeconds = 0;
+        } else if (Math.abs(currentTime - previousTime) > 0.05) {
+          healthySeconds += Math.max(0, Math.min(5, currentTime - previousTime));
+          lastProgress = now();
+          if (healthySeconds >= 30) recoveryAttempts = 0;
+        } else if (now() - lastProgress >= 30000) {
+          // A nonfatal HLS stall can leave a valid lease spinning indefinitely.
+          // Re-open the latest playlist, without issuing another device command.
+          if (recoveryAttempts < 2) { recoveryAttempts++; void play(); }
+          else { cleanup(); status('failed', '视频持续缓冲，自动重连未恢复，请重新播放'); }
+          return;
+        }
+        previousTime = currentTime;
+        watchdog = schedule(check, 5000);
+      };
+      watchdog = schedule(check, 5000);
+    }
     try {
       const live = selected(), url = mediaUrl(live?.url);
       if (!url) throw mediaPlaybackError('暂无可用直播地址');
@@ -83,6 +110,7 @@ export function createLiveVideoPlayer(video, {
             if (active()) void video.play().catch(rejected);
           });
           hls.loadSource(url); hls.attachMedia(video);
+          monitorPlayback();
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = url;
           // Native HLS has no request hook. Renew near the loaded ticket's
@@ -107,18 +135,18 @@ export function createLiveVideoPlayer(video, {
       latest = live ? { ...live } : live;
       if (previousIdentity !== sourceIdentity(latest)) fallback = false;
       const next = sourceIdentity(selected());
-      if (next !== identity) { identity = next; return play(); }
+      if (next !== identity) { identity = next; recoveryAttempts = 0; return play(); }
       // Keep the latest ticket for explicit retry, including after a failed
       // connection. Polling must not repeatedly interrupt an ICE negotiation.
     },
-    retry: play,
+    retry() { recoveryAttempts = 0; return play(); },
     mediaError() {
       if (disposed || !video.error) return;
       state = 'failed';
       error = ({2:'视频下载失败，请检查直播流和网络',3:'视频解码失败，请检查设备视频和音频编码',4:'浏览器不支持此直播格式，请改用兼容播放或检查视频编码'})[video.error.code] || '视频播放失败，请重新播放';
       notify();
     },
-    useHls() { if (!latest?.hlsUrl || disposed) return; fallback = true; identity = sourceIdentity(selected()); return play(); },
+    useHls() { if (!latest?.hlsUrl || disposed) return; fallback = true; recoveryAttempts = 0; identity = sourceIdentity(selected()); return play(); },
     dispose() { if (disposed) return; disposed = true; generation++; cleanup(); },
   };
 }

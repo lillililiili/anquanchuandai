@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../core.dart';
 import '../device_features.dart';
+import '../server_clock.dart';
 import 'query_widgets.dart';
 
 /// Display meanings only after the backend confirms the firmware's mapping.
 class BeltTelemetryView {
-  BeltTelemetryView(this.device, {DateTime? now}) : now = now ?? DateTime.now();
+  BeltTelemetryView(this.device, {DateTime? now})
+    : now = now ?? serverClock.now();
 
   final JsonMap device;
   final DateTime now;
@@ -72,19 +74,16 @@ class BeltTelemetryPanel extends StatelessWidget {
               label: deviceFeatureLabel(device, 'wear', '佩戴状态'),
               value: view.worn,
             ),
-            DetailField(label: '佩戴原始值', value: view.raw('isWeared')),
           ],
           if (deviceFeature(device, 'hooks').supported) ...[
             DetailField(
               label: deviceFeatureLabel(device, 'hooks', 'A 挂钩'),
               value: view.hookA,
             ),
-            DetailField(label: 'A 原始值', value: view.raw('hangerAStatus')),
             DetailField(
               label: deviceFeatureLabel(device, 'hooks', 'B 挂钩'),
               value: view.hookB,
             ),
-            DetailField(label: 'B 原始值', value: view.raw('hangerBStatus')),
           ],
           if (deviceFeature(device, 'height').supported)
             DetailField(
@@ -93,16 +92,12 @@ class BeltTelemetryPanel extends StatelessWidget {
                   ? '${device['relativeAltitude']} m'
                   : '暂无最新上报',
             ),
-          DetailField(label: '状态新鲜度', value: view.freshness),
+          DetailField(label: '数据状态', value: view.freshness),
           DetailField(
             label: '状态上报时间',
             value: view.reportedAt.isEmpty
                 ? '尚未上报'
                 : formatTime(view.reportedAt),
-          ),
-          const Text(
-            '原始值来自设备上报。状态含义未确认时显示待确认，陈旧读数不代表当前状态。',
-            style: TextStyle(color: WearColors.muted),
           ),
         ],
       ),

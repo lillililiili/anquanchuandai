@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../config/backend_config.dart';
 import 'data.dart';
 import 'mock_backend.dart';
+import 'server_clock.dart';
 import 'shared_backend.dart';
 
 class WearApiException implements Exception {
@@ -30,6 +31,7 @@ class WearApi {
   CancelToken _cancel = CancelToken();
   late final SharedBackend shared;
   final bool _real;
+  final bool _synchronizeServerClock;
   WearApi({
     Dio? dio,
     bool? mock,
@@ -37,7 +39,9 @@ class WearApi {
     required this.siteId,
     required this.epoch,
     this.onUnauthorized,
-  }) : _real =
+    bool synchronizeServerClock = true,
+  }) : _synchronizeServerClock = synchronizeServerClock,
+       _real =
            !(mock ?? BackendConfig.mock) &&
            dio?.httpClientAdapter is! MockBackend,
        dio =
@@ -75,6 +79,7 @@ class WearApi {
       token: () => capturedToken,
       siteId: () => capturedSite,
       epoch: () => 0,
+      synchronizeServerClock: false,
     );
     return (callId) {
       final path = '/api/v1/calls/${Uri.encodeComponent(callId)}/end';
@@ -101,6 +106,7 @@ class WearApi {
       token: () => capturedToken,
       siteId: () => capturedSite,
       epoch: () => 0,
+      synchronizeServerClock: false,
     );
     final path =
         '/api/guardian/v1/devices/${Uri.encodeComponent(deviceId)}/commands';
@@ -125,6 +131,7 @@ class WearApi {
     _cancel.cancel('session changed');
     _cancel = CancelToken();
     shared.invalidate();
+    if (_synchronizeServerClock) serverClock.reset();
   }
 
   Future<dynamic> _native(
@@ -139,6 +146,7 @@ class WearApi {
     }
     // Dio concatenates baseUrl + path, preserving deployment prefixes.
     final captured = epoch();
+    final requestStartedAt = serverClock.startRequest();
     final response = await dio.request<dynamic>(
       path,
       data: data,
@@ -165,6 +173,22 @@ class WearApi {
     }
     if (response.data is! Map && response.data is! List) {
       throw const WearApiException(502, '服务响应格式不正确');
+    }
+    final apiOrigin = Uri.tryParse(dio.options.baseUrl);
+    final responseOrigin = response.realUri;
+    if (_synchronizeServerClock &&
+        status >= 200 &&
+        status < 300 &&
+        !response.isRedirect &&
+        response.redirects.isEmpty &&
+        const ['http', 'https'].contains(apiOrigin?.scheme) &&
+        apiOrigin?.scheme == responseOrigin.scheme &&
+        apiOrigin?.host == responseOrigin.host &&
+        apiOrigin?.port == responseOrigin.port) {
+      serverClock.observeHttpDate(
+        response.headers['date']?.singleOrNull,
+        requestStartedAt: requestStartedAt,
+      );
     }
     return body.containsKey('code') && body.containsKey('data')
         ? body['data']

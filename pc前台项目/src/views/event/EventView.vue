@@ -227,6 +227,10 @@ function openMaterials() {
           <div class="grid equal" :style="workEnabled ? undefined : { gridTemplateColumns: '1fr' }">
             <dl class="info compact">
               <dt>上报来源</dt><dd>{{ eventSource(eventRecord, db.device(eventRecord.deviceId)) }} · {{ eventRecord.deviceId || "未关联设备" }}</dd><dt>位置说明</dt><dd>{{ eventRecord.locationDescription || "暂无有效位置说明" }}</dd>
+              <template v-if="eventRecord.source === 'PLATFORM_GEOFENCE'">
+                <dt>关联围栏</dt><dd>{{ eventRecord.fenceName }}</dd>
+                <dt>进出方向</dt><dd>{{ eventRecord.fenceDirection }}</dd>
+              </template>
               <template v-if="workEnabled">
               <dt>关联作业</dt>
               <dd>{{ eventRecord.snapshot.workName }}</dd>
@@ -296,7 +300,7 @@ function openMaterials() {
           <div v-if="!verified && eventRecord.permissions?.['events:observe']" class="form-stack"><AppField label="现场补充" :error="observationError"><AppTextarea v-model="observation" maxlength="500" placeholder="补充现场情况，独立留痕，不代替最终核验" /></AppField><AppButton :disabled="busy || !observation.trim()" @click="appendObservation">保存现场补充</AppButton></div>
         </AppPanel>
         <AppPanel :title="verified ? '已提交核验结果' : '填写核验结果'">
-          <form ref="formRef" novalidate class="form-stack" data-form="verify" :data-id="eventRecord.id" @submit.prevent="submitVerify">
+          <form ref="formRef" novalidate class="form-stack" :class="{ 'verification-submitted': verified }" data-form="verify" :data-id="eventRecord.id" @submit.prevent="submitVerify">
             <AppField data-field="conclusion" :error="errors.conclusion">
               <template #label>核验结论 <span class="red">*</span></template>
               <AppSelect v-model="form.conclusion" name="conclusion" :options="conclusionOptions" :disabled="verified || busy || !eventRecord.permissions?.['events:verify']" />
@@ -323,7 +327,7 @@ function openMaterials() {
               </div>
             </template>
             <div v-else-if="verified" class="warning-box">
-              <p><AppIcon name="checkbox-circle-line" /> {{ eventRecord.verification.submittedAt }}　{{ eventRecord.verification.actorName || "历史核验人" }}已提交</p>
+              <p><AppIcon name="checkbox-circle-line" /> {{ formatBeijingDateTime(eventRecord.verification.submittedAt) }}　{{ eventRecord.verification.actorName || "历史核验人" }}已提交</p>
             </div>
             <AppButton v-if="!verified && form.expectedVersion !== eventRecord.version" :disabled="busy" @click="loadLatestDraft">载入最新核验草稿（替换当前填写）</AppButton>
             <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
@@ -343,3 +347,11 @@ function openMaterials() {
     </div>
   </template>
 </template>
+
+<style scoped>
+form.verification-submitted[data-form="verify"] :deep(textarea[readonly]),
+form.verification-submitted[data-form="verify"] :deep(.ui-select-trigger:disabled) {
+  color: var(--theme-text);
+  opacity: 1;
+}
+</style>

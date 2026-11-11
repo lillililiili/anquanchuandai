@@ -140,6 +140,19 @@ class DirectBeltIngestTest {
         assertEquals(before + 2, rows(state, "events").size());
     }
 
+    @Test void alarmConfigurationUsesReceiptTimeEvidenceAndLeavesUnknownCodesGeneric() {
+        JSONObject configured=DeviceFeatureConfiguration.update(device,object("feature","temperature","support","SUPPORTED","verification","VERIFIED","evidence","隔离测试已核对本机编号","alarmCodes",JSONArray.of("3")),object("id","demo-system","name","测试管理员"));
+        device.clear();device.putAll(configured);
+        JSONObject captured=new GuardianIngest(store).captureBelt("BELT-LOGIN-100");
+        device.getJSONObject("featureConfiguration").getJSONObject("temperature").put("verification","PENDING");
+        store.update(state -> GuardianIngest.directBeltAlarm(state,"BELT-LOGIN-100","3","2026-10-20T12:00:01Z",false,captured));
+        JSONObject event=rows(store.snapshot(),"events").getJSONObject(0);
+        assertEquals("安全带温度告警（3）",event.getString("title"));assertEquals("temperature",event.getString("alarmFeature"));assertEquals("3",event.getString("rawAlarmType"));
+        telemetry.receive("BELT-LOGIN-100",status,"3","2026-10-20T12:00:02Z",false);
+        event=rows(store.snapshot(),"events").getJSONObject(0);
+        assertEquals("安全带告警（3）",event.getString("title"));assertNull(event.getString("alarmFeature"));
+    }
+
     @Test void revokedRegistrationAndStorageFailuresAreNotAcknowledged() {
         store.snapshot();
         device.put("lifecycle", "DISABLED");

@@ -83,12 +83,12 @@ test('驻留大屏关闭作业指标后重新排成三列，保留人员、装�
     db, workBusinessEnabled, workStatus, () => [], {}, () => node, {}, () => {});
   const stats = { people: [{ id: 'P1' }], assigned: 1, works: [{ status: '进行中' }], devices: [{ id: 'H1' }], online: 1, unresolved: 2 };
   statistics(stats);
-  assert.match(node.innerHTML, /台账作业/);
+  assert.match(node.innerHTML, /进行中作业/);
   db.state.businessConfig.workBusinessEnabled = false; statistics(stats);
   assert.equal(node.style.gridTemplateColumns, 'repeat(3, 1fr)');
   assert.doesNotMatch(node.innerHTML, /作业|待分配/);
   assert.match(node.innerHTML, /在册人员/);
-  assert.match(node.innerHTML, /真实领用装备在线/);
+  assert.match(node.innerHTML, /领用装备在线/);
   assert.match(node.innerHTML, /待核验事件/);
 });
 

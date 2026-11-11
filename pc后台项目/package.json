@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5181 --strictPort",
+    "dev:local": "vite --mode local --host 127.0.0.1 --port 5181 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5182 --strictPort",
     "test": "vitest run"

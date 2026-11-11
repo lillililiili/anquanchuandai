@@ -9,11 +9,13 @@ import 'package:rolling_intelligence_headband/wear/app.dart';
 import 'package:rolling_intelligence_headband/wear/auth_pages.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/shared_backend.dart';
+import '../test/png_fixture.dart';
 
 // Credentials are supplied only through an ignored --dart-define-from-file file.
 // This test intentionally refuses every host/port except the disposable QA clone.
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  WidgetController.hitTestWarningShouldBeFatal = true;
   const rawConfig = String.fromEnvironment('WEAR_QA_CONFIG');
   testWidgets('isolated real backend: routes, roles, SOS, photos and assignments', (
     t,
@@ -38,10 +40,18 @@ void main() {
     final memberAccount = jsonMap(config['member']);
     final adminAccount = jsonMap(config['admin']);
     final dutyAccount = jsonMap(config['duty']);
-    final runId = idOf(config['runId']);
-    expect(runId.isNotEmpty && site.isNotEmpty, true);
-    final pc = Dio(BaseOptions(baseUrl: BackendConfig.baseUrl));
-    final portal = Dio(BaseOptions(baseUrl: BackendConfig.baseUrl));
+    final configuredRunId = idOf(config['runId']);
+    expect(configuredRunId.isNotEmpty && site.isNotEmpty, true);
+    // Reusing an already-built QA APK must not match an earlier run's event.
+    final runId = '$configuredRunId-${DateTime.now().microsecondsSinceEpoch}';
+    BaseOptions options() => BaseOptions(
+      baseUrl: BackendConfig.baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 90),
+      sendTimeout: const Duration(seconds: 30),
+    );
+    final pc = Dio(options());
+    final portal = Dio(options());
     Object? unwrap(Object? value) {
       final map = jsonMap(value);
       return map.containsKey('code') && map.containsKey('data')
@@ -103,16 +113,18 @@ void main() {
     );
     var converted = false;
     GoRouter? router;
-    Future<void> settle() => t.pumpAndSettle(
-      const Duration(milliseconds: 150),
-      EnginePhase.sendSemanticsUpdate,
-      const Duration(seconds: 30),
-    );
+    // Real dashboards may continuously animate; wait for actual controls/data,
+    // not for the entire engine to stop scheduling frames.
+    Future<void> settle() async {
+      await t.pump(const Duration(milliseconds: 250));
+      await t.pump(const Duration(milliseconds: 250));
+    }
+
     Future<void> waitFor(
       Finder finder, {
       String reason = 'Expected real backend page',
     }) async {
-      final deadline = DateTime.now().add(const Duration(seconds: 30));
+      final deadline = DateTime.now().add(const Duration(seconds: 90));
       while (finder.evaluate().isEmpty && DateTime.now().isBefore(deadline)) {
         await t.pump(const Duration(milliseconds: 150));
       }
@@ -121,21 +133,52 @@ void main() {
 
     Future<void> click(Finder finder) async {
       await waitFor(finder);
-      await t.ensureVisible(finder.first);
+      final deadline = DateTime.now().add(const Duration(seconds: 90));
+      bool enabled() {
+        final widget = t.widget(finder.first);
+        if (widget is ButtonStyleButton) return widget.onPressed != null;
+        if (widget is IconButton) return widget.onPressed != null;
+        if (widget is DropdownButtonFormField<String>) {
+          return widget.onChanged != null;
+        }
+        return true;
+      }
+
+      while (!enabled() && DateTime.now().isBefore(deadline)) {
+        await t.pump(const Duration(milliseconds: 250));
+      }
+      expect(
+        enabled(),
+        true,
+        reason: 'The requested action must become enabled',
+      );
+      // Top-alignment can put long-form controls behind the fixed app bar.
+      await Scrollable.ensureVisible(t.element(finder.first), alignment: 0.5);
       await settle();
-      await t.tap(finder.first);
+      await waitFor(finder.hitTestable(), reason: 'Action must be reachable');
+      await t.tap(finder.hitTestable().first);
       await settle();
     }
 
     Future<void> enter(String key, String text) async {
       final finder = find.byKey(ValueKey(key));
       await waitFor(finder);
-      await t.ensureVisible(finder);
+      await Scrollable.ensureVisible(t.element(finder), alignment: 0.5);
+      await settle();
       await t.enterText(finder, text);
       await settle();
     }
 
     Future<void> shot(String name) async {
+      final loading = find.byWidgetPredicate(
+        (widget) => widget is CircularProgressIndicator && widget.value == null,
+      );
+      final deadline = DateTime.now().add(const Duration(seconds: 90));
+      while (loading.evaluate().isNotEmpty &&
+          DateTime.now().isBefore(deadline)) {
+        await t.pump(const Duration(milliseconds: 250));
+      }
+      expect(loading, findsNothing, reason: 'Screenshot must show loaded UI');
       if (!converted) {
         await binding.convertFlutterSurfaceToImage();
         converted = true;
@@ -143,6 +186,7 @@ void main() {
       await settle();
       await binding.takeScreenshot(name);
       shots.add(name);
+      debugPrint('QA_SCREEN $name');
     }
 
     Future<void> mount(WearSession session, String key) async {
@@ -294,9 +338,7 @@ void main() {
       expect(event['deviceId'] ?? '', isEmpty);
       checks.add('member SOS and observation persisted in shared snapshot');
       await shot('04-sos-observation');
-      final png = base64Decode(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=',
-      );
+      final png = validPngFixture();
       await member.api.post(
         '/api/v1/events/$eventId/report',
         data: FormData.fromMap({
@@ -355,6 +397,10 @@ void main() {
       await open('/events?eventId=$eventId');
       await click(find.byKey(const ValueKey('event-claim')));
       await click(find.byKey(const ValueKey('sos-join')));
+      expect(
+        jsonMap((await eventOf(eventId))['assistance'])['state'],
+        'active',
+      );
       await click(find.byKey(const ValueKey('sos-end')));
       await click(find.text('确认'));
       event = await eventOf(eventId);
@@ -366,7 +412,7 @@ void main() {
       );
       await shot('05-assistance-ended');
       await click(find.byKey(const ValueKey('verification-conclusion')));
-      await click(find.text('需现场处理').last);
+      await click(find.text('需现场处理').hitTestable());
       await enter('verification-situation', '$runId Android 核验完成');
       await enter('verification-measures', '隔离测试确认现场安全');
       await click(find.byKey(const ValueKey('verification-save')));
@@ -458,7 +504,7 @@ void main() {
         find.byType(TextField).first,
         idOf(fixture['deviceCode']),
       );
-      await t.testTextInput.receiveAction(TextInputAction.done);
+      await click(find.widgetWithIcon(IconButton, Icons.arrow_forward));
       await settle();
       await waitFor(fixtureRow());
       await click(

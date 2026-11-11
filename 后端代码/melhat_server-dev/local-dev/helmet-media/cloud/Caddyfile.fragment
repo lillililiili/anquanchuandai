@@ -10,7 +10,8 @@
         }
         reverse_proxy 10.255.1.1:18190
     }
-    @wear_business path /wear-api/api/guardian/v1/*
+    # Admin routes still require the gateway's explicit --pc-clients flag.
+    @wear_business path /wear-api/api/guardian/v1/* /wear-api/api/admin/v1/*
     handle @wear_business {
         uri strip_prefix /wear-api
         request_body {

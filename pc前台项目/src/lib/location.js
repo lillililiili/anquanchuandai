@@ -2,9 +2,10 @@
 // the GCJ-02 basemap; unknown coordinate systems must never be guessed.
 import { toMapCoordinates } from "../../../shared/map-coordinates.mjs";
 import { formatBeijingDateTime } from './date-time.js';
+import { serverNow } from '../../../shared/server-clock.mjs';
 export { coordinateSystem, toMapCoordinates, validLonLat, fromMapCoordinates } from "../../../shared/map-coordinates.mjs";
 
-export function mapLocation(location, { current = false, now = Date.now() } = {}) {
+export function mapLocation(location, { current = false, now = serverNow() } = {}) {
   const quality = String(location?.locationQuality || "").toLowerCase();
   if (!["valid", "ok", "good"].includes(quality)) return null;
   if (current) {

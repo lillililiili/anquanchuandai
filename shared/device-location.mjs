@@ -1,3 +1,5 @@
+import { serverNow } from './server-clock.mjs';
+
 function coordinate(value, limit) {
   if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '') return null;
   const number = Number(value);
@@ -5,7 +7,7 @@ function coordinate(value, limit) {
 }
 
 // Report receipt time is not a measurement timestamp or a precision guarantee.
-export function deviceLocation(device, now = Date.now()) {
+export function deviceLocation(device, now = serverNow()) {
   const lat = coordinate(device?.latitude, 90);
   const lon = coordinate(device?.longitude, 180);
   const valid = lat != null && lon != null && !(lat === 0 && lon === 0);

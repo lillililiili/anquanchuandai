@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -44,7 +45,7 @@ class RoleLifecycleTest {
 
     JSONObject send(String path, JSONObject body, int code) throws Exception {
         String response = http.perform(post(path).requestAttr("wearable.actor", actor).contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsBytes(body))).andExpect(status().is(code)).andReturn().getResponse().getContentAsString();
+                        .content(new ObjectMapper().writeValueAsBytes(body))).andExpect(status().is(code)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         return JSONObject.parseObject(response);
     }
 
@@ -103,19 +104,60 @@ class RoleLifecycleTest {
         assertTrue(send("/api/admin/v1/query", object("kind", "impacts", "input", input), 200).getJSONObject("data").getJSONArray("rows").isEmpty());
     }
 
-    @Test void roleDeletionProtectsBuiltinsChecksVersionAndRequiresSystemIdentityIncludingReplay() throws Exception {
+    @Test void roleDeletionChecksVersionAndRequiresSystemIdentityRegardlessOfOriginIncludingReplay() throws Exception {
         JSONObject role = createRole();
         JSONObject stale = command(role);stale.put("expectedVersion", 0);
         assertEquals("VERSION_CONFLICT", execute("roles.delete", stale, 409).getString("errorCode"));
         find(saved.get(), "roles", role.getString("id")).put("builtin", true);
-        assertEquals("BUILTIN_PROTECTED", execute("roles.delete", command(role), 403).getString("errorCode"));
-        find(saved.get(), "roles", role.getString("id")).put("builtin", false);
         actor = object("id", "ordinary-admin", "enabled", true, "roleIds", new JSONArray());rows(saved.get(), "accounts").add(actor);
         assertEquals("PERMISSION_DENIED", execute("roles.delete", command(role), 403).getString("errorCode"));
         actor = find(saved.get(), "accounts", "demo-system");JSONObject deletion = command(role);
         execute("roles.delete", deletion, 200);
         find(saved.get(), "accounts", "demo-system").put("enabled", false);
         execute("roles.delete", deletion, 401);
+    }
+
+    @Test void allRolesShareEditingStatusAuthorizationAndAccountReferenceRules() throws Exception {
+        for (boolean builtin : new boolean[]{true, false}) {
+            JSONObject role = createRole();
+            find(saved.get(), "roles", role.getString("id")).put("builtin", builtin);
+            JSONObject user = object("id", "role-user-" + builtin, "name", "角色用户", "siteId", "site-1", "enabled", true, "roleIds", JSONArray.of(role.getString("id")));
+            rows(saved.get(), "accounts").add(user);
+            JSONObject update = command(role), data = roleData();
+            data.put("name", "统一维护角色");data.put("operations", JSONArray.of("people:read", "access:read"));update.put("data", data);
+            assertEquals("PREVIEW_EXPIRED", execute("roles.update", update, 409).getString("errorCode"));
+            preview("roles.update", update);
+            role = execute("roles.update", update, 200).getJSONObject("data");
+            assertEquals(data.getString("name"), role.getString("name"));
+            assertTrue(queries.allows(saved.get(), user, "people:read", "site-1", null));
+            assertFalse(queries.allows(saved.get(), user, "assets:read", "site-1", null));
+            assertNotNull(find(new JSONObject(queries.query(user.getString("id"), "master", object("entity", "roles", "siteId", "site-1"))), "rows", role.getString("id")));
+            JSONObject disable = command(role);disable.put("enabled", false);preview("roles.status", disable);
+            role = execute("roles.status", disable, 200).getJSONObject("data");
+            assertFalse(queries.allows(saved.get(), user, "people:read", "site-1", null));
+            JSONObject enable = command(role);enable.put("enabled", true);preview("roles.status", enable);
+            role = execute("roles.status", enable, 200).getJSONObject("data");
+            assertTrue(queries.allows(saved.get(), user, "people:read", "site-1", null));
+            assertEquals("REFERENCED", execute("roles.delete", command(role), 409).getString("errorCode"));
+            rows(find(saved.get(), "accounts", user.getString("id")), "roleIds").clear();
+            assertTrue(execute("roles.delete", command(role), 200).getJSONObject("data").getBooleanValue("deleted"));
+        }
+    }
+
+    @Test void legacySystemRoleCanBeEditedAndReenabledWithoutLockingOutTheSystemAccount() throws Exception {
+        JSONObject role = object("id", "system", "name", "管理员角色", "builtin", true, "enabled", true, "version", 1,
+                "grants", JSONArray.of(object("operations", JSONArray.of("*"), "siteIds", JSONArray.of("site-1"))));
+        rows(saved.get(), "roles").add(role);
+        find(saved.get(), "accounts", "demo-system").put("roleIds", JSONArray.of("system"));
+        JSONObject update = command(role);update.put("data", roleData());preview("roles.update", update);
+        role = execute("roles.update", update, 200).getJSONObject("data");
+        assertFalse(role.getJSONArray("grants").getJSONObject(0).getJSONArray("operations").contains("*"));
+        JSONObject disable = command(role);disable.put("enabled", false);preview("roles.status", disable);
+        role = execute("roles.status", disable, 200).getJSONObject("data");
+        JSONObject enable = command(role);enable.put("enabled", true);preview("roles.status", enable);
+        role = execute("roles.status", enable, 200).getJSONObject("data");
+        assertTrue(role.getBooleanValue("enabled"));
+        assertEquals("REFERENCED", execute("roles.delete", command(role), 409).getString("errorCode"));
     }
 
     @Test void roleDatesUseServerTimePreserveCreationAndLeaveLegacyCreationUnknown() throws Exception {

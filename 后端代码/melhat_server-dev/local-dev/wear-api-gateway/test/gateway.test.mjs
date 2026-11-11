@@ -3,6 +3,27 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import {once} from 'node:events';
 import {allowed,createWearGateway} from '../gateway.mjs';
+test('owned call recovery query reaches backend with auth and preserves the exact filter',async t=>{
+  const seen=[];
+  const backend=http.createServer((req,res)=>{seen.push({url:req.url,token:req.headers['x-wearable-token']});res.writeHead(200,{'content-type':'application/json'});res.end('[]');});
+  backend.listen(0,'127.0.0.1');await once(backend,'listening');
+  const gateway=createWearGateway({testOnly:true,upstreamOrigin:`http://127.0.0.1:${backend.address().port}`});
+  gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
+  t.after(async()=>{await new Promise(r=>gateway.close(r));await new Promise(r=>backend.close(r));});
+  const origin=`http://127.0.0.1:${gateway.address().port}`;
+  const route='/api/guardian/v1/mobile/calls?owned=true&status=active';
+  assert.equal((await fetch(origin+route)).status,401);assert.equal(seen.length,0);
+  const headers={'X-Wearable-Token':'a'.repeat(43)};
+  const response=await fetch(origin+route,{headers});
+  assert.equal(response.status,200);assert.deepEqual(await response.json(),[]);
+  assert.deepEqual(seen,[{url:route,token:headers['X-Wearable-Token']}]);
+  assert.equal((await fetch(origin+'/api/guardian/v1/mobile/calls?owned=false',{headers})).status,200);
+  for(const path of ['/api/guardian/v1/mobile/calls?owned=all','/api/guardian/v1/mobile/calls?owned=true&owned=false','/api/guardian/v1/mobile/home?owned=true','/api/guardian/v1/mobile/calls/c1?owned=true']){
+    assert.equal((await fetch(origin+path,{headers})).status,400);
+  }
+  assert.equal((await fetch(origin+'/api/guardian/v1/mobile/calls?owned=true',{method:'POST',headers,body:'{}'})).status,400);
+  assert.equal(seen.length,2);
+});
 test('public API allows reviewed mobile routes only with exact methods',()=>{
   assert.equal(allowed('GET','/api/guardian/v1/mobile/home'),true);
   assert.equal(allowed('POST','/api/guardian/v1/mobile/calls/call-1/end'),true);

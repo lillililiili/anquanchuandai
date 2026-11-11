@@ -5,7 +5,7 @@ $tokens = $null
 $errors = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$tokens, [ref]$errors)
 if ($errors.Count) { throw 'Startup script has PowerShell syntax errors.' }
-foreach ($name in @('Same-Path', 'Quote-Argument', 'Test-NodeCommand', 'Test-ViteSource')) {
+foreach ($name in @('Same-Path', 'Quote-Argument', 'Test-NodeCommand', 'Test-ViteSource', 'Get-FudaQueryTunnel', 'Get-TunnelStatus')) {
     $function = $ast.Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }.GetNewClosure(), $true)
     if (-not $function) { throw ('Missing test function: ' + $name) }
     . ([scriptblock]::Create($function.Extent.Text))
@@ -52,4 +52,54 @@ $starts = @($commands | Where-Object { $_.GetCommandName() -eq 'Start-Process' }
 Assert ($starts.Count -eq 1 -and $starts[0].Extent.Text -match '-WindowStyle\s+Hidden') 'New node service processes are hidden'
 $text = [IO.File]::ReadAllText($scriptPath)
 Assert ($text -notmatch 'docker\s+compose|\bpm\s+clear\b|\badb\s+install\b') 'No container rebuild or application data reset is present'
+
+# Use only an isolated tree and a fake Status controller. No real startup,
+# process inspection, credential read, or network connection is performed.
+$fixture = Join-Path ([IO.Path]::GetTempPath()) ('wearable-start-test-' + [Guid]::NewGuid().ToString('N'))
+$queryRoot = Join-Path $fixture 'fuda-api-gateway'
+$queryLocal = Join-Path $queryRoot '.local'
+$queryCloud = Join-Path $queryRoot 'cloud'
+$production = Join-Path $fixture 'fuda-cloud/.private/production'
+$configuration = Join-Path $production 'fuda-api.yml'
+$queryLock = Join-Path $queryLocal 'fuda-query-tunnel-control.lock'
+$queryState = Join-Path $queryLocal 'fuda-query-tunnel-process.json'
+$controller = Join-Path $queryCloud 'tunnel.ps1'
+try {
+    $null = New-Item -ItemType Directory -Path $fixture
+    Assert ($null -eq (Get-FudaQueryTunnel $fixture)) 'A checkout without existing Fuda production configuration does not acquire a query tunnel'
+    $null = New-Item -ItemType Directory -Path $production -Force
+    $null = New-Item -ItemType Directory -Path $configuration
+    Assert ($null -eq (Get-FudaQueryTunnel $fixture)) 'A directory named fuda-api.yml does not enable the query tunnel'
+    Remove-Item -LiteralPath $configuration
+    [IO.File]::WriteAllText($configuration, 'offline fixture; intentionally not valid credentials')
+    $queryService = Get-FudaQueryTunnel $fixture
+    Assert ($queryService.prefix -ceq 'fuda-query' -and $queryService.root -eq $queryRoot) 'Existing Fuda configuration selects the dedicated controller and state prefix'
+    $CheckOnly = $true
+    Assert ($null -eq (Get-TunnelStatus $queryService)) 'CheckOnly accepts a query tunnel that has never been started'
+    Assert (-not (Test-Path -LiteralPath $queryLocal)) 'First CheckOnly does not create the query state directory or lock'
+    $null = New-Item -ItemType Directory -Path $queryLocal
+    [IO.File]::WriteAllText($queryState, '{}')
+    $threw = $false
+    try { $null = Get-TunnelStatus $queryService } catch { $threw = $true }
+    Assert $threw 'A state file without its query control lock is reported rather than rewritten'
+    Assert (-not (Test-Path -LiteralPath $queryLock)) 'CheckOnly does not create a missing lock beside existing state'
+    $null = New-Item -ItemType Directory -Path $queryCloud
+    [IO.File]::WriteAllText($queryLock, '')
+    [IO.File]::WriteAllText($controller, @'
+param([string]$Action)
+if ($Action -ne 'Status') { throw 'Offline fixture permits Status only.' }
+[pscustomobject]@{ status='ssh-running'; workerAlive=$true; sshAlive=$true }
+'@)
+    $status = Get-TunnelStatus $queryService
+    Assert ($status.workerAlive -and $status.sshAlive -and $status.status -ceq 'ssh-running') 'Existing query status is read using the same Status-only path'
+    Assert ([IO.File]::ReadAllText($queryState) -ceq '{}') 'Status does not rewrite the isolated recorded state'
+} finally {
+    # Delete only explicitly created fixture entries; never recurse or enumerate
+    # production directories during cleanup.
+    foreach ($path in @($controller, $queryLock, $queryState, $configuration,
+        $queryCloud, $queryLocal, $queryRoot, $production,
+        (Join-Path $fixture 'fuda-cloud/.private'), (Join-Path $fixture 'fuda-cloud'), $fixture)) {
+        if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
+    }
+}
 Write-Output ("PASS: $passed offline checks; startup was not executed.")

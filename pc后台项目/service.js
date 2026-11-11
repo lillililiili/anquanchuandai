@@ -133,12 +133,12 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
     const previous = state
     state = draft
     try { persist() }
-    catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') }
+    catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '服务连接失败，修改未保存') }
   }
   async function rememberPublished(draft, type) {
     if (portalEnabled() && /^(assignments|devices|maintenance|people)\./.test(type)) {
       try { await publishPortal(draft) }
-      catch (error) { throw fail(error.code >= 400 && error.code < 500 ? 400 : 503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') }
+      catch (error) { throw fail(error.code >= 400 && error.code < 500 ? 400 : 503, 'PORTAL_REJECTED', error.message || '服务连接失败，修改未保存') }
     }
     remember(draft)
   }
@@ -267,7 +267,7 @@ export function createAdminService({ storage, delay = 200, seed = createSeed, co
       scenario = { ...next, delayNext: next.delayNext === true }; contextGeneration++; emit('scenario')
     },
     restoreScenario() { scenario = { target: 'devices', mode: 'normal', delayNext: false }; contextGeneration++; emit('scenario') },
-    reset() { clearAdminState(); const previous = state; state = seed(); try { persist() } catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '后端未连接，修改未保存') } scenario = { target: 'devices', mode: 'normal', delayNext: false }; epoch++; contextGeneration++; clearSession(); emit('reset') },
+    reset() { clearAdminState(); const previous = state; state = seed(); try { persist() } catch (error) { state = previous; throw fail(503, 'PORTAL_REJECTED', error.message || '服务连接失败，修改未保存') } scenario = { target: 'devices', mode: 'normal', delayNext: false }; epoch++; contextGeneration++; clearSession(); emit('reset') },
     hydrate: async () => { if (!portalEnabled() || !await readTelemetry(state)) return false; try { persist() } catch { /* 电量已在内存，台账保存失败不阻断页面 */ } emit('revision'); return true },
     exportState: () => copy(state),
     replaceState(next) { if (!next) return; state = next; emit('revision') },

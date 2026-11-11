@@ -15,15 +15,15 @@ const query = async (entity, extra = {}) => (await api.query('master', { entity,
 const command = async (entity, action, data, extra = {}) => {
   const choices = (await api.query('options', { siteId: extra.siteId || siteId })).data
   const relatedVersions = Object.fromEntries(Object.values(choices).flat().map(r => [r.id, r.version]))
-  const type = `${entity}.${action}`, input = { siteId, operationId: `test-${++serial}`, relatedVersions, data, ...extra }
+  const type = `${entity}.${action}`, input = { siteId, operationId: `test-${++serial}`, data, ...extra, relatedVersions: { ...relatedVersions, ...extra?.relatedVersions } }
   if (['accounts.update', 'roles.update', 'roles.status'].includes(type)) input.previewId = (await api.query('authorizationPreview', { siteId: input.siteId, type, command: input })).data.previewId
   return (await api.execute(type, input)).data
 }
 const create = (entity, data, extra) => command(entity, 'create', data, extra)
-const update = (entity, row, data, extra) => command(entity, 'update', data, { id: row.id, expectedVersion: row.version, ...extra })
+const update = (entity, row, data, extra) => command(entity, 'update', entity === 'accounts' ? { bindings: row.roleIds.map(roleId => ({ roleId })), ...data } : data, { id: row.id, expectedVersion: row.version, ...extra })
 const status = (entity, row, enabled, extra) => command(entity, 'status', null, { id: row.id, expectedVersion: row.version, enabled, ...extra })
 const person = (code = 'TEST-P') => create('people', { name: '预置同名人员', code })
-const account = () => create('accounts', { name: '预置自定义账号', loginName: `test-${serial}` })
+const account = () => create('accounts', { name: '预置自定义账号', loginName: `test-${serial}`, bindings: [{ roleId: 'viewer' }] })
 const scope = (roleId, sid = siteId, areaIds = '*') => ({ roleId, siteIds: [sid], areaIds })
 async function grant(row, roleId = 'viewer', sid = siteId, areaIds = '*') {
   return update('accounts', row, { ...row, bindings: [scope(roleId, sid, areaIds)] }, { relatedVersions: { [roleId]: 1 }, siteId: row.siteId })
@@ -79,21 +79,13 @@ describe('A1 master data', () => {
   it('protects persons with active assignments, including conflict links', async () => {
     for (const id of ['person-1-0', 'person-1-20']) await expect(command('people', 'status', null, { id, siteId: 'site-1', expectedVersion: 1, enabled: false })).rejects.toMatchObject({ code: 409 })
   })
-  it('future duty blocks stopping members; cancelling releases dependency', async () => {
-    const p = await person()
-    const shift = await create('dutyShifts', { name: '预置未来班', startsAt: '2027-01-01T00:00:00Z', endsAt: '2027-01-01T08:00:00Z', personIds: [p.id] })
-    await expect(status('people', p, false)).rejects.toMatchObject({ code: 409 })
-    await status('dutyShifts', shift, false); expect((await status('people', p, false)).enabled).toBe(false)
-  })
-  it('rejects duplicate members and invalid duty time', async () => {
-    const p = await person(), data = { name: '预置', startsAt: '2027-01-01T00:00:00Z', endsAt: '2027-01-01T08:00:00Z', personIds: [p.id, p.id] }
-    await expect(create('dutyShifts', data)).rejects.toMatchObject({ code: 400 })
-    await expect(create('dutyShifts', { ...data, personIds: [p.id], endsAt: data.startsAt })).rejects.toMatchObject({ code: 400 })
-  })
-  it('started shift cannot be edited or cancelled', async () => {
-    const row = (await query('dutyShifts', { siteId: 'site-1' })).rows[0]
-    await expect(update('dutyShifts', row, row, { siteId: 'site-1' })).rejects.toMatchObject({ code: 409 })
-    await expect(status('dutyShifts', row, false, { siteId: 'site-1' })).rejects.toMatchObject({ code: 409 })
+  it('rejects retired roster reads and commands without changing stored records', async () => {
+    const before = api.exportState()
+    await expect(query('dutyShifts')).rejects.toMatchObject({ errorCode: 'INVALID_ENTITY' })
+    for (const action of ['create', 'update', 'status', 'delete']) {
+      await expect(command('dutyShifts', action, { name: '旧班次' }, { id: 'shift-1', expectedVersion: 1 })).rejects.toMatchObject({ errorCode: 'COMMAND_NOT_AVAILABLE' })
+    }
+    expect(api.exportState()).toEqual(before)
   })
   it('historical audit snapshots do not change on rename', async () => {
     const row = await person(); await update('people', row, { ...row, name: '新名字' })
@@ -121,9 +113,12 @@ describe('A1 master data', () => {
   })
 })
 describe('A1 accounts and authorization', () => {
-  it('new account starts without authorization and is selectable', async () => {
-    const a = await account(); expect(api.identities().some(x => x.id === a.id)).toBe(true)
-    api.login(a.id, 'Admin@2026'); expect((await api.query('context')).data.sites).toEqual([])
+  it('requires a role on create and rejects omission or an empty list without changing state', async () => {
+    const before = api.exportState()
+    for (const extra of [{}, { bindings: [] }]) {
+      await expect(create('accounts', { name: '缺少角色', loginName: 'missing-role', ...extra })).rejects.toMatchObject({ fields: { bindings: '请选择角色，账号必须分配一个角色' } })
+    }
+    expect(api.exportState()).toEqual(before)
   })
   it('creates an account with one role and lets multiple users share that role', async () => {
     const bindings = [{ roleId: 'people-editor' }]
@@ -137,7 +132,7 @@ describe('A1 accounts and authorization', () => {
       expect((await api.query('context')).data.sites.map(site => site.id)).toEqual(['site-1', 'site-2', siteId])
     }
   })
-  it('replaces a users role instead of accumulating roles and allows clearing it', async () => {
+  it('replaces a users role instead of accumulating roles and refuses clearing it', async () => {
     const first = await create('accounts', { name: '可改绑用户', loginName: 'replace-role', bindings: [scope('people-editor')] })
     const replacement = await grant(first, 'viewer')
     expect(replacement.roleIds).toEqual(['viewer'])
@@ -145,11 +140,13 @@ describe('A1 accounts and authorization', () => {
     api.login(replacement.id, 'Admin@2026')
     expect(api.can('people:write', siteId)).toBe(false)
     api.login('demo-system', 'Admin@2026')
-    const cleared = await update('accounts', replacement, { ...replacement, bindings: [] })
-    expect(cleared.roleIds).toEqual([])
-    expect(cleared).not.toHaveProperty('roleScopes')
-    api.login(cleared.id, 'Admin@2026')
-    expect((await api.query('context')).data.sites).toEqual([])
+    const before = api.exportState()
+    for (const extra of [{}, { bindings: [] }]) {
+      const input = { siteId, id: replacement.id, expectedVersion: replacement.version, operationId: 'clear-role', data: { name: replacement.name, loginName: replacement.loginName, ...extra } }
+      await expect(api.query('authorizationPreview', { siteId, type: 'accounts.update', command: input })).rejects.toMatchObject({ fields: { bindings: expect.any(String) } })
+      await expect(api.execute('accounts.update', input)).rejects.toMatchObject({ fields: { bindings: expect.any(String) } })
+    }
+    expect(api.exportState()).toEqual(before)
   })
   it('rejects multiple roles on create and update without changing existing authorization', async () => {
     const bindings = [scope('viewer'), scope('people-editor')]
@@ -195,7 +192,7 @@ describe('A1 accounts and authorization', () => {
   it('deletes a linked account while retaining the person, equipment, roles and audit snapshots', async () => {
     const currentSite = 'site-1'
     const p = (await query('people', { siteId: currentSite })).rows[0]
-    let a = await create('accounts', { name: '待删除用户', loginName: 'remove-linked' }, { siteId: currentSite })
+    let a = await create('accounts', { name: '待删除用户', loginName: 'remove-linked', bindings: [scope('viewer')] }, { siteId: currentSite })
     a = await update('accounts', a, { ...a, personId: p.id, bindings: [scope('viewer', currentSite)] }, { siteId: currentSite })
     const before = (await api.query('person', { siteId: currentSite, id: p.id })).data
     const roles = (await query('roles', { siteId: currentSite })).rows
@@ -252,9 +249,10 @@ describe('A1 accounts and authorization', () => {
     await expect(api.execute('accounts.delete', { siteId, id: a.id, expectedVersion: a.version, operationId: 'readonly' })).rejects.toMatchObject({ code: 404 })
   })
   it('rechecks delegated write permission before replaying a deleted account', async () => {
-    let manager = await create('accounts', { name: '临时管理用户', loginName: 'delete-manager' }, { siteId: 'site-1' })
+    resetService(() => { const state = createSeed(); state.roles.find(role => role.id === 'viewer').grants[0].siteIds = ['site-1']; return state })
+    let manager = await create('accounts', { name: '临时管理用户', loginName: 'delete-manager', bindings: [scope('viewer')] }, { siteId: 'site-1' })
     manager = await grant(manager, 'site', 'site-1')
-    const target = await create('accounts', { name: '委派删除目标', loginName: 'delete-target' }, { siteId: 'site-1' })
+    const target = await create('accounts', { name: '委派删除目标', loginName: 'delete-target', bindings: [scope('viewer')] }, { siteId: 'site-1' })
     api.login(manager.id, 'Admin@2026')
     const input = { siteId: 'site-1', id: target.id, expectedVersion: target.version, operationId: 'delegated-delete' }
     await api.execute('accounts.delete', input)
@@ -269,20 +267,20 @@ describe('A1 accounts and authorization', () => {
     const unchanged = (await query('people')).rows[0]
     expect(unchanged.accountId).toBe(null); expect(unchanged.version).toBe(p.version)
   })
-  it('built-in system and roles cannot be edited', async () => {
+  it('protects the system account while allowing role maintenance', async () => {
     await expect(command('accounts', 'status', null, { siteId: 'site-1', id: 'demo-system', expectedVersion: 1, enabled: false })).rejects.toMatchObject({ code: 403 })
-    await expect(command('roles', 'status', null, { id: 'site', expectedVersion: 1, enabled: false })).rejects.toMatchObject({ code: 403 })
+    expect((await command('roles', 'status', null, { id: 'site', expectedVersion: 1, enabled: false })).enabled).toBe(false)
   })
   it('site administrator delegates only predefined roles within its full scope', async () => {
     resetService(() => { const state = createSeed(); state.roles.find(role => role.id === 'viewer').grants[0].siteIds = ['site-1']; return state })
     api.login('demo-site', 'Admin@2026')
-    const a = await create('accounts', { name: '预置站员', loginName: 'delegated' }, { siteId: 'site-1' })
+    const a = await create('accounts', { name: '预置站员', loginName: 'delegated', bindings: [scope('viewer')] }, { siteId: 'site-1' })
     await grant(a, 'viewer', 'site-1')
     await expect(grant({ ...a, version: 2 }, 'people-editor', 'site-1')).rejects.toMatchObject({ code: 400 })
     await expect(grant({ ...a, version: 2 }, 'site', 'site-1')).rejects.toMatchObject({ code: 400 })
   })
   it('site administrator cannot remove roles to take over stronger account', async () => {
-    let a = await create('accounts', { name: '高权限本地', loginName: 'higher' }, { siteId: 'site-1' })
+    let a = await create('accounts', { name: '高权限本地', loginName: 'higher', bindings: [scope('viewer')] }, { siteId: 'site-1' })
     a = await grant(a, 'site', 'site-1'); api.login('demo-site', 'Admin@2026')
     await expect(update('accounts', a, { ...a, bindings: [] }, { siteId: 'site-1' })).rejects.toMatchObject({ code: 404 })
   })

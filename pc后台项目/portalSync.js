@@ -1,4 +1,5 @@
 import { normalizePersonDutyStatus } from '../shared/person-duty.mjs'
+import { serverNow, syncServerTime } from '../shared/server-clock.mjs'
 
 const SITE = { 'site-1': 'S1', 'site-2': 'S2' }
 const TYPE = { HELMET: 'H', BELT: 'B', WATCH: 'W' }
@@ -37,7 +38,7 @@ export function applyTelemetry(adminState, snapshot) {
     if (['PLATFORM', 'DIRECT_HELMET', 'DIRECT_BELT'].includes(remote.source)) {
       const sourceTime = remote.sourceTime || remote.updated || null
       const observed = Date.parse(sourceTime)
-      const age = Date.now() - observed
+      const age = serverNow() - observed
       const current = String(remote.freshness).toUpperCase() === 'CURRENT' && Number.isFinite(observed) && age >= 0 && age <= 300000
       device.communication = remote.online === false ? 'OFFLINE' : !current || remote.online !== true ? 'UNKNOWN' : 'ONLINE'
       const battery = remote.battery == null || remote.battery === '' ? NaN : Number(remote.battery)
@@ -64,7 +65,7 @@ export async function readTelemetry(adminState, fetchImpl = fetch) {
 
 export async function publishPortal(adminState, fetchImpl = fetch) {
   const snapshot = await readSnapshot(fetchImpl)
-  if (!snapshot) throw Object.assign(new Error('后端未连接，修改未保存'), { code: 503 })
+  if (!snapshot) throw Object.assign(new Error('服务连接失败，修改未保存'), { code: 503 })
   projectPortal(adminState, snapshot)
   const response = await fetchImpl(SNAPSHOT, {
     method: 'PUT',
@@ -80,8 +81,10 @@ export async function publishPortal(adminState, fetchImpl = fetch) {
 
 async function readSnapshot(fetchImpl) {
   try {
+    const startedAt = performance.now()
     const response = await fetchImpl(SNAPSHOT)
     if (!response.ok) return null
+    if (!response.redirected) syncServerTime(response.headers?.get?.('Date'), startedAt)
     const body = await response.json()
     if (!body?.state || !/[\u4e00-\u9fff]/.test(body.state.stations?.[0]?.name || '')) return null
     return body.state

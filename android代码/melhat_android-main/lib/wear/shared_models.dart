@@ -1,7 +1,9 @@
 import 'data.dart';
+import 'belt_alarm_names.dart';
 import 'demo_visibility.dart';
 import 'device_features.dart';
 import 'person_equipment_context.dart';
+import 'server_clock.dart';
 import 'work_business.dart';
 
 /// Only a presentation projection. Identifiers and versions always come from Spring.
@@ -72,7 +74,9 @@ class SharedModels {
     ].contains(d['source']);
     final freshness = idOf(d['freshness']).toUpperCase();
     final observed = DateTime.tryParse(idOf(d['sourceTime'] ?? d['updated']));
-    final age = observed == null ? null : DateTime.now().difference(observed);
+    final age = observed == null
+        ? null
+        : serverClock.now().difference(observed);
     final current =
         realTelemetry &&
         freshness == 'CURRENT' &&
@@ -341,8 +345,10 @@ class SharedModels {
       e['assistance'] ?? jsonMap(state['assistance'])[idOf(e['id'])],
     );
     final snapshot = jsonMap(e['snapshot']);
+    final alarmTitle = beltAlarmTitle(e);
     return {
       ...e,
+      'title': alarmTitle,
       'type': eventTypes[e['type']] ?? e['type'],
       'status': statuses[e['status']] ?? e['status'],
       'severity': e['type'] == '人员求助' ? 'emergency' : 'abnormal',
@@ -368,8 +374,8 @@ class SharedModels {
           ? ''
           : 'not_synced',
       'alarmCode': eventTypes[e['type']] ?? e['type'],
-      'alarmName': e['title'],
-      'alarmDescription': e['description'] ?? e['title'],
+      'alarmName': alarmTitle,
+      'alarmDescription': e['description'] ?? alarmTitle,
       'location': e['locationDescription'],
       'locationQuality': e['locationQuality'] ?? 'unknown',
       'coordinateSystem': e['coordinateSystem'] ?? 'UNKNOWN',

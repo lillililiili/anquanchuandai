@@ -1,3 +1,5 @@
+import 'server_clock.dart';
+
 /// Positions and timestamps describe received reports, not measurement accuracy.
 ({String position, String? reportedAt, String status}) deviceLocation(
   Map<String, dynamic> device, {
@@ -19,7 +21,7 @@
   final reported = DateTime.tryParse('${device['locationReportedAt'] ?? ''}');
   final age = reported == null
       ? null
-      : (now ?? DateTime.now()).difference(reported);
+      : (now ?? serverClock.now()).difference(reported);
   final freshness = '${device['locationFreshness'] ?? ''}'.toUpperCase();
   final String status;
   if (device['online'] == false || device['online'] == 0) {

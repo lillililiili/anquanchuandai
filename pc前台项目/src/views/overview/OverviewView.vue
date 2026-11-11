@@ -40,7 +40,7 @@ const cards = computed(() => {
       color: "cyan",
       detail: `台账关联 ${stats.assigned} 人　未关联 ${stats.people.length - stats.assigned} 人`,
     },
-    { icon: "wifi-line", label: "真实领用装备在线", value: stats.online + " / " + stats.devices.length, unit: "", color: "cyan" },
+    { icon: "wifi-line", label: "领用装备在线", value: stats.online + " / " + stats.devices.length, unit: "", color: "cyan" },
     { icon: "alarm-warning-line", label: "待核验事件", value: stats.unresolved, unit: "起", color: "yellow" },
   ].filter(card => workEnabled.value || card.label !== "台账作业");
 });
@@ -63,7 +63,7 @@ function eventIcon(item) {
   <div class="overview-layout">
     <div class="overview-map"><PlantMap popup /></div>
     <div class="stack">
-      <AppPanel title="台账待核验事件">
+      <AppPanel title="待核验事件">
         <template #extra><a class="text-link" href="#/alarms">查看全部 <UiIcon name="chevron-right" /></a></template>
         <AppTable :reset-key="session.station" :rows="openEvents" v-slot="{ rows: pageRows }" :columns="['时间', '事件', '人员 / 装备', '状态']" table-class="compact" :empty="!openEvents.length">
           <tr v-for="item in pageRows" :key="item.id" @click="go('event/' + item.id)">
@@ -74,7 +74,7 @@ function eventIcon(item) {
           </tr>
         </AppTable>
       </AppPanel>
-      <AppPanel :title="db.demoMode ? '领用装备概况（演示）' : '真实领用装备概况'">
+      <AppPanel :title="db.demoMode ? '领用装备概况（演示）' : '领用装备概况'">
         <template #extra>总计 {{ summary.devices.length }}　|　在线 {{ summary.online }}</template>
         <div v-for="[type, count] in equipment" :key="type" class="progress-row">
           <img :src="'/assets/' + { H: 'helmet', B: 'harness', W: 'watch' }[type] + '.png?v=transparent-20260921'" :alt="typeNames[type]" />
@@ -82,7 +82,6 @@ function eventIcon(item) {
           <div class="bar"><span :style="{ width: (count.total ? (count.online / count.total) * 100 : 0) + '%' }"></span></div>
           <b>{{ count.online }} / {{ count.total }}</b>
         </div>
-        <p class="note" style="text-align: right">仅统计真实来源且已领用的设备；通信在线不代表佩戴合规</p>
         <p v-if="summary.simulatedWatches.length" class="note" style="text-align: right">模拟手表 {{ summary.simulatedWatches.length }} 块 · 非实时测量，单独展示</p>
       </AppPanel>
     </div>

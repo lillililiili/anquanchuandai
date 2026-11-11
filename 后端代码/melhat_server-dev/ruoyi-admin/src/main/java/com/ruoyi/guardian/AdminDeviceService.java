@@ -32,8 +32,8 @@ public class AdminDeviceService {
     }
 
     private JSONObject executeLocked(String accountId, String type, JSONObject input) {
-        if (!Arrays.asList("devices.create", "devices.update", "devices.configure").contains(type)) {
-            throw AdminQueryService.fail(400, "COMMAND_NOT_AVAILABLE", "本阶段仅开放设备建档、资料编辑和型号配置");
+        if (!Arrays.asList("devices.create", "devices.update", "devices.configure", "devices.features").contains(type)) {
+            throw AdminQueryService.fail(400, "COMMAND_NOT_AVAILABLE", "本阶段仅开放设备建档、资料编辑、型号与功能配置");
         }
         JSONObject state = ledger.read();
         if (state == null) throw AdminQueryService.fail(503, "SOURCE_FAILURE", "后台台账尚未保存");
@@ -81,8 +81,13 @@ public class AdminDeviceService {
                 throw AdminQueryService.fail(409, "VERSION_CONFLICT", "对象已变化，请重新读取");
             }
         }
-        JSONObject output = apply(state, action, row, input);
-        if ("HELMET".equals(output.getString("type"))) {
+        JSONObject beforeFeatures = row == null || row.getJSONObject("featureConfiguration") == null ? new JSONObject() : WearableModel.copy(row.getJSONObject("featureConfiguration"));
+        JSONObject output;
+        if ("features".equals(action)) {
+            output = DeviceFeatureConfiguration.update(row, fields, actor);
+            row.clear(); row.putAll(output);
+        } else output = apply(state, action, row, input);
+        if (!"features".equals(action) && "HELMET".equals(output.getString("type"))) {
             if ("DIRECT_HELMET".equals(output.getString("source"))) {
                 if ("create".equals(action)) hats.ensureDirectUnassigned(output.getString("deviceNumber"));
             }
@@ -105,6 +110,11 @@ public class AdminDeviceService {
         line.put("objectId", output.getString("id"));
         line.put("operationId", operationId);
         line.put("result", "SUCCESS");
+        if ("features".equals(action)) {
+            line.put("before", beforeFeatures);
+            line.put("after", WearableModel.copy(output.getJSONObject("featureConfiguration")));
+            line.put("summary", "更新设备功能配置");
+        }
         audit.add(line);
         JSONObject stored = new JSONObject();
         stored.put("fingerprint", fingerprint);

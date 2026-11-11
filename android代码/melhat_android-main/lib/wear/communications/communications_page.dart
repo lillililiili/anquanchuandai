@@ -1322,23 +1322,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                 ),
               ),
             ),
-          if (controller.isSip &&
-              !call.isTerminal &&
-              !controller.isRecoveredSession)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                '语音服务：${controller.sipRegistered ? '已注册' : '尚未注册'}\n'
-                '本端信令：${controller.rtcPhase == WearRtcPhase.localJoined ? '已确认' : '尚未确认'}\n'
-                '远端音频：${controller.remotePresent ? '已收到媒体流' : '等待媒体流'}\n'
-                '设备会话：${call.serverConnected && call.status == WearCallStatus.connected
-                    ? '服务端确认连接'
-                    : call.status == WearCallStatus.answered
-                    ? '设备已应答，等待双方接通'
-                    : '等待服务端确认'}',
-                style: const TextStyle(color: WearColors.muted, height: 1.7),
-              ),
-            ),
           if (call.video &&
               !controller.isRecoveredSession &&
               controller.rtc is ProtocolWearRtcEngine)

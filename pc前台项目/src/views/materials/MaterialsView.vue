@@ -15,7 +15,8 @@ import PageHeading from "@/components/layout/PageHeading.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
 import { db, guardianReady } from "@/mock/runtime";
 import { authFetch } from '@/lib/auth';
-import { normalizeMedia, mediaKindLabel, mediaSourceLabel, mediaTime, mediaPerson } from '@/lib/media-presentation';
+import { normalizeMedia, mediaKindLabel, mediaSourceLabel, mediaTime, mediaPerson, mediaCaptureTime } from '@/lib/media-presentation';
+import { mediaPreviewKey } from '@/lib/media-preview-source';
 import { isRealDevice } from '@/lib/device-telemetry';
 import { filtersOf, session } from "@/stores/session";
 import { openModal, closeModal, modalView, modalProps } from "@/stores/modal";
@@ -24,7 +25,6 @@ import { materials, people, revision, works } from "@/lib/queries";
 import { downloadMedia, durationText } from "./media";
 import MediaPreview from "./MediaPreview.vue";
 import MediaPreviewFooter from "./MediaPreviewFooter.vue";
-import DeviceRecordings from './DeviceRecordings.vue';
 import { mergeDeviceMedia } from '@/lib/device-media-state';
 
 const workEnabled = computed(() => { revision(); return workBusinessEnabled(db); });
@@ -33,9 +33,6 @@ const tabs = [
   { id: "photo", label: "照片" },
   { id: "video", label: "录像" },
 ];
-const recordingPersonId = ref('');
-const recordingPeople = computed(() => { revision(); return people().filter(person => db.currentDevices(person.id).some(device => device.type === 'H' && device.source === 'DIRECT_HELMET' && device.active !== false && device.simulated !== true && device.demo !== true)); });
-const recordingPerson = computed(() => recordingPeople.value.find(person => person.id === recordingPersonId.value) || recordingPeople.value[0]);
 
 const draft = reactive({
   deviceId: "",
@@ -56,6 +53,7 @@ function readDraft() {
 
 readDraft();
 const deviceMedia=ref([]),mediaError=ref(''),mediaLoading=ref(false);
+const mediaDurations = ref(new Map());
 let mediaRequest=0,mediaController;
 const deviceVersions = new Map();
 const deniedDevices=ref(new Set());
@@ -79,8 +77,7 @@ async function refreshDeviceMedia(background=false){
   await guardianReady;
   if(operation!==mediaRequest)return;
   const station=session.station;
-  const observedDevice=recordingPerson.value && db.currentDevices(recordingPerson.value.id).find(item=>item.type==='H'&&isRealDevice(item));
-  const devices=db.state.devices.filter(item=>item.type==='H'&&isRealDevice(item)&&item.station===station&&(!background||item.id!==observedDevice?.id));
+  const devices=db.state.devices.filter(item=>item.type==='H'&&isRealDevice(item)&&item.station===station);
   const failures=[];
   let index=0;
   await Promise.all(Array.from({length:Math.min(3,devices.length)},async()=>{
@@ -90,6 +87,7 @@ async function refreshDeviceMedia(background=false){
       try{
         const response=await authFetch(`/api/guardian/v1/helmet/media?deviceId=${encodeURIComponent(device.id)}`,{signal:mediaController.signal});
         const body=await response.json();if(!response.ok)throw Object.assign(Error(body.message||'设备资料读取失败'),{status:response.status});
+        if(body.itemsAvailable===false)throw Error('资料暂时无法刷新，正在自动重试');
         if(operation===mediaRequest && station===session.station && version===(deviceVersions.get(device.id)||0))receiveDeviceMedia({deviceId:device.id,items:body.items||[]});
       }catch(reason){if(reason.name!=='AbortError'){failures.push(reason.message);if(operation===mediaRequest&&[401,403].includes(reason.status))receiveDeviceMedia({deviceId:device.id,items:[],accessDenied:true});}}
       if(operation!==mediaRequest)return;
@@ -97,9 +95,9 @@ async function refreshDeviceMedia(background=false){
   }));
   if(operation===mediaRequest){mediaInFlight=false;mediaLoading.value=false;if(failures.length)mediaError.value=`${failures.length} 台设备的资料读取失败：${failures[0]}`;}
 }
-watch(()=>{revision();const operator=db.state.operator;return JSON.stringify([session.station,operator?.id,operator?.roleIds,operator?.sites,operator?.permissionsBySite,db.state.devices.filter(item=>item.type==='H'&&isRealDevice(item)&&item.station===session.station).map(item=>item.id).sort()]);},()=>{closeMediaPreview();deviceMedia.value=[];deniedDevices.value=new Set();deviceVersions.clear();void refreshDeviceMedia();},{immediate:true,flush:'sync'});
+watch(()=>{revision();const operator=db.state.operator;return JSON.stringify([session.station,operator?.id,operator?.roleIds,operator?.sites,operator?.permissionsBySite,db.state.devices.filter(item=>item.type==='H'&&isRealDevice(item)&&item.station===session.station).map(item=>item.id).sort()]);},()=>{closeMediaPreview();deviceMedia.value=[];mediaDurations.value.clear();deniedDevices.value=new Set();deviceVersions.clear();void refreshDeviceMedia();},{immediate:true,flush:'sync'});
 const mediaTimer=setInterval(()=>void refreshDeviceMedia(true),15000);
-onUnmounted(()=>{mediaRequest++;mediaController?.abort();clearInterval(mediaTimer);closeMediaPreview();deviceMedia.value=[];});
+onUnmounted(()=>{mediaRequest++;mediaController?.abort();clearInterval(mediaTimer);closeMediaPreview();deviceMedia.value=[];mediaDurations.value.clear();});
 
 const applied = computed(() => {
   revision();
@@ -129,7 +127,10 @@ const mediaList = computed(() => {
   // snapshot copy only for devices currently queried. Historical files for
   // transferred/retired devices retain the server snapshot's historical scope.
   const snapshotMedia=materials().filter(item=>item.source!=='DIRECT_HELMET'||!queriedDevices.has(item.deviceId));
-  return [...new Map([...snapshotMedia,...deviceMedia.value].map(item=>[item.id,normalizeMedia(item)])).values()].filter(
+  return [...new Map([...snapshotMedia,...deviceMedia.value].map(item => {
+    const media = normalizeMedia(item), duration = mediaDurations.value.get(mediaPreviewKey(media));
+    return [item.id, duration == null ? media : { ...media, duration }];
+  })).values()].filter(
     (item) =>
       !deniedDevices.value.has(item.deviceId) &&
       (session.mediaTab === "all" || item.kind === session.mediaTab) &&
@@ -140,6 +141,11 @@ const mediaList = computed(() => {
       (!query.date || item.date === query.date),
   );
 });
+
+function receiveMediaMetadata({ key, duration }) {
+  if (!Number.isFinite(duration) || duration <= 0 || !mediaList.value.some(item => item.kind === 'video' && mediaPreviewKey(item) === key)) return;
+  mediaDurations.value.set(key, duration);
+}
 
 const selectedMedia = computed(() => {
   revision();
@@ -244,7 +250,7 @@ watch(() => { revision(); return db.state.businessConfig?.workBusinessEnabled; }
             @keydown.space.prevent="selectMedia(item.id)"
           >
             <div class="preview">
-              <MediaImage :media="item" />
+              <MediaImage :media="item" @metadata="receiveMediaMetadata" />
               <span class="video-label">非实时</span>
               <template v-if="item.kind === 'video'">
                 <span class="play-overlay"><AppIcon name="play-fill" /></span>
@@ -263,13 +269,9 @@ watch(() => { revision(); return db.state.businessConfig?.workBusinessEnabled; }
       </div>
     </div>
     <div class="materials-sidebar">
-      <div v-if="recordingPeople.length" class="materials-device-recordings">
-        <AppField label="当前领用人员"><AppSelect :model-value="recordingPerson?.id || ''" :options="recordingPeople.map(person => [person.id, person.name])" @update:model-value="recordingPersonId = $event" /></AppField>
-        <DeviceRecordings v-if="recordingPerson" :key="session.station + ':' + recordingPerson.id" :person-id="recordingPerson.id" @media="receiveDeviceMedia" @refresh="refreshDeviceMedia()" />
-      </div>
       <AppPanel title="资料详情" extra-class="media-detail">
         <template v-if="selectedMedia">
-          <MediaImage :media="selectedMedia" />
+          <MediaImage :media="selectedMedia" @metadata="receiveMediaMetadata" />
           <h3 style="margin-top:18px">
             {{ selectedMedia.title }}　<AppTag>{{ mediaKindLabel(selectedMedia) }}</AppTag>
           </h3>
@@ -287,12 +289,12 @@ watch(() => { revision(); return db.state.businessConfig?.workBusinessEnabled; }
             <dd>{{ selectedMedia.eventId || "—" }}</dd>
             <dt>{{ mediaTime(selectedMedia).label }}</dt>
             <dd>{{ mediaTime(selectedMedia).value }}（北京时间）</dd>
-            <template v-if="selectedMedia.timeBasis === 'RECEIVED_AT' && !selectedMedia.capturedAt"><dt>拍摄时间</dt><dd>未提供</dd></template>
+            <template v-if="selectedMedia.timeBasis === 'RECEIVED_AT' && !selectedMedia.capturedAt"><dt>{{ mediaCaptureTime(selectedMedia).label }}</dt><dd>{{ mediaCaptureTime(selectedMedia).value }}</dd></template>
             <template v-if="selectedMedia.kind === 'video'"><dt>时长</dt><dd>{{ durationText(selectedMedia.duration) }}</dd></template>
             <dt>核验引用</dt>
             <dd>
-              <AppTag v-if="selectedMedia.eventId" color="yellow">{{ db.event(selectedMedia.eventId)?.status || "待提交" }}</AppTag>
-              <template v-else>—</template>
+              <AppTag v-if="selectedMedia.eventId" color="yellow">{{ db.event(selectedMedia.eventId)?.status || "已关联事件" }}</AppTag>
+              <template v-else>未引用</template>
             </dd>
           </dl>
           <div class="form-actions">

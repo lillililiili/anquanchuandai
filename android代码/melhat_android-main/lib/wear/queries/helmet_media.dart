@@ -626,6 +626,7 @@ String _actionLabel(String value) =>
       'stop_recording': '停止平台录制',
       'list_recordings': '查询本地录像',
       'upload_recording': '上传录像',
+      'broadcast': '文字广播',
     }[value] ??
     value;
 String _statusLabel(String value, String action) => value == 'completed'

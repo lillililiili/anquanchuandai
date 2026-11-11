@@ -4,11 +4,11 @@
     <p v-if="exportError" class="error" role="alert">{{ exportError.message }}<small v-if="exportError.requestId"> · {{ exportError.requestId }}</small></p><p v-if="exportNotice" role="status">{{ exportNotice }}</p>
     <section class="panel master-list">
       <form ref="formRef" novalidate class="list-filters" @submit.prevent="search">
-        <label>关键词<input v-model="filters.keyword" maxlength="100" /></label><label>操作账号<input v-model="filters.actorName" maxlength="100" placeholder="完整账号名称" /></label><label>对象编号<input v-model="filters.objectId" maxlength="100" placeholder="详情中的对象编号" /></label><label>动作<UiSelect v-model="filters.action"><option value="">全部动作</option><option v-for="(label, value) in AUDIT_ACTIONS" :key="value" :value="value">{{ label }}</option></UiSelect></label>
-        <label>结果<UiSelect v-model="filters.result"><option value="">全部</option><option v-for="(label, value) in AUDIT_RESULTS" :key="value" :value="value">{{ label }}</option></UiSelect></label><label>开始日期（UTC）<UiDatePicker v-model="filters.dateFrom" type="date" /></label><label data-field="dateTo">结束日期（UTC）<div class="field-control"><UiDatePicker v-model="filters.dateTo" type="date" aria-label="结束日期（UTC）" :aria-invalid="!!errors.dateTo" /><small v-if="errors.dateTo" class="field-error" aria-live="polite">{{ errors.dateTo }}</small></div></label><div class="filter-actions"><button class="button primary">查询</button><button class="button" type="button" @click="reset">重置</button>
+        <label>关键词<input v-model="filters.keyword" maxlength="100" /></label><label>操作账号<input v-model="filters.actorName" maxlength="100" placeholder="完整账号名称" /></label><label>记录编号<input v-model="filters.recordId" maxlength="100" placeholder="输入完整记录编号" /></label><label>动作<UiSelect v-model="filters.action"><option value="">全部动作</option><option v-for="(label, value) in AUDIT_ACTIONS" :key="value" :value="value">{{ label }}</option></UiSelect></label>
+        <label>结果<UiSelect v-model="filters.result"><option value="">全部</option><option v-for="(label, value) in AUDIT_RESULT_FILTERS" :key="value" :value="value">{{ label }}</option></UiSelect></label><label>开始日期（UTC）<UiDatePicker v-model="filters.dateFrom" type="date" /></label><label data-field="dateTo">结束日期（UTC）<div class="field-control"><UiDatePicker v-model="filters.dateTo" type="date" aria-label="结束日期（UTC）" :aria-invalid="!!errors.dateTo" /><small v-if="errors.dateTo" class="field-error" aria-live="polite">{{ errors.dateTo }}</small></div></label><div class="filter-actions"><button class="button primary">查询</button><button class="button" type="button" @click="reset">重置</button>
       </div></form><div class="section-heading"><h2>操作日志列表</h2><button class="button" :disabled="exporting || list.loading.value" @click="download">{{ exporting ? '正在生成…' : '导出全部筛选结果' }}</button></div>
       <div v-table-region class="admin-results"><QueryState :data="list.data.value" :loading="list.loading.value" :error="list.error.value" @retry="load">
-        <template v-if="list.data.value?.rows"><div class="device-table-wrap"><table v-table class="admin-table device-table"><caption class="sr-only">当前厂站授权范围内的操作日志</caption><thead><tr><th data-width="210">时间（北京时间）</th><th data-width="240">记录编号</th><th>操作账号</th><th>业务对象</th><th>动作</th><th>结果</th><th>操作</th></tr></thead><tbody><tr v-for="row in list.data.value.rows" :key="row.id"><td>{{ beijingTime(row.occurredAt) }}</td><td>{{ row.id }}</td><td>{{ row.actorName }}</td><td :title="objectLabel(row)">{{ objectLabel(row) }}</td><td>{{ auditActionLabel(row.action) }}</td><td class="status-cell"><span class="badge">{{ AUDIT_RESULTS[row.result] || row.result }}</span></td><td><button class="button" @click="openDetail(row.id)">查看详情</button></td></tr></tbody></table></div><p v-if="!list.data.value.rows.length" class="query-state">当前筛选下暂无操作日志。</p><AdminPagination :total="list.data.value.total" :model-value="pageNum" :page-size="pageSize" :disabled="list.loading.value" @update:model-value="pageNum=$event; load()" @update:page-size="pageSize=$event; search()" /></template>
+        <template v-if="list.data.value?.rows"><div class="device-table-wrap" :class="{ 'audit-table-empty': !list.data.value.rows.length }"><table v-table class="admin-table device-table"><caption class="sr-only">当前厂站授权范围内的操作日志</caption><thead><tr><th data-width="210">时间（北京时间）</th><th data-width="240">记录编号</th><th>操作账号</th><th>业务对象</th><th>动作</th><th>结果</th><th>操作</th></tr></thead><tbody><tr v-for="row in list.data.value.rows" :key="row.id"><td>{{ beijingTime(row.occurredAt) }}</td><td>{{ row.id }}</td><td>{{ row.actorName }}</td><td>{{ objectTypeLabel(row) }}</td><td>{{ auditActionLabel(row.action) }}</td><td class="status-cell"><span class="badge">{{ AUDIT_RESULTS[row.result] || row.result }}</span></td><td><button class="button" @click="openDetail(row.id)">查看详情</button></td></tr></tbody></table><p v-if="!list.data.value.rows.length" class="audit-empty-message" role="status">当前筛选下暂无操作日志。</p></div><AdminPagination :total="list.data.value.total" :model-value="pageNum" :page-size="pageSize" :disabled="list.loading.value" @update:model-value="pageNum=$event; load()" @update:page-size="pageSize=$event; search()" /></template>
       </QueryState></div>
     </section>
     <ModalPanel :open="!!selectedId" title="操作日志详情" heading-id="audit-detail-heading" @close="closeDetail">
@@ -24,12 +24,12 @@ import { getAdminProvider } from '@admin-provider'
 import { useAdminStore } from '../store'
 import { useQuery } from '../useQuery'
 import { useTablePagination } from '../pagination'
-import { AUDIT_RESULTS } from '../auditData'
-import { AUDIT_ACTIONS, auditActionLabel, auditObjectLabel, loadAuditDeviceNames } from '../auditPresentation'
+import { AUDIT_RESULTS, AUDIT_RESULT_FILTERS } from '../auditData'
+import { AUDIT_ACTIONS, auditActionLabel, auditObjectLabel, auditObjectTypeLabel, loadAuditDeviceNames } from '../auditPresentation'
 import QueryState from '../components/QueryState.vue'
 import ModalPanel from '../components/ModalPanel.vue'
 const store = useAdminStore(), list = useQuery(), detail = useQuery()
-const emptyFilters = () => ({ keyword: '', actorName: '', objectId: '', action: '', result: '', dateFrom: '', dateTo: '' })
+const emptyFilters = () => ({ keyword: '', actorName: '', recordId: '', action: '', result: '', dateFrom: '', dateTo: '' })
 const filters = reactive(emptyFilters()), applied = ref(emptyFilters()), pageNum = ref(1), pageSize = ref(10), selectedId = ref('')
 const { formRef, errors, validate } = useFieldErrors(() => ({ ...filters }))
 const exporting = ref(false), exportError = ref(null), exportNotice = ref('')
@@ -37,6 +37,7 @@ let exportController, exportVersion = 0
 const deviceNames = ref({})
 let namesController, namesVersion = 0
 const objectLabel = row => auditObjectLabel(row, deviceNames.value[row?.objectId])
+const objectTypeLabel = row => auditObjectTypeLabel(row, deviceNames.value[row?.objectId])
 const detailFields = { id: '记录编号', siteId: '厂站编号', actorName: '操作账号', objectId: '业务对象', objectCode: '对象编号', action: '动作', actionCode: '动作代码', result: '结果', occurredAt: '时间（北京时间）', source: '来源', requestId: '请求编号', operationId: '操作编号' }
 function detailValue(key) {
   const row = detail.data.value
@@ -81,6 +82,9 @@ onBeforeUnmount(() => { cancelExport(); namesVersion++; namesController?.abort()
 const differencePages = useTablePagination(differences, selectedId)
 </script>
 <style scoped>
+.audit-table-empty { display: flex; flex-direction: column; }
+.audit-table-empty > table { flex: none; }
+.audit-empty-message { display: grid; place-items: center; flex: 1; margin: 0; padding: 24px; color: var(--muted); text-align: center; line-height: 1.8; overflow-wrap: anywhere; }
 .audit-snapshot, pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; font-size:14px; }
 .audit-snapshot { background: var(--canvas, var(--theme-card)); border-radius: 4px; padding: 16px; }
 dd { overflow-wrap: anywhere; }

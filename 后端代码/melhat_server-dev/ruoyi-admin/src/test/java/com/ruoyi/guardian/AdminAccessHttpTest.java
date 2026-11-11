@@ -38,7 +38,7 @@ class AdminAccessHttpTest {
     Map<String,Object> map(Object... entries) {Map<String,Object> result=new LinkedHashMap<>();for(int i=0;i<entries.length;i+=2)result.put((String)entries[i],entries[i+1]);return result;}
     String send(String path,Object body,int code) throws Exception {
         return http.perform(post(path).requestAttr("wearable.actor",actor).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body)))
-                .andExpect(status().is(code)).andReturn().getResponse().getContentAsString();
+                .andExpect(status().is(code)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
     }
     @Test void legacyAccountAreaListIsIgnoredWhileHttpPreviewPreservesSiteScope() throws Exception {
         JSONObject target=find(saved.get(),"accounts","demo-duty");AtomicBoolean arrayListSeen=new AtomicBoolean();
@@ -158,7 +158,7 @@ class AdminAccessHttpTest {
     JSONObject createAccount(String loginName,Object bindings) throws Exception {
         return JSONObject.parseObject(send("/api/admin/v1/execute",map("type","accounts.create","input",createAccountCommand(loginName,bindings)),200)).getJSONObject("data");
     }
-    @Test void multipleUsersCanBeCreatedWithTheSameSingleRoleAndUnassignedIsAllowed() throws Exception {
+    @Test void multipleUsersCanBeCreatedWithTheSameSingleRole() throws Exception {
         JSONObject first=createAccount("role-user-one",Collections.singletonList(binding("duty")));
         JSONObject second=createAccount("role-user-two",Collections.singletonList(binding("duty")));
         assertNotEquals(first.getString("id"),second.getString("id"));
@@ -166,8 +166,22 @@ class AdminAccessHttpTest {
             assertEquals(Collections.singletonList("duty"),account.getJSONArray("roleIds"));
             assertFalse(account.containsKey("roleScopes"));
         }
-        JSONObject unassigned=createAccount("role-user-unassigned",Collections.emptyList());
-        assertTrue(unassigned.getJSONArray("roleIds").isEmpty());assertFalse(unassigned.containsKey("roleScopes"));
+    }
+    @Test void missingOrEmptyRoleIsRejectedOnCreateUpdateAndPreviewWithoutMutation() throws Exception {
+        JSONObject account=createAccount("required-role-user",Collections.singletonList(binding("duty")));
+        String baseline=saved.get().toJSONString();
+        for(boolean omitted:new boolean[]{false,true}) {
+            Map<String,Object> create=createAccountCommand("missing-role-"+omitted,Collections.emptyList());
+            if(omitted)((Map<?,?>)create.get("data")).remove("bindings");
+            JSONObject failed=JSONObject.parseObject(send("/api/admin/v1/execute",map("type","accounts.create","input",create),400));
+            assertEquals("VALIDATION_ERROR",failed.getString("errorCode"));assertTrue(failed.getString("message").contains("必须分配一个角色"));
+            Map<String,Object> data=map("name",account.getString("name"),"loginName",account.getString("loginName"),"bindings",Collections.emptyList());
+            if(omitted)data.remove("bindings");
+            Map<String,Object> update=map("operationId","clear-required-role-"+omitted,"siteId","site-1","id",account.getString("id"),"expectedVersion",account.getIntValue("version"),"data",data);
+            send("/api/admin/v1/execute",map("type","accounts.update","input",update),400);
+            send("/api/admin/v1/query",map("kind","authorizationPreview","input",map("siteId","site-1","type","accounts.update","command",update)),400);
+        }
+        assertEquals(baseline,saved.get().toJSONString());
     }
     @Test void changingSingleRoleRequiresPreviewAndReplacesThePreviousBinding() throws Exception {
         JSONObject account=createAccount("role-user-rebind",Collections.singletonList(binding("duty")));

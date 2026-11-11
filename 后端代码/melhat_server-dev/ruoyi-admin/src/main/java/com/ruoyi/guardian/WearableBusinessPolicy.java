@@ -52,35 +52,78 @@ public class WearableBusinessPolicy {
       }
     }
     public JSONObject features(JSONObject device) {
-        String source=text(device,"source"),id=text(device,"portalDeviceId");if(id.isEmpty())id=text(device,"deviceNumber");if(id.isEmpty())id=text(device,"id");
+        Set<String> verified=new HashSet<>(jdbc.query("SELECT feature_key FROM wearable_feature_acceptance WHERE device_id=?",(rs,n)->rs.getString(1),featureDeviceId(device)));
+        return features(device,verified);
+    }
+    private static String featureDeviceId(JSONObject device) {
+        String id=text(device,"portalDeviceId");if(id.isEmpty())id=text(device,"deviceNumber");if(id.isEmpty())id=text(device,"id");return id;
+    }
+    /** Request-local evidence only. Runtime readiness is still computed from each observed device. */
+    Map<String,Set<String>> featureAcceptance(JSONArray devices) {
+        Map<String,Set<String>> accepted=new LinkedHashMap<>();
+        for(Object raw:devices)accepted.computeIfAbsent(featureDeviceId((JSONObject)raw),id->new HashSet<>());
+        List<String> ids=new ArrayList<>(accepted.keySet());
+        for(int start=0;start<ids.size();start+=500) {
+            List<String> batch=ids.subList(start,Math.min(start+500,ids.size()));
+            // Keep each original equality predicate: MySQL may match IDs using a
+            // case/accent-insensitive collation. Return its request index, not the
+            // stored ID spelling, so Java need not approximate that comparison.
+            List<String> selects=new ArrayList<>();
+            for(int index=0;index<batch.size();index++)selects.add("SELECT "+index+" AS request_index,feature_key FROM wearable_feature_acceptance WHERE device_id=?");
+            List<String[]> rows=jdbc.query(String.join(" UNION ALL ",selects),
+                    (rs,n)->new String[]{batch.get(rs.getInt(1)),rs.getString(2)},batch.toArray());
+            for(String[] row:rows)accepted.get(row[0]).add(row[1]);
+        }
+        return accepted;
+    }
+    JSONObject features(JSONObject device,Map<String,Set<String>> accepted) {
+        Set<String> verified=accepted.get(featureDeviceId(device));
+        return verified==null?features(device):features(device,verified);
+    }
+    private JSONObject features(JSONObject device,Set<String> verified) {
+        DeviceFeatureConfiguration.applyMappings(device);
+        String source=text(device,"source");
         boolean hat="DIRECT_HELMET".equals(source),belt="DIRECT_BELT".equals(source),watch="DEMO_WATCH".equals(source);
         boolean online=device.getBooleanValue("online")||"ONLINE".equals(device.getString("communication"));
-        Set<String> verified=new HashSet<>(jdbc.query("SELECT feature_key FROM wearable_feature_acceptance WHERE device_id=?",(rs,n)->rs.getString(1),id));
         JSONObject result=new JSONObject();
-        for(String key:Arrays.asList("battery","wear","hooks","height","location","alarm","sos","video","videoCall","photo","recording","voice","broadcast","vitals","doubleRelease","lowHook","proximity","temperature","rtk","indoorLocation")) {
+        for(String key:Arrays.asList("battery","wear","hooks","height","location","alarm","sos","video","videoCall","photo","recording","voice","broadcast","vitals","doubleRelease","lowHook","proximity","temperature","silent","rtk","indoorLocation")) {
             boolean base=Arrays.asList("battery","wear","location","alarm","sos").contains(key);
             boolean supported=(hat||belt)&&base || hat&&Arrays.asList("video","videoCall","photo","recording","voice","broadcast").contains(key)
                     || belt&&Arrays.asList("hooks","height").contains(key) || watch&&Arrays.asList("battery","vitals").contains(key);
-            boolean optional=belt&&Arrays.asList("doubleRelease","lowHook","proximity","temperature","rtk","indoorLocation").contains(key);
+            boolean optional=belt&&DeviceFeatureConfiguration.BELT_OPTIONS.contains(key);
+            JSONObject configured=DeviceFeatureConfiguration.entry(device,key);
+            String declared=configured==null?"DEFAULT":configured.getString("support");
+            if("SUPPORTED".equals(declared))supported=true;
+            if("UNSUPPORTED".equals(declared))supported=false;
             boolean accepted=watch&&supported||verified.contains(key);
+            if(configured!=null&&!"DEFAULT".equals(configured.getString("verification")))accepted="VERIFIED".equals(configured.getString("verification"));
             if(belt&&"wear".equals(key))accepted=device.getBooleanValue("wearMappingConfirmed");
             if(belt&&"hooks".equals(key))accepted=accepted&&device.getBooleanValue("hookMappingConfirmed");
             boolean media=Arrays.asList("video","photo","recording").contains(key);
             boolean integrated=hat||belt||watch;
+            if(optional)integrated=DeviceFeatureConfiguration.BELT_ALARMS.contains(key)&&configured!=null
+                    &&configured.getJSONArray("alarmCodes")!=null&&!configured.getJSONArray("alarmCodes").isEmpty();
             if(media)integrated=hat&&device.getBooleanValue("mediaAvailable");
             if("voice".equals(key))integrated=hat&&device.getBooleanValue("voiceAvailable");
             if("videoCall".equals(key))integrated=hat&&device.getBooleanValue("voiceAvailable")&&device.getBooleanValue("mediaAvailable");
             if("broadcast".equals(key))integrated=hat&&device.getBooleanValue("broadcastAvailable");
             boolean fresh=online;
             if(belt&&Arrays.asList("wear","hooks","height").contains(key))fresh=online&&"CURRENT".equals(device.getString("telemetryFreshness"));
+            if(configured!=null&&belt) {
+                if("wear".equals(key))fresh=fresh&&device.get("worn") instanceof Boolean;
+                if("hooks".equals(key))fresh=fresh&&device.get("hookAEngaged") instanceof Boolean&&device.get("hookBEngaged") instanceof Boolean;
+                if("height".equals(key))fresh=fresh&&device.get("relativeAltitude") instanceof Number;
+            }
             // The implemented helmet media operations use live service/device readiness.
             // Physical acceptance remains separate evidence; it does not disable a working
             // SIP, camera or TTS operation. Sensor interpretation still requires verification.
             boolean runtimeOperation=runtimeOperation(source,key);
             boolean available=supported&&(accepted||runtimeOperation)&&integrated&&(watch||fresh);
-            String reason=!supported?(optional?"选配未确认":"设备不支持") : runtimeOperation?mediaUnavailable(device,key,online,integrated) : !accepted?"设备数据待确认" : !integrated?"设备服务暂不可用" : !watch&&!online?"设备离线" : !watch&&!fresh?"数据已过期或尚未上报" : watch?"模拟数据":"";
+            String reason=!supported?(optional&&!"UNSUPPORTED".equals(declared)?"选配未确认":"设备不支持") : runtimeOperation?mediaUnavailable(device,key,online,integrated) : !accepted?"设备数据待确认" : !integrated?(optional?"平台尚无对应数据接入":"设备服务暂不可用") : !watch&&!online?"设备离线" : !watch&&!fresh?"数据已过期、缺失或状态码未知" : watch?"模拟数据":"";
             result.put(key,object("supported",supported,"verified",accepted,"available",available,"reason",reason,"optional",optional,
-                    "integrationStatus",integrated?"CONNECTED":"NOT_CONNECTED","verificationStatus",accepted?"VERIFIED":"PENDING"));
+                    "integrationStatus",integrated&&(watch||online)?"CONNECTED":"NOT_CONNECTED","verificationStatus",accepted?"VERIFIED":"PENDING",
+                    "supportStatus",supported?"SUPPORTED":optional&&!"UNSUPPORTED".equals(declared)?"UNKNOWN":"UNSUPPORTED",
+                    "configurable",DeviceFeatureConfiguration.keys(device).contains(key)));
         }
         return result;
     }
@@ -99,9 +142,12 @@ public class WearableBusinessPolicy {
     public void decorateDevice(JSONObject device){device.put("featureStates",features(device));device.put("simulated","DEMO_WATCH".equals(device.getString("source")));}
     /** Filtering affects only the read model; visibility changes never delete a simulation's history. */
     public JSONObject decorate(JSONObject state,boolean ledger) {
+        return decorate(state,ledger,featureAcceptance(rows(state,"devices")));
+    }
+    JSONObject decorate(JSONObject state,boolean ledger,Map<String,Set<String>> accepted) {
         JSONObject cfg=config();state.put("businessConfig",cfg);
         Set<String> hidden=new HashSet<>();JSONArray kept=new JSONArray();
-        for(Object raw:rows(state,"devices")){JSONObject d=(JSONObject)raw;decorateDevice(d);if(!cfg.getBooleanValue("simulatedWatchVisible")&&d.getBooleanValue("simulated")){if(d.getString("id")!=null)hidden.add(d.getString("id"));if(d.getString("portalDeviceId")!=null)hidden.add(d.getString("portalDeviceId"));}else kept.add(d);}
+        for(Object raw:rows(state,"devices")){JSONObject d=(JSONObject)raw;d.put("featureStates",features(d,accepted));d.put("simulated","DEMO_WATCH".equals(d.getString("source")));if(!cfg.getBooleanValue("simulatedWatchVisible")&&d.getBooleanValue("simulated")){if(d.getString("id")!=null)hidden.add(d.getString("id"));if(d.getString("portalDeviceId")!=null)hidden.add(d.getString("portalDeviceId"));}else kept.add(d);}
         state.put("devices",kept);
         for(String key:Arrays.asList("bindings","assignments","assignmentHistory","history","vitals","events","locations")) {
             if(!(state.get(key) instanceof JSONArray))continue;

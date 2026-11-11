@@ -18,7 +18,6 @@ const query = async (kind, extra = {}) => (await api.query(kind, { siteId, ...ex
 
 const references = [
   ['活动领用', state => state.assignments.push({ id: 'live-assignment', siteId, personId, deviceId: 'test-device', active: true }), 'live-assignment'],
-  ['已停用历史名册', state => state.dutyShifts.push({ id: 'old-roster', siteId, name: '旧名册', enabled: false, startsAt: '2020-01-01T00:00:00Z', endsAt: '2020-01-02T00:00:00Z', personIds: [personId] }), 'old-roster'],
   ['已停用组成员', state => state.groups.push({ id: 'old-group', siteId, enabled: false, personIds: [personId] }), 'old-group'],
   ['已停用组长', state => state.groups.push({ id: 'old-leader-group', siteId, enabled: false, personIds: [], leaderId: personId }), 'old-leader-group'],
   ['账号人员关联', state => state.accounts.push({ id: 'linked-account', siteId, name: '关联账号', enabled: false, roleIds: [], personId }), 'linked-account'],
@@ -34,6 +33,16 @@ describe('personnel deletion', () => {
     expect(impacts.map(row => row.id)).toContain(referenceId)
     await expect(api.execute('people.delete', input())).rejects.toMatchObject({ code: 409, errorCode: 'REFERENCED', impacts })
     expect(api.exportState()).toEqual(before)
+  })
+
+  it.each([true, false])('ignores archived roster references for deactivation and deletion (enabled=%s)', async enabled => {
+    setup(state => state.dutyShifts.push({ id: 'old-roster', siteId, name: '旧名册', enabled, startsAt: '2020-01-01T00:00:00Z', endsAt: enabled ? '2099-01-02T00:00:00Z' : '2020-01-02T00:00:00Z', personIds: [personId] }))
+    const before = api.exportState().dutyShifts
+    for (const all of [true, false]) expect((await query('impacts', { entity: 'people', id: personId, all })).rows).toEqual([])
+    const disabled = await api.execute('people.status', { ...input(), operationId: 'disable-person', enabled: false })
+    expect(disabled.data.enabled).toBe(false)
+    expect((await api.execute('people.delete', { ...input(), expectedVersion: disabled.data.version })).data.deleted).toBe(true)
+    expect(api.exportState().dutyShifts).toEqual(before)
   })
 
   it('deletes only the person, retaining returned equipment and immutable history, with one audit on replay', async () => {

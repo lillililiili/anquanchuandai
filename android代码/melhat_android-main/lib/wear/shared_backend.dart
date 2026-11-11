@@ -93,7 +93,7 @@ class SharedBackend {
 
   Future<SharedModels> context() {
     if (testSiteMode && siteId() != testSiteId) {
-      return Future.error(const WearApiException(403, '当前开发环境仅开放已授权的测试厂区'));
+      return Future.error(const WearApiException(403, '无权访问该厂区，请联系管理员授权'));
     }
     final existing = _reading;
     if (existing != null) return existing;

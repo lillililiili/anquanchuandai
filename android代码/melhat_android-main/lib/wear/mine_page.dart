@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'core.dart';
 import 'notifications.dart';
+import 'app_diagnostics.dart';
 import 'package:flutter/services.dart';
 import 'queries/my_equipment_page.dart';
 
@@ -39,6 +40,7 @@ class _WearMinePageState extends State<WearMinePage> {
               'wear_readonly': '只读',
               'wear_device_admin': '设备管理员',
               'wear_member': '普通用户',
+              'member': '普通用户',
               'wear_platform_admin': '平台管理员',
               'admin': '管理员',
             }[role] ??
@@ -373,17 +375,26 @@ class _WearMinePageState extends State<WearMinePage> {
                                 _blue,
                                 '清理业务缓存',
                                 () async {
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+                                  final user = session.userId;
+                                  final site = session.siteId;
+                                  bool canReport() =>
+                                      messenger.mounted &&
+                                      session.userId == user &&
+                                      session.siteId == site;
                                   try {
                                     await session.clearBusinessCache();
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    if (!canReport()) return;
+                                    messenger.showSnackBar(
                                       const SnackBar(
                                         content: Text('已清理业务缓存，保留登录与未提交草稿'),
                                       ),
                                     );
                                   } catch (error) {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    if (!canReport()) return;
+                                    messenger.showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           error is WearApiException
@@ -599,7 +610,7 @@ class _WearMinePageState extends State<WearMinePage> {
           ),
           const SizedBox(height: 14),
           const Text(
-            '我的装备：查看当前账号关联人员的设备和绑定记录。\n\n通讯服务：查看实际连接情况；本轮不提供离线推送绑定。\n\n账号操作：确认后退出当前账号；通话中请先结束通话。',
+            '我的装备：查看当前账号关联人员的设备和绑定记录。\n\n通讯服务：查看通知和设备通话状态。\n\n账号操作：确认后退出当前账号；通话中请先结束通话。',
             style: TextStyle(height: 1.6),
           ),
           const SizedBox(height: 18),
@@ -611,10 +622,14 @@ class _WearMinePageState extends State<WearMinePage> {
             icon: const Icon(Icons.copy_outlined),
             label: const Text('复制诊断信息'),
             onPressed: () async {
+              final siteName = _session!.siteName;
+              final notificationStatus = widget.notifications.status;
+              final version = await installedAppVersion();
+              if (!ctx.mounted) return;
               await Clipboard.setData(
                 ClipboardData(
                   text:
-                      '智能穿戴管理平台 1.3.0\n厂站：${_session!.siteName}\n通知：${widget.notifications.status}',
+                      '智能穿戴管理平台 $version\n厂站：$siteName\n通知：$notificationStatus',
                 ),
               );
               if (ctx.mounted) {
@@ -652,14 +667,14 @@ class _WearMinePageState extends State<WearMinePage> {
           Text(
             _session!.api.isMock
                 ? widget.notifications.status
-                : '业务数据通过共用后端查询，设备语音连接情况以通话页为准。',
+                : '通话连接状态可在通讯页查看。',
             style: const TextStyle(color: WearColors.muted),
           ),
           const SizedBox(height: 8),
           Text(
             _session!.api.isMock
-                ? '模拟语音和广播不会通知或播放到真实设备。本轮不提供后台离线推送。'
-                : '广播受理不代表现场已经听到。本轮不提供后台离线推送。',
+                ? '当前为模拟通讯，语音和广播不会播放到设备。'
+                : '请保持应用打开接收告警，广播播放结果可在广播记录中查看。',
             style: const TextStyle(color: WearColors.muted, fontSize: 12),
           ),
         ],

@@ -26,6 +26,15 @@ beforeEach(async () => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('non-blocking admin reads', () => {
+  it('calibrates device presentation from a successful current-session response before consuming its data', async () => {
+    const pending = provider.query('devices', { siteId: 'site-1' })
+    const serverTime = Date.parse('2036-11-05T09:38:42Z')
+    requests[0].resolve({ ...response({ data: { rows: [] } }), headers: new Headers({ Date: new Date(serverTime).toUTCString() }) })
+    await pending
+    const { serverNow } = await import('../shared/server-clock.mjs')
+    expect(serverNow()).toBeGreaterThanOrEqual(serverTime)
+    expect(serverNow()).toBeLessThan(serverTime + 2000)
+  })
   it('sends manual personnel duty updates to the authoritative backend', async () => {
     const sent = []
     vi.stubGlobal('XMLHttpRequest', class {
@@ -101,9 +110,18 @@ describe('non-blocking admin reads', () => {
   it.each([200, 401])('discards a late %s response from an earlier login', async status => {
     const pending = provider.query('devices', { siteId: 'site-1' })
     storage.setItem('wearable-admin-token', 'session-two')
-    requests[0].resolve(response({ data: { counts: { assets: 100 } } }, status))
+    requests[0].resolve({ ...response({ data: { counts: { assets: 100 } } }, status), headers: new Headers({ Date: 'Mon, 05 Nov 2040 09:38:42 GMT' }) })
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
     expect(storage.getItem('wearable-admin-token')).toBe('session-two')
     expect(provider.invalidate).not.toHaveBeenCalled()
+    const { serverClock } = await import('../shared/server-clock.mjs')
+    expect(serverClock.synchronized).toBe(false)
+  })
+  it('does not calibrate from a redirected response', async () => {
+    const pending = provider.query('devices', { siteId: 'site-1' })
+    requests[0].resolve({ ...response({ data: { rows: [] } }), redirected: true, headers: new Headers({ Date: 'Mon, 05 Nov 2040 09:38:42 GMT' }) })
+    await pending
+    const { serverClock } = await import('../shared/server-clock.mjs')
+    expect(serverClock.synchronized).toBe(false)
   })
 })

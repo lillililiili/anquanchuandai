@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { queryAudit, redactAudit, auditCsvCell, AUDIT_RESULTS } from './auditData'
+import { queryAudit, redactAudit, auditCsvCell, AUDIT_RESULTS, AUDIT_RESULT_FILTERS } from './auditData'
 import { createAdminService } from './service'
 import { createLegacySeed as createSeed } from './legacySeed'
 import { safeTarget, adminHome, menuPath } from './navigation'
@@ -15,11 +15,48 @@ function setup() {
   return { state, actor, q }
 }
 describe('A6 audit snapshots and local CSV', () => {
-  it.each(['SOURCE_FAILURE', 'BUSINESS_REJECTED'])('exposes actual integration result %s as a filter option', result => {
+  it.each(['SOURCE_FAILURE', 'BUSINESS_REJECTED'])('retains exact legacy queries for integration result %s', result => {
     const { q, state } = setup(); state.audit[0].result = result
     expect(AUDIT_RESULTS[result]).toBeTruthy()
     expect(q('audit', { result }).rows.map(r => r.id)).toEqual(['r-0'])
     expect(q('auditExport', { result }).total).toBe(1)
+  })
+  it('matches record IDs exactly without confusing them with object IDs or prefixes', () => {
+    const { q, state } = setup()
+    state.audit[1].objectId = 'r-0'
+    const filters = { recordId: ' r-0 ', actorName: '历史账号', action: 'people.update', result: 'SUCCESS' }
+    expect(q('audit', filters).rows.map(row => row.id)).toEqual(['r-0'])
+    expect(q('auditExport', filters).total).toBe(1)
+    expect(q('audit', { recordId: 'r-' }).total).toBe(0)
+    expect(q('audit', { recordId: 'hidden' }).total).toBe(0)
+    expect(() => q('audit', { recordId: 'x'.repeat(101) })).toThrow()
+  })
+  it('groups all failure codes before pagination and exports the entire group', () => {
+    const { q, state } = setup()
+    const original = ['FAILED', 'FAILURE', 'SOURCE_FAILURE']
+    original.forEach((result, index) => { state.audit[index].result = result })
+    const filters = { result: 'FAILED', pageNum: 2, pageSize: 1 }
+    expect(q('audit', filters)).toMatchObject({ total: 3, rows: [{ id: 'r-1' }] })
+    const exported = q('auditExport', filters)
+    expect(exported.total).toBe(3)
+    original.forEach(result => expect(exported.csv).toContain(result))
+    expect(state.audit.slice(0, 3).map(row => row.result)).toEqual(original)
+  })
+  it('groups rejected results and combines the group with a record ID', () => {
+    const { q, state } = setup()
+    state.audit[0].result = 'DENIED'
+    state.audit[1].result = 'BUSINESS_REJECTED'
+    expect(q('audit', { result: 'DENIED' }).total).toBe(2)
+    expect(q('auditExport', { result: 'DENIED' }).total).toBe(2)
+    expect(q('audit', { result: 'DENIED', recordId: 'r-1' }).rows).toMatchObject([{ id: 'r-1', result: 'BUSINESS_REJECTED' }])
+    expect(q('auditExport', { result: 'DENIED', recordId: 'r-1' }).total).toBe(1)
+  })
+  it('offers only distinct result groups and retains unknown results under all', () => {
+    expect(AUDIT_RESULT_FILTERS).toEqual({ SUCCESS: '成功', FAILED: '失败', DENIED: '拒绝' })
+    const { q, state } = setup()
+    state.audit[0].result = 'UNKNOWN'
+    expect(q('audit').total).toBe(25)
+    expect(q('audit', { result: 'SUCCESS' }).total).toBe(24)
   })
   it('filters before paging and exports all authorized results', () => {
     const { q } = setup()

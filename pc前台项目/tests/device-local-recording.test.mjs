@@ -16,7 +16,7 @@ test('last local recording observation stays historical when offline and cannot 
   const value=observations.deviceLocalRecordingPresentation(source);
   assert.equal(value.label,'开启');assert.equal(value.personLabel,'上报时人员');
   assert.equal(dateTime.formatBeijingDateTime(value.receivedAt),'2026-11-02 14:20:30');
-  assert.match(value.note,/不代表当前仍在录制或文件已生成/);
+  assert.match(value.note,/显示最近一次上报状态/);
   assert.equal(observations.deviceLocalRecordingPresentation({...source,online:true}).label,'开启');
   assert.equal(observations.deviceLocalRecordingPresentation({...source,localRecording:{...report,rawType:'1',state:'STOPPED'}}).label,'关闭');
   assert.deepEqual(source,before);assert.equal(value.available,undefined);

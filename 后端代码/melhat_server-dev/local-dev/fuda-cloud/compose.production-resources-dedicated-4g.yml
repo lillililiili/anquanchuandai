@@ -1,0 +1,64 @@
+# Not enabled automatically. Trial budget after pausing the knowledge-base apps.
+# Keep the shared Caddy, five media services and live query gateway running.
+# Required order: compose.yml, compose.production.yml, this file.
+# Validate with production_resources_4g_check.py; do not lower default preflight.
+# No ports, networks, project/image/build, business profile or device switches here.
+services:
+  mysql:
+    labels: &resource-profile-4g
+      com.wearables.resource-profile: production-dedicated-4g-v1
+    mem_limit: 448m
+    memswap_limit: 448m
+    logging: &bounded-logs-4g
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=96M
+      - --innodb-log-buffer-size=8M
+      - --max-connections=30
+      - --table-open-cache=300
+  redis:
+    labels: *resource-profile-4g
+    mem_limit: 128m
+    memswap_limit: 128m
+    logging: *bounded-logs-4g
+    # Preserve AOF's ordinary every-second sync; do not introduce always fsync.
+    # Never evict auth nonces; reserve process/AOF overhead outside maxmemory.
+    command:
+      - sh
+      - -c
+      - exec redis-server --appendonly yes --appendfsync everysec --no-appendfsync-on-rewrite no --maxmemory 48mb --maxmemory-policy noeviction --requirepass "$$REDIS_PASSWORD"
+  backend:
+    labels: *resource-profile-4g
+    mem_limit: 896m
+    memswap_limit: 896m
+    logging: *bounded-logs-4g
+    environment:
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError
+  query-gateway:
+    labels: *resource-profile-4g
+    mem_limit: 64m
+    memswap_limit: 64m
+    logging: *bounded-logs-4g
+  helmet-gateway:
+    labels: *resource-profile-4g
+    mem_limit: 96m
+    memswap_limit: 96m
+    logging: *bounded-logs-4g
+  belt-gateway:
+    labels: *resource-profile-4g
+    mem_limit: 96m
+    memswap_limit: 96m
+    logging: *bounded-logs-4g
+  phone-gateway:
+    labels: *resource-profile-4g
+    mem_limit: 96m
+    memswap_limit: 96m
+    logging: *bounded-logs-4g
+  private-relays:
+    labels: *resource-profile-4g
+    mem_limit: 64m
+    memswap_limit: 64m
+    logging: *bounded-logs-4g

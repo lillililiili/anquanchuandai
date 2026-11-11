@@ -45,7 +45,7 @@ function statusValue(device, key, value) {
   return value == null ? '暂无有效上报' : value;
 }
 function reportTime(device) {
-  if (!device.updated) return isSimulatedWatch(device) ? '暂无示例时间' : '暂无真实上报';
+  if (!device.updated) return isSimulatedWatch(device) ? '暂无示例时间' : '暂无设备上报';
   const formatted = formatBeijingDateTime(device.updated);
   return formatted === '—' ? '时间格式无效' : formatted;
 }

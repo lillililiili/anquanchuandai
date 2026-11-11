@@ -15,7 +15,7 @@ import java.util.Set;
 
 @Service
 public class AdminQueryService {
-    private static final List<String> READ_ENTITIES = Arrays.asList("people", "organizations", "sites", "dutyShifts", "accounts", "roles");
+    private static final List<String> READ_ENTITIES = Arrays.asList("people", "organizations", "sites", "accounts", "roles");
     private static final List<String> DELEGATE_ROLES = Arrays.asList("viewer", "people-editor", "asset-operator", "mobile-user");
     private final AdminLedgerStore ledger;
     private final GuardianStore guardian;
@@ -151,9 +151,10 @@ public class AdminQueryService {
                     "status", "date", "time", "createdAt", "updatedAt", "source"))
                 if (event.containsKey(field)) row.put(field, event.get(field));
             row.put("protocol", protocol);
+            BeltAlarmNames.present(row);
             row.put("sourceEventId", event.getString("id"));
             row.put("alarmCode", event.getString("rawAlarmType"));
-            row.put("alarmName", event.getString("title") == null ? (helmet ? "安全帽设备告警" : "安全带设备告警") : event.getString("title"));
+            row.put("alarmName", row.getString("title") == null ? (helmet ? "安全帽设备告警" : "安全带设备告警") : row.getString("title"));
             rows.add(row);
         }
         rows.sort((left, right) -> {
@@ -210,7 +211,7 @@ public class AdminQueryService {
         if ("areas".equals(entity)) throw fail(410, "FEATURE_REMOVED", "行政区域功能已取消");
         if (!READ_ENTITIES.contains(entity)) throw fail(400, "INVALID_ENTITY", "不支持的资料类型");
         boolean accessEntity = "accounts".equals(entity) || "roles".equals(entity);
-        String permission = accessEntity ? "access:read" : "sites".equals(entity) ? "sites:read" : "dutyShifts".equals(entity) ? "duty:read" : "people".equals(entity) ? "people:read" : "organization:read";
+        String permission = accessEntity ? "access:read" : "sites".equals(entity) ? "sites:read" : "people".equals(entity) ? "people:read" : "organization:read";
         String siteId = input.getString("siteId");
         if (!system(actor)) {
             if (accessEntity) {
@@ -339,6 +340,9 @@ public class AdminQueryService {
         if(localRecording!=null&&!can(state,actor,"assets:read",localRecording.getString("siteId"),localRecording.getString("areaId")))
             copy.remove("localRecording");
         if(businessPolicy!=null)businessPolicy.decorateDevice(copy);
+        copy.put("featureManagement", WearableModel.object("version", 2,
+                "editable", !DeviceFeatureConfiguration.keys(copy).isEmpty() && !"SCRAPPED".equals(device.getString("lifecycle"))
+                        && can(state, actor, "assets:write", device.getString("siteId"), device.getString("areaId"))));
         return copy;
     }
 
@@ -456,15 +460,6 @@ public class AdminQueryService {
         }
         if ("people".equals(entity)) {
             for (JSONObject assignment : array(state, "assignments")) if (assignment.getBooleanValue("active") && row.getString("id").equals(assignment.getString("personId"))) results.add(impact(assignment.getString("id"), assignment.getString("id"), "有效领用关系（请到发放回收页面归还或核实）"));
-            for (JSONObject shift : array(state, "dutyShifts")) {
-                JSONArray members = shift.getJSONArray("personIds");
-                if ((!all && !shift.getBooleanValue("enabled")) || members == null || !members.contains(row.getString("id"))) continue;
-                if (all) { results.add(impact(shift.getString("id"), shift.getString("name"), "名册成员引用"));continue; }
-                String ends = shift.getString("endsAt");
-                try {
-                    if (ends != null && java.time.Instant.parse(ends).isAfter(java.time.Instant.now())) results.add(impact(shift.getString("id"), shift.getString("name"), "当前或未来名册"));
-                } catch (RuntimeException ignored) { /* 无法解析的班次不当作活动引用 */ }
-            }
             if (all) {
                 for (JSONObject group : array(state, "groups")) if ((group.getJSONArray("personIds") != null && group.getJSONArray("personIds").contains(row.getString("id"))) || row.getString("id").equals(group.getString("leaderId"))) results.add(impact(group.getString("id"), group.getString("name"), "协助组成员（A5维护）"));
                 for (JSONObject account : array(state, "accounts")) if (row.getString("id").equals(account.getString("personId")) || account.getString("id").equals(row.getString("accountId"))) results.add(impact(account.getString("id"), account.getString("name"), "绑定账号（请先解除人员关联）"));
@@ -550,7 +545,6 @@ public class AdminQueryService {
         if ("accounts".equals(entity)) return system(actor) || actor.getString("id").equals(row.getString("id")) || accountManageable(state, actor, row);
         if ("roles".equals(entity)) return roleVisible(state, actor, row);
         if ("sites".equals(entity)) return system(actor) || can(state, actor, "sites:read", row.getString("id"), null);
-        if ("dutyShifts".equals(entity)) return can(state, actor, "duty:read", row.getString("siteId"), null);
         String operation = "people".equals(entity) ? "people:read" : "organization:read";
         String areaId = "areas".equals(entity) ? row.getString("id") : row.getString("areaId");
         return can(state, actor, operation, row.getString("siteId"), areaId);
@@ -569,7 +563,6 @@ public class AdminQueryService {
 
     private boolean roleVisible(JSONObject state, JSONObject actor, JSONObject role) {
         if (system(actor)) return true;
-        if (!role.getBooleanValue("builtin")) return false;
         JSONArray grants = role.getJSONArray("grants");
         if (grants == null) return false;
         for (int i = 0; i < grants.size(); i++) {

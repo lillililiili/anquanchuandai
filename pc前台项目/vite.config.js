@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { fileURLToPath, URL } from "node:url";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [vue()],
   resolve: {
     dedupe: ["vue"],
@@ -18,9 +18,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api/guardian": {
-        target: "http://127.0.0.1:18084",
+        target: process.env.WEAR_BACKEND_URL || (mode === "local" ? "http://127.0.0.1:18084" : "https://lingzhiaide.com/wear-api"),
         changeOrigin: true,
       },
     },
   },
-});
+}));

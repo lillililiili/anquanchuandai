@@ -3,12 +3,13 @@ export const DEFAULT_ADMIN_PATH = '/devices'
 const legacyPaths = {
   '/admin/assets/devices': '/devices', '/admin/assets/assignments': '/assignments', '/admin/assets/maintenance': '/maintenance',
   '/admin/access/accounts': '/accounts', '/admin/access/roles': '/roles', '/admin/access/groups': '/groups',
-  '/admin/people': '/people', '/admin/sites': '/sites', '/admin/duty': '/duty',
+  '/admin/people': '/people', '/admin/sites': '/sites',
   '/admin/audit': '/audit', '/admin/login': '/login', '/admin/401': '/401', '/admin/overview': '/overview', '/admin/integrations': '/integrations'
 }
 const isLegacyOrganizationPath = path => /^\/(?:admin\/)?organization\/?$/.test(path)
+const isLegacyDutyPath = path => /^\/(?:admin\/)?duty(?:\/|$)/.test(path)
 export function canonicalAdminPath(path) {
-  if (isLegacyOrganizationPath(path)) return '/people'
+  if (isLegacyOrganizationPath(path) || isLegacyDutyPath(path)) return '/people'
   for (const [legacy, current] of Object.entries(legacyPaths)) {
     if (path === legacy || path.startsWith(legacy + '/')) return current + path.slice(legacy.length)
   }
@@ -20,10 +21,10 @@ function parseAdminTarget(value) {
   try {
     const url = new URL(value, 'http://admin.local')
     if (url.origin !== 'http://admin.local') return null
-    if (isLegacyOrganizationPath(url.pathname)) {
+    if (isLegacyOrganizationPath(url.pathname) || isLegacyDutyPath(url.pathname)) {
       const legacyQuery = cleanQuery(Object.fromEntries(url.searchParams)), query = {}
       if (legacyQuery.siteId) query.siteId = legacyQuery.siteId
-      if (legacyQuery.organizationId || legacyQuery.selectedId) query.organizationId = legacyQuery.organizationId || legacyQuery.selectedId
+      if (isLegacyOrganizationPath(url.pathname) && (legacyQuery.organizationId || legacyQuery.selectedId)) query.organizationId = legacyQuery.organizationId || legacyQuery.selectedId
       url.search = new URLSearchParams(query).toString()
     }
     url.pathname = canonicalAdminPath(url.pathname)
@@ -37,7 +38,7 @@ export function adminHome(query = {}) {
 
 export const MENU = [
   { path: '/devices', title: '装备资产', permission: 'assets:read', description: '设备台账、领用与归还' },
-  { path: '/people', title: '人员组织', permission: 'people:read', description: '人员档案、组织班组、厂站资料与当班名册' },
+  { path: '/people', title: '人员组织', permission: 'people:read', description: '人员档案、组织班组与厂站资料' },
   { path: '/accounts', title: '权限协作', permission: 'access:read', description: '登录账号与角色范围' },
   { path: '/workbusiness', title: '作业与外部业务', systemOnly: true, description: '业务总开关与本地作业登记' },
   { path: '/audit', title: '操作日志', permission: 'audit:read', description: '查看谁在何时修改了什么，以及处理结果' },
@@ -46,7 +47,6 @@ export function navigationFor(identity) { return MENU.filter(item => !item.syste
 export const WORKSPACES = [
   { path: '/people', title: '人员与组织', entity: 'people', group: 'people' },
   { path: '/sites', title: '厂站资料', entity: 'sites', group: 'people' },
-  { path: '/duty', title: '班次名册', entity: 'dutyShifts', group: 'people' },
   { path: '/accounts', title: '用户账号', entity: 'accounts', group: 'access' },
   { path: '/roles', title: '基础角色', entity: 'roles', group: 'access' }
 ]
@@ -54,7 +54,7 @@ export function menuPath(value) {
   const path = canonicalAdminPath(value)
   if (isRetiredAdminPath(path) || /^\/(devices|assignments)(?:\/|$)/.test(path)) return DEFAULT_ADMIN_PATH
   if (/^\/(accounts|roles)(?:\/|$)/.test(path)) return '/accounts'
-  if (/^\/(people|organization|sites|duty)(?:\/|$)/.test(path)) return '/people'
+  if (/^\/(people|organization|sites)(?:\/|$)/.test(path)) return '/people'
   return path
 }
 const allowed = new Set([...MENU.map(m => m.path), ...WORKSPACES.map(m => m.path), '/assignments', '/401'])

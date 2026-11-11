@@ -21,6 +21,8 @@ final class GuardianMasterProjection {
             String type="HELMET".equals(d.getString("type"))?"H":"BELT".equals(d.getString("type"))?"B":"WATCH".equals(d.getString("type"))?"W":null;if(type==null)continue;
             String id=d.getString("portalDeviceId");JSONObject target=find(snapshot,"devices",id);
             if(target==null){target=object("id",id,"online",null,"battery",null,"video","unavailable","updated",null);rows(snapshot,"devices").add(target);}
+            if (d.getJSONObject("featureConfiguration") != null) target.put("featureConfiguration", copy(d.getJSONObject("featureConfiguration")));
+            else target.remove("featureConfiguration");
             boolean active=!Arrays.asList("DISABLED","SCRAPPED").contains(d.getString("lifecycle"));
             if ("DIRECT_BELT".equals(d.getString("source"))) active = active && s.getBooleanValue("enabled");
             target.remove("areaId");target.put("type",type);target.put("station",s.getString("portalStation"));target.put("siteId",s.getString("id"));target.put("ledgerId",d.getString("id"));target.put("active",active);target.put("name",d.getString("name"));

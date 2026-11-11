@@ -57,7 +57,7 @@ export function csvContent(headers, rows) {
   const cell = (value) =>
     '"' +
     String(value ?? "")
-      .replace(/^[=+@-]/, "'$&")
+      .replace(/^[\s\u0000-\u001f\u007f-\u009f]*[=+\-@]/u, "'$&")
       .replace(/"/g, '""') +
     '"';
   return "\ufeff" + [headers, ...rows].map((row) => row.map(cell).join(",")).join("\r\n");

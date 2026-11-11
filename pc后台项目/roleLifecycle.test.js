@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createAdminService } from './service'
 import { createLegacySeed } from './legacySeed'
+import { OPERATIONS } from './access'
 
 const siteId = 'site-1'
 let api, serial, currentTime
@@ -86,12 +87,26 @@ describe('role deletion and recorded times', () => {
     expect((await query('audit')).rows.some(row => row.action === 'roles.delete')).toBe(false)
   })
 
-  it('protects built-in roles and restricts custom role deletion to the system administrator', async () => {
+  it.each(['system', 'site', 'asset', 'audit', 'viewer', 'people-editor', 'asset-operator'])('maintains existing role %s through the same edit and status commands', async id => {
+    let role = await query('record', { entity: 'roles', id })
+    role = await updateRole(role, { name: '统一维护-' + id, operations: role.grants[0].operations.includes('*') ? OPERATIONS : role.grants[0].operations })
+    expect(role).toMatchObject({ name: '统一维护-' + id, version: 2 })
+    const disabled = await execute('roles.status', { id, expectedVersion: role.version, enabled: false })
+    expect(disabled.enabled).toBe(false)
+    const enabled = await execute('roles.status', { id, expectedVersion: disabled.version, enabled: true })
+    expect(enabled.enabled).toBe(true)
+    const refs = (await query('impacts', { entity: 'roles', id, all: true })).rows
+    if (refs.length) await expect(execute('roles.delete', { id, expectedVersion: enabled.version })).rejects.toMatchObject({ errorCode: 'REFERENCED' })
+    else expect((await execute('roles.delete', { id, expectedVersion: enabled.version })).deleted).toBe(true)
+  })
+
+  it('restricts maintenance of every role to the system administrator', async () => {
     const role = await createRole()
-    await expect(execute('roles.delete', { id: 'viewer', expectedVersion: 1 })).rejects.toMatchObject({ errorCode: 'BUILTIN_PROTECTED' })
     api.login('demo-site', 'Admin@2026')
-    await expect(execute('roles.delete', { id: 'viewer', expectedVersion: 1 })).rejects.toMatchObject({ code: 403 })
-    await expect(execute('roles.delete', { id: role.id, expectedVersion: role.version })).rejects.toMatchObject({ code: 404 })
+    for (const id of ['viewer', role.id]) {
+      expect((await query('record', { entity: 'roles', id })).id).toBe(id)
+      for (const action of ['update', 'status', 'delete']) await expect(execute('roles.' + action, { id, expectedVersion: 1, enabled: false, data: { name: '不能越权维护' } })).rejects.toMatchObject({ code: 403 })
+    }
     api.login('demo-system', 'Admin@2026')
     expect((await query('record', { entity: 'roles', id: role.id })).id).toBe(role.id)
   })

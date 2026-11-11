@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,12 @@ import 'package:path_provider/path_provider.dart';
 import '../core.dart';
 import '../mock_media.dart';
 import 'event_video_preview.dart';
+
+// Use the same base URL composition as the API transport, including /wear-api.
+String _photoUrl(WearSession session, String path) => RequestOptions(
+  baseUrl: session.api.dio.options.baseUrl,
+  path: path,
+).uri.toString();
 
 /// Photos on their actual employee observation or final verification record.
 class EventStoredPhotos extends StatelessWidget {
@@ -24,9 +31,10 @@ class EventStoredPhotos extends StatelessWidget {
         for (final id in blobIds)
           Builder(
             builder: (context) {
-              final url = Uri.parse(session.api.dio.options.baseUrl)
-                  .resolve('/api/guardian/v1/files/${Uri.encodeComponent(id)}')
-                  .toString();
+              final url = _photoUrl(
+                session,
+                '/api/guardian/v1/files/${Uri.encodeComponent(id)}',
+              );
               Widget photo() => Image.network(
                 url,
                 headers: {'X-Wearable-Token': session.token ?? ''},
@@ -288,7 +296,7 @@ class _EventSubmittedPhotosState extends State<EventSubmittedPhotos> {
   @override
   void didUpdateWidget(covariant EventSubmittedPhotos old) {
     super.didUpdateWidget(old);
-    if (old.version != widget.version) {
+    if (old.eventId != widget.eventId || old.version != widget.version) {
       loading = WearScope.of(
         context,
       ).api.get('/api/v1/events/${widget.eventId}/media');
@@ -311,7 +319,7 @@ class _EventSubmittedPhotosState extends State<EventSubmittedPhotos> {
             child: const Text('现场附件加载失败，点击重试'),
           );
         }
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState != ConnectionState.done) {
           return const LinearProgressIndicator(minHeight: 2);
         }
         final rows = jsonList(snapshot.data);
@@ -334,9 +342,7 @@ class _EventSubmittedPhotosState extends State<EventSubmittedPhotos> {
               runSpacing: 8,
               children: rows.map((row) {
                 if (session.api.isMock) return MockMediaTile(media: row);
-                final url = Uri.parse(
-                  session.api.dio.options.baseUrl,
-                ).resolve(textOf(row['url'])).toString();
+                final url = _photoUrl(session, textOf(row['url']));
                 final video = textOf(row['mediaType']).startsWith('video/');
                 final headers = {'X-Wearable-Token': session.token ?? ''};
                 Widget photo() => Image.network(

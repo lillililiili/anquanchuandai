@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class AdminMasterService {
-    private static final List<String> ENTITIES = Arrays.asList("people", "organizations", "sites", "dutyShifts");
+    private static final List<String> ENTITIES = Arrays.asList("people", "organizations", "sites");
     private static final List<String> ACTIONS = Arrays.asList("create", "update", "status", "delete");
     private static final Pattern CJK = Pattern.compile("[\\u4e00-\\u9fff]");
     private final AdminLedgerStore ledger;
@@ -161,10 +161,6 @@ public class AdminMasterService {
     private JSONObject status(JSONObject state, JSONObject actor, String entity, JSONObject row, JSONObject input) {
         if (!input.containsKey("enabled") || !(input.get("enabled") instanceof Boolean)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "启停状态无效");
         boolean enabled = input.getBooleanValue("enabled");
-        if ("dutyShifts".equals(entity)) {
-            Instant start = parseInstant(row.getString("startsAt"));
-            if (enabled || start == null || !start.isAfter(Instant.now())) throw AdminQueryService.fail(409, "SHIFT_STARTED", "仅未来班次允许取消，不能恢复已取消班次");
-        }
         if (!enabled && referenced(state, entity, row, false)) throw AdminQueryService.fail(409, "REFERENCED", "存在活动引用，请先处理影响清单");
         if (enabled && row.getString("parentId") != null) requireEnabled(state, actor, entity, row.getString("parentId"), row.getString("siteId"), input);
         if (enabled && "people".equals(entity)) {
@@ -190,12 +186,10 @@ public class AdminMasterService {
         }
         record.put("name", required(data, "name", 100, "名称"));
         record.put("version", (row == null ? 0 : row.getIntValue("version")) + 1);
-        if (!"dutyShifts".equals(entity)) {
-            record.put("code", required(data, "code", 50, "编号"));
-            for (JSONObject other : rows(state, entity)) {
-                if (record.getString("id").equals(other.getString("id"))) continue;
-                if (other.getString("code") != null && other.getString("code").equalsIgnoreCase(record.getString("code"))) throw AdminQueryService.fail(409, "RELATION_CONFLICT", "编号已存在，请使用其他编号");
-            }
+        record.put("code", required(data, "code", 50, "编号"));
+        for (JSONObject other : rows(state, entity)) {
+            if (record.getString("id").equals(other.getString("id"))) continue;
+            if (other.getString("code") != null && other.getString("code").equalsIgnoreCase(record.getString("code"))) throw AdminQueryService.fail(409, "RELATION_CONFLICT", "编号已存在，请使用其他编号");
         }
         if ("organizations".equals(entity)) {
             record.remove("enabled");
@@ -238,33 +232,6 @@ public class AdminMasterService {
                 record.put("equipmentEvidence", evidence);
             }
         }
-        if ("dutyShifts".equals(entity)) {
-            Instant existingStart = row == null ? null : parseInstant(row.getString("startsAt"));
-        if (row != null && (!row.getBooleanValue("enabled") || existingStart == null || !existingStart.isAfter(Instant.now()))) throw AdminQueryService.fail(409, "SHIFT_STARTED", "已开始或已取消班次不能普通编辑");
-            Instant start = requireInstant(data, "startsAt");
-            Instant end = requireInstant(data, "endsAt");
-            if (!start.isAfter(Instant.now()) || !end.isAfter(start)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "班次必须在未来开始，结束晚于开始");
-            JSONArray people = data.getJSONArray("personIds");
-            if (people == null || people.isEmpty()) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择至少一名成员，且不能重复");
-            List<String> seen = new ArrayList<String>();
-            JSONArray snapshots = new JSONArray();
-            for (int i = 0; i < people.size(); i++) {
-                String id = people.getString(i);
-                if (id == null || seen.contains(id)) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择至少一名成员，且不能重复");
-                seen.add(id);
-                JSONObject person = requireEnabled(state, actor, "people", id, siteId, input);
-                if (!queries.allows(state, actor, "duty:write", siteId, person.getString("areaId"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "成员不在可维护范围");
-                JSONObject snap = new JSONObject();
-                snap.put("id", id);
-                snap.put("name", person.getString("name"));
-                snapshots.add(snap);
-            }
-            record.put("startsAt", start.toString());
-            record.put("endsAt", end.toString());
-            record.put("personIds", people);
-            record.put("source", "MOCK");
-            record.put("memberSnapshots", snapshots);
-        }
         JSONArray list = state.getJSONArray(entity);
         if (list == null) { list = new JSONArray(); state.put(entity, list); }
         if (creating) list.add(record);
@@ -276,13 +243,6 @@ public class AdminMasterService {
     private boolean referenced(JSONObject state, String entity, JSONObject row, boolean all) {
         if ("people".equals(entity)) {
             for (JSONObject assignment : rows(state, "assignments")) if (assignment.getBooleanValue("active") && row.getString("id").equals(assignment.getString("personId"))) return true;
-            for (JSONObject shift : rows(state, "dutyShifts")) {
-                JSONArray members = shift.getJSONArray("personIds");
-                if (members == null || !members.contains(row.getString("id"))) continue;
-                if (!all && !shift.getBooleanValue("enabled")) continue;
-                Instant end = parseInstant(shift.getString("endsAt"));
-                if (all || (end != null && end.isAfter(Instant.now()))) return true;
-            }
             if (all) {
                 for (JSONObject group : rows(state, "groups")) if ((group.getJSONArray("personIds") != null && group.getJSONArray("personIds").contains(row.getString("id"))) || row.getString("id").equals(group.getString("leaderId"))) return true;
                 for (JSONObject account : rows(state, "accounts")) if (row.getString("id").equals(account.getString("personId")) || account.getString("id").equals(row.getString("accountId"))) return true;
@@ -383,7 +343,6 @@ public class AdminMasterService {
     private static String writeOperation(String entity) {
         if ("people".equals(entity)) return "people:write";
         if ("sites".equals(entity)) return "sites:write";
-        if ("dutyShifts".equals(entity)) return "duty:write";
         return "organization:write";
     }
 
@@ -409,19 +368,6 @@ public class AdminMasterService {
         String value = data.getString(key);
         if (value == null || value.trim().isEmpty() || value.trim().length() > max) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请填写" + label + "（1–" + max + "字）");
         return value.trim();
-    }
-
-    private static Instant requireInstant(JSONObject data, String key) {
-        String value = data.getString(key);
-        if (value == null || !value.endsWith("Z")) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请提供有效UTC时间");
-        Instant instant = parseInstant(value);
-        if (instant == null) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请提供有效UTC时间");
-        return instant;
-    }
-
-    private static Instant parseInstant(String value) {
-        try { return value == null ? null : Instant.parse(value); }
-        catch (RuntimeException error) { return null; }
     }
 
     private static String blank(String value) { return value == null || value.trim().isEmpty() ? null : value; }

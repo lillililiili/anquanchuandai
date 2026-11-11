@@ -69,7 +69,7 @@ class LocalRecordingReport extends StatelessWidget {
                   ),
               ],
               const Text(
-                '仅表示设备最后一次上报，不代表当前仍在录制或文件已生成；与平台录制分开。',
+                '显示最近一次上报状态；已上传录像请到现场资料查看。',
                 style: TextStyle(color: WearColors.muted),
               ),
             ],

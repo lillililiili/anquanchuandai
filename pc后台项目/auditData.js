@@ -1,7 +1,14 @@
 import { can, hasSite } from './access'
 
 export const AUDIT_QUERIES = ['audit', 'auditDetail', 'auditExport']
-export const AUDIT_RESULTS = { SUCCESS: '成功', SOURCE_FAILURE: '来源失败', BUSINESS_REJECTED: '业务拒绝', FAILED: '失败', FAILURE: '失败（FAILURE）', DENIED: '拒绝' }
+export const AUDIT_RESULTS = { SUCCESS: '成功', SOURCE_FAILURE: '来源失败', BUSINESS_REJECTED: '业务拒绝', FAILED: '失败', FAILURE: '失败', DENIED: '拒绝' }
+export const AUDIT_RESULT_FILTERS = { SUCCESS: '成功', FAILED: '失败', DENIED: '拒绝' }
+export function auditResultMatches(filter, result) {
+  if (!filter) return true
+  if (filter === 'FAILED' || filter === 'FAILURE') return ['FAILED', 'FAILURE', 'SOURCE_FAILURE'].includes(result)
+  if (filter === 'DENIED') return ['DENIED', 'BUSINESS_REJECTED'].includes(result)
+  return filter === result
+}
 const HIDDEN = '[已脱敏]'
 const sensitiveKey = /password|passwd|token|secret|credential|authorization|cookie|url|address|api.?key|access.?key|private.?key|密码|密钥|令牌/i
 
@@ -32,7 +39,7 @@ export function redactAudit(value) {
 
 function filtersFor(input, fail) {
   const filters = {}
-  for (const key of ['keyword', 'actorName', 'objectId', 'action', 'result', 'dateFrom', 'dateTo']) {
+  for (const key of ['keyword', 'actorName', 'recordId', 'objectId', 'action', 'result', 'dateFrom', 'dateTo']) {
     const value = input[key] ?? ''
     if (typeof value !== 'string' || value.length > 100) throw fail(400, 'INVALID_FILTER', '筛选条件最多100字')
     filters[key] = value.trim()
@@ -73,7 +80,9 @@ export function queryAudit(state, actor, kind, input, { fail, page, now, redact 
     const time = Date.parse(row.occurredAt)
     if ((dates.dateFrom != null || dates.dateTo != null) && !Number.isFinite(time)) return false
     if (dates.dateFrom != null && time < dates.dateFrom || dates.dateTo != null && time > dates.dateTo) return false
-    if (['actorName', 'objectId', 'action', 'result'].some(k => filters[k] && String(row[k] || '') !== filters[k])) return false
+    if (filters.recordId && String(row.id || '') !== filters.recordId) return false
+    if (['actorName', 'objectId', 'action'].some(k => filters[k] && String(row[k] || '') !== filters[k])) return false
+    if (!auditResultMatches(filters.result, row.result)) return false
     return [row.id, row.actorName, row.objectId, row.action, row.result, row.requestId, row.operationId].join(' ').toLowerCase().includes(filters.keyword.toLowerCase())
   }).sort((a, b) => String(b.occurredAt).localeCompare(String(a.occurredAt)) || String(b.id).localeCompare(String(a.id)))
   if (kind === 'audit') return { availability: 'AVAILABLE', ...page(rows, { ...input, keyword: '' }) }

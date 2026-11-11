@@ -16,7 +16,7 @@ async function preview(media = file) {
   const raw = await readFile(new URL('../src/components/domain/MediaImage.vue', import.meta.url), 'utf8');
   const { descriptor } = parse(raw);
   const code = compileScript(descriptor, { id: 'media-image-behavior' }).content;
-  const requests = [], created = [], revoked = [], unmounts = [];
+  const requests = [], created = [], revoked = [], unmounts = [], emissions = [];
   const props = Vue.reactive({ media: media ? { ...media } : null });
   const db = Vue.reactive({ demoMode: false });
   const modules = {
@@ -41,7 +41,7 @@ async function preview(media = file) {
   }
   const component = new Function('modules', 'URL', compiled)(modules, TestURL);
   const scope = Vue.effectScope();
-  const instance = scope.run(() => component.setup(props, { expose() {} }));
+  const instance = scope.run(() => component.setup(props, { expose() {}, emit: (name, value) => emissions.push({ name, value }) }));
   const transitions = [];
   scope.run(() => Vue.watch(instance.src, value => transitions.push(value), { flush: 'sync' }));
   const flush = async () => { await Promise.resolve(); await Vue.nextTick(); await Promise.resolve(); };
@@ -52,8 +52,31 @@ async function preview(media = file) {
     scope.stop();
     for (const callback of unmounts) callback();
   }
-  return { instance, props, db, requests, created, revoked, transitions, flush, dispose };
+  return { instance, props, db, requests, created, revoked, transitions, emissions, flush, dispose };
 }
+
+test('video metadata reports measured duration only for the currently loaded file and element', async t => {
+  const f = await preview(); t.after(f.dispose);
+  f.instance.previewElement.value = { duration: 22.933467, dataset: { previewGeneration: String(f.instance.renderGeneration.value) } };
+  const original = f.instance.previewElement.value;
+  f.instance.onMetadata({ target: original });
+  assert.deepEqual(f.emissions, [{ name: 'metadata', value: { key: previewSource.mediaPreviewKey(file), duration: 22.933467 } }]);
+  for (const duration of [NaN, Infinity, 0, -1]) {
+    original.duration = duration;
+    f.instance.onMetadata({ target: original });
+  }
+  assert.equal(f.emissions.length, 1);
+  original.duration = 22.933467;
+  f.props.media = { ...file, id: 'video-2', url: file.url.replace('video-1', 'video-2') };
+  f.instance.onMetadata({ target: original });
+  await f.flush();
+  f.instance.onMetadata({ target: original });
+  assert.equal(f.emissions.length, 1, 'old metadata cannot acquire the new file identity before or after rendering');
+  f.instance.previewElement.value = { duration: 11.75, dataset: { previewGeneration: String(f.instance.renderGeneration.value) } };
+  f.instance.onMetadata({ target: f.instance.previewElement.value });
+  assert.equal(f.emissions[1].value.key, previewSource.mediaPreviewKey(f.props.media));
+  assert.equal(f.emissions[1].value.duration, 11.75);
+});
 
 test('polling the same helmet file preserves its loaded URL and render identity through ticket renewal', async t => {
   const f = await preview(); t.after(f.dispose);

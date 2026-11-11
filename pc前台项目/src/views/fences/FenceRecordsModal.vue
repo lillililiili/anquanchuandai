@@ -43,12 +43,13 @@ function submit() {
 
 <template>
   <form class="dialog-form" @submit.prevent="submit"><div class="dialog-form-body">
-  <AppTable :rows="records" v-slot="{ rows: pageRows }" :columns="['时间', '围栏', '人员', '方向']" :empty="!records.length">
+  <AppTable :rows="records" v-slot="{ rows: pageRows }" :columns="['时间', '围栏', '人员', '方向', '告警']" :empty="!records.length">
     <tr v-for="item in pageRows" :key="item.id">
       <td>{{ item.time }}</td>
       <td>{{ item.fenceName }}</td>
       <td>{{ item.personName }}</td>
       <td><AppTag>{{ item.type }}</AppTag></td>
+      <td><a v-if="item.eventId && db.event(item.eventId)" :href="'#/event/' + encodeURIComponent(item.eventId)" class="fence-record-link" @click="closeModal">查看告警</a><span v-else class="muted">—</span></td>
     </tr>
   </AppTable>
   <div v-if="db.demoMode" class="detail-section">
@@ -64,3 +65,5 @@ function submit() {
     </div><p v-if="error" class="form-error" role="alert">{{ error }}</p>
   </div></div><div class="dialog-form-footer"><AppButton @click="closeModal">关闭</AppButton><AppButton v-if="db.demoMode" type="submit" tone="primary">模拟位置变化</AppButton></div></form>
 </template>
+
+<style scoped>.fence-record-link { color: var(--theme-cyan, #82e9ff); white-space: nowrap; }</style>

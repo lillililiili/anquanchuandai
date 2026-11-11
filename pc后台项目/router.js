@@ -30,6 +30,7 @@ export const router = createRouter({ history: createWebHashHistory(), routes: [
     { path: '/maintenance/:pathMatch(.*)*', redirect: inventoryRedirect },
     { path: '/assignments', component: () => import('./views/Assignments.vue') },
     { path: '/organization', redirect: legacyRedirect },
+    { path: '/duty/:pathMatch(.*)*', redirect: legacyRedirect },
     ...WORKSPACES.map(w => ({ path: w.path, component: MasterWorkspace, meta: w })),
     { path: '/people/:personId', component: PersonDetail, meta: { title: '人员详情', adminFamily: 'detail' } },
     { path: '/integrations/:pathMatch(.*)*', redirect: inventoryRedirect },

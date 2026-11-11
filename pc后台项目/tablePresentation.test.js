@@ -18,6 +18,7 @@ describe('admin presentation preserves source meaning', () => {
     const row = { grants: [{ operations: ['read', 'write'], siteIds: ['s1'] }, { operations: ['read'], siteIds: ['s1', 's2'] }] }
     const original = JSON.stringify(row)
     const columns = masterColumns('roles', { sites: [{ id: 's1', name: '一号厂站' }, { id: 's2', name: '二号厂站' }] }, {}, {}, String)
+    expect(columns.map(column => column.key)).toEqual(['sites', 'createdAt'])
     expect(columns.find(column => column.key === 'sites').value(row)).toBe('一号厂站、二号厂站')
     expect(JSON.stringify(row)).toBe(original)
   })

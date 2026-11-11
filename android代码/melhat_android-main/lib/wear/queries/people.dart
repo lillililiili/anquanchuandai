@@ -170,7 +170,7 @@ class _PeoplePageState extends State<PeoplePage> {
                       key: ValueKey('person-${idOf(person['id'])}'),
                       title: textOf(person['name']),
                       subtitle:
-                          '${textOf(person['personCode'])} · ${textOf(person['teamName'], '未分班组')}',
+                          '${textOf(person['personCode'])} · ${textOf(person['teamName'], '未分组织')}',
                       leading: CircleAvatar(
                         child: Text(
                           textOf(person['name'], '?').characters.first,
@@ -403,7 +403,7 @@ class _PersonPageState extends State<PersonPage> {
                             value: personStatusLabel(person['status']),
                           ),
                           DetailField(
-                            label: '班组',
+                            label: '组织',
                             value: textOf(person['teamName']),
                           ),
                           DetailField(

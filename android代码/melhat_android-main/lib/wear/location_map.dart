@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'core.dart';
+import 'server_clock.dart';
 
 bool isCurrentLocation(JsonMap row, {DateTime? now}) {
   if (row['locationFreshness'] != 'CURRENT') return false;
   final time = DateTime.tryParse(
     idOf(row['locationReportedAt'] ?? row['reportedAt']),
   );
-  final age = time == null ? null : (now ?? DateTime.now()).difference(time);
+  final age = time == null ? null : (now ?? serverClock.now()).difference(time);
   return age != null && !age.isNegative && age <= const Duration(minutes: 5);
 }
 

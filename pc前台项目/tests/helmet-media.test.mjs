@@ -13,6 +13,28 @@ test('media transport rejects executable URLs and keeps retry command identity',
   assert.deepEqual(JSON.parse(calls[0].options.body),{action:'take_photo',parameters:{},idempotencyKey:'retry-key'});
 });
 
+test('media gateway failures preserve status and code without claiming device telemetry is missing',async()=>{
+  for (const [status,body,message] of [
+    [400,{error:'INVALID_QUERY'},'设备请求未被接受，请刷新页面后重试'],
+    [429,{error:'RATE_LIMIT'},'请求过于频繁，请稍后重试'],
+    [502,{error:'BACKEND_UNAVAILABLE'},'设备服务连接失败，请稍后重试'],
+    [401,null,'登录已失效，请重新登录'],
+  ]) {
+    const api=createHelmetMediaApi(async()=>({ok:false,status,json:async()=>body}));
+    await assert.rejects(api.live('H1',{}),error=>error.status===status&&error.code===body?.error&&error.message===message);
+  }
+  const api=createHelmetMediaApi(async()=>({ok:false,status:504,json:async()=>{throw SyntaxError('private proxy response');}}));
+  await assert.rejects(api.live('H1',{}),{message:'设备服务响应超时，请稍后重试',status:504});
+});
+
+test('media business failures retain actionable messages and feature-specific recovery',async()=>{
+  const api=createHelmetMediaApi(async()=>({ok:false,status:409,json:async()=>({message:'领用关系已变化，请刷新',errorCode:'ASSIGNMENT_CHANGED'})}));
+  await assert.rejects(api.command('H1','start_video',{},'request-key'),{message:'领用关系已变化，请刷新',status:409,code:'ASSIGNMENT_CHANGED'});
+  const legacy=createHelmetMediaApi(async()=>({ok:false,status:503,json:async()=>({message:'实时视频待联调'})}));
+  await assert.rejects(legacy.live('H1',{}),{message:'视频服务不可用，请检查设备网络和媒体服务'});
+  await assert.rejects(legacy.command('H1','take_photo',{},'request-key'),{message:'拍照服务不可用，请检查设备网络和媒体服务'});
+});
+
 test('SIP credentials never enter a persisted call snapshot',()=>{
   let saved;
   const store=createStore(null),state=seed();

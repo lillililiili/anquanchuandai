@@ -75,7 +75,12 @@ describe('accounts inherit the complete current role grants', () => {
   })
 
   it('rejects delegation outside any role site even when the request supplies a narrower scope', async () => {
-    const target = await createAccount('delegation-target')
+    setup(() => {
+      const state = createLegacySeed()
+      state.accounts.push({ id: 'delegation-target', name: '历史待补角色账号', loginName: 'delegation-target', siteId, enabled: true, version: 1, roleIds: [] })
+      return state
+    })
+    const target = await query('record', { entity: 'accounts', id: 'delegation-target' })
     api.login('demo-site', 'Admin@2026')
     for (const binding of [{ roleId: 'viewer' }, { roleId: 'viewer', siteIds: [siteId] }, { roleId: 'viewer', siteIds: [] }]) {
       const data = { name: '禁止越权', loginName: 'narrowed-delegation', bindings: [binding] }

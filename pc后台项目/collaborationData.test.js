@@ -11,7 +11,9 @@ const siteId = 'site-1'
 function setup(seed = createSeed) {
   const map = new Map([['Admin-Token', 'real'], ['Wearable-Portal-Mock-Token', 'portal']])
   storage = { getItem: k => map.get(k), setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }
-  api = createAdminService({ storage, seed, delay: 0 }); api.login('demo-system', 'Admin@2026'); serial = 0
+  const fixture = seed()
+  fixture.roles.push({ id: 'mobile-user', name: '测试基础访问角色', enabled: true, version: 1, grants: [{ operations: ['overview:read'], siteIds: [siteId] }] })
+  api = createAdminService({ storage, seed: () => fixture, delay: 0 }); api.login('demo-system', 'Admin@2026'); serial = 0
 }
 beforeEach(() => setup())
 const q = async (kind, input = {}) => (await api.query(kind, { siteId, ...input })).data
@@ -20,7 +22,7 @@ const form = () => ({ code: 'A5-G', name: '预置A5组', leaderId: 'person-1-0',
 const versions = async () => { const c = await q('groupCandidates'); return Object.fromEntries(c.people.map(p => [p.id, p.version])) }
 const createGroup = async (data = form(), extra = {}) => exec('groups.create', { data, relatedVersions: await versions(), ...extra })
 const updateGroup = async (row, data, extra = {}) => exec('groups.update', { id: row.id, expectedVersion: row.version, relatedVersions: await versions(), data, ...extra })
-const account = async () => exec('accounts.create', { data: { name: '预置A5身份', loginName: 'a5-login' } })
+const account = async () => exec('accounts.create', { relatedVersions: { 'mobile-user': 1 }, data: { name: '预置A5身份', loginName: 'a5-login', bindings: [{ roleId: 'mobile-user' }] } })
 const grantInput = (a, extra = {}) => ({ siteId, operationId: 'grant', id: a.id, expectedVersion: a.version, relatedVersions: { viewer: 1 }, data: { name: a.name, loginName: a.loginName, personId: null, bindings: [{ roleId: 'viewer' }] }, ...extra })
 const preview = async (type, command) => q('authorizationPreview', { type, command })
 
@@ -29,13 +31,13 @@ describe('A5 authorization preview and mock credentials', () => {
     const a = await account(), input = grantInput(a), before = await q('audit'), p = await preview('accounts.update', input)
     expect(p.required).toBe(true); expect(p.accounts[0].added.length).toBeGreaterThan(0)
     expect((await q('audit')).total).toBe(before.total)
-    expect((await q('record', { entity: 'accounts', id: a.id })).roleIds).toEqual([])
+    expect((await q('record', { entity: 'accounts', id: a.id })).roleIds).toEqual(['mobile-user'])
     await api.execute('accounts.update', { ...input, previewId: p.previewId })
     api.login(a.id, 'Admin@2026'); expect((await q('context')).sites.map(s => s.id)).toEqual([siteId, 'site-2', 'site-empty']); expect(api.canAny('assets:read', siteId)).toBe(true); expect(api.canAny('assets:write', siteId)).toBe(false)
   })
   it('refuses direct authorization writes without preview and rolls back', async () => {
     const a = await account(); await expect(api.execute('accounts.update', grantInput(a))).rejects.toMatchObject({ errorCode: 'PREVIEW_EXPIRED' })
-    expect((await q('record', { entity: 'accounts', id: a.id })).roleIds).toEqual([]); expect((await q('audit')).total).toBe(1)
+    expect((await q('record', { entity: 'accounts', id: a.id })).roleIds).toEqual(['mobile-user']); expect((await q('audit')).total).toBe(1)
   })
   it.each(['input', 'revision', 'context', 'identity'])('invalidates preview after %s changes', async mode => {
     const a = await account(), input = grantInput(a), p = await preview('accounts.update', input)
@@ -46,7 +48,7 @@ describe('A5 authorization preview and mock credentials', () => {
     await expect(api.execute('accounts.update', { ...input, previewId: p.previewId })).rejects.toMatchObject({ errorCode: 'PREVIEW_EXPIRED' })
   })
   it('ordinary account profile edit needs no confirmation preview', async () => {
-    const a = await account(); const b = await exec('accounts.update', { id: a.id, expectedVersion: a.version, data: { name: '预置更名', loginName: a.loginName, bindings: [] } }); expect(b.name).toBe('预置更名')
+    const a = await account(); const b = await exec('accounts.update', { id: a.id, expectedVersion: a.version, relatedVersions: { 'mobile-user': 1 }, data: { name: '预置更名', loginName: a.loginName, bindings: [{ roleId: 'mobile-user' }] } }); expect(b.name).toBe('预置更名')
   })
   it('preview and actual permission never cross-combine role scopes', () => {
     const s = createSeed(), a = s.accounts.find(a => a.id === 'demo-asset')

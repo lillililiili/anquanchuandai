@@ -48,6 +48,16 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 val info = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
                 when (call.method) {
+                    "appVersion" -> {
+                        val installed = packageManager.getPackageInfo(packageName, 0)
+                        val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            installed.longVersionCode
+                        } else {
+                            @Suppress("DEPRECATION")
+                            installed.versionCode.toLong()
+                        }
+                        result.success(mapOf("name" to installed.versionName, "code" to code))
+                    }
                     "pushAppKey" -> result.success(info.metaData?.getString("JPUSH_APPKEY") ?: "")
                     "pushVendors" -> result.success(info.metaData?.getString("wear.push.vendors") ?: "")
                     else -> result.notImplemented()

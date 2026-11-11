@@ -15,9 +15,11 @@
 .dispatch-page .dispatch-layout > .panel .filters {
   margin: 10px 0;
   gap: 7px;
+  flex-wrap: wrap;
 }
-.dispatch-page .dispatch-layout > .panel .filters .btn {
-  display: none;
+.dispatch-page .dispatch-layout > .panel .filters .searchbox {
+  flex-basis: 100%;
+  min-width: 0;
 }
 .dispatch-page .group-row {
   padding: 10px 7px;

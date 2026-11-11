@@ -139,7 +139,7 @@ onBeforeUnmount(() => { disposed = true; ++listRun; ++readRun; listController?.a
         <div class="work-mode-control"><div><strong>启用作业及外部安监业务</strong><p>{{ enabled ? '可登记作业，开始后关联人员、装备与告警。' : '按人员、装备、告警和核验独立运行，历史作业仅供后台查阅。' }}</p></div><button class="button" :class="enabled ? '' : 'primary'" :disabled="!config || configBusy || busy" @click="toggleBusiness">{{ configBusy ? '正在处理…' : enabled ? '关闭业务' : '开启业务' }}</button></div>
         <dl class="work-config-meta"><dt>修改人</dt><dd>{{ config?.updatedByName || config?.updatedBy || '系统初始配置' }}</dd><dt>修改时间</dt><dd>{{ formatTime(config?.updatedAt) }}</dd><dt>登记方式</dt><dd>本地手工登记</dd></dl>
         <div class="work-policy-note"><h3>关闭后的业务范围</h3><p>各使用端取消作业票、作业关联和外部安监信息。后台作业登记只读，已有作业和告警不会被自动结束，历史资料保留。</p><p>人员装备管理、设备上报、告警认领与核验、视频、语音、定位和地图继续运行。</p></div>
-        <p class="muted">当前支持本地作业登记，尚未连接外部工作票或安监系统。</p>
+        <p class="muted">作业来源：本地手工登记。</p>
       </section>
       <section v-else class="panel master-list">
         <div class="work-list-heading"><div><h2>作业登记</h2><p class="muted">本地维护作业安排，人工开始、结束并保留处理记录。</p></div><button class="button primary" :disabled="!writable || detailLoading || busy" @click="openEditor()">新增作业</button></div>

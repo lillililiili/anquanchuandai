@@ -32,6 +32,10 @@ onUnmounted(() => {
   </Teleport>
   <Teleport v-if="videoTarget" :to="videoTarget">
     <VideoFrame v-for="person in videos" :key="person.id" :person-id="person.id" preview show-name />
+    <div v-if="!videos.length" class="screen-video-empty">
+      <strong>暂无现场视频</strong>
+      <span>领用支持视频的安全帽后显示</span>
+    </div>
   </Teleport>
 </template>
 
@@ -39,7 +43,8 @@ onUnmounted(() => {
 .screen-session-bar { position:fixed; bottom:12px; left:20px; right:20px; z-index:1000; border:1px solid var(--theme-border); border-radius:6px; }
 :deep([data-screen-videos] .video-frame), :deep([data-screen-videos] .helmet-preview) { height:100%; min-height:0; aspect-ratio:auto; }
 :deep([data-screen-videos] .live-video), :deep([data-screen-videos] .live-video video) { height:100%; min-height:0; max-height:100%; }
-:deep([data-screen-videos] .preview-start) { height:100%; min-height:0; padding:8px 12px 38px; gap:6px; font-size:12px; }
-:deep([data-screen-videos] .video-name) { font-size:12px; }
+:deep([data-screen-videos] .preview-start) { height:100%; min-height:0; padding:56px 12px 8px; gap:6px; font-size:12px; }
+:deep([data-screen-videos] .video-name) { top:8px; left:10px; right:10px; font-size:12px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+:deep([data-screen-videos] .video-name small) { overflow:hidden; text-overflow:ellipsis; }
 :deep([data-screen-videos] .live-label) { top:auto; bottom:32px; font-size:10px; padding:2px 5px; }
 </style>

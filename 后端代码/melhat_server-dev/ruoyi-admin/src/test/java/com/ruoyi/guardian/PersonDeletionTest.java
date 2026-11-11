@@ -63,10 +63,9 @@ class PersonDeletionTest {
         input.put("expectedVersion", 2);assertEquals("IDEMPOTENCY_CONFLICT", send(input, 409).getString("errorCode"));
     }
     @Test void everyLiveReferenceBlocksDeletionIncludingDisabledBindingsAndLegacyDeviceLinks() {
-        String[] keys = {"assignments", "dutyShifts", "groups", "groups", "accounts", "devices"};
+        String[] keys = {"assignments", "groups", "groups", "accounts", "devices"};
         JSONObject[] refs = {
                 object("id", "active-assignment", "active", true, "personId", "person"),
-                object("id", "historic-shift", "enabled", false, "endsAt", "2000-01-01T00:00:00Z", "personIds", JSONArray.of("person")),
                 object("id", "disabled-group", "enabled", false, "personIds", JSONArray.of("person")),
                 object("id", "group-leader", "enabled", false, "personIds", new JSONArray(), "leaderId", "person"),
                 object("id", "disabled-account", "enabled", false, "personId", "person"),
@@ -80,6 +79,32 @@ class PersonDeletionTest {
         rows(saved.get(), "accounts").add(object("id", "reverse-account", "enabled", false));find(saved.get(), "people", "person").put("accountId", "reverse-account");
         assertEquals(1, impacts().getJSONArray("rows").size());assertEquals("REFERENCED", assertThrows(AdminQueryService.QueryFailed.class, () -> remove(command())).errorCode);
         find(saved.get(), "people", "person").put("accountId", "missing-account");assertTrue(remove(command()).getBooleanValue("deleted"));
+    }
+    @Test void retiredRostersDoNotBlockDeactivationOrDeletionAndRemainArchived() {
+        rows(saved.get(), "dutyShifts").add(object("id", "old-shift", "enabled", false, "endsAt", "2000-01-01T00:00:00Z", "personIds", JSONArray.of("person")));
+        rows(saved.get(), "dutyShifts").add(object("id", "future-shift", "enabled", true, "endsAt", "2099-01-01T00:00:00Z", "personIds", JSONArray.of("person")));
+        JSONArray before = copy(saved.get()).getJSONArray("dutyShifts");
+        assertTrue(impacts().getJSONArray("rows").isEmpty());
+        JSONObject activeImpacts = new JSONObject(queries.query(actor.getString("id"), "impacts", object("siteId", "site-1", "entity", "people", "id", "person", "all", false)));
+        assertTrue(activeImpacts.getJSONArray("rows").isEmpty());
+        JSONObject disable = command();disable.put("enabled", false);
+        JSONObject disabled = masters.execute(actor.getString("id"), "people.status", disable).getJSONObject("data");
+        assertFalse(disabled.getBooleanValue("enabled"));
+        JSONObject deletion = command();deletion.put("expectedVersion", disabled.getIntValue("version"));
+        assertTrue(remove(deletion).getBooleanValue("deleted"));
+        assertEquals(before, saved.get().getJSONArray("dutyShifts"));
+    }
+    @Test void retiredRosterQueriesAndCommandsAreRejectedWithoutChangingData() {
+        String before = saved.get().toJSONString();
+        assertEquals("INVALID_ENTITY", assertThrows(AdminQueryService.QueryFailed.class,
+                () -> queries.query(actor.getString("id"), "master", object("entity", "dutyShifts", "siteId", "site-1"))).errorCode);
+        for (String action : new String[]{"create", "update", "status", "delete"}) {
+            String type = "dutyShifts." + action;
+            assertFalse(masters.handles(type));
+            assertEquals("UNKNOWN_COMMAND", assertThrows(AdminQueryService.QueryFailed.class,
+                    () -> masters.execute(actor.getString("id"), type, command())).errorCode);
+        }
+        assertEquals(before, saved.get().toJSONString());
     }
     @Test void openWorkBlocksDeletionAndIsReported() {
         find(projection.get(),"people","P-DELETE").put("active",true);find(projection.get(),"people","P-DELETE").put("station","S1");

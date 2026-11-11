@@ -137,6 +137,5 @@ async function fullscreen(event) {
         </div>
       </AppPanel>
     </div>
-    <p class="note"><AppIcon name="information-line" />真实设备以直播流、上传文件和指令回执为准；暂无真实影像时显示空态。</p>
   </template>
 </template>
