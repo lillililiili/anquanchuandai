@@ -124,10 +124,12 @@ test('uncertain creation retries the same request key and keeps the shared sessi
 });
 
 test('server permission refusal releases the prepared microphone without joining', async () => {
-  const f = fixture({ create: async () => ({ httpStatus: 403, errorCode: 'PERMISSION_DENIED', message: '设备不在授权范围' }) });
+  for (const errorCode of ['PERMISSION_DENIED', 'SPLIT_DEVICE_UNAVAILABLE', 'SPLIT_DISABLED']) {
+  const f = fixture({ create: async () => ({ httpStatus: errorCode === 'PERMISSION_DENIED' ? 403 : 409, errorCode, message: '设备不在授权范围' }) });
   await f.call.start(device(), media, false, assignment);
   assert.equal(f.call.getState().phase, 'failed'); assert.deepEqual(f.rtcEvents, [['leave']]);
   assert.doesNotThrow(() => f.guard.acquire());
+  }
 });
 
 test('microphone failure requests server end; it never reports local cleanup as confirmed termination', async () => {

@@ -35,8 +35,12 @@ ResponseBody rosterReply(RequestOptions r) {
       'online': '1',
       'connectionQuality': 'ok',
       'currentAssignment': {'personId': '7'},
+      'featureStates': {
+        for (final feature in ['voice', 'videoCall'])
+          feature: {'supported': true, 'verified': true, 'available': true},
+      },
       'capabilities': {
-        'actions': ['intercom'],
+        'actions': ['intercom', 'video_call'],
       },
     });
   }
@@ -143,7 +147,7 @@ void main() {
   );
 
   testWidgets(
-    'forbidden call history does not discard contacts or prevent selection',
+    'selecting a contact recovers active calls without loading call history',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(390, 900);
@@ -151,7 +155,14 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       var historyReads = 0;
+      var recoveryReads = 0;
       final session = sessionWith((r) {
+        if (r.path == '/api/v1/calls' &&
+            r.queryParameters['owned'] == true &&
+            r.queryParameters['status'] == 'active') {
+          recoveryReads++;
+          return reply([]);
+        }
         if (r.path.endsWith('/calls')) {
           historyReads++;
           return reply(null, code: 403, msg: '无通话历史权限');
@@ -180,11 +191,13 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('通讯测试人员'));
-      await tester.tap(find.text('通讯测试人员'));
+      await tester.tap(find.byKey(const ValueKey('contact-helmet-p:7')));
       await tester.pumpAndSettle();
       expect(find.text('通讯测试人员'), findsOneWidget);
       expect(find.text('通讯数据加载失败'), findsNothing);
-      expect(historyReads, greaterThan(0));
+      expect(find.text('1 项'), findsOneWidget);
+      expect(historyReads, 0);
+      expect(recoveryReads, greaterThan(0));
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

@@ -4,15 +4,25 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import 'data.dart';
+import 'person_duty_status.dart';
 
 /// In-memory transport. Every request ends here, including unsupported paths.
 /// There is deliberately no IO adapter and no fallback to a backend.
 class MockBackend implements HttpClientAdapter {
+  JsonMap _ledgerDevice(JsonMap device) => {
+    ...device,
+    'relation': device['currentAssignment'] == null ? 'UNASSIGNED' : 'ASSIGNED',
+  };
+
   static final shared = MockBackend();
   final bool _scoped;
   MockBackend({bool scoped = false}) : _scoped = scoped {
     for (var i = 0; i < people.length; i++) {
-      people[i].addAll({'teamId': i < 2 ? '1' : '2', 'demo': true});
+      people[i].addAll({
+        'teamId': i < 2 ? '1' : '2',
+        'demo': true,
+        'dutyStatus': PersonDutyStatus.from(people[i]['dutyStatus']).code,
+      });
     }
     for (var i = 0; i < devices.length; i++) {
       devices[i].addAll({
@@ -501,25 +511,20 @@ class MockBackend implements HttpClientAdapter {
       }
       return missing();
     }
-    if (p == '/api/v1/people/options') {
-      return reply(
-        people.where((p) => _admin || p['id'] == _personId).toList(),
-      );
-    }
-    if (p == '/api/v1/people') {
-      final name = textOf(o.queryParameters['name'], '');
-      return reply(
-        page(
-          people
-              .where(
-                (r) =>
-                    (_admin || r['id'] == _personId) &&
-                    idOf(r['name']).contains(name),
-              )
-              .toList(),
-          o,
-        ),
-      );
+    if (p == '/api/v1/people' || p == '/api/v1/people/options') {
+      final q = o.queryParameters;
+      final records = people
+          .where(
+            (r) =>
+                (_admin || r['id'] == _personId) &&
+                idOf(r['name']).contains(idOf(q['name'])) &&
+                (idOf(q['dutyStatus']).isEmpty ||
+                    q['dutyStatus'] ==
+                        PersonDutyStatus.from(r['dutyStatus']).code) &&
+                (idOf(q['status']).isEmpty || q['status'] == r['status']),
+          )
+          .toList();
+      return reply(p.endsWith('/options') ? records : page(records, o));
     }
     if (p.startsWith('/api/v1/people/')) {
       final person = people.where((r) => r['id'] == parts[4]).firstOrNull;
@@ -539,6 +544,7 @@ class MockBackend implements HttpClientAdapter {
       return reply(
         page(
           devices
+              .map(_ledgerDevice)
               .where(
                 (r) =>
                     (_admin ||
@@ -547,6 +553,8 @@ class MockBackend implements HttpClientAdapter {
                     idOf(r['sn']).contains(textOf(query['sn'], '')) &&
                     (idOf(query['typeCode']).isEmpty ||
                         r['typeCode'] == query['typeCode']) &&
+                    (idOf(query['relation']).isEmpty ||
+                        r['relation'] == query['relation']) &&
                     (idOf(query['assetStatus']).isEmpty ||
                         r['assetStatus'] == query['assetStatus']),
               )
@@ -562,7 +570,7 @@ class MockBackend implements HttpClientAdapter {
           jsonMap(device['currentAssignment'])['personId'] != _personId) {
         return forbidden();
       }
-      if (parts.length == 5) return reply(device);
+      if (parts.length == 5) return reply(_ledgerDevice(device));
       if (parts.last == 'assignments') {
         return reply(
           assignmentHistory

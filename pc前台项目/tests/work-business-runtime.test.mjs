@@ -5,6 +5,7 @@ import { ref } from 'vue';
 import { createStore } from '../src/mock/data.js';
 import { fixtureState } from './fixtures/person-device-data.mjs';
 import { workBusinessEnabled, workStatus, withoutWorkQuery } from '../src/lib/work-business.js';
+import { deviceSourceLabel } from '../src/lib/device-telemetry.js';
 
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
@@ -98,10 +99,11 @@ test('打开中的地图人员浮层随模式隐藏作业字段，保留定位�
   const node = { innerHTML: '' }, person = { id: 'P1', name: '张工' };
   const db = { state: { businessConfig: { workBusinessEnabled: true } }, locationValid: () => true, locationDevice: () => ({ id: 'H1' }) };
   const bindings = { map: true, ensurePopup() {}, props: { popup: true }, visiblePeople: { value: [person] }, hoveredId: { value: 'P1' },
-    positionOf: () => [117,36], popupOverlay: { getElement: () => node, setPosition() {} }, db, workBusinessEnabled, workName: () => '作业甲', esc: String, iconMarkup: () => '', projected: value => value };
+    positionOf: () => [117,36], popupOverlay: { getElement: () => node, setPosition() {} }, db, workBusinessEnabled, deviceSourceLabel, workName: () => '作业甲', esc: String, iconMarkup: () => '', projected: value => value };
   const render = new Function(...Object.keys(bindings), body + '\nreturn renderPopup;')(...Object.values(bindings));
   render(); assert.match(node.innerHTML, /作业甲/);
   db.state.businessConfig.workBusinessEnabled = false; render();
   assert.doesNotMatch(node.innerHTML, /作业/);
   assert.match(node.innerHTML, /H1/); assert.match(node.innerHTML, /历史轨迹/); assert.match(node.innerHTML, /查看人员/);
+  db.locationDevice = () => ({ id: 'SPLIT-1', source: 'SPLIT_HELMET' }); render(); assert.match(node.innerHTML, /分体式安全帽/);
 });

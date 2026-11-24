@@ -13,6 +13,10 @@ void main() {
     final router = GoRouter.of(t.element(find.byType(WearShell)));
     router.go('/events?eventId=402');
     await t.pumpAndSettle();
+    await tapAcceptance(
+      t,
+      find.byKey(const ValueKey('event-open-observation')),
+    );
     await enterAcceptance(t, 'event-observation', 'unsubmitted cache draft');
     FocusManager.instance.primaryFocus?.unfocus();
     router.go('/me');

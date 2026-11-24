@@ -5,7 +5,7 @@ const absent = reason => ({ supported: false, verified: false, available: false,
 export function personFeature(db, personId, key) {
   const person = db.person(personId);
   if (!person) return absent('人员不存在');
-  const assigned = db.currentDevices(personId).filter(d => d.active !== false && (key !== 'voice' || d.type === 'H' && (db.demoMode || d.source === 'DIRECT_HELMET')));
+  const assigned = db.currentDevices(personId).filter(d => d.active !== false && (key !== 'voice' || d.type === 'H' && (db.demoMode || ['DIRECT_HELMET','SPLIT_HELMET'].includes(d.source))));
   const context = db.state.personEquipmentContext?.[personId];
   const target = context?.features?.[key];
   const device = target?.deviceId ? assigned.find(d => d.id === target.deviceId) :
@@ -25,8 +25,9 @@ export function personFeature(db, personId, key) {
     if (bindings.length !== 1 || binding.personId !== personId || binding.assignmentId !== target.assignmentId || binding.assignmentVersion !== target.assignmentVersion) {
       return { ...result, available: false, reason: '领用关系已变化，请刷新' };
     }
-    if (String(device.communicationProtocol).toUpperCase() !== 'SIP') return { ...result, available: false, reason: '安全帽语音配置异常，请检查 SIP 设置' };
-    if (device.sipRegistered === false || !(device.voiceAvailable === true || device.sipRegistered === true || device.capabilities?.sipRegistered === true)) return { ...result, available: false, reason: '安全帽语音未注册，请检查设备网络和语音服务' };
+    if (device.source === 'SPLIT_HELMET' && String(device.communicationProtocol).toUpperCase() !== 'ZLM_WEBRTC') return { ...result, available: false, reason: '分体帽通话服务尚未就绪' };
+    if (device.source !== 'SPLIT_HELMET' && String(device.communicationProtocol).toUpperCase() !== 'SIP') return { ...result, available: false, reason: '安全帽语音配置异常，请检查 SIP 设置' };
+    if (device.source !== 'SPLIT_HELMET' && (device.sipRegistered === false || !(device.voiceAvailable === true || device.sipRegistered === true || device.capabilities?.sipRegistered === true))) return { ...result, available: false, reason: '安全帽语音未注册，请检查设备网络和语音服务' };
   }
   const available = declared.available && target.available === true;
   const reason = featureUnavailableReason(target.reason || declared.reason, key);

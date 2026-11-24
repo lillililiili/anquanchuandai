@@ -107,6 +107,13 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
                 title: const Text('从相册选择照片'),
                 onTap: () => Navigator.pop(ctx, 'gallery'),
               ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
+                child: Text(
+                  '支持 JPG、PNG，最多 6 张，每张不超过 10 MB。',
+                  style: TextStyle(color: WearColors.muted),
+                ),
+              ),
             ],
           ),
         ),
@@ -179,16 +186,6 @@ class _EventPhotoCaptureState extends State<EventPhotoCapture> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
-        '现场照片（选填）',
-        style: TextStyle(fontWeight: FontWeight.w700, color: WearColors.ink),
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        '最多6张 JPG/PNG，单张不超过10MB；随本次现场补充或核验提交',
-        style: TextStyle(color: WearColors.muted, fontSize: 12),
-      ),
-      const SizedBox(height: 10),
       Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -323,67 +320,66 @@ class _EventSubmittedPhotosState extends State<EventSubmittedPhotos> {
           return const LinearProgressIndicator(minHeight: 2);
         }
         final rows = jsonList(snapshot.data);
-        if (rows.isEmpty) {
-          return const Text(
-            '暂无已提交附件',
-            style: TextStyle(color: WearColors.muted),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '已提交现场附件',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: rows.map((row) {
-                if (session.api.isMock) return MockMediaTile(media: row);
-                final url = _photoUrl(session, textOf(row['url']));
-                final video = textOf(row['mediaType']).startsWith('video/');
-                final headers = {'X-Wearable-Token': session.token ?? ''};
-                Widget photo() => Image.network(
-                  url,
-                  headers: headers,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, e, s) =>
-                      const Icon(Icons.broken_image_outlined),
-                );
-                return InkWell(
-                  onTap: () => showDialog<void>(
-                    context: context,
-                    builder: (ctx) => video
-                        ? EventVideoPreview(source: url, headers: headers)
-                        : Dialog(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(child: photo()),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx),
-                                  child: const Text('关闭'),
-                                ),
-                              ],
+        if (rows.isEmpty) return const SizedBox.shrink();
+        return WearCard(
+          padding: EdgeInsets.zero,
+          child: ExpansionTile(
+            key: ValueKey('submitted-media-${widget.eventId}'),
+            leading: const Icon(Icons.attachment),
+            title: Text('现场附件（${rows.length}）'),
+            shape: const Border(),
+            collapsedShape: const Border(),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            expandedAlignment: Alignment.centerLeft,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: rows.map((row) {
+                  if (session.api.isMock) return MockMediaTile(media: row);
+                  final url = _photoUrl(session, textOf(row['url']));
+                  final video = textOf(row['mediaType']).startsWith('video/');
+                  final headers = {'X-Wearable-Token': session.token ?? ''};
+                  Widget photo() => Image.network(
+                    url,
+                    headers: headers,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, e, s) =>
+                        const Icon(Icons.broken_image_outlined),
+                  );
+                  return InkWell(
+                    onTap: () => showDialog<void>(
+                      context: context,
+                      builder: (ctx) => video
+                          ? EventVideoPreview(source: url, headers: headers)
+                          : Dialog(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(child: photo()),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('关闭'),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                  ),
-                  child: SizedBox(
-                    width: 96,
-                    height: 96,
-                    child: video
-                        ? const ColoredBox(
-                            color: Color(0xFFE8F1FF),
-                            child: Icon(Icons.play_circle_outline, size: 32),
-                          )
-                        : photo(),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
+                    ),
+                    child: SizedBox(
+                      width: 96,
+                      height: 96,
+                      child: video
+                          ? const ColoredBox(
+                              color: Color(0xFFE8F1FF),
+                              child: Icon(Icons.play_circle_outline, size: 32),
+                            )
+                          : photo(),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         );
       },
     );

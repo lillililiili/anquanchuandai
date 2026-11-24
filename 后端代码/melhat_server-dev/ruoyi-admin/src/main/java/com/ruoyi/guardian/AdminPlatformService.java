@@ -52,7 +52,7 @@ public class AdminPlatformService {
                     device=row;
                 }
             }
-            if(device!=null && ("DIRECT_HELMET".equals(device.getString("source")) || "DIRECT_BELT".equals(device.getString("source"))))
+            if(device!=null && ("DIRECT_HELMET".equals(device.getString("source")) || "DIRECT_BELT".equals(device.getString("source")) || "SPLIT_HELMET".equals(device.getString("source"))))
                 throw AdminQueryService.fail(409,"DEVICE_CONFLICT","厂家列表与直连设备身份冲突，不能接管已登记的直连设备");
             if(device!=null && (!"HELMET".equals(device.getString("type")) || device.getString("code").startsWith("RL-")))
                 throw AdminQueryService.fail(409,"DEVICE_CONFLICT","厂家编号与现有其他类型或示例设备冲突");

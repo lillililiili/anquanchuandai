@@ -185,7 +185,14 @@ void main() {
       expect(find.widgetWithText(TextButton, '设备语音'), findsNothing);
       expect(find.widgetWithText(TextButton, '文字播报'), findsNothing);
       expect(find.text('视频群聊'), findsNothing);
-      expect(find.byKey(const ValueKey('contact-call-p:P1')), findsNothing);
+      for (final kind in ['call', 'helmet']) {
+        expect(
+          t
+              .widget<IconButton>(find.byKey(ValueKey('contact-$kind-p:P1')))
+              .onPressed,
+          isNull,
+        );
+      }
       expect(t.takeException(), isNull);
     },
   );

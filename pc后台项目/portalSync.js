@@ -35,14 +35,20 @@ export function applyTelemetry(adminState, snapshot) {
   for (const device of adminState.devices || []) {
     const remote = byId.get(device.portalDeviceId || device.code || device.id)
     if (!remote || !Object.hasOwn(remote, 'online')) continue
-    if (['PLATFORM', 'DIRECT_HELMET', 'DIRECT_BELT'].includes(remote.source)) {
+    if (['PLATFORM', 'DIRECT_HELMET', 'SPLIT_HELMET', 'DIRECT_BELT'].includes(remote.source)) {
       const sourceTime = remote.sourceTime || remote.updated || null
       const observed = Date.parse(sourceTime)
       const age = serverNow() - observed
       const current = String(remote.freshness).toUpperCase() === 'CURRENT' && Number.isFinite(observed) && age >= 0 && age <= 300000
       device.communication = remote.online === false ? 'OFFLINE' : !current || remote.online !== true ? 'UNKNOWN' : 'ONLINE'
       const battery = remote.battery == null || remote.battery === '' ? NaN : Number(remote.battery)
-      device.battery = current && Number.isFinite(battery) && battery >= 0 && battery <= 100 ? battery : null
+      const batteryAge = serverNow() - Date.parse(remote.batteryReportedAt || '')
+      const batteryCurrent = remote.source === 'SPLIT_HELMET' ? remote.batteryFreshness === 'CURRENT' && Number.isFinite(batteryAge) && batteryAge >= 0 && batteryAge <= 300000 : current
+      device.battery = batteryCurrent && Number.isFinite(battery) && battery >= 0 && battery <= 100 ? battery : null
+      if (remote.source === 'SPLIT_HELMET') for (const field of ['battery', 'isWeared', 'pressure', 'barometricAltitude', 'temperature', 'tfEnable', 'storageUsed', 'storageAvailable', 'storageTotal']) {
+        if (field !== 'battery' && Object.hasOwn(remote, field)) device[field] = remote[field]
+        for (const suffix of ['ReportedAt', 'Freshness']) if (Object.hasOwn(remote, field + suffix)) device[field + suffix] = remote[field + suffix]
+      }
       device.freshness = current ? 'CURRENT' : age > 300000 || String(remote.freshness).toUpperCase() === 'STALE' ? 'STALE' : 'UNKNOWN'
       device.sourceTime = sourceTime
       continue

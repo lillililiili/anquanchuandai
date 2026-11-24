@@ -12,7 +12,7 @@ import 'wear_session_test.dart'
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets(
-    'message shortcuts preserve server filters and expose claim before the form',
+    'the message list opens a severity result and exposes claim before the form',
     (tester) async {
       final reads = <Map<String, dynamic>>[];
       final writes = <String>[];
@@ -79,12 +79,11 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await click(find.byKey(const ValueKey('inline-filter-toggle')));
-      await click(find.byKey(const ValueKey('filter-flags-mine')));
-      expect(reads.last['claimantUserId'], '7');
-      await click(find.byKey(const ValueKey('filter-flags-escalated')));
-      expect(reads.last['escalated'], 'true');
-      expect(reads.last['claimantUserId'], '7', reason: '组合筛选保留我负责条件');
+      expect(find.text('事件筛选'), findsNothing);
+      await click(find.byKey(const ValueKey('event-level-emergency')));
+      expect(reads.last['severity'], 'emergency');
+      expect(reads.last.containsKey('claimantUserId'), isFalse);
+      expect(reads.last.containsKey('escalated'), isFalse);
       await click(find.byKey(const ValueKey('wear-event-a')));
       expect(find.byType(EventsPage), findsWidgets);
       expect(

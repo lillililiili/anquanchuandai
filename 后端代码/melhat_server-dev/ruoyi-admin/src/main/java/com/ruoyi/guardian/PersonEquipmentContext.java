@@ -34,7 +34,7 @@ public class PersonEquipmentContext {
         try {
             GuardianAccess.Context ctx=access.new Context(data,actorId);
             JSONObject device=masterDevice(ctx,captured.getString("deviceId")),person=person(data,captured.getString("personId"));
-            if(device==null||person==null||!Arrays.asList("DIRECT_HELMET","DIRECT_BELT").contains(device.getString("source")))return false;
+            if(device==null||person==null||!Arrays.asList("DIRECT_HELMET","DIRECT_BELT","SPLIT_HELMET").contains(device.getString("source")))return false;
             JSONObject assigned=assignment(ctx,device,person);
             return assigned!=null&&Objects.equals(captured.getString("siteId"),device.getString("siteId"))
                     &&Objects.equals(captured.getString("assignmentId"),assigned.getString("id"))
@@ -74,7 +74,7 @@ public class PersonEquipmentContext {
         JSONObject device=masterDevice(ctx,deviceId);
         if(device==null)throw AdminQueryService.fail(404,"DEVICE_NOT_FOUND","设备不存在或不在授权范围");
         if(!ctx.can(permission,device.getString("siteId"),null))throw AdminQueryService.fail(403,"PERMISSION_DENIED","设备不在操作授权范围");
-        if(!Arrays.asList("DIRECT_HELMET","DIRECT_BELT").contains(device.getString("source")))throw AdminQueryService.fail(409,"DEVICE_UNAVAILABLE","此设备没有真实设备操作能力");
+        if(!Arrays.asList("DIRECT_HELMET","DIRECT_BELT","SPLIT_HELMET").contains(device.getString("source")))throw AdminQueryService.fail(409,"DEVICE_UNAVAILABLE","此设备没有真实设备操作能力");
         JSONObject person=person(ctx.data,text(input,"personId"));
         JSONObject assignment=person==null?null:assignment(ctx,device,person);
         if(assignment==null)throw AdminQueryService.fail(409,"ASSIGNMENT_REQUIRED","请先为人员领用此设备");

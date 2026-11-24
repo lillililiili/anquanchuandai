@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -121,14 +122,29 @@ class EventController extends ChangeNotifier {
     return submitted != null && text == submitted;
   }
 
-  Future<void> initialize({bool applyInitial = true}) async {
+  EventFilters _normalizeListFilters(EventFilters value) {
+    if (value.severity == 'warning') value = value.copyWith(severity: '');
+    return worksEnabled ? value : value.copyWith(taskId: '');
+  }
+
+  Future<void> initialize({
+    bool applyInitial = true,
+    bool keepListContext = false,
+  }) async {
     final scope = _scopeGeneration;
     final restored = await _store.read();
     if (!_acceptScope(scope)) return;
     if (restored != null) {
-      filters = restored.filters;
-      current = restored.current;
-      scrollOffset = restored.scrollOffset;
+      // A detail shares its parent list's workspace. A new list only restores
+      // visible choices; other constraints come from its route.
+      filters =
+          keepListContext ||
+              (applyInitial && initialEventId?.isNotEmpty == true)
+          ? restored.filters
+          : EventFilters(
+              severity: restored.filters.severity,
+              processingFilter: restored.filters.processingFilter,
+            );
       _drafts
         ..clear()
         ..addAll(restored.drafts);
@@ -136,25 +152,29 @@ class EventController extends ChangeNotifier {
     if (applyInitial) {
       if (initialSeverity != null) {
         filters = EventFilters(severity: initialSeverity!);
-        current = 1;
-        scrollOffset = 0;
       }
       filters = filters.copyWith(
         personId: initialPersonId ?? filters.personId,
-        taskId: worksEnabled ? initialTaskId ?? filters.taskId : '',
+        taskId: initialTaskId ?? filters.taskId,
         claimantUserId: initialClaimantUserId ?? filters.claimantUserId,
         escalated: initialEscalated ?? filters.escalated,
         status: initialStatus,
         type: initialType,
       );
     }
+    filters = _normalizeListFilters(filters);
     if (!worksEnabled) {
-      filters = filters.copyWith(taskId: '');
       for (final id in _drafts.keys.toList()) {
         _drafts[id] = _drafts[id]!.copyWith(taskId: '');
       }
-      await _persist();
     }
+    final sameList =
+        restored != null &&
+        !(applyInitial && initialSeverity != null) &&
+        jsonEncode(restored.filters.toJson()) == jsonEncode(filters.toJson());
+    current = sameList ? restored.current : 1;
+    scrollOffset = sameList ? restored.scrollOffset : 0;
+    if (!worksEnabled) await _persist();
     final target = applyInitial
         ? initialEventId ??
               (initialSeverity != null ? '' : restored?.selectedEventId ?? '')
@@ -168,6 +188,7 @@ class EventController extends ChangeNotifier {
     required EventActor actor,
     required EventStateStore store,
   }) async {
+    final sameScope = _scopeKey == scopeKey;
     _scopeGeneration++;
     _pageGeneration++;
     _detailGeneration++;
@@ -195,7 +216,7 @@ class EventController extends ChangeNotifier {
     _ackedLocally.clear();
     _submittedHandleComments.clear();
     notifyListeners();
-    await initialize(applyInitial: false);
+    await initialize(applyInitial: false, keepListContext: sameScope);
   }
 
   Future<void> reload({int? current}) async {
@@ -266,7 +287,7 @@ class EventController extends ChangeNotifier {
       total = 0;
       scrollOffset = 0;
     }
-    filters = worksEnabled ? value : value.copyWith(taskId: '');
+    filters = _normalizeListFilters(value);
     current = 1;
     await _persist();
     await reload(current: 1);

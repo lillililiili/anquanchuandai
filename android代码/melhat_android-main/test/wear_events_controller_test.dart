@@ -133,17 +133,13 @@ void main() {
     },
   );
   test(
-    'restoring multi-select filters keeps all choices on initialization',
+    'a saved warning filter reopens on the first page without a severity limit',
     () async {
       final store = MemoryEventStateStore()
         ..value = const EventWorkspaceState(
-          filters: EventFilters(
-            status: 'all',
-            statuses: ['open', 'closed'],
-            types: ['fall', 'impact'],
-            alarmCodes: ['helmet.removal', 'belt.unhooked'],
-            deviceTypes: ['helmet', 'belt'],
-          ),
+          filters: EventFilters(severity: 'warning'),
+          current: 3,
+          scrollOffset: 420,
         );
       final gateway = FakeEventGateway();
       final controller = EventController(
@@ -159,12 +155,9 @@ void main() {
         const EventPageData(records: [], total: 0, current: 1, size: 20),
       );
       await pending;
-      expect(controller.filters.statuses, ['open', 'closed']);
-      expect(controller.filters.types, ['fall', 'impact']);
-      expect(controller.filters.alarmCodes, [
-        'helmet.removal',
-        'belt.unhooked',
-      ]);
+      expect(controller.filters.toJson(), const EventFilters().toJson());
+      expect(controller.current, 1);
+      expect(controller.scrollOffset, 0);
     },
   );
   test(
@@ -331,7 +324,7 @@ void main() {
   });
 
   test(
-    'stored filters, selection, offset and drafts recover after restart',
+    'the same explicit event route restores its selection, offset and drafts',
     () async {
       final gateway = FakeEventGateway();
       final store = MemoryEventStateStore()
@@ -348,6 +341,8 @@ void main() {
         store: store,
         scopeKey: 'user-12@site-a',
         actor: actor,
+        initialStatus: 'closed',
+        initialType: 'fall',
       );
 
       final init = controller.initialize();

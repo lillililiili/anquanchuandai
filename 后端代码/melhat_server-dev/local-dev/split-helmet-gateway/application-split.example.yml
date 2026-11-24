@@ -1,0 +1,15 @@
+# 追加到智能穿戴后端的独立配置；默认关闭。不要覆盖一体帽/安全带原配置。
+melhat:
+  split:
+    enabled: false
+    base-url: https://api.hel.epplink.com:30090
+    client-id: ${SPLIT_HELMET_CLIENT_ID:}
+    client-secret: ${SPLIT_HELMET_CLIENT_SECRET:}
+    callback-secret: ${SPLIT_HELMET_CALLBACK_SECRET:}
+    # 逗号分隔的厂家 helmetSn，必须同时在本系统手动建档。空白不会导入全部设备。
+    allowed-devices: ${SPLIT_HELMET_ALLOWED_DEVICES:}
+    # 录像机文件源站的精确白名单；填写前核对实际网络和厂家目录响应。
+    file-origins: ${SPLIT_HELMET_FILE_ORIGINS:}
+    timeout-seconds: 15
+    freshness-seconds: 300
+    lease-seconds: 180

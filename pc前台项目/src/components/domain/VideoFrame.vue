@@ -82,7 +82,8 @@ const workEnabled = computed(() => { tick.value; return workBusinessEnabled(db);
       <span v-if="demo" data-video-time>{{ playClock }}</span>
       <div class="spacer"></div>
       <AppButton v-if="demo || feature('photo').supported" :disabled="!demo && !feature('photo').available" :title="!demo ? feature('photo').reason : ''" tone="plain" icon="camera-line" @click="runGuarded(() => capturePhoto(personId))">抓拍</AppButton>
-      <AppButton v-if="demo || feature('recording').supported" :disabled="!demo && !feature('recording').available && session.recording?.person !== personId" :tone="session.recording?.person === personId ? 'red plain' : 'plain'" icon="record-circle-line" @click="runGuarded(() => toggleRecording(personId))">{{ demo ? session.recording?.person === personId ? '停止模拟录像' : '开始模拟录像' : session.recording?.person === personId ? '停止平台录制' : '开始平台录制' }}</AppButton>
+      <AppButton v-if="demo || feature('recording').supported && helmet?.source !== 'SPLIT_HELMET'" :disabled="!demo && !feature('recording').available && session.recording?.person !== personId" :tone="session.recording?.person === personId ? 'red plain' : 'plain'" icon="record-circle-line" @click="runGuarded(() => toggleRecording(personId))">{{ demo ? session.recording?.person === personId ? '停止模拟录像' : '开始模拟录像' : session.recording?.person === personId ? '停止平台录制' : '开始平台录制' }}</AppButton>
+      <a v-if="helmet?.source === 'SPLIT_HELMET'" class="btn plain" :href="'#/single/' + personId">设备录像与水印</a>
       <a class="btn plain" :href="'#/tracks/' + personId"><AppIcon name="map-pin-line" />轨迹</a>
       <AppButton v-if="demo || feature('voice').supported" :disabled="!demo && !feature('voice').available" :title="feature('voice').reason" tone="plain" icon="mic-line" @click="runGuarded(() => callPerson(personId))">调度通信</AppButton>
       <AppButton tone="plain" icon="fullscreen-line" @click="fullscreen">全屏</AppButton>

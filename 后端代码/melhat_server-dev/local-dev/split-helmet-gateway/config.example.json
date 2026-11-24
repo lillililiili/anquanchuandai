@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "listenPort": 18089,
+  "databasePath": "/var/lib/split-helmet-router/inbox.sqlite",
+  "legacyOrigin": "https://original-platform.example/prod-api",
+  "wearableOrigin": "https://wearable-platform.example/split-callback",
+  "routes": {}
+}

@@ -105,7 +105,6 @@ void main() {
                 if (r.path == '/api/v1/locations/people/8') {
                   return reply({'personId': '8'});
                 }
-                if (r.path == '/api/v1/people/8/assignments') return reply([]);
                 throw StateError('Unexpected request: ${r.path}');
               }),
             )
@@ -162,6 +161,7 @@ void main() {
       await tester.ensureVisible(find.text('归还'));
       await tester.tap(find.text('归还'));
       await tester.pumpAndSettle();
+      expect(find.text('安全帽 · H-042\n请确认装备完好，可正常入库。'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, '确认'));
       await tester.pumpAndSettle();
       expect(assigned, isFalse);

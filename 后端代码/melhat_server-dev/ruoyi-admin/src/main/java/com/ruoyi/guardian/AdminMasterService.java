@@ -213,7 +213,8 @@ public class AdminMasterService {
             }
         }
         if ("people".equals(entity)) {
-            record.put("dutyStatus", creating ? "UNKNOWN" : PersonDutyStatus.value(row));
+            record.put("dutyStatus", creating ? "ON_DUTY" : PersonDutyStatus.value(row));
+            if (creating) record.put("dutyStatusSource", "DEFAULT");
             String organizationId = blank(data.getString("organizationId"));
             record.put("organizationId", organizationId);
             if (organizationId != null) requireEnabled(state, actor, "organizations", organizationId, siteId, input);

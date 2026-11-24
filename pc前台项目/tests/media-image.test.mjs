@@ -21,6 +21,7 @@ async function preview(media = file) {
   const db = Vue.reactive({ demoMode: false });
   const modules = {
     vue: { ...Vue, onUnmounted(callback) { unmounts.push(callback); } },
+    '@/lib/split-media-file': { loadSplitMedia: () => Promise.reject(Error('No split fixture response')) },
     '@/lib/files': { blobGet(id) { return new Promise((resolve, reject) => requests.push({ id, resolve, reject })); } },
     '@/lib/helmet-media': { mediaUrl },
     '@/lib/media-preview-source': previewSource,

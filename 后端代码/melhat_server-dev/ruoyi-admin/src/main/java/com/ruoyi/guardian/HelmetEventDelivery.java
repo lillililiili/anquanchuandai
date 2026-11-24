@@ -28,7 +28,7 @@ public class HelmetEventDelivery {
             }
             for(Object raw:WearableModel.rows(store.snapshot(),"events")) {
                 JSONObject event=(JSONObject)raw;
-                if("direct-helmet".equals(event.getString("protocol"))) synchronize(event);
+                if(java.util.Arrays.asList("direct-helmet","split-helmet").contains(event.getString("protocol"))) synchronize(event);
             }
         } catch(RuntimeException error) { warn(); }
     }

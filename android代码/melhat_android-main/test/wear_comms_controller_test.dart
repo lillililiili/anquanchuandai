@@ -291,6 +291,29 @@ void main() {
     },
   );
 
+  test('returning to the idle contact list leaves it free of call notices', () {
+    controller.setForeground(false);
+    controller.setForeground(true);
+    expect(controller.statusMessage, isEmpty);
+    expect(gateway.detailCount, 0);
+  });
+
+  test(
+    'returning after hangup keeps the terminal status without polling',
+    () async {
+      gateway.demo = true;
+      await controller.startCall();
+      await controller.hangUp();
+      final ended = controller.activeCall!;
+      expect(ended.isTerminal, isTrue);
+      final reads = gateway.detailCount;
+      controller.setForeground(false);
+      controller.setForeground(true);
+      expect(controller.statusMessage, ended.statusLabel);
+      expect(gateway.detailCount, reads);
+    },
+  );
+
   test(
     'background and resume calibration do not present stale connected state',
     () async {
@@ -309,6 +332,7 @@ void main() {
       expect(controller.isConnected, isFalse);
       await Future<void>.delayed(Duration.zero);
       expect(controller.isConnected, isTrue);
+      expect(controller.statusMessage, '已接通');
     },
   );
 
@@ -446,6 +470,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(controller.rtcPhase, WearRtcPhase.preparing);
       expect(gateway.startCount, 0);
+      final preparationMessage = controller.statusMessage;
+      controller.setForeground(false);
+      controller.setForeground(true);
+      expect(controller.statusMessage, preparationMessage);
       await controller.cancelPreparation();
       ready.complete();
       await starting;
@@ -464,6 +492,9 @@ void main() {
       expect(gateway.endedIds, isEmpty);
       expect(controller.statusMessage, contains('呼叫结果未确认'));
       expect(controller.activeCall, isNull);
+      controller.setForeground(false);
+      controller.setForeground(true);
+      expect(controller.statusMessage, contains('呼叫结果未确认'));
       expect(rtc.leaveCount, 1);
     },
   );

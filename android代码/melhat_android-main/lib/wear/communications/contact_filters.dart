@@ -95,6 +95,7 @@ class ContactRoster {
     WearApi api, {
     required bool lab,
     bool allTasks = false,
+    bool includeTasks = true,
   }) async {
     // The call transport may be simulated; business records always belong to
     // the main backend. The lab must write its changes there before reading.
@@ -104,7 +105,7 @@ class ContactRoster {
     final detailed = <JsonMap>[];
     var tasksUnavailable = false;
     try {
-      final tasks = !api.workBusinessEnabled
+      final tasks = !includeTasks || !api.workBusinessEnabled
           ? <JsonMap>[]
           : await allPages(
               api,
@@ -244,7 +245,7 @@ List<CommunicationDevice> selectedContactDevices({
   required Set<String> selectedKeys,
   required Set<String> visibleKeys,
   required List<CommunicationDevice> devices,
-  required ContactFilters filters,
+  ContactFilters filters = const ContactFilters(),
 }) {
   final selected = selectedKeys.intersection(visibleKeys);
   return <String, CommunicationDevice>{

@@ -1,5 +1,5 @@
-export const FEATURE_LABELS = Object.freeze({ battery: '电量', wear: '佩戴检测', hooks: '双钩状态', height: '相对高度', location: '定位', alarm: '设备告警', sos: 'SOS 求助', video: '实时视频', photo: '拍照', recording: '录像', voice: '语音对讲', broadcast: '语音播报', vitals: '生命体征' });
-export const ACTION_FEATURES = Object.freeze({ video: 'video', start_video: 'video', stop_video: 'video', take_photo: 'photo', start_recording: 'recording', stop_recording: 'recording', list_recordings: 'recording', upload_recording: 'recording', intercom: 'voice', configure_sip: 'voice', tts: 'broadcast', broadcast: 'broadcast' });
+export const FEATURE_LABELS = Object.freeze({ battery: '电量', wear: '佩戴检测', hooks: '双钩状态', height: '相对高度', location: '定位', alarm: '设备告警', sos: 'SOS 求助', video: '实时视频', photo: '拍照', recording: '录像', voice: '语音对讲', broadcast: '语音播报', vitals: '生命体征', pressure: '气压', storage: 'TF 存储' });
+export const ACTION_FEATURES = Object.freeze({ video: 'video', start_video: 'video', stop_video: 'video', take_photo: 'photo', start_recording: 'recording', stop_recording: 'recording', list_recordings: 'recording', upload_recording: 'recording', intercom: 'voice', set_watermark: 'recording', configure_sip: 'voice', tts: 'broadcast', broadcast: 'broadcast' });
 
 const LIVE_HELMET_FEATURES = new Set(['video', 'videoCall', 'photo', 'recording', 'voice', 'broadcast']);
 const FEATURE_RECOVERY = Object.freeze({
@@ -28,8 +28,8 @@ export function featureState(device, key) {
   if (state && typeof state === 'object') {
     const supported = state.supported === true;
     const verified = supported && state.verified === true;
-    const liveCommand = LIVE_HELMET_FEATURES.has(key) && device.source === 'DIRECT_HELMET' && ['H', 'HELMET'].includes(device.type) &&
-      state.integrationStatus === 'CONNECTED' && (!['voice', 'videoCall'].includes(key) || String(device.communicationProtocol).toUpperCase() === 'SIP');
+    const liveCommand = LIVE_HELMET_FEATURES.has(key) && ['DIRECT_HELMET','SPLIT_HELMET'].includes(device.source) && ['H', 'HELMET'].includes(device.type) &&
+      state.integrationStatus === 'CONNECTED' && (!['voice', 'videoCall'].includes(key) || (device.source === 'SPLIT_HELMET' ? String(device.communicationProtocol).toUpperCase() === 'ZLM_WEBRTC' : String(device.communicationProtocol).toUpperCase() === 'SIP'));
     const available = supported && (verified || liveCommand) && state.available === true;
     const reason = !supported ? state.reason || '该型号不支持' : state.reason;
     return { supported, verified, available, reason: available ? '' : featureUnavailableReason(reason, key) };

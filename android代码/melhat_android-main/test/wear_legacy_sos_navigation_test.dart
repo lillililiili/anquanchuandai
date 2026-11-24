@@ -74,7 +74,7 @@ void main() {
       expect(find.text('事件详情'), findsOneWidget);
       expect(find.text('SOS 求助'), findsWidgets);
       expect(find.text('告警名称未提供'), findsNothing);
-      expect(find.textContaining('紧急 ·'), findsOneWidget);
+      expect(find.text('紧急'), findsOneWidget);
       expect(find.textContaining('陈建国'), findsWidgets);
       expect(find.textContaining('RL-H001'), findsWidgets);
       expect(find.text('提交待审批'), findsNothing);

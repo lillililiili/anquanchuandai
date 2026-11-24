@@ -42,6 +42,7 @@ export function eventSource(event, device) {
   if (event?.source === 'PLATFORM_GEOFENCE') return '平台电子围栏';
   if (event?.source === 'manual_sos') return '手机 SOS';
   if (event?.protocol === 'direct-belt' || device?.source === 'DIRECT_BELT') return '安全带直连';
+  if (event?.protocol === 'split-helmet' || event?.source === 'SPLIT_HELMET' || device?.source === 'SPLIT_HELMET') return '分体式安全帽';
   if (event?.protocol === 'direct-helmet' || device?.source === 'DIRECT_HELMET') return '安全帽直连';
   return event?.source === 'device' ? '设备上报' : event?.source || '来源未提供';
 }

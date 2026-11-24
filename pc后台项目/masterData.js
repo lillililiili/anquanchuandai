@@ -179,7 +179,8 @@ export function applyMaster(state, actor, type, input, { fail, now }) {
   }
   if (entity === 'people') {
     record.organizationId = data.organizationId || null
-    record.dutyStatus = normalizePersonDutyStatus(row?.dutyStatus)
+    record.dutyStatus = creating ? 'ON_DUTY' : normalizePersonDutyStatus(row.dutyStatus)
+    if (creating) record.dutyStatusSource = 'DEFAULT'
     delete record.areaId
     enabledRef('organizations', record.organizationId, siteId, 'organizationId')
     record.remark = typeof data.remark === 'string' ? data.remark.trim() : ''

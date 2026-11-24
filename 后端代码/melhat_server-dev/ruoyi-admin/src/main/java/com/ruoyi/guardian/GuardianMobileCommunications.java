@@ -27,11 +27,21 @@ public class GuardianMobileCommunications {
         // Retry identifies an already-owned request; it must not become a new-call
         // validation failure that hides the original session after return/reassignment.
         JSONObject previous=previous(ctx,input,"call");if(previous!=null){own(ctx,previous);refreshCall(previous);return recover(ctx,previous);}
-        JSONObject device=device(ctx,input.getString("deviceId"),"communications:voice");
-        JSONObject target=equipment.require(ctx,device.getString("portalDeviceId"),input,"voice","communications:voice");
-        if(input.getBooleanValue("video"))equipment.require(ctx,device.getString("portalDeviceId"),input,"videoCall","communications:voice");
+        JSONArray requested=input.getJSONArray("recipients");if(requested==null)requested=JSONArray.of(copy(input));
+        if(requested.isEmpty()||requested.size()>8)throw fail(400,"INVALID_CALL","请选择1至8顶安全帽");
+        JSONArray recipients=new JSONArray(),hats=new JSONArray(),deviceIds=new JSONArray();String site=null;JSONObject device=null,target=null;
+        for(Object raw:requested){if(!(raw instanceof JSONObject))throw fail(400,"INVALID_CALL","呼叫目标格式无效");JSONObject request=copy((JSONObject)raw);request.put("acceptanceTest",input.getBooleanValue("acceptanceTest"));
+            JSONObject d=device(ctx,request.getString("deviceId"),"communications:voice");String sn=d.getString("portalDeviceId");
+            if(deviceIds.contains(sn))throw fail(400,"INVALID_CALL","呼叫设备不能重复");if(site!=null&&!site.equals(d.getString("siteId")))throw fail(400,"SITE_MISMATCH","多帽呼叫必须属于同一厂站");site=d.getString("siteId");
+            if(requested.size()>1&&!voice.isSplit(sn))throw fail(400,"MIXED_PROTOCOL","多帽呼叫仅支持已登记的分体式安全帽，不可混用协议");
+            JSONObject recipient=equipment.require(ctx,sn,request,"voice","communications:voice");
+            if(input.getBooleanValue("video"))equipment.require(ctx,sn,request,"videoCall","communications:voice");
+            recipient.put("acceptanceTest",input.getBooleanValue("acceptanceTest"));recipients.add(copy(recipient));recipient.put("hatNumber",sn);hats.add(recipient);deviceIds.add(sn);
+            if(device==null){device=d;target=recipient;}
+        }
+        if(input.getJSONArray("deviceIds")!=null&&!input.getJSONArray("deviceIds").equals(deviceIds))throw fail(400,"INVALID_CALL","设备列表与完整呼叫目标不一致");
         event(ctx,input.getString("eventId"));
-        if(input.getBooleanValue("video")&&!voice.isDirect(device.getString("portalDeviceId")))throw fail(400,"VOICE_ONLY","此设备当前仅支持安全帽语音");
+        if(input.getBooleanValue("video")&&!voice.isDirect(device.getString("portalDeviceId"))&&!voice.isSplit(device.getString("portalDeviceId")))throw fail(400,"VOICE_ONLY","此设备当前仅支持安全帽语音");
         for(Object raw:rows(store.snapshot(),"sharedCommunications")){
             JSONObject existing=(JSONObject)raw;
             if("call".equals(existing.getString("operationType"))&&ctx.id().equals(existing.getString("requesterUserId"))&&device.getString("portalDeviceId").equals(existing.getString("deviceId"))){
@@ -39,15 +49,14 @@ public class GuardianMobileCommunications {
             }
         }
         if(voice.isDirect(device.getString("portalDeviceId")))voice.directMedia().requireCallReady(Collections.singletonList(device.getString("portalDeviceId")));
-        JSONObject row=base(ctx,input,"call");row.put("deviceId",device.getString("portalDeviceId"));row.put("siteId",device.getString("siteId"));row.put("areaId",device.get("areaId"));row.put("status","requesting");row.put("kind","single");row.put("video",false);row.put("demo",false);
+        JSONObject row=base(ctx,input,"call");row.put("deviceId",device.getString("portalDeviceId"));row.put("deviceIds",deviceIds);row.put("recipients",recipients);row.put("siteId",device.getString("siteId"));row.put("areaId",device.get("areaId"));row.put("status","requesting");row.put("kind",deviceIds.size()>1?"group":"single");row.put("video",false);row.put("demo",false);
         row.putAll(target);row.put("sn",device.getString("portalDeviceId"));row.put("personId",target.get("personId"));row.put("acceptanceTest",input.getBooleanValue("acceptanceTest"));save(row);
         try {
-            JSONArray hats=new JSONArray();JSONObject recipient=copy(target);recipient.put("hatNumber",device.getString("portalDeviceId"));hats.add(recipient);
-            Map<String,Object> rtc=voice.call(hats,ctx.id(),input.getBooleanValue("video"));
-            if("unknown".equals(rtc.get("status"))){row.put("protocol","SIP");row.put("channelName",rtc.get("channel"));row.put("status","unknown");row.put("errorCode","PLATFORM_UNCONFIRMED");row.put("failReason",rtc.get("message"));save(row);return publicRow(row);}
+            Map<String,Object> rtc=voice.isSplit(device.getString("portalDeviceId"))?voice.call(hats,ctx.id(),input.getBooleanValue("video"),row.getString("id")):voice.call(hats,ctx.id(),input.getBooleanValue("video"));
+            if("unknown".equals(rtc.get("status"))||"failed".equals(rtc.get("status"))){row.put("protocol",rtc.get("protocol"));row.put("channelName",rtc.get("channel"));row.put("status",rtc.get("status"));row.put("errorCode","PLATFORM_UNCONFIRMED");row.put("failReason",rtc.get("message"));save(row);return publicRow(row);}
             row.put("channelName",rtc.get("channel"));row.put("status","offered");row.put("expiresAt",Instant.now().plusSeconds(3600).toString());
             row.put("credentials",object("agoraAppId",rtc.get("appId"),"channelName",rtc.get("channel"),"agoraToken",rtc.get("token"),"agoraUid",rtc.get("uid"),"expiresAt",row.get("expiresAt"),"demo",false,"video",false));
-            if("SIP".equals(rtc.get("protocol"))){row.put("protocol","SIP");row.put("video",input.getBooleanValue("video"));row.put("credentials",new JSONObject(rtc));row.put("expiresAt",rtc.get("expiresAt"));}
+            if(Arrays.asList("SIP","ZLM_WEBRTC").contains(rtc.get("protocol"))){row.put("protocol",rtc.get("protocol"));row.put("video",input.getBooleanValue("video"));row.put("credentials",new JSONObject(rtc));row.put("expiresAt",rtc.get("expiresAt"));row.put("skipped",rtc.get("skipped"));}
             save(row);return offered(row,true);
         }catch(AdminQueryService.QueryFailed error){
             if(Arrays.asList("CALL_BUSY","DEVICE_OFFLINE","SIP_NOT_REGISTERED","MEDIA_SERVICE_UNAVAILABLE","INVALID_CALL").contains(error.errorCode)){
@@ -73,12 +82,12 @@ public class GuardianMobileCommunications {
         try { equipment.withSessionAuthority(authority->{
             for(Object raw:rows(store.snapshot(),"sharedCommunications")){
                 JSONObject row=(JSONObject)raw;
-                if(!"call".equals(row.getString("operationType"))||Arrays.asList("ended","failed").contains(row.getString("status"))||!row.containsKey("sessionInvalidatedAt")&&authority.test(row.getString("requesterUserId"),row))continue;
+                if(!"call".equals(row.getString("operationType"))||Arrays.asList("ended","failed").contains(row.getString("status"))||!row.containsKey("sessionInvalidatedAt")&&authorized(authority,row))continue;
                 row.remove("credentials");row.put("sessionInvalidatedAt",Instant.now().toString());row.put("status","unknown");row.put("failReason","领用或权限已变化，原通话正在结束，结果待确认");save(row);
                 try{
                     if(text(row,"channelName").isEmpty())continue;
                     voice.end(row.getString("channelName"));row.put("status","ending");
-                    if("SIP".equals(row.getString("protocol"))){JSONObject remote=voice.directMedia().callState(row.getString("channelName"));if(remote!=null&&Arrays.asList("ended","failed").contains(remote.getString("status")))row.put("status",remote.getString("status"));}
+                    if(Arrays.asList("SIP","ZLM_WEBRTC").contains(row.getString("protocol"))){JSONObject remote=remoteCallState(row);if(remote!=null&&Arrays.asList("ended","failed").contains(remote.getString("status")))row.put("status",remote.getString("status"));}
                     else row.put("status","ended");
                     save(row);
                 }catch(RuntimeException ignored){/* Retain unknown and retry hangup; never return stale credentials. */}
@@ -91,13 +100,14 @@ public class GuardianMobileCommunications {
     @PostMapping("/calls/{id}/joined") public synchronized JSONObject joined(@PathVariable String id,@RequestBody JSONObject body,HttpServletRequest r){
         JSONObject row=owned(id,r);requireCall(access.context(WearableSessions.actor(r)),row);offered(row,false);
         if("SIP".equals(row.getString("protocol"))){row.put("clientJoinedAt",Instant.now().toString());save(row);return publicRow(row);}
+        if("ZLM_WEBRTC".equals(row.getString("protocol"))){voice.splitMedia().joined(row.getString("requesterUserId"),row.getString("channelName"),body.getBooleanValue("peerConnected"),body.getJSONArray("connectedDeviceIds"));refreshCall(row);return publicRow(row);}
         if(!Objects.equals(String.valueOf(row.getJSONObject("credentials").get("agoraUid")),body.getString("agoraUid")))throw fail(400,"UID_MISMATCH","通话身份不匹配");
         row.put("status","connected");row.put("connectedAt",Instant.now().toString());row.put("connectionQuality","local_joined");save(row);return publicRow(row);
     }
     @PostMapping("/calls/{id}/end") public synchronized JSONObject end(@PathVariable String id,HttpServletRequest r){
         JSONObject row=owned(id,r);if("ended".equals(row.getString("status")))return publicRow(row);
         if(text(row,"channelName").isEmpty())throw fail(409,"PLATFORM_UNCONFIRMED","未取得设备频道，无法确认挂断，请核实设备状态");
-        voice.end(row.getString("channelName"));row.put("status","SIP".equals(row.getString("protocol"))?"ending":"ended");row.put("endedAt",Instant.now().toString());row.remove("credentials");save(row);return publicRow(row);
+        voice.end(row.getString("channelName"));row.put("status","SIP".equals(row.getString("protocol"))?"ending":"ended");if("ZLM_WEBRTC".equals(row.getString("protocol")))refreshCall(row);row.put("endedAt",Instant.now().toString());row.remove("credentials");save(row);return publicRow(row);
     }
     @PostMapping("/broadcast") public synchronized JSONArray broadcast(@RequestBody JSONObject input,HttpServletRequest r){
         return equipment.execute(WearableSessions.actor(r),ctx->broadcast(ctx,input));
@@ -116,17 +126,20 @@ public class GuardianMobileCommunications {
     private JSONObject owned(String id,HttpServletRequest r){GuardianAccess.Context ctx=access.context(WearableSessions.actor(r));JSONObject row=find(store.snapshot(),"sharedCommunications",id);own(ctx,row);if(!visible(ctx,row))throw fail(403,"PERMISSION_DENIED","通话不在授权范围");
         refreshCall(row);return row;}
     private void refreshCall(JSONObject row){
-        if(!"SIP".equals(row.getString("protocol"))||text(row,"channelName").isEmpty())return;
+        if(!Arrays.asList("SIP","ZLM_WEBRTC").contains(row.getString("protocol"))||text(row,"channelName").isEmpty())return;
         JSONObject before=copy(row),remote;
-        try{remote=voice.directMedia().callState(row.getString("channelName"));}catch(GuardianRejected error){return;}
+        try{remote=remoteCallState(row);}catch(GuardianRejected error){return;}
         if(remote==null)return;
         row.put("status",remote.get("status"));row.put("serverConnected","connected".equals(remote.getString("status")));
         if(remote.containsKey("connectedDeviceIds"))row.put("connectedDeviceIds",remote.get("connectedDeviceIds"));
+        if(remote.containsKey("connectionQuality"))row.put("connectionQuality",remote.get("connectionQuality"));
         if(remote.containsKey("statusVerified"))row.put("statusVerified",remote.get("statusVerified"));else row.remove("statusVerified");
+        if(remote.containsKey("expiresAt")){row.put("expiresAt",remote.get("expiresAt"));if(row.getJSONObject("credentials")!=null)row.getJSONObject("credentials").put("expiresAt",remote.get("expiresAt"));}
         if(Arrays.asList("ended","failed").contains(remote.getString("status")))row.remove("credentials");
         if(!before.equals(row))save(row);
     }
     private static boolean activeCall(JSONObject row){return !Arrays.asList("ended","failed").contains(row.getString("status"));}
+    private JSONObject remoteCallState(JSONObject row){return "ZLM_WEBRTC".equals(row.getString("protocol"))?voice.splitMedia().callState(row.getString("channelName")):voice.directMedia().callState(row.getString("channelName"));}
     private JSONObject recover(GuardianAccess.Context ctx,JSONObject row){
         if(Arrays.asList("offered","answered","connected").contains(row.getString("status"))&&row.getJSONObject("credentials")!=null&&Instant.parse(row.getString("expiresAt")).isAfter(Instant.now())){
             try{requireCall(ctx,row);return offered(row,true);}
@@ -151,14 +164,15 @@ public class GuardianMobileCommunications {
     private JSONObject device(GuardianAccess.Context ctx,String id,String operation){
         for(Object raw:rows(ctx.data,"devices")){JSONObject d=(JSONObject)raw;if(Objects.equals(id,d.getString("portalDeviceId"))){
             if(!ctx.can(operation,d.getString("siteId"),d.getString("areaId")))throw fail(403,"PERMISSION_DENIED","设备不在通讯授权范围");
-            if(!"HELMET".equals(d.getString("type"))||!Arrays.asList("PLATFORM","DIRECT_HELMET").contains(d.getString("source"))||Arrays.asList("DISABLED","SCRAPPED").contains(d.getString("lifecycle")))throw fail(409,"DEVICE_UNAVAILABLE","此设备尚无可用的真实安全帽通讯能力");return d;}}
+            if(!"HELMET".equals(d.getString("type"))||!Arrays.asList("PLATFORM","DIRECT_HELMET","SPLIT_HELMET").contains(d.getString("source"))||Arrays.asList("DISABLED","SCRAPPED").contains(d.getString("lifecycle")))throw fail(409,"DEVICE_UNAVAILABLE","此设备尚无可用的真实安全帽通讯能力");return d;}}
         throw fail(404,"DEVICE_NOT_FOUND","设备不存在或不在授权范围");
     }
     private void event(GuardianAccess.Context ctx,String id){if(id!=null&&!id.isEmpty())ctx.requireEvent(find(store.snapshot(),"events",id),null);}
-    private void requireCall(GuardianAccess.Context ctx,JSONObject row){equipment.require(ctx,row.getString("deviceId"),row,"voice","communications:voice");if(row.getBooleanValue("video"))equipment.require(ctx,row.getString("deviceId"),row,"videoCall","communications:voice");}
+    private void requireCall(GuardianAccess.Context ctx,JSONObject row){JSONArray recipients=row.getJSONArray("recipients");if(recipients==null||recipients.isEmpty())recipients=JSONArray.of(row);for(Object raw:recipients){JSONObject r=(JSONObject)raw;equipment.require(ctx,r.getString("deviceId"),r,"voice","communications:voice");if(row.getBooleanValue("video"))equipment.require(ctx,r.getString("deviceId"),r,"videoCall","communications:voice");}}
+    private static boolean authorized(java.util.function.BiPredicate<String,JSONObject> authority,JSONObject row){JSONArray recipients=row.getJSONArray("recipients");if(recipients==null||recipients.isEmpty())return authority.test(row.getString("requesterUserId"),row);for(Object raw:recipients)if(!authority.test(row.getString("requesterUserId"),(JSONObject)raw))return false;return true;}
     static boolean visible(GuardianAccess.Context ctx,JSONObject row){
         if("deviceVoiceMessage".equals(row.getString("operationType")))return GuardianDeviceVoiceMessages.visible(ctx,row);
-        if("call".equals(row.getString("operationType")))return ctx.can("communications:voice",row.getString("siteId"),row.getString("areaId"));
+        if("call".equals(row.getString("operationType"))){for(Object raw:rows(row,"recipients"))if(!ctx.can("communications:voice",((JSONObject)raw).getString("siteId"),((JSONObject)raw).getString("areaId")))return false;return ctx.can("communications:voice",row.getString("siteId"),row.getString("areaId"));}
         for(Object raw:rows(row,"recipients"))if(!ctx.can("communications:broadcast",row.getString("siteId"),((JSONObject)raw).getString("areaId")))return false;return ctx.site(row.getString("siteId"));
     }
     static JSONObject publicRow(JSONObject row){if("deviceVoiceMessage".equals(row.getString("operationType")))return GuardianDeviceVoiceMessages.publicRow(row);JSONObject out=copy(row);out.remove("credentials");out.remove("requestId");out.remove("fingerprint");out.remove("correctionAudit");return out;}

@@ -1,6 +1,10 @@
 import { actionFeatureState } from '../../../shared/device-features.mjs';
 import { serverNow } from '../../../shared/server-clock.mjs';
-const REAL_SOURCES = new Set(["PLATFORM", "DIRECT_HELMET", "DIRECT_BELT"]);
+const REAL_SOURCES = new Set(["PLATFORM", "DIRECT_HELMET", "SPLIT_HELMET", "DIRECT_BELT"]);
+
+export function deviceSourceLabel(source) {
+  return ({ SPLIT_HELMET: '分体式安全帽', DIRECT_HELMET: '一体式安全帽', DIRECT_BELT: '安全带直连', PLATFORM: '厂家平台' })[String(source || '').toUpperCase().replace(/-/g, '_')] || '设备来源待确认';
+}
 
 export function isRealDevice(device) {
   return REAL_SOURCES.has(device?.source);
@@ -26,7 +30,10 @@ export function projectDevice(device, now = serverNow()) {
   const current = isCurrentDevice(device, now);
   const rawBattery = device.battery;
   const battery = rawBattery == null || rawBattery === "" ? NaN : Number(rawBattery);
-  const fieldCurrent = field => current && (device.source !== 'DIRECT_HELMET' && device[`${field}Freshness`] == null || device[`${field}Freshness`] === 'CURRENT');
+  const fieldCurrent = field => {
+    if (device.source === 'SPLIT_HELMET') { const age = now - Date.parse(device[`${field}ReportedAt`] || ''); return device[`${field}Freshness`] === 'CURRENT' && Number.isFinite(age) && age >= 0 && age <= 300000; }
+    return current && (device.source !== 'DIRECT_HELMET' && device[`${field}Freshness`] == null || device[`${field}Freshness`] === 'CURRENT');
+  };
   return {
     ...device,
     sn: device.sn || device.deviceNumber || device.id,
@@ -52,9 +59,9 @@ export function supportsDeviceAction(device, action) {
   if (!deviceActions(device).includes(action)) return false;
   if (action === "intercom") {
     const protocol = String(device.communicationProtocol || "").toUpperCase();
-    return protocol === "AGORA" || protocol === "SIP" || (!protocol && device.source === "PLATFORM");
+    return protocol === "AGORA" || protocol === "SIP" || protocol === "ZLM_WEBRTC" || (!protocol && device.source === "PLATFORM");
   }
-  return ["tts", "video", "take_photo", "start_recording", "stop_recording", "start_video", "stop_video", "list_recordings", "upload_recording", "set_config"].includes(action);
+  return ["tts", "video", "take_photo", "start_recording", "stop_recording", "start_video", "stop_video", "list_recordings", "upload_recording", "set_watermark", "set_config"].includes(action);
 }
 
 export function deviceStatus(device) {

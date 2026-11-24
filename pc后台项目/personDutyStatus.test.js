@@ -67,14 +67,22 @@ describe('manual person duty status', () => {
     expect(api.exportState()).toEqual(before)
   })
 
-  it('new people stay unknown and ordinary profile edits cannot overwrite manual duty state', async () => {
-    const created = (await api.execute('people.create', { siteId, operationId: 'new-person', data: { code: 'DUTY-NEW', name: '新人员', dutyStatus: 'ON_DUTY' } })).data
-    expect(created.dutyStatus).toBe('UNKNOWN')
-    await api.execute('people.dutyStatus', command())
-    const row = await query('record', { id })
+  it('new people default to on duty and profile edits preserve a subsequent manual change', async () => {
+    const created = (await api.execute('people.create', { siteId, operationId: 'new-person', data: { code: 'DUTY-NEW', name: '新人员' } })).data
+    expect(created).toMatchObject({ dutyStatus: 'ON_DUTY', dutyStatusSource: 'DEFAULT' })
+    expect(created.dutyStatusUpdatedBy).toBeUndefined()
+    expect((await query('master', { dutyStatus: 'ON_DUTY' })).rows.map(row => row.id)).toEqual([created.id])
+    await api.execute('people.dutyStatus', command({ id: created.id, expectedVersion: created.version }))
+    const row = await query('record', { id: created.id })
     const options = await query('options')
     const relatedVersions = Object.fromEntries(Object.values(options).flat().map(item => [item.id, item.version]))
-    const result = await api.execute('people.update', { siteId, id, expectedVersion: row.version, operationId: 'edit-profile', relatedVersions, data: { ...row, name: '修改姓名', dutyStatus: 'ON_DUTY' } })
+    const result = await api.execute('people.update', { siteId, id: created.id, expectedVersion: row.version, operationId: 'edit-profile', relatedVersions, data: { ...row, name: '修改姓名', dutyStatus: 'ON_DUTY' } })
     expect(result.data).toMatchObject({ name: '修改姓名', dutyStatus: 'OFF_DUTY', dutyStatusUpdatedAt: now, dutyStatusSource: 'MANUAL' })
+  })
+
+  it('ignores duty and provenance supplied with a new profile', async () => {
+    const { data } = await api.execute('people.create', { siteId, operationId: 'new-person-forged', data: { code: 'NEW', name: '新人员', dutyStatus: 'OFF_DUTY', dutyStatusSource: 'MANUAL', dutyStatusUpdatedBy: 'forged' } })
+    expect(data).toMatchObject({ dutyStatus: 'ON_DUTY', dutyStatusSource: 'DEFAULT' })
+    expect(data.dutyStatusUpdatedBy).toBeUndefined()
   })
 })

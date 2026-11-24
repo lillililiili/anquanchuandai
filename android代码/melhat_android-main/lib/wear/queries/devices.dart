@@ -7,7 +7,7 @@ import '../device_location.dart';
 import '../device_features.dart';
 import 'belt_telemetry.dart';
 import 'device_local_operations.dart';
-import 'helmet_media.dart';
+import 'split_helmet_telemetry.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
 
@@ -28,7 +28,7 @@ class _DevicesPageState extends State<DevicesPage> {
   bool _loading = true;
   Object? _error;
   String? _typeCode;
-  String? _assetStatus;
+  String? _relation;
   int _request = 0;
 
   @override
@@ -64,7 +64,7 @@ class _DevicesPageState extends State<DevicesPage> {
         query: {
           if (_sn.text.trim().isNotEmpty) 'sn': _sn.text.trim(),
           if (_typeCode != null) 'typeCode': _typeCode,
-          if (_assetStatus != null) 'assetStatus': _assetStatus,
+          if (_relation != null) 'relation': _relation,
         },
       );
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
@@ -93,8 +93,9 @@ class _DevicesPageState extends State<DevicesPage> {
   Widget build(BuildContext context) {
     return QueryPage(
       title: '设备台账',
-      subtitle: '连接、电量和定位状态均来自设备上报，未知或陈旧状态会明确标出。',
+      subtitle: '领用状态来自当前领用记录。连接、电量和定位来自设备上报，未知或过期会标明。',
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -108,46 +109,58 @@ class _DevicesPageState extends State<DevicesPage> {
               ),
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                _filterChip('全部类型', _typeCode == null, () => _setType(null)),
-                _filterChip(
-                  '安全帽',
-                  _typeCode == 'helmet',
-                  () => _setType('helmet'),
-                ),
-                _filterChip('安全带', _typeCode == 'belt', () => _setType('belt')),
-                if (_session?.simulatedWatchVisible != false)
-                  _filterChip(
-                    '模拟手表',
-                    _typeCode == 'watch',
-                    () => _setType('watch'),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _filterChip(
+                          '全部类型',
+                          _typeCode == null,
+                          () => _setType(null),
+                        ),
+                        _filterChip(
+                          '安全帽',
+                          _typeCode == 'helmet',
+                          () => _setType('helmet'),
+                        ),
+                        _filterChip(
+                          '安全带',
+                          _typeCode == 'belt',
+                          () => _setType('belt'),
+                        ),
+                        if (_session?.simulatedWatchVisible != false)
+                          _filterChip(
+                            '模拟手表',
+                            _typeCode == 'watch',
+                            () => _setType('watch'),
+                          ),
+                      ],
+                    ),
                   ),
-                const SizedBox(width: 8),
+                ),
+                const SizedBox(width: 4),
                 PopupMenuButton<String>(
-                  tooltip: '资产状态',
-                  initialValue: _assetStatus ?? '',
-                  onSelected: (value) {
-                    setState(() => _assetStatus = value.isEmpty ? null : value);
-                    _load(page: 1);
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: '', child: Text('全部资产状态')),
-                    PopupMenuItem(value: 'unassigned', child: Text('未分配')),
-                    PopupMenuItem(value: 'in_stock', child: Text('在库')),
-                    PopupMenuItem(value: 'maintenance', child: Text('维修中')),
-                    PopupMenuItem(value: 'disabled', child: Text('已停用')),
-                    PopupMenuItem(value: 'scrapped', child: Text('已报废')),
+                  tooltip: '领用状态',
+                  initialValue: _relation,
+                  onSelected: _setRelation,
+                  itemBuilder: (_) => [
+                    for (final status in deviceRelationLabels.entries)
+                      PopupMenuItem(
+                        value: status.key,
+                        child: Text(status.value),
+                      ),
                   ],
                   child: Chip(
-                    label: Text(
-                      _assetStatus == null
-                          ? '资产状态'
-                          : assetStatusLabel(_assetStatus),
-                    ),
+                    label: Text(deviceRelationLabels[_relation] ?? '领用状态'),
+                    onDeleted: _relation == null
+                        ? null
+                        : () => _setRelation(null),
+                    deleteButtonTooltipMessage: '清除领用状态筛选',
                   ),
                 ),
               ],
@@ -159,7 +172,9 @@ class _DevicesPageState extends State<DevicesPage> {
               error: _error,
               empty: _records.isEmpty,
               onRetry: () => _load(page: _current),
-              emptyTitle: '没有符合条件的设备',
+              emptyTitle: _relation == null
+                  ? '没有符合条件的设备'
+                  : '当前筛选条件下没有「${deviceRelationLabels[_relation]}」设备',
               child: RefreshIndicator(
                 onRefresh: () => _load(page: _current),
                 child: ListView.builder(
@@ -178,7 +193,7 @@ class _DevicesPageState extends State<DevicesPage> {
                       key: ValueKey('device-${idOf(device['id'])}'),
                       title: textOf(device['sn']),
                       subtitle:
-                          '${deviceTypeLabel(device['typeCode'])} · ${textOf(device['modelName'])}\n${assetStatusLabel(device['assetStatus'])} · 电量 ${batteryLabel(device['battery'])}',
+                          '${deviceTypeLabel(device['typeCode'])} · ${textOf(device['modelName'])}\n${deviceRelationLabels[device['relation']] ?? '—'} · 电量 ${batteryLabel(device['battery'])}',
                       leading: Icon(
                         device['typeCode'] == 'belt'
                             ? Icons.safety_check
@@ -208,9 +223,10 @@ class _DevicesPageState extends State<DevicesPage> {
 
   Widget _filterChip(String label, bool selected, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.only(right: 4),
       child: FilterChip(
         label: Text(label),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
         selected: selected,
         onSelected: (_) => onTap(),
       ),
@@ -219,6 +235,11 @@ class _DevicesPageState extends State<DevicesPage> {
 
   void _setType(String? value) {
     setState(() => _typeCode = value);
+    _load(page: 1);
+  }
+
+  void _setRelation(String? value) {
+    setState(() => _relation = value);
     _load(page: 1);
   }
 }
@@ -348,8 +369,9 @@ class _DevicePageState extends State<DevicePage> {
                             value: textOf(device['siteName']),
                           ),
                           DetailField(
-                            label: '资产状态',
-                            value: assetStatusLabel(device['assetStatus']),
+                            label: '领用状态',
+                            value:
+                                deviceRelationLabels[device['relation']] ?? '—',
                           ),
                           DetailField(
                             label: '连接状态',
@@ -393,22 +415,9 @@ class _DevicePageState extends State<DevicePage> {
                       const SizedBox(height: 18),
                       BeltTelemetryPanel(device: device),
                     ],
-                    if (localDeviceProfile(device) == 'DIRECT_HELMET') ...[
+                    if (device['source'] == 'SPLIT_HELMET') ...[
                       const SizedBox(height: 18),
-                      LocalRecordingReport(device: device),
-                    ],
-                    if (device['source'] == 'DIRECT_HELMET' &&
-                        ['photo', 'video', 'recording'].any(
-                          (key) => deviceFeature(device, key).supported,
-                        )) ...[
-                      const SizedBox(height: 18),
-                      HelmetMediaPanel(
-                        key: ValueKey(
-                          'media-${widget.id}-${_session!.scopeKey}',
-                        ),
-                        deviceId: widget.id,
-                        device: device,
-                      ),
+                      SplitHelmetTelemetryPanel(device: device),
                     ],
                     if (localDeviceProfile(device) != null) ...[
                       const SizedBox(height: 18),
@@ -416,8 +425,6 @@ class _DevicePageState extends State<DevicePage> {
                     ],
                     if (_session!.isAdmin) ...[
                       const SizedBox(height: 18),
-                      _actionPanel(context, device),
-                      const SizedBox(height: 22),
                       QuerySection(
                         title: '历史领用记录（${_history.length}）',
                         children: _history
@@ -426,11 +433,6 @@ class _DevicePageState extends State<DevicePage> {
                                 title: textOf(item['personName'], '未关联人员'),
                                 subtitle:
                                     '${formatTime(item['issuedAt'])} 至 ${item['returnedAt'] == null ? '当前' : formatTime(item['returnedAt'])}',
-                                onTap: item['personId'] == null
-                                    ? null
-                                    : () => context.push(
-                                        '/people/${textOf(item['personId'])}',
-                                      ),
                               ),
                             )
                             .toList(),
@@ -441,83 +443,5 @@ class _DevicePageState extends State<DevicePage> {
               ),
       ),
     );
-  }
-
-  Widget _actionPanel(BuildContext context, JsonMap device) {
-    final actions = [
-      'tts',
-      'intercom',
-      'video_call',
-    ].where((action) => actionFeature(device, action).supported).toList();
-    final assignment = jsonMap(device['currentAssignment']);
-    final personId = assignment['personId']?.toString();
-    if (actions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    final buttons = <Widget>[];
-    if (actions.contains('tts')) {
-      buttons.add(
-        OutlinedButton.icon(
-          onPressed: !actionFeature(device, 'tts').available
-              ? null
-              : () => _openCommunications(
-                  context,
-                  personId: personId,
-                  action: 'tts',
-                ),
-          icon: const Icon(Icons.campaign_outlined),
-          label: Text(deviceFeatureLabel(device, 'broadcast', 'TTS')),
-        ),
-      );
-    }
-    if (actions.contains('intercom')) {
-      buttons.add(
-        OutlinedButton.icon(
-          onPressed: !actionFeature(device, 'intercom').available
-              ? null
-              : () => _openCommunications(
-                  context,
-                  personId: personId,
-                  action: 'intercom',
-                ),
-          icon: const Icon(Icons.call_outlined),
-          label: Text(deviceFeatureLabel(device, 'voice', '对讲')),
-        ),
-      );
-    }
-
-    if (actions.contains('video_call')) {
-      buttons.add(
-        OutlinedButton.icon(
-          onPressed: !actionFeature(device, 'video_call').available
-              ? null
-              : () => _openCommunications(
-                  context,
-                  personId: personId,
-                  action: 'video',
-                ),
-          icon: const Icon(Icons.videocam_outlined),
-          label: Text(deviceFeatureLabel(device, 'videoCall', '视频通话')),
-        ),
-      );
-    }
-
-    return QuerySection(
-      title: '设备能力',
-      children: [Wrap(spacing: 8, runSpacing: 8, children: buttons)],
-    );
-  }
-
-  void _openCommunications(
-    BuildContext context, {
-    String? personId,
-    required String action,
-  }) {
-    final uri = communicationUri(
-      deviceId: widget.id,
-      personId: personId,
-      action: action,
-    );
-    context.push(uri.toString());
   }
 }

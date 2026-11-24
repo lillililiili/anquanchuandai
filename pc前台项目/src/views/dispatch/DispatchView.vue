@@ -22,6 +22,7 @@ import CallRecords from "./CallRecords.vue";
 import GroupForm from "./GroupForm.vue";
 import InviteForm from "./InviteForm.vue";
 import { db, refreshSnapshot } from "@/mock/runtime";
+import SplitGroupCall from './SplitGroupCall.vue';
 import PersonCall from './PersonCall.vue';
 import DeviceVoiceMessages from './DeviceVoiceMessages.vue';
 import { personFeature, personDevice, operationContext } from '@/lib/person-equipment';
@@ -349,6 +350,7 @@ async function sendBroadcast() {
       </div>
     </AppPanel>
     <div class="stack">
+      <SplitGroupCall v-if="!db.demoMode" :members="session.selectedMembers.filter(id => people().some(p => p.id === id))" />
       <PersonCall v-if="!db.demoMode" :person-id="selectedPerson" :selected-count="selectedCount" />
       <AppPanel v-else :title="'当前通话：' + (activeCall ? activeCall.kind : '未发起')">
         <template v-if="activeCall">

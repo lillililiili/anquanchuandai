@@ -10,6 +10,7 @@ import { db, tick } from "@/mock/runtime";
 import { deviceStatus, deviceStatusTone, projectDevice } from "@/lib/device-telemetry";
 import { isSimulatedWatch } from "@/lib/sample-data";
 import { formatBeijingDateTime } from "@/lib/date-time";
+import { splitHelmetTelemetry } from '../../../../shared/split-helmet.mjs';
 import { featureState } from '../../../../shared/device-features.mjs';
 
 const props = defineProps({
@@ -40,6 +41,7 @@ function label(device) {
   return deviceStatus(device);
 }
 function statusValue(device, key, value) {
+  if (device.source === 'SPLIT_HELMET' && ['battery', 'wear'].includes(key) && value != null) return value;
   const feature = featureState(device, key);
   if (!feature.available) return feature.reason || '暂无有效上报';
   return value == null ? '暂无有效上报' : value;
@@ -85,6 +87,9 @@ const hooks = value => value === true ? '已挂接' : value === false ? '未挂�
             <span>相对高度</span>
             <strong>{{ statusValue(deviceOf(type), 'height', (deviceOf(type).relativeHeight ?? deviceOf(type).height) == null ? null : (deviceOf(type).relativeHeight ?? deviceOf(type).height) + ' m') }}</strong>
           </div>
+          <template v-if="deviceOf(type).source === 'SPLIT_HELMET'">
+            <div v-for="field in splitHelmetTelemetry(deviceOf(type)).fields" :key="field.key" class="device-fact device-fact-wide"><span>分体帽 · {{ field.label }}</span><strong>{{ field.value }}</strong><small>{{ field.status }} · {{ formatBeijingDateTime(field.reportedAt) }}</small></div>
+          </template>
           <div v-if="deviceOf(type).source === 'DIRECT_HELMET'" class="device-fact device-fact-wide">
             <DeviceLocalRecording :device="deviceOf(type)" />
           </div>

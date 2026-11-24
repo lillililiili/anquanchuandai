@@ -3,76 +3,97 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rolling_intelligence_headband/wear/communications/contact_action_bar.dart';
-import 'wear_comms_entry_test.dart' show openDevice;
+import 'wear_comms_entry_test.dart' show openDevice, confirmHelmetCall;
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets(
-    'favorite star pins without selecting or calling and survives reentry',
+    'each contact has independent phone and helmet selectors and no checkbox',
     (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'wear.contact-favorites.v1.["https://test.invalid","12","1"]': ['p:2'],
+      });
       final requests = <RequestOptions>[];
-      final router = await openDevice(tester, requests);
+      final router = await openDevice(tester, requests, phoneContacts: ['7']);
       router.go('/communications');
       await tester.pumpAndSettle();
-      final star = find.byKey(const ValueKey('favorite-p:2'));
-      await tester.ensureVisible(star);
-      await tester.tap(star);
-      await tester.pumpAndSettle();
-      expect(tester.widget<IconButton>(star).isSelected, isTrue);
-      expect(
-        tester.getTopLeft(find.text('联系人02')).dy,
-        lessThan(tester.getTopLeft(find.text('联系人00')).dy),
-      );
-      expect(find.text('0 项'), findsOneWidget);
-      router.go('/devices/42');
-      await tester.pumpAndSettle();
-      router.go('/communications');
-      await tester.pumpAndSettle();
-      expect(tester.widget<IconButton>(star).isSelected, isTrue);
-      // The shell restores the previous scroll offset on reentry.
-      tester
-          .widget<ListView>(
-            find.byKey(const ValueKey('wear-communications-list')),
-          )
-          .controller!
-          .jumpTo(0);
-      await tester.pumpAndSettle();
-      expect(find.text('联系人02').hitTestable(), findsOneWidget);
-      await tester.tap(star);
-      await tester.pumpAndSettle();
+      expect(find.byTooltip('收藏并置顶'), findsNothing);
+      expect(find.byTooltip('取消收藏'), findsNothing);
+      expect(find.text('星标联系人优先显示'), findsNothing);
+      expect(find.text('相关会话'), findsNothing);
+      expect(find.text('暂无相关通话记录'), findsNothing);
+      expect(find.text('设备语音消息（非实时通话）'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('联系人00')).dy,
         lessThan(tester.getTopLeft(find.text('联系人02')).dy),
       );
-      expect(requests.where((r) => r.method != 'GET'), isEmpty);
+      final unassignedHat = find.byKey(const ValueKey('contact-helmet-p:2'));
+      await tester.ensureVisible(unassignedHat);
+      await tester.tapAt(tester.getCenter(unassignedHat));
+      await tester.pumpAndSettle();
+      expect(find.text('0 项'), findsOneWidget);
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const ValueKey('contact-call-p:2')))
+            .onPressed,
+        isNull,
+      );
+      expect(tester.widget<IconButton>(unassignedHat).onPressed, isNull);
+      expect(find.byType(Checkbox), findsNothing);
+
+      final hat = find.byKey(const ValueKey('contact-helmet-p:7'));
+      final phone = find.byKey(const ValueKey('contact-call-p:7'));
+      await tester.ensureVisible(hat);
+      expect(
+        tester.getRect(phone).right,
+        lessThanOrEqualTo(tester.getRect(hat).left),
+      );
+      expect(tester.widget<IconButton>(phone).onPressed, isNotNull);
+      await tester.tap(hat);
+      await tester.pumpAndSettle();
+      expect(tester.widget<IconButton>(hat).isSelected, true);
+      expect(tester.widget<IconButton>(phone).isSelected, false);
+      await tester.tap(phone);
+      await tester.pumpAndSettle();
+      expect(find.text('2 项'), findsOneWidget);
+      await tester.tap(hat);
+      await tester.pumpAndSettle();
+      expect(find.text('1 项'), findsOneWidget);
+      expect(tester.widget<IconButton>(phone).isSelected, true);
+      expect(
+        requests.where(
+          (r) => r.method == 'POST' && !r.path.endsWith('/presence'),
+        ),
+        isEmpty,
+      );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
     },
   );
 
-  testWidgets(
-    'voice keeps explicit device and removed video cannot initiate a call',
-    (tester) async {
-      final requests = <RequestOptions>[];
-      final router = await openDevice(tester, requests);
-      router.go('/communications?deviceId=42&personId=7');
-      await tester.pumpAndSettle();
-      expect(find.text('视频群聊'), findsNothing);
-      await tester.tap(find.text('设备语音'));
-      await tester.pumpAndSettle();
-      final call = requests
-          .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
-          .single;
-      expect(call.data['deviceId'], '42');
-      expect(call.data['video'], false);
-      expect(find.text('结束通话').hitTestable(), findsOneWidget);
-      await tester.tap(find.text('结束通话'));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+  testWidgets('helmet video call keeps the explicitly selected device', (
+    tester,
+  ) async {
+    final requests = <RequestOptions>[];
+    final router = await openDevice(tester, requests);
+    router.go('/communications?deviceId=42&personId=7');
+    await tester.pumpAndSettle();
+    expect(find.text('视频群聊'), findsNothing);
+    await confirmHelmetCall(tester);
+    final call = requests
+        .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
+        .single;
+    expect(call.data['deviceId'], '42');
+    expect(call.data['video'], true);
+    expect(find.text('结束通话').hitTestable(), findsOneWidget);
+    await tester.tap(find.text('结束通话'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
 
   testWidgets(
     'broadcast opens editor without sending; draft survives closing',
@@ -102,6 +123,7 @@ void main() {
       expect(command.data['text'], '请到集合点');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
     },
   );
 
@@ -120,8 +142,8 @@ void main() {
             body: Align(
               alignment: Alignment.bottomCenter,
               child: ContactActionBar(
-                onVoice: () {},
-                onVideo: () {},
+                onPhone: () {},
+                onHelmet: () {},
                 onBroadcast: () {},
               ),
             ),
@@ -129,7 +151,7 @@ void main() {
         ),
       ),
     );
-    for (final label in ['设备语音', '视频通话', '文字播报']) {
+    for (final label in ['手机呼叫', '安全帽呼叫', '文字播报']) {
       expect(find.text(label).hitTestable(), findsOneWidget);
     }
     expect(find.text('清空'), findsNothing);

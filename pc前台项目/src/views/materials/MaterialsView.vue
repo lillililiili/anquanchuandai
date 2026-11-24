@@ -85,7 +85,8 @@ async function refreshDeviceMedia(background=false){
       const device=devices[index++];
       const version=deviceVersions.get(device.id)||0;
       try{
-        const response=await authFetch(`/api/guardian/v1/helmet/media?deviceId=${encodeURIComponent(device.id)}`,{signal:mediaController.signal});
+        const mediaPath=device.source === 'SPLIT_HELMET' ? `/api/guardian/v1/devices/${encodeURIComponent(device.id)}/media` : `/api/guardian/v1/helmet/media?deviceId=${encodeURIComponent(device.id)}`;
+        const response=await authFetch(mediaPath,{signal:mediaController.signal});
         const body=await response.json();if(!response.ok)throw Object.assign(Error(body.message||'设备资料读取失败'),{status:response.status});
         if(body.itemsAvailable===false)throw Error('资料暂时无法刷新，正在自动重试');
         if(operation===mediaRequest && station===session.station && version===(deviceVersions.get(device.id)||0))receiveDeviceMedia({deviceId:device.id,items:body.items||[]});
@@ -122,11 +123,11 @@ const workOptions = computed(() => {
 const mediaList = computed(() => {
   revision();
   const query = applied.value;
-  const queriedDevices=new Set(db.state.devices.filter(item=>item.type==='H'&&item.source==='DIRECT_HELMET'&&item.station===session.station).map(item=>item.id));
+  const queriedDevices=new Set(db.state.devices.filter(item=>item.type==='H'&&['DIRECT_HELMET','SPLIT_HELMET'].includes(item.source)&&item.station===session.station).map(item=>item.id));
   // For direct media, this page's authorized file response supersedes the
   // snapshot copy only for devices currently queried. Historical files for
   // transferred/retired devices retain the server snapshot's historical scope.
-  const snapshotMedia=materials().filter(item=>item.source!=='DIRECT_HELMET'||!queriedDevices.has(item.deviceId));
+  const snapshotMedia=materials().filter(item=>!['DIRECT_HELMET','SPLIT_HELMET'].includes(item.source)||!queriedDevices.has(item.deviceId));
   return [...new Map([...snapshotMedia,...deviceMedia.value].map(item => {
     const media = normalizeMedia(item), duration = mediaDurations.value.get(mediaPreviewKey(media));
     return [item.id, duration == null ? media : { ...media, duration }];

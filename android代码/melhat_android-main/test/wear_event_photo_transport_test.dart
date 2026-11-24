@@ -63,6 +63,9 @@ void main() {
         ),
       );
       await t.pumpAndSettle();
+      expect(find.byType(Image), findsNothing);
+      await t.tap(find.byKey(const ValueKey('submitted-media-event-one')));
+      await t.pumpAndSettle();
       final image = t.widget<Image>(find.byType(Image)).image as NetworkImage;
       expect(image.url, '${entry.value}/api/guardian/v1/files/upload-one');
       await t.pumpWidget(const SizedBox.shrink());
@@ -87,6 +90,8 @@ void main() {
         const EventSubmittedPhotos(eventId: 'event-two', version: 1),
       ),
     );
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('submitted-media-event-two')));
     await t.pumpAndSettle();
     final image = t.widget<Image>(find.byType(Image)).image as NetworkImage;
     expect(image.url, endsWith('/files/upload-two'));

@@ -37,11 +37,19 @@ services:
     image: coturn/coturn:4.6.3
     # The private 0600 config belongs to root. Official turnserver needs its bind-port file capability.
     user: "0:0"
-    network_mode: host
+    networks: [turn]
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49160-49200:49160-49200/udp"
     restart: unless-stopped
-    command: [-c, /etc/helmet-turn.conf]
+    entrypoint: [/bin/sh, /usr/local/bin/helmet-turn-bridge.sh]
+    command: []
     volumes:
       - ./.local/turn.conf:/etc/helmet-turn.conf:ro
+      - ./turn-bridge.sh:/usr/local/bin/helmet-turn-bridge.sh:ro
+    tmpfs:
+      - /run/helmet-turn:mode=0700
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE]
@@ -57,3 +65,7 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     mem_limit: 1g
+
+networks:
+  turn:
+    driver: bridge

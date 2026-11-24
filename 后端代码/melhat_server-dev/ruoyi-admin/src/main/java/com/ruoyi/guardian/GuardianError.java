@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = {GuardianController.class, GuardianMobileController.class, GuardianMobileCommunications.class, GuardianLocationController.class, GuardianHelmetMediaController.class,WearableBusinessController.class,WearableMaintenanceController.class,AdminWorksController.class,GuardianBusinessConfigController.class})
+@RestControllerAdvice(assignableTypes = {GuardianController.class, GuardianMobileController.class, GuardianMobileCommunications.class, GuardianLocationController.class, GuardianHelmetMediaController.class,WearableBusinessController.class,WearableMaintenanceController.class,AdminWorksController.class,GuardianBusinessConfigController.class,com.ruoyi.melhat.split.SplitHelmetSessionController.class})
 public class GuardianError {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String,String>> unavailable(IllegalStateException error) {

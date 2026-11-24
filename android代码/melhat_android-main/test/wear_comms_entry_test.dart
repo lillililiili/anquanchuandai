@@ -10,6 +10,8 @@ import 'package:rolling_intelligence_headband/wear/app.dart';
 import 'package:rolling_intelligence_headband/wear/core.dart';
 import 'package:rolling_intelligence_headband/wear/communications/communications_page.dart';
 import 'package:rolling_intelligence_headband/wear/queries/devices.dart';
+import 'package:rolling_intelligence_headband/wear/queries/query_utils.dart'
+    show communicationUri;
 import 'wear_session_test.dart'
     show MemoryCredentials, transport, identity, reply;
 
@@ -66,9 +68,8 @@ void main() {
       );
       router.go('/communications?deviceId=42&personId=7');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('设备语音'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('请允许麦克风权限后重试'), findsOneWidget);
+      await confirmHelmetCall(tester);
+      expect(find.textContaining('请允许麦克风和摄像头权限后重试'), findsOneWidget);
       expect(
         requests.where((r) => r.method == 'POST' && r.path == '/api/v1/calls'),
         isEmpty,
@@ -78,28 +79,29 @@ void main() {
     },
   );
 
-  for (final entry in {'TTS': 'tts', '对讲': 'intercom'}.entries) {
+  for (final action in ['tts', 'intercom']) {
     testWidgets(
-      'device ${entry.key} opens reachable operation without sending',
+      'communications $action link opens the device operation without sending',
       (tester) async {
         final requests = <RequestOptions>[];
-        await openDevice(tester, requests);
-        final button = find.widgetWithText(
-          entry.key == '视频' ? FilledButton : OutlinedButton,
-          entry.key,
+        final router = await openDevice(tester, requests);
+        router.go(
+          communicationUri(
+            deviceId: '42',
+            personId: '7',
+            action: action,
+          ).toString(),
         );
-        await tester.ensureVisible(button);
-        await tester.tap(button);
         await tester.pumpAndSettle();
         expect(
           GoRouterState.of(
             tester.element(find.byType(CommunicationsPage)),
           ).uri.queryParameters['action'],
-          entry.value,
+          action,
         );
-        final operation = find.text(entry.value == 'tts' ? '提交播报指令' : '设备语音');
+        final operation = find.text(action == 'tts' ? '提交播报指令' : '安全帽呼叫');
         expect(operation.hitTestable(), findsOneWidget);
-        expect(find.text('安全帽呼叫'), findsNothing);
+        expect(find.widgetWithText(TextButton, '安全帽呼叫'), findsOneWidget);
         expect(find.text('视频呼叫'), findsNothing);
         expect(find.byType(NavigationBar), findsOneWidget);
         expect(requests.where((r) => r.method != 'GET'), isEmpty);
@@ -119,7 +121,7 @@ void main() {
     expect(find.text('联系人00').hitTestable(), findsOneWidget);
     expect(
       tester
-          .widget<TextButton>(find.widgetWithText(TextButton, '设备语音'))
+          .widget<TextButton>(find.widgetWithText(TextButton, '安全帽呼叫'))
           .onPressed,
       isNull,
     );
@@ -135,9 +137,9 @@ void main() {
           .first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('联系人07'));
+    await tester.tap(find.byKey(const ValueKey('contact-helmet-p:7')));
     await tester.pumpAndSettle();
-    expect(find.text('设备语音').hitTestable(), findsOneWidget);
+    expect(find.text('安全帽呼叫').hitTestable(), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNothing);
     expect(requests.where((r) => r.method != 'GET'), isEmpty);
     expect(tester.takeException(), isNull);
@@ -204,16 +206,15 @@ void main() {
   });
 
   testWidgets(
-    'legacy video entry opens voice call and four controls stay reachable without another call',
+    'video entry starts a helmet video call and four controls stay reachable without another call',
     (tester) async {
       final requests = <RequestOptions>[];
       final router = await openDevice(tester, requests);
       router.go('/communications?deviceId=42&action=video');
       await tester.pumpAndSettle();
       expect(find.text('视频呼叫'), findsNothing);
-      expect(find.text('设备语音').hitTestable(), findsOneWidget);
-      await tester.tap(find.text('设备语音'));
-      await tester.pumpAndSettle();
+      expect(find.text('安全帽呼叫').hitTestable(), findsOneWidget);
+      await confirmHelmetCall(tester);
       tester.view.physicalSize = const Size(640, 360);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -228,7 +229,7 @@ void main() {
           .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
           .toList();
       expect(starts, hasLength(1));
-      expect(starts.single.data['video'], false);
+      expect(starts.single.data['video'], true);
       expect(find.text('结束通话').hitTestable(), findsOneWidget);
       await tester.tap(find.text('结束通话'));
       await tester.pumpAndSettle();
@@ -250,14 +251,13 @@ void main() {
       final router = await openDevice(tester, requests);
       router.go('/communications?deviceId=42&personId=7&action=intercom');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('设备语音'));
-      await tester.tap(find.text('设备语音'));
-      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('安全帽呼叫'));
+      await confirmHelmetCall(tester);
       final create = requests
           .where((r) => r.method == 'POST' && r.path == '/api/v1/calls')
           .single;
       expect(create.data['deviceId'], '42');
-      expect(create.data['video'], false);
+      expect(create.data['video'], true);
       expect(find.text('结束通话').hitTestable(), findsOneWidget);
       await tester.drag(find.byType(ListView).first, const Offset(0, -1200));
       await tester.pumpAndSettle();
@@ -276,10 +276,19 @@ void main() {
   );
 }
 
+Future<void> confirmHelmetCall(WidgetTester tester) async {
+  await tester.tap(find.widgetWithText(TextButton, '安全帽呼叫'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(FilledButton, '开始呼叫'));
+  await tester.pumpAndSettle();
+}
+
 Future<GoRouter> openDevice(
   WidgetTester tester,
   List<RequestOptions> requests, {
-  List<String> actions = const ['tts', 'intercom', 'video'],
+  List<String> actions = const ['tts', 'intercom', 'video', 'video_call'],
+  List<String> phoneContacts = const [],
+  Future<ResponseBody> Function(RequestOptions)? phoneReply,
   String? fontFamily,
   Future<void> Function(String)? beforeDeviceRead,
   bool microphoneGranted = true,
@@ -302,7 +311,8 @@ Future<GoRouter> openDevice(
     return microphoneGranted ? 1 : 0;
   });
   messenger.setMockMethodCallHandler(media, (call) async {
-    if (call.method == 'getUserMedia')
+    if (call.method == 'createVideoRenderer') return {'textureId': 81};
+    if (call.method == 'getUserMedia') {
       return {
         'streamId': 'test-microphone',
         'audioTracks': [
@@ -315,13 +325,17 @@ Future<GoRouter> openDevice(
         ],
         'videoTracks': [],
       };
+    }
     return null;
   });
   messenger.setMockMethodCallHandler(mediaEvents, (_) async => null);
+  const texture = MethodChannel('FlutterWebRTC/Texture81');
+  messenger.setMockMethodCallHandler(texture, (_) async => null);
   addTearDown(() {
     messenger.setMockMethodCallHandler(permissions, null);
     messenger.setMockMethodCallHandler(media, null);
     messenger.setMockMethodCallHandler(mediaEvents, null);
+    messenger.setMockMethodCallHandler(texture, null);
   });
   tester.view.physicalSize = const Size(360, 800);
   tester.view.devicePixelRatio = 1;
@@ -331,12 +345,15 @@ Future<GoRouter> openDevice(
     'id': id,
     'sn': 'REAL-H$id',
     'typeCode': 'helmet',
+    'online': 'online',
+    'connectionQuality': 'ok',
     'modelName': '现场安全帽',
     'capabilities': {'actions': actions},
     'featureStates': {
       for (final entry in const {
         'intercom': 'voice',
         'video': 'video',
+        'video_call': 'videoCall',
         'tts': 'broadcast',
       }.entries)
         entry.value: {
@@ -363,6 +380,14 @@ Future<GoRouter> openDevice(
           credentials: MemoryCredentials(),
           dio: transport((request) async {
             requests.add(request);
+            if (request.path.startsWith('/api/guardian/v1/mobile/phone/')) {
+              if (phoneReply != null) return phoneReply(request);
+              return reply({
+                'ready': true,
+                'contacts': phoneContacts,
+                'call': null,
+              });
+            }
             if (request.path == '/api/v1/people') {
               return reply({
                 'records': List.generate(
@@ -429,6 +454,7 @@ Future<GoRouter> openDevice(
         ..me = {
           // Communications and device administration are administrator-only.
           ...identity(roles: const ['wear_platform_admin']),
+          'phoneCallsEnabled': phoneContacts.isNotEmpty || phoneReply != null,
           'permissions': ['wear:call:start', 'wear:command:tts'],
         };
   addTearDown(session.dispose);

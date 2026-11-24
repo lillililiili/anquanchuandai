@@ -22,6 +22,10 @@ void main() {
             : mode == 'whitespace'
             ? '   '
             : '现场需要协助';
+        await tapAcceptance(
+          t,
+          find.byKey(const ValueKey('event-open-observation')),
+        );
         await enterAcceptance(t, 'event-observation', text);
         if (['network', 'conflict'].contains(mode)) {
           backend
@@ -72,7 +76,14 @@ void main() {
         final backend = AcceptanceBackend();
         await launchAcceptance(t, backend);
         await openAcceptance(t, '/events?eventId=401');
-        if (mode != 'invalid') await fillVerification(t);
+        if (mode == 'invalid') {
+          await tapAcceptance(
+            t,
+            find.byKey(const ValueKey('event-open-verification')),
+          );
+        } else {
+          await fillVerification(t);
+        }
         if (['network', 'conflict'].contains(mode)) {
           backend
             ..failSuffix = '/verify'

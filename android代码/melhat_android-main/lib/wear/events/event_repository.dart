@@ -22,11 +22,12 @@ class ApiEventGateway implements EventGateway {
     int size,
   ) async {
     return _fresh(() async {
+      final statuses = filters.queryStatuses;
       if (api.workBusinessEnabled &&
           filters.taskId.isNotEmpty &&
           filters.severity.isEmpty &&
           filters.alarmCode.isEmpty &&
-          filters.statuses.isEmpty &&
+          statuses.isEmpty &&
           filters.types.isEmpty &&
           filters.alarmCodes.isEmpty &&
           filters.deviceTypes.isEmpty) {
@@ -62,12 +63,11 @@ class ApiEventGateway implements EventGateway {
         current: current,
         size: size,
         query: {
-          if (filters.statuses.isNotEmpty)
-            'statuses': filters.statuses.join(','),
+          if (statuses.isNotEmpty) 'statuses': statuses.join(','),
           if (filters.types.isNotEmpty) 'types': filters.types.join(','),
           if (filters.alarmCodes.isNotEmpty)
             'alarmCodes': filters.alarmCodes.join(','),
-          if (filters.statuses.isEmpty &&
+          if (statuses.isEmpty &&
               filters.status.isNotEmpty &&
               filters.status != 'active')
             'status': filters.status,

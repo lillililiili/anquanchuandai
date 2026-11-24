@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../core.dart';
 import '../scroll_to_top.dart';
@@ -9,14 +8,13 @@ import 'api_gateway.dart';
 import 'controller.dart';
 import 'contact_filters.dart';
 import 'contact_action_bar.dart';
-import 'contact_favorites.dart';
-import 'contact_video_request.dart';
+import 'phone_calls.dart';
 import 'device_voice_messages.dart';
-import '../inline_filters.dart';
 import 'lab_calls.dart';
 import 'models.dart' hide JsonMap;
 import 'rtc_engine.dart';
 import 'sip_rtc_engine.dart';
+import 'zlm_rtc_engine.dart';
 
 class CommunicationsPage extends StatefulWidget {
   const CommunicationsPage({
@@ -52,17 +50,12 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   List<PersonOption> _people = const [];
   List<CommunicationDevice> _devices = const [];
   List<CommunicationDevice> _equipment = const [];
-  List<CallSession> _history = const [];
-  final Map<String, List<CommunicationDevice>> _equipmentByPerson = {};
-  final Set<String> _selectedKeys = {};
-  ContactFavorites? _favorites;
-  bool _favoritesReady = false;
-  bool _favoriteBusy = false;
-  ContactVideoRequest? _videoRequest;
-  ContactFilters _filters = const ContactFilters();
+  final Set<String> _phones = {};
+  final Map<String, CommunicationDevice> _hats = {};
+  final Map<String, CommunicationDevice> _broadcastTargets = {};
+  PhoneCallsModel? _phoneCalls;
   String? _personFilter;
   bool _applyRouteTarget = true;
-  List<JsonMap> _tasks = const [];
   bool _batchBusy = false;
   bool _preparingCall = false;
   List<JsonMap> _broadcastReceipts = const [];
@@ -77,7 +70,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   String? _rosterScope;
   String? _activeLoadScope;
   int? _activeLoadGeneration;
-  bool _tasksUnavailable = false;
   String _eventType = '';
   int _loadGeneration = 0;
 
@@ -102,7 +94,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         oldWidget.filterRequest != widget.filterRequest) {
       _loading = true;
       _applyRouteTarget = true;
-      _selectedKeys.clear();
+      _clearTargets();
       _controller?.selectDevice(null);
       unawaited(_load());
     }
@@ -112,26 +104,8 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final session = WearScope.of(context);
-    if (!session.workBusinessEnabled) {
-      _filters = ContactFilters(
-        teams: _filters.teams,
-        types: _filters.types,
-        presences: _filters.selectedPresence,
-      );
-      _tasks = const [];
-      _tasksUnavailable = false;
-    }
-    final favorites = ContactFavorites(
-      server: session.api.dio.options.baseUrl,
-      userId: session.userId,
-      siteId: session.siteId ?? 'none',
-    );
-    if (_favorites?.storageKey != favorites.storageKey) {
-      _favorites = favorites;
-      _favoritesReady = false;
-      _favoriteBusy = false;
-      unawaited(_loadFavorites(favorites));
-    }
+    _phoneCalls = PhoneCallScope.maybeOf(context);
+    _phones.retainAll(_phoneCalls?.contacts ?? const <String>{});
     if (!identical(session, _session)) {
       _controller?.removeListener(_onControllerChanged);
       _controller?.dispose();
@@ -143,7 +117,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         gateway: _gateway!,
         rtc: session.api.isMock
             ? OfflineWearRtcEngine()
-            : ProtocolWearRtcEngine(),
+            : ProtocolWearRtcEngine(api: session.api),
         userId: session.userId,
         permissions: session.permissions,
       )..addListener(_onControllerChanged);
@@ -153,36 +127,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       _presenceTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         if (!_loading && !_batchBusy) unawaited(_refreshPresence());
       });
-    }
-  }
-
-  Future<void> _loadFavorites(ContactFavorites favorites) async {
-    try {
-      await favorites.load();
-      if (mounted && identical(favorites, _favorites)) {
-        setState(() => _favoritesReady = true);
-      }
-    } catch (_) {
-      if (mounted && identical(favorites, _favorites)) {
-        _snack('常用联系人读取失败，请重新进入通讯页');
-      }
-    }
-  }
-
-  Future<void> _toggleFavorite(_CommsContact contact) async {
-    final favorites = _favorites;
-    if (!_favoritesReady || _favoriteBusy || favorites == null) return;
-    setState(() => _favoriteBusy = true);
-    try {
-      await favorites.toggle(contact.key);
-    } catch (_) {
-      if (mounted && identical(favorites, _favorites)) {
-        _snack('收藏保存失败，请重试');
-      }
-    } finally {
-      if (mounted && identical(favorites, _favorites)) {
-        setState(() => _favoriteBusy = false);
-      }
     }
   }
 
@@ -200,7 +144,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   void _onControllerChanged() {
     final controller = _controller;
     if (controller != null && !callLabEnabled) {
-      _session?.callActive.value = controller.hasLocalSession;
+      _session?.setHelmetCallActive(controller.hasLocalSession);
     }
     if (mounted) setState(() {});
   }
@@ -221,16 +165,11 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         _people = const [];
         _devices = const [];
         _equipment = const [];
-        _tasks = const [];
-        _history = const [];
-        _equipmentByPerson.clear();
-        _selectedKeys.clear();
-        _filters = const ContactFilters();
+        _clearTargets();
         _personFilter = null;
         _applyRouteTarget = true;
         _rosterScope = null;
         _refreshWarning = null;
-        _tasksUnavailable = false;
       }
       if (blocking && (!background || _loadError == null)) _loading = true;
       if (!background) _loadError = null;
@@ -239,7 +178,7 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       final roster = await ContactRoster.load(
         session.api,
         lab: callLabEnabled,
-        allTasks: session.isAdmin,
+        includeTasks: false,
       );
       final people = roster.people;
       final devices = roster.devices;
@@ -282,44 +221,37 @@ class _CommunicationsPageState extends State<CommunicationsPage>
           equipment.every((item) => item.id != selected!.id)) {
         equipment = [...equipment, selected];
       }
-      final history = await _readHistory(
-        eventId: eventId,
-        deviceId: selected?.id,
-      );
       if (!mounted ||
           generation != _loadGeneration ||
           scope != session.scopeKey) {
         return;
       }
       setState(() {
-        if (!roster.tasksUnavailable || blocking) _tasks = roster.tasks;
-        _tasksUnavailable = roster.tasksUnavailable;
         _rosterScope = scope;
         _loadError = null;
         _refreshWarning = null;
-        _equipmentByPerson.clear();
-        for (final p in people) {
-          _equipmentByPerson[p.id] = devices
-              .where((d) => d.personId == p.id)
-              .toList();
-        }
         _people = [
           ...people,
           if (person != null && people.every((p) => p.id != person!.id)) person,
         ];
         _devices = devices;
         _equipment = equipment;
-        _history = history;
         _eventType = eventType;
         _loading = false;
         if (_applyRouteTarget) {
-          _filters = const ContactFilters();
           _search.clear();
           _personFilter = person?.id;
-          _selectedKeys.clear();
+          _clearTargets();
           if (person != null) {
-            _selectedKeys.add('p:${person.id}');
-            _equipmentByPerson[person.id] = equipment;
+            final hat = _hatOf(person.id);
+            if (hat != null && _canCallHat(hat)) _hats[person.id] = hat;
+            if (_action == 'tts') {
+              for (final device in _broadcastOptions.where(
+                (d) => d.personId == person!.id,
+              )) {
+                _broadcastTargets[device.id] = device;
+              }
+            }
           }
           _applyRouteTarget = false;
         }
@@ -352,65 +284,8 @@ class _CommunicationsPageState extends State<CommunicationsPage>
     }
   }
 
-  Future<void> _selectPerson(PersonOption? person) async {
-    final session = _session;
-    final gateway = _gateway;
-    if (session == null || gateway == null || person == null) return;
-    final generation = ++_loadGeneration;
-    final scope = session.scopeKey;
-    setState(() {
-      _equipment = const [];
-      _history = const [];
-      _loadError = null;
-    });
-    _controller?.selectDevice(null);
-    try {
-      final equipment = _devices
-          .where((d) => d.personId == person.id && _filters.matchesDevice(d))
-          .toList();
-      final selected = equipment.firstOrNull;
-      final history = await _readHistory(deviceId: selected?.id);
-      if (!mounted ||
-          generation != _loadGeneration ||
-          scope != session.scopeKey) {
-        return;
-      }
-      setState(() {
-        _equipment = equipment;
-        _equipmentByPerson[person.id] = equipment;
-        _history = history;
-      });
-      _controller?.selectDevice(selected);
-      await _controller?.recoverOwnedCalls();
-    } catch (error) {
-      if (error is StaleSessionException) return;
-      if (!mounted ||
-          generation != _loadGeneration ||
-          scope != session.scopeKey) {
-        return;
-      }
-      _snack(_errorText(error));
-    }
-  }
-
-  Future<List<CallSession>> _readHistory({
-    String? eventId,
-    String? deviceId,
-  }) async {
-    // Targets have already been resolved from this station's authorized
-    // roster/detail. History is optional and never grants calling privileges.
-    if (_session?.can('wear:call:start') != true) return const [];
-    try {
-      return await _gateway!.calls(eventId: eventId, deviceId: deviceId);
-    } on WearApiException catch (error) {
-      if (error.code != 403) rethrow;
-      return const [];
-    }
-  }
-
   @override
   void dispose() {
-    _videoRequest?.dispose();
     _loadGeneration++;
     _presenceTimer?.cancel();
     _session?.refreshTick.removeListener(_onRefreshRequested);
@@ -428,6 +303,9 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
+    final capabilityNotice = _loading || _loadError != null
+        ? null
+        : _capabilityNotice;
     return ColoredBox(
       color: WearColors.background,
       child: SafeArea(
@@ -509,29 +387,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                     ),
                                     const SizedBox(height: 18),
                                   ],
-                                  _filterBar(),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: SizedBox(
-                                      height:
-                                          MediaQuery.textScalerOf(
-                                            context,
-                                          ).scale(12) *
-                                          4.5,
-                                      child: Text(
-                                        _capabilityNotice ??
-                                            '选择联系人后，可按设备能力发起语音或文字广播。',
-                                        key: const ValueKey(
-                                          'communications-capability-notice',
-                                        ),
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          height: 1.5,
-                                          color: WearColors.muted,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                                   if (_personFilter != null)
                                     Align(
                                       alignment: Alignment.centerLeft,
@@ -546,13 +401,11 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                         }),
                                       ),
                                     ),
-                                  if (_refreshWarning != null ||
-                                      (_session?.workBusinessEnabled == true &&
-                                          _tasksUnavailable))
+                                  if (_refreshWarning != null)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 8),
                                       child: Text(
-                                        _refreshWarning ?? '作业筛选暂不可用，联系人正常显示',
+                                        _refreshWarning!,
                                         style: const TextStyle(
                                           fontSize: 12,
                                           color: WearColors.muted,
@@ -599,8 +452,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                                       ),
                                     ),
                                   const SizedBox(height: 14),
-                                  _historyCard(controller),
-                                  const SizedBox(height: 14),
                                   const DeviceVoiceMessages(),
                                 ],
                               ),
@@ -610,20 +461,40 @@ class _CommunicationsPageState extends State<CommunicationsPage>
                       ),
                     ),
             ),
+            if (capabilityNotice != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Text(
+                  capabilityNotice,
+                  key: const ValueKey('communications-capability-notice'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                    color: WearColors.muted,
+                  ),
+                ),
+              ),
             if (!_loading &&
                 _loadError == null &&
                 controller?.activeCall == null)
               ContactActionBar(
-                showVoice: _supportsAction('intercom'),
-                showVideo: _supportsAction('video'),
-                showBroadcast: _supportsAction('tts'),
-                onVoice: _canUseActions && _hasSelectedCapability('intercom')
-                    ? () => unawaited(_startCallForSelection())
+                onPhone:
+                    _canUseActions &&
+                        _phones.isNotEmpty &&
+                        _phoneCalls?.canDial == true
+                    ? () => unawaited(_startPhoneCall())
                     : null,
-                onVideo: _canUseActions && _hasSelectedCapability('video')
-                    ? () => unawaited(_startCallForSelection(video: true))
+                onHelmet:
+                    _canUseActions &&
+                        _hats.isNotEmpty &&
+                        _hats.values.every(_canCallHat)
+                    ? () => unawaited(_startHelmetCall())
                     : null,
-                onBroadcast: _canUseActions && _hasSelectedCapability('tts')
+                showBroadcast: _controller?.policy.canSubmitTts == true,
+                onBroadcast: _canUseActions && _broadcastOptions.isNotEmpty
                     ? _showBroadcast
                     : null,
               ),
@@ -634,47 +505,59 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   }
 
   bool get _canUseActions =>
-      _selectedKeys.isNotEmpty &&
       _refreshWarning == null &&
       !_batchBusy &&
       !_preparingCall &&
       _controller?.busy == false &&
       _session?.callActive.value == false;
 
-  bool _hasSelectedCapability(String action) => _batchDevices().any(
-    (d) => action == 'video'
-        ? _controller?.policy.canStartVideo(d) == true
-        : action == 'intercom'
-        ? _controller?.policy.canStartVoice(d) == true
-        : _controller?.policy.canSendTts(d) == true,
-  );
+  Iterable<CommunicationDevice> get _currentDevices => {
+    for (final d in [..._equipment, ..._devices]) d.id: d,
+  }.values;
 
-  Iterable<CommunicationDevice> get _actionDevices =>
-      _selectedKeys.isEmpty ? [..._devices, ..._equipment] : _batchDevices();
-  bool _supportsAction(String action) => _actionDevices.any(
-    (d) => d.supports(action == 'video' ? 'video_call' : action),
+  CommunicationDevice? _hatOf(String personId) {
+    final hats = _currentDevices.where(
+      (d) => d.typeCode == 'helmet' && d.personId == personId,
+    );
+    if (widget.deviceId != null && personId == _personFilter) {
+      return hats.where((d) => d.id == widget.deviceId).firstOrNull;
+    }
+    return hats.where(_canCallHat).firstOrNull ?? hats.firstOrNull;
+  }
+
+  bool _canCallHat(CommunicationDevice d) =>
+      d.typeCode == 'helmet' &&
+      d.personId != null &&
+      d.isNormalOnline &&
+      _controller?.policy.canStartVideo(d) == true;
+
+  Iterable<CommunicationDevice> get _broadcastOptions => _currentDevices.where(
+    (d) =>
+        d.personId != null &&
+        _controller?.policy.canSendTts(d) == true &&
+        (_personFilter == null || d.personId == _personFilter) &&
+        (widget.deviceId == null ||
+            _personFilter == null ||
+            widget.deviceId == d.id),
   );
 
   String? get _capabilityNotice {
     final policy = _controller?.policy;
-    if (policy == null) return null;
-    if (!policy.canStartCalls && !policy.canSubmitTts) {
+    if (policy != null && !policy.canStartCalls && !policy.canSubmitTts) {
       return '当前账号未获设备语音或广播权限，可查看通讯录和事件记录。';
-    }
-    final devices = [..._devices, ..._equipment];
-    if (!devices.any((d) => d.supports('intercom') || d.supports('tts'))) {
-      return '当前范围内暂无支持语音或广播的设备；手机求助和事件文字跟进仍可使用。';
-    }
-    if (_selectedKeys.isNotEmpty &&
-        !_hasSelectedCapability('intercom') &&
-        !_hasSelectedCapability('tts')) {
-      return '所选联系人暂无可用的设备通讯能力，请选择有对应装备的联系人。';
     }
     return null;
   }
 
   void _showBroadcast() {
-    setState(() => _action = 'tts');
+    setState(() {
+      _action = 'tts';
+      for (final device in _broadcastOptions) {
+        if (_hats.containsKey(device.personId)) {
+          _broadcastTargets[device.id] = device;
+        }
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final target = _targetActionsKey.currentContext;
@@ -759,18 +642,8 @@ class _CommunicationsPageState extends State<CommunicationsPage>
         devicesUpdated = true;
         _refreshWarning = null;
         _devices = devices;
-        _equipment = _equipment
-            .map(
-              (d) =>
-                  _devices.where((fresh) => fresh.id == d.id).firstOrNull ?? d,
-            )
-            .toList();
-        _equipmentByPerson.clear();
-        for (final p in _people) {
-          _equipmentByPerson[p.id] = _devices
-              .where((d) => d.personId == p.id)
-              .toList();
-        }
+        final priorIds = _equipment.map((d) => d.id).toSet();
+        _equipment = _devices.where((d) => priorIds.contains(d.id)).toList();
         _pruneSelection();
       });
       // Optional broadcast receipts cannot hold up or discard authoritative
@@ -812,81 +685,12 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   void _markPresenceUnknown() {
     _devices = ContactRoster.unavailableDevices(_devices);
     _equipment = ContactRoster.unavailableDevices(_equipment);
-    _equipmentByPerson.clear();
-    for (final p in _people) {
-      _equipmentByPerson[p.id] = _devices
-          .where((d) => d.personId == p.id)
-          .toList();
-    }
+    _hats.clear();
+    _broadcastTargets.clear();
   }
 
-  Widget _filterBar() => WearCard(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-    child: InlineFilters(
-      key: ValueKey(
-        'contact-filters-${_session?.scopeKey}-${_session?.workBusinessEnabled}',
-      ),
-      title: '联系对象筛选 · ${_visibleContacts.length} 项',
-      groups: [
-        const InlineFilterGroup('presence', '状态', {
-          'online': '在线',
-          'offline': '离线',
-        }),
-        InlineFilterGroup('team', '班组', {
-          for (final p in _people)
-            if (p.teamId.isNotEmpty)
-              p.teamId: p.teamName.isEmpty ? '班组 ${p.teamId}' : p.teamName,
-        }),
-        if (_session!.workBusinessEnabled)
-          InlineFilterGroup('task', '作业', {
-            for (final t in _tasks)
-              idOf(t['id']): textOf(t['title'], '作业 ${idOf(t['id'])}'),
-          }),
-      ],
-      value: {
-        'team': _filters.teams,
-        'presence': _filters.selectedPresence,
-        'device': _filters.types,
-        'task': _filters.tasks,
-      },
-      onApply: (selected, _) => setState(() {
-        _filters = ContactFilters(
-          teams: selected['team'] ?? {},
-          types: selected['device'] ?? {},
-          tasks: _session!.workBusinessEnabled ? selected['task'] ?? {} : {},
-          presences: selected['presence'] ?? {},
-        );
-        _pruneSelection();
-      }),
-      footer: const Padding(
-        padding: EdgeInsets.only(top: 8),
-        child: Text(
-          '状态同步主平台 · 按联系人安全帽在线状态筛选',
-          style: TextStyle(fontSize: 11, color: WearColors.muted),
-        ),
-      ),
-    ),
-  );
-
-  CommunicationDevice? get _explicitDevice => [
-    ..._devices,
-    ..._equipment,
-  ].where((d) => d.id == widget.deviceId && d.personId != null).firstOrNull;
-
   List<CommunicationDevice> _batchDevices() =>
-      selectedContactDevices(
-        selectedKeys: _selectedKeys,
-        visibleKeys: _visibleContacts.map((c) => c.key).toSet(),
-        devices: <String, CommunicationDevice>{
-          for (final d in [..._devices, ..._equipment]) d.id: d,
-        }.values.toList(),
-        filters: _filters,
-      ).where((device) {
-        final explicit = _explicitDevice;
-        return explicit == null ||
-            device.personId != explicit.personId ||
-            device.id == explicit.id;
-      }).toList();
+      _broadcastTargets.values.toList();
 
   Widget _batchTtsCard() => WearCard(
     child: Column(
@@ -916,6 +720,26 @@ class _CommunicationsPageState extends State<CommunicationsPage>
           style: TextStyle(fontSize: 12, color: WearColors.muted),
         ),
         const SizedBox(height: 12),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            for (final device in _broadcastOptions)
+              FilterChip(
+                label: Text(_deviceCaption(device)),
+                selected: _broadcastTargets.containsKey(device.id),
+                onSelected: _batchBusy
+                    ? null
+                    : (selected) => setState(() {
+                        if (selected) {
+                          _broadcastTargets[device.id] = device;
+                        } else {
+                          _broadcastTargets.remove(device.id);
+                        }
+                      }),
+              ),
+          ],
+        ),
         TextField(
           controller: _tts,
           minLines: 2,
@@ -1057,44 +881,35 @@ class _CommunicationsPageState extends State<CommunicationsPage>
       key: const ValueKey('contact-selection-bar'),
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Row(
-                children: [
-                  const Text(
-                    '已选 ',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: WearColors.ink,
-                    ),
-                  ),
-                  Text(
-                    '${_selectedKeys.length} 项',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: WearColors.brand,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
               const Text(
-                '星标联系人优先显示',
-                style: TextStyle(fontSize: 11, color: WearColors.muted),
+                '已选 ',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: WearColors.ink,
+                ),
+              ),
+              Text(
+                '${_phones.length + _hats.length} 项',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: WearColors.brand,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(width: 8),
         OutlinedButton(
-          onPressed: _selectedKeys.isEmpty || _batchBusy
+          onPressed:
+              (_phones.isEmpty && _hats.isEmpty && _broadcastTargets.isEmpty) ||
+                  _batchBusy
               ? null
               : () {
-                  setState(() => _selectedKeys.clear());
+                  setState(_clearTargets);
                   _controller?.selectDevice(null);
                 },
           style: OutlinedButton.styleFrom(
@@ -1112,162 +927,159 @@ class _CommunicationsPageState extends State<CommunicationsPage>
   }
 
   Widget _contactTile(_CommsContact contact) {
-    final selected = _selectedKeys.contains(contact.key);
-    final voiceDevices = [
-      ..._devices,
-      ..._equipment,
-    ].where((d) => d.personId == contact.person.id && d.supports('intercom'));
-    final canCall =
-        _refreshWarning == null &&
-        !_batchBusy &&
-        !_preparingCall &&
-        _controller?.busy == false &&
-        _session?.callActive.value == false &&
-        [..._devices, ..._equipment].any(
-          (d) =>
-              d.personId == contact.person.id &&
-              _controller?.policy.canStartVoice(d) == true,
-        );
-    final helmet = PersonHelmetStatus(contact.person.id, _devices);
-    final statusLabel = helmet.label;
-    final isOnline = helmet.isOnline;
-    final statusColor = isOnline
-        ? const Color(0xFF0AA56C)
+    final id = contact.person.id;
+    final helmet = PersonHelmetStatus(id, _devices);
+    final hat = _hatOf(id);
+    final statusColor = helmet.isOnline
+        ? WearColors.online
         : (helmet.device?.isAbnormal ?? false)
         ? WearColors.warning
         : WearColors.muted;
+    final canPhone =
+        _canUseActions &&
+        _phoneCalls?.canSelect(id) == true &&
+        (_phones.contains(id) || _phones.length < 8);
+    final compatible =
+        _hats.containsKey(id) ||
+        _hats.isEmpty ||
+        (_hats.length < 8 &&
+            hat?.source == 'SPLIT_HELMET' &&
+            _hats.values.every((d) => d.source == 'SPLIT_HELMET'));
+    final canHat =
+        hat != null && _canUseActions && _canCallHat(hat) && compatible;
     return Padding(
       key: ValueKey('contact-${contact.key}'),
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => unawaited(_toggleContact(contact)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-            child: Row(
-              children: [
-                _checkBox(selected),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: const Color(0xFFF3F6FB),
-                  child: Icon(contact.icon, color: WearColors.brand, size: 22),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        contact.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: WearColors.ink,
-                        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFF3F6FB),
+                child: Icon(contact.icon, color: WearColors.brand, size: 22),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      contact.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: WearColors.ink,
                       ),
-                      Text(
-                        contact.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: WearColors.muted,
-                        ),
+                    ),
+                    Text(
+                      contact.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: WearColors.muted,
                       ),
-                      if (statusLabel.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Row(
-                            children: [
-                              Icon(Icons.circle, size: 6, color: statusColor),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: Text(
-                                  '$statusLabel${(helmet.device?.simulatedPresence ?? false) ? ' · 模拟状态' : ''}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: statusColor,
-                                  ),
-                                ),
-                              ),
-                            ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.circle, size: 6, color: statusColor),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            '${helmet.label}${helmet.device?.simulatedPresence == true ? ' · 模拟状态' : ''}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11, color: statusColor),
                           ),
                         ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  key: ValueKey('favorite-${contact.key}'),
-                  tooltip: _favorites?.contains(contact.key) == true
-                      ? '取消收藏'
-                      : '收藏并置顶',
-                  isSelected: _favorites?.contains(contact.key) == true,
-                  onPressed: _favoritesReady && !_favoriteBusy
-                      ? () => unawaited(_toggleFavorite(contact))
-                      : null,
-                  icon: const Icon(
-                    Icons.star_border_rounded,
-                    color: WearColors.muted,
-                  ),
-                  selectedIcon: const Icon(
-                    Icons.star_rounded,
-                    color: WearColors.brand,
-                  ),
-                ),
-                if (voiceDevices.isNotEmpty)
-                  IconButton(
-                    key: ValueKey('contact-call-${contact.key}'),
-                    tooltip: canCall
-                        ? '呼叫'
-                        : _controller?.policy.canStartCalls != true
-                        ? '当前账号无通话权限'
-                        : voiceDevices
-                                  .map(
-                                    (device) =>
-                                        device.feature('intercom').reason,
-                                  )
-                                  .where((reason) => reason.isNotEmpty)
-                                  .firstOrNull ??
-                              '当前不可呼叫，请刷新设备状态',
-                    onPressed: canCall
-                        ? () => unawaited(_callContact(contact))
-                        : null,
-                    icon: Icon(
-                      Icons.call_outlined,
-                      color: canCall ? WearColors.brand : WearColors.muted,
+                      ],
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+              _targetIcon(
+                contact,
+                phone: true,
+                enabled: canPhone,
+                selected: _phones.contains(id),
+                hint: canPhone ? '选择手机' : '手机当前不可呼叫',
+                toggle: () => setState(() {
+                  if (!_phones.remove(id)) {
+                    if (_phones.length >= 8) {
+                      _snack('每次最多呼叫 8 部手机');
+                      return;
+                    }
+                    _phones.add(id);
+                  }
+                }),
+              ),
+              _targetIcon(
+                contact,
+                phone: false,
+                enabled: canHat,
+                selected: _hats.containsKey(id),
+                hint: canHat
+                    ? '选择安全帽'
+                    : hat == null
+                    ? '安全帽未关联'
+                    : !hat.isNormalOnline
+                    ? '安全帽${hat.stateLabel}'
+                    : '安全帽视频对讲不可用',
+                toggle: () {
+                  if (hat == null) return;
+                  setState(() {
+                    if (_hats.remove(id) != null) return;
+                    _hats[id] = hat;
+                  });
+                },
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _checkBox(bool selected) {
-    return Container(
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        color: selected ? WearColors.brand : Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: selected ? WearColors.brand : const Color(0xFFC9D4E5),
-          width: 1.5,
-        ),
+  Widget _targetIcon(
+    _CommsContact contact, {
+    required bool phone,
+    required bool enabled,
+    required bool selected,
+    required String hint,
+    required VoidCallback toggle,
+  }) {
+    final color = !enabled
+        ? const Color(0xFFA4ADBC)
+        : selected
+        ? const Color(0xFF087D49)
+        : WearColors.brand;
+    final label = phone ? '手机' : '安全帽';
+    return IconButton(
+      key: ValueKey('contact-${phone ? 'call' : 'helmet'}-${contact.key}'),
+      tooltip: selected && enabled ? '取消选择$label' : hint,
+      isSelected: selected && enabled,
+      onPressed: enabled ? toggle : null,
+      style: IconButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        backgroundColor: selected && enabled
+            ? const Color(0xFFE0F4E9)
+            : Colors.transparent,
       ),
-      child: selected
-          ? const Icon(Icons.check, size: 16, color: Colors.white)
-          : null,
+      icon: phone
+          ? Icon(
+              selected ? Icons.phone_in_talk : Icons.call_outlined,
+              color: color,
+            )
+          : CustomPaint(
+              size: const Size.square(24),
+              painter: _SafetyHelmetPainter(color),
+            ),
     );
   }
 
@@ -1310,6 +1122,16 @@ class _CommunicationsPageState extends State<CommunicationsPage>
             '会话 ${call.id} · 设备 ${call.sn.isEmpty ? call.deviceId : call.sn}',
             style: const TextStyle(color: WearColors.muted),
           ),
+          if (call.connectedDeviceIds.isNotEmpty)
+            Text(
+              '媒体已连接：${call.connectedDeviceIds.join('、')}',
+              style: const TextStyle(color: WearColors.muted),
+            ),
+          for (final skipped in call.skipped)
+            Text(
+              '${textOf(skipped['deviceId'] ?? skipped['helmetSn'] ?? skipped['sn'], '设备')} · 未接通：${textOf(skipped['reason'] ?? skipped['message'], '设备未受理')}',
+              style: const TextStyle(color: WearColors.warning),
+            ),
           if (controller.statusMessage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -1327,9 +1149,33 @@ class _CommunicationsPageState extends State<CommunicationsPage>
               controller.rtc is ProtocolWearRtcEngine)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: SipRemoteVideo(
-                engine: controller.rtc as ProtocolWearRtcEngine,
-              ),
+              child: controller.rtcProtocol == 'ZLM_WEBRTC'
+                  ? ValueListenableBuilder(
+                      valueListenable: (controller.rtc as ProtocolWearRtcEngine)
+                          .splitStreams,
+                      builder: (context, streams, _) => Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: streams.entries
+                            .map(
+                              (entry) => SizedBox(
+                                width: streams.length == 1
+                                    ? MediaQuery.sizeOf(context).width - 80
+                                    : (MediaQuery.sizeOf(context).width - 88) /
+                                          2,
+                                child: ZlmStreamView(
+                                  key: ValueKey(entry.key),
+                                  stream: entry.value,
+                                  label: entry.key,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    )
+                  : SipRemoteVideo(
+                      engine: controller.rtc as ProtocolWearRtcEngine,
+                    ),
             ),
           if (!controller.policy.owns(call))
             const Padding(
@@ -1479,63 +1325,6 @@ class _CommunicationsPageState extends State<CommunicationsPage>
     );
   }
 
-  Widget _historyCard(CommunicationsController? controller) {
-    final records = <String, CallSession>{
-      for (final call in _history) call.id: call,
-      for (final call in controller?.recoveredCalls ?? <CallSession>[])
-        call.id: call,
-      if (controller?.activeCall != null)
-        controller!.activeCall!.id: controller.activeCall!,
-    }.values.toList();
-    return WearCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '相关会话',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: WearColors.ink,
-            ),
-          ),
-          const SizedBox(height: 10),
-          if (records.isEmpty)
-            const Text('暂无相关通话记录', style: TextStyle(color: WearColors.muted))
-          else
-            ...records.map((call) {
-              final canObserve =
-                  !callLabEnabled &&
-                  controller != null &&
-                  !controller.busy &&
-                  (controller.activeCall == null ||
-                      controller.activeCall!.isTerminal ||
-                      controller.isRecoveredSession) &&
-                  controller.policy.owns(call) &&
-                  !call.isTerminal;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  call.video ? Icons.videocam_outlined : Icons.call_outlined,
-                  color: WearColors.primary,
-                ),
-                title: Text(
-                  '${call.kind == 'sos' ? 'SOS' : '单呼'} · ${call.sn.isEmpty ? call.deviceId : call.sn}',
-                ),
-                subtitle: Text(
-                  '${call.statusLabel} · ${formatTime(call.startedAt)}',
-                ),
-                trailing: canObserve
-                    ? const Icon(Icons.visibility_outlined)
-                    : null,
-                onTap: canObserve ? () => controller.observeCall(call) : null,
-              );
-            }),
-        ],
-      ),
-    );
-  }
-
   List<_CommsContact> get _allContacts {
     final items = <_CommsContact>[
       for (final person in _people) _CommsContact.person(person),
@@ -1545,177 +1334,69 @@ class _CommunicationsPageState extends State<CommunicationsPage>
 
   List<_CommsContact> get _visibleContacts {
     final query = _search.text.trim().toLowerCase();
-    final visible = _allContacts.where((item) {
+    return _allContacts.where((item) {
       if (_personFilter != null && item.person.id != _personFilter) {
         return false;
       }
-      if (query.isNotEmpty && !item.matches(query)) return false;
-      return _filters.matchesPerson(item.person, _devices, _tasks);
+      return query.isEmpty || item.matches(query);
     }).toList();
-    return _favorites?.order(visible, (contact) => contact.key) ?? visible;
   }
+
+  void _clearTargets() {
+    _phones.clear();
+    _hats.clear();
+    _broadcastTargets.clear();
+  }
+
+  bool _sameAssignment(
+    CommunicationDevice current,
+    CommunicationDevice saved,
+  ) =>
+      current.id == saved.id &&
+      current.personId == saved.personId &&
+      current.equipmentContext['assignmentId'] ==
+          saved.equipmentContext['assignmentId'] &&
+      current.equipmentContext['assignmentVersion'] ==
+          saved.equipmentContext['assignmentVersion'];
 
   void _pruneSelection() {
-    final visible = _visibleContacts.map((c) => c.key).toSet();
-    _selectedKeys.retainAll(visible);
-    if (_selectedKeys.isEmpty) _controller?.selectDevice(null);
-  }
-
-  Future<void> _toggleContact(_CommsContact contact) async {
-    var selecting = true;
-    setState(() {
-      if (_selectedKeys.contains(contact.key)) {
-        _selectedKeys.remove(contact.key);
-        selecting = false;
-      } else {
-        _selectedKeys.add(contact.key);
-      }
-    });
-    if (selecting) {
-      await _activateContact(contact);
-    }
-  }
-
-  Future<void> _callContact(_CommsContact contact) async {
-    if (_refreshWarning != null) {
-      _snack('请先刷新联系人在线状态');
-      return;
-    }
-    final session = _session;
-    if (!mounted ||
-        session == null ||
-        _batchBusy ||
-        _preparingCall ||
-        session.callActive.value ||
-        _controller?.busy == true) {
-      return;
-    }
-    final scope = session.scopeKey;
-    _preparingCall = true;
-    setState(() {
-      _selectedKeys
-        ..clear()
-        ..add(contact.key);
-    });
-    try {
-      await _activateContact(contact);
-      if (!mounted ||
-          scope != session.scopeKey ||
-          _batchBusy ||
-          session.callActive.value) {
-        return;
-      }
-      _preparingCall = false;
-      await _startCallForSelection();
-    } finally {
-      _preparingCall = false;
-    }
-  }
-
-  Future<void> _activateContact(_CommsContact contact) async {
-    await _selectPerson(contact.person);
-  }
-
-  Future<CommunicationDevice?> _deviceOf(_CommsContact contact) async {
-    final person = contact.person;
-    final explicit = _explicitDevice;
-    if (explicit != null && explicit.personId == person.id) return explicit;
-    final cached = _equipmentByPerson[person.id];
-    if (cached != null) {
-      final matching = cached.where(_filters.matchesDevice);
-      return matching.where((item) => item.supports('intercom')).firstOrNull ??
-          matching.firstOrNull;
-    }
-    final equipment = _devices.where(
-      (d) => d.personId == person.id && _filters.matchesDevice(d),
+    final roster = _people.map((p) => p.id).toSet();
+    _phones.retainAll(roster);
+    _hats.removeWhere(
+      (id, saved) =>
+          !roster.contains(id) ||
+          !_currentDevices.any(
+            (d) => _sameAssignment(d, saved) && _canCallHat(d),
+          ),
     );
-    return equipment.where((item) => item.supports('intercom')).firstOrNull ??
-        equipment.firstOrNull;
+    _broadcastTargets.removeWhere(
+      (id, saved) => !_broadcastOptions.any((d) => _sameAssignment(d, saved)),
+    );
   }
 
-  Future<void> _startCallForSelection({bool video = false}) async {
-    if (_refreshWarning != null) {
-      _snack('请先刷新联系人在线状态');
-      return;
+  Future<void> _startPhoneCall() async {
+    try {
+      await _phoneCalls?.start({..._phones});
+    } catch (error) {
+      if (mounted) _snack(error.toString());
     }
-    final controller = _controller;
-    if (!mounted ||
-        controller == null ||
-        _batchBusy ||
-        _preparingCall ||
-        controller.busy ||
-        _session?.callActive.value == true) {
-      return;
-    }
-    if (_selectedKeys.isEmpty) {
-      _snack('请先选择联系人');
-      return;
-    }
-    if (callLabEnabled) {
-      final targets = callContactDevices(_batchDevices());
-      if (targets.isEmpty) {
-        _snack('所选对象暂无支持呼叫的设备');
-        return;
-      }
-      setState(() => _batchBusy = true);
-      try {
-        if (video) {
-          final model = LabCallScope.of(context);
-          if (!model.canViewHelmetVideo) {
-            _snack('当前账号无查看安全帽画面的权限');
-            return;
-          }
-          final id = await model.start(targets.map((d) => d.id).toList());
-          if (!mounted || id == null) return;
-          _videoRequest?.dispose();
-          _videoRequest = ContactVideoRequest(
-            model,
-            (error) => _snack(_errorText(error)),
-          )..watch(id);
-          context.push('/lab-call/$id');
-        } else {
-          await startLabCall(context, targets.map((d) => d.id).toList());
-        }
-      } catch (error) {
-        _snack(_errorText(error));
-      } finally {
-        if (mounted) setState(() => _batchBusy = false);
-      }
-      return;
-    }
-    final scope = _session!.scopeKey;
-    final resolved = <CommunicationDevice>[];
+  }
 
-    for (final contact in _visibleContacts) {
-      if (!_selectedKeys.contains(contact.key)) continue;
-      final device = await _deviceOf(contact);
-      if (device == null) continue;
-      final allowed = video
-          ? controller.policy.canStartVideo(device)
-          : controller.policy.canStartVoice(device);
-      if (!allowed) continue;
-      if (resolved.any((d) => d.id == device.id)) continue;
-      resolved.add(device);
-    }
-    if (resolved.isEmpty) {
-      _snack(video ? '所选对象暂无支持视频的通话装备或当前账号无权限' : '所选对象暂无可用通话装备');
-      return;
-    }
-    if (!mounted || scope != _session?.scopeKey) return;
-    controller.selectDevice(resolved.first);
-    if (resolved.length > 1) {
-      _snack('请仅选择一位人员发起语音通话。');
-      return;
-    }
-    final eventId = _clean(widget.eventId);
-    final kind = eventId != null && _eventType == 'sos' ? 'sos' : 'single';
-    if (video) {
+  Future<void> _startHelmetCall() async {
+    final controller = _controller;
+    if (!_canUseActions || controller == null || _hats.isEmpty) return;
+    final scope = _session!.scopeKey;
+    final selected = _hats.values.toList();
+    setState(() => _preparingCall = true);
+    try {
       final accepted = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('发起视频通话'),
-          content: const Text(
-            '视频通话将开启本机麦克风和摄像头，与安全帽交换音视频。只观看安全帽画面，请到设备详情选择实时观看。',
+          title: const Text('安全帽呼叫'),
+          content: Text(
+            selected.first.source == 'SPLIT_HELMET'
+                ? '将接收安全帽画面，并开启麦克风进行对讲。'
+                : '将开启麦克风和摄像头，与安全帽进行视频通话。',
           ),
           actions: [
             TextButton(
@@ -1724,14 +1405,40 @@ class _CommunicationsPageState extends State<CommunicationsPage>
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('开启视频通话'),
+              child: const Text('开始呼叫'),
             ),
           ],
         ),
       );
-      if (accepted != true || !mounted || scope != _session?.scopeKey) return;
+      if (!mounted ||
+          accepted != true ||
+          scope != _session?.scopeKey ||
+          _session?.callActive.value == true) {
+        return;
+      }
+      if (selected.any(
+        (saved) => !_currentDevices.any(
+          (d) => _sameAssignment(d, saved) && _canCallHat(d),
+        ),
+      )) {
+        _snack('安全帽状态或领用关系已变化，请重新选择');
+        return;
+      }
+      final event = _clean(widget.eventId);
+      controller.selectDevice(selected.first);
+      await controller.startCall(
+        video: true,
+        eventId: event,
+        kind: selected.length > 1
+            ? 'group'
+            : event != null && _eventType == 'sos'
+            ? 'sos'
+            : 'single',
+        targets: selected.length > 1 ? selected : const [],
+      );
+    } finally {
+      if (mounted) setState(() => _preparingCall = false);
     }
-    await controller.startCall(video: video, eventId: eventId, kind: kind);
   }
 
   void _snack(String text) {
@@ -1746,6 +1453,40 @@ class _CommunicationsPageState extends State<CommunicationsPage>
     final text = value?.trim() ?? '';
     return text.isEmpty ? null : text;
   }
+}
+
+class _SafetyHelmetPainter extends CustomPainter {
+  const _SafetyHelmetPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final shell = Path()
+      ..moveTo(3.5, 16)
+      ..cubicTo(3.5, 11.5, 5.7, 8, 9.5, 6.6)
+      ..moveTo(14.5, 6.6)
+      ..cubicTo(18.3, 8, 20.5, 11.5, 20.5, 16)
+      ..moveTo(10.2, 11.5)
+      ..lineTo(9.5, 5.5)
+      ..quadraticBezierTo(12, 4.4, 14.5, 5.5)
+      ..lineTo(13.8, 11.5);
+    canvas.drawPath(shell, stroke);
+    canvas.drawRRect(
+      RRect.fromLTRBR(2, 16, 22, 19.5, const Radius.circular(1.4)),
+      stroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SafetyHelmetPainter oldDelegate) =>
+      color != oldDelegate.color;
 }
 
 class _CommsHero extends StatelessWidget {

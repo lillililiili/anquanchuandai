@@ -1,5 +1,7 @@
 # anquanchuandai
 
+2026-11-16 分体式安全帽兼容开发：PC 前台、管理后台与 Flutter 安卓端复用现有业务，直接对接厂家 v1.12 中间件。独立配置默认关闭，设备名单、正式回调切换及实机联调留待接入安排。数据库增量、SN 分流网关、配置和验收步骤见[分体式安全帽接入说明](后端代码/melhat_server-dev/local-dev/split-helmet-gateway/README.md)。
+
 日常启动入口（在项目根目录运行）：
 
 ```powershell

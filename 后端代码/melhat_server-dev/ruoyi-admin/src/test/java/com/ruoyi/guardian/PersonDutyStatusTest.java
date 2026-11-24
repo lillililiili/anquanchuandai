@@ -122,17 +122,36 @@ class PersonDutyStatusTest {
         assertEquals("UNKNOWN", query("person", object("id", "disabled-person")).getString("dutyStatus"));
     }
 
-    @Test void onlyDedicatedManualCommandsCanChangeDutyStatusAndTheirMetadata() {
-        JSONObject input = object("siteId", "site-1", "operationId", "create-person", "data", object("name", "新人员", "code", "NEW",
-                "dutyStatus", "ON_DUTY", "dutyStatusSource", "FORGED"));
+    @Test void newPersonIsOnDutyInTheLedgerAndPortalUntilManuallyChanged() {
+        JSONObject input = object("siteId", "site-1", "operationId", "create-person", "data", object("name", "新人员", "code", "NEW"));
         JSONObject created = masters.execute(actor.getString("id"), "people.create", input).getJSONObject("data");
-        assertEquals("UNKNOWN", created.getString("dutyStatus"));assertFalse(created.containsKey("dutyStatusSource"));
-        JSONObject assigned = run(command("OFF_DUTY")).getJSONObject("data");
-        input = object("siteId", "site-1", "id", "person", "operationId", "edit-person", "expectedVersion", assigned.getIntValue("version"),
-                "data", object("name", "重命名", "code", "person", "dutyStatus", "ON_DUTY", "dutyStatusUpdatedAt", "forged"));
+        String id = created.getString("id"), portalId = find(saved.get(), "people", id).getString("portalId");
+        assertEquals("ON_DUTY", created.getString("dutyStatus"));
+        assertEquals("DEFAULT", created.getString("dutyStatusSource"));
+        assertFalse(created.containsKey("dutyStatusUpdatedBy"));
+        assertEquals("ON_DUTY", query("record", object("id", id)).getString("dutyStatus"));
+        assertEquals("ON_DUTY", find(projection.get(), "people", portalId).getString("dutyStatus"));
+        assertEquals(1, query("master", object("dutyStatus", "ON_DUTY")).getIntValue("total"));
+        assertEquals(2, query("master", object("dutyStatus", "UNKNOWN")).getIntValue("total"));
+        JSONObject off = command("OFF_DUTY");
+        off.put("id", id);
+        off.put("expectedVersion", created.getIntValue("version"));
+        JSONObject assigned = run(off).getJSONObject("data");
+        assertEquals("OFF_DUTY", find(projection.get(), "people", portalId).getString("dutyStatus"));
+        input = object("siteId", "site-1", "id", id, "operationId", "edit-person", "expectedVersion", assigned.getIntValue("version"),
+                "data", object("name", "重命名", "code", "NEW", "dutyStatus", "ON_DUTY", "dutyStatusUpdatedAt", "forged"));
         JSONObject edited = masters.execute(actor.getString("id"), "people.update", input).getJSONObject("data");
         for (String key : Arrays.asList("dutyStatus", "dutyStatusUpdatedAt", "dutyStatusUpdatedBy", "dutyStatusSource")) assertEquals(assigned.get(key), edited.get(key));
         assertEquals("重命名", edited.getString("name"));
+    }
+
+    @Test void createIgnoresCallerSuppliedDutyAndManualMetadata() {
+        JSONObject input = object("siteId", "site-1", "operationId", "create-forged", "data",
+                object("name", "新人员", "code", "NEW", "dutyStatus", "OFF_DUTY", "dutyStatusSource", "MANUAL", "dutyStatusUpdatedBy", "forged"));
+        JSONObject row = masters.execute(actor.getString("id"), "people.create", input).getJSONObject("data");
+        assertEquals("ON_DUTY", row.getString("dutyStatus"));
+        assertEquals("DEFAULT", row.getString("dutyStatusSource"));
+        assertFalse(row.containsKey("dutyStatusUpdatedBy"));
     }
 
     @Test void invalidCommandsNeverWriteOrChangeBindings() {

@@ -63,6 +63,94 @@ class WearApi {
 
   bool get isMock => dio.httpClientAdapter is MockBackend;
   bool get usesSharedBackend => _real;
+
+  /// Only the authenticated, same-backend signalling route may receive SDP.
+  Future<String> postSdp(String path, String sdp) async {
+    if (!RegExp(
+          r'^/api/guardian/v1/split/sessions/[^/?#]+/devices/[^/?#]+/(play|talk)$',
+        ).hasMatch(path) ||
+        path.contains('..') ||
+        sdp.length > 262144 ||
+        !sdp.startsWith('v=0')) {
+      throw const WearApiException(400, '媒体协商参数不合法');
+    }
+    final captured = epoch();
+    try {
+      final response = await dio.post<String>(
+        path,
+        data: sdp,
+        cancelToken: _cancel,
+        options: Options(
+          contentType: 'application/sdp',
+          responseType: ResponseType.plain,
+          followRedirects: false,
+          validateStatus: (_) => true,
+          headers: {'X-Wearable-Token': token()},
+        ),
+      );
+      if (captured != epoch()) throw const StaleSessionException();
+      final status = response.statusCode ?? 0;
+      if (status == 401) onUnauthorized?.call();
+      final answer = response.data ?? '';
+      if (status < 200 ||
+          status >= 300 ||
+          !answer.startsWith('v=0') ||
+          answer.length > 262144) {
+        throw WearApiException(status, '媒体协商失败，请结束会话后检查网络与设备状态');
+      }
+      return answer;
+    } on DioException {
+      if (captured != epoch()) throw const StaleSessionException();
+      throw const WearApiException(0, '媒体协商结果未确认，未自动重试');
+    }
+  }
+
+  /// Public signed HTTPS assets receive no token. Private assets stay on our origin.
+  ({String url, Map<String, String> headers})? mediaResource(String path) {
+    if (RegExp(
+          r'^/api/guardian/v1/split/devices/[^/?#]+/files/[^/?#]+$',
+        ).hasMatch(path) &&
+        !path.contains('..')) {
+      final base = dio.options.baseUrl.replaceFirst(RegExp(r'/$'), '');
+      return (url: '$base$path', headers: {'X-Wearable-Token': token() ?? ''});
+    }
+    final uri = Uri.tryParse(path);
+    return uri?.scheme == 'https' && uri!.userInfo.isEmpty
+        ? (url: path, headers: const <String, String>{})
+        : null;
+  }
+
+  Future<void> downloadSplitMedia(
+    String path,
+    String destination,
+    CancelToken cancel,
+    void Function(int, int) progress,
+  ) async {
+    final resource = mediaResource(path);
+    if (resource == null || !path.startsWith('/api/guardian/v1/split/')) {
+      throw const WearApiException(400, '设备文件地址无效');
+    }
+    final captured = epoch();
+    await dio.download(
+      resource.url,
+      destination,
+      cancelToken: cancel,
+      options: Options(
+        headers: resource.headers,
+        followRedirects: false,
+        validateStatus: (status) => status == 200,
+      ),
+      onReceiveProgress: (received, total) {
+        if (captured != epoch()) {
+          cancel.cancel('download scope changed');
+        } else {
+          progress(received, total);
+        }
+      },
+    );
+    if (captured != epoch()) throw const StaleSessionException();
+  }
+
   bool get workBusinessEnabled => shared.businessConfig.isNotEmpty
       ? shared.businessConfig['workBusinessEnabled'] != false
       : !_real;
@@ -190,9 +278,16 @@ class WearApi {
         requestStartedAt: requestStartedAt,
       );
     }
-    return body.containsKey('code') && body.containsKey('data')
+    final value = body.containsKey('code') && body.containsKey('data')
         ? body['data']
         : response.data;
+    if (path == '/api/guardian/v1/mobile/identity' && value is Map) {
+      return {
+        ...value,
+        'phoneCallsEnabled': response.headers.value('x-wear-phone') == '1',
+      };
+    }
+    return value;
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>

@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import '../core.dart';
 import '../device_features.dart';
 import '../shared_backend.dart';
 import '../person_equipment_context.dart';
 import 'query_widgets.dart';
+import 'split_helmet_live.dart';
 
 /// Commands and files come from the same authenticated backend as the device.
 class HelmetMediaPanel extends StatefulWidget {
@@ -21,7 +26,30 @@ class HelmetMediaPanel extends StatefulWidget {
   State<HelmetMediaPanel> createState() => _HelmetMediaPanelState();
 }
 
-class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
+class _HelmetMediaPanelState extends State<HelmetMediaPanel>
+    with WidgetsBindingObserver {
+  final _duration = TextEditingController(text: '300');
+  final _watermark = TextEditingController();
+  CancelToken? _downloadCancel;
+  String? _downloading;
+  String _downloadProgress = '';
+  bool get _split => widget.device['source'] == 'SPLIT_HELMET';
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _closePreview();
+      _releaseView();
+      if (mounted) setState(() => _live = {});
+    }
+  }
+
   WearSession? _session;
   String? _scope;
   JsonMap _data = {};
@@ -32,6 +60,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
   DialogRoute<void>? _previewRoute;
   NavigatorState? _previewNavigator;
   String? _previewAssetId;
+  ImageProvider? _privatePreviewImage;
   String? _recordingStartKey;
   bool _viewing = false;
   Object? _error;
@@ -46,6 +75,8 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     super.didChangeDependencies();
     final session = WearScope.of(context);
     if (!identical(session, _session) || _scope != session.scopeKey) {
+      _downloadCancel?.cancel();
+      _downloading = null;
       _closePreview();
       _releaseView();
       _session = session;
@@ -81,6 +112,8 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
         _viewerSessionId != null &&
         !actionFeature(widget.device, 'start_video').available;
     if (changedDevice || changedIssuance || unavailable) {
+      _downloadCancel?.cancel();
+      _downloading = null;
       _closePreview();
       _releaseView();
       _live = {};
@@ -103,6 +136,10 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
 
   @override
   void dispose() {
+    _downloadCancel?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _duration.dispose();
+    _watermark.dispose();
     _timer?.cancel();
     _closePreview();
     _releaseView();
@@ -197,6 +234,35 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
 
   Future<void> _command(String action, [JsonMap parameters = const {}]) async {
     if (_writing) return;
+    if (_split && action == 'start_recording') {
+      final duration = int.tryParse(_duration.text);
+      if (duration == null ||
+          duration < 1 ||
+          duration > 86400 ||
+          _watermark.text.length > 512) {
+        setState(() => _message = '录像时长需为 1–86400 秒，水印最多 512 字');
+        return;
+      }
+      parameters = {
+        ...parameters,
+        'durationSeconds': duration,
+        if (_watermark.text.trim().isNotEmpty)
+          'watermark': _watermark.text.trim(),
+      };
+    }
+    if (_split && action == 'take_photo' && _watermark.text.trim().isNotEmpty) {
+      parameters = {...parameters, 'watermark': _watermark.text.trim()};
+    }
+    if (_split && action == 'set_watermark') {
+      if (_watermark.text.trim().isEmpty) {
+        setState(() => _message = '请输入需要设置的影像水印');
+        return;
+      }
+      parameters = {'watermark': _watermark.text.trim()};
+    }
+    if (_split && action == 'stop_recording') {
+      parameters = {...parameters, 'commandId': _recordingSourceCommandId};
+    }
     final session = _session!,
         scope = _session!.scopeKey,
         generation = _generation,
@@ -342,7 +408,7 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     if (_pending.keys.any(
       (key) => key.startsWith('$action:') && key.endsWith(':$identity'),
     )) {
-      return true;
+      return !_split;
     }
     final last = jsonList(
       _data['commands'],
@@ -368,6 +434,10 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
   }
 
   Future<void> _listLocal() async {
+    if (_split) {
+      await _command('list_recordings');
+      return;
+    }
     final now = DateTime.now().toUtc().add(const Duration(hours: 8));
     final date =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -413,11 +483,17 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                     _button('实时观看', Icons.videocam_outlined, 'start_video'),
                     _button('停止观看', Icons.stop_circle_outlined, 'stop_video'),
                     _button(
-                      '开始平台录制',
+                      _split ? '开始设备录像' : '开始平台录制',
                       Icons.fiber_manual_record_outlined,
                       'start_recording',
                     ),
-                    _button('停止平台录制', Icons.stop_outlined, 'stop_recording'),
+                    _button(
+                      _split ? '停止设备录像' : '停止平台录制',
+                      Icons.stop_outlined,
+                      'stop_recording',
+                    ),
+                    if (_split)
+                      _button('设置水印', Icons.text_fields, 'set_watermark'),
                     if (actionFeature(_features, 'list_recordings').supported)
                       OutlinedButton.icon(
                         onPressed: _allowed('list_recordings')
@@ -425,11 +501,37 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                             : null,
                         icon: const Icon(Icons.video_library_outlined),
                         label: Text(
-                          deviceFeatureLabel(_features, 'recording', '今日设备录像'),
+                          deviceFeatureLabel(
+                            _features,
+                            'recording',
+                            _split ? '查询设备文件' : '今日设备录像',
+                          ),
                         ),
                       ),
                   ],
                 ),
+                if (_split) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _duration,
+                    enabled: !_writing,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: '设备录像时长（秒）',
+                      helperText: '1–86400 秒；到时由设备停止录像',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _watermark,
+                    enabled: !_writing,
+                    maxLength: 512,
+                    decoration: const InputDecoration(
+                      labelText: '影像水印',
+                      helperText: '提交后以设备执行结果为准',
+                    ),
+                  ),
+                ],
                 if (_message.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -439,6 +541,31 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                   Text(
                     _liveError,
                     style: const TextStyle(color: WearColors.muted),
+                  ),
+                if (_split &&
+                    live['protocol'] == 'ZLM_WEBRTC' &&
+                    _viewing &&
+                    _error == null)
+                  SplitHelmetLivePlayer(
+                    key: ValueKey('${_scope}_${live['sessionId']}'),
+                    api: _session!.api,
+                    playUrl: idOf(live['playUrl'] ?? live['whepUrl']),
+                    heartbeatUrl: idOf(live['heartbeatUrl']),
+                    talkUrl:
+                        actionFeature(_features, 'intercom').available &&
+                            actionFeature(_features, 'video_call').available &&
+                            !_session!.callActive.value &&
+                            (ModalRoute.isCurrentOf(context) ?? true)
+                        ? idOf(live['talkUrl'])
+                        : '',
+                    onFailure: (message) {
+                      if (!mounted) return;
+                      _releaseView();
+                      setState(() {
+                        _live = {};
+                        _liveError = message;
+                      });
+                    },
                   ),
                 if (deviceFeature(_features, 'video').supported &&
                     idOf(live['hlsUrl']).isNotEmpty &&
@@ -454,7 +581,8 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                     live: true,
                   ),
                 if (deviceFeature(_features, 'video').supported &&
-                    idOf(live['hlsUrl']).isEmpty)
+                    idOf(live['hlsUrl']).isEmpty &&
+                    live['protocol'] != 'ZLM_WEBRTC')
                   const Text(
                     '收到真实视频流后显示画面；指令发送成功不代表设备已推流。',
                     style: TextStyle(color: WearColors.muted),
@@ -463,13 +591,14 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                   ListTile(
                     dense: true,
                     title: Text(
-                      '${_actionLabel(idOf(command['action']))} · ${_statusLabel(idOf(command['status']), idOf(command['action']))}',
+                      '${_split ? _actionLabel(idOf(command['action'])).replaceAll('平台录制', '设备录像') : _actionLabel(idOf(command['action']))} · ${_split && command['status'] == 'completed' ? '服务已受理，设备结果以实际文件为准' : _statusLabel(idOf(command['status']), idOf(command['action']))}',
                     ),
                     subtitle: Text(
                       '${textOf(command['message'])}\n${formatTime(command['createdAt'])}',
                     ),
                   ),
-                if (deviceFeature(_features, 'recording').supported &&
+                if (!_split &&
+                    deviceFeature(_features, 'recording').supported &&
                     local?['result'] is List) ...[
                   const Divider(),
                   const Text('设备回报的本地录像'),
@@ -502,7 +631,12 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                     ),
                 ],
                 const Divider(),
-                Text('已入库照片与录像（${files.length}）'),
+                Text(
+                  _split
+                      ? '设备文件（${files.length}）'
+                      : '已入库照片与录像（${files.length}）',
+                ),
+                if (_downloading != null) Text('正在下载 $_downloadProgress'),
                 if (files.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(12),
@@ -536,21 +670,101 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
         );
   Widget _asset(JsonMap row) {
     final url = idOf(row['url'] ?? row['playUrl'] ?? row['downloadUrl']);
-    final valid = Uri.tryParse(url)?.scheme == 'https';
+    final resource = row['available'] == false
+        ? null
+        : _session?.api.mediaResource(url);
     return ListTile(
       leading: Icon(
         row['kind'] == 'photo' ? Icons.photo_outlined : Icons.movie_outlined,
       ),
       title: Text(textOf(row['name'], row['kind'] == 'photo' ? '照片' : '录像')),
       subtitle: Text(
-        '${_mediaOriginLabel(row)} · ${formatTime(row['createdAt'] ?? row['created'])}',
+        '${_split ? '设备文件' : _mediaOriginLabel(row)} · ${formatTime(row['createdAt'] ?? row['created'])}${idOf(row['unavailableReason']).isEmpty ? '' : '\n${row['unavailableReason']}'}',
       ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: valid ? () => _openPreview(row, url) : null,
+      trailing: _split
+          ? IconButton(
+              tooltip: '保存设备文件',
+              icon: const Icon(Icons.download_outlined),
+              onPressed: resource == null || _downloading != null
+                  ? null
+                  : () => _saveFile(row, url),
+            )
+          : const Icon(Icons.chevron_right),
+      onTap: resource != null
+          ? () => _openPreview(row, resource.url, resource.headers)
+          : null,
     );
   }
 
+  Future<void> _saveFile(JsonMap row, String url) async {
+    final session = _session!,
+        scope = _session!.scopeKey,
+        generation = _generation;
+    final cancel = CancelToken();
+    _downloadCancel = cancel;
+    setState(() {
+      _downloading = idOf(row['id']);
+      _downloadProgress = '';
+    });
+    File? temporary;
+    try {
+      final directory = await getTemporaryDirectory();
+      temporary = File(
+        '${directory.path}/wear-media-${SharedBackend.requestId()}.tmp',
+      );
+      await session.api.downloadSplitMedia(url, temporary.path, cancel, (
+        received,
+        total,
+      ) {
+        if (mounted && scope == session.scopeKey && generation == _generation) {
+          setState(
+            () => _downloadProgress = total > 0
+                ? '${(received * 100 / total).floor()}%'
+                : '${(received / 1048576).toStringAsFixed(1)} MB',
+          );
+        }
+      });
+      if (!mounted || scope != session.scopeKey || generation != _generation) {
+        return;
+      }
+      final saved = await const MethodChannel('rolling/documents')
+          .invokeMethod<bool>('saveMedia', {
+            'path': temporary.path,
+            'name': textOf(
+              row['name'] ?? row['fileName'],
+              '安全帽文件',
+            ).replaceAll(RegExp(r'[/\\]'), '_'),
+            'mime': row['kind'] == 'photo'
+                ? 'image/*'
+                : row['kind'] == 'audio'
+                ? 'audio/*'
+                : 'video/*',
+          });
+      if (mounted &&
+          scope == session.scopeKey &&
+          generation == _generation &&
+          saved == true) {
+        setState(() => _message = '文件已保存到所选位置');
+      }
+    } catch (_) {
+      if (mounted && scope == session.scopeKey && generation == _generation) {
+        setState(() => _message = '文件保存未完成，请检查可用空间或刷新目录后重试');
+      }
+    } finally {
+      if (temporary != null && await temporary.exists()) {
+        await temporary.delete();
+      }
+      if (identical(_downloadCancel, cancel)) {
+        _downloadCancel = null;
+        if (mounted) setState(() => _downloading = null);
+      }
+    }
+  }
+
   void _closePreview() {
+    final image = _privatePreviewImage;
+    _privatePreviewImage = null;
+    if (image != null) unawaited(image.evict());
     final route = _previewRoute, navigator = _previewNavigator;
     _previewRoute = null;
     _previewNavigator = null;
@@ -563,8 +777,15 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
     });
   }
 
-  Future<void> _openPreview(JsonMap row, String url) async {
+  Future<void> _openPreview(
+    JsonMap row,
+    String url,
+    Map<String, String> headers,
+  ) async {
     if (_previewRoute != null) return;
+    if (row['kind'] == 'photo' && headers.isNotEmpty) {
+      _privatePreviewImage = NetworkImage(url, headers: headers);
+    }
     final navigator = Navigator.of(context, rootNavigator: true);
     final route = DialogRoute<void>(
       context: context,
@@ -578,13 +799,14 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
                 child: row['kind'] == 'photo'
                     ? Image.network(
                         url,
+                        headers: headers,
                         fit: BoxFit.contain,
                         errorBuilder: (_, error, stack) => const Padding(
                           padding: EdgeInsets.all(24),
                           child: Text('照片加载失败或链接已过期，请刷新列表后重试'),
                         ),
                       )
-                    : HelmetVideoPlayer(url: url),
+                    : HelmetVideoPlayer(url: url, headers: headers),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -602,6 +824,9 @@ class _HelmetMediaPanelState extends State<HelmetMediaPanel> {
       await navigator.push(route);
     } finally {
       if (identical(_previewRoute, route)) {
+        final image = _privatePreviewImage;
+        _privatePreviewImage = null;
+        if (image != null) unawaited(image.evict());
         _previewRoute = null;
         _previewNavigator = null;
         _previewAssetId = null;
@@ -627,6 +852,7 @@ String _actionLabel(String value) =>
       'list_recordings': '查询本地录像',
       'upload_recording': '上传录像',
       'broadcast': '文字广播',
+      'set_watermark': '设置水印',
     }[value] ??
     value;
 String _statusLabel(String value, String action) => value == 'completed'
@@ -647,6 +873,10 @@ String _statusLabel(String value, String action) => value == 'completed'
             'rejected': '设备拒绝',
             'finalizing': '文件封装中',
             'requesting': '提交中',
+            'pending': '等待设备执行',
+            'stopping': '正在停止，等待确认',
+            'stopped': '设备任务已停止',
+            'failed': '执行失败',
           }[value] ??
           value;
 
@@ -656,10 +886,12 @@ class HelmetVideoPlayer extends StatefulWidget {
     required this.url,
     this.live = false,
     this.expiresAt,
+    this.headers = const {},
   });
   final String url;
   final bool live;
   final DateTime? expiresAt;
+  final Map<String, String> headers;
   @override
   State<HelmetVideoPlayer> createState() => _HelmetVideoPlayerState();
 }
@@ -696,11 +928,16 @@ class _HelmetVideoPlayerState extends State<HelmetVideoPlayer> {
     final generation = ++_generation;
     _activeExpiry = widget.expiresAt;
     final uri = Uri.tryParse(widget.url);
-    if (uri?.scheme != 'https') {
+    if (uri?.scheme != 'https' &&
+        !(uri?.scheme == 'http' &&
+            widget.headers.containsKey('X-Wearable-Token'))) {
       setState(() => _failed = true);
       return;
     }
-    final c = VideoPlayerController.networkUrl(uri!);
+    final c = VideoPlayerController.networkUrl(
+      uri!,
+      httpHeaders: widget.headers,
+    );
     _controller = c;
     try {
       await c.initialize();

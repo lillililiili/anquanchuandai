@@ -200,7 +200,7 @@ public class AdminAssignmentService {
                 }
             }
             device.put("version", device.getIntValue("version") + 1);
-            if ("DIRECT_HELMET".equals(device.getString("source")) || "DIRECT_BELT".equals(device.getString("source")))
+            if (Arrays.asList("DIRECT_HELMET", "DIRECT_BELT", "SPLIT_HELMET").contains(device.getString("source")))
                 device.put("portalDeviceId", device.getString("deviceNumber"));
             else if (device.getString("code") != null && !device.getString("code").isEmpty()) device.put("portalDeviceId", device.getString("code"));
             JSONObject record = new JSONObject();
@@ -216,6 +216,8 @@ public class AdminAssignmentService {
             record.put("deviceName", device.getString("name"));
             record.put("type", device.getString("type"));
             record.put("personId", person.getString("id"));
+            record.put("personPortalId", person.getString("portalId"));
+            record.put("assignmentVersion", assignment.getIntValue("version"));
             record.put("personName", person.getString("name"));
             record.put("personCode", person.getString("code"));
             record.put("actorId", actor.getString("id"));

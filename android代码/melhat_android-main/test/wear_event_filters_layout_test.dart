@@ -11,7 +11,7 @@ void main() {
 
   for (final scale in [1.0, 1.5]) {
     testWidgets(
-      'event filter card stays compact and preserves filtering at $scale',
+      'severity and processing state can be combined at text scale $scale',
       (tester) async {
         tester.view.physicalSize = const Size(360, 900);
         tester.view.devicePixelRatio = 1;
@@ -22,20 +22,13 @@ void main() {
           tester.platformDispatcher.clearTextScaleFactorTestValue();
         });
         final reads = <Map<String, dynamic>>[];
+        final paths = <String>[];
         final userId = scale == 1 ? '7' : '8';
         final session =
             WearSession(
                 credentials: MemoryCredentials(),
                 dio: transport((request) {
-                  if (request.path.endsWith('/filter-options')) {
-                    return reply([
-                      {'code': 'helmet.removal', 'label': '核心脱帽名称'},
-                      {'code': 'belt.future_alarm', 'label': '平台新增告警'},
-                    ]);
-                  }
-                  if (request.path.endsWith('/summary')) {
-                    return reply({'unclaimed': 2, 'mine': 0, 'overdue': 1});
-                  }
+                  paths.add(request.path);
                   if (request.path == '/api/v1/events') {
                     reads.add(Map.of(request.queryParameters));
                     return reply({
@@ -63,59 +56,114 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final card = find.ancestor(
-          of: find.text('事件筛选'),
-          matching: find.byType(WearCard),
+        expect(find.text('事件筛选'), findsNothing);
+        expect(find.byKey(const ValueKey('event-level-warning')), findsNothing);
+        expect(find.byType(ChoiceChip), findsNWidgets(4));
+        expect(
+          find.byKey(const ValueKey('inline-filter-toggle')),
+          findsNothing,
         );
-        final height = tester.getSize(card).height;
-        // Collapsed filter card is very compact, freeing viewport for event items.
-        expect(height, lessThanOrEqualTo(scale == 1 ? 65 : 90));
-        expect(find.byType(BottomSheet), findsNothing);
-        expect(find.text('应用筛选'), findsNothing);
-        final toggle = find.byKey(const ValueKey('inline-filter-toggle'));
-        expect(toggle, findsOneWidget);
-        await tester.tap(toggle);
-        await tester.pumpAndSettle();
-        Finder key(String value) => find.byKey(ValueKey(value));
-        Future<void> click(Finder finder) async {
-          await tester.ensureVisible(finder);
+        final header = find.text('事件列表');
+        expect(header.hitTestable(), findsOneWidget);
+        expect(find.textContaining('待办 2'), findsOneWidget);
+        final defaultQuery = Map.of(reads.last);
+        expect(defaultQuery.containsKey('severity'), isFalse);
+        expect(defaultQuery.containsKey('statuses'), isFalse);
+        final emergency = find.byKey(const ValueKey('event-level-emergency'));
+        final abnormal = find.byKey(const ValueKey('event-level-abnormal'));
+        final unclaimed = find.byKey(const ValueKey('event-status-unclaimed'));
+        final processing = find.byKey(
+          const ValueKey('event-status-processing'),
+        );
+        expect(find.text('处理状态').hitTestable(), findsOneWidget);
+        for (final (chip, label) in [(unclaimed, '待认领'), (processing, '处理中')]) {
+          expect(
+            find.descendant(of: chip, matching: find.text(label)),
+            findsOneWidget,
+          );
+          expect(chip.hitTestable(), findsOneWidget);
+          expect(
+            tester.getTopLeft(chip).dy,
+            greaterThan(tester.getBottomLeft(emergency).dy),
+          );
+          expect(
+            tester.getBottomLeft(chip).dy,
+            lessThan(tester.getTopLeft(header).dy),
+          );
+        }
+        for (final level in const {
+          'emergency': '紧急',
+          'abnormal': '异常',
+        }.entries) {
+          final chip = find.byKey(ValueKey('event-level-${level.key}'));
+          expect(
+            find.descendant(of: chip, matching: find.text(level.value)),
+            findsOneWidget,
+          );
+          expect(chip.hitTestable(), findsOneWidget);
+          expect(
+            tester.getBottomLeft(chip).dy,
+            lessThan(tester.getTopLeft(header).dy),
+          );
+          await tester.tap(chip);
           await tester.pumpAndSettle();
-          await tester.tap(finder);
-          await tester.pump(const Duration(milliseconds: 350));
+          expect(reads.last, {...defaultQuery, 'severity': level.key});
+        }
+        Future<void> tapFilter(Finder chip) async {
+          await tester.tap(chip);
           await tester.pumpAndSettle();
         }
 
-        await click(key('event-level-emergency'));
-        expect(reads.last['severity'], 'emergency');
-        await click(key('event-level-warning'));
-        expect(reads.last['severity'], 'warning');
-        await click(key('event-level-warning'));
-        expect(reads.last.containsKey('severity'), isFalse);
-        await click(key('filter-status-open'));
-        expect(reads.last['statuses'], 'open', reason: '一次点击替换默认未关闭预设');
-        await click(key('filter-status-field_pending'));
-        await click(key('filter-type-type:geofence'));
-        await click(key('filter-type-alarm:belt.future_alarm'));
-        await click(key('filter-device-helmet'));
-        await click(key('filter-device-belt'));
-        expect(reads.last['statuses'], 'open,field_pending');
-        expect(reads.last['types'], 'geofence');
-        expect(reads.last['alarmCodes'], 'belt.future_alarm');
-        expect(reads.last['deviceTypes'], 'helmet,belt');
-        expect(
-          tester.widget<FilterChip>(key('filter-device-belt')).selected,
-          true,
-        );
-        await click(key('filter-more'));
-        await tester.enterText(find.byType(TextField).first, '101');
-        await tester.pump(const Duration(milliseconds: 350));
+        await tapFilter(unclaimed);
+        expect(reads.last, {
+          ...defaultQuery,
+          'severity': 'abnormal',
+          'statuses': 'open',
+        });
+        await tapFilter(processing);
+        expect(tester.widget<ChoiceChip>(unclaimed).selected, isFalse);
+        expect(reads.last, {
+          ...defaultQuery,
+          'severity': 'abnormal',
+          'statuses': 'claimed,handling',
+        });
+        await tapFilter(emergency);
+        expect(reads.last, {
+          ...defaultQuery,
+          'severity': 'emergency',
+          'statuses': 'claimed,handling',
+        });
+        await tapFilter(emergency);
+        expect(reads.last, {...defaultQuery, 'statuses': 'claimed,handling'});
+        await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
-        expect(reads.last['personId'], '101');
-        await click(key('filter-reset'));
-        expect(reads.last.containsKey('alarmCodes'), false);
-        expect(reads.last.containsKey('deviceTypes'), false);
-        expect(reads.last.containsKey('statuses'), false);
-        expect(reads.last['status'], 'all');
+        await tester.pumpWidget(
+          WearScope(
+            session: session,
+            child: const MaterialApp(home: EventsPage()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.widget<ChoiceChip>(processing).selected, isTrue);
+        expect(reads.last, {...defaultQuery, 'statuses': 'claimed,handling'});
+        await tapFilter(abnormal);
+        await tapFilter(processing);
+        expect(reads.last, {...defaultQuery, 'severity': 'abnormal'});
+        await tapFilter(abnormal);
+        expect(reads.last, defaultQuery);
+        expect(find.text('暂无事件'), findsOneWidget);
+        await tester.pumpWidget(
+          WearScope(
+            session: session,
+            child: const MaterialApp(
+              home: EventsPage(initialSeverity: 'warning', personId: '42'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(reads.last, {...defaultQuery, 'personId': '42'});
+        expect(paths, isNot(contains('/api/v1/events/filter-options')));
+        expect(paths, isNot(contains('/api/v1/duty/summary')));
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();

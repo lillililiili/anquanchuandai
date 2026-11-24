@@ -68,21 +68,20 @@ void main() {
             data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
             child: const Scaffold(
               body: ContactActionBar(
-                onVoice: null,
-                onVideo: null,
+                onPhone: null,
+                onHelmet: null,
                 onBroadcast: null,
-                showVideo: false,
                 showBroadcast: false,
               ),
             ),
           ),
         ),
       );
-      expect(find.text('设备语音'), findsOneWidget);
-      expect(find.text('视频通话'), findsNothing);
+      expect(find.text('手机呼叫'), findsOneWidget);
+      expect(find.text('安全帽呼叫'), findsOneWidget);
       expect(
-        tester.widget<TextButton>(find.byType(TextButton)).onPressed,
-        isNull,
+        tester.widgetList<TextButton>(find.byType(TextButton)).every((b) => b.onPressed == null),
+        isTrue,
       );
       expect(tester.takeException(), isNull);
     },

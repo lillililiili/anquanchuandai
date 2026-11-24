@@ -97,7 +97,7 @@ class _PersonEquipmentPageState extends State<PersonEquipmentPage> {
       context,
       returning ? '确认归还装备？' : '确认分配装备？',
       '${deviceTypeLabel(row['typeCode'])} · ${textOf(row['sn'])}'
-          '${returning ? '\n请确认装备完好，可正常入库；损坏装备请在 PC 后台办理异常归还。' : ''}',
+      '${returning ? '\n请确认装备完好，可正常入库。' : ''}',
     )) {
       return;
     }

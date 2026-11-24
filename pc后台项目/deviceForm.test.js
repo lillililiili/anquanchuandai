@@ -5,6 +5,7 @@ const form = () => ({ type: 'HELMET', source: 'DIRECT_HELMET', deviceNumber: ' d
 
 describe.each([
   ['HELMET', 'DIRECT_HELMET'],
+  ['HELMET', 'SPLIT_HELMET'],
   ['BELT', 'DIRECT_BELT'],
 ])('direct %s registration form', (type, source) => {
   const directForm = () => ({ ...form(), type, source })

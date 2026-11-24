@@ -2,6 +2,7 @@ import 'data.dart';
 import 'belt_alarm_names.dart';
 import 'demo_visibility.dart';
 import 'device_features.dart';
+import 'person_duty_status.dart';
 import 'person_equipment_context.dart';
 import 'server_clock.dart';
 import 'work_business.dart';
@@ -9,7 +10,9 @@ import 'work_business.dart';
 /// Only a presentation projection. Identifiers and versions always come from Spring.
 class SharedModels {
   SharedModels(JsonMap state)
-    : state = projectWorkBusiness(visibleBusinessState(state));
+    : _hasAssignmentLedger = state['assignments'] is List,
+      state = projectWorkBusiness(visibleBusinessState(state));
+  final bool _hasAssignmentLedger;
   final JsonMap state;
   List<JsonMap> rows(String key) => jsonList(state[key]);
   JsonMap find(String key, Object? id) =>
@@ -60,16 +63,25 @@ class SharedModels {
     'personCode': p['code'] ?? p['id'],
     'teamName': p['team'],
     'status': p['active'] == false ? '1' : '0',
+    'dutyStatus': PersonDutyStatus.from(p['dutyStatus']).code,
   };
   JsonMap device(JsonMap d) {
     final demoWatch = isDemoWatch(d);
     final equipmentContext = equipmentContextForDevice(state, idOf(d['id']));
-    final a = rows('assignments')
-        .where((a) => a['active'] == true && a['deviceId'] == d['ledgerId'])
-        .firstOrNull;
+    final ledgerId = idOf(d['ledgerId']);
+    final activeAssignments = ledgerId.isEmpty
+        ? const <JsonMap>[]
+        : rows('assignments')
+              .where(
+                (a) => a['active'] == true && idOf(a['deviceId']) == ledgerId,
+              )
+              .take(2)
+              .toList();
+    final a = activeAssignments.singleOrNull;
     final realTelemetry = const [
       'PLATFORM',
       'DIRECT_HELMET',
+      'SPLIT_HELMET',
       'DIRECT_BELT',
     ].contains(d['source']);
     final freshness = idOf(d['freshness']).toUpperCase();
@@ -105,9 +117,10 @@ class SharedModels {
     final rtcSupported =
         protocol == 'SIP' ||
         protocol == 'AGORA' ||
+        protocol == 'ZLM_WEBRTC' ||
         (protocol.isEmpty && d['source'] == 'PLATFORM');
     bool fieldCurrent(String field) =>
-        d['source'] != 'DIRECT_HELMET' ||
+        !const ['DIRECT_HELMET', 'SPLIT_HELMET'].contains(d['source']) ||
         idOf(d['${field}Freshness']).toUpperCase() == 'CURRENT';
     final features = <String, JsonMap>{
       for (final key in deviceFeatureLabels.keys)
@@ -142,7 +155,7 @@ class SharedModels {
                     (action == 'tts' ||
                         (action == 'intercom' && rtcSupported) ||
                         (action == 'video' &&
-                            protocol == 'SIP' &&
+                            const ['SIP', 'ZLM_WEBRTC'].contains(protocol) &&
                             d['mediaAvailable'] == true)),
               )
               .map(idOf)
@@ -172,6 +185,7 @@ class SharedModels {
       'lastReportedAt':
           d['lastReportedAt'] ?? (realTelemetry ? d['sourceTime'] : null),
       'status': d['active'] == false ? '1' : '0',
+      'relation': _deviceRelation(d, activeAssignments, equipmentContext),
       'assetStatus':
           const {
             'STOCK': 'in_stock',
@@ -224,6 +238,8 @@ class SharedModels {
           : null,
       'telemetryNote': demoWatch
           ? '智能手表示例数据 · 非实测'
+          : d['source'] == 'SPLIT_HELMET'
+          ? '分体式安全帽实际回调；各指标按独立上报时间显示'
           : d['source'] == 'DIRECT_BELT'
           ? '安全带直接上报；佩戴及挂钩状态含义以厂家确认结果为准'
           : d['source'] == 'DIRECT_HELMET'
@@ -239,6 +255,47 @@ class SharedModels {
       'equipmentContext': equipmentContext,
       'currentAssignment': a == null ? null : assignment(a),
     };
+  }
+
+  String? _deviceRelation(
+    JsonMap device,
+    List<JsonMap> active,
+    JsonMap equipment,
+  ) {
+    final declared = device['relation']?.toString();
+    if (active.length > 1 ||
+        (declared != null &&
+            declared != 'ASSIGNED' &&
+            declared != 'UNASSIGNED')) {
+      return null;
+    }
+    final assignment = active.singleOrNull;
+    if (assignment != null &&
+        (idOf(assignment['personId']).isEmpty ||
+            assignment['endedAt'] != null)) {
+      return null;
+    }
+    final outsideUse = const {
+      'STOCK',
+      'MAINTENANCE',
+      'DISABLED',
+      'SCRAPPED',
+    }.contains(device['lifecycle']);
+    if (declared == 'ASSIGNED' ||
+        assignment != null ||
+        hasEquipmentContext(equipment)) {
+      return declared == 'UNASSIGNED' || outsideUse ? null : 'ASSIGNED';
+    }
+    // The mobile context can omit a holder outside the reader's scope. An
+    // in-use or incomplete ledger without a visible assignment is inconclusive.
+    if (device['lifecycle'] == 'IN_USE') return null;
+    if (declared == 'UNASSIGNED' ||
+        (_hasAssignmentLedger &&
+            idOf(device['ledgerId']).isNotEmpty &&
+            outsideUse)) {
+      return 'UNASSIGNED';
+    }
+    return null;
   }
 
   JsonMap assignment(JsonMap a) {

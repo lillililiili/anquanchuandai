@@ -4,12 +4,12 @@ const LABELS = Object.freeze({ ...FEATURE_LABELS, videoCall: '视频通话', dou
 const ORDER = ['battery', 'wear', 'hooks', 'height', 'location', 'alarm', 'sos', 'video', 'videoCall', 'photo', 'recording', 'voice', 'broadcast', 'vitals', 'doubleRelease', 'lowHook', 'proximity', 'temperature', 'silent', 'rtk', 'indoorLocation']
 const COMMON_FEATURES = ['battery', 'wear', 'location', 'alarm', 'sos']
 const DEVICE_FEATURES = {
-  HELMET: new Set([...COMMON_FEATURES, 'video', 'videoCall', 'photo', 'recording', 'voice', 'broadcast']),
+  HELMET: new Set([...COMMON_FEATURES, 'video', 'videoCall', 'photo', 'recording', 'voice', 'broadcast', 'pressure', 'storage']),
   BELT: new Set([...COMMON_FEATURES, 'hooks', 'height', 'doubleRelease', 'lowHook', 'proximity', 'temperature', 'silent', 'rtk', 'indoorLocation']),
   WATCH: new Set(['battery', 'vitals']),
 }
 const DEVICE_TYPES = { H: 'HELMET', HELMET: 'HELMET', B: 'BELT', BELT: 'BELT', W: 'WATCH', WATCH: 'WATCH' }
-const SOURCE_TYPES = { DIRECT_HELMET: 'HELMET', DIRECT_BELT: 'BELT', DEMO_WATCH: 'WATCH' }
+const SOURCE_TYPES = { SPLIT_HELMET: 'HELMET', DIRECT_HELMET: 'HELMET', DIRECT_BELT: 'BELT', DEMO_WATCH: 'WATCH' }
 const status = (label, tone = 'neutral') => ({ label, tone })
 
 // Use persisted maintenance choices for this list; automatic choices continue

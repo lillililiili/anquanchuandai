@@ -96,7 +96,14 @@ public class HelmetBusinessJournal {
         for(JSONObject link:links) {
         if(link.getIntValue("version")>=event.getIntValue("version")) continue;
         int changed;
-        if("real_time_alarm".equals(link.getString("type"))) {
+        if("split_helmet_event".equals(link.getString("type"))) {
+            changed=jdbc.update("UPDATE split_helmet_event SET handled=1,handled_at=?,handler=? WHERE id=?",
+                    when.getTime(),verification.getString("actorId"),link.getLong("id"));
+            if(changed!=1 && jdbc.queryForObject("SELECT COUNT(*) FROM split_helmet_event WHERE id=?",Integer.class,link.getLong("id"))!=1)
+                throw new IllegalStateException("分体帽原始记录核验同步失败");
+            jdbc.update("UPDATE helmet_event_link SET closure_version=? WHERE source_type=? AND source_record_id=?",event.getIntValue("version"),link.getString("type"),link.getLong("id"));
+            continue;
+        } else if("real_time_alarm".equals(link.getString("type"))) {
             changed=jdbc.update("UPDATE real_time_alarm SET is_handled=1,handle_time=?,update_by=?,update_time=? WHERE id=? AND create_by='direct-helmet' AND del_flag='0'",
                     when,verification.getString("actorId"),when,link.getLong("id"));
         } else if("sos_alarm_record".equals(link.getString("type"))) {

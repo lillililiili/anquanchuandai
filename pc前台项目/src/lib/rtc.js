@@ -1,7 +1,9 @@
+import { createZlmSession } from './zlm-session.js';
 import { createSipSession } from './sip-session.js';
 import { communicationGuard } from './communication-guard.js';
 
 export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), sipFactory = createSipSession, guard = communicationGuard, {
+  zlmFactory = createZlmSession,
   getUserMedia = constraints => {
     if (!globalThis.navigator?.mediaDevices?.getUserMedia) throw Error('当前浏览器无法使用麦克风，请使用安全地址并检查录音设备');
     return globalThis.navigator.mediaDevices.getUserMedia(constraints);
@@ -79,9 +81,9 @@ export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), s
     await close(previous);
   }
 
-  async function joinChannel(rtc, { onMediaState = () => {}, reservation } = {}) {
+  async function joinChannel(rtc, { onMediaState = () => {}, reservation, talkOnly = false } = {}) {
     guard.assertAvailable(reservation);
-    if (String(rtc?.protocol).toUpperCase() === 'SIP') {
+    if (['SIP','ZLM_WEBRTC'].includes(String(rtc?.protocol).toUpperCase())) {
       const microphone = preparedMicrophone;
       if (microphone && microphone.reservation !== reservation) throw Error('麦克风准备不属于当前会话');
       preparedMicrophone = null;
@@ -94,7 +96,8 @@ export function createRtcSession(loadAgora = () => import("agora-rtc-sdk-ng"), s
       const placeholder = { sip: null, controller: new AbortController(), callId:rtc.callId || rtc.channel, microphoneStream: microphone?.stream };
       current = placeholder;
       try {
-        const sip = await sipFactory(rtc, { signal: placeholder.controller.signal, microphoneStream: microphone?.stream, onMediaState, onStream: stream => { if (current === placeholder) publishStream(stream); }, active: () => generation === operation && current === placeholder });
+        const factory = String(rtc.protocol).toUpperCase() === 'ZLM_WEBRTC' ? zlmFactory : sipFactory;
+        const sip = await factory(rtc, { signal: placeholder.controller.signal, microphoneStream: microphone?.stream, talkOnly, onMediaState, onStream: stream => { if (current === placeholder) publishStream(stream); }, active: () => generation === operation && current === placeholder });
         if (generation !== operation || current !== placeholder) { await sip.close(); throw Error('通话已取消'); }
         placeholder.sip = sip;
       } catch (error) { if (current === placeholder) current = null; stopStream(microphone?.stream); throw error; }

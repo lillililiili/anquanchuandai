@@ -1,3 +1,4 @@
+import * as splitHelmet from '../../shared/split-helmet.mjs';
 import * as workBusiness from '../src/lib/work-business.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,7 +27,7 @@ async function recordings() {
   const device={id:'helmet-1',type:'H',source:'DIRECT_HELMET',active:true},feature={deviceId:device.id,assignmentId:'a',assignmentVersion:1,supported:true,available:false};
   const db={state:{operator:{id:'operator'}},currentDevices:()=>[device],device:()=>device,person:()=>({name:'测试人员'})};
   const api={read(){return new Promise((resolve,reject)=>requests.push({resolve,reject}));},command(){assert.fail('passive observation must not issue a device command');}};
-  const modules={
+  const modules={ '../../../../shared/split-helmet.mjs':splitHelmet,'@/stores/modal':{openModal(){}},
     '@/lib/work-business': workBusiness,vue:{...Vue,onUnmounted(){},watch(selector,callback,options){watchers.push(callback);if(options?.immediate)callback();}},'@/mock/runtime':{db,tick,connection:Vue.ref({status:'online'})},'@/lib/auth':{authFetch(){assert.fail('network unavailable in isolated test');}},'@/lib/location':{beijingDate:()=> '2026-11-02'},'@/lib/date-time':dateTime,'@/lib/helmet-media':{COMMAND_LABELS:{},COMMAND_STATUSES:{},createHelmetMediaApi:()=>api},'@/lib/person-equipment':{personFeature:()=>feature,operationContext:()=>({})},'@/lib/device-telemetry':{supportsDeviceAction:()=>false}};
   const compiled=code.replace(/^import\s+([\s\S]*?)\s+from\s+(['"])([^'"]+)\2;?\s*$/gm,(_,names,_quote,from)=>{
     if(from.endsWith('.vue'))modules[from]={default:{}};
@@ -92,7 +93,7 @@ async function library() {
   const session=Vue.reactive({station:'S1',filters:{},mediaTab:'all'});
   const modalView=Vue.shallowRef(null),modalProps=Vue.shallowRef({});let closes=0;
   const modal={modalView,modalProps,closeModal(){closes++;modalView.value=null;modalProps.value={};},openModal(options){modalView.value=options.view;modalProps.value=options.props;}};
-  const modules={
+  const modules={ '../../../../shared/split-helmet.mjs':splitHelmet,'@/stores/modal':{openModal(){}},
     '@/lib/work-business': workBusiness,vue:{...Vue,onUnmounted(){},watch(selector,callback,options){watchers.push(callback);if(options?.immediate)callback();}},'@/mock/runtime':{db,guardianReady:Promise.resolve()},
     '@/lib/auth':{authFetch:()=>new Promise(resolve=>requests.push(resolve))},'@/lib/media-presentation':{...mediaPresentation,normalizeMedia:identity=>identity,mediaKindLabel:()=>'',mediaSourceLabel:()=>'',mediaTime:()=>({}),mediaPerson:()=>({})},'@/lib/media-preview-source':previewSource,'@/lib/device-telemetry':{isRealDevice:()=>true},
     '@/stores/session':{session,filtersOf:()=>session.filters.materials||{}},'@/stores/modal':modal,'@/stores/notify':{toast(){}},'@/lib/queries':{revision(){},materials:()=>db.state.media,people:()=>[],works:()=>[]},'./media':{downloadMedia(){},durationText(){}},'@/lib/person-equipment':{personFeature:()=>({})},'@/lib/device-media-state':{mergeDeviceMedia}};

@@ -6,21 +6,31 @@ import { db, tick, connection } from '@/mock/runtime';
 import { personFeature, operationContext } from '@/lib/person-equipment';
 import { liveViewing } from '@/lib/live-session';
 const props = defineProps({ personId: { type: String, required: true } });
+const emit = defineEmits(['viewing']);
 const feature = computed(() => { tick.value; return personFeature(db, props.personId, 'video'); });
 const available = computed(() => feature.value.available && connection.value.status === 'online');
+const canTalk = computed(() => {
+  const view = feature.value;
+  return available.value && db.device(view.deviceId)?.source === 'SPLIT_HELMET' &&
+    ['voice','videoCall'].every(key => {
+      const grant = personFeature(db, props.personId, key);
+      return grant.available && grant.deviceId === view.deviceId && grant.assignmentId === view.assignmentId && grant.assignmentVersion === view.assignmentVersion;
+    });
+});
 const state = ref({ phase: 'idle', live: null, error: '' }), opened = ref(false);
 let handle;
+watch(opened, value => emit('viewing', value), { flush: 'sync' });
 watch(() => JSON.stringify([props.personId, feature.value.deviceId, feature.value.assignmentId, feature.value.assignmentVersion, available.value]), () => {
   handle?.dispose(); handle = null; opened.value = false; state.value = { phase: 'idle', live: null, error: '' };
   if (available.value) handle = liveViewing.watch(operationContext(feature.value), value => { state.value = value; });
 }, { immediate: true });
-onUnmounted(() => handle?.dispose());
+onUnmounted(() => { handle?.dispose(); emit('viewing',false); });
 async function open() { if (!handle || !available.value) return; opened.value = true; await handle.open(); }
 function close() { opened.value = false; handle?.close(); }
 </script>
 <template>
   <div class="helmet-preview" :aria-busy="opened && ['starting','waiting'].includes(state.phase)" @click.stop>
-    <LiveVideo v-if="opened && state.live && available" :live="state.live" :label="`${db.person(personId)?.name || ''}的安全帽实时视频`" />
+    <LiveVideo v-if="opened && state.live && available" :live="state.live" :can-talk="canTalk" :label="`${db.person(personId)?.name || ''}的安全帽实时视频`" />
     <div v-else class="preview-start">
       <p>{{ !available ? (connection.status !== 'online' ? '业务连接中断，实时观看不可用' : feature.reason) : opened ? state.phase === 'starting' ? '正在请求开启直播…' : state.phase === 'waiting' ? '正在等待设备视频回传…' : '实时视频暂不可用' : '安全帽现场视频' }}</p>
       <AppButton v-if="!opened || state.phase === 'error'" :disabled="!available" @click="open">{{ opened ? '重试观看' : '查看实时视频' }}</AppButton>

@@ -87,6 +87,15 @@ Future<void> enterAcceptance(WidgetTester t, String key, String value) async {
 }
 
 Future<void> fillVerification(WidgetTester t) async {
+  if (find
+      .byKey(const ValueKey('verification-conclusion'))
+      .evaluate()
+      .isEmpty) {
+    await tapAcceptance(
+      t,
+      find.byKey(const ValueKey('event-open-verification')),
+    );
+  }
   await tapAcceptance(t, find.byKey(const ValueKey('verification-conclusion')));
   await tapAcceptance(t, find.text('需现场处理').last);
   await enterAcceptance(t, 'verification-situation', '已到现场，人员安全');

@@ -25,6 +25,8 @@ public class GuardianVoiceService {
     private org.springframework.beans.factory.ObjectProvider<com.ruoyi.helmet.service.DirectHelmetAccess> directAccess;
     @org.springframework.beans.factory.annotation.Autowired(required=false)
     private org.springframework.beans.factory.ObjectProvider<com.ruoyi.melhat.direct.HelmetMediaService> helmetMedia;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private org.springframework.beans.factory.ObjectProvider<com.ruoyi.melhat.split.SplitHelmetService> splitHelmets;
 
     public GuardianVoiceService(HeadbandService headband, ITtsTextSynthesisBroadcastService broadcasts) {
         this.headband = headband;
@@ -42,7 +44,13 @@ public class GuardianVoiceService {
         readHats(hats, numbers, names);
         List<String> platform = new ArrayList<>();
         for(String number:numbers) {
-            if(isDirect(number)) {
+            if(isSplit(number)) {
+                JSONObject command=new JSONObject();command.put("action","broadcast");command.put("idempotencyKey",java.util.UUID.randomUUID().toString());
+                JSONObject params=new JSONObject();params.put("text",text);command.put("parameters",params);
+                for(Object raw:hats){JSONObject recipient=(JSONObject)raw;if(number.equals(recipient.getString("hatNumber"))){for(String field:new String[]{"siteId","areaId","personId","assignmentId","assignmentVersion","ledgerDeviceId"})command.put(field,recipient.get(field));break;}}
+                JSONObject result=splitMedia().command(actorId,number,command);
+                if(!"sent".equals(result.getString("status")))throw new GuardianRejected("分体帽广播结果未确认，请查看指令记录");
+            } else if(isDirect(number)) {
                 com.ruoyi.melhat.direct.HelmetMediaService media=directMedia();
                 JSONObject command=com.ruoyi.melhat.direct.HelmetMediaService.obj("action","broadcast","idempotencyKey",java.util.UUID.randomUUID().toString(),"parameters",com.ruoyi.melhat.direct.HelmetMediaService.obj("text",text));
                 for(Object raw:hats){JSONObject recipient=(JSONObject)raw;if(number.equals(recipient.getString("hatNumber"))){
@@ -79,10 +87,15 @@ public class GuardianVoiceService {
         return call(hats,"legacy",false);
     }
     public Map<String, Object> call(JSONArray hats,String actorId,boolean video) {
+        return call(hats,actorId,video,java.util.UUID.randomUUID().toString());
+    }
+    public Map<String, Object> call(JSONArray hats,String actorId,boolean video,String requestKey) {
         List<String> numbers = new ArrayList<String>();
         readHats(hats, numbers, new ArrayList<String>());
-        boolean direct=false,other=false;
-        for(String number:numbers){if(isDirect(number))direct=true;else other=true;}
+        boolean direct=false,other=false,split=false;
+        for(String number:numbers){if(isSplit(number))split=true;else if(isDirect(number))direct=true;else other=true;}
+        if(split&&(direct||other))throw new GuardianRejected("不同协议安全帽请分别发起通话");
+        if(split){JSONArray recipients=JSONArray.parseArray(hats.toJSONString());for(Object raw:recipients){JSONObject r=(JSONObject)raw;r.put("deviceId",r.getString("hatNumber"));}return new LinkedHashMap<String,Object>(splitMedia().create(actorId,recipients,video,"call",requestKey));}
         if(direct&&other)throw new GuardianRejected("SIP安全帽与Agora设备请分别发起通话");
         if(direct)return new LinkedHashMap<String,Object>(directMedia().call(actorId,numbers,video,hats));
         if(video)throw new GuardianRejected("此设备当前仅支持语音通话");
@@ -112,6 +125,7 @@ public class GuardianVoiceService {
 
     public void end(String channel) {
         if (channel == null || channel.trim().isEmpty()) return;
+        if(channel.startsWith("SPLIT-")){splitMedia().end(channel);return;}
         if(channel.startsWith("SIP-")){directMedia().endCall(channel);return;}
         try {
             headband.agoraEnd(channel.trim());
@@ -126,6 +140,9 @@ public class GuardianVoiceService {
         com.ruoyi.helmet.service.DirectHelmetAccess direct = directAccess == null ? null : directAccess.getIfAvailable();
         return direct!=null&&direct.supports(number);
     }
+    public boolean isSplit(String number){com.ruoyi.melhat.split.SplitHelmetService split=splitHelmets==null?null:splitHelmets.getIfAvailable();return split!=null&&split.ownsIdentity(number);}
+    public com.ruoyi.melhat.split.SplitHelmetService splitMedia(){com.ruoyi.melhat.split.SplitHelmetService split=splitHelmets==null?null:splitHelmets.getIfAvailable();if(split==null||!split.enabled())throw new GuardianRejected("分体式安全帽接入尚未启用");return split;}
+    public JSONObject callState(String channel){return channel!=null&&channel.startsWith("SPLIT-")?splitMedia().callState(channel):directMedia().callState(channel);}
     public com.ruoyi.melhat.direct.HelmetMediaService directMedia(){
         com.ruoyi.melhat.direct.HelmetMediaService media=helmetMedia==null?null:helmetMedia.getIfAvailable();
         if(media==null||!media.available())throw new GuardianRejected("一体式安全帽媒体服务尚未配置或未就绪");return media;

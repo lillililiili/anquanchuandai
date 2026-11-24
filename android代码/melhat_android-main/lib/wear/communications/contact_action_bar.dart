@@ -5,16 +5,14 @@ import '../core.dart';
 class ContactActionBar extends StatelessWidget {
   const ContactActionBar({
     super.key,
-    required this.onVoice,
-    required this.onVideo,
+    required this.onPhone,
+    required this.onHelmet,
     required this.onBroadcast,
-    this.showVoice = true,
-    this.showVideo = true,
     this.showBroadcast = true,
   });
 
-  final VoidCallback? onVoice, onVideo, onBroadcast;
-  final bool showVoice, showVideo, showBroadcast;
+  final VoidCallback? onPhone, onHelmet, onBroadcast;
+  final bool showBroadcast;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -26,12 +24,10 @@ class ContactActionBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          if (showVoice) _button(context, '设备语音', Icons.call_outlined, onVoice),
-          if (showVoice && (showVideo || showBroadcast))
-            const SizedBox(width: 8),
-          if (showVideo)
-            _button(context, '视频通话', Icons.videocam_outlined, onVideo),
-          if (showVideo && showBroadcast) const SizedBox(width: 8),
+          _button(context, '手机呼叫', Icons.call_outlined, onPhone),
+          const SizedBox(width: 8),
+          _button(context, '安全帽呼叫', Icons.videocam_outlined, onHelmet),
+          if (showBroadcast) const SizedBox(width: 8),
           if (showBroadcast)
             _button(context, '文字播报', Icons.volume_up_outlined, onBroadcast),
         ],

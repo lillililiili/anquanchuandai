@@ -79,6 +79,8 @@ class CallSession {
     this.endedAt,
     this.failReason = '',
     this.version = 0,
+    this.skipped = const [],
+    this.connectedDeviceIds = const [],
   });
 
   factory CallSession.fromJson(JsonMap json) => CallSession(
@@ -103,6 +105,11 @@ class CallSession {
     endedAt: _dateOf(json['endedAt']),
     failReason: _stringOf(json['failReason']),
     version: int.tryParse(_stringOf(json['version'])) ?? 0,
+    skipped: (json['skipped'] as List? ?? [])
+        .whereType<Map>()
+        .map((v) => Map<String, dynamic>.from(v))
+        .toList(),
+    connectedDeviceIds: _strings(json['connectedDeviceIds']).toList(),
   );
 
   final String id;
@@ -126,6 +133,8 @@ class CallSession {
   final DateTime? endedAt;
   final String failReason;
   final int version;
+  final List<JsonMap> skipped;
+  final List<String> connectedDeviceIds;
 
   bool get isConnected =>
       status == WearCallStatus.connected &&
@@ -134,6 +143,10 @@ class CallSession {
   bool get isTerminal => status.isTerminal;
   String get statusLabel => demo
       ? '演示状态（未连接真实设备）'
+      : protocol == 'ZLM_WEBRTC' && skipped.isNotEmpty
+      ? '${status.label}（${skipped.length} 顶未接通）'
+      : protocol == 'ZLM_WEBRTC' && status == WearCallStatus.connected
+      ? '媒体连接已建立（声音需现场确认）'
       : protocol == 'SIP' && status == WearCallStatus.connected
       ? serverConnected
             ? '设备会话已连接'
@@ -160,6 +173,8 @@ class RtcCredentials {
     this.authorizationPassword = '',
     this.target = '',
     this.iceServers = const [],
+    this.sessions = const [],
+    this.heartbeatUrl = '',
   });
 
   factory RtcCredentials.fromJson(JsonMap json) => RtcCredentials(
@@ -174,12 +189,17 @@ class RtcCredentials {
         .map((v) => Map<String, dynamic>.from(v))
         .toList(),
     appId: _stringOf(json['agoraAppId']),
-    channelName: _stringOf(json['channelName']),
+    channelName: _stringOf(json['channelName'] ?? json['channel']),
     uid: int.tryParse(_stringOf(json['agoraUid'])) ?? 0,
     token: _stringOf(json['agoraToken']),
     expiresAt: _dateOf(json['expiresAt']),
     demo: _boolOf(json['demo']),
     video: _boolOf(json['video']),
+    sessions: (json['sessions'] as List? ?? [])
+        .whereType<Map>()
+        .map((v) => ZlmSessionTarget.fromJson(Map<String, dynamic>.from(v)))
+        .toList(),
+    heartbeatUrl: _stringOf(json['heartbeatUrl']),
   );
 
   final String protocol,
@@ -189,6 +209,8 @@ class RtcCredentials {
       authorizationPassword,
       target;
   final List<Map<String, dynamic>> iceServers;
+  final List<ZlmSessionTarget> sessions;
+  final String heartbeatUrl;
   final String appId;
   final String channelName;
   final int uid;
@@ -197,7 +219,15 @@ class RtcCredentials {
   final bool demo;
   final bool video;
 
-  bool get isUsable => protocol == 'SIP'
+  bool get isUsable => protocol == 'ZLM_WEBRTC'
+      ? channelName.isNotEmpty &&
+            sessions.isNotEmpty &&
+            sessions.length <= 8 &&
+            sessions.map((s) => s.deviceId).toSet().length == sessions.length &&
+            sessions.every((s) => s.validFor(channelName)) &&
+            heartbeatUrl ==
+                '/api/guardian/v1/split/sessions/${Uri.encodeComponent(channelName)}/heartbeat'
+      : protocol == 'SIP'
       ? (Uri.tryParse(server)?.scheme == 'wss' &&
             uri.startsWith('sip:') &&
             target.startsWith('sip:') &&
@@ -329,7 +359,10 @@ class CommunicationDevice {
       'featureStates': featureStates,
       'capabilities': {'actions': actions.toList()},
     }, action);
-    if (source != 'DIRECT_HELMET' || !state.supported) return state;
+    if (!const ['DIRECT_HELMET', 'SPLIT_HELMET'].contains(source) ||
+        !state.supported) {
+      return state;
+    }
     final reason = typeCode != 'helmet'
         ? '请选择安全帽进行通讯'
         : !isNormalOnline
@@ -365,6 +398,34 @@ class CommunicationDevice {
       return simulationStatusLabel.isEmpty ? '异常' : simulationStatusLabel;
     }
     return '在线';
+  }
+}
+
+class ZlmSessionTarget {
+  const ZlmSessionTarget({
+    required this.deviceId,
+    required this.playUrl,
+    required this.talkUrl,
+  });
+  factory ZlmSessionTarget.fromJson(JsonMap json) => ZlmSessionTarget(
+    deviceId: _stringOf(json['deviceId']),
+    playUrl: _stringOf(json['playUrl']),
+    talkUrl: _stringOf(json['talkUrl']),
+  );
+  final String deviceId, playUrl, talkUrl;
+  bool validFor(String session) {
+    final prefix =
+        '/api/guardian/v1/split/sessions/${Uri.encodeComponent(session)}/devices/';
+    final path = Uri.tryParse(playUrl);
+    return deviceId.isNotEmpty &&
+        playUrl.startsWith(prefix) &&
+        path != null &&
+        !path.hasScheme &&
+        !path.hasQuery &&
+        !path.hasFragment &&
+        !playUrl.contains('..') &&
+        RegExp(r'^[^/?#]+/play$').hasMatch(playUrl.substring(prefix.length)) &&
+        talkUrl == '${playUrl.substring(0, playUrl.length - 4)}talk';
   }
 }
 

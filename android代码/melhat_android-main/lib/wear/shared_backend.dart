@@ -331,6 +331,8 @@ class SharedBackend {
           .where(
             (p) =>
                 idOf(p['name']).contains(idOf(q['name'])) &&
+                (idOf(q['dutyStatus']).isEmpty ||
+                    q['dutyStatus'] == p['dutyStatus']) &&
                 (idOf(q['status']).isEmpty || q['status'] == p['status']),
           )
           .toList();
@@ -358,6 +360,8 @@ class SharedBackend {
                   idOf(d['sn']).contains(idOf(q['sn'])) &&
                   (idOf(q['typeCode']).isEmpty ||
                       q['typeCode'] == d['typeCode']) &&
+                  (idOf(q['relation']).isEmpty ||
+                      q['relation'] == d['relation']) &&
                   (idOf(q['assetStatus']).isEmpty ||
                       q['assetStatus'] == d['assetStatus']),
             )

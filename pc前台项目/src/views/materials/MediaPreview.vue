@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import AppButton from "@/components/ui/AppButton.vue";
 import AppEmpty from "@/components/ui/AppEmpty.vue";
+import SplitMediaPreview from '@/components/domain/SplitMediaPreview.vue';
 import MediaImage from "@/components/domain/MediaImage.vue";
 import { db } from "@/mock/runtime";
 import { revision } from "@/lib/queries";
@@ -79,7 +80,8 @@ onUnmounted(stopTimer);
   <AppEmpty v-if="!media" text="资料不存在" />
   <template v-else>
     <div class="media-preview-wrap">
-      <video v-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" :aria-label="mediaKindLabel(media)" style="width:100%;max-height:65vh" />
+      <SplitMediaPreview v-if="media.source === 'SPLIT_HELMET' && media.url" :media="media" />
+      <video v-else-if="media.kind==='video' && mediaUrl(media.url)" :src="mediaUrl(media.url)" controls playsinline preload="metadata" :aria-label="mediaKindLabel(media)" style="width:100%;max-height:65vh" />
       <MediaImage v-else :media="media" />
     </div>
     <template v-if="db.demoMode && media.kind === 'video' && !media.url">

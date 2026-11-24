@@ -3,10 +3,61 @@ import 'controller.dart';
 import 'models.dart' hide JsonMap;
 
 class WearCommunicationsGateway
-    implements CommunicationsGateway, CallCleanupGateway {
+    implements
+        CommunicationsGateway,
+        CallCleanupGateway,
+        BatchCommunicationsGateway,
+        PeerEvidenceGateway {
   const WearCommunicationsGateway(this.api);
 
   final WearApi api;
+
+  @override
+  Future<CallSession> markPeersJoined(
+    String callId,
+    List<String> deviceIds,
+  ) async => CallSession.fromJson(
+    jsonMap(
+      await api.post(
+        '/api/v1/calls/$callId/joined',
+        data: {'peerConnected': true, 'connectedDeviceIds': deviceIds},
+      ),
+    ),
+  );
+
+  @override
+  Future<StartedCall> startBatchCall({
+    required List<CommunicationDevice> devices,
+    required String kind,
+    required bool video,
+    required String idempotencyKey,
+    String? eventId,
+  }) async {
+    final first = devices.first;
+    final data = jsonMap(
+      await api.post(
+        '/api/v1/calls',
+        data: {
+          ...first.equipmentContext,
+          'deviceId': first.id,
+          'deviceIds': devices.map((d) => d.id).toList(),
+          'recipients': devices
+              .map((d) => {...d.equipmentContext, 'deviceId': d.id})
+              .toList(),
+          'kind': kind,
+          'video': video,
+          'idempotencyKey': idempotencyKey,
+          'eventId': ?eventId,
+        },
+      ),
+    );
+    return StartedCall(
+      CallSession.fromJson(data),
+      data['credentials'] is Map
+          ? RtcCredentials.fromJson(jsonMap(data['credentials']))
+          : null,
+    );
+  }
 
   @override
   Future<CallSession> Function() Function(String) captureCallCleanup() {
@@ -71,7 +122,7 @@ class WearCommunicationsGateway
         jsonMap(
           await api.post(
             '/api/v1/calls/$callId/joined',
-            data: {'agoraUid': uid},
+            data: {'agoraUid': uid, 'peerConnected': true},
           ),
         ),
       );
@@ -170,16 +221,4 @@ class WearCommunicationsGateway
 
   Future<JsonMap> event(String eventId) async =>
       jsonMap(await api.get('/api/v1/events/$eventId'));
-
-  Future<List<CallSession>> calls({String? eventId, String? deviceId}) async {
-    final path = eventId != null && eventId.isNotEmpty
-        ? '/api/v1/events/$eventId/calls'
-        : deviceId != null && deviceId.isNotEmpty
-        ? '/api/v1/devices/$deviceId/calls'
-        : null;
-    if (path == null) return const [];
-    return jsonList(
-      await api.get(path),
-    ).map(CallSession.fromJson).toList(growable: false);
-  }
 }

@@ -110,6 +110,10 @@ void main() {
         await mountRetainedPage(tester, session, route);
         expect(find.byType(EventReferenceView), findsOneWidget);
         final oldState = tester.state(find.byType(EventsPage));
+        final editor = find.byKey(const ValueKey('event-open-observation'));
+        await tester.ensureVisible(editor);
+        await tester.tap(editor);
+        await tester.pumpAndSettle();
         final input = find.byKey(const ValueKey('event-observation'));
         await tester.ensureVisible(input);
         await tester.enterText(input, 'private draft from old $changedPart');

@@ -9,6 +9,7 @@ export function durationText(value) {
 export function mediaKindLabel(media) {
   if (String(media?.kind).toLowerCase() === 'photo') return '照片';
   if (String(media?.kind).toLowerCase() !== 'video') return '影像资料';
+  if (media.source === 'SPLIT_HELMET' && media.recordingOrigin === 'device') return '设备内录像';
   const origin = media.mediaOrigin;
   if (origin === 'PLATFORM_RECORDING' || !origin && media.commandAction === 'start_recording') return '平台录制';
   if (origin === 'DEVICE_RECORDING' || !origin && media.commandAction === 'upload_recording') return '设备内录像';
@@ -17,11 +18,12 @@ export function mediaKindLabel(media) {
 }
 
 export function mediaSourceLabel(media) {
-  return ({ DIRECT_HELMET: '安全帽直连接入', DIRECT_BELT: '安全带直连接入', PLATFORM: '厂家平台同步',
+  return ({ SPLIT_HELMET: '分体式安全帽', DIRECT_HELMET: '安全帽直连接入', DIRECT_BELT: '安全带直连接入', PLATFORM: '厂家平台同步',
     DEMO_WATCH: '模拟手表', DEMO: '模拟数据', MANUAL: '人工上传' })[media?.source] || '来源待确认';
 }
 
 export function mediaTime(media) {
+  if (media?.source === 'SPLIT_HELMET' && !media.capturedAt) return { label: '设备文件时间', value: formatRecordedDateTime(media.createdAt || media.created) };
   if (!media?.capturedAt && media?.timeBasis === 'RECEIVED_AT' && media?.receivedAt)
     return { label: '接收时间', value: formatRecordedDateTime(media.receivedAt) };
   return { label: media?.capturedAt ? '拍摄时间' : '资料生成时间', value: formatRecordedDateTime(media?.capturedAt || media?.createdAt || media?.created) };

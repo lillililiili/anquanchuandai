@@ -7,25 +7,71 @@ import 'package:rolling_intelligence_headband/wear/shared_models.dart';
 import 'wear_session_test.dart' show MemoryCredentials;
 
 void main() {
-  testWidgets('live support does not create a two-way video call entry', (
-    tester,
-  ) async {
-    await mount(tester, {
-      'typeCode': 'helmet',
-      'featureStates': {
-        'video': {'supported': true, 'verified': true, 'available': true},
-        'videoCall': {
-          'supported': false,
-          'verified': false,
-          'available': false,
-        },
+  for (final source in ['DIRECT_HELMET', 'SPLIT_HELMET']) {
+    testWidgets(
+      '$source details show read-only assignment history without media or controls',
+      (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(400, 2200);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetPhysicalSize);
+        const history = [
+          {
+            'personId': 'p1',
+            'personName': '当前领用人',
+            'issuedAt': '2026-10-27T08:00:00Z',
+          },
+          {
+            'personId': 'p2',
+            'personName': '前次领用人',
+            'issuedAt': '2026-10-25T08:00:00Z',
+            'returnedAt': '2026-10-26T08:00:00Z',
+          },
+        ];
+        await mount(tester, {
+          'source': source,
+          'typeCode': 'helmet',
+          'featureStates': {
+            for (final key in [
+              'photo',
+              'video',
+              'recording',
+              'voice',
+              'broadcast',
+              'videoCall',
+            ])
+              key: {'supported': true, 'verified': true, 'available': true},
+          },
+        }, history: history);
+        expect(find.text('产品型号'), findsOneWidget);
+        if (source == 'SPLIT_HELMET') {
+          expect(find.text('分体式安全帽状态'), findsOneWidget);
+        }
+        for (final label in ['设备本地录像 · 最后上报', '安全帽影像', '设备能力', '实时观看', '对讲']) {
+          expect(find.text(label), findsNothing);
+        }
+        expect(find.text('历史领用记录（2）'), findsOneWidget);
+        for (final record in history) {
+          final name = find.text(record['personName']!);
+          final end = record['returnedAt'];
+          expect(
+            find.text(
+              '${formatTime(record['issuedAt'])} 至 ${end == null ? '当前' : formatTime(end)}',
+            ),
+            findsOneWidget,
+          );
+          final row = find.ancestor(of: name, matching: find.byType(ListTile));
+          expect(tester.widget<ListTile>(row).trailing, isNull);
+          expect(tester.semantics.find(name), isSemantics(hasTapAction: false));
+          await tester.tap(name);
+          await tester.pumpAndSettle();
+          expect(find.byType(DevicePage), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
       },
-    });
-    await tester.scrollUntilVisible(find.text('历史领用记录（0）'), 300);
-    expect(find.text('视频通话'), findsNothing);
-    expect(find.text('设备能力'), findsNothing);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+    );
+  }
 
   testWidgets(
     'belt details omit voice controls without a supported call path',
@@ -54,7 +100,11 @@ void main() {
   );
 }
 
-Future<void> mount(WidgetTester tester, JsonMap device) async {
+Future<void> mount(
+  WidgetTester tester,
+  JsonMap device, {
+  List<JsonMap> history = const [],
+}) async {
   final dio = Dio();
   dio.interceptors.add(
     InterceptorsWrapper(
@@ -70,7 +120,7 @@ Future<void> mount(WidgetTester tester, JsonMap device) async {
             data: {
               'code': 200,
               'data': request.path.endsWith('/assignments')
-                  ? []
+                  ? history
                   : {'id': 'h', 'sn': 'DEVICE', ...device},
             },
           ),

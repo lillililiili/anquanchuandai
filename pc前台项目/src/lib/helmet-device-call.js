@@ -9,7 +9,7 @@ export function deviceCallUnavailable(device, feature, otherActive = false, assi
   if (testing && (options.operator?.id !== 'demo-system' || options.operator?.enabled === false)) return '仅系统管理员可发起语音测试';
   if (!assignment?.personId || !assignment?.assignmentId || assignment.assignmentVersion == null || assignment.deviceId !== device?.id) return '人员领用关系未就绪，请刷新';
   if (otherActive) return '请先结束当前人员通话或 SOS 通话';
-  if (!device?.id || device.source !== 'DIRECT_HELMET' || device.type !== 'H' || device.active === false) return '此设备没有已启用的直连安全帽语音能力';
+  if (!device?.id || !['DIRECT_HELMET','SPLIT_HELMET'].includes(device.source) || device.type !== 'H' || device.active === false) return '此设备没有已启用的直连安全帽语音能力';
   if (!isCurrentDevice(device) || device.online !== true) return '设备离线或状态已过期，请等待最新上报';
   if (!feature?.supported || feature.integrationStatus !== 'CONNECTED') return featureUnavailableReason(feature?.reason, 'voice') || '语音服务不可用，请检查设备注册和服务连接';
   // Runtime availability is authoritative for voice. Acceptance metadata
@@ -18,8 +18,8 @@ export function deviceCallUnavailable(device, feature, otherActive = false, assi
   if (['personId','deviceId','assignmentId','assignmentVersion'].some(key => feature[key] !== assignment[key])) return '人员领用关系已变化，请刷新';
   // The guardian snapshot exposes per-device voiceAvailable, derived on the
   // server from SIP registration. Older projections omit sipRegistered itself.
-  if (device.sipRegistered === false || !(device.voiceAvailable === true || device.sipRegistered === true || device.capabilities?.sipRegistered === true)) return '安全帽语音未注册，请检查设备网络和语音服务';
-  if (String(device.communicationProtocol).toUpperCase() !== 'SIP') return '安全帽语音配置异常，请联系管理员';
+  if (device.source !== 'SPLIT_HELMET' && (device.sipRegistered === false || !(device.voiceAvailable === true || device.sipRegistered === true || device.capabilities?.sipRegistered === true))) return '安全帽语音未注册，请检查设备网络和语音服务';
+  if (String(device.communicationProtocol).toUpperCase() !== (device.source === 'SPLIT_HELMET' ? 'ZLM_WEBRTC' : 'SIP')) return '安全帽语音配置异常，请联系管理员';
   if (!supportsDeviceAction(device, 'intercom')) return '设备当前没有可用的语音通话能力';
   return '';
 }
@@ -32,6 +32,12 @@ export function deviceCallStatus(state) {
   }
   const terminal = { idle: '尚未发起通话', ending: '正在结束通话…', unknown: '通话结果待确认', ended: '通话已结束', failed: '呼叫失败', timeout: '通话建立超时' };
   if (terminal[state.phase]) return terminal[state.phase];
+  if (state.protocol === 'ZLM_WEBRTC') {
+    if (state.serverConnected && state.localJoined) return '播放与对讲媒体通道已连接';
+    if (state.localJoined) return '本端播放与对讲已连接，正在确认平台记录';
+    if (state.clientStatus === 'remote_audio') return '播放通道已连接，正在连接对讲';
+    if (state.clientStatus === 'local_joined') return '对讲通道已连接，正在连接播放';
+  }
   if (state.serverConnected && state.localJoined) return '双方已接通';
   const stages = { microphone_permission: '等待电脑麦克风授权，尚未呼叫设备', microphone_ready: '电脑麦克风已就绪，正在请求设备呼叫', connecting_service: '正在连接电脑语音服务', registering: '正在连接语音服务', preparing_offer: '正在建立音频连接', invite_sent: '正在连接通话，请稍候' };
   if (state.localJoined) return state.deviceAnswered ? '电脑已入会、设备已应答，等待双方接通确认' : '电脑已入会，等待设备接听';
@@ -106,7 +112,8 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
   // is deliberately excluded: its outcome still needs the same-key recovery.
   const notSentCodes = new Set(['PERMISSION_DENIED','DEVICE_UNAVAILABLE','DEVICE_OFFLINE','SIP_NOT_REGISTERED',
     'REQUEST_ID_REQUIRED','VOICE_ONLY','DEVICE_NOT_FOUND','INVALID_REQUEST','INVALID_CALL','MEDIA_SERVICE_UNAVAILABLE',
-    'ASSIGNMENT_CHANGED','ASSIGNMENT_REQUIRED','FEATURE_PENDING_ACCEPTANCE','FEATURE_UNSUPPORTED','FEATURE_NOT_CONNECTED']);
+    'ASSIGNMENT_CHANGED','ASSIGNMENT_REQUIRED','FEATURE_PENDING_ACCEPTANCE','FEATURE_UNSUPPORTED','FEATURE_NOT_CONNECTED',
+    'SPLIT_DEVICE_UNAVAILABLE','SPLIT_DISABLED']);
   function recoveredRow(ctx, row) {
     ctx.recordId = row.id || ctx.recordId;
     ctx.callId = row.channelName || ctx.callId || '';
@@ -185,7 +192,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
     if (!active(ctx) || ctx.endRequested || ctx.joinReported || ctx.reportingJoin || !ctx.localJoined) return;
     ctx.reportingJoin = true;
     try {
-      await api('/mobile/calls/' + encodeURIComponent(ctx.recordId) + '/joined', {});
+      await api('/mobile/calls/' + encodeURIComponent(ctx.recordId) + '/joined', ctx.protocol === 'ZLM_WEBRTC' ? { peerConnected: true, connectedDeviceIds: [ctx.deviceId] } : {});
       ctx.joinReported = true;
     } catch (error) {
       if (active(ctx) && !ctx.endRequested) {
@@ -202,7 +209,7 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
       if (!active(ctx)) return;
       if (terminal(row.status)) { await finish(ctx, row.status); return; }
       if (row.channelName) ctx.callId = row.channelName;
-      const call = ctx.recovered || !ctx.callId ? row : await api('/helmet/calls/' + encodeURIComponent(ctx.callId));
+      const call = ctx.protocol === 'ZLM_WEBRTC' || ctx.recovered || !ctx.callId ? row : await api('/helmet/calls/' + encodeURIComponent(ctx.callId));
       if (!active(ctx)) return;
       if (['ended', 'failed'].includes(call.status)) { await finish(ctx, call.status); return; }
       const connected = call.status === 'connected' && call.serverConnected === true &&
@@ -247,13 +254,15 @@ export function createHelmetDeviceCall({ fetchImpl, rtc, guard = communicationGu
         await end(); return;
       }
       const credentials = row.credentials;
-      if (credentials?.protocol !== 'SIP') throw Error('此入口仅支持真实安全帽 SIP 语音');
+      if (!['SIP','ZLM_WEBRTC'].includes(credentials?.protocol)) throw Error('此入口不支持当前安全帽通话协议');
+      ctx.protocol = credentials.protocol;
+      update({ protocol: credentials.protocol });
       ctx.localStarted = true;
       await rtc.joinChannel({ ...credentials, callId: ctx.callId, video: false }, {
         reservation: ctx.reservation,
         onMediaState(value) {
           if (!active(ctx)) return;
-          if (['local_joined','remote_audio','remote_video','playback_blocked'].includes(value)) ctx.localJoined = true;
+          if (ctx.protocol === 'ZLM_WEBRTC' ? value === 'peer_connected' : ['local_joined','remote_audio','remote_video','playback_blocked'].includes(value)) ctx.localJoined = true;
           update({ clientStatus: value, localJoined: !!ctx.localJoined });
           if (ctx.localJoined && !ctx.endRequested) void reportLocalJoined(ctx);
           if (!ctx.endRequested && ['failed', 'ended'].includes(value)) {

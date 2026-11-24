@@ -23,7 +23,7 @@ void main() {
     for (final id in ['h1', 'b1', 'unbound']) {
       expect(find.byKey(ValueKey('contact-d:$id')), findsNothing);
     }
-    expect(find.text('联系对象筛选 · 3 项'), findsOneWidget);
+    expect(find.textContaining('联系对象筛选'), findsNothing);
     expect(find.text('陈建国的安全帽'), findsNothing);
     expect(find.text('陈建国的安全带'), findsNothing);
     expect(requests.where((r) => r.method != 'GET'), isEmpty);
@@ -41,7 +41,7 @@ void main() {
       for (var attempt = 0; attempt < 2; attempt++) {
         router.go('/events?eventId=159');
         await tester.pumpAndSettle();
-        final contact = find.text('查看可用通讯装备');
+        final contact = find.text('联系现场');
         await tester.ensureVisible(contact);
         await tester.tap(contact);
         await tester.pumpAndSettle();
@@ -58,8 +58,8 @@ void main() {
           reason: '同名人员必须按 ID 区分',
         );
         expect(find.byKey(const ValueKey('contact-p:3')), findsNothing);
-        expect(find.text('1 项'), findsOneWidget);
-        expect(find.text('设备语音').hitTestable(), findsOneWidget);
+        expect(find.text('0 项'), findsOneWidget);
+        expect(find.text('安全帽呼叫').hitTestable(), findsOneWidget);
         final clear = find.byTooltip('清除联系人筛选');
         await tester.ensureVisible(clear);
         await tester.tap(clear);

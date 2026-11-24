@@ -365,6 +365,8 @@ void main() {
           ),
         );
         await open('/events?eventId=${event['id']}');
+        await click(find.byKey(const ValueKey('event-history')));
+        await click(find.byKey(ValueKey('submitted-media-${event['id']}')));
         await until(
           () =>
               t
@@ -388,6 +390,7 @@ void main() {
           alignment: 0.5,
         );
         await shot('valid-submitted-photos');
+        await click(find.byKey(const ValueKey('event-open-observation')));
         await enter('event-observation', idOf(state['draft']));
         final prefs = await SharedPreferences.getInstance();
         await until(

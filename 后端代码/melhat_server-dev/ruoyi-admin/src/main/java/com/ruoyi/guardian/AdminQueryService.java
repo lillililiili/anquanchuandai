@@ -125,12 +125,13 @@ public class AdminQueryService {
         if (!can(state, actor, "events:read", siteId, device.getString("areaId")))
             throw fail(403, "SECTION_DENIED", "没有此设备的报警查看权限");
         String deviceId = device.getString("portalDeviceId");
-        boolean helmet = "DIRECT_HELMET".equals(device.getString("source")) && "HELMET".equals(device.getString("type"));
+        boolean split = "SPLIT_HELMET".equals(device.getString("source"));
+        boolean helmet = ("DIRECT_HELMET".equals(device.getString("source")) || split) && "HELMET".equals(device.getString("type"));
         boolean belt = "DIRECT_BELT".equals(device.getString("source")) && "BELT".equals(device.getString("type"));
         if ((!helmet && !belt)
                 || deviceId == null || deviceId.isEmpty() || !deviceId.equals(device.getString("deviceNumber")))
             throw fail(400, "UNSUPPORTED_DEVICE", "此设备不支持设备报警查询");
-        String protocol = helmet ? "direct-helmet" : "direct-belt";
+        String protocol = split ? "split-helmet" : helmet ? "direct-helmet" : "direct-belt";
         // Validate pagination before reading the shared business snapshot.
         page(new ArrayList<JSONObject>(), input, false);
         JSONObject snapshot = guardian.snapshot();
@@ -347,9 +348,9 @@ public class AdminQueryService {
     }
 
     private void applyTelemetry(JSONObject device, Telemetry telemetry) {
-        if ("DIRECT_HELMET".equals(device.getString("source")) || "DIRECT_BELT".equals(device.getString("source"))) {
+        if (Arrays.asList("DIRECT_HELMET", "DIRECT_BELT", "SPLIT_HELMET").contains(device.getString("source"))) {
             JSONObject remote = telemetry.find(device.getString("deviceNumber"));
-            device.put("communicationProtocol", "DIRECT_BELT".equals(device.getString("source")) ? "WEBSOCKET" : "SIP");
+            device.put("communicationProtocol", "SPLIT_HELMET".equals(device.getString("source")) ? "ZLM_WEBRTC" : "DIRECT_BELT".equals(device.getString("source")) ? "WEBSOCKET" : "SIP");
             device.put("capabilities", new JSONArray());
             device.put("online", null);
             device.put("communication", "UNKNOWN");
@@ -359,6 +360,8 @@ public class AdminQueryService {
                 device.put("isWearedFreshness", "UNKNOWN");
             }
             if (remote == null || !device.getString("source").equals(remote.getString("source"))) return;
+            if ("SPLIT_HELMET".equals(device.getString("source")))
+                for (String key : SplitHelmetProjection.FIELDS) if (remote.containsKey(key)) device.put(key, remote.get(key));
             if("DIRECT_HELMET".equals(device.getString("source"))&&remote.getJSONObject("localRecording")!=null)
                 device.put("localRecording",WearableModel.copy(remote.getJSONObject("localRecording")));
             for (String key : Arrays.asList("online", "battery", "batteryReportedAt", "batteryFreshness", "freshness", "isWeared", "isWearedReportedAt", "isWearedFreshness", "worn", "latitude", "longitude", "lat", "lng", "locationReportedAt", "locationFreshness", "sourceTime", "capabilities", "hangerAStatus", "hangerBStatus", "relativeAltitude", "relativeAltitudeReportedAt", "relativeAltitudeFreshness", "altitude", "gpsAltitude", "ignoreHookAlarm", "deviceReportedAt", "lastSeenAt", "inUse", "inUseReportedAt", "inUseFreshness", "networkType", "networkTypeReportedAt", "networkTypeFreshness", "networkStrength", "networkStrengthReportedAt", "networkStrengthFreshness", "hookState", "hookAEngaged", "hookBEngaged", "wearMappingConfirmed", "hookMappingConfirmed", "telemetryReportedAt", "telemetryFreshness","mediaAvailable","voiceAvailable","broadcastAvailable","mediaStatus","mediaVerification")) {

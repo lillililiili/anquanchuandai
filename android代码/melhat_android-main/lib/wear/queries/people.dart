@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core.dart';
 import '../location_map.dart';
+import '../person_duty_status.dart';
 import 'location_history.dart';
 import 'query_utils.dart';
 import 'query_widgets.dart';
@@ -26,7 +27,8 @@ class _PeoplePageState extends State<PeoplePage> {
   bool _hasMore = false;
   bool _loading = true;
   Object? _error;
-  String? _status;
+  PersonDutyStatus? _dutyStatus;
+  String _appliedName = '';
   int _request = 0;
   bool _seededInitialName = false;
 
@@ -39,7 +41,9 @@ class _PeoplePageState extends State<PeoplePage> {
     }
     final session = WearScope.of(context);
     if (!identical(session, _session)) {
+      _session?.refreshTick.removeListener(_refreshVisible);
       _session = session;
+      session.refreshTick.addListener(_refreshVisible);
       _load(page: 1);
     }
   }
@@ -55,33 +59,55 @@ class _PeoplePageState extends State<PeoplePage> {
 
   @override
   void dispose() {
+    _session?.refreshTick.removeListener(_refreshVisible);
     _search.dispose();
     super.dispose();
   }
 
-  Future<void> _load({required int page}) async {
+  void _refreshVisible() {
+    if (!_loading &&
+        TickerMode.valuesOf(context).enabled &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      unawaited(_load(page: _current, background: true));
+    }
+  }
+
+  void _setDutyStatus(PersonDutyStatus? value) {
+    setState(() => _dutyStatus = value);
+    _load(page: 1);
+  }
+
+  Future<void> _load({required int page, bool background = false}) async {
     final session = _session;
     if (session == null) return;
     final request = ++_request;
     final scopeKey = session.scopeKey;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (!background) {
+      _appliedName = _search.text.trim();
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final result = await session.api.page(
         '/api/v1/people',
         current: page,
         size: 20,
         query: {
-          if (_search.text.trim().isNotEmpty) 'name': _search.text.trim(),
-          if (_status != null) 'status': _status,
+          if (_appliedName.isNotEmpty) 'name': _appliedName,
+          if (_dutyStatus != null) 'dutyStatus': _dutyStatus!.code,
         },
       );
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
         return;
       }
+      if (page > 1 && result.records.isEmpty) {
+        await _load(page: 1, background: background);
+        return;
+      }
       setState(() {
+        _error = null;
         _records = result.records;
         _current = result.current;
         _total = result.total;
@@ -104,7 +130,7 @@ class _PeoplePageState extends State<PeoplePage> {
   Widget build(BuildContext context) {
     return QueryPage(
       title: '人员档案',
-      subtitle: '人员档案独立于登录账号，姓名重复时请核对人员编号。',
+      subtitle: '在岗状态由管理后台维护。姓名重复时请核对人员编号。',
       body: Column(
         children: [
           Padding(
@@ -132,21 +158,20 @@ class _PeoplePageState extends State<PeoplePage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  tooltip: '人员状态',
-                  initialValue: _status ?? '',
-                  onSelected: (value) {
-                    setState(() => _status = value.isEmpty ? null : value);
-                    _load(page: 1);
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: '', child: Text('全部状态')),
-                    PopupMenuItem(value: '0', child: Text('在职')),
-                    PopupMenuItem(value: '1', child: Text('停用')),
+                PopupMenuButton<PersonDutyStatus>(
+                  tooltip: '在岗状态',
+                  initialValue: _dutyStatus,
+                  onSelected: _setDutyStatus,
+                  itemBuilder: (_) => [
+                    for (final status in PersonDutyStatus.choices)
+                      PopupMenuItem(value: status, child: Text(status.label)),
                   ],
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Icon(Icons.filter_list),
+                  child: Chip(
+                    label: Text(_dutyStatus?.label ?? '在岗状态'),
+                    onDeleted: _dutyStatus == null
+                        ? null
+                        : () => _setDutyStatus(null),
+                    deleteButtonTooltipMessage: '清除在岗状态筛选',
                   ),
                 ),
               ],
@@ -158,7 +183,9 @@ class _PeoplePageState extends State<PeoplePage> {
               error: _error,
               empty: _records.isEmpty,
               onRetry: () => _load(page: _current),
-              emptyTitle: '没有符合条件的人员',
+              emptyTitle: _dutyStatus == null
+                  ? '没有符合条件的人员'
+                  : '当前筛选条件下没有「${_dutyStatus!.label}」人员',
               child: RefreshIndicator(
                 onRefresh: () => _load(page: _current),
                 child: ListView.builder(
@@ -166,6 +193,7 @@ class _PeoplePageState extends State<PeoplePage> {
                   itemCount: _records.length,
                   itemBuilder: (context, index) {
                     final person = _records[index];
+                    final duty = PersonDutyStatus.from(person['dutyStatus']);
                     return QueryRow(
                       key: ValueKey('person-${idOf(person['id'])}'),
                       title: textOf(person['name']),
@@ -177,10 +205,10 @@ class _PeoplePageState extends State<PeoplePage> {
                         ),
                       ),
                       trailing: WearBadge(
-                        text: personStatusLabel(person['status']),
-                        color: person['status']?.toString() == '0'
+                        text: duty.label,
+                        color: duty == PersonDutyStatus.onDuty
                             ? WearColors.primary
-                            : WearColors.muted,
+                            : WearColors.warning,
                       ),
                       onTap: () async {
                         await context.push('/people/${idOf(person['id'])}');
@@ -225,7 +253,6 @@ class _PersonPageState extends State<PersonPage> {
   List<JsonMap> _activeTasks = const [];
   bool _tasksLoading = true;
   bool _tasksFailed = false;
-  List<JsonMap> _history = const [];
   bool _loading = true;
   Object? _error;
   int _request = 0;
@@ -245,6 +272,7 @@ class _PersonPageState extends State<PersonPage> {
 
   @override
   void dispose() {
+    _session?.refreshTick.removeListener(_refreshVisible);
     _locationTimer?.cancel();
     super.dispose();
   }
@@ -254,7 +282,9 @@ class _PersonPageState extends State<PersonPage> {
     super.didChangeDependencies();
     final session = WearScope.of(context);
     if (!identical(session, _session)) {
+      _session?.refreshTick.removeListener(_refreshVisible);
       _session = session;
+      session.refreshTick.addListener(_refreshVisible);
       _workMode = session.workBusinessEnabled;
       _load();
     } else if (_workMode != session.workBusinessEnabled) {
@@ -274,35 +304,44 @@ class _PersonPageState extends State<PersonPage> {
     if (oldWidget.id != widget.id) _load();
   }
 
-  Future<void> _load() async {
+  void _refreshVisible() {
+    if (!_loading &&
+        TickerMode.valuesOf(context).enabled &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      unawaited(_load(background: true));
+    }
+  }
+
+  Future<void> _load({bool background = false}) async {
     final session = _session;
     if (session == null) return;
     final request = ++_request;
     final scopeKey = session.scopeKey;
-    setState(() {
-      _loading = true;
-      _error = null;
-      _location = null;
-      _locationLoading = true;
-      _locationFailed = false;
-      _activeTasks = [];
-      _tasksLoading = true;
-      _tasksFailed = false;
-    });
+    if (!background) {
+      setState(() {
+        _loading = true;
+        _error = null;
+        _location = null;
+        _locationLoading = true;
+        _locationFailed = false;
+        _activeTasks = [];
+        _tasksLoading = true;
+        _tasksFailed = false;
+      });
+    }
     // Optional context must not block the personnel record or contact action.
     _loadLocation(session, request, scopeKey);
     _loadActiveTasks(session, request, scopeKey);
     try {
-      final responses = await Future.wait([
-        session.api.get('/api/v1/people/${widget.id}'),
-        session.api.get('/api/v1/people/${widget.id}/assignments'),
-      ]);
+      final person = jsonMap(
+        await session.api.get('/api/v1/people/${widget.id}'),
+      );
       if (!mounted || request != _request || scopeKey != session.scopeKey) {
         return;
       }
       setState(() {
-        _person = jsonMap(responses[0]);
-        _history = jsonList(responses[1]);
+        _person = person;
+        _error = null;
         _loading = false;
       });
     } catch (error) {
@@ -399,21 +438,14 @@ class _PersonPageState extends State<PersonPage> {
                             value: textOf(person['personCode']),
                           ),
                           DetailField(
-                            label: '状态',
-                            value: personStatusLabel(person['status']),
+                            label: '在岗状态',
+                            value: PersonDutyStatus.from(
+                              person['dutyStatus'],
+                            ).label,
                           ),
                           DetailField(
                             label: '组织',
                             value: textOf(person['teamName']),
-                          ),
-                          DetailField(
-                            label: '承包商',
-                            value: textOf(person['contractorName']),
-                          ),
-                          DetailField(
-                            label: '有效期',
-                            value:
-                                '${textOf(person['validFrom'], '不限')} 至 ${textOf(person['validTo'], '不限')}',
                           ),
                         ],
                       ),
@@ -455,23 +487,6 @@ class _PersonPageState extends State<PersonPage> {
                     EquipmentPanel(
                       key: ValueKey('equipment-$_request'),
                       personId: widget.id,
-                    ),
-                    const SizedBox(height: 22),
-                    QuerySection(
-                      title: '历史领用记录（${_history.length}）',
-                      children: _history
-                          .map(
-                            (item) => QueryRow(
-                              title:
-                                  '${deviceTypeLabel(item['typeCode'])} · ${textOf(item['sn'])}',
-                              subtitle:
-                                  '${formatTime(item['issuedAt'])} 至 ${item['returnedAt'] == null ? '当前' : formatTime(item['returnedAt'])}',
-                              onTap: () => context.push(
-                                '/devices/${idOf(item['deviceId'])}',
-                              ),
-                            ),
-                          )
-                          .toList(),
                     ),
                   ],
                 ),
@@ -670,8 +685,9 @@ class _EquipmentPanelState extends State<EquipmentPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final isMyEquipment = widget.personId == null;
     return QuerySection(
-      title: widget.personId == null ? '我的装备' : '当前装备',
+      title: isMyEquipment ? '我的装备' : '当前装备',
       children: [
         QueryStateView(
           loading: _loading,
@@ -679,76 +695,75 @@ class _EquipmentPanelState extends State<EquipmentPanel> {
           empty: _items.isEmpty,
           onRetry: _load,
           emptyTitle: '暂无领用装备',
-          emptyDetail: widget.personId == null ? '当前账号可能尚未关联人员档案' : null,
+          emptyDetail: isMyEquipment ? '当前账号可能尚未关联人员档案' : null,
           child: Column(
-            children: _items
-                .map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: WearCard(
-                      padding: const EdgeInsets.all(12),
-                      child: InkWell(
-                        onTap: () =>
-                            context.push('/devices/${idOf(item['deviceId'])}'),
-                        child: Row(
-                          children: [
-                            WearAssetImage(
-                              WearArt.equipment(item['typeCode']),
-                              width: 88,
-                              height: 88,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    deviceTypeLabel(item['typeCode']),
-                                    style: const TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
-                                      color: WearColors.ink,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    textOf(item['sn']),
-                                    style: const TextStyle(
-                                      color: WearColors.muted,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  WearStatusDot(
-                                    label: connectionLabel(item),
-                                    color: connectionLabel(item) == '在线'
-                                        ? WearColors.online
-                                        : connectionLabel(item) == '数据陈旧'
-                                        ? WearColors.warning
-                                        : WearColors.muted,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '领用时间 ${formatTime(item['issuedAt'])}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: WearColors.muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: WearColors.muted,
-                            ),
-                          ],
+            children: _items.map((item) {
+              final status = connectionLabel(item);
+              final details = Row(
+                children: [
+                  WearAssetImage(
+                    WearArt.equipment(item['typeCode']),
+                    width: 88,
+                    height: 88,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          deviceTypeLabel(item['typeCode']),
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: WearColors.ink,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          textOf(item['sn']),
+                          style: const TextStyle(color: WearColors.muted),
+                        ),
+                        const SizedBox(height: 8),
+                        WearStatusDot(
+                          label: status,
+                          color: status == '在线'
+                              ? WearColors.online
+                              : status == '数据陈旧'
+                              ? WearColors.warning
+                              : WearColors.muted,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '领用时间 ${formatTime(item['issuedAt'])}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: WearColors.muted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                )
-                .toList(),
+                  if (isMyEquipment)
+                    const Icon(Icons.chevron_right, color: WearColors.muted),
+                ],
+              );
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: WearCard(
+                  padding: const EdgeInsets.all(12),
+                  child: isMyEquipment
+                      ? InkWell(
+                          onTap: () => context.push(
+                            '/devices/${idOf(item['deviceId'])}',
+                          ),
+                          child: details,
+                        )
+                      : MergeSemantics(child: details),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],

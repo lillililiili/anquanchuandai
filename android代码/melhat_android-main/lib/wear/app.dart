@@ -13,6 +13,7 @@ import 'queries/person_management.dart';
 import 'events/events_page.dart';
 import 'communications/communications.dart';
 import 'communications/lab_calls.dart';
+import 'communications/phone_calls.dart';
 import '../theme/app_theme.dart';
 
 class WearApp extends StatefulWidget {
@@ -253,25 +254,28 @@ class _WearAppState extends State<WearApp> with WidgetsBindingObserver {
     return WearScope(
       session: _session,
       child: MaterialApp.router(
-        builder: (context, child) => LabCallHost(
-          routeChanges: _router.routerDelegate,
-          // The URI can still describe the parent for imperative pushes.
-          // The last match is the actual top page, including pushed routes.
-          callPageVisible: () => _router
-              .routerDelegate
-              .currentConfiguration
-              .last
-              .matchedLocation
-              .startsWith('/lab-call/'),
+        builder: (context, child) => PhoneCallHost(
           session: _session,
-          openCall: (id) => _router.push('/lab-call/$id'),
-          child: _session.api.isMock
-              ? Banner(
-                  message: '本地模拟',
-                  location: BannerLocation.topEnd,
-                  child: child ?? const SizedBox.shrink(),
-                )
-              : child ?? const SizedBox.shrink(),
+          child: LabCallHost(
+            routeChanges: _router.routerDelegate,
+            // The URI can still describe the parent for imperative pushes.
+            // The last match is the actual top page, including pushed routes.
+            callPageVisible: () => _router
+                .routerDelegate
+                .currentConfiguration
+                .last
+                .matchedLocation
+                .startsWith('/lab-call/'),
+            session: _session,
+            openCall: (id) => _router.push('/lab-call/$id'),
+            child: _session.api.isMock
+                ? Banner(
+                    message: '本地模拟',
+                    location: BannerLocation.topEnd,
+                    child: child ?? const SizedBox.shrink(),
+                  )
+                : child ?? const SizedBox.shrink(),
+          ),
         ),
         title: '智能穿戴管理平台',
         debugShowCheckedModeBanner: false,

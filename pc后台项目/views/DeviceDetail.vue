@@ -3,7 +3,7 @@
     <section class="panel device-summary" aria-label="设备概况">
       <DeviceMark :type="d.type" />
       <div class="device-summary-info">
-        <p class="device-summary-source">{{ DEVICE_TYPES[d.type] }}<span aria-hidden="true">/</span>{{ d.source === 'DEMO_WATCH' ? '智能手表 · 模拟数据' : d.source === 'DIRECT_BELT' ? '安全带直连' : d.source === 'DIRECT_HELMET' ? '一体式安全帽直连' : d.source === 'PLATFORM' ? '厂家同步设备' : '设备档案' }}</p>
+        <p class="device-summary-source">{{ DEVICE_TYPES[d.type] }}<span aria-hidden="true">/</span>{{ d.source === 'DEMO_WATCH' ? '智能手表 · 模拟数据' : d.source === 'DIRECT_BELT' ? '安全带直连' : d.source === 'DIRECT_HELMET' ? '一体式安全帽直连' : d.source === 'SPLIT_HELMET' ? '分体式安全帽' : d.source === 'PLATFORM' ? '厂家同步设备' : '设备档案' }}</p>
         <h2>{{ d.name }}</h2>
         <p class="device-summary-code"><span>设备编号</span><strong>{{ d.code }}</strong></p>
         <div class="device-summary-meta"><span>型号 <b>{{ d.modelName || '待补充' }}</b></span></div>
@@ -28,6 +28,7 @@
     <DeviceFeatureStatus :device="d"><template #actions><DeviceFeatureEditor :device="d" @saved="loadDevice()" /></template></DeviceFeatureStatus>
     <DeviceControlsReference :device="d" />
     <section v-if="d.source === 'DIRECT_BELT'" class="panel"><h2>安全带上报</h2><dl class="record-fields"><dt>佩戴状态</dt><dd>{{ beltState(d.worn, '已佩戴', '未佩戴') }}</dd><dt>A挂钩状态</dt><dd>{{ beltState(d.hookAEngaged, '已挂扣', '未挂扣') }}</dd><dt>B挂钩状态</dt><dd>{{ beltState(d.hookBEngaged, '已挂扣', '未挂扣') }}</dd><dt>上报时间</dt><dd>{{ d.deviceReportedAt || d.sourceTime ? beijingTime(d.deviceReportedAt || d.sourceTime) : '尚未上报' }}</dd></dl></section>
+    <section v-if="d.source === 'SPLIT_HELMET'" class="panel" aria-label="分体帽上报"><h2>分体式安全帽上报</h2><dl class="record-fields"><dt>中间件设备编号</dt><dd>{{ d.deviceNumber }}</dd><dt>电量</dt><dd>{{ verified.battery }}</dd><dt>佩戴状态</dt><dd>{{ verified.worn }}</dd><template v-for="field in splitTelemetry.fields" :key="field.key"><dt>{{ field.label }}</dt><dd>{{ field.value }} · {{ field.status }}<small> · {{ field.reportedAt ? beijingTime(field.reportedAt) : '上报时间未提供' }}</small></dd></template></dl><p class="muted">气压按设备原始测量值展示，不推算人员高度。各项状态分别记录上报时间。</p></section>
     <section v-if="d.source === 'DIRECT_HELMET'" class="panel" aria-label="安全帽上报">
       <h2>安全帽上报</h2>
       <dl class="record-fields">
@@ -52,6 +53,7 @@ import { recordReturn } from '../navigation'
 import { beijingTime } from '../tablePresentation'
 import { DEVICE_FILTERS, DEVICE_TYPES } from '../deviceData'
 import { verifiedDeviceSummary, deviceRemark } from '../devicePresentation'
+import { splitHelmetTelemetry } from '../../shared/split-helmet.mjs'
 import { deviceLocalRecordingPresentation } from '../../shared/device-local-recording.mjs'
 import QueryState from '../components/QueryState.vue'
 import DeviceEditPanel from '../components/DeviceEditPanel.vue'
@@ -65,6 +67,7 @@ import HistoryTable from '../components/HistoryTable.vue'
 const store = useAdminStore(), route = useRoute(), detail = useQuery(), history = useQuery()
 const d = computed(() => detail.data.value), historyPage = ref(1), historySize = ref(10)
 const verified = computed(() => verifiedDeviceSummary(d.value))
+const splitTelemetry = computed(() => splitHelmetTelemetry(d.value))
 const localRecording = computed(() => deviceLocalRecordingPresentation(d.value))
 const fields = [['id', '设备ID'], ['manufacturer', '厂商'], ['sn', 'SN'], ['assetCode', '资产编号'], ['purchasedOn', '购置日期'], ['remark', '备注']]
 const beltState = (value, yes, no) => d.value?.freshness !== 'CURRENT' ? '未知（暂无最新上报）' : value === true ? yes : value === false ? no : '待确认'

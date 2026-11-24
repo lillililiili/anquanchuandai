@@ -36,6 +36,8 @@ public class GuardianStore {
     private org.springframework.beans.factory.ObjectProvider<com.ruoyi.helmet.service.DirectHelmetAccess> directAccess;
     @org.springframework.beans.factory.annotation.Autowired(required=false)
     private org.springframework.beans.factory.ObjectProvider<DirectBeltAccess> directBeltAccess;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private org.springframework.beans.factory.ObjectProvider<com.ruoyi.melhat.split.SplitHelmetService> splitAccess;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableMaintenance maintenance;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private WearableBusinessPolicy businessPolicy;
 
@@ -46,6 +48,7 @@ public class GuardianStore {
         if (ledger != null) PlatformProjection.apply(next, ledger.read());
         DirectHelmetProjection.apply(next, directAccess == null ? null : directAccess.getIfAvailable());
         DirectBeltProjection.apply(next, directBeltAccess == null ? null : directBeltAccess.getIfAvailable());
+        SplitHelmetProjection.apply(next, splitAccess == null ? null : splitAccess.getIfAvailable());
         PersonLocationProjection.apply(next);
         if(!next.toJSONString().equals(state.toJSONString())) {
             next.put("seq",state.getIntValue("seq")+1);

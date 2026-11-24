@@ -15,10 +15,11 @@ final class DeviceFeatureConfiguration {
     static Set<String> keys(JSONObject device) {
         Set<String> keys = new LinkedHashSet<>();
         String source = device.getString("source");
-        if (!Arrays.asList("DIRECT_HELMET", "DIRECT_BELT").contains(source)) return keys;
+        if (!Arrays.asList("DIRECT_HELMET", "DIRECT_BELT", "SPLIT_HELMET").contains(source)) return keys;
         Collections.addAll(keys, "battery", "wear", "location", "alarm", "sos");
         if ("DIRECT_BELT".equals(source)) { Collections.addAll(keys, "hooks", "height"); keys.addAll(BELT_OPTIONS); }
         else Collections.addAll(keys, "video", "videoCall", "photo", "recording", "voice", "broadcast");
+        if ("SPLIT_HELMET".equals(source)) { keys.remove("wear"); Collections.addAll(keys, "pressure", "temperature", "storage"); }
         return keys;
     }
 
@@ -54,7 +55,7 @@ final class DeviceFeatureConfiguration {
         for (Object code : codes) {
             if (!(code instanceof String) || !((String)code).matches("[0-9]{1,8}") || !unique.add((String)code)) throw fail("告警编号须为不重复的非负整数字符串");
         }
-        if (BELT_ALARMS.contains(key) && "VERIFIED".equals(verification) && unique.isEmpty()) throw fail("请先填写与本机实际报文对应的告警编号");
+        if ("DIRECT_BELT".equals(device.getString("source")) && BELT_ALARMS.contains(key) && "VERIFIED".equals(verification) && unique.isEmpty()) throw fail("请先填写与本机实际报文对应的告警编号");
         JSONObject all = device.getJSONObject("featureConfiguration") == null ? new JSONObject() : copy(device.getJSONObject("featureConfiguration"));
         for (String other : all.keySet()) {
             if (other.equals(key)) continue;

@@ -19,8 +19,9 @@ export function createLiveViewing({ api, makeId = () => crypto.randomUUID(), sch
     try {
       const result = await api.live(entry.context.deviceId, entry.context, entry.controller.signal);
       if (entry.closed) return;
-      const source = result.live;
-      const live = source?.hlsUrl ? { ...source, protocol: 'HLS', url: source.hlsUrl } : source;
+      const source = result.live || (result.protocol === 'ZLM_WEBRTC' ? result : null);
+      const normalized = source?.protocol === 'ZLM_WEBRTC' ? { ...source, url: source.playUrl || source.url || source.whepUrl } : source;
+      const live = source?.protocol !== 'ZLM_WEBRTC' && source?.hlsUrl ? { ...source, protocol: 'HLS', url: source.hlsUrl } : normalized;
       update(entry, { phase: live?.url ? 'ready' : 'waiting', live: live?.url ? live : null, error: '', message: result.message || '正在等待设备视频回传' });
     } catch (error) {
       if (!entry.closed && error.name !== 'AbortError') update(entry, { phase: 'error', live: null, error: error.message || '直播状态暂不可用，请重试' });

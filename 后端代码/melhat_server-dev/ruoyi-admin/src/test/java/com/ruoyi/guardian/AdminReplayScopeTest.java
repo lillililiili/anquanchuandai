@@ -27,6 +27,9 @@ class AdminReplayScopeTest {
                                 "operations", JSONArray.of("accounts:write", "assets:read", "assets:write"))))),
                 "devices", JSONArray.of(object("id", "device-A", "siteId", "A", "version", 2, "lifecycle", "DISABLED")),
                 "idempotency", new JSONObject()));
+        // Account creation requires one delegated role under the current access contract.
+        state.get().getJSONArray("roles").add(object("id","viewer","enabled",true,"version",1,
+                "grants",JSONArray.of(object("siteIds",JSONArray.of("A"),"operations",JSONArray.of("assets:read")))));
         ledger = mock(AdminLedgerStore.class);
         when(ledger.read()).thenAnswer(call -> copy(state.get()));
         doAnswer(call -> { state.set(copy(call.getArgument(0))); return null; }).when(ledger).write(any());
@@ -37,16 +40,17 @@ class AdminReplayScopeTest {
 
     JSONObject grant() { return find(state.get(), "roles", "manager-role").getJSONArray("grants").getJSONObject(0); }
     JSONObject createCommand(String site) {
+        find(state.get(),"roles","viewer").getJSONArray("grants").getJSONObject(0).put("siteIds",JSONArray.of(site));
         return object("siteId", site, "operationId", "create-user-" + site,
                 "data", object("name", "New user", "loginName", "new-user-" + site,
-                        "password", "FixtureOnly!2026", "bindings", new JSONArray()));
+                        "password", "FixtureOnly!2026", "bindings", JSONArray.of(object("roleId","viewer"))));
     }
 
     @Test void authorizedReplayDoesNotRepeatTheMutationButScopeRevocationDeniesIt() {
         JSONObject command = createCommand("A");
         JSONObject first = accounts.execute("manager", "accounts.create", command);
         int revision = state.get().getIntValue("revision");
-        assertEquals(first, accounts.execute("manager", "accounts.create", command));
+        assertEquals(first.toJSONString(), accounts.execute("manager", "accounts.create", command).toJSONString());
         assertEquals(revision, state.get().getIntValue("revision"));
         grant().put("siteIds", JSONArray.of("B"));
         assertEquals(403, assertThrows(AdminQueryService.QueryFailed.class,
@@ -69,7 +73,7 @@ class AdminReplayScopeTest {
                 () -> accounts.execute("manager", "accounts.create", command)).code);
         grant().getJSONArray("siteIds").add("B");
         JSONObject first = accounts.execute("manager", "accounts.create", command);
-        assertEquals(first, accounts.execute("manager", "accounts.create", command));
+        assertEquals(first.toJSONString(), accounts.execute("manager", "accounts.create", command).toJSONString());
         find(state.get(), "roles", "manager-role").put("enabled", false);
         assertEquals(403, assertThrows(AdminQueryService.QueryFailed.class,
                 () -> accounts.execute("manager", "accounts.create", command)).code);

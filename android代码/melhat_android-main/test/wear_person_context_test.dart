@@ -18,8 +18,9 @@ void main() {
       expect(find.text('暂无进行中的作业'), findsOneWidget);
       expect(find.text('P-007'), findsOneWidget);
       expect(find.text('巡检一班'), findsOneWidget);
-      expect(find.text('建设公司'), findsOneWidget);
-      expect(find.text('2026-01-01 至 2026-12-31'), findsOneWidget);
+      for (final text in ['承包商', '建设公司', '有效期', '2026-01-01 至 2026-12-31']) {
+        expect(find.text(text), findsNothing);
+      }
       expect(
         tester.getTopLeft(find.text('联系该人员')).dy,
         lessThan(tester.getTopLeft(find.text('当前装备')).dy),
@@ -30,16 +31,28 @@ void main() {
       router.pop();
       await tester.pumpAndSettle();
       expect(find.text('查看轨迹'), findsNothing);
-      await tester.ensureVisible(find.text('HELMET-42'));
-      await tester.tap(find.text('HELMET-42'));
-      await tester.pumpAndSettle();
-      expect(find.text('/devices/42'), findsOneWidget);
-      router.pop();
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.textContaining('OLD-43'), 250);
-      await tester.tap(find.textContaining('OLD-43'));
-      await tester.pumpAndSettle();
-      expect(find.text('/devices/43'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(EquipmentPanel),
+          matching: find.byIcon(Icons.chevron_right),
+        ),
+        findsNothing,
+      );
+      for (final sn in ['HELMET-42', 'BELT-43']) {
+        final serialNumber = find.text(sn);
+        await tester.ensureVisible(serialNumber);
+        await tester.pumpAndSettle();
+        expect(
+          tester.semantics.find(serialNumber),
+          isSemantics(hasTapAction: false),
+        );
+        await tester.tap(serialNumber);
+        await tester.pumpAndSettle();
+        expect(find.byType(PersonPage), findsOneWidget);
+        expect(find.text(sn), findsOneWidget);
+      }
+      expect(find.text('当前装备'), findsOneWidget);
+      expect(find.textContaining('历史领用记录'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -116,8 +129,8 @@ void main() {
       tester.view.physicalSize = const Size(360, 800);
       await tester.pumpAndSettle();
       expect(find.text('联系该人员').hitTestable(), findsOneWidget);
-      await tester.scrollUntilVisible(find.textContaining('OLD-43'), 250);
-      expect(find.textContaining('OLD-43').hitTestable(), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('HELMET-42'), 250);
+      expect(find.text('HELMET-42').hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -172,16 +185,6 @@ Future<GoRouter> _mount(
               'validFrom': '2026-01-01',
               'validTo': '2026-12-31',
             };
-          case '/api/v1/people/7/assignments':
-            data = [
-              {
-                'deviceId': '43',
-                'typeCode': 'helmet',
-                'sn': 'OLD-43',
-                'issuedAt': '2026-01-01T10:00:00+08:00',
-                'returnedAt': '2026-01-02T10:00:00+08:00',
-              },
-            ];
           case '/api/v1/people/7/equipment':
             data = [
               {
@@ -192,6 +195,12 @@ Future<GoRouter> _mount(
                 'connectionQuality': 'ok',
                 'online': '1',
               },
+              {
+                'deviceId': '43',
+                'typeCode': 'belt',
+                'sn': 'BELT-43',
+                'issuedAt': '2026-09-18T10:05:00+08:00',
+              },
             ];
           case '/api/v1/locations/people/7':
             if (locationReady != null) await locationReady;
@@ -199,6 +208,8 @@ Future<GoRouter> _mount(
             code = locationCode;
           case '/api/v1/devices/42':
             data = {'id': '42', 'online': '1', 'connectionQuality': 'ok'};
+          case '/api/v1/devices/43':
+            data = {'id': '43', 'online': '0', 'connectionQuality': 'ok'};
           case '/api/v1/work-tasks':
             data = {'records': [], 'total': 0, 'current': 1, 'size': 100};
           default:

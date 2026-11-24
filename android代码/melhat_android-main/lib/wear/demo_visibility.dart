@@ -12,6 +12,7 @@ bool isWatchRecord(JsonMap row) => const ['W', 'WATCH'].contains(
 bool hasRealDeviceSource(JsonMap row) => const [
   'PLATFORM',
   'DIRECT_HELMET',
+  'SPLIT_HELMET',
   'DIRECT_BELT',
   'DIRECT_WATCH',
   'DEVICE',

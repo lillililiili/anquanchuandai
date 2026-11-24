@@ -33,6 +33,17 @@ class PersonEquipmentContextTest {
         assertEquals("RECEIVED_AT",person.getJSONObject("location").getString("locationTimeBasis"));
         master.getJSONArray("assignments").clear();service.decorate(access.context(actor),snapshot);assertTrue(snapshot.getJSONObject("personEquipmentContext").getJSONObject("P1").getJSONArray("devices").isEmpty());
     }
+    @Test void splitHelmetKeepsAssignmentAndRevocationGate(){
+        master.getJSONArray("devices").getJSONObject(0).put("source","SPLIT_HELMET");
+        state.getJSONArray("devices").getJSONObject(0).put("source","SPLIT_HELMET");
+        assertEquals("a-hat",service.require(access.context(actor),"866652021714127",request,"video","communications:voice").getString("assignmentId"));
+        service.withSessionAuthority(authority->assertTrue(authority.test("demo-system",object("deviceId","866652021714127","personId","P1","assignmentId","a-hat","assignmentVersion",3,"siteId","site-1"))));
+        request.put("assignmentVersion",2);
+        assertEquals("ASSIGNMENT_CHANGED",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"voice","communications:voice")).errorCode);
+        request.put("assignmentVersion",3);master.getJSONArray("assignments").getJSONObject(0).put("active",false);
+        assertEquals("ASSIGNMENT_REQUIRED",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"photo","communications:voice")).errorCode);
+        service.withSessionAuthority(authority->assertFalse(authority.test("demo-system",object("deviceId","866652021714127","personId","P1","assignmentId","a-hat","assignmentVersion",3,"siteId","site-1"))));
+    }
     @Test void realtimeRejectsUnassignedStaleVersionAndOfflineEvenForAcceptance(){
         assertEquals("a-hat",service.require(access.context(actor),"866652021714127",request,"video","communications:voice").getString("assignmentId"));
         request.put("assignmentVersion",2);assertEquals("ASSIGNMENT_CHANGED",assertThrows(AdminQueryService.QueryFailed.class,()->service.require(access.context(actor),"866652021714127",request,"video","communications:voice")).errorCode);

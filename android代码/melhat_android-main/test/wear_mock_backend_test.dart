@@ -294,13 +294,55 @@ void main() {
     expect(jsonList((await event('401'))['observations']), isEmpty);
   });
 
+  test(
+    'person duty filtering is independent from the mock archive status',
+    () async {
+      final ledger = MockBackend(scoped: true)..siteId = session.siteId;
+      session.api.dio.httpClientAdapter = ledger;
+      ledger.people[0]['dutyStatus'] = 'OFF_DUTY';
+      ledger.people[1]['dutyStatus'] = 'ON_DUTY';
+      final off = await session.api.page(
+        '/api/v1/people',
+        query: {'dutyStatus': 'OFF_DUTY'},
+      );
+      expect(off.records.single['id'], ledger.people[0]['id']);
+      final on = jsonList(
+        await session.api.get(
+          '/api/v1/people/options',
+          query: {'dutyStatus': 'ON_DUTY'},
+        ),
+      );
+      expect(on.single['id'], ledger.people[1]['id']);
+      expect(
+        jsonMap(
+          await session.api.get('/api/v1/people/${ledger.people[2]['id']}'),
+        )['dutyStatus'],
+        'UNKNOWN',
+      );
+    },
+  );
+
   test('equipment allocation and return preserve ownership', () async {
+    Future<void> expectIssueFilter(String relation) async {
+      expect(
+        jsonMap(await session.api.get('/api/v1/devices/204'))['relation'],
+        relation,
+      );
+      final page = await session.api.page(
+        '/api/v1/devices',
+        query: {'relation': relation, 'sn': 'RL-H002'},
+      );
+      expect(page.records.single['id'], '204');
+    }
+
+    await expectIssueFilter('UNASSIGNED');
     final assigned = jsonMap(
       await session.api.post(
         '/api/v1/assignments',
         data: {'deviceId': '204', 'personId': '102'},
       ),
     );
+    await expectIssueFilter('ASSIGNED');
     expect(
       jsonList(
         await session.api.get('/api/v1/people/102/equipment'),
@@ -311,6 +353,7 @@ void main() {
       '/api/v1/assignments/${assigned['id']}/return',
       data: {},
     );
+    await expectIssueFilter('UNASSIGNED');
     expect(
       jsonList(
         await session.api.get('/api/v1/people/102/equipment'),

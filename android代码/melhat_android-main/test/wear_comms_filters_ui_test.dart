@@ -6,61 +6,40 @@ import 'wear_comms_entry_test.dart' show openDevice;
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
-  for (final action in ['呼叫', '文字播报']) {
-    testWidgets(
-      'multi-select keeps contacts in place while checking and unchecking ($action)',
-      (tester) async {
-        final requests = <RequestOptions>[];
-        final router = await openDevice(tester, requests);
-        router.go('/communications');
-        await tester.pumpAndSettle();
-        expect(find.text('多选'), findsNothing);
-        expect(find.text('清空'), findsOneWidget);
-        await tester.pumpAndSettle();
-        if (action == '文字播报') {
-          // Only contact 07 has equipment in this fixture. Selecting an
-          // unequipped person correctly hides device-only broadcast actions.
-          await tester.ensureVisible(find.text('联系人07'));
-          await tester.pumpAndSettle();
-          expect(find.text('联系人07').hitTestable(), findsOneWidget);
-          await tester.tap(find.text('联系人07'));
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('文字播报'));
-          await tester.pumpAndSettle();
-          await tester.ensureVisible(find.text('清空'));
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('清空'));
-          await tester.pumpAndSettle();
-        }
-        final list = find.byKey(const ValueKey('wear-communications-list'));
-        final scroll = tester.widget<ListView>(list).controller!;
-        await tester.scrollUntilVisible(
-          find.text('联系人07'),
-          250,
-          scrollable: find
-              .descendant(of: list, matching: find.byType(Scrollable))
-              .first,
-        );
-        await tester.pumpAndSettle();
-        final anchor = find.text('联系人07');
-        final position = tester.getTopLeft(anchor);
-        final offset = scroll.offset;
-        var tapIndex = 0;
-        for (final name in ['联系人07', '联系人08', '联系人07', '联系人08']) {
-          expect(find.text(name).hitTestable(), findsOneWidget);
-          await tester.tap(find.text(name));
-          await tester.pumpAndSettle();
-          expect(find.text('${[1, 2, 1, 0][tapIndex++]} 项'), findsOneWidget);
-          expect(scroll.offset, closeTo(offset, .01));
-          expect(tester.getTopLeft(anchor), position);
-        }
-        expect(find.text('0 项'), findsOneWidget);
-        expect(requests.where((r) => r.method != 'GET'), isEmpty);
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox.shrink());
-      },
+  testWidgets('multiple phone selections stay in place and never dial on tap', (
+    tester,
+  ) async {
+    final requests = <RequestOptions>[];
+    final router = await openDevice(
+      tester,
+      requests,
+      phoneContacts: ['7', '8'],
     );
-  }
+    router.go('/communications');
+    await tester.pumpAndSettle();
+    final list = find.byKey(const ValueKey('wear-communications-list'));
+    final scroll = tester.widget<ListView>(list).controller!;
+    final first = find.byKey(const ValueKey('contact-call-p:7'));
+    final second = find.byKey(const ValueKey('contact-call-p:8'));
+    await Scrollable.ensureVisible(tester.element(first), alignment: .4);
+    await tester.pumpAndSettle();
+    final before = scroll.offset;
+    var i = 0;
+    for (final icon in [first, second, first, second]) {
+      await tester.tap(icon);
+      await tester.pumpAndSettle();
+      expect(find.text('${[1, 2, 1, 0][i++]} 项'), findsOneWidget);
+      expect(scroll.offset, closeTo(before, .01));
+    }
+    expect(
+      requests.where(
+        (r) => r.method == 'POST' && !r.path.endsWith('/presence'),
+      ),
+      isEmpty,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
   testWidgets('contacts return to the page top after scrolling one viewport', (
     tester,
   ) async {
@@ -107,41 +86,56 @@ void main() {
     expect(requests.where((r) => r.method != 'GET'), isEmpty);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
   });
   testWidgets(
-    'inline filters clear hidden selections and preserve search/navigation',
+    'contacts open without a filter panel and search keeps reachable phone selections',
     (tester) async {
       final requests = <RequestOptions>[];
-      final router = await openDevice(tester, requests);
+      final router = await openDevice(tester, requests, phoneContacts: ['0']);
+      requests.clear();
       router.go('/communications');
       await tester.pumpAndSettle();
       expect(find.text('安全帽未关联'), findsWidgets);
+      expect(find.textContaining('联系对象筛选'), findsNothing);
+      expect(find.byKey(const ValueKey('inline-filter-toggle')), findsNothing);
+      expect(find.textContaining('选择联系人后，可按设备能力'), findsNothing);
+      expect(
+        requests.where((r) => r.path.startsWith('/api/v1/work-tasks')),
+        isEmpty,
+      );
       expect(requests.where((r) => r.path == '/api/v1/lab/roster'), isEmpty);
-      await tester.tap(find.text('联系人00'));
+      await tester.tap(find.byKey(const ValueKey('contact-call-p:0')));
       await tester.pumpAndSettle();
-      expect(find.byType(BottomSheet), findsNothing);
-      final toggle = find.byKey(const ValueKey('inline-filter-toggle'));
-      if (toggle.evaluate().isNotEmpty) {
-        await tester.tap(toggle);
-        await tester.pumpAndSettle();
-      }
-      final watch = find.byKey(const ValueKey('filter-presence-online'));
-      await tester.ensureVisible(watch);
-      await tester.tap(watch);
-      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text('1 项'), findsOneWidget);
+      final search = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.hintText == '搜索联系人',
+      );
+      await tester.enterText(search, '联系人07');
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('contact-p:7')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(find.text('联系人00'), findsNothing);
+      expect(find.text('1 项'), findsOneWidget);
+      await tester.enterText(search, '不存在的联系人');
       await tester.pumpAndSettle();
       expect(find.text('没有匹配的联系人'), findsOneWidget);
-      expect(find.text('0 项'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
-      expect(requests.where((r) => r.method != 'GET'), isEmpty);
-      expect(tester.takeException(), isNull);
-      final reset = find.byKey(const ValueKey('filter-reset'));
-      await tester.ensureVisible(reset);
-      await tester.tap(reset);
+      await tester.enterText(search, '');
       await tester.pumpAndSettle();
       expect(find.text('联系人00'), findsOneWidget);
+      expect(
+        requests.where(
+          (r) => r.method != 'GET' && !r.path.endsWith('/presence'),
+        ),
+        isEmpty,
+      );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
     },
   );
 }

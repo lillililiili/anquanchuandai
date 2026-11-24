@@ -1,0 +1,27 @@
+# 示例域名，不会由程序自动安装或启用。合并到实际配置前先核对现有路由。
+callback-router.example {
+    @split_notify path /api/helmet/notify/gnss /api/helmet/notify/baro /api/helmet/notify/deviceStatus /api/helmet/notify/sosCall /api/helmet/notify/sosCallEnd /api/helmet/notify/sos
+    handle @split_notify {
+        request_body {
+            max_size 64KB
+        }
+        reverse_proxy 127.0.0.1:18089
+    }
+    respond 404
+}
+
+# 合并到智能穿戴实际 HTTPS 站点。只开放带独立回调密钥的六个精确接口。
+wearable-platform.example {
+    @split_callback path /split-callback/api/helmet/notify/gnss /split-callback/api/helmet/notify/baro /split-callback/api/helmet/notify/deviceStatus /split-callback/api/helmet/notify/sosCall /split-callback/api/helmet/notify/sosCallEnd /split-callback/api/helmet/notify/sos
+    handle @split_callback {
+        uri strip_prefix /split-callback
+        request_body {
+            max_size 64KB
+        }
+        reverse_proxy 127.0.0.1:18084 {
+            header_up -Authorization
+            header_up -Cookie
+        }
+    }
+    respond 404
+}

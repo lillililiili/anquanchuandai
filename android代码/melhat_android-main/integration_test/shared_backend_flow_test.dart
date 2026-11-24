@@ -324,6 +324,7 @@ void main() {
       await click(find.text('确认求助'));
       await waitFor(find.text('手机手动求助'));
       expect(find.byKey(const ValueKey('event-claim')), findsNothing);
+      await click(find.byKey(const ValueKey('event-open-observation')));
       await enter('event-observation', '$runId Android 实际接口现场补充');
       await click(find.byKey(const ValueKey('event-observation-submit')));
       await waitFor(find.textContaining('现场情况已补充'));
@@ -411,6 +412,7 @@ void main() {
         'waiting',
       );
       await shot('05-assistance-ended');
+      await click(find.byKey(const ValueKey('event-open-verification')));
       await click(find.byKey(const ValueKey('verification-conclusion')));
       await click(find.text('需现场处理').hitTestable());
       await enter('verification-situation', '$runId Android 核验完成');

@@ -27,7 +27,7 @@ import { session } from "@/stores/session";
 import { toast } from "@/stores/notify";
 import { people } from "@/lib/queries";
 import { fromMapCoordinates, mapLocation, toMapCoordinates } from "@/lib/location";
-import { isRealDevice } from "@/lib/device-telemetry";
+import { isRealDevice, deviceSourceLabel } from "@/lib/device-telemetry";
 import { personMapPosition } from '@/lib/data-mode';
 import { testSiteViewport } from '../../../../shared/test-site.mjs';
 import {
@@ -248,6 +248,7 @@ function renderPopup() {
   const valid = db.locationValid(person.id);
   popupOverlay.getElement().innerHTML =
     `<b>${esc(person.name)}</b>　${esc(db.locationDevice(person.id)?.id || "定位来源待确认")}` +
+    `<p>设备来源：${esc(deviceSourceLabel(db.locationDevice(person.id)?.source))}</p>` +
     (workBusinessEnabled(db) ? `<p>作业：${esc(workName(person.id))}</p>` : "") +
     `<p>定位状态：<span class="status ${valid ? "green" : "yellow"}"><b></b>${valid ? "位置有效" : "待核验"}</span></p>` +
     `<div class="row"><a class="text-link" href="#/tracks/${esc(person.id)}">历史轨迹 ${iconMarkup("arrow-right")}</a><a class="text-link" href="#/person/${esc(person.id)}">查看人员</a></div>`;

@@ -65,6 +65,8 @@ class WearEvent {
     this.alarmDescription = '',
     this.locationDescription = '',
     this.coordinateSystem = 'UNKNOWN',
+    this.protocol = '',
+    this.bindingId = '',
     this.locationReportedAt = '',
     this.observations = const [],
     this.verification = const {},
@@ -92,6 +94,8 @@ class WearEvent {
       alarmName: _text(json['alarmName']),
       alarmDescription: _text(json['alarmDescription']),
       locationDescription: _text(json['location']),
+      protocol: _text(json['protocol']),
+      bindingId: _text(json['bindingId']),
       coordinateSystem: _text(json['coordinateSystem']).isEmpty
           ? 'UNKNOWN'
           : _text(json['coordinateSystem']),
@@ -154,6 +158,7 @@ class WearEvent {
   final String alarmName;
   final String alarmDescription;
   final String locationDescription;
+  final String protocol, bindingId;
   final String coordinateSystem, locationReportedAt;
   final List<EventJson> observations;
   final EventJson verification, verificationDraft, assistance;
@@ -277,6 +282,26 @@ class EventAction {
   final String fromStatus;
   final String toStatus;
   final String createTime;
+
+  String get label =>
+      const {
+        'ack': '确认看见',
+        'claim': '认领',
+        'handle': '现场处置',
+        'report': '补充现场情况',
+        'observe': '补充现场情况',
+        'manual_sos': '手动 SOS 报警',
+        'transfer': '转交',
+        'close': '历史处理',
+        'review': '审批通过',
+        'reopen': '重开',
+        'escalate': '升级',
+        'verify': '最终核验',
+        'verification-draft': '保存核验草稿',
+        'assistance/join': '加入协助',
+        'assistance/end': '结束协助',
+      }[action] ??
+      (action.isEmpty ? '处理记录' : action);
 }
 
 class DutyOperator {
@@ -350,11 +375,22 @@ class TaskCandidatePage {
   bool get hasMore => current * size < total;
 }
 
+enum EventProcessingFilter {
+  all('', []),
+  unclaimed('待认领', ['open']),
+  processing('处理中', ['claimed', 'handling']);
+
+  const EventProcessingFilter(this.label, this.codes);
+  final String label;
+  final List<String> codes;
+}
+
 class EventFilters {
   const EventFilters({
     this.status = 'active',
     this.type = '',
     this.severity = '',
+    this.processingFilter = EventProcessingFilter.all,
     this.reminderOnly = false,
     this.alarmCode = '',
     this.alarmLabel = '',
@@ -376,6 +412,11 @@ class EventFilters {
       status: status.isEmpty ? 'active' : status,
       type: _text(value['type']),
       severity: _text(value['severity']),
+      processingFilter:
+          EventProcessingFilter.values.asNameMap()[_text(
+            value['processingFilter'],
+          )] ??
+          EventProcessingFilter.all,
       alarmCode: _text(value['alarmCode']),
       alarmLabel: _text(value['alarmLabel']),
       statuses: _strings(value['statuses']),
@@ -403,6 +444,7 @@ class EventFilters {
   final String status;
   final String type;
   final String severity;
+  final EventProcessingFilter processingFilter;
   final bool reminderOnly;
   final String alarmCode;
   final String alarmLabel;
@@ -411,8 +453,12 @@ class EventFilters {
   final List<String> types;
   final List<String> alarmCodes;
   final Map<String, String> alarmLabels;
-  List<String> get selectedStatuses => statuses.isNotEmpty
+  List<String> get queryStatuses =>
+      processingFilter == EventProcessingFilter.all
       ? statuses
+      : processingFilter.codes;
+  List<String> get selectedStatuses => queryStatuses.isNotEmpty
+      ? queryStatuses
       : status == 'all'
       ? const []
       : status == 'active' || status.isEmpty
@@ -440,6 +486,8 @@ class EventFilters {
     'status': status,
     'type': type,
     'severity': severity,
+    if (processingFilter != EventProcessingFilter.all)
+      'processingFilter': processingFilter.name,
     'alarmCode': alarmCode,
     'alarmLabel': alarmLabel,
     'deviceTypes': deviceTypes,
@@ -457,6 +505,7 @@ class EventFilters {
     String? status,
     String? type,
     String? severity,
+    EventProcessingFilter? processingFilter,
     String? alarmCode,
     String? alarmLabel,
     List<String>? deviceTypes,
@@ -472,6 +521,11 @@ class EventFilters {
     status: status ?? this.status,
     type: type ?? this.type,
     severity: severity ?? this.severity,
+    processingFilter:
+        processingFilter ??
+        (status != null || statuses != null
+            ? EventProcessingFilter.all
+            : this.processingFilter),
     alarmCode: alarmCode ?? this.alarmCode,
     alarmLabel: alarmLabel ?? this.alarmLabel,
     deviceTypes: deviceTypes ?? this.deviceTypes,

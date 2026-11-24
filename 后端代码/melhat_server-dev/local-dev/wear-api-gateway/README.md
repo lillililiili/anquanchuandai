@@ -20,3 +20,5 @@ PC 接口采用方法和路径白名单，除登录外必须提供 `X-Wearable-T
 `-BackendUrl http://127.0.0.1:18084`。修改地址需要重新编译安装，attach 不会改变地址。
 
 网关回归测试：`node --test test/*.test.mjs`。
+
+分体帽会话的 `heartbeat/end`、按会话及设备的 `play/talk` SDP 转发和文件代理已加入精确白名单，仍需 `X-Wearable-Token`。文件支持单范围 `Range`，保留 `Content-Range`，不转发厂家凭据。厂家回调不经过本客户端网关；接入和独立 SN 分流见 [分体帽接入说明](../split-helmet-gateway/README.md)。

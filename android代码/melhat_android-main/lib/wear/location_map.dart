@@ -22,6 +22,10 @@ LatLng? verifiedLocation(JsonMap row) {
       ].contains(idOf(row['locationQuality']).toLowerCase())) {
     return null;
   }
+  return reportedCoordinates(row);
+}
+
+LatLng? reportedCoordinates(JsonMap row) {
   final lat = double.tryParse('${row['latitude'] ?? row['locationLat']}');
   final lon = double.tryParse('${row['longitude'] ?? row['locationLng']}');
   if (lat == null ||
@@ -139,7 +143,14 @@ class VerifiedLocationMap extends StatefulWidget {
     required this.rows,
     required this.system,
     this.interactive = true,
-  });
+  }) : point = null;
+  const VerifiedLocationMap.point({
+    super.key,
+    required LatLng this.point,
+    required this.system,
+    this.interactive = true,
+  }) : rows = const [];
+  final LatLng? point;
   final List<JsonMap> rows;
   final String system;
   final bool interactive;
@@ -153,7 +164,11 @@ class _VerifiedLocationMapState extends State<VerifiedLocationMap> {
 
   @override
   Widget build(BuildContext context) {
-    final segments = locationSegments(widget.rows, widget.system);
+    final segments = widget.point == null
+        ? locationSegments(widget.rows, widget.system)
+        : [
+            [widget.point!],
+          ];
     final all = segments.expand((s) => s).toList();
     if (all.isEmpty) return const Text('暂无可绘制定位；原始坐标仍保留，待坐标系与质量确认。');
     return Column(
@@ -228,7 +243,7 @@ class _VerifiedLocationMapState extends State<VerifiedLocationMap> {
           ),
         ),
         Text(
-          '${widget.system == 'GCJ02' ? '高德地图' : '© OpenStreetMap contributors'} · ${widget.system} · 中断处不连线',
+          '${widget.system == 'GCJ02' ? '高德地图' : '© OpenStreetMap contributors'} · ${widget.system}${widget.point == null ? ' · 中断处不连线' : ''}',
           style: const TextStyle(fontSize: 11, color: WearColors.muted),
         ),
         if (_failed)

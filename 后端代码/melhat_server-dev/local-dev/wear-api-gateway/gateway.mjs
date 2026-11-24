@@ -1,24 +1,31 @@
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PhoneCalls, phoneIdentityReader, phoneRelay } from './phone-calls.mjs';
 
 const PREFIX = '/api/guardian/v1';
 const ID = '[A-Za-z0-9_-]{1,100}';
+const SPLIT_SN = '[A-Za-z0-9._-]{1,64}';
+const DEVICE_ID = '[A-Za-z0-9._-]{1,100}';
 const patterns = [
   ['POST', '/(?:mobile/)?login'], ['POST', '/logout'], ['GET', '/operator'],
   ['GET', '/mobile/(?:identity|sites|context|home|people|devices|works|assignments|calls)'],
-  ['GET', `/mobile/(?:people|devices|works)/${ID}`],
+  ['GET', `/mobile/(?:people|works)/${ID}`], ['GET', `/mobile/devices/${DEVICE_ID}`],
   ['POST', '/mobile/assignments/(?:issue|return)'],
   ['POST', '/mobile/(?:calls|broadcast)'],
+  ['POST', '/mobile/phone/(?:presence|offline|start|accept|leave|signal)'],
   ['GET', `/mobile/calls/${ID}(?:/credentials)?`],
   ['POST', `/mobile/calls/${ID}/(?:joined|end)`],
   ['GET', `/events(?:/${ID})?`],
   ['POST', `/events/${ID}/(?:claim|observations|verification-draft|verification|photos|assist-join|assist-end)`],
   ['POST', '/sos'], ['GET', `/files/${ID}`], ['PUT', `/files/${ID}`],
-  ['GET', `/devices/${ID}/(?:media|live)`], ['POST', `/devices/${ID}/commands`],
+  ['GET', `/devices/${DEVICE_ID}/(?:media|live)`], ['POST', `/devices/${DEVICE_ID}/commands`],
   ['GET', `/helmet/calls/${ID}(?:/credentials)?`], ['GET', '/locations/history'], ['GET', `/locations/people/${ID}`],
   ['GET', '/helmet/media'],
   ['POST', '/(?:call|call/end|broadcast)'],
+  ['POST', `/split/sessions/${ID}/(?:heartbeat|end)`],
+  ['POST', `/split/sessions/${ID}/devices/${SPLIT_SN}/(?:play|talk)`],
+  ['GET', `/split/devices/${SPLIT_SN}/files/[a-f0-9]{64}`],
 ].map(([method, pattern]) => [method, new RegExp(`^${PREFIX}${pattern}$`)]);
 // PC access is opt-in. Never expose whole-state writers or legacy controllers.
 const pcPatterns = [
@@ -39,11 +46,12 @@ export function allowed(method, pathname, pcClients = false) {
 }
 const login = pathname => pathname === `${PREFIX}/login` || pathname === `${PREFIX}/mobile/login` || pathname === '/api/admin/v1/login';
 function fail(response, status, code) { response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); response.end(JSON.stringify({ code: status, error: code })); }
-export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false, pcClients = false } = {}) {
+export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', testOnly = false, pcClients = false, phoneOptions } = {}) {
   const upstream = new URL(upstreamOrigin);
   if (upstream.protocol !== 'http:' || upstream.hostname !== '127.0.0.1' || upstream.origin !== upstreamOrigin
     || (!testOnly && upstream.port !== '18084') || (testOnly && upstream.port === '18084')) throw Error('Expected isolated local backend');
   const limits = new Map();
+  const phones = new PhoneCalls(phoneOptions ?? { identity: phoneIdentityReader(upstream), relay: phoneRelay() });
   const take = (key, max) => {
     const now = Date.now();
     if (limits.size > 10000) for (const [k, v] of limits) if (v.until < now) limits.delete(k);
@@ -56,11 +64,17 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     if (!raw.startsWith('/') || raw.startsWith('//') || raw.length > 4096 || /%2f|%5c|%00|\\|\.\.|#/i.test(raw)) return fail(response, 400, 'INVALID_PATH');
     const url = new URL(raw, 'http://localhost');
     if (!allowed(request.method, url.pathname, pcClients)) return fail(response, 404, 'NOT_FOUND');
+    const splitFile = request.method === 'GET' && new RegExp(`^${PREFIX}/split/devices/${SPLIT_SN}/files/[a-f0-9]{64}$`).test(url.pathname);
+    const splitSignal = request.method === 'POST' && new RegExp(`^${PREFIX}/split/sessions/${ID}/devices/${SPLIT_SN}/(?:play|talk)$`).test(url.pathname);
+    if (url.pathname.startsWith(`${PREFIX}/split/`) && url.search) return fail(response, 400, 'INVALID_QUERY');
+    if (splitSignal && (request.headers['content-type'] ?? '').split(';')[0].trim() !== 'application/sdp') return fail(response, 415, 'SDP_REQUIRED');
+    const range = request.headers.range;
+    if (splitFile && range !== undefined && !/^bytes=(?:[0-9]{1,15}-[0-9]{0,15}|-[0-9]{1,15})$/.test(range)) return fail(response, 400, 'INVALID_RANGE');
     const queryKeys = ['siteId', 'eventId', 'deviceId', 'personId', 'status', 'type', 'pageNum', 'pageSize', 'from', 'to', 'after', 'cursor', 'limit'];
     const callList = request.method === 'GET' && url.pathname === `${PREFIX}/mobile/calls`;
     if (callList) queryKeys.push('owned');
     if (pcClients && request.method === 'GET' && url.pathname === '/api/admin/v1/works') queryKeys.push('keyword', 'date');
-    const liveRoute = request.method === 'GET' && new RegExp(`^${PREFIX}/devices/${ID}/live$`).test(url.pathname);
+    const liveRoute = request.method === 'GET' && new RegExp(`^${PREFIX}/devices/${DEVICE_ID}/live$`).test(url.pathname);
     if (liveRoute) {
       queryKeys.push('assignmentId', 'assignmentVersion', 'viewerSessionId');
     }
@@ -87,14 +101,35 @@ export function createWearGateway({ upstreamOrigin = 'http://127.0.0.1:18084', t
     request.on('end', () => {
       if (rejected) return;
       const body = Buffer.concat(chunks);
+      if (url.pathname.startsWith(PREFIX + '/mobile/phone/')) {
+        if (url.search || (request.headers['content-type'] ?? '').split(';')[0] !== 'application/json') return fail(response, 400, 'INVALID_PHONE_REQUEST');
+        let input;
+        try { input = JSON.parse(body.toString()); } catch { return fail(response, 400, 'INVALID_JSON'); }
+        const sendPhone = (status, value) => {
+          if (response.destroyed) return;
+          response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+          response.end(JSON.stringify(value));
+        };
+        phones.handle(url.pathname.split('/').at(-1), token, input).then(
+          value => sendPhone(200, value),
+          error => sendPhone(error.status || 503, { code: error.status || 503, message: error.status ? error.message : '手机语音服务暂不可用' }),
+        );
+        return;
+      }
       const headers = { Accept: 'application/json', 'Content-Length': String(body.length) };
       if (token) headers['X-Wearable-Token'] = token;
       if (request.headers['content-type']) headers['Content-Type'] = request.headers['content-type'];
       if (request.headers['x-wearable-revision']) headers['X-Wearable-Revision'] = request.headers['x-wearable-revision'];
+      if (splitSignal) headers.Accept = 'application/sdp';
+      if (splitFile) { headers.Accept = '*/*'; if (range) headers.Range = range; }
       const outgoing = http.request(new URL(url.pathname + url.search, upstream), { method: request.method, headers, timeout: 30000 }, incoming => {
-        response.writeHead(incoming.statusCode, { 'Content-Type': incoming.headers['content-type'] ?? 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        const responseHeaders = { 'Content-Type': incoming.headers['content-type'] ?? 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+        if (url.pathname === PREFIX + '/mobile/identity' && incoming.statusCode === 200 && phones.relay) responseHeaders['X-Wear-Phone'] = '1';
+        if (splitFile) for (const key of ['content-length', 'content-range', 'accept-ranges', 'content-disposition']) if (incoming.headers[key]) responseHeaders[key] = incoming.headers[key];
+        response.writeHead(incoming.statusCode, responseHeaders);
         let received = 0;
-        incoming.on('data', chunk => { received += chunk.length; if (received > 20 * 1024 * 1024) { incoming.destroy(); response.destroy(); } else response.write(chunk); });
+        incoming.on('data', chunk => { received += chunk.length; if (!splitFile && received > 20 * 1024 * 1024) { incoming.destroy(); response.destroy(); } else if (!response.write(chunk)) incoming.pause(); });
+        response.on('drain', () => incoming.resume());
         incoming.on('end', () => response.end()); incoming.on('error', () => response.destroy());
       });
       outgoing.on('timeout', () => outgoing.destroy());

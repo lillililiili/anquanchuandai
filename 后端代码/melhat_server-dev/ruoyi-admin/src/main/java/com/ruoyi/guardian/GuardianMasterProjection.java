@@ -24,7 +24,7 @@ final class GuardianMasterProjection {
             if (d.getJSONObject("featureConfiguration") != null) target.put("featureConfiguration", copy(d.getJSONObject("featureConfiguration")));
             else target.remove("featureConfiguration");
             boolean active=!Arrays.asList("DISABLED","SCRAPPED").contains(d.getString("lifecycle"));
-            if ("DIRECT_BELT".equals(d.getString("source"))) active = active && s.getBooleanValue("enabled");
+            if (Arrays.asList("DIRECT_BELT", "SPLIT_HELMET").contains(d.getString("source"))) active = active && s.getBooleanValue("enabled");
             target.remove("areaId");target.put("type",type);target.put("station",s.getString("portalStation"));target.put("siteId",s.getString("id"));target.put("ledgerId",d.getString("id"));target.put("active",active);target.put("name",d.getString("name"));
             if (GuardianDemoData.seedAsset(d)) GuardianDemoData.markDevice(target, "admin-seed.json", d.getString("id"));
             else if (GuardianDemoData.confirmed(target)) {
@@ -34,12 +34,12 @@ final class GuardianMasterProjection {
                 for (String key : Arrays.asList("online", "battery", "updated", "latitude", "longitude", "lat", "lng", "sourceTime", "locationReportedAt")) target.put(key, null);
                 target.put("video", "unavailable");target.put("freshness", "UNKNOWN");target.put("locationValid", false);
             }
-            if ("DIRECT_HELMET".equals(d.getString("source")) || "DIRECT_BELT".equals(d.getString("source"))) {
+            if (Arrays.asList("DIRECT_HELMET", "DIRECT_BELT", "SPLIT_HELMET").contains(d.getString("source"))) {
                 target.put("source", d.getString("source"));
                 target.put("deviceNumber", d.getString("deviceNumber"));
                 target.put("code", d.getString("code"));
                 target.put("sn", d.getString("sn"));
-                target.put("communicationProtocol", "DIRECT_BELT".equals(d.getString("source")) ? "WEBSOCKET" : "SIP");
+                target.put("communicationProtocol", "SPLIT_HELMET".equals(d.getString("source")) ? "ZLM_WEBRTC" : "DIRECT_BELT".equals(d.getString("source")) ? "WEBSOCKET" : "SIP");
                 target.put("capabilities", new com.alibaba.fastjson2.JSONArray());
                 if (!target.containsKey("freshness")) target.put("freshness", "UNKNOWN");
             }

@@ -234,6 +234,68 @@ void main() {
     expect(EventPolicy.can(EventCommand.handle, event, actor), true);
   });
   test(
+    'processing filters match native event badges before pagination',
+    () async {
+      JsonMap row(
+        String id,
+        String status, {
+        String person = 'P1',
+        String type = '静默告警',
+      }) => {'id': id, 'status': status, 'personId': person, 'type': type};
+      final data = {
+        ...contextData(),
+        'events': [
+          row('open', '待认领'),
+          row('other-person', '处理中', person: 'P2'),
+          row('claimed', 'claimed'),
+          row('handling', '处理中'),
+          row('verify', '待现场核验'),
+          row('closed', '已核验'),
+          row('sos', '处理中', type: '人员求助'),
+        ],
+      };
+      final gateway = ApiEventGateway(
+        api((r) {
+          expect(r.path, '$root/mobile/context');
+          expect(r.queryParameters['siteId'], 'site-1');
+          return reply(data, raw: true);
+        }),
+      );
+      const filters = EventFilters(
+        personId: 'P1',
+        severity: 'abnormal',
+        processingFilter: EventProcessingFilter.processing,
+      );
+      final first = await gateway.fetchPage(filters, 1, 1);
+      final second = await gateway.fetchPage(filters, 2, 1);
+      expect(first.total, 2);
+      expect(second.total, 2);
+      expect(
+        {first.records.single.id, second.records.single.id},
+        {'claimed', 'handling'},
+      );
+      expect(
+        [first.records.single.statusLabel, second.records.single.statusLabel],
+        ['处理中', '处理中'],
+      );
+      final open = await gateway.fetchPage(
+        filters.copyWith(processingFilter: EventProcessingFilter.unclaimed),
+        1,
+        1,
+      );
+      expect(open.total, 1);
+      expect(open.records.single.id, 'open');
+      expect(open.records.single.statusLabel, '待认领');
+      final emergency = await gateway.fetchPage(
+        filters.copyWith(severity: 'emergency'),
+        1,
+        1,
+      );
+      expect(emergency.total, 1);
+      expect(emergency.records.single.id, 'sos');
+    },
+  );
+  test(
     'real login uses native protocol and permissions, never wildcard or fake admin',
     () async {
       final seen = <RequestOptions>[];

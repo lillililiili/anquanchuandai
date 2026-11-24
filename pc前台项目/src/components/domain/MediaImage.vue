@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from "vue";
+import { loadSplitMedia } from '@/lib/split-media-file';
 import { blobGet } from "@/lib/files";
 import { mediaUrl } from '@/lib/helmet-media';
 import { mediaPreviewKey } from '@/lib/media-preview-source';
@@ -30,6 +31,11 @@ async function load() {
   loadedKey = mediaPreviewKey(media);
   if (!media) {
     src.value = "";
+    return;
+  }
+  if (media.source === 'SPLIT_HELMET' && media.url) {
+    if (String(media.kind).toLowerCase() === 'video') { error.value = '打开预览查看设备录像'; return; }
+    try { const blob = await loadSplitMedia(media); if (operation !== generation) return; objectUrl = URL.createObjectURL(blob); src.value = objectUrl; } catch (failure) { if (operation === generation) error.value = failure.message; }
     return;
   }
   if (media.url) {

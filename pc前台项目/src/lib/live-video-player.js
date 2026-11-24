@@ -1,3 +1,4 @@
+import { openZlmLive } from './zlm-session.js';
 import { mediaUrl, openWhep, mediaPlaybackError, mediaPlaybackRejection } from './helmet-media.js';
 
 // Only the known authorization parameter is ephemeral. Other query parameters
@@ -13,7 +14,7 @@ function sourceIdentity(live) {
 }
 
 export function createLiveVideoPlayer(video, {
-  open = openWhep, loadHls = () => import('hls.js'), onChange = () => {},
+  open = openWhep, openSplit = openZlmLive, loadHls = () => import('hls.js'), onChange = () => {},
   now = Date.now, schedule = setTimeout, cancel = clearTimeout,
   visible = () => typeof document === 'undefined' || !document.hidden,
 } = {}) {
@@ -87,7 +88,11 @@ export function createLiveVideoPlayer(video, {
       if (!url) throw mediaPlaybackError('暂无可用直播地址');
       if (live.expiresAt && Date.parse(live.expiresAt) <= now()) throw mediaPlaybackError('直播授权已过期，请刷新后重新播放');
       const protocol = String(live.protocol || '').toUpperCase();
-      if (protocol === 'WHEP') {
+      if (protocol === 'ZLM_WEBRTC') {
+        const opened = await openSplit(live, video, { signal: controller.signal, onState: status });
+        if (!active()) { await opened.close(); return; }
+        session = opened;
+      } else if (protocol === 'WHEP') {
         const opened = await open(live, video, { signal: controller.signal, onState: status });
         if (!active()) { await opened.close(); return; }
         session = opened;

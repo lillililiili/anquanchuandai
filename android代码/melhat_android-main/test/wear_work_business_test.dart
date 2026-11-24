@@ -197,6 +197,7 @@ void main() {
         store: store,
         scopeKey: 'test',
         actor: _reviewer,
+        initialPersonId: 'person-1',
         initialTaskId: 'old-deep-link',
         workBusinessEnabled: () => enabled,
       );
@@ -398,30 +399,29 @@ void main() {
   });
 
   testWidgets(
-    'closing during task filter debounce drops hidden condition and task wording',
+    'closing work mode removes an explicit task scope from the event list',
     (tester) async {
       final session = await launchAcceptance(tester, AcceptanceBackend());
-      await openAcceptance(tester, '/events?status=all');
-      final toggle = find.byKey(const ValueKey('inline-filter-toggle'));
-      if (toggle.evaluate().isNotEmpty) await tapAcceptance(tester, toggle);
-      await tapAcceptance(tester, find.byKey(const ValueKey('filter-more')));
-      final taskField = find.byKey(const ValueKey('filter-field-task-0'));
-      await tester.ensureVisible(taskField);
-      await tester.enterText(taskField, '987654321');
+      final router = GoRouter.of(tester.element(find.byType(NavigationBar)));
+      router.go('/events?taskId=987654321&status=all');
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.queryParameters['taskId'],
+        '987654321',
+      );
       session.api.shared.applyBusinessConfig({
         'version': 2,
         'workBusinessEnabled': false,
       });
       await tester.pumpAndSettle();
-      expect(taskField, findsNothing);
-      expect(find.textContaining('987654321'), findsNothing);
-      expect(find.textContaining('人员、任务'), findsNothing);
-      final newToggle = find.byKey(const ValueKey('inline-filter-toggle'));
-      if (newToggle.evaluate().isNotEmpty) {
-        await tapAcceptance(tester, newToggle);
-      }
-      expect(find.textContaining('人员、任务'), findsNothing);
-      expect(find.text('补充筛选条件'), findsOneWidget);
+      expect(
+        router.routeInformationProvider.value.uri.queryParameters.containsKey(
+          'taskId',
+        ),
+        isFalse,
+      );
+      expect(find.text('事件列表'), findsOneWidget);
+      expect(find.text('事件筛选'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

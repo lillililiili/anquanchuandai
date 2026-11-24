@@ -2,12 +2,6 @@ import '../core.dart';
 import '../device_status.dart';
 import '../work_business.dart';
 
-String personStatusLabel(Object? value) => switch (value?.toString()) {
-  '0' => '在职',
-  '1' => '停用',
-  _ => '未知',
-};
-
 String deviceTypeLabel(Object? value) => switch (value?.toString()) {
   'helmet' => '安全帽',
   'belt' => '安全带',
@@ -15,15 +9,7 @@ String deviceTypeLabel(Object? value) => switch (value?.toString()) {
   _ => '未知类型',
 };
 
-String assetStatusLabel(Object? value) => switch (value?.toString()) {
-  'unassigned' => '未分配',
-  'in_stock' => '在库',
-  'issued' => '已领用',
-  'maintenance' => '维修中',
-  'disabled' => '已停用',
-  'scrapped' => '已报废',
-  _ => '未知',
-};
+const deviceRelationLabels = {'ASSIGNED': '已领用', 'UNASSIGNED': '未领用'};
 
 String taskStatusLabel(Object? value) => switch (value?.toString()) {
   'draft' => '草稿',

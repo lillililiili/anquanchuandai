@@ -33,6 +33,20 @@ abstract interface class CommunicationsGateway {
 
 enum WearRtcPhase { idle, preparing, joining, localJoined, demo, failed }
 
+abstract interface class BatchCommunicationsGateway {
+  Future<StartedCall> startBatchCall({
+    required List<CommunicationDevice> devices,
+    required String kind,
+    required bool video,
+    required String idempotencyKey,
+    String? eventId,
+  });
+}
+
+abstract interface class PeerEvidenceGateway {
+  Future<CallSession> markPeersJoined(String callId, List<String> deviceIds);
+}
+
 abstract interface class CallCleanupGateway {
   Future<CallSession> Function() Function(String) captureCallCleanup();
 }
@@ -108,7 +122,11 @@ class CommunicationsController extends ChangeNotifier {
       return call.statusLabel;
     }
     if (rtcPhase == WearRtcPhase.failed) return '本端连接失败';
-    if (isConnected) return '语音连接已建立';
+    if (isConnected) {
+      return call.skipped.isEmpty
+          ? (rtcProtocol == 'ZLM_WEBRTC' ? '媒体连接已建立' : '语音连接已建立')
+          : '部分设备已连接（${call.skipped.length} 顶未接通）';
+    }
     if (call.status == WearCallStatus.answered ||
         call.status == WearCallStatus.connected) {
       return '设备已应答，等待双方接通';
@@ -216,6 +234,7 @@ class CommunicationsController extends ChangeNotifier {
     bool video = false,
     String? eventId,
     String kind = 'single',
+    List<CommunicationDevice> targets = const [],
   }) async {
     if (recoveringCalls) return;
     if (_sessionOperationPending || busy || hasActiveOwnedSession) {
@@ -243,6 +262,19 @@ class CommunicationsController extends ChangeNotifier {
       _notify();
       return;
     }
+    if (targets.isNotEmpty &&
+        (targets.length > 8 ||
+            targets.map((d) => d.id).toSet().length != targets.length ||
+            targets.any(
+              (d) =>
+                  d.source != 'SPLIT_HELMET' ||
+                  (video ? !policy.canStartVideo(d) : !policy.canStartVoice(d)),
+            ) ||
+            gateway is! BatchCommunicationsGateway)) {
+      statusMessage = '群呼需选择最多 8 顶在线且已领用的分体式安全帽，不能混选其他协议';
+      _notify();
+      return;
+    }
 
     if (activeCall?.isTerminal == true) {
       activeCall = null;
@@ -259,21 +291,31 @@ class CommunicationsController extends ChangeNotifier {
       rtcPhase = WearRtcPhase.preparing;
       final engine = rtc;
       if (engine is WearRtcPreparation) {
-        await (engine as WearRtcPreparation).prepare(video: video);
+        await (engine as WearRtcPreparation).prepare(
+          video: video && device.source != 'SPLIT_HELMET',
+        );
       }
       if (!_acceptsOperation(operation)) return;
       rtcPhase = WearRtcPhase.idle;
       statusMessage = '麦克风已准备，正在创建通话…';
       _notify();
       dialRequested = true;
-      final started = await gateway.startCall(
-        deviceId: device.id,
-        recipient: device.equipmentContext,
-        eventId: eventId,
-        kind: kind,
-        video: video,
-        idempotencyKey: _idempotencyKey('call'),
-      );
+      final started = targets.length > 1
+          ? await (gateway as BatchCommunicationsGateway).startBatchCall(
+              devices: targets,
+              kind: kind,
+              video: video,
+              idempotencyKey: _idempotencyKey('call'),
+              eventId: eventId,
+            )
+          : await gateway.startCall(
+              deviceId: device.id,
+              recipient: device.equipmentContext,
+              eventId: eventId,
+              kind: kind,
+              video: video,
+              idempotencyKey: _idempotencyKey('call'),
+            );
       created = started.session;
       if (started.session.demo ||
           (started.credentials != null && policy.canJoin(started.session))) {
@@ -369,7 +411,9 @@ class CommunicationsController extends ChangeNotifier {
       _notify();
       final engine = rtc;
       if (engine is WearRtcPreparation) {
-        await (engine as WearRtcPreparation).prepare(video: session.video);
+        await (engine as WearRtcPreparation).prepare(
+          video: session.video && session.protocol != 'ZLM_WEBRTC',
+        );
       }
       if (!_acceptsCallOperation(operation, session.id)) return;
       final credentials = await gateway.credentialsFor(session.id);
@@ -455,8 +499,16 @@ class CommunicationsController extends ChangeNotifier {
           statusMessage = '语音服务已注册，等待本端会话确认…';
           _notify();
         },
-        onLocalJoined: () =>
-            unawaited(_markLocalJoined(operation, session.id, credentials.uid)),
+        onLocalJoined: () => unawaited(
+          _markLocalJoined(
+            operation,
+            session.id,
+            credentials.uid,
+            peers: credentials.protocol == 'ZLM_WEBRTC'
+                ? credentials.sessions.map((s) => s.deviceId).toList()
+                : const [],
+          ),
+        ),
         onRemoteJoined: (uid) => _onRemoteJoined(operation, session.id, uid),
         onRemoteLeft: (uid) => _onRemoteLeft(operation, session.id, uid),
         onTokenExpiring: () => unawaited(_refreshToken(operation, session.id)),
@@ -475,14 +527,24 @@ class CommunicationsController extends ChangeNotifier {
     }
   }
 
-  Future<void> _markLocalJoined(int operation, String callId, int uid) async {
+  Future<void> _markLocalJoined(
+    int operation,
+    String callId,
+    int uid, {
+    List<String> peers = const [],
+  }) async {
     if (!_acceptsCallOperation(operation, callId)) return;
     _rtcActive = true;
     rtcPhase = WearRtcPhase.localJoined;
     statusMessage = isSip ? '本端信令已确认，等待设备与媒体连接…' : '本端已加入，等待服务器确认…';
     _notify();
     try {
-      final server = await gateway.markJoined(callId, uid.toString());
+      final server = peers.isNotEmpty && gateway is PeerEvidenceGateway
+          ? await (gateway as PeerEvidenceGateway).markPeersJoined(
+              callId,
+              peers,
+            )
+          : await gateway.markJoined(callId, uid.toString());
       if (!_acceptsCallOperation(operation, callId)) return;
       _applyServerUpdate(server);
       _serverStateFresh = true;
@@ -708,19 +770,17 @@ class CommunicationsController extends ChangeNotifier {
   }
 
   void setForeground(bool foreground) {
-    if (_disposed) return;
+    if (_disposed || _foreground == foreground) return;
     _foreground = foreground;
+    final call = activeCall;
+    if (call == null || call.isTerminal) return;
+
     _serverStateFresh = false;
-    if (foreground) {
-      statusMessage = '正在校准通话状态…';
-      _schedulePolling();
-      unawaited(refreshActiveCall());
-    } else {
-      _pollTimer?.cancel();
-      if (activeCall != null && !activeCall!.isTerminal) {
-        statusMessage = '应用位于后台，音视频状态待返回前台确认';
-      }
+    if (!busy && rtcPhase != WearRtcPhase.failed) {
+      statusMessage = '设备通话状态待确认';
     }
+    _schedulePolling();
+    if (foreground) unawaited(refreshActiveCall());
     _notify();
   }
 
@@ -924,7 +984,7 @@ class CommunicationsController extends ChangeNotifier {
           : !_rtcActive || rtcPhase != WearRtcPhase.localJoined
           ? '服务器已确认，RTC 尚未就绪'
           : remotePresent
-          ? isSip
+          ? isSip || rtcProtocol == 'ZLM_WEBRTC'
                 ? '语音连接已建立，双向声音需现场确认'
                 : '已接通'
           : '服务器已确认，等待设备加入…';

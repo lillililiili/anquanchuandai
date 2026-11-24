@@ -83,13 +83,15 @@ public class WearableBusinessPolicy {
     private JSONObject features(JSONObject device,Set<String> verified) {
         DeviceFeatureConfiguration.applyMappings(device);
         String source=text(device,"source");
-        boolean hat="DIRECT_HELMET".equals(source),belt="DIRECT_BELT".equals(source),watch="DEMO_WATCH".equals(source);
+        boolean split="SPLIT_HELMET".equals(source),hat="DIRECT_HELMET".equals(source)||split,belt="DIRECT_BELT".equals(source),watch="DEMO_WATCH".equals(source);
         boolean online=device.getBooleanValue("online")||"ONLINE".equals(device.getString("communication"));
         JSONObject result=new JSONObject();
-        for(String key:Arrays.asList("battery","wear","hooks","height","location","alarm","sos","video","videoCall","photo","recording","voice","broadcast","vitals","doubleRelease","lowHook","proximity","temperature","silent","rtk","indoorLocation")) {
+        for(String key:Arrays.asList("battery","wear","hooks","height","location","alarm","sos","video","videoCall","photo","recording","voice","broadcast","vitals","doubleRelease","lowHook","proximity","temperature","silent","rtk","indoorLocation","pressure","storage")) {
             boolean base=Arrays.asList("battery","wear","location","alarm","sos").contains(key);
             boolean supported=(hat||belt)&&base || hat&&Arrays.asList("video","videoCall","photo","recording","voice","broadcast").contains(key)
-                    || belt&&Arrays.asList("hooks","height").contains(key) || watch&&Arrays.asList("battery","vitals").contains(key);
+                    || belt&&Arrays.asList("hooks","height").contains(key) || watch&&Arrays.asList("battery","vitals").contains(key)
+                    || split&&Arrays.asList("pressure","temperature","storage").contains(key);
+            if(split&&"wear".equals(key))supported=false;
             boolean optional=belt&&DeviceFeatureConfiguration.BELT_OPTIONS.contains(key);
             JSONObject configured=DeviceFeatureConfiguration.entry(device,key);
             String declared=configured==null?"DEFAULT":configured.getString("support");
@@ -108,6 +110,8 @@ public class WearableBusinessPolicy {
             if("videoCall".equals(key))integrated=hat&&device.getBooleanValue("voiceAvailable")&&device.getBooleanValue("mediaAvailable");
             if("broadcast".equals(key))integrated=hat&&device.getBooleanValue("broadcastAvailable");
             boolean fresh=online;
+            if(split&&Arrays.asList("battery","location","pressure","temperature","storage").contains(key))
+                fresh=online&&"CURRENT".equals(device.getString(key+"Freshness"));
             if(belt&&Arrays.asList("wear","hooks","height").contains(key))fresh=online&&"CURRENT".equals(device.getString("telemetryFreshness"));
             if(configured!=null&&belt) {
                 if("wear".equals(key))fresh=fresh&&device.get("worn") instanceof Boolean;
@@ -128,7 +132,7 @@ public class WearableBusinessPolicy {
         return result;
     }
     private static boolean runtimeOperation(String source,String feature) {
-        return "DIRECT_HELMET".equals(source)&&Arrays.asList("video","photo","recording","voice","videoCall","broadcast").contains(feature);
+        return Arrays.asList("DIRECT_HELMET","SPLIT_HELMET").contains(source)&&Arrays.asList("video","photo","recording","voice","videoCall","broadcast").contains(feature);
     }
     private static String mediaUnavailable(JSONObject device,String feature,boolean online,boolean connected) {
         if(!online)return "设备离线";

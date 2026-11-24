@@ -31,10 +31,14 @@ public class GuardianIngest {
         return captureDevice(deviceId,false);
     }
     public JSONObject captureBelt(String deviceId) {return captureDevice(deviceId,true);}
+    public JSONObject captureSplit(String deviceId) {return captureDevice(deviceId,false,"SPLIT_HELMET");}
     private JSONObject captureDevice(String deviceId,boolean isBelt) {
+        return captureDevice(deviceId,isBelt,isBelt?"DIRECT_BELT":"DIRECT_HELMET");
+    }
+    private JSONObject captureDevice(String deviceId,boolean isBelt,String source) {
         JSONObject state = store.snapshot();
         Helmet h = isBelt?belt(state,deviceId):helmet(state,deviceId);
-        if(h==null || !(isBelt?"DIRECT_BELT":"DIRECT_HELMET").equals(h.device.getString("source")))
+        if(h==null || !source.equals(h.device.getString("source")))
             throw new IllegalArgumentException("设备登记或领用已变化");
         JSONObject binding=null,previousBinding=null;
         for(Object raw:WearableModel.rows(state,"bindings")) {
@@ -61,20 +65,21 @@ public class GuardianIngest {
             JSONObject fix=WearableModel.copy(point);
             fix.remove("device");fix.remove("person");fix.remove("work");
             fix.put("lng",point.get("longitude"));fix.put("lat",point.get("latitude"));
-            fix.put("time",point.get("receivedAt"));fix.put("inside",false);
+            String observed=point.getString("locationReportedAt");if(observed==null)observed=point.getString("receivedAt");
+            fix.put("time",observed);fix.put("inside",false);
             fix.put("locationTimeBasis",PersonLocationProjection.timeBasis(point));
             JSONArray history=array(state,"locations");history.add(0,fix);
             // SQL is the full history. Keep only a bounded recent view in the shared snapshot.
             int count=0;
-            for(int i=0;i<history.size();i++) if("direct-helmet".equals(history.getJSONObject(i).getString("source")) && ++count>2000) history.remove(i--);
-            if(h.person!=null && PersonLocationProjection.sameBinding(state,h.deviceId,point,point.getString("receivedAt"))) {
+            for(int i=0;i<history.size();i++) if(java.util.Arrays.asList("direct-helmet","split-helmet").contains(history.getJSONObject(i).getString("source")) && ++count>2000) history.remove(i--);
+            if(h.person!=null && PersonLocationProjection.sameBinding(state,h.deviceId,point,observed)) {
                 String previous=h.person.getString("locationReportedAt");
-                Date previousTime=parseTime(previous), current=parseTime(point.getString("receivedAt"));
+                Date previousTime=parseTime(previous), current=parseTime(observed);
                 if(current!=null && (previousTime==null || !current.before(previousTime))) {
                     noteGeographicFences(state,h,point,current);
                     for(String key:new String[]{"longitude","latitude","coordinateSystem","locationSource","accuracyMeters","locationQuality"}) h.person.put(key,point.get(key));
                     h.person.put("locationDeviceId",h.deviceId);
-                    h.person.put("locationReportedAt",point.get("receivedAt"));
+                    h.person.put("locationReportedAt",observed);
                     h.person.put("locationTimeBasis",PersonLocationProjection.timeBasis(point));
                     h.person.put("locationFreshness","CURRENT");
                     h.person.put("locationValid","valid".equals(point.getString("locationQuality")));
@@ -106,13 +111,17 @@ public class GuardianIngest {
             JSONObject device=envelope.getJSONObject("device"), person=envelope.getJSONObject("person");
             if(device==null) throw new IllegalArgumentException("安全帽事件缺少归属快照");
             Helmet h=new Helmet(device,envelope.getString("personId"),envelope.getString("personName"),envelope.getString("station"),person);
-            boolean sos="ca_sip_sos".equals(envelope.getString("act"));
+            boolean split="split-helmet".equals(envelope.getString("protocol"));
+            boolean sos="ca_sip_sos".equals(envelope.getString("act"))||split&&"sos".equals(envelope.getString("rawType"));
             String type=envelope.getString("rawType");
-            Date when=parseTime(envelope.getString("receivedAt"));
-            addEvent(state,h,when,sos?"安全帽发起 SOS":"安全帽告警"+(type==null?"":"（"+type+"）"),
+            Date when=parseTime(split?envelope.getString("observedAt"):envelope.getString("receivedAt"));
+            if(when==null)when=parseTime(envelope.getString("receivedAt"));
+            String title=sos?"安全帽发起 SOS":split&&"removal".equals(type)?"分体帽脱帽告警":split&&"fall".equals(type)?"分体帽跌落告警":"安全帽告警"+(type==null?"":"（"+type+"）");
+            addEvent(state,h,when,title,
                     sos?"人员求助":"设备通信","helmet-event:"+eventId,type);
             JSONObject event=WearableModel.find(state,"events",eventId);
-            event.put("protocol","direct-helmet");
+            event.put("protocol",split?"split-helmet":"direct-helmet");
+            if(split){event.put("observedAt",envelope.get("observedAt"));event.put("rawPayload",envelope.get("payload"));event.put("deviceReportedAt",envelope.get("deviceReportedAt"));}
             event.put("sourceRecordType",envelope.get("sourceRecordType"));event.put("sourceRecordId",envelope.get("sourceRecordId"));
             event.put("eventGroupKey",envelope.get("eventGroupKey"));
             event.put("bindingId",envelope.get("bindingId"));
@@ -137,7 +146,9 @@ public class GuardianIngest {
             JSONObject report=(JSONObject)raw;
             if(java.util.Objects.equals(source,report.getString("type")) && java.util.Objects.equals(id,report.getLong("id"))) return false;
         }
-        reports.add(WearableModel.object("type",source,"id",id,"receivedAt",envelope.get("receivedAt")));
+        JSONObject report=WearableModel.object("type",source,"id",id,"receivedAt",envelope.get("receivedAt"));
+        if("split-helmet".equals(envelope.getString("protocol"))){report.put("payload",envelope.get("payload"));report.put("observedAt",envelope.get("observedAt"));}
+        reports.add(report);
         event.put("reportCount",reports.size());
         Date previous=parseTime(event.getString("lastReportedAt")), current=parseTime(envelope.getString("receivedAt"));
         if(previous==null || current!=null&&!current.before(previous)) event.put("lastReportedAt",envelope.get("receivedAt"));

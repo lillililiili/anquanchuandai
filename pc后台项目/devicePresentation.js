@@ -19,12 +19,15 @@ export function verifiedDeviceSummary(device) {
   if (device?.type === 'WATCH' && device.source === 'DEMO_WATCH') return {
     capabilities: '模拟展示', worn: '模拟数据', battery: '模拟数据（非设备上报）',
   }
-  const real = ['DIRECT_HELMET', 'DIRECT_BELT', 'PLATFORM'].includes(device?.source)
+  const real = ['DIRECT_HELMET', 'SPLIT_HELMET', 'DIRECT_BELT', 'PLATFORM'].includes(device?.source)
   const observed = Date.parse(device?.sourceTime || '')
   const age = serverNow() - observed
   const current = real && device.freshness === 'CURRENT' && Number.isFinite(age) && age >= 0 && age <= 300000
   const actions = Array.isArray(device?.capabilities) ? device.capabilities : device?.capabilities?.actions
-  const fieldCurrent = field => current && (device.source !== 'DIRECT_HELMET' && device[`${field}Freshness`] == null || device[`${field}Freshness`] === 'CURRENT')
+  const fieldCurrent = field => {
+    if (device?.source === 'SPLIT_HELMET') { const age = serverNow() - Date.parse(device[`${field}ReportedAt`] || ''); return device[`${field}Freshness`] === 'CURRENT' && Number.isFinite(age) && age >= 0 && age <= 300000 }
+    return current && (device.source !== 'DIRECT_HELMET' && device[`${field}Freshness`] == null || device[`${field}Freshness`] === 'CURRENT')
+  }
   return {
     capabilities: device?.featureStates ? supportedFeatures(device).map(key => featureLabel(device, key)).join('、') || '无已声明能力' : Array.isArray(actions) && actions.length ? [...new Set(actions.map(action => ACTIONS[action]).filter(Boolean))].join('、') || '业务能力待核验' : '业务能力待核验',
     worn: device?.featureStates && !featureState(device, 'wear').verified ? featureState(device, 'wear').reason : !fieldCurrent('isWeared') ? '未知（暂无最新上报）' : device.worn === true ? '已佩戴' : device.worn === false ? '未佩戴' : '待确认',

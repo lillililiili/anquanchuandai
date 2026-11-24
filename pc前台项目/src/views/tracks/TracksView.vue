@@ -16,6 +16,7 @@ import PlantMap from "@/components/domain/PlantMap.vue";
 import { db, locationApi, guardianReady } from "@/mock/runtime";
 import { beijingDate, trackSegments, trackBreakLabel, trackQueryContext } from "@/lib/location";
 import { formatBeijingDateTime } from '@/lib/date-time';
+import { deviceSourceLabel } from '@/lib/device-telemetry';
 import { filtersOf, session } from "@/stores/session";
 import { toast } from "@/stores/notify";
 import { revision } from "@/lib/queries";
@@ -48,7 +49,7 @@ const { formRef, errors, validate } = useFieldErrors(() => ({ ...draft }));
 
 const deviceOptions = computed(() => {
   revision();
-  return db.state.devices.filter(d=>d.station===session.station && ['DIRECT_HELMET','DIRECT_BELT'].includes(d.source)).map(d=>[d.id,`${d.type==='B'?'安全带':'安全帽'} / ${d.deviceNumber || d.id}`]);
+  return db.state.devices.filter(d=>d.station===session.station && ['DIRECT_HELMET','SPLIT_HELMET','DIRECT_BELT'].includes(d.source)).map(d=>[d.id,`${deviceSourceLabel(d.source)} / ${d.deviceNumber || d.id}`]);
 });
 const personOptions=computed(()=>{revision();return db.state.people.filter(p=>p.station===session.station && p.source!=='DEMO_WATCH').map(p=>[p.id,p.name+(p.active===false?'（已停用）':'')]);});
 
@@ -180,10 +181,11 @@ function exportTracks() {
   }
   previewCsv(
     "历史轨迹-" + (filtersOf('tracks').mode === 'device' ? filtersOf('tracks').deviceId : session.person) + ".csv",
-    ["人员", "历史关联设备", "历史领用编号", "时间（北京时间）", "经度", "纬度", "坐标系", "定位来源", "时间依据", "设备采集时间", "平台接收时间", "分段起点", "分段原因"],
+    ["人员", "历史关联设备", "设备来源", "历史领用编号", "时间（北京时间）", "经度", "纬度", "坐标系", "定位来源", "时间依据", "设备采集时间", "平台接收时间", "分段起点", "分段原因"],
     session.trackPoints.map((point) => [
       db.person(point.personId)?.name || '未关联人员',
       point.deviceId,
+      deviceSourceLabel(point.source || db.device(point.deviceId)?.source),
       point.bindingId || point.assignmentId || '未提供',
       formatBeijingDateTime(point.timeAt),
       point.longitude,
@@ -280,7 +282,7 @@ function exportTracks() {
             />
             <span>{{ currentPoint ? formatBeijingDateTime(currentPoint.timeAt) : trackWindow.date + ' --:--:--' }}</span>
             <span class="spacer"></span>
-            <small>当前采样点信息　{{ currentPoint ? currentPoint.deviceId : "—" }}</small>
+            <small>当前采样点信息　{{ currentPoint ? currentPoint.deviceId : "—" }}<template v-if="currentPoint"> · {{ deviceSourceLabel(currentPoint.source || db.device(currentPoint.deviceId)?.source) }}</template></small>
             <small v-if="currentPoint">时间依据：{{ currentPoint.locationTimeBasis === 'DEVICE_COLLECTED_AT' || (!currentPoint.locationTimeBasis && currentPoint.collectedAt) ? '设备采集时间' : '平台接收时间，采集时间未确认' }}；设备采集时间：{{ currentPoint.collectedAt ? formatBeijingDateTime(currentPoint.collectedAt) : '未确认' }}</small>
           </div>
         </div>

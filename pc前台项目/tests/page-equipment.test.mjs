@@ -1,3 +1,4 @@
+import * as splitHelmet from '../../shared/split-helmet.mjs';
 import * as workBusiness from '../src/lib/work-business.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,6 +23,8 @@ import * as testSite from '../../shared/test-site.mjs';
 import * as vitalValues from '../src/views/person/vital-values.js';
 import * as navigation from '../src/components/layout/navigation.js';
 import * as beltAlarmNames from '../../shared/belt-alarm-names.mjs';
+import * as sampleData from '../src/lib/sample-data.js';
+import * as helmetCalls from '../src/lib/helmet-device-call.js';
 
 function fixture(type = 'B', online = true) {
   const person = { id: 'P1', name: '现场人员', active: true, station: 'S1', team: '一班' };
@@ -42,14 +45,20 @@ function stub(name) {
   const component = Vue.defineComponent({ name, props: ['title','text','rows'], setup(props, { slots, attrs }) { return () => Vue.h(name === 'AppButton' ? 'button' : 'section', { ...attrs, 'data-component': name }, [props.title || props.text, slots.title?.(), slots.extra?.(), slots.actions?.(), slots.default?.({ rows: props.rows || [] })]); } });
   componentCache.set(name, component); return component;
 }
-async function render(path, f, components = {}) {
+async function render(path, f, components = {}, props = {}) {
   const raw = await readFile(new URL(`../src/views/${path}`, import.meta.url), 'utf8');
   const { descriptor } = parse(raw, { filename: path });
   const code = compileScript(descriptor, { id: path, inlineTemplate: true, templateOptions: { ssr: true } }).content;
   const modules = {
+    '../../../../shared/split-helmet.mjs': splitHelmet, '@/stores/modal': { openModal() {} },
     '@/lib/work-business': workBusiness,
     vue: Vue, 'vue/server-renderer': SSR, 'vue-router': { useRoute: () => f.route },
-    '@/mock/runtime': { db: f.db, tick: Vue.ref(0) }, '@/mock/data': { typeNames: { H: '安全帽', B: '安全带', W: '手表' } },
+    '@/mock/runtime': { db: f.db, tick: Vue.ref(0), connection: Vue.ref({ status: 'online' }) }, '@/mock/data': { typeNames: { H: '安全帽', B: '安全带', W: '手表' } },
+    '@/lib/sample-data': sampleData, '@/lib/helmet-device-call': helmetCalls,
+    '@/lib/auth': { authFetch() { assert.fail('isolated rendering must never request a backend'); }, captureAuthRequest() {}, onAuthCleared: () => () => {} },
+    '@/lib/split-group-call': { createSplitGroupCall: () => ({ start() { assert.fail('render must not place a call'); }, end() {}, revoke() {}, getState: () => ({ phase: 'idle', devices: {} }) }) },
+    '@/lib/helmet-media': { COMMAND_LABELS: {}, COMMAND_STATUSES: {}, createHelmetMediaApi: () => ({ read: async () => ({ recordings: [], commands: [] }), command() { assert.fail('render must not command a device'); } }) },
+    '@/lib/location': { beijingDate: () => '2026-11-16' },
     '@/lib/person-equipment': equipment, '@/lib/device-telemetry': telemetry, '@/lib/external-status': external, '@/lib/date-time': dateTime,
     '../../../../shared/device-features.mjs': features, '@/lib/person-duty': { personDutyPresentation }, './work-source': source, './video-wall': videoWall,
     '@/lib/queries': f.queries, '@/stores/session': { session: f.session, filtersOf: key => f.session.filters[key] || {} },
@@ -69,10 +78,31 @@ async function render(path, f, components = {}) {
     const binding = names.trim().startsWith('{') ? names.replace(/\bas\b/g, ':') : `{ default: ${names} }`;
     return `const ${binding} = modules[${JSON.stringify(from)}];\n`;
   }).replace('export default', 'return');
-  const component = new Function('modules', compiled)(modules);
-  const app = Vue.createSSRApp(component); app.component('UiIcon', stub('UiIcon'));
+  const component = new Function('modules', 'setInterval', 'clearInterval', compiled)(modules, () => 1, () => {});
+  const app = Vue.createSSRApp(component, props); app.component('UiIcon', stub('UiIcon'));
   return SSR.renderToString(app);
 }
+
+test('分体帽隔离组件显示独立遥测与设备媒体控制，离线状态不抹掉有效测量', async () => {
+  const f = fixture('H', false), reportedAt = new Date().toISOString();
+  Object.assign(f.device, { source: 'SPLIT_HELMET', communicationProtocol: 'ZLM_WEBRTC', battery: 64, batteryReportedAt: reportedAt, batteryFreshness: 'CURRENT', pressure: 101325, pressureReportedAt: reportedAt, pressureFreshness: 'CURRENT', temperature: 25.3, temperatureReportedAt: reportedAt, temperatureFreshness: 'CURRENT', storageTotal: '32G' });
+  f.device.featureStates.battery = { supported: true, verified: true, available: false, reason: '设备离线' };
+  const telemetryHtml = await render('../components/domain/DeviceStrip.vue', f, {}, { personId: 'P1', large: true });
+  assert.match(telemetryHtml, /64%/); assert.match(telemetryHtml, /101325（单位未提供）/); assert.match(telemetryHtml, /25.3（单位未提供）/); assert.match(telemetryHtml, /32G（设备原始值）/);
+  const mediaHtml = await render('materials/DeviceRecordings.vue', f, {}, { personId: 'P1' });
+  assert.match(mediaHtml, /设备抓拍/); assert.match(mediaHtml, /开始设备录像/); assert.match(mediaHtml, /设置水印/); assert.match(mediaHtml, /查询设备文件/);
+  assert.doesNotMatch(mediaHtml, /上传选中录像|日期（北京时间）/);
+  assert.match(mediaHtml.replace(/<!--[\s\S]*?-->/g, ''), /disabled[^>]*>[^<]*开始设备录像/);
+});
+
+test('多帽调度隔离渲染拒绝混合协议并保留逐帽播放和对讲说明', async () => {
+  const f = fixture('H');
+  const html = await render('dispatch/SplitGroupCall.vue', f, {}, { members: ['P1', 'P2'] });
+  assert.match(html, /多帽调度仅支持同一厂站的分体帽/); assert.match(html, /最多 8 顶分体帽/);
+  const buttons = html.replace(/<!--[\s\S]*?-->/g, '');
+  assert.match(buttons, /disabled[^>]*>[^<]*多帽视频对讲/);
+  assert.match(buttons, /disabled[^>]*>[^<]*仅语音群呼/);
+});
 
 test('关闭作业业务的页面不展示作业与外部关联，旧筛选不隐藏设备监看和待办事件', async () => {
   for (const page of ['overview/OverviewView.vue', 'personnel/PersonnelView.vue', 'person/PersonView.vue', 'video/VideoView.vue', 'location/LocationView.vue', 'alarms/AlarmsView.vue', 'event/EventView.vue', 'statistics/StatisticsView.vue']) {
@@ -326,6 +356,7 @@ test('设备录像查询使用实际功能与领用上下文，不受旧遥测�
   const { descriptor } = parse(raw);
   const code = compileScript(descriptor, { id: 'recordings-contract' }).content;
   const modules = {
+    '../../../../shared/split-helmet.mjs': splitHelmet, '@/stores/modal': { openModal() {} },
     '@/lib/work-business': workBusiness,
     vue: { ...Vue, onUnmounted() {}, watch(selector, callback, options) { watchers.push(callback); if (options?.immediate) callback(); } },
     '@/mock/runtime': { db: f.db, tick, connection: Vue.ref({ status: 'online' }) }, '@/lib/auth': { authFetch() { assert.fail('test must never access a backend'); } },

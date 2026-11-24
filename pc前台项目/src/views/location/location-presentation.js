@@ -1,4 +1,5 @@
 import { validLonLat, beijingTime } from '../../lib/location.js';
+import { deviceSourceLabel } from '../../lib/device-telemetry.js';
 
 export function locationPresentation(db, person) {
   const current = db.locationValid(person.id);
@@ -8,6 +9,6 @@ export function locationPresentation(db, person) {
   return {
     deviceId: current ? db.locationDevice(person.id)?.id : location.deviceId || '历史来源待确认',
     summary: `${current ? '当前位置' : '最后已知位置 · 历史'}：${Number(location.longitude).toFixed(6)}, ${Number(location.latitude).toFixed(6)} · ${location.coordinateSystem || '坐标系待核实'}`,
-    detail: `${location.locationSource || '定位来源待确认'} · ${beijingTime(location.locationReportedAt)}${current ? '' : ' · 当前离线或位置失效，不绘制为当前位置'}`,
+    detail: `${deviceSourceLabel(current ? db.locationDevice(person.id)?.source : location.source || db.device?.(location.deviceId)?.source)} · ${location.locationSource || '定位来源待确认'} · ${beijingTime(location.locationReportedAt)}${current ? '' : ' · 当前离线或位置失效，不绘制为当前位置'}`,
   };
 }

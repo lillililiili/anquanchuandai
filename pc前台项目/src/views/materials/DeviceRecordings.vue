@@ -1,4 +1,7 @@
 <script setup>
+import { splitRecordingParameters, splitWatermarkParameters } from '../../../../shared/split-helmet.mjs';
+import { openModal } from '@/stores/modal';
+import MediaPreview from './MediaPreview.vue';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { formatBeijingDateTime } from '@/lib/date-time';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -14,7 +17,10 @@ const props = defineProps({ personId: { type: String, required: true } });
 const emit = defineEmits(['refresh', 'media']);
 const feature = computed(() => { tick.value; return personFeature(db, props.personId, 'recording'); });
 const photoFeature = computed(() => { tick.value; return personFeature(db, props.personId, 'photo'); });
-const device = computed(() => { tick.value; return db.currentDevices(props.personId).find(item => item.type === 'H' && item.active !== false && item.source === 'DIRECT_HELMET' && item.simulated !== true && item.demo !== true); });
+const device = computed(() => { tick.value; return db.currentDevices(props.personId).find(item => item.type === 'H' && item.active !== false && ['DIRECT_HELMET','SPLIT_HELMET'].includes(item.source) && item.simulated !== true && item.demo !== true); });
+const split = computed(() => device.value?.source === 'SPLIT_HELMET');
+const durationSeconds = ref(300), watermark = ref('');
+const activeRecording = computed(() => (data.value.commands || []).find(row => row.action === 'start_recording' && ['requesting','accepted','sent','acknowledged','pending','recording','stopping','unknown'].includes(String(row.status).toLowerCase())));
 const api = createHelmetMediaApi(authFetch);
 const data = ref({ recordings: [], commands: [] });
 const date = ref(beijingDate()), start = ref('00:00'), end = ref('23:59');
@@ -22,11 +28,12 @@ const selected = ref([]), busy = ref(''), error = ref(''), notice = ref('');
 let controller, timer, generation = 0, readSequence = 0;
 const retryKeys = new Map();
 const recordings = computed(() => Array.isArray(data.value.recordings) ? data.value.recordings : []);
-const commands = computed(() => (data.value.commands || []).filter(command => ['take_photo', 'list_recordings', 'upload_recording'].includes(command.action)));
+const commands = computed(() => (data.value.commands || []).filter(command => ['take_photo', 'list_recordings', 'upload_recording', ...(split.value ? ['start_recording','stop_recording','set_watermark'] : [])].includes(command.action)));
 const autoSyncTasks = computed(() => (Array.isArray(data.value.autoSyncTasks) ? data.value.autoSyncTasks : []).filter(task => task.deviceId === device.value?.id));
 const autoSyncStatus = task => ({ recording:'正在录像', queued:'等待上传', querying:'正在获取录像', waiting_device:'等待设备连接', uploading:'上传中', completed:'已上传', failed:'上传失败' })[String(task.status).toLowerCase()] || '同步状态待确认';
 const linkedFiles = command => (data.value.items || []).filter(item => item.status === 'ready' && item.requestId === command.id && item.deviceId === device.value?.id).length;
 const status = command => COMMAND_STATUSES[String(command.status).toLowerCase()] || '执行状态待确认';
+const commandLabel = action => split.value ? ({ take_photo: '设备抓拍', start_recording: '开始设备录像', stop_recording: '停止设备录像', list_recordings: '查询设备文件' })[action] || COMMAND_LABELS[action] : COMMAND_LABELS[action];
 const unavailable = computed(() => {
   if (connection.value.status !== 'online') return '业务连接中断，实时操作不可用';
   if (!device.value || feature.value.deviceId !== device.value.id) return '领用关系已变化，请刷新';
@@ -35,7 +42,11 @@ const unavailable = computed(() => {
 // These are implemented direct-helmet commands. The authorized per-person
 // feature already checks current assignment, device freshness and permissions;
 // the legacy telemetry capability list does not include file-query commands.
-const enabled = action => ['list_recordings', 'upload_recording'].includes(action) && !unavailable.value;
+const enabled = action => {
+  if (action === 'take_photo') return split.value && photoFeature.value.available && connection.value.status === 'online';
+  if (action === 'upload_recording' && split.value) return false;
+  return ['list_recordings','upload_recording', ...(split.value ? ['start_recording','stop_recording','set_watermark'] : [])].includes(action) && !unavailable.value;
+};
 async function read() {
   const current = generation, sequence = ++readSequence, deviceId = device.value?.id;
   if (!deviceId || !controller) return;
@@ -63,7 +74,7 @@ watch(() => { const f = feature.value, p = photoFeature.value, operator = db.sta
 onUnmounted(() => { generation++; controller?.abort(); clearInterval(timer); });
 async function send(action, parameters) {
   if (busy.value || !enabled(action)) return;
-  const current = generation, target = feature.value;
+  const current = generation, target = action === 'take_photo' ? photoFeature.value : feature.value;
   const retryId = JSON.stringify([target.deviceId, target.assignmentId, target.assignmentVersion, action, parameters]);
   const key = retryKeys.get(retryId) || crypto.randomUUID(); retryKeys.set(retryId, key);
   busy.value = action; error.value = ''; notice.value = '';
@@ -71,12 +82,21 @@ async function send(action, parameters) {
     const result = await api.command(target.deviceId, action, parameters, key, controller.signal, operationContext(target));
     if (current !== generation) return;
     if (!['unknown', 'requesting'].includes(String(result.status).toLowerCase())) retryKeys.delete(retryId);
-    notice.value = `${COMMAND_LABELS[action]}：${status(result)}。请以设备回执和返回文件为准。`;
+    notice.value = `${commandLabel(action)}：${status(result)}。请以设备回执和返回文件为准。`;
     await read(); emit('refresh');
   } catch (reason) { if (current === generation && reason.name !== 'AbortError') error.value = reason.message || '请求失败，可重试查询结果'; }
   finally { if (current === generation) busy.value = ''; }
 }
+function previewSplit(item) { openModal({ title: '分体帽设备文件', wide: true, view: MediaPreview, props: { file: { ...item, source: 'SPLIT_HELMET', deviceId: device.value.id } } }); }
+function recordSplit() {
+  try { const parameters = splitRecordingParameters(durationSeconds.value, watermark.value); void send('start_recording', parameters); } catch (reason) { error.value = reason.message; }
+}
+function watermarkSplit() {
+  try { const parameters = splitWatermarkParameters(watermark.value); if (!parameters.watermark) throw Error('请填写水印内容'); void send('set_watermark', parameters); } catch (reason) { error.value = reason.message; }
+}
+function photoSplit() { try { void send('take_photo', splitWatermarkParameters(watermark.value)); } catch (reason) { error.value = reason.message; } }
 function query() {
+  if (split.value) { void send('list_recordings', {}); return; }
   if (!date.value || !start.value || !end.value || start.value >= end.value) { error.value = '请选择有效日期，结束时间须晚于开始时间'; return; }
   void send('list_recordings', { startTime: `${date.value} ${start.value}:00`, endTime: `${date.value} ${end.value}:59` });
 }
@@ -89,7 +109,7 @@ function upload() {
 </script>
 
 <template>
-  <AppPanel v-if="device" title="设备影像与回执">
+  <AppPanel v-if="device" title="设备影像与回执" :aria-busy="!!busy">
     <p>{{ db.person(personId)?.name }} · {{ device.id }}</p>
     <DeviceLocalRecording :device="device" />
     <template v-if="autoSyncTasks.length">
@@ -102,24 +122,29 @@ function upload() {
         </li>
       </ul>
     </template>
+    <section v-if="split" class="split-media-controls" aria-label="分体帽影像操作">
+      <h3>分体帽拍照、录像与水印</h3><div class="recording-controls"><label>录像时长（秒）<input v-model.number="durationSeconds" type="number" min="1" max="86400" step="1" :disabled="!!busy" /></label><label>水印（最多 512 字）<input v-model="watermark" maxlength="512" :disabled="!!busy" placeholder="留空沿用设备水印" /></label></div>
+      <div class="recording-controls"><AppButton :disabled="!!busy || !enabled('take_photo')" @click="photoSplit">设备抓拍</AppButton><AppButton :disabled="!!busy || !!activeRecording || !enabled('start_recording')" @click="recordSplit">开始设备录像</AppButton><AppButton v-if="activeRecording" :disabled="!!busy || !enabled('stop_recording')" @click="send('stop_recording', { commandId: activeRecording.id })">停止设备录像</AppButton><AppButton :disabled="!!busy || !watermark.trim() || !enabled('set_watermark')" @click="watermarkSplit">设置水印</AppButton></div>
+      <p class="note">指令已发送不表示设备已完成；录像在设备中保存，文件可查询后再查看。</p>
+    </section>
     <template v-if="feature.supported">
-    <h3>设备内录像与上传</h3>
+    <h3>{{ split ? '分体帽设备文件' : '设备内录像与上传' }}</h3>
     <p>{{ unavailable || '按当前领用关系查询设备内文件' }}</p>
     <div class="recording-controls">
-      <label>日期（北京时间）<input v-model="date" type="date" /></label>
+      <template v-if="!split"><label>日期（北京时间）<input v-model="date" type="date" /></label>
       <label>开始<input v-model="start" type="time" /></label>
-      <label>结束<input v-model="end" type="time" /></label>
-      <AppButton :disabled="!!busy || !enabled('list_recordings')" :title="unavailable" @click="query">查询设备录像</AppButton>
+      <label>结束<input v-model="end" type="time" /></label></template>
+      <AppButton :disabled="!!busy || !enabled('list_recordings')" :title="unavailable" @click="query">{{ split ? '查询设备文件' : '查询设备录像' }}</AppButton>
     </div>
-    <label v-for="item in recordings" :key="item.fileName || item.name || item.id" class="recording-file"><input v-model="selected" type="checkbox" :value="item.fileName || item.name || item.id" :disabled="!feature.available" />{{ item.name || item.fileName || item.id }} · {{ formatBeijingDateTime(item.createdAt) }}</label>
+    <label v-for="item in recordings" :key="item.fileName || item.name || item.id" class="recording-file"><input v-if="!split" v-model="selected" type="checkbox" :value="item.fileName || item.name || item.id" :disabled="!feature.available" />{{ item.name || item.fileName || item.id }} · {{ formatBeijingDateTime(item.createdAt) }}<button v-if="split && item.url" type="button" class="btn small" @click="previewSplit(item)">查看文件</button></label>
     <p v-if="!recordings.length" class="muted">暂无设备返回的录像列表。查询后等待设备回执。</p>
-    <AppButton :disabled="!!busy || !selected.length || !enabled('upload_recording')" :title="unavailable" @click="upload">上传选中录像</AppButton>
-    <p class="note">查询和上传需要当前人员领用且设备在线；历史上传资料可在资料列表中查看。请求受理不表示文件已经上传。</p>
+    <AppButton v-if="!split" :disabled="!!busy || !selected.length || !enabled('upload_recording')" :title="unavailable" @click="upload">上传选中录像</AppButton>
+    <p class="note">{{ split ? '查询需要当前人员领用且设备在线；只展示服务确认可访问的文件，指令受理不表示文件已生成。' : '查询和上传需要当前人员领用且设备在线；历史上传资料可在资料列表中查看。请求受理不表示文件已经上传。' }}</p>
     </template>
     <p v-if="error" role="alert" class="form-error">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <h3>平台请求回执</h3>
-    <ul v-if="commands.length" class="media-command-list"><li v-for="command in commands" :key="command.id"><span>{{ COMMAND_LABELS[command.action] }} · {{ status(command) }} · {{ formatBeijingDateTime(command.createdAt) }}</span><small v-if="command.action === 'take_photo'">{{ linkedFiles(command) ? '已关联回传照片：' + linkedFiles(command) + ' 份' : '尚无关联回传照片；不表示设备未拍摄' }}</small></li></ul>
+    <ul v-if="commands.length" class="media-command-list"><li v-for="command in commands" :key="command.id"><span>{{ commandLabel(command.action) }} · {{ status(command) }} · {{ formatBeijingDateTime(command.createdAt) }}</span><small v-if="command.action === 'take_photo'">{{ linkedFiles(command) ? '已关联回传照片：' + linkedFiles(command) + ' 份' : '尚无关联回传照片；不表示设备未拍摄' }}</small></li></ul>
     <p v-else class="muted">暂无平台拍照、录像查询或上传请求。</p>
     <p class="note">平台请求结果与收到的文件分别记录。未关联平台请求的文件仍在现场资料中展示，不据此判断触发方式。</p>
   </AppPanel>

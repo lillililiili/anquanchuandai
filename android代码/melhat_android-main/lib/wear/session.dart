@@ -54,6 +54,18 @@ class WearSession extends ChangeNotifier {
   Future<void> Function()? terminateCall;
   final ValueNotifier<int> refreshTick = ValueNotifier(0);
   final ValueNotifier<bool> callActive = ValueNotifier(false);
+  bool _helmetCallActive = false, _phoneCallActive = false;
+  bool get helmetCallActive => _helmetCallActive;
+  void setHelmetCallActive(bool value) {
+    _helmetCallActive = value;
+    callActive.value = value || _phoneCallActive;
+  }
+
+  void setPhoneCallActive(bool value) {
+    _phoneCallActive = value;
+    callActive.value = value || _helmetCallActive;
+  }
+
   WearSession({Dio? dio, CredentialStore? credentials, bool? mock})
     : credentials =
           credentials ??
@@ -215,6 +227,8 @@ class WearSession extends ChangeNotifier {
   void _endSessionCall() {
     final ending = terminateCall?.call();
     if (ending != null) unawaited(ending.catchError((_) {}));
+    _helmetCallActive = false;
+    _phoneCallActive = false;
     callActive.value = false;
   }
 

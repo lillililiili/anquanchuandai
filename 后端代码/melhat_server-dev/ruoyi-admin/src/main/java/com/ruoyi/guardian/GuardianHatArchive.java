@@ -33,6 +33,11 @@ public class GuardianHatArchive {
         this.mapper = mapper;
     }
 
+    public void requireUnusedIdentity(String number) {
+        if (!mapper.findIncludingDeleted(number).isEmpty())
+            throw AdminQueryService.fail(409, "DEVICE_CONFLICT", "厂家设备编号已被其他安全帽接入占用，不能自动接管");
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void ensureUnassigned(String number) {
         ensureUnassigned(number, OWNER);
@@ -79,6 +84,8 @@ public class GuardianHatArchive {
                 throw new IllegalArgumentException("安全帽编号缺失");
             }
             if (!numbers.add(number)) throw new IllegalArgumentException("安全帽编号重复");
+            // Split helmets have their own registration/telemetry authority, not the legacy archive.
+            if ("SPLIT_HELMET".equals(device.getString("source"))) continue;
             upsert(state, device, number);
         }
         retireMissing(numbers);

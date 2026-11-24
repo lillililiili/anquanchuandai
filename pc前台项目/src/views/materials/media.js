@@ -1,3 +1,4 @@
+import { loadSplitMedia } from '@/lib/split-media-file';
 import { workBusinessEnabled } from '@/lib/work-business';
 import { db } from "@/mock/runtime";
 import { toast } from "@/stores/notify";
@@ -44,6 +45,12 @@ export async function downloadMedia(id) {
   if (!media) {
     toast("资料不存在", true);
     return;
+  }
+  if (media.source === 'SPLIT_HELMET' && media.url) {
+    const blob = await loadSplitMedia(media);
+    const extension = blob.type.startsWith('video/') ? 'mp4' : blob.type.startsWith('audio/') ? 'mp3' : 'jpg';
+    download(media.fileName || media.id + '.' + extension, blob);
+    toast('设备文件已下载'); return;
   }
   if (media.url) {
     const url=mediaDownloadUrl(media.url);

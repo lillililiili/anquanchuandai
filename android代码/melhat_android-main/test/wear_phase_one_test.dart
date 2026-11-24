@@ -78,6 +78,7 @@ void main() {
         expect(find.text('最终核验'), findsNothing);
         expect(find.byKey(const ValueKey('sos-join')), findsNothing);
         expect(find.byKey(const ValueKey('event-claim')), findsNothing);
+        await click(t, find.byKey(const ValueKey('event-open-observation')));
         await enter(t, 'event-observation', '位置在东门，请安排人员协助');
         await click(t, find.byKey(const ValueKey('event-observation-submit')));
         final row = (await t.runAsync(
@@ -123,6 +124,7 @@ void main() {
       );
       expect(ended['status'], 'handling');
       expect(jsonMap(ended['assistance'])['state'], 'ended');
+      await click(t, find.byKey(const ValueKey('event-open-verification')));
       await click(t, find.byKey(const ValueKey('verification-conclusion')));
       await click(t, find.text('需现场处理').last);
       await enter(t, 'verification-situation', '已到现场，人员安全');
@@ -186,11 +188,8 @@ void main() {
         await t.tap(find.byType(NavigationDestination).at(1));
         await t.pumpAndSettle();
         expect(find.text('视频群聊'), findsNothing);
-        // The member fixture has only a watch; unsupported voice is hidden.
-        expect(
-          find.text('设备语音'),
-          role == 'demo' ? findsOneWidget : findsNothing,
-        );
+        expect(find.text('手机呼叫'), findsOneWidget);
+        expect(find.text('安全帽呼叫'), findsOneWidget);
         await t.tap(find.byType(NavigationDestination).at(3));
         await t.pumpAndSettle();
         expect(find.byType(NavigationBar), findsOneWidget);

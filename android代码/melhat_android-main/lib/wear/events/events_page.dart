@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../core.dart';
 import '../scroll_to_top.dart';
-import '../inline_filters.dart';
 import 'event_controller.dart';
 import 'event_models.dart';
 import 'event_repository.dart';
@@ -48,13 +47,6 @@ class _EventsPageState extends State<EventsPage> {
   String? _scopeKey;
   Timer? _scrollSave;
   int _routeGeneration = 0;
-  JsonMap? _dutySummary;
-  String? _summaryScope;
-  int _summaryRequest = 0;
-  bool _openingFilters = false;
-  List<JsonMap> _filterOptions = [];
-  String? _filterOptionsScope;
-  String? _filterOptionsError;
 
   @override
   void didUpdateWidget(covariant EventsPage oldWidget) {
@@ -165,46 +157,9 @@ class _EventsPageState extends State<EventsPage> {
             }),
       );
     }
-    if (_summaryScope != session.scopeKey) {
-      _dutySummary = null;
-      unawaited(_loadDutySummary());
-    }
     if (!session.workBusinessEnabled) {
       unawaited(_controller!.clearWorkContext());
     }
-  }
-
-  Future<void> _loadDutySummary() async {
-    final session = _session;
-    if (session == null || widget.eventId?.isNotEmpty == true) return;
-    final scope = session.scopeKey;
-    _summaryScope = scope;
-    final request = ++_summaryRequest;
-    try {
-      final data = jsonMap(await session.api.get('/api/v1/duty/summary'));
-      if (!mounted ||
-          request != _summaryRequest ||
-          session != _session ||
-          scope != session.scopeKey) {
-        return;
-      }
-      setState(() => _dutySummary = data);
-    } catch (_) {
-      if (!mounted ||
-          request != _summaryRequest ||
-          session != _session ||
-          scope != session.scopeKey) {
-        return;
-      }
-      setState(() => _dutySummary = null);
-    }
-  }
-
-  Future<void> _refreshWorkspace() async {
-    await Future.wait([
-      if (_controller != null) _controller!.refreshFromSignal(),
-      _loadDutySummary(),
-    ]);
   }
 
   EventController _buildController(WearSession session) => EventController(
@@ -272,7 +227,7 @@ class _EventsPageState extends State<EventsPage> {
   void _serverSignaled() {
     final controller = _controller;
     if (controller != null && !controller.writing) {
-      unawaited(_refreshWorkspace());
+      unawaited(controller.refreshFromSignal());
     }
   }
 
@@ -359,7 +314,7 @@ class _EventsPageState extends State<EventsPage> {
           child: WearScrollToTop(
             controller: _scroll,
             child: RefreshIndicator(
-              onRefresh: _refreshWorkspace,
+              onRefresh: controller.refreshFromSignal,
               child: ListView(
                 key: const ValueKey('wear-events-workspace'),
                 controller: _scroll,
@@ -377,48 +332,73 @@ class _EventsPageState extends State<EventsPage> {
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            for (final level in const [
-                              ('emergency', '紧急', WearColors.danger),
-                              ('abnormal', '异常', WearColors.warning),
-                              ('warning', '警告', WearColors.online),
-                            ])
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 3,
-                                  ),
-                                  child: ChoiceChip(
-                                    key: ValueKey('event-level-${level.$1}'),
-                                    label: Center(child: Text(level.$2)),
-                                    selected:
-                                        controller.filters.severity == level.$1,
-                                    selectedColor: level.$3.withValues(
-                                      alpha: .14,
-                                    ),
-                                    labelStyle: TextStyle(
-                                      color: level.$3,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    onSelected: controller.writing
-                                        ? null
-                                        : (selected) => controller.setFilters(
-                                            controller.filters.copyWith(
-                                              severity: selected
-                                                  ? level.$1
-                                                  : '',
-                                            ),
-                                          ),
-                                  ),
-                                ),
+                        for (final level in const [
+                          ('emergency', '紧急', WearColors.danger),
+                          ('abnormal', '异常', WearColors.warning),
+                        ])
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 3,
                               ),
-                          ],
+                              child: ChoiceChip(
+                                key: ValueKey('event-level-${level.$1}'),
+                                label: Center(child: Text(level.$2)),
+                                selected:
+                                    controller.filters.severity == level.$1,
+                                selectedColor: level.$3.withValues(alpha: .14),
+                                labelStyle: TextStyle(
+                                  color: level.$3,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                onSelected: controller.writing
+                                    ? null
+                                    : (selected) => controller.setFilters(
+                                        controller.filters.copyWith(
+                                          severity: selected ? level.$1 : '',
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(19, 4, 19, 0),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        const Text(
+                          '处理状态',
+                          style: TextStyle(color: WearColors.muted),
                         ),
-                        const SizedBox(height: 10),
-                        _filters(controller),
+                        for (final state in const [
+                          EventProcessingFilter.unclaimed,
+                          EventProcessingFilter.processing,
+                        ])
+                          ChoiceChip(
+                            key: ValueKey('event-status-${state.name}'),
+                            label: Text(state.label),
+                            selected:
+                                controller.filters.processingFilter == state,
+                            selectedColor: WearColors.primary.withValues(
+                              alpha: .12,
+                            ),
+                            onSelected: controller.writing
+                                ? null
+                                : (selected) => controller.setFilters(
+                                    controller.filters.copyWith(
+                                      processingFilter: selected
+                                          ? state
+                                          : EventProcessingFilter.all,
+                                    ),
+                                  ),
+                          ),
                       ],
                     ),
                   ),
@@ -459,8 +439,8 @@ class _EventsPageState extends State<EventsPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: WearEmpty(
-                        title: '当前筛选没有事件',
-                        detail: '当前条件下没有待处理事项，可调整筛选或刷新。',
+                        title: '暂无事件',
+                        detail: '可调整事件级别、处理状态或下拉刷新。',
                         onRetry: controller.reload,
                       ),
                     )
@@ -522,140 +502,6 @@ class _EventsPageState extends State<EventsPage> {
       store: _store(session),
     );
     _restoreScroll();
-  }
-
-  Widget _filters(EventController controller) {
-    final filters = controller.filters;
-    final statuses = filters.selectedStatuses.toSet();
-    final active =
-        statuses.length == 4 &&
-        statuses.containsAll({'open', 'field_pending', 'claimed', 'handling'});
-    return WearCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: InlineFilters(
-        key: ValueKey(
-          'event-filters-${_session?.scopeKey}-${_session?.workBusinessEnabled}',
-        ),
-        title: '事件筛选',
-        enabled: !controller.writing,
-        groups: [
-          InlineFilterGroup(
-            'status',
-            '状态',
-            {
-              for (final e in _statuses.entries)
-                if (e.key != 'active')
-                  e.key: !controller.actor.isAdmin && e.key == 'pending_review'
-                      ? '已上报'
-                      : e.value,
-              'active': '待处理 ${controller.inboxCount}',
-            },
-            presets: const {'active'},
-          ),
-          InlineFilterGroup('type', '类型', {
-            if (_filterOptionsScope == _session?.scopeKey)
-              for (final e in _filterOptions)
-                if (_session?.simulatedWatchVisible != false ||
-                    !idOf(e['code']).startsWith('watch.'))
-                  'alarm:${idOf(e['code'])}':
-                      '${textOf(e['label'])} · ${_deviceTypes[idOf(e['code']).split('.').first] ?? idOf(e['code'])}',
-            for (final e in _types.entries)
-              if (e.key.isNotEmpty &&
-                  (_session?.simulatedWatchVisible != false ||
-                      e.key != 'vitals'))
-                'type:${e.key}': e.value,
-            for (final code in filters.selectedAlarmCodes)
-              if (!_filterOptions.any((e) => idOf(e['code']) == code))
-                'alarm:$code':
-                    filters.alarmLabels[code] ??
-                    (filters.alarmLabel.isEmpty ? code : filters.alarmLabel),
-          }),
-          InlineFilterGroup('device', '设备', {
-            for (final entry in _deviceTypes.entries)
-              if (_session?.simulatedWatchVisible != false ||
-                  entry.key != 'watch')
-                entry.key: entry.value,
-          }),
-          InlineFilterGroup('flags', '其他', {
-            if (controller.actor.isAdmin)
-              'mine': _quickFilterLabel('我负责', 'mine'),
-            'escalated': _quickFilterLabel('已升级', 'overdue'),
-          }),
-        ],
-        value: {
-          'status': active ? {'active'} : statuses,
-          'type': {
-            for (final t in filters.selectedTypes) 'type:$t',
-            for (final c in filters.selectedAlarmCodes) 'alarm:$c',
-          },
-          'device': filters.deviceTypes.toSet(),
-          'flags': {
-            if (filters.escalated) 'escalated',
-            if (filters.claimantUserId.isNotEmpty &&
-                filters.claimantUserId == _session?.userId)
-              'mine',
-          },
-        },
-        fields: {
-          'person': '人员 ID（可选）',
-          if (_session!.workBusinessEnabled) 'task': '任务 ID（可选）',
-        },
-        fieldValues: {
-          'person': filters.personId,
-          if (_session!.workBusinessEnabled) 'task': filters.taskId,
-          'claimant': filters.claimantUserId == _session?.userId
-              ? ''
-              : filters.claimantUserId,
-        },
-        loading: _openingFilters,
-        error: _filterOptionsError,
-        onOpen: _loadFilterOptions,
-        onApply: (selected, fields) {
-          final kinds = selected['type'] ?? {};
-          final codes = kinds
-              .where((v) => v.startsWith('alarm:'))
-              .map((v) => v.substring(6))
-              .toList();
-          final chosenStates = selected['status'] ?? {};
-          controller.setFilters(
-            EventFilters(
-              status: chosenStates.contains('active') ? 'active' : 'all',
-              statuses: chosenStates.contains('active')
-                  ? const []
-                  : chosenStates.toList(),
-              types: kinds
-                  .where((v) => v.startsWith('type:'))
-                  .map((v) => v.substring(5))
-                  .toList(),
-              alarmCodes: codes,
-              alarmLabels: {
-                for (final code in codes)
-                  code:
-                      _filterOptions
-                          .where((e) => idOf(e['code']) == code)
-                          .map((e) => textOf(e['label']))
-                          .firstOrNull ??
-                      filters.alarmLabels[code] ??
-                      code,
-              },
-              deviceTypes: (selected['device'] ?? {}).toList(),
-              escalated: selected['flags']?.contains('escalated') ?? false,
-              personId: fields['person'] ?? '',
-              taskId: _session!.workBusinessEnabled ? fields['task'] ?? '' : '',
-              claimantUserId: selected['flags']?.contains('mine') == true
-                  ? _session!.userId
-                  : fields['claimant'] ?? '',
-            ),
-            preserveViewport: true,
-          );
-        },
-      ),
-    );
-  }
-
-  String _quickFilterLabel(String label, String? countField) {
-    final count = countField == null ? null : _dutySummary?[countField];
-    return count == null ? label : '$label ${intOf(count)}';
   }
 
   Widget _resultHeader(EventController controller) => Column(
@@ -1145,7 +991,7 @@ class _EventsPageState extends State<EventsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${_actionLabel(action.action)} · ${_known(action.actor)}',
+                '${action.label} · ${_known(action.actor)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: WearColors.ink,
@@ -1560,33 +1406,6 @@ class _EventsPageState extends State<EventsPage> {
       await _execute(controller, EventCommand.assignTask);
     }
   }
-
-  Future<void> _loadFilterOptions() async {
-    if (_openingFilters) return;
-    final session = _session!;
-    final scope = session.scopeKey;
-    setState(() {
-      _openingFilters = true;
-      _filterOptionsError = null;
-    });
-    try {
-      final options = jsonList(
-        await session.api.get('/api/v1/events/filter-options'),
-      );
-      if (mounted && session.scopeKey == scope) {
-        setState(() {
-          _filterOptions = options;
-          _filterOptionsScope = scope;
-        });
-      }
-    } catch (_) {
-      if (mounted && session.scopeKey == scope) {
-        setState(() => _filterOptionsError = '具体告警类型加载失败');
-      }
-    } finally {
-      if (mounted) setState(() => _openingFilters = false);
-    }
-  }
 }
 
 const _statuses = {
@@ -1597,35 +1416,9 @@ const _statuses = {
   'verified': '已核验',
 };
 
-const _types = {
-  '': '全部类型',
-  'sos': '人员求助',
-  'geofence': '电子围栏',
-  'communication': '设备通信',
-  'battery': '低电量',
-  'location': '位置异常',
-  'belt': '安全带挂接',
-  'vitals': '生命体征',
-};
-
-const _deviceTypes = {'helmet': '安全帽', 'belt': '安全带', 'watch': '手表'};
-
 String _known(String value) => value.isEmpty ? '未知' : value;
 String _statusLabel(String value) =>
     _statuses[value] ?? (value.isEmpty ? '未知状态' : value);
-String _actionLabel(String value) =>
-    const {
-      'ack': '确认看见',
-      'claim': '认领',
-      'handle': '处置',
-      'manual_sos': '手动 SOS 报警',
-      'transfer': '转交',
-      'close': '历史处理',
-      'review': '审批通过',
-      'reopen': '重开',
-      'escalate': '升级',
-    }[value] ??
-    value;
 String _locationLabel(String value) =>
     const {'ok': '定位正常', 'stale': '定位已过期', 'unknown': '定位质量未知'}[value] ??
     '定位质量未知';

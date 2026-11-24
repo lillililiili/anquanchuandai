@@ -112,7 +112,7 @@ public class GuardianEvents {
             }
             event.put("version",event.getIntValue("version")+1);event.put("updatedAt",Instant.now().toString());remember(state,key,input,id);bump(state);result[0]=present(state,event,ctx);return true;
         });
-        if(helmetDelivery!=null && result[0]!=null && "direct-helmet".equals(result[0].getString("protocol"))) helmetDelivery.synchronize(result[0]);
+        if(helmetDelivery!=null && result[0]!=null && Arrays.asList("direct-helmet","split-helmet").contains(result[0].getString("protocol"))) helmetDelivery.synchronize(result[0]);
         return result[0];
     }
     public void upload(JSONObject actor,String id,String contentType,java.io.InputStream bytes) {

@@ -91,7 +91,9 @@ public class AdminDeviceService {
             if ("DIRECT_HELMET".equals(output.getString("source"))) {
                 if ("create".equals(action)) hats.ensureDirectUnassigned(output.getString("deviceNumber"));
             }
-            else hats.ensureUnassigned(output.getString("code"));
+            else if ("SPLIT_HELMET".equals(output.getString("source"))) {
+                if ("create".equals(action)) hats.requireUnusedIdentity(output.getString("deviceNumber"));
+            } else hats.ensureUnassigned(output.getString("code"));
         }
         state.put("revision", state.getIntValue("revision") + 1);
         JSONArray audit = state.getJSONArray("audit");
@@ -159,7 +161,8 @@ public class AdminDeviceService {
         if (!TYPES.contains(result.getString("type"))) throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请选择设备类型");
         if (row == null && (data.containsKey("source") || data.containsKey("deviceNumber"))) {
             boolean belt = "DIRECT_BELT".equals(data.getString("source"));
-            if ((!belt && !"DIRECT_HELMET".equals(data.getString("source")))
+            boolean split = "SPLIT_HELMET".equals(data.getString("source"));
+            if ((!belt && !split && !"DIRECT_HELMET".equals(data.getString("source")))
                     || !(belt ? "BELT" : "HELMET").equals(result.getString("type"))) {
                 throw AdminQueryService.fail(400, "VALIDATION_ERROR", "直连接入方式与设备类型不匹配");
             }
@@ -168,12 +171,12 @@ public class AdminDeviceService {
             if (!number.matches("[A-Za-z0-9._-]{1,64}")) {
                 throw AdminQueryService.fail(400, "VALIDATION_ERROR", "请填写设备实际登录ID（1至64位字母、数字、点、下划线或连字符）");
             }
-            result.put("source", belt ? "DIRECT_BELT" : "DIRECT_HELMET");
+            result.put("source", split ? "SPLIT_HELMET" : belt ? "DIRECT_BELT" : "DIRECT_HELMET");
             result.put("deviceNumber", number);
             result.put("portalDeviceId", number);
-            result.put("communicationProtocol", belt ? "WEBSOCKET" : "SIP");
+            result.put("communicationProtocol", split ? "ZLM_WEBRTC" : belt ? "WEBSOCKET" : "SIP");
             result.put("capabilities", new JSONArray());
-            result.put("capabilitySource", (belt ? "安全带" : "一体帽") + "直连设备；功能状态由设备和服务实时确认");
+            result.put("capabilitySource", split ? "分体帽厂家中间件；功能状态由真实设备与服务确认" : (belt ? "安全带" : "一体帽") + "直连设备；功能状态由设备和服务实时确认");
             result.put("online", null);
             result.put("battery", null);
             if (!data.containsKey("code")) result.put("code", number);
@@ -244,7 +247,7 @@ public class AdminDeviceService {
     }
 
     private static boolean directSource(String source) {
-        return "DIRECT_HELMET".equals(source) || "DIRECT_BELT".equals(source);
+        return "DIRECT_HELMET".equals(source) || "DIRECT_BELT".equals(source) || "SPLIT_HELMET".equals(source);
     }
 
     private static boolean locked(JSONObject before, JSONObject after) {

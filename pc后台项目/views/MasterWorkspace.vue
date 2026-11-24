@@ -156,7 +156,11 @@ const writable = computed(() => { void store.revision; return ['roles', 'sites']
 const writeReason = computed(() => ['roles', 'sites'].includes(entity.value) ? '仅系统管理员可维护' : '当前身份只有查询权限')
 function editable(row) { return writable.value && (entity.value === 'roles' || !row.builtin || entity.value === 'accounts' && row.id !== 'demo-system' && provider.isSystem()) }
 function displayName(row) { return entity.value === 'sites' ? testSiteName(row) : row?.name }
-function dutyStatusTitle(row) { return row.dutyStatusSource === 'MANUAL' ? `${row.dutyStatusUpdatedBy || '管理员'}于${beijingTime(row.dutyStatusUpdatedAt)}人工维护` : '尚未维护在岗状态' }
+function dutyStatusTitle(row) {
+  if (row.dutyStatusSource === 'MANUAL') return `${row.dutyStatusUpdatedBy || '管理员'}于${beijingTime(row.dutyStatusUpdatedAt)}人工维护`
+  if (row.dutyStatusSource === 'DEFAULT') return '新建人员默认在岗'
+  return normalizePersonDutyStatus(row.dutyStatus) === 'UNKNOWN' ? '尚未维护在岗状态' : personDutyStatusLabel(row.dutyStatus)
+}
 const tableColumns = computed(() => masterColumns(entity.value, options.value, trees.value))
 function roleSiteNames(roleId) {
   const role = options.value.roles?.find(role => role.id === roleId)

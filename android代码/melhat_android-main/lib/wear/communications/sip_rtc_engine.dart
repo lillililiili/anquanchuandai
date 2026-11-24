@@ -2,15 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:logger/logger.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'models.dart';
 import 'rtc_engine.dart';
 import 'media_preparation.dart';
-
-abstract interface class WearPreparedRtcMedia {
-  void usePreparedMedia(MediaStream stream);
-}
+import '../api.dart';
+import 'prepared_rtc_media.dart';
+import 'zlm_rtc_engine.dart';
+export 'prepared_rtc_media.dart';
 
 /// Protocol selection is explicit; SIP secrets never enter persistent settings.
 class ProtocolWearRtcEngine
@@ -19,38 +18,18 @@ class ProtocolWearRtcEngine
     WearRtcEngine Function()? agoraFactory,
     WearRtcEngine Function(void Function(MediaStream?))? sipFactory,
     RtcMediaPreparation<MediaStream>? preparation,
+    WearApi? api,
   }) : _agoraFactory = agoraFactory ?? AgoraWearRtcEngine.new,
        _sipFactory = sipFactory ?? SipWearRtcEngine.new,
-       _preparation =
-           preparation ??
-           RtcMediaPreparation<MediaStream>(
-             requestPermission: (video) async {
-               final permissions = await [
-                 Permission.microphone,
-                 if (video) Permission.camera,
-               ].request();
-               return permissions.values.every(
-                 (permission) => permission.isGranted,
-               );
-             },
-             acquire: (video) async {
-               final stream = await navigator.mediaDevices.getUserMedia({
-                 'audio': true,
-                 'video': video,
-               });
-               if (stream.getAudioTracks().isEmpty) {
-                 await releaseWearMedia(stream);
-                 throw const RtcJoinFailure('未取得可用麦克风，未发起呼叫');
-               }
-               return stream;
-             },
-             release: releaseWearMedia,
-           );
+       _api = api,
+       _preparation = preparation ?? prepareWearMedia();
   final WearRtcEngine Function() _agoraFactory;
+  final WearApi? _api;
   final WearRtcEngine Function(void Function(MediaStream?)) _sipFactory;
   final RtcMediaPreparation<MediaStream> _preparation;
   WearRtcEngine? _active;
   final remoteStream = ValueNotifier<MediaStream?>(null);
+  final splitStreams = ValueNotifier<Map<String, MediaStream?>>({});
   bool _disposed = false;
   int _generation = 0;
   @override
@@ -70,6 +49,7 @@ class ProtocolWearRtcEngine
     final old = _active;
     _active = null;
     remoteStream.value = null;
+    splitStreams.value = {};
     await old?.dispose();
     if (_disposed || generation != _generation) {
       throw const RtcOperationCancelled();
@@ -78,13 +58,21 @@ class ProtocolWearRtcEngine
         ? _sipFactory((s) {
             if (!_disposed && generation == _generation) remoteStream.value = s;
           })
+        : c.protocol == 'ZLM_WEBRTC' && _api != null
+        ? ZlmWearRtcEngine(_api, (streams) {
+            if (!_disposed && generation == _generation) {
+              splitStreams.value = streams;
+            }
+          })
         : c.protocol == 'AGORA'
         ? _agoraFactory()
         : null;
     if (next == null) throw const RtcJoinFailure('设备通话协议暂不支持');
     _active = next;
     if (next is WearPreparedRtcMedia) {
-      final local = _preparation.take(video: c.video);
+      final local = _preparation.take(
+        video: c.protocol == 'ZLM_WEBRTC' ? false : c.video,
+      );
       if (local == null) throw const RtcJoinFailure('请先准备麦克风后再发起呼叫');
       (next as WearPreparedRtcMedia).usePreparedMedia(local);
     } else {
@@ -116,6 +104,7 @@ class ProtocolWearRtcEngine
     final old = _active;
     _active = null;
     if (!_disposed) remoteStream.value = null;
+    if (!_disposed) splitStreams.value = {};
     try {
       await _preparation.cancel();
     } finally {
@@ -131,6 +120,7 @@ class ProtocolWearRtcEngine
     final old = _active;
     _active = null;
     remoteStream.value = null;
+    splitStreams.value = {};
     try {
       await _preparation.cancel();
     } finally {
@@ -138,26 +128,10 @@ class ProtocolWearRtcEngine
         await old?.dispose();
       } finally {
         remoteStream.dispose();
+        splitStreams.dispose();
       }
     }
   }
-}
-
-Future<void> releaseWearMedia(MediaStream stream) async {
-  Object? failure;
-  for (final track in stream.getTracks()) {
-    try {
-      await track.stop();
-    } catch (error) {
-      failure ??= error;
-    }
-  }
-  try {
-    await stream.dispose();
-  } catch (error) {
-    failure ??= error;
-  }
-  if (failure != null) throw failure;
 }
 
 class SipWearRtcEngine

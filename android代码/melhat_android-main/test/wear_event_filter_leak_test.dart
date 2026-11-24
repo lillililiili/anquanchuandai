@@ -12,11 +12,20 @@ import 'wear_session_test.dart'
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets(
-    'opening home emergency detail must not limit later unclaimed list to SOS',
+    'messages restore severity and discard obsolete filters after opening SOS',
     (tester) async {
       SharedPreferences.setMockInitialValues({
         'wear.filter-leak.events.1.state': jsonEncode({
-          'filters': {'status': 'open'},
+          'filters': {
+            'status': 'open',
+            'severity': 'abnormal',
+            'statuses': ['open'],
+            'types': ['sos'],
+            'alarmCodes': ['belt.unhooked'],
+            'deviceTypes': ['belt'],
+            'claimantUserId': '7',
+            'escalated': true,
+          },
           'current': 1,
         }),
       });
@@ -50,7 +59,7 @@ void main() {
                   final total =
                       onlySos || r.queryParameters['escalated'] == 'true'
                       ? 1
-                      : r.queryParameters['status'] == 'open'
+                      : r.queryParameters['severity'] == 'abnormal'
                       ? 24
                       : 35;
                   final current = intOf(r.queryParameters['current']);
@@ -96,30 +105,19 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byType(NavigationDestination).at(2));
       await tester.pumpAndSettle();
-      final toggle = find.byKey(const ValueKey('inline-filter-toggle'));
-      if (toggle.evaluate().isNotEmpty) {
-        await tester.tap(toggle);
-        await tester.pumpAndSettle();
-      }
-      final open = find.byKey(const ValueKey('filter-status-open'));
-      if (!tester.widget<FilterChip>(open).selected) {
-        await tester.tap(open);
-        await tester.pump(const Duration(milliseconds: 350));
-        await tester.pumpAndSettle();
-      }
-      expect(
-        queries.last['statuses'] == 'open' || queries.last['status'] == 'open',
-        true,
-      );
-      expect(
-        queries.last.containsKey('type'),
-        false,
-        reason: '待认领24的入口不应保留首页详情带入的type=sos',
-      );
-      final collapse = find.byKey(const ValueKey('inline-filter-collapse-top'));
-      if (collapse.evaluate().isNotEmpty) {
-        await tester.tap(collapse);
-        await tester.pumpAndSettle();
+      expect(find.text('事件筛选'), findsNothing);
+      expect(queries.last['severity'], 'abnormal');
+      for (final key in [
+        'status',
+        'statuses',
+        'type',
+        'types',
+        'alarmCodes',
+        'deviceTypes',
+        'claimantUserId',
+        'escalated',
+      ]) {
+        expect(queries.last.containsKey(key), isFalse, reason: key);
       }
       expect(find.textContaining('共 24 条'), findsOneWidget);
       expect(find.textContaining('我的待办 35'), findsOneWidget);
@@ -129,48 +127,17 @@ void main() {
         await tester.pumpAndSettle();
       }
       expect(
-        queries.any(
-          (q) =>
-              q['current'] == 2 &&
-              (q['status'] == 'open' || q['statuses'] == 'open'),
-        ),
+        queries.any((q) => q['current'] == 2 && q['severity'] == 'abnormal'),
         true,
       );
       expect(find.byKey(const ValueKey('wear-event-24')), findsOneWidget);
       expect(find.text('没有更多事件了'), findsOneWidget);
       tester.widget<ListView>(workspace).controller!.jumpTo(0);
       await tester.pumpAndSettle();
-      if (toggle.evaluate().isNotEmpty) {
-        await tester.tap(toggle);
-        await tester.pumpAndSettle();
-      }
-      final reset = find.byKey(const ValueKey('filter-reset'));
-      await tester.tap(reset);
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.tap(find.byKey(const ValueKey('event-level-abnormal')));
       await tester.pumpAndSettle();
-      final escalated = find.byKey(const ValueKey('filter-flags-escalated'));
-      await tester.ensureVisible(escalated);
-      await tester.pumpAndSettle();
-      await tester.tap(escalated);
-      await tester.pump(const Duration(milliseconds: 350));
-      await tester.pumpAndSettle();
-      expect(queries.last['escalated'], 'true');
-      expect(queries.last.containsKey('type'), false);
-      expect(
-        queries.last['status'] == 'all' || !queries.last.containsKey('status'),
-        true,
-      );
-      expect(queries.last.containsKey('statuses'), false);
-      final collapse2 = find.byKey(
-        const ValueKey('inline-filter-collapse-top'),
-      );
-      if (collapse2.evaluate().isNotEmpty) {
-        await tester.ensureVisible(collapse2);
-        await tester.pumpAndSettle();
-        await tester.tap(collapse2);
-        await tester.pumpAndSettle();
-      }
-      expect(find.textContaining('共 1 条'), findsOneWidget);
+      expect(queries.last.containsKey('severity'), isFalse);
+      expect(find.textContaining('共 35 条'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

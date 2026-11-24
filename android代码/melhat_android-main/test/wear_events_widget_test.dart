@@ -9,6 +9,10 @@ void main() {
       final backend = AcceptanceBackend();
       await launchAcceptance(t, backend, account: 'member', scale: 1.5);
       await openAcceptance(t, '/events?eventId=402');
+      await tapAcceptance(
+        t,
+        find.byKey(const ValueKey('event-open-observation')),
+      );
       await enterAcceptance(t, 'event-observation', '已到达安全区域，等待协助');
       await tapAcceptance(t, find.byTooltip('返回事件列表'));
       await openAcceptance(t, '/events?eventId=402');

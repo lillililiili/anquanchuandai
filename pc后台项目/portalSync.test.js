@@ -14,6 +14,11 @@ function snapshot() {
 }
 
 describe('portal projection', () => {
+  it('retains split field freshness independently from offline communication', () => {
+    const admin = { devices: [{ id: 'split-1' }] }, now = new Date().toISOString();
+    applyTelemetry(admin, { devices: [{ id: 'split-1', source: 'SPLIT_HELMET', online: false, freshness: 'STALE', sourceTime: '2020-01-01', battery: 62, batteryFreshness: 'CURRENT', batteryReportedAt: now, storageTotal: '32G', storageTotalFreshness: 'STALE', storageTotalReportedAt: '2020-01-01', pressure: 101325, pressureFreshness: 'CURRENT', pressureReportedAt: now }] });
+    expect(admin.devices[0]).toMatchObject({ communication: 'OFFLINE', battery: 62, batteryReportedAt: now, storageTotal: '32G', storageTotalFreshness: 'STALE', storageTotalReportedAt: '2020-01-01', pressure: 101325, pressureReportedAt: now });
+  })
   it('projects manual duty without ending held equipment or disabling the person', () => {
     const admin = createSeed(), remote = snapshot()
     const person = admin.people.find(row => row.id === 'person-1-0')

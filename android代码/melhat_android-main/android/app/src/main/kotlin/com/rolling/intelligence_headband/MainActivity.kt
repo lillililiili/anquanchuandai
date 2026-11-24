@@ -15,6 +15,7 @@ import android.provider.OpenableColumns
 class MainActivity : FlutterActivity() {
     private var documentResult: MethodChannel.Result? = null
     private var documentBytes: ByteArray? = null
+    private var documentSource: java.io.File? = null
     override fun shouldHandleDeeplinking(): Boolean = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -23,6 +24,18 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 if (documentResult != null) {
                     result.error("busy", "请先完成当前文件操作", null)
+                } else if (call.method == "saveMedia") {
+                    val source = call.argument<String>("path")?.let { java.io.File(it).canonicalFile }
+                    if (source == null || !source.path.startsWith(cacheDir.canonicalPath + java.io.File.separator) || !source.isFile) {
+                        result.error("invalid", "设备文件缓存无效", null)
+                    } else {
+                        documentResult = result; documentSource = source
+                        val mime = call.argument<String>("mime").takeIf { it in listOf("image/*", "video/*", "audio/*") } ?: "application/octet-stream"
+                        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                            .setType(mime).putExtra(Intent.EXTRA_TITLE, call.argument<String>("name") ?: "安全帽文件")
+                        try { startActivityForResult(intent, 703) }
+                        catch (e: Exception) { documentResult = null; documentSource = null; result.error("unavailable", "系统文件选择器不可用", null) }
+                    }
                 } else if (call.method == "openXlsx" || call.method == "saveXlsx") {
                     val saving = call.method == "saveXlsx"
                     documentResult = result
@@ -68,12 +81,24 @@ class MainActivity : FlutterActivity() {
     @Deprecated("Android activity result bridge")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != 701 && requestCode != 702) return
+        if (requestCode != 701 && requestCode != 702 && requestCode != 703) return
         val result = documentResult ?: return
         val bytes = documentBytes
-        documentResult = null; documentBytes = null
+        val source = documentSource
+        documentResult = null; documentBytes = null; documentSource = null
         val uri = data?.data
         if (resultCode != Activity.RESULT_OK || uri == null) { result.success(null); return }
+        if (requestCode == 703) {
+            Thread {
+                try {
+                    require(source != null && source.isFile) { "设备文件缓存已失效" }
+                    val output = contentResolver.openOutputStream(uri) ?: error("无法写入文件")
+                    output.use { target -> source.inputStream().use { it.copyTo(target) } }
+                    runOnUiThread { result.success(true) }
+                } catch (e: Exception) { runOnUiThread { result.error("document", "文件保存未完成", null) } }
+            }.start()
+            return
+        }
         try {
             if (requestCode == 702) {
                 require(bytes != null) { "文件内容为空" }

@@ -24,6 +24,7 @@ void main() {
         'wear.sos-multiple.events.1.state': jsonEncode({
           'filters': {
             'severity': 'warning',
+            'processingFilter': 'processing',
             'statuses': ['closed'],
             'personId': '999',
             'deviceTypes': ['watch'],
@@ -96,7 +97,7 @@ void main() {
       expect(requests.single['type'], 'sos');
       expect(requests.single.containsKey('personId'), isFalse);
       expect(requests.single.containsKey('deviceTypes'), isFalse);
-      expect(requests.single['statuses'], isNot(contains('closed')));
+      expect(requests.single.containsKey('statuses'), isFalse);
       final router = GoRouter.of(tester.element(find.byType(NavigationBar)));
       final tile = find.byKey(const ValueKey('wear-event-93'));
       await tester.scrollUntilVisible(
@@ -117,16 +118,26 @@ void main() {
       );
       router.pop();
       await tester.pumpAndSettle();
-      await tester.ensureVisible(emergency);
+      await tester.scrollUntilVisible(
+        emergency,
+        -180,
+        scrollable: find.byType(Scrollable).last,
+      );
       await tester.pumpAndSettle();
       await tester.tap(emergency);
       await tester.pumpAndSettle();
       expect(tester.widget<ChoiceChip>(emergency).selected, isFalse);
+      final processing = find.byKey(const ValueKey('event-status-processing'));
+      await tester.tap(processing);
+      await tester.pumpAndSettle();
+      expect(requests.last['statuses'], 'claimed,handling');
       await tester.tap(find.byType(NavigationDestination).at(0));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('home-sos-banner')));
       await tester.pumpAndSettle();
       expect(tester.widget<ChoiceChip>(emergency).selected, isTrue);
+      expect(tester.widget<ChoiceChip>(processing).selected, isFalse);
+      expect(requests.last.containsKey('statuses'), isFalse);
       expect(
         tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
         2,

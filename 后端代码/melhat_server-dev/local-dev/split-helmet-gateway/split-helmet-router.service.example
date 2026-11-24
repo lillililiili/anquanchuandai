@@ -1,0 +1,23 @@
+[Unit]
+Description=Split helmet SN callback router
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wearables
+Group=wearables
+WorkingDirectory=/opt/wearables/split-helmet-gateway
+EnvironmentFile=/etc/wearables/split-router.env
+ExecStart=/usr/bin/node /opt/wearables/split-helmet-gateway/gateway.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/split-helmet-router
+
+[Install]
+WantedBy=multi-user.target

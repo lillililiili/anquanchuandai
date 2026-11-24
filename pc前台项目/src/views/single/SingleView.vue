@@ -8,6 +8,7 @@ import AppStatus from "@/components/ui/AppStatus.vue";
 import MissingRecord from "@/components/layout/MissingRecord.vue";
 import MediaImage from "@/components/domain/MediaImage.vue";
 import PersonAvatar from "@/components/domain/PersonAvatar.vue";
+import DeviceRecordings from '../materials/DeviceRecordings.vue';
 import VideoFrame from "@/components/domain/VideoFrame.vue";
 import { personFeature } from '@/lib/person-equipment';
 import { db } from "@/mock/runtime";
@@ -116,6 +117,7 @@ async function fullscreen(event) {
         </div>
 
       </AppPanel>
+      <DeviceRecordings v-if="helmetOf(person.id)?.source === 'SPLIT_HELMET'" :person-id="person.id" />
       <AppPanel v-if="recent.length" title="最近影像 / 记录">
         <div>
           <div

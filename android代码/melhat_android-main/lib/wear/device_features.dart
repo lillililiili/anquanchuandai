@@ -15,6 +15,8 @@ const deviceFeatureLabels = <String, String>{
   'voice': '语音对讲',
   'broadcast': '语音播报',
   'vitals': '生命体征',
+  'pressure': '气压',
+  'storage': 'TF 卡',
 };
 
 const actionFeatures = <String, String>{
@@ -27,6 +29,7 @@ const actionFeatures = <String, String>{
   'stop_recording': 'recording',
   'list_recordings': 'recording',
   'upload_recording': 'recording',
+  'set_watermark': 'recording',
   'intercom': 'voice',
   'configure_sip': 'voice',
   'tts': 'broadcast',
@@ -88,7 +91,7 @@ DeviceFeatureState deviceFeature(JsonMap device, String key) {
     final supported = raw['supported'] == true;
     final verified = supported && raw['verified'] == true;
     final runtimeReady =
-        device['source'] == 'DIRECT_HELMET' &&
+        const ['DIRECT_HELMET', 'SPLIT_HELMET'].contains(device['source']) &&
         raw['integrationStatus'] == 'CONNECTED' &&
         _runtimeHelmetFeatures.contains(key);
     final available =
